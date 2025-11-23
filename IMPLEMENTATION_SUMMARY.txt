@@ -1,0 +1,125 @@
+═══════════════════════════════════════════════════════════════
+✅ BACKEND FIX ABGESCHLOSSEN: "1 Stream Pro Chat-Raum"
+═══════════════════════════════════════════════════════════════
+
+📊 ZUSAMMENFASSUNG DER ÄNDERUNGEN:
+
+📁 BACKEND (Cloudflare)
+-------------------------------------------------------------------
+✅ add_chat_room_id_migration.sql (NEU)
+   - ALTER TABLE live_rooms ADD COLUMN chat_room_id TEXT
+   - CREATE INDEX idx_live_rooms_chat_room_status
+
+✅ weltenbibliothek_worker.js (GEÄNDERT)
+   - handleCreateLiveRoom(): Doppelte Validierung
+     1. Prüft ob Chat-Raum bereits Stream hat
+     2. Prüft ob User bereits Stream in anderem Chat hat
+   - handleGetLiveRooms(): chat_room_id in SELECT
+   - Neue 409 Error-Responses mit error_type
+
+📱 FLUTTER APP
+-------------------------------------------------------------------
+✅ lib/services/live_room_service.dart
+   - LiveRoom.chatRoomId Feld hinzugefügt
+   - createLiveRoom() chatRoomId Parameter (REQUIRED)
+   - Intelligentes Error-Handling (error_type: chat_room_occupied / user_has_stream)
+
+✅ lib/widgets/telegram_live_banner.dart
+   - Filter korrigiert: room?.chatRoomId == widget.roomId (nicht roomId!)
+
+✅ lib/screens/chat_room_detail_screen.dart
+   - createLiveRoom(chatRoomId: widget.chatRoom.id)
+   - SnackBar mit "Beitreten"-Button (chat_room_occupied)
+   - SnackBar mit "Öffnen"-Button (user_has_stream)
+
+✅ lib/screens/live_streams_screen.dart
+   - Allgemeine Streams: chatRoomId: 'general_livestream'
+
+✅ pubspec.yaml
+   - Version: 3.2.0+43 → 3.3.0+44
+
+📚 DOKUMENTATION
+-------------------------------------------------------------------
+✅ BACKEND_MIGRATION_GUIDE.md (NEU)
+   - Schritt-für-Schritt Migrations-Anleitung
+   - Testing-Szenarien mit erwarteten Ergebnissen
+   - Rollback-Plan falls Migration fehlschlägt
+
+✅ CHANGELOG_v3.3.0.md (NEU)
+   - Detaillierte Änderungsliste
+   - Code-Beispiele (Vor/Nach)
+   - Testing-Checklist
+
+✅ APK_INDEX_UPDATE_v3.3.0.html (NEU)
+   - HTML-Code für APK Download-Seite
+   - Migrations-Warnung für User
+
+═══════════════════════════════════════════════════════════════
+🚨 KRITISCH: BACKEND-MIGRATION ERFORDERLICH!
+═══════════════════════════════════════════════════════════════
+
+OHNE MIGRATION WERDEN NEUE FEATURES NICHT FUNKTIONIEREN!
+
+Schritt 1: Cloudflare D1 Migration
+-----------------------------------
+cd /home/user/flutter_app/cloudflare_backend
+npx wrangler d1 execute weltenbibliothek --file=add_chat_room_id_migration.sql
+
+Schritt 2: Worker Deployment
+-----------------------------------
+npx wrangler deploy weltenbibliothek_worker.js
+
+Schritt 3: Flutter App Testen
+-----------------------------------
+flutter clean && flutter pub get
+flutter build apk --release
+
+═══════════════════════════════════════════════════════════════
+📋 TESTING-SZENARIEN
+═══════════════════════════════════════════════════════════════
+
+✅ Test 1: Normaler Flow
+  User A → "Allgemeiner Chat" → Stream starten → SUCCESS
+  User B → "Allgemeiner Chat" → Sieht Banner → Joined Viewer
+
+✅ Test 2: Chat-Raum besetzt
+  User A → "Allgemeiner Chat" → Stream starten → SUCCESS
+  User B → "Allgemeiner Chat" → Stream starten → 409 ERROR
+  User B → Sieht SnackBar: "user_a streamt bereits" + [Beitreten]
+
+✅ Test 3: User hat Stream in anderem Chat
+  User A → "Musik Chat" → Stream starten → SUCCESS
+  User A → "Allgemeiner Chat" → Stream starten → 409 ERROR
+  User A → Sieht SnackBar: "Du hast bereits Stream" + [Öffnen]
+
+═══════════════════════════════════════════════════════════════
+📁 GEÄNDERTE DATEIEN (9 Total)
+═══════════════════════════════════════════════════════════════
+
+Backend (2):
+  + cloudflare_backend/add_chat_room_id_migration.sql
+  * cloudflare_backend/weltenbibliothek_worker.js
+
+Flutter (5):
+  * lib/services/live_room_service.dart
+  * lib/widgets/telegram_live_banner.dart
+  * lib/screens/chat_room_detail_screen.dart
+  * lib/screens/live_streams_screen.dart
+  * pubspec.yaml
+
+Docs (3):
+  + BACKEND_MIGRATION_GUIDE.md
+  + CHANGELOG_v3.3.0.md
+  + APK_INDEX_UPDATE_v3.3.0.html
+
+═══════════════════════════════════════════════════════════════
+✅ CODE-ÄNDERUNGEN ABGESCHLOSSEN
+═══════════════════════════════════════════════════════════════
+
+Nächste Schritte:
+1. Backend-Migration in Cloudflare D1 durchführen
+2. Worker deployen
+3. Flutter App neu builden
+4. Mit 2 Usern live testen
+5. APK Index aktualisieren
+

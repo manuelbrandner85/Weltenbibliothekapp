@@ -1,0 +1,203 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:flutter_webrtc/flutter_webrtc.dart';
+import '../services/webrtc_service_v2.dart';
+import 'webrtc_video_widget.dart';
+
+/// PiP Video Overlay - Schwebendes Mini-Fenster im Chat
+class PiPVideoOverlay extends StatefulWidget {
+  const PiPVideoOverlay({super.key});
+
+  @override
+  State<PiPVideoOverlay> createState() => _PiPVideoOverlayState();
+}
+
+class _PiPVideoOverlayState extends State<PiPVideoOverlay> {
+  Offset _position = const Offset(20, 100); // Initiale Position
+  final RTCVideoRenderer _localRenderer = RTCVideoRenderer();
+  bool _isInitialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initRenderer();
+  }
+
+  Future<void> _initRenderer() async {
+    await _localRenderer.initialize();
+    setState(() {
+      _isInitialized = true;
+    });
+  }
+
+  @override
+  void dispose() {
+    _localRenderer.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<WebRTCServiceV2>(
+      builder: (context, service, child) {
+        // Nur anzeigen wenn Stream läuft UND PiP-Mode aktiviert ist
+        if (!service.isStreaming || !service.isPiPMode || !_isInitialized) {
+          return const SizedBox.shrink();
+        }
+
+        // Setze Local Stream
+        if (service.localStream != null) {
+          _localRenderer.srcObject = service.localStream;
+        }
+
+        final screenSize = MediaQuery.of(context).size;
+
+        return Positioned(
+          left: _position.dx,
+          top: _position.dy,
+          child: GestureDetector(
+            onPanUpdate: (details) {
+              setState(() {
+                _position = Offset(
+                  (_position.dx + details.delta.dx).clamp(0.0, screenSize.width - 140),
+                  (_position.dy + details.delta.dy).clamp(0.0, screenSize.height - 200),
+                );
+              });
+            },
+            onTap: () {
+              // Deaktiviere PiP-Mode
+              service.setPiPMode(false);
+              // Zeige Vollbild-Dialog
+              showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder: (context) => const WebRTCVideoWidget(),
+              );
+            },
+            child: Container(
+              width: 140,
+              height: 200,
+              decoration: BoxDecoration(
+                color: Colors.black,
+                border: Border.all(color: Colors.white, width: 3),
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.5),
+                    blurRadius: 10,
+                    spreadRadius: 2,
+                  ),
+                ],
+              ),
+              child: Stack(
+                children: [
+                  // Video display
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: service.localStream != null
+                        ? RTCVideoView(
+                            _localRenderer,
+                            mirror: true,
+                            objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
+                          )
+                        : const Center(
+                            child: Icon(Icons.videocam_off, color: Colors.white54, size: 40),
+                          ),
+                  ),
+
+                  // PiP Badge
+                  Positioned(
+                    top: 8,
+                    left: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.green,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Text(
+                        'LIVE',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // Minimal controls overlay
+                  Positioned(
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Colors.black.withValues(alpha: 0.7),
+                          ],
+                        ),
+                        borderRadius: const BorderRadius.only(
+                          bottomLeft: Radius.circular(10),
+                          bottomRight: Radius.circular(10),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          // Mic toggle
+                          IconButton(
+                            icon: Icon(
+                              service.isMicrophoneEnabled ? Icons.mic : Icons.mic_off,
+                              color: service.isMicrophoneEnabled ? Colors.white : Colors.red,
+                              size: 18,
+                            ),
+                            onPressed: service.toggleMicrophone,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                            tooltip: 'Mikrofon',
+                          ),
+                          // Camera toggle
+                          IconButton(
+                            icon: Icon(
+                              service.isCameraEnabled ? Icons.videocam : Icons.videocam_off,
+                              color: service.isCameraEnabled ? Colors.white : Colors.red,
+                              size: 18,
+                            ),
+                            onPressed: service.toggleCamera,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                            tooltip: 'Kamera',
+                          ),
+                          // End call
+                          IconButton(
+                            icon: const Icon(Icons.call_end, color: Colors.red, size: 18),
+                            onPressed: () => service.stopStream(),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                            tooltip: 'Beenden',
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // Drag indicator
+                  const Positioned(
+                    top: 4,
+                    right: 8,
+                    child: Icon(Icons.drag_indicator, color: Colors.white54, size: 16),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}

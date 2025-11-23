@@ -1,0 +1,168 @@
+═══════════════════════════════════════════════════════════════
+📐 ARCHITEKTUR-FLUSS: "1 Stream Pro Chat-Raum"
+═══════════════════════════════════════════════════════════════
+
+┌─────────────────────────────────────────────────────────────┐
+│  USER A: Stream starten in "Allgemeiner Chat"              │
+└─────────────────────────────────────────────────────────────┘
+                          │
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│  FLUTTER APP (chat_room_detail_screen.dart)                 │
+│  ─────────────────────────────────────────────              │
+│  1. User klickt "Live starten"-Button                       │
+│  2. createLiveRoom() aufgerufen mit:                        │
+│     chatRoomId: "allgemeiner_chat"  ← KRITISCH!             │
+│     title: "Live: Allgemeiner Chat"                         │
+└─────────────────────────────────────────────────────────────┘
+                          │
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│  CLOUDFLARE WORKER (weltenbibliothek_worker.js)             │
+│  ────────────────────────────────────────────               │
+│  handleCreateLiveRoom()                                     │
+│                                                              │
+│  VALIDIERUNG 1: Chat-Raum-Check                             │
+│  ┌────────────────────────────────────────┐                 │
+│  │ SELECT * FROM live_rooms                │                 │
+│  │ WHERE chat_room_id = 'allgemeiner_chat'│                 │
+│  │ AND status = 'live'                    │                 │
+│  └────────────────────────────────────────┘                 │
+│           │                                                  │
+│           ├─ Kein Ergebnis → WEITER zu Validierung 2        │
+│           └─ Stream existiert → 409 Conflict                │
+│                                                              │
+│  VALIDIERUNG 2: User-Check                                  │
+│  ┌────────────────────────────────────────┐                 │
+│  │ SELECT * FROM live_rooms                │                 │
+│  │ WHERE host_user_id = 123                │                 │
+│  │ AND status = 'live'                    │                 │
+│  └────────────────────────────────────────┘                 │
+│           │                                                  │
+│           ├─ Kein Ergebnis → Stream erstellen ✅            │
+│           └─ Stream in anderem Chat → 409 Conflict          │
+│                                                              │
+│  ERFOLG: INSERT INTO live_rooms                             │
+│  ┌────────────────────────────────────────┐                 │
+│  │ room_id: "room_123_1234567890"         │                 │
+│  │ chat_room_id: "allgemeiner_chat" ← NEU!│                 │
+│  │ host_user_id: 123                      │                 │
+│  │ status: 'live'                         │                 │
+│  └────────────────────────────────────────┘                 │
+└─────────────────────────────────────────────────────────────┘
+                          │
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│  FLUTTER APP: Response-Handling                             │
+│  ─────────────────────────────────────────                  │
+│  201 Created → Navigate zu LiveStreamHostScreen ✅          │
+└─────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════
+
+┌─────────────────────────────────────────────────────────────┐
+│  USER B: Stream starten in "Allgemeiner Chat"              │
+│  (während User A bereits streamt)                           │
+└─────────────────────────────────────────────────────────────┘
+                          │
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│  FLUTTER APP (chat_room_detail_screen.dart)                 │
+│  ─────────────────────────────────────────                  │
+│  1. User klickt "Live starten"-Button                       │
+│  2. createLiveRoom() aufgerufen mit:                        │
+│     chatRoomId: "allgemeiner_chat"  ← GLEICHER CHAT!        │
+└─────────────────────────────────────────────────────────────┘
+                          │
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│  CLOUDFLARE WORKER                                          │
+│  ────────────────────────────────────────────               │
+│  VALIDIERUNG 1: Chat-Raum-Check                             │
+│  ┌────────────────────────────────────────┐                 │
+│  │ SELECT * FROM live_rooms                │                 │
+│  │ WHERE chat_room_id = 'allgemeiner_chat'│                 │
+│  │ AND status = 'live'                    │                 │
+│  └────────────────────────────────────────┘                 │
+│           │                                                  │
+│           └─ Stream gefunden! ❌                             │
+│                                                              │
+│  RESPONSE: 409 Conflict                                     │
+│  ┌────────────────────────────────────────┐                 │
+│  │ error: "Chat-Raum hat bereits Stream"  │                 │
+│  │ error_type: "chat_room_occupied"       │                 │
+│  │ existing_stream: {                     │                 │
+│  │   room_id: "room_123_1234567890"       │                 │
+│  │   host_username: "user_a"              │                 │
+│  │ }                                       │                 │
+│  └────────────────────────────────────────┘                 │
+└─────────────────────────────────────────────────────────────┘
+                          │
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│  FLUTTER APP: Error-Handling                                │
+│  ─────────────────────────────────────────                  │
+│  errorType == 'chat_room_occupied' → SnackBar:              │
+│  ┌────────────────────────────────────────┐                 │
+│  │ ⚠️ user_a streamt bereits in diesem Chat │                │
+│  │ [Beitreten] ← Button                   │                 │
+│  └────────────────────────────────────────┘                 │
+│  User klickt → Navigate zu LiveStreamViewerScreen ✅        │
+└─────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════
+
+┌─────────────────────────────────────────────────────────────┐
+│  LIVE-BANNER: Auto-Update (TelegramLiveBanner)              │
+└─────────────────────────────────────────────────────────────┘
+                          │
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│  Timer.periodic(3 Sekunden)                                 │
+│  ───────────────────────────────                            │
+│  1. getActiveLiveRooms() API-Call                           │
+│  2. Filter: room.chatRoomId == widget.roomId                │
+│                                                              │
+│  widget.roomId = "allgemeiner_chat" (Chat-ID)               │
+│  room.chatRoomId = "allgemeiner_chat" (aus DB)              │
+│                                                              │
+│  Match gefunden? → Zeige Banner                             │
+│  Kein Match? → Verstecke Banner                             │
+└─────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════
+
+📊 DATENBANK-SCHEMA (live_rooms Tabelle)
+═══════════════════════════════════════════════════════════════
+
+┌─────────────┬──────────────────────┬─────────────┬──────────┐
+│ room_id     │ chat_room_id         │ host_user_id│ status   │
+├─────────────┼──────────────────────┼─────────────┼──────────┤
+│ room_1_123  │ allgemeiner_chat  ← │ 1           │ live     │
+│ room_2_456  │ musik_chat        ← │ 2           │ live     │
+│ room_1_789  │ verschwoerung_chat← │ 1           │ ended    │
+└─────────────┴──────────────────────┴─────────────┴──────────┘
+              ↑ NEU in v3.3.0!
+
+REGEL: Pro chat_room_id nur 1 Row mit status='live'! ✅
+
+═══════════════════════════════════════════════════════════════
+
+🎯 VALIDIERUNGS-LOGIK: Priorisierung
+═══════════════════════════════════════════════════════════════
+
+1️⃣ ERSTE PRIORITÄT: Chat-Raum-Check
+   ❓ "Hat DIESER Chat bereits einen Stream?"
+   ✅ Nein → Weiter zu Schritt 2
+   ❌ Ja → 409 Error (chat_room_occupied)
+
+2️⃣ ZWEITE PRIORITÄT: User-Check
+   ❓ "Hat DIESER User bereits einen Stream irgendwo?"
+   ✅ Nein → Stream erstellen
+   ❌ Ja → 409 Error (user_has_stream)
+
+WICHTIG: Chat-Raum-Check VOR User-Check!
+Warum? Chat-Raum-Regel ist strenger (nur 1 Stream total)
+        User-Regel verhindert nur mehrere Streams vom gleichen User
+
+═══════════════════════════════════════════════════════════════

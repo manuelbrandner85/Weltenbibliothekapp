@@ -1,0 +1,245 @@
+═══════════════════════════════════════════════════════════════════════════
+  WELTENBIBLIOTHEK - KOMPLETTES PROJEKT-BACKUP v5.0
+═══════════════════════════════════════════════════════════════════════════
+
+Backup Datum: 20. November 2024, 21:53 UTC
+Version: 5.0 - Livestream Korrigiert
+Build: app-release.apk (117 MB)
+
+═══════════════════════════════════════════════════════════════════════════
+  BACKUP-INHALT
+═══════════════════════════════════════════════════════════════════════════
+
+📁 VERZEICHNIS-STRUKTUR:
+├── lib/                             → Kompletter Dart Quellcode
+│   ├── screens/                     → 15+ UI-Screens
+│   ├── widgets/                     → 30+ Wiederverwendbare Widgets
+│   ├── providers/                   → State Management (Provider)
+│   ├── services/                    → WebRTC, Chat, Firebase
+│   ├── models/                      → Datenmodelle
+│   └── data/                        → Event-Datenbank (50+ Events)
+│
+├── assets/                          → App-Assets
+│   ├── icons/                       → App-Icon (192x192)
+│   ├── images/                      → Bilder
+│   └── fonts/                       → Schriftarten
+│
+├── android/                         → Android-Konfiguration
+│   ├── app/                         → App-Level Gradle
+│   └── gradle/                      → Project-Level Gradle
+│
+├── web/                             → Web-Konfiguration
+│   ├── index.html                   → Web Entry Point
+│   └── manifest.json                → Web App Manifest
+│
+├── apk_builds/                      → Fertige APK-Builds
+│   ├── weltenbibliothek-v5.0.apk   → 117 MB (Universal)
+│   ├── app-arm64-v8a-release.apk   → 49 MB (ARM 64-bit)
+│   └── app-armeabi-v7a-release.apk → 41 MB (ARM 32-bit)
+│
+├── cloudflare_workers/              → WebRTC Signaling Server
+│   ├── webrtc_signaling_worker.js  → 8,246 Bytes (Vollständig)
+│   └── wrangler.toml                → 534 Bytes (Cloudflare Config)
+│
+├── deployment_scripts/              → Deployment-Automatisierung
+│   ├── quick_deploy.sh              → 4.8 KB (Schnell-Deployment)
+│   ├── deploy_via_api.sh            → 3.2 KB (API-basiert)
+│   ├── auto_deploy_non_interactive.sh → 6.9 KB (Voll-Automatisch)
+│   └── deploy_signaling_server.sh  → 2.1 KB (Server-Only)
+│
+├── documentation/                   → Umfassende Dokumentation
+│   ├── DEPLOYMENT_*.md              → 4 Deployment-Guides
+│   ├── FEATURES_*.md                → 2 Feature-Listen
+│   └── README.md                    → Projekt-Übersicht
+│
+├── WIEDERHERSTELLUNG_ANLEITUNG.md  → Schritt-für-Schritt Wiederherstellung
+├── BACKUP_INFO.txt                  → Diese Datei
+└── pubspec.yaml + pubspec.lock      → Projekt-Konfiguration
+
+═══════════════════════════════════════════════════════════════════════════
+  NEUE FEATURES IN VERSION 5.0
+═══════════════════════════════════════════════════════════════════════════
+
+✅ LIVESTREAM-BUTTON:
+   - Automatisches Fullscreen-Video beim Klick
+   - Kamera standardmäßig AUS (nur Audio)
+   - Individuelle Kamera-Steuerung für jeden User
+
+✅ LIVE-LEISTE:
+   - Anzeige für nicht-streamende User
+   - "Beitreten" Button sichtbar
+   - Teilnehmerzahl-Anzeige
+
+✅ PIP-MODUS:
+   - Frei beweglich über gesamte App
+   - 70px runde Bubble mit Live-Video
+   - Funktioniert über alle 7 Tabs
+
+✅ KAMERA-KONTROLLE:
+   - Start/Stop Video Button
+   - Avatar-Anzeige wenn Kamera aus
+   - Echtzeit-Updates im Video-Grid
+
+═══════════════════════════════════════════════════════════════════════════
+  CLOUDFLARE WORKERS - DEPLOYMENT-INFORMATIONEN
+═══════════════════════════════════════════════════════════════════════════
+
+🌐 DEPLOYED SERVER:
+   URL: wss://weltenbibliothek-webrtc-signaling.brandy13062.workers.dev/ws
+   Health: https://weltenbibliothek-webrtc-signaling.brandy13062.workers.dev/health
+   Status: 🟢 LIVE (getestet am 20. Nov 2024)
+
+📦 DEPLOYMENT-DETAILS:
+   - Cloudflare Account: brandy13062.workers.dev
+   - Projekt: weltenbibliothek-webrtc-signaling
+   - Durable Objects: WebRTCRoom (aktiviert)
+   - Version: 1.0.0 (Stable)
+
+🔧 NEU-DEPLOYMENT (falls nötig):
+   1. cd cloudflare_workers/
+   2. wrangler login
+   3. wrangler deploy webrtc_signaling_worker.js
+   4. URL in lib/services/webrtc_service.dart aktualisieren
+
+═══════════════════════════════════════════════════════════════════════════
+  FLUTTER UMGEBUNG - FIXED VERSIONS (NICHT ÄNDERN!)
+═══════════════════════════════════════════════════════════════════════════
+
+Flutter Version:        3.35.4       ⚠️ LOCKED
+Dart Version:           3.9.2        ⚠️ LOCKED
+Java Version:           OpenJDK 17.0.2
+Android API Level:      35 (Android 15)
+Android Build Tools:    35.0.0
+
+WICHTIG: Diese Versionen sind für Stabilität fixiert!
+         NICHT updaten mit "flutter upgrade" oder ähnlich.
+
+═══════════════════════════════════════════════════════════════════════════
+  DEPENDENCIES - FIXED VERSIONS
+═══════════════════════════════════════════════════════════════════════════
+
+CORE PACKAGES:
+  flutter_webrtc: 0.11.6          → WebRTC Video/Audio
+  provider: 6.1.5+1               → State Management
+  hive: 2.2.3                     → Local Database
+  hive_flutter: 1.1.0             → Hive Flutter Integration
+
+MAP & LOCATION:
+  flutter_map: 7.0.2              → Interaktive Karten
+  geolocator: 11.0.0              → GPS Services
+  flutter_map_marker_cluster: 1.4.0 → Marker Clustering
+
+MULTIMEDIA:
+  audioplayers: 6.1.0             → Audio Playback
+  youtube_player_flutter: 9.1.1   → YouTube Integration
+
+UTILITIES:
+  http: 1.5.0                     → HTTP Requests
+  shared_preferences: 2.5.3       → Key-Value Storage
+  permission_handler: 11.3.1      → Runtime Permissions
+
+Vollständige Liste in pubspec.yaml
+
+═══════════════════════════════════════════════════════════════════════════
+  SCHNELL-START NACH WIEDERHERSTELLUNG
+═══════════════════════════════════════════════════════════════════════════
+
+1. PROJEKT ERSTELLEN:
+   $ flutter create weltenbibliothek
+   $ cd weltenbibliothek
+
+2. BACKUP WIEDERHERSTELLEN:
+   $ cp -r /backup/lib/* lib/
+   $ cp -r /backup/assets/* assets/
+   $ cp -r /backup/android/* android/
+   $ cp /backup/pubspec.yaml .
+
+3. DEPENDENCIES INSTALLIEREN:
+   $ flutter pub get
+
+4. WEB PREVIEW:
+   $ flutter build web --release
+   $ cd build/web && python3 -m http.server 5060
+
+5. APK BAUEN:
+   $ flutter build apk --release
+   
+6. FERTIG! ✅
+   APK: build/app/outputs/flutter-apk/app-release.apk (117 MB)
+
+═══════════════════════════════════════════════════════════════════════════
+  APK BUILD-INFORMATIONEN
+═══════════════════════════════════════════════════════════════════════════
+
+📱 UNIVERSAL APK:
+   Name: weltenbibliothek-v5.0.apk
+   Größe: 117 MB
+   Architekturen: ARM64, ARMv7, x86_64
+   Kompatibilität: Alle Android-Geräte (API 21+)
+
+📱 ARCHITEKTUR-SPEZIFISCHE APKS:
+   ARM64-v8a: 49 MB  → Moderne 64-bit Geräte
+   ARMv7a:    41 MB  → Ältere 32-bit Geräte
+   x86_64:    54 MB  → Emulatoren
+
+═══════════════════════════════════════════════════════════════════════════
+  BACKUP-STATISTIK
+═══════════════════════════════════════════════════════════════════════════
+
+📊 DATEIEN:
+   Dart-Dateien:           150+
+   Widget-Dateien:         30+
+   Screen-Dateien:         15+
+   Service-Dateien:        10+
+   Model-Dateien:          8+
+   Asset-Dateien:          20+
+
+📊 CODE-ZEILEN:
+   Dart Code:              ~15,000 Zeilen
+   JavaScript (Worker):    ~300 Zeilen
+   Gradle (Android):       ~500 Zeilen
+   Dokumentation:          ~5,000 Zeilen
+
+📊 DATENBANK:
+   Events:                 50+ Einträge
+   Chat-Räume:             5+ Vordefiniert
+   Kategorien:             7+ Event-Kategorien
+
+═══════════════════════════════════════════════════════════════════════════
+  SUPPORT & KONTAKT
+═══════════════════════════════════════════════════════════════════════════
+
+📧 Bei Problemen siehe:
+   - WIEDERHERSTELLUNG_ANLEITUNG.md (Schritt-für-Schritt)
+   - documentation/*.md (Detaillierte Guides)
+   - Troubleshooting-Sektion in Wiederherstellungs-Anleitung
+
+🔗 Wichtige Links:
+   - Cloudflare Workers: https://workers.cloudflare.com/
+   - Flutter Docs: https://docs.flutter.dev/
+   - Pub.dev Packages: https://pub.dev/
+
+═══════════════════════════════════════════════════════════════════════════
+  BACKUP-STATUS
+═══════════════════════════════════════════════════════════════════════════
+
+✅ Quellcode:              VOLLSTÄNDIG
+✅ APK Builds:             VOLLSTÄNDIG (3 Varianten)
+✅ Cloudflare Workers:     VOLLSTÄNDIG (deployed & getestet)
+✅ Deployment-Skripte:     VOLLSTÄNDIG (4 Skripte)
+✅ Dokumentationen:        VOLLSTÄNDIG (8 Dateien)
+✅ Assets:                 VOLLSTÄNDIG
+✅ Konfigurationen:        VOLLSTÄNDIG
+
+═══════════════════════════════════════════════════════════════════════════
+
+💾 BACKUP ERFOLGREICH ERSTELLT! ✅
+
+Dieses Backup enthält ALLES was benötigt wird um die komplette App
+von Grund auf neu zu bauen oder nach einem Crash wiederherzustellen.
+
+Erstellt am: 20. November 2024, 21:53 UTC
+Version: 5.0 - Livestream Korrigiert
+Status: PRODUKTIONSREIF 🚀
+
+═══════════════════════════════════════════════════════════════════════════

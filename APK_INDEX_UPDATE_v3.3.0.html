@@ -1,0 +1,75 @@
+<!-- 
+  COPY DIESER VERSION-CARD IN /home/user/apk_downloads/index.html 
+  POSITION: Nach der Version 3.2.0 einfügen
+-->
+
+<div class="version-card">
+  <div class="version-header">
+    <span class="version-number">v3.3.0</span>
+    <span class="version-date">2025</span>
+    <span class="badge badge-critical">CRITICAL UPDATE</span>
+  </div>
+  
+  <div class="version-features">
+    <h4>🔒 Kritisches Backend-Update:</h4>
+    <ul>
+      <li><strong>"1 Stream Pro Chat-Raum"</strong> Regel implementiert</li>
+      <li>Backend-Validierung verhindert mehrere Streams im gleichen Chat</li>
+      <li>Intelligente Fehlerbehandlung mit "Beitreten"-Button</li>
+      <li>Live-Banner zeigt jetzt korrekten Stream pro Chat an</li>
+    </ul>
+    
+    <h4>📱 Neue Features:</h4>
+    <ul>
+      <li>Bessere UX wenn Chat bereits Stream hat (SnackBar mit Beitreten-Option)</li>
+      <li>Warnung wenn User bereits Stream in anderem Chat hat</li>
+      <li>"Öffnen"-Button zum schnellen Wechsel zu eigenem Stream</li>
+      <li>Chat-Raum-ID wird jetzt in Livestreams getrackt</li>
+    </ul>
+    
+    <h4>🐛 Bugfixes:</h4>
+    <ul>
+      <li>Live-Banner filtert jetzt korrekt nach Chat-Raum (nicht Live-Stream-ID)</li>
+      <li>Mehrere User können nicht mehr gleichzeitig im selben Chat streamen</li>
+      <li>Präzisere Fehlermeldungen bei Stream-Konflikten</li>
+    </ul>
+    
+    <h4>⚠️ WICHTIG - Breaking Changes:</h4>
+    <ul>
+      <li><strong>Backend-Migration erforderlich!</strong> Siehe BACKEND_MIGRATION_GUIDE.md</li>
+      <li>Cloudflare D1 Datenbank muss aktualisiert werden (chat_room_id Spalte)</li>
+      <li>Worker muss neu deployed werden</li>
+      <li>Ältere App-Versionen (v3.2.0-) funktionieren nicht mehr nach Backend-Update</li>
+    </ul>
+  </div>
+  
+  <div class="migration-warning" style="background: #FEF3C7; border-left: 4px solid #F59E0B; padding: 12px; margin: 12px 0; border-radius: 4px;">
+    <strong>🚨 Migrations-Hinweis:</strong>
+    <p style="margin: 8px 0 0 0; font-size: 14px; color: #78350F;">
+      Vor Installation: Backend-Migration in Cloudflare D1 durchführen! 
+      Details in <code>BACKEND_MIGRATION_GUIDE.md</code>
+    </p>
+  </div>
+  
+  <a href="weltenbibliothek_v3.3.0.apk" class="download-btn" download>
+    <i class="fas fa-download"></i> APK Herunterladen (v3.3.0)
+  </a>
+  
+  <div class="version-meta" style="margin-top: 16px; font-size: 12px; color: #64748B;">
+    <p><strong>Dateigröße:</strong> ~XX MB | <strong>Min. Android:</strong> 7.0+ | <strong>Build:</strong> 44</p>
+    <p><strong>Kritikalität:</strong> 🔴 HIGH | <strong>Backend-Migration:</strong> ✅ Erforderlich</p>
+  </div>
+</div>
+
+<!-- CSS für Badge (falls noch nicht vorhanden) -->
+<style>
+.badge-critical {
+  background: #DC2626;
+  color: white;
+  font-size: 10px;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+</style>

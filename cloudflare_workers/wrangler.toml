@@ -1,0 +1,188 @@
+# ═══════════════════════════════════════════════════════════════
+# WELTENBIBLIOTHEK - Cloudflare Worker Configuration
+# ═══════════════════════════════════════════════════════════════
+# Production-ready Wrangler configuration für alle API Endpoints
+# ═══════════════════════════════════════════════════════════════
+
+name = "weltenbibliothek-api"
+main = "api_endpoints_extended.js"
+compatibility_date = "2024-01-01"
+account_id = "3472f5994537c3a30c5caeaff4de21fb"  # TODO: Replace with your Cloudflare Account ID
+
+# ═══════════════════════════════════════════════════════════════
+# WORKER SETTINGS
+# ═══════════════════════════════════════════════════════════════
+
+workers_dev = true  # Enable *.workers.dev subdomain for testing
+route = ""          # TODO: Add custom domain route (e.g., "api.weltenbibliothek.com/*")
+
+# ═══════════════════════════════════════════════════════════════
+# D1 DATABASE (Analytics, Push Subscriptions)
+# ═══════════════════════════════════════════════════════════════
+
+[[d1_databases]]
+binding = "DATABASE"
+database_name = "weltenbibliothek_db"
+database_id = "83b677ce-72c8-4e3b-a2b2-b7046d2de46c"  # TODO: Replace after creating D1 database
+
+# How to create D1 database:
+# 1. wrangler d1 create weltenbibliothek_db
+# 2. Copy the database_id from output
+# 3. Replace 83b677ce-72c8-4e3b-a2b2-b7046d2de46c above
+
+# ═══════════════════════════════════════════════════════════════
+# KV NAMESPACES (Music Playlists)
+# ═══════════════════════════════════════════════════════════════
+
+[[kv_namespaces]]
+binding = "PLAYLISTS_KV"
+id = "cbabe32f8dd1476db076584c4d3d4327"  # TODO: Replace after creating KV namespace
+
+# How to create KV namespace:
+# 1. wrangler kv:namespace create "PLAYLISTS_KV"
+# 2. Copy the id from output
+# 3. Replace cbabe32f8dd1476db076584c4d3d4327 above
+
+# ═══════════════════════════════════════════════════════════════
+# ENVIRONMENT VARIABLES (Secrets)
+# ═══════════════════════════════════════════════════════════════
+
+# Set these using: wrangler secret put <KEY>
+# 
+# Required secrets:
+# - JWT_SECRET              (for authentication tokens)
+# - VAPID_PUBLIC_KEY        (for Web Push notifications)
+# - VAPID_PRIVATE_KEY       (for Web Push notifications)
+# - FIREBASE_PROJECT_ID     (optional, if using Firebase)
+# - FIREBASE_API_KEY        (optional, if using Firebase)
+
+[vars]
+# Public environment variables (not sensitive)
+API_VERSION = "2.0"
+MAX_REQUEST_SIZE = "10485760"  # 10MB
+ENABLE_CORS = "true"
+ENABLE_RATE_LIMITING = "false"  # Set to true in production
+RATE_LIMIT_REQUESTS = "100"     # Requests per minute per IP
+
+# ═══════════════════════════════════════════════════════════════
+# PRODUCTION ENVIRONMENT
+# ═══════════════════════════════════════════════════════════════
+
+[env.production]
+name = "weltenbibliothek-api-production"
+route = "api.weltenbibliothek.com/*"  # TODO: Configure your custom domain
+
+[[env.production.d1_databases]]
+binding = "DATABASE"
+database_name = "weltenbibliothek_db_production"
+database_id = "YOUR_PRODUCTION_D1_DATABASE_ID"  # TODO: Create separate production DB
+
+[[env.production.kv_namespaces]]
+binding = "PLAYLISTS_KV"
+id = "YOUR_PRODUCTION_PLAYLISTS_KV_ID"  # TODO: Create separate production KV
+
+[env.production.vars]
+API_VERSION = "2.0"
+ENABLE_RATE_LIMITING = "true"
+RATE_LIMIT_REQUESTS = "60"
+MAX_REQUEST_SIZE = "5242880"  # 5MB in production
+
+# ═══════════════════════════════════════════════════════════════
+# STAGING ENVIRONMENT
+# ═══════════════════════════════════════════════════════════════
+
+[env.staging]
+name = "weltenbibliothek-api-staging"
+route = "staging-api.weltenbibliothek.com/*"  # TODO: Configure staging domain
+
+[[env.staging.d1_databases]]
+binding = "DATABASE"
+database_name = "weltenbibliothek_db_staging"
+database_id = "YOUR_STAGING_D1_DATABASE_ID"  # TODO: Create staging DB
+
+[[env.staging.kv_namespaces]]
+binding = "PLAYLISTS_KV"
+id = "YOUR_STAGING_PLAYLISTS_KV_ID"  # TODO: Create staging KV
+
+[env.staging.vars]
+API_VERSION = "2.0-staging"
+ENABLE_RATE_LIMITING = "true"
+RATE_LIMIT_REQUESTS = "120"
+
+# ═══════════════════════════════════════════════════════════════
+# BUILD CONFIGURATION
+# ═══════════════════════════════════════════════════════════════
+
+[build]
+command = ""  # No build step required for plain JS workers
+
+[build.upload]
+format = "service-worker"
+
+# ═══════════════════════════════════════════════════════════════
+# DEPLOYMENT TRIGGERS
+# ═══════════════════════════════════════════════════════════════
+
+# [triggers]
+# crons = ["0 0 * * *"]  # Daily cleanup job (optional)
+
+# ═══════════════════════════════════════════════════════════════
+# OBSERVABILITY
+# ═══════════════════════════════════════════════════════════════
+
+[observability]
+enabled = true
+head_sampling_rate = 1.0  # Sample 100% of requests (reduce in production)
+
+# ═══════════════════════════════════════════════════════════════
+# LIMITS
+# ═══════════════════════════════════════════════════════════════
+
+# Cloudflare Workers Limits:
+# - CPU Time: 50ms (Bundled), 30s (Unbound)
+# - Memory: 128MB
+# - Script Size: 1MB (after compression)
+# - KV Read: 1000 per request
+# - D1 Queries: 50,000 per day (free tier)
+
+# ═══════════════════════════════════════════════════════════════
+# DEPLOYMENT COMMANDS
+# ═══════════════════════════════════════════════════════════════
+
+# Development:
+#   wrangler dev                          # Start local dev server
+#   wrangler dev --remote                 # Test with remote resources
+
+# Deployment:
+#   wrangler deploy                       # Deploy to default environment
+#   wrangler deploy --env production      # Deploy to production
+#   wrangler deploy --env staging         # Deploy to staging
+
+# Database Management:
+#   wrangler d1 execute weltenbibliothek_db --file=database_schema_extended.sql
+#   wrangler d1 migrations apply weltenbibliothek_db
+
+# Secrets Management:
+#   wrangler secret put JWT_SECRET
+#   wrangler secret put VAPID_PUBLIC_KEY
+#   wrangler secret put VAPID_PRIVATE_KEY
+#   wrangler secret list
+
+# Monitoring:
+#   wrangler tail                         # Live logs
+#   wrangler tail --env production        # Production logs
+
+# ═══════════════════════════════════════════════════════════════
+# NOTES
+# ═══════════════════════════════════════════════════════════════
+
+# 1. Replace ALL "YOUR_*" placeholders with actual IDs
+# 2. Set up secrets before first deployment
+# 3. Test in development before deploying to production
+# 4. Configure custom domains in Cloudflare Dashboard
+# 5. Enable rate limiting in production
+# 6. Monitor usage and adjust limits as needed
+# 7. Keep staging and production databases separate
+# 8. Regular backups recommended (D1 snapshots)
+
+# ═══════════════════════════════════════════════════════════════
