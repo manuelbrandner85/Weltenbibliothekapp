@@ -1,0 +1,99 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:weltenbibliothek/utils/performance_utils.dart';
+
+void main() {
+  group('Debouncer', () {
+    test('debounces callback', () async {
+      final debouncer = Debouncer(delay: const Duration(milliseconds: 100));
+      var callCount = 0;
+      
+      // Call multiple times rapidly
+      debouncer.run(() => callCount++);
+      debouncer.run(() => callCount++);
+      debouncer.run(() => callCount++);
+      
+      // Wait for debounce
+      await Future.delayed(const Duration(milliseconds: 150));
+      
+      // Should only execute once
+      expect(callCount, 1);
+      
+      debouncer.dispose();
+    });
+    
+    test('cancels pending callback', () async {
+      final debouncer = Debouncer(delay: const Duration(milliseconds: 100));
+      var callCount = 0;
+      
+      debouncer.run(() => callCount++);
+      debouncer.cancel();
+      
+      await Future.delayed(const Duration(milliseconds: 150));
+      
+      expect(callCount, 0);
+      
+      debouncer.dispose();
+    });
+  });
+  
+  group('Throttler', () {
+    test('throttles rapid calls', () async {
+      final throttler = Throttler(interval: const Duration(milliseconds: 100));
+      var callCount = 0;
+      
+      // Call multiple times rapidly
+      for (var i = 0; i < 10; i++) {
+        throttler.run(() => callCount++);
+        await Future.delayed(const Duration(milliseconds: 10));
+      }
+      
+      // Should execute only 2-3 times due to throttling
+      expect(callCount, lessThan(5));
+    });
+  });
+  
+  group('PerformanceMonitor', () {
+    test('measureBuildTime returns result', () {
+      final result = PerformanceMonitor.measureBuildTime(
+        'TestWidget',
+        () => 'test result',
+      );
+      
+      expect(result, 'test result');
+    });
+    
+    test('measureAsyncTime returns result', () async {
+      final result = await PerformanceMonitor.measureAsyncTime(
+        'TestOperation',
+        () async => 'async result',
+      );
+      
+      expect(result, 'async result');
+    });
+  });
+  
+  group('PerformanceConstants', () {
+    test('frame time constants are correct', () {
+      expect(
+        PerformanceConstants.frameTime60fps.inMilliseconds,
+        16,
+      );
+      
+      expect(
+        PerformanceConstants.frameTime120fps.inMilliseconds,
+        8,
+      );
+    });
+    
+    test('debounce delay is reasonable', () {
+      expect(
+        PerformanceConstants.searchDebounce.inMilliseconds,
+        greaterThan(200),
+      );
+      expect(
+        PerformanceConstants.searchDebounce.inMilliseconds,
+        lessThan(500),
+      );
+    });
+  });
+}

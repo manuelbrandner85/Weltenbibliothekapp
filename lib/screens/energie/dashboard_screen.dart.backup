@@ -1,0 +1,476 @@
+/// Dashboard Screen - Übersicht aller Spirit-Tools
+/// Weltenbibliothek v60
+library;
+
+import 'package:flutter/material.dart';
+import 'dart:async';
+import 'package:weltenbibliothek/services/storage_service.dart';
+import '../../services/cloudflare_api_service.dart';
+import '../../services/user_stats_service.dart';  // 🔥 NEW: Realtime Stats
+import '../../widgets/daily_featured_widget.dart';  // 🆕 Daily Featured
+import '../../widgets/streak_stats_widget.dart';  // 🆕 Streak Stats
+import '../../widgets/recommended_narratives_widget.dart';  // 🆕 Recommended Narratives
+import '../../theme/app_theme.dart';  // 🎨 Theme System
+
+class DashboardScreen extends StatefulWidget {
+  const DashboardScreen({super.key});
+
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  final _storageService = StorageService();
+  final CloudflareApiService _cloudflareApi = CloudflareApiService();
+  final _userStatsService = UserStatsService();  // 🔥 NEW: Stats Service
+  
+  StreamSubscription<UserStats>? _statsSubscription;  // 🔥 NEW: Stream Subscription
+  
+  int _totalSessions = 0;
+  int _activeChallenges = 0;
+  int _tarotReadings = 0;
+  int _crystalCollection = 0;
+  int _currentStreak = 0;
+  int _energieArticlesCount = 0;  // ✅ NEW: Energie articles count
+  
+  @override
+  void initState() {
+    super.initState();
+    
+    // 🔥 NEW: Listen to realtime stats updates
+    _statsSubscription = _userStatsService.statsStream.listen((stats) {
+      if (mounted) {
+        setState(() {
+          _totalSessions = stats.totalSessions;
+          _activeChallenges = stats.activeChallenges;
+          _tarotReadings = stats.tarotReadings;
+          _currentStreak = stats.currentStreak;
+        });
+      }
+    });
+    
+    // Initial load
+    _loadDashboardData();
+  }
+  
+  @override
+  void dispose() {
+    _statsSubscription?.cancel();  // 🔥 NEW: Cancel subscription
+    super.dispose();
+  }
+  
+  Future<void> _loadDashboardData() async {
+    // 🔥 NEW: Load stats from UserStatsService (echte Daten + Cloudflare Sync)
+    final stats = await _userStatsService.getUserStats();
+    
+    // ✅ Load Energie articles from Cloudflare
+    int articlesCount = 0;
+    try {
+      final articles = await _cloudflareApi.getArticles(
+        realm: 'energie',
+        limit: 100,
+      );
+      articlesCount = articles.length;
+    } catch (e) {
+      // Fallback to 0 on error
+      articlesCount = 0;
+    }
+    
+    if (mounted) {
+      setState(() {
+        // Stats from UserStatsService
+        _totalSessions = stats.totalSessions;
+        _activeChallenges = stats.activeChallenges;
+        _tarotReadings = stats.tarotReadings;
+        _currentStreak = stats.currentStreak;
+        
+        // Additional data
+        _crystalCollection = articlesCount;  // ✅ Use Energie articles as "crystal collection"
+        _energieArticlesCount = articlesCount;
+      });
+    }
+  }
+  
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppTheme.backgroundDark,
+      appBar: AppBar(
+        title: Text('📊 Dashboard'),
+        backgroundColor: AppTheme.energiePurpleDark,  // 🎨 Theme-basierte Farbe
+        actions: [
+          IconButton(
+            icon: Icon(Icons.notifications),
+            onPressed: () {
+              Navigator.pushNamed(context, '/notifications');
+            },
+            tooltip: 'Benachrichtigungen',
+          ),
+        ],
+      ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [AppTheme.energiePurpleDark, AppTheme.backgroundDark],  // 🎨 Theme Gradient
+          ),
+        ),
+        child: RefreshIndicator(
+          onRefresh: _loadDashboardData,
+          child: ListView(
+            padding: const EdgeInsets.all(AppTheme.space5),  // 🎨 Theme Spacing
+            children: [
+              // 🆕 DAILY FEATURED NARRATIVE
+              DailyFeaturedWidget(
+                onNarrativeTap: () {
+                  // Navigate to Energie articles list
+                  Navigator.pushNamed(context, '/energie_articles');
+                },
+              ),
+              
+              SizedBox(height: 16),
+              
+              // 🆕 STREAK STATISTICS
+              StreakStatsWidget(),
+              
+              SizedBox(height: 16),
+              
+              // 🆕 RECOMMENDED NARRATIVES (AI-POWERED)
+              RecommendedNarrativesWidget(
+                onNarrativeTap: (narrativeTitle) {
+                  // Navigate to specific narrative/article
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('📖 Artikel wird geladen: $narrativeTitle'),
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
+                },
+              ),
+              
+              SizedBox(height: 16),
+              
+              // Welcome Card
+              Container(
+                padding: const EdgeInsets.all(AppTheme.space5),  // 🎨 Theme Spacing
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      AppTheme.energiePurple.withValues(alpha: 0.3),
+                      AppTheme.energiePurpleDark.withValues(alpha: 0.3),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.white24),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '🌟 Willkommen zurück!',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      'Deine spirituelle Reise auf einen Blick',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.white70,
+                      ),
+                    ),
+                    SizedBox(height: 16),
+                    
+                    // Streak Display
+                    if (_currentStreak > 0)
+                      Container(
+                        padding: EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              AppTheme.ueberwachungOrange.withValues(alpha: 0.4),
+                              AppTheme.ueberwachungOrange.withValues(alpha: 0.2),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppTheme.ueberwachungOrange.withValues(alpha: 0.5)),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              '🔥',
+                              style: TextStyle(fontSize: 32),
+                            ),
+                            SizedBox(width: 12),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '$_currentStreak Tage Streak!',
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                Text(
+                                  'Bleib dran! 💪',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.white70,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    
+                    SizedBox(height: 16),
+                    
+                    // Achievements Button
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.pushNamed(context, '/achievements');
+                      },
+                      icon: Icon(Icons.emoji_events, color: AppTheme.vortexGold),  // 🎨 Theme-basiert
+                      label: Text('Achievements ansehen'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.vortexGold.withValues(alpha: 0.2),
+                        foregroundColor: Colors.white,
+                        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: BorderSide(color: AppTheme.vortexGold.withValues(alpha: 0.5)),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              
+              SizedBox(height: 24),
+              
+              // Quick Stats Grid
+              Text(
+                'Übersicht',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              SizedBox(height: 12),
+              
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildQuickStatCard(
+                      '🧘',
+                      _totalSessions.toString(),
+                      'Meditationen',
+                      AppTheme.energiePurpleDark,  // 🎨 Theme-basiert
+                    ),
+                  ),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: _buildQuickStatCard(
+                      '🕉️',
+                      _activeChallenges.toString(),
+                      'Challenges',
+                      AppTheme.ueberwachungOrange,  // 🎨 Theme-basiert
+                    ),
+                  ),
+                ],
+              ),
+              
+              SizedBox(height: 12),
+              
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildQuickStatCard(
+                      '🔮',
+                      _tarotReadings.toString(),
+                      'Tarot-Ziehungen',
+                      AppTheme.energiePurple,  // 🎨 Theme-basiert
+                    ),
+                  ),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: _buildQuickStatCard(
+                      '💎',
+                      _crystalCollection.toString(),
+                      'Kristalle',
+                      AppTheme.heiligeStaettenGreen,  // 🎨 Theme-basiert
+                    ),
+                  ),
+                ],
+              ),
+              
+              SizedBox(height: 24),
+              
+              // Tools Section
+              Text(
+                'Schnellzugriff',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              SizedBox(height: 12),
+              
+              _buildToolCard(
+                '🧘 Meditation',
+                'Timer & Atemübungen',
+                AppTheme.energiePurpleDark,  // 🎨 Theme-basiert
+                () {
+                  // Navigation wird später hinzugefügt
+                },
+              ),
+              
+              _buildToolCard(
+                '🕉️ Mantras',
+                'Heilige Wiederholungen',
+                AppTheme.ueberwachungOrange,  // 🎨 Theme-basiert
+                () {
+                  // Navigation wird später hinzugefügt
+                },
+              ),
+              
+              _buildToolCard(
+                '🔮 Tarot',
+                'Tägliche Kartenziehung',
+                AppTheme.energiePurple,  // 🎨 Theme-basiert
+                () {
+                  // Navigation wird später hinzugefügt
+                },
+              ),
+              
+              _buildToolCard(
+                '💎 Kristalle',
+                'Energetische Heilsteine',
+                AppTheme.heiligeStaettenGreen,  // 🎨 Theme-basiert
+                () {
+                  // Navigation wird später hinzugefügt
+                },
+              ),
+              
+              _buildToolCard(
+                '🎵 Frequenzen',
+                'Solfeggio Heilfrequenzen',
+                AppTheme.errorRed,  // 🎨 Theme-basiert
+                () {
+                  // Navigation wird später hinzugefügt
+                },
+              ),
+              
+              SizedBox(height: 80),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildQuickStatCard(String emoji, String value, String label, Color color) {
+    return Container(
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.5)),
+      ),
+      child: Column(
+        children: [
+          Text(
+            emoji,
+            style: TextStyle(fontSize: 32),
+          ),
+          SizedBox(height: 8),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.white70,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildToolCard(String title, String subtitle, Color color, VoidCallback onTap) {
+    return Container(
+      margin: EdgeInsets.only(bottom: 12),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  color.withValues(alpha: 0.3),
+                  color.withValues(alpha: 0.1),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: color.withValues(alpha: 0.5)),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        subtitle,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.white70,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.arrow_forward_ios,
+                  color: Colors.white54,
+                  size: 20,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

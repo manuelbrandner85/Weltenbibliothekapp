@@ -1,0 +1,856 @@
+import 'package:flutter/material.dart';
+import 'dart:math' as math;
+import '../../models/spirit_dashboard.dart';
+import '../../services/spirit_dashboard_service.dart';
+import '../../services/storage_service.dart';
+
+/// 🌟 PREMIUM SPIRIT DASHBOARD - Professionelle Visualisierungen
+/// Modern, Clean, Beeindruckend aber übersichtlich
+class SpiritTabPremium extends StatefulWidget {
+  const SpiritTabPremium({super.key});
+
+  @override
+  State<SpiritTabPremium> createState() => _SpiritTabPremiumState();
+}
+
+class _SpiritTabPremiumState extends State<SpiritTabPremium> with SingleTickerProviderStateMixin {
+  final _dashboardService = SpiritDashboardService();
+  final _storage = StorageService();
+  
+  SpiritDashboard? _dashboard;
+  bool _isLoading = true;
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    );
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+    );
+    _scaleAnimation = Tween<double>(begin: 0.95, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+    );
+    _loadDashboard();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadDashboard() async {
+    setState(() => _isLoading = true);
+    try {
+      final profile = await _storage.loadEnergieProfile();
+      final dashboard = _dashboardService.calculateDashboard(profile);
+      setState(() {
+        _dashboard = dashboard;
+        _isLoading = false;
+      });
+      _animationController.forward();
+    } catch (e) {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFF1A1A2E), Color(0xFF0F0F1E)],
+        ),
+      ),
+      child: _isLoading
+          ? const Center(child: CircularProgressIndicator(color: Color(0xFF9C27B0)))
+          : _dashboard == null
+              ? _buildEmptyState()
+              : FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: ScaleTransition(
+                    scale: _scaleAnimation,
+                    child: CustomScrollView(
+                      slivers: [
+                        _buildModernHeader(),
+                        SliverPadding(
+                          padding: const EdgeInsets.all(20),
+                          sliver: SliverList(
+                            delegate: SliverChildListDelegate([
+                              // ENERGETISCHE SIGNATUR - Radial Chart
+                              _buildEnergeticSignatureCard(),
+                              const SizedBox(height: 20),
+                              
+                              // ZYKLUS-TIMELINE - Horizontal Progress
+                              _buildCycleTimelineCard(),
+                              const SizedBox(height: 20),
+                              
+                              // ARCHETYPEN - Network Graph
+                              _buildArchetypeNetworkCard(),
+                              const SizedBox(height: 20),
+                              
+                              // ASTROLOGIE - Planetary Positions
+                              _buildAstrologyCard(),
+                              
+                              const SizedBox(height: 100),
+                            ]),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+    );
+  }
+
+  Widget _buildModernHeader() {
+    return SliverAppBar(
+      expandedHeight: 220,
+      floating: false,
+      pinned: true,
+      backgroundColor: const Color(0xFF1A1A2E),
+      flexibleSpace: FlexibleSpaceBar(
+        background: Stack(
+          fit: StackFit.expand,
+          children: [
+            // Animated Background
+            CustomPaint(
+              painter: _NebulaPainter(
+                animation: _animationController,
+                color: const Color(0xFF9C27B0),
+              ),
+            ),
+            // Content
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 40, 20, 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'SPIRIT',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 32,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 4,
+                      ),
+                    ),
+                    const Text(
+                      'DASHBOARD',
+                      style: TextStyle(
+                        color: Colors.white38,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w300,
+                        letterSpacing: 8,
+                      ),
+                    ),
+                    const Spacer(),
+                    // Live Stats Row
+                    Row(
+                      children: [
+                        _buildLiveStatChip(
+                          label: 'ENERGIE',
+                          value: '${(_dashboard!.coreFrequency * 10).toInt()}%',
+                          color: const Color(0xFF9C27B0),
+                        ),
+                        const SizedBox(width: 12),
+                        _buildLiveStatChip(
+                          label: 'PHASE',
+                          value: 'Jahr ${_dashboard!.personalYear}',
+                          color: const Color(0xFFE91E63),
+                        ),
+                        const SizedBox(width: 12),
+                        _buildLiveStatChip(
+                          label: 'BALANCE',
+                          value: '${(_dashboard!.lifePathNumber * 11).toInt()}%',
+                          color: const Color(0xFF673AB7),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLiveStatChip({required String label, required String value, required Color color}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withValues(alpha: 0.5), width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              color: color.withValues(alpha: 0.8),
+              fontSize: 8,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 1,
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              color: color,
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 🎯 ENERGETISCHE SIGNATUR - Radial Chart
+  Widget _buildEnergeticSignatureCard() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: _cardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildCardHeader(
+            icon: Icons.auto_awesome,
+            title: 'Energetische Signatur',
+            subtitle: 'Numerologisches Profil',
+          ),
+          const SizedBox(height: 24),
+          
+          // RADIAL CHART
+          SizedBox(
+            height: 280,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                // Radial Visualization
+                CustomPaint(
+                  size: const Size(280, 280),
+                  painter: _RadialChartPainter(
+                    values: [
+                      _dashboard!.lifePathNumber / 9,
+                      _dashboard!.soulNumber / 9,
+                      _dashboard!.expressionNumber / 9,
+                      _dashboard!.nameVibration / 9,
+                    ],
+                    labels: ['Lebensweg', 'Seele', 'Ausdruck', 'Name'],
+                    colors: [
+                      const Color(0xFF9C27B0),
+                      const Color(0xFFE91E63),
+                      const Color(0xFF673AB7),
+                      const Color(0xFFAB47BC),
+                    ],
+                  ),
+                ),
+                // Center Value
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      _dashboard!.coreFrequency.toStringAsFixed(1),
+                      style: const TextStyle(
+                        color: Color(0xFF9C27B0),
+                        fontSize: 48,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const Text(
+                      'KERNFREQUENZ',
+                      style: TextStyle(
+                        color: Colors.white38,
+                        fontSize: 10,
+                        letterSpacing: 2,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          
+          const SizedBox(height: 20),
+          
+          // Legend
+          Wrap(
+            spacing: 16,
+            runSpacing: 8,
+            children: [
+              _buildLegendItem('Lebensweg', _dashboard!.lifePathNumber, const Color(0xFF9C27B0)),
+              _buildLegendItem('Seele', _dashboard!.soulNumber, const Color(0xFFE91E63)),
+              _buildLegendItem('Ausdruck', _dashboard!.expressionNumber, const Color(0xFF673AB7)),
+              _buildLegendItem('Name', _dashboard!.nameVibration, const Color(0xFFAB47BC)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 📅 ZYKLUS-TIMELINE - Horizontal Progress
+  Widget _buildCycleTimelineCard() {
+    final yearProgress = (_dashboard!.personalMonth - 1) / 12;
+    
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: _cardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildCardHeader(
+            icon: Icons.timeline,
+            title: 'Zyklus & Lebensphasen',
+            subtitle: '9-Jahres-Rhythmus',
+          ),
+          const SizedBox(height: 24),
+          
+          // Year Timeline
+          Row(
+            children: [
+              _buildTimelineDot('Jahr', '${_dashboard!.personalYear}', true),
+              Expanded(
+                child: Container(
+                  height: 2,
+                  margin: const EdgeInsets.symmetric(horizontal: 12),
+                  child: LinearProgressIndicator(
+                    value: yearProgress,
+                    backgroundColor: Colors.white10,
+                    valueColor: const AlwaysStoppedAnimation(Color(0xFFE91E63)),
+                  ),
+                ),
+              ),
+              _buildTimelineDot('Monat', '${_dashboard!.personalMonth}', false),
+            ],
+          ),
+          
+          const SizedBox(height: 32),
+          
+          // 9-Year Cycle Visualization
+          SizedBox(
+            height: 120,
+            child: CustomPaint(
+              painter: _CycleWavePainter(
+                currentYear: _dashboard!.personalYear,
+                color: const Color(0xFFE91E63),
+              ),
+              child: Container(),
+            ),
+          ),
+          
+          const SizedBox(height: 16),
+          
+          // Current Phase Info
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  const Color(0xFFE91E63).withValues(alpha: 0.1),
+                  Colors.transparent,
+                ],
+              ),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE91E63).withValues(alpha: 0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.auto_fix_high, color: Color(0xFFE91E63), size: 24),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _getYearMeaning(_dashboard!.personalYear),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _getYearDescription(_dashboard!.personalYear),
+                        style: const TextStyle(
+                          color: Colors.white60,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 🎭 ARCHETYPEN - Network Graph
+  Widget _buildArchetypeNetworkCard() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: _cardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildCardHeader(
+            icon: Icons.psychology,
+            title: 'Archetypen-Matrix',
+            subtitle: 'Aktive Persönlichkeitsaspekte',
+          ),
+          const SizedBox(height: 24),
+          
+          // Network Visualization
+          SizedBox(
+            height: 240,
+            child: CustomPaint(
+              painter: _ArchetypeNetworkPainter(
+                primary: _dashboard!.primaryArchetype['name'] as String,
+                secondary: _dashboard!.secondaryArchetype['name'] as String,
+                shadow: _dashboard!.shadowArchetype['name'] as String,
+              ),
+              child: Container(),
+            ),
+          ),
+          
+          const SizedBox(height: 20),
+          
+          // Archetype Cards
+          _buildArchetypeCard(
+            'Primär',
+            _dashboard!.primaryArchetype['name'] as String,
+            const Color(0xFF673AB7),
+            Icons.star,
+          ),
+          const SizedBox(height: 12),
+          _buildArchetypeCard(
+            'Sekundär',
+            _dashboard!.secondaryArchetype['name'] as String,
+            const Color(0xFF9C27B0),
+            Icons.show_chart,
+          ),
+          const SizedBox(height: 12),
+          _buildArchetypeCard(
+            'Schatten',
+            _dashboard!.shadowArchetype['name'] as String,
+            const Color(0xFF7E57C2),
+            Icons.visibility_off,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ⭐ ASTROLOGIE CARD
+  Widget _buildAstrologyCard() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: _cardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildCardHeader(
+            icon: Icons.brightness_2,
+            title: 'Astrologische Matrix',
+            subtitle: 'Himmelskörper-Positionen',
+          ),
+          const SizedBox(height: 24),
+          
+          // Planetary System Visualization
+          SizedBox(
+            height: 200,
+            child: CustomPaint(
+              painter: _PlanetarySystemPainter(),
+              child: Container(),
+            ),
+          ),
+          
+          const SizedBox(height: 20),
+          
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Center(
+              child: Text(
+                'Erweiterte astrologische Analyse verfügbar',
+                style: TextStyle(
+                  color: Colors.white60,
+                  fontSize: 12,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // HELPER WIDGETS
+  BoxDecoration _cardDecoration() {
+    return BoxDecoration(
+      color: const Color(0xFF1E1E2E).withValues(alpha: 0.6),
+      borderRadius: BorderRadius.circular(20),
+      border: Border.all(
+        color: Colors.white.withValues(alpha: 0.1),
+        width: 1,
+      ),
+      boxShadow: [
+        BoxShadow(
+          color: const Color(0xFF9C27B0).withValues(alpha: 0.1),
+          blurRadius: 20,
+          spreadRadius: -5,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCardHeader({required IconData icon, required String title, required String subtitle}) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF9C27B0), Color(0xFFE91E63)],
+            ),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: Colors.white, size: 20),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Text(
+                subtitle,
+                style: const TextStyle(
+                  color: Colors.white38,
+                  fontSize: 11,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLegendItem(String label, int value, Color color) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+          ),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          '$label: $value',
+          style: const TextStyle(
+            color: Colors.white70,
+            fontSize: 12,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTimelineDot(String label, String value, bool isActive) {
+    return Column(
+      children: [
+        Container(
+          width: 60,
+          height: 60,
+          decoration: BoxDecoration(
+            gradient: isActive
+                ? const LinearGradient(colors: [Color(0xFFE91E63), Color(0xFF9C27B0)])
+                : null,
+            color: isActive ? null : Colors.white10,
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: isActive ? Colors.transparent : Colors.white24,
+              width: 2,
+            ),
+          ),
+          child: Center(
+            child: Text(
+              value,
+              style: TextStyle(
+                color: isActive ? Colors.white : Colors.white60,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          label,
+          style: TextStyle(
+            color: isActive ? const Color(0xFFE91E63) : Colors.white38,
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildArchetypeCard(String type, String name, Color color, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [color.withValues(alpha: 0.15), Colors.transparent],
+        ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                type.toUpperCase(),
+                style: TextStyle(
+                  color: color.withValues(alpha: 0.8),
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 1,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                name,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _getYearMeaning(int year) {
+    const meanings = {
+      1: 'Jahr der Neuanfänge',
+      5: 'Jahr der Veränderung',
+      7: 'Jahr der Spiritualität',
+      9: 'Jahr der Vollendung',
+    };
+    return meanings[year] ?? 'Jahr der Entwicklung';
+  }
+
+  String _getYearDescription(int year) {
+    const descriptions = {
+      1: 'Neue Projekte starten, mutige Schritte wagen',
+      5: 'Flexibilität üben, Abenteuer erleben',
+      7: 'Innenschau, spirituelles Wachstum',
+      9: 'Abschlüsse, Loslassen, Transformation',
+    };
+    return descriptions[year] ?? 'Persönliche Entwicklung im Fokus';
+  }
+
+  Widget _buildEmptyState() {
+    return const Center(
+      child: Text('Kein Profil gefunden', style: TextStyle(color: Colors.white60)),
+    );
+  }
+}
+
+// CUSTOM PAINTERS
+
+class _NebulaPainter extends CustomPainter {
+  final Animation<double> animation;
+  final Color color;
+
+  _NebulaPainter({required this.animation, required this.color}) : super(repaint: animation);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..style = PaintingStyle.fill;
+    
+    for (int i = 0; i < 3; i++) {
+      final offset = animation.value * 2 * math.pi + i * math.pi / 1.5;
+      paint.color = color.withValues(alpha: 0.05 + i * 0.02);
+      canvas.drawCircle(
+        Offset(
+          size.width * (0.3 + i * 0.2),
+          size.height * 0.4 + math.sin(offset) * 20,
+        ),
+        60 + i * 30,
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_NebulaPainter oldDelegate) => true;
+}
+
+class _RadialChartPainter extends CustomPainter {
+  final List<double> values;
+  final List<String> labels;
+  final List<Color> colors;
+
+  _RadialChartPainter({required this.values, required this.labels, required this.colors});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = math.min(size.width, size.height) / 2.5;
+    
+    for (int i = 0; i < values.length; i++) {
+      final paint = Paint()
+        ..color = colors[i].withValues(alpha: 0.3)
+        ..style = PaintingStyle.fill;
+      
+      final angle = (i / values.length) * 2 * math.pi - math.pi / 2;
+      final valueRadius = radius * values[i];
+      
+      canvas.drawCircle(
+        Offset(
+          center.dx + math.cos(angle) * valueRadius * 0.7,
+          center.dy + math.sin(angle) * valueRadius * 0.7,
+        ),
+        30,
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_RadialChartPainter oldDelegate) => false;
+}
+
+class _CycleWavePainter extends CustomPainter {
+  final int currentYear;
+  final Color color;
+
+  _CycleWavePainter({required this.currentYear, required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color.withValues(alpha: 0.3)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+
+    final path = Path();
+    for (double x = 0; x <= size.width; x += 1) {
+      final progress = x / size.width;
+      final y = size.height / 2 + math.sin(progress * 2 * math.pi) * 40;
+      if (x == 0) {
+        path.moveTo(x, y);
+      } else {
+        path.lineTo(x, y);
+      }
+    }
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(_CycleWavePainter oldDelegate) => false;
+}
+
+class _ArchetypeNetworkPainter extends CustomPainter {
+  final String primary, secondary, shadow;
+
+  _ArchetypeNetworkPainter({required this.primary, required this.secondary, required this.shadow});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = const Color(0xFF673AB7).withValues(alpha: 0.2)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5;
+
+    // Draw connections
+    canvas.drawLine(Offset(size.width / 2, size.height / 2), Offset(size.width * 0.2, size.height * 0.3), paint);
+    canvas.drawLine(Offset(size.width / 2, size.height / 2), Offset(size.width * 0.8, size.height * 0.3), paint);
+    canvas.drawLine(Offset(size.width / 2, size.height / 2), Offset(size.width * 0.5, size.height * 0.8), paint);
+  }
+
+  @override
+  bool shouldRepaint(_ArchetypeNetworkPainter oldDelegate) => false;
+}
+
+class _PlanetarySystemPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    
+    // Sun
+    canvas.drawCircle(center, 20, Paint()..color = const Color(0xFFFFD700).withValues(alpha: 0.5));
+    
+    // Orbits
+    for (int i = 1; i <= 3; i++) {
+      canvas.drawCircle(
+        center,
+        40.0 * i,
+        Paint()
+          ..color = Colors.white.withValues(alpha: 0.1)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_PlanetarySystemPainter oldDelegate) => false;
+}

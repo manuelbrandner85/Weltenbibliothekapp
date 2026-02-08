@@ -1,0 +1,305 @@
+/// 🎵 VOICE AUDIO VISUALIZER
+/// Real-time audio visualization with frequency bars
+library;
+
+import 'package:flutter/material.dart';
+import 'dart:async';
+import 'dart:math' as math;
+
+class VoiceAudioVisualizer extends StatefulWidget {
+  final bool isActive;
+  final int barCount;
+  final Color color;
+  final double height;
+  final double barWidth;
+
+  const VoiceAudioVisualizer({
+    super.key,
+    this.isActive = false,
+    this.barCount = 24,
+    this.color = Colors.greenAccent,
+    this.height = 60,
+    this.barWidth = 3,
+  });
+
+  @override
+  State<VoiceAudioVisualizer> createState() => _VoiceAudioVisualizerState();
+}
+
+class _VoiceAudioVisualizerState extends State<VoiceAudioVisualizer> {
+  List<double> _audioLevels = [];
+  Timer? _animationTimer;
+  final math.Random _random = math.Random();
+
+  @override
+  void initState() {
+    super.initState();
+    _audioLevels = List.generate(widget.barCount, (_) => 0.1);
+    _startAnimation();
+  }
+
+  @override
+  void didUpdateWidget(VoiceAudioVisualizer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isActive != oldWidget.isActive) {
+      if (widget.isActive) {
+        _startAnimation();
+      } else {
+        _stopAnimation();
+      }
+    }
+  }
+
+  void _startAnimation() {
+    _animationTimer?.cancel();
+    if (widget.isActive) {
+      _animationTimer = Timer.periodic(
+        const Duration(milliseconds: 100),
+        (_) {
+          if (mounted) {
+            setState(() {
+              _audioLevels = List.generate(
+                widget.barCount,
+                (index) {
+                  // Simulate audio levels with some randomness
+                  // In production, connect to actual audio stream data
+                  final baseLevel = _random.nextDouble();
+                  final variation = _random.nextDouble() * 0.3;
+                  return (baseLevel + variation).clamp(0.1, 1.0);
+                },
+              );
+            });
+          }
+        },
+      );
+    }
+  }
+
+  void _stopAnimation() {
+    _animationTimer?.cancel();
+    if (mounted) {
+      setState(() {
+        _audioLevels = List.generate(widget.barCount, (_) => 0.1);
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _animationTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: widget.height,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: List.generate(widget.barCount, (index) {
+          return AnimatedContainer(
+            duration: const Duration(milliseconds: 100),
+            width: widget.barWidth,
+            height: widget.height * _audioLevels[index],
+            margin: const EdgeInsets.symmetric(horizontal: 1),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.bottomCenter,
+                end: Alignment.topCenter,
+                colors: [
+                  widget.color,
+                  widget.color.withValues(alpha: 0.5),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(widget.barWidth / 2),
+              boxShadow: widget.isActive
+                  ? [
+                      BoxShadow(
+                        color: widget.color.withValues(alpha: 0.5),
+                        blurRadius: 4,
+                        spreadRadius: 1,
+                      ),
+                    ]
+                  : [],
+            ),
+          );
+        }),
+      ),
+    );
+  }
+}
+
+/// 🎙️ Advanced Audio Visualizer with Frequency Spectrum
+class VoiceFrequencyVisualizer extends StatefulWidget {
+  final List<double> frequencyData; // 0.0 - 1.0 for each frequency band
+  final Color lowFreqColor;
+  final Color midFreqColor;
+  final Color highFreqColor;
+  final double height;
+
+  const VoiceFrequencyVisualizer({
+    super.key,
+    required this.frequencyData,
+    this.lowFreqColor = const Color(0xFFFF6B6B),
+    this.midFreqColor = const Color(0xFF4ECDC4),
+    this.highFreqColor = const Color(0xFF95E1D3),
+    this.height = 80,
+  });
+
+  @override
+  State<VoiceFrequencyVisualizer> createState() =>
+      _VoiceFrequencyVisualizerState();
+}
+
+class _VoiceFrequencyVisualizerState extends State<VoiceFrequencyVisualizer> {
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: widget.height,
+      child: CustomPaint(
+        painter: _FrequencyPainter(
+          frequencyData: widget.frequencyData,
+          lowColor: widget.lowFreqColor,
+          midColor: widget.midFreqColor,
+          highColor: widget.highFreqColor,
+        ),
+        size: Size.infinite,
+      ),
+    );
+  }
+}
+
+/// 🎨 Frequency Painter
+class _FrequencyPainter extends CustomPainter {
+  final List<double> frequencyData;
+  final Color lowColor;
+  final Color midColor;
+  final Color highColor;
+
+  _FrequencyPainter({
+    required this.frequencyData,
+    required this.lowColor,
+    required this.midColor,
+    required this.highColor,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (frequencyData.isEmpty) return;
+
+    final barWidth = size.width / frequencyData.length;
+    final paint = Paint()..style = PaintingStyle.fill;
+
+    for (int i = 0; i < frequencyData.length; i++) {
+      final barHeight = size.height * frequencyData[i];
+      final x = i * barWidth;
+      final y = size.height - barHeight;
+
+      // Color gradient based on frequency position
+      final colorRatio = i / frequencyData.length;
+      final barColor = colorRatio < 0.33
+          ? lowColor
+          : colorRatio < 0.66
+              ? midColor
+              : highColor;
+
+      paint.color = barColor;
+
+      final rect = RRect.fromRectAndRadius(
+        Rect.fromLTWH(x + 1, y, barWidth - 2, barHeight),
+        Radius.circular(barWidth / 4),
+      );
+
+      canvas.drawRRect(rect, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_FrequencyPainter oldDelegate) =>
+      frequencyData != oldDelegate.frequencyData;
+}
+
+/// 🌊 Waveform Visualizer
+class VoiceWaveformVisualizer extends StatelessWidget {
+  final List<double> waveformData; // Audio samples (-1.0 to 1.0)
+  final Color color;
+  final double height;
+  final double strokeWidth;
+
+  const VoiceWaveformVisualizer({
+    super.key,
+    required this.waveformData,
+    this.color = Colors.cyan,
+    this.height = 100,
+    this.strokeWidth = 2,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: height,
+      child: CustomPaint(
+        painter: _WaveformPainter(
+          waveformData: waveformData,
+          color: color,
+          strokeWidth: strokeWidth,
+        ),
+        size: Size.infinite,
+      ),
+    );
+  }
+}
+
+/// 🎨 Waveform Painter
+class _WaveformPainter extends CustomPainter {
+  final List<double> waveformData;
+  final Color color;
+  final double strokeWidth;
+
+  _WaveformPainter({
+    required this.waveformData,
+    required this.color,
+    required this.strokeWidth,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (waveformData.isEmpty) return;
+
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = strokeWidth
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+
+    final path = Path();
+    final centerY = size.height / 2;
+    final stepWidth = size.width / waveformData.length;
+
+    // Start path
+    path.moveTo(0, centerY);
+
+    // Draw waveform
+    for (int i = 0; i < waveformData.length; i++) {
+      final x = i * stepWidth;
+      final y = centerY + (waveformData[i] * centerY);
+      path.lineTo(x, y);
+    }
+
+    canvas.drawPath(path, paint);
+
+    // Draw shadow/glow effect
+    final glowPaint = Paint()
+      ..color = color.withValues(alpha: 0.3)
+      ..strokeWidth = strokeWidth * 2
+      ..style = PaintingStyle.stroke
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5);
+
+    canvas.drawPath(path, glowPaint);
+  }
+
+  @override
+  bool shouldRepaint(_WaveformPainter oldDelegate) =>
+      waveformData != oldDelegate.waveformData;
+}

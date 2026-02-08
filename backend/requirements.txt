@@ -1,0 +1,10 @@
+# Weltenbibliothek Backend - Python Dependencies
+
+# HTTP & Async
+aiohttp==3.9.1
+
+# Standard Library (bereits vorhanden, hier zur Dokumentation)
+# asyncio - Built-in
+# json - Built-in
+# uuid - Built-in
+# dataclasses - Built-in (Python 3.7+)

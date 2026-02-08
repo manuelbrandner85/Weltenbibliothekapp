@@ -1,0 +1,186 @@
+/// 🎵 VOICE MINI PLAYER
+/// Floating mini player when voice chat is minimized
+library;
+
+import 'package:flutter/material.dart';
+import '../services/simple_voice_controller.dart';
+import '../screens/shared/telegram_voice_screen.dart';
+
+class VoiceMiniPlayer extends StatefulWidget {
+  final SimpleVoiceController voiceController;
+
+  const VoiceMiniPlayer({
+    super.key,
+    required this.voiceController,
+  });
+
+  @override
+  State<VoiceMiniPlayer> createState() => _VoiceMiniPlayerState();
+}
+
+class _VoiceMiniPlayerState extends State<VoiceMiniPlayer>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _pulseController;
+  late Animation<double> _pulseAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // 💚 Pulse Animation
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    )..repeat(reverse: true);
+
+    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.1).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: widget.voiceController,
+      builder: (context, child) {
+        // Only show when voice chat is minimized (not in fullscreen)
+        if (!widget.voiceController.isInCall || // ✅ FIX: isInCall statt isInVoiceRoom
+            ModalRoute.of(context)?.settings.name == '/voice') {
+          return const SizedBox.shrink();
+        }
+
+        return Positioned(
+          right: 16,
+          bottom: 80,
+          child: GestureDetector(
+            onTap: () {
+              // Open fullscreen voice chat
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const TelegramVoiceScreen(),
+                  settings: const RouteSettings(name: '/voice'),
+                ),
+              );
+            },
+            child: AnimatedBuilder(
+              animation: _pulseAnimation,
+              builder: (context, child) {
+                return Transform.scale(
+                  scale: _pulseAnimation.value,
+                  child: Container(
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Color(0xFF6A5ACD),
+                          Color(0xFF4A4ACD),
+                        ],
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF6A5ACD).withValues(alpha: 0.5),
+                          blurRadius: 20,
+                          spreadRadius: 5,
+                        ),
+                      ],
+                    ),
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        // 🎙️ Mic Icon
+                        const Icon(
+                          Icons.mic,
+                          color: Colors.white,
+                          size: 28,
+                        ),
+
+                        // 🔢 Participant Count Badge
+                        if (widget.voiceController.participantCount > 1)
+                          Positioned(
+                            top: 4,
+                            right: 4,
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: const BoxDecoration(
+                                color: Colors.red,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Text(
+                                '${widget.voiceController.participantCount}',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+
+                        // 🌊 Speaking Wave Animation
+                        if (widget.voiceController.currentSpeakerId != null)
+                          _buildWaveAnimation(),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// 🌊 Wave Animation when someone is speaking
+  Widget _buildWaveAnimation() {
+    return Positioned.fill(
+      child: CustomPaint(
+        painter: _WaveCirclePainter(
+          animationValue: _pulseAnimation.value,
+          color: Colors.greenAccent,
+        ),
+      ),
+    );
+  }
+}
+
+/// 🌊 Wave Circle Painter
+class _WaveCirclePainter extends CustomPainter {
+  final double animationValue;
+  final Color color;
+
+  _WaveCirclePainter({required this.animationValue, required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2;
+
+    final paint = Paint()
+      ..color = color.withValues(alpha: 0.3)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+
+    // Draw expanding circles
+    for (int i = 0; i < 3; i++) {
+      final waveRadius = radius * (0.8 + (animationValue + i * 0.2) % 1.0);
+      final opacity = 1.0 - ((animationValue + i * 0.2) % 1.0);
+      paint.color = color.withOpacity(opacity * 0.3);
+      canvas.drawCircle(center, waveRadius, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_WaveCirclePainter oldDelegate) =>
+      animationValue != oldDelegate.animationValue;
+}

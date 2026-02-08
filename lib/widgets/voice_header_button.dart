@@ -1,0 +1,97 @@
+/// 🎙️ VOICE CHAT HEADER BUTTON
+/// Compact voice chat button for AppBar
+/// Opens Telegram-style voice chat screen
+library;
+
+import 'package:flutter/material.dart';
+import '../services/simple_voice_controller.dart';
+import '../screens/shared/telegram_voice_screen.dart';
+
+class VoiceHeaderButton extends StatefulWidget {
+  final String roomId;
+  final String roomName;
+  final String userId;
+  final String username;
+  final Color color;
+
+  const VoiceHeaderButton({
+    super.key,
+    required this.roomId,
+    required this.roomName,
+    required this.userId,
+    required this.username,
+    this.color = Colors.white,
+  });
+
+  @override
+  State<VoiceHeaderButton> createState() => _VoiceHeaderButtonState();
+}
+
+class _VoiceHeaderButtonState extends State<VoiceHeaderButton> {
+  final SimpleVoiceController _voiceController = SimpleVoiceController();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: _voiceController,
+      builder: (context, child) {
+        final isInCall = _voiceController.isInCall;
+        final isInThisRoom = _voiceController.currentRoomId == widget.roomId;
+        final participantCount = _voiceController.participantCount;
+
+        return Stack(
+          children: [
+            IconButton(
+              icon: Icon(
+                isInThisRoom ? Icons.mic : Icons.groups,
+                color: isInThisRoom ? Colors.green : widget.color,
+              ),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const TelegramVoiceScreen(),
+                  ),
+                );
+              },
+              tooltip: isInThisRoom 
+                  ? 'Im Voice-Raum ($participantCount)' 
+                  : 'Voice-Chat öffnen',
+            ),
+            
+            // Participant count badge
+            if (participantCount > 0)
+              Positioned(
+                right: 8,
+                top: 8,
+                child: Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    color: isInThisRoom ? Colors.green : Colors.red,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: const Color(0xFF121212),
+                      width: 1,
+                    ),
+                  ),
+                  constraints: const BoxConstraints(
+                    minWidth: 16,
+                    minHeight: 16,
+                  ),
+                  child: Text(
+                    '$participantCount',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}

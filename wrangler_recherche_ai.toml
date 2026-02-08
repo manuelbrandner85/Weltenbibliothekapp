@@ -1,0 +1,19 @@
+name = "recherche-engine"
+main = "worker_recherche_ai.js"
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
+account_id = "3472f5994537c3a30c5caeaff4de21fb"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "weltenbibliothek-db"
+database_id = "4fbea23c-8c00-4e09-aebd-2b4dceacbce5"
+
+# Cloudflare AI Binding
+[ai]
+binding = "AI"
+
+# Vectorize Index for Semantic Search
+[[vectorize]]
+binding = "VECTORIZE"
+index_name = "weltenbibliothek-knowledge"

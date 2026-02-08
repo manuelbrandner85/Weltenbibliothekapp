@@ -1,0 +1,910 @@
+import 'package:flutter/material.dart';
+import '../../theme/premium_text_styles.dart';
+import '../../widgets/micro_interactions.dart';
+import '../../widgets/profile_edit_dialogs.dart';
+import '../../models/materie_profile.dart';
+import '../../services/storage_service.dart';
+import '../../services/cloudflare_api_service.dart';
+import '../../widgets/toast_helper.dart';
+
+/// Home/Dashboard-Tab für MATERIE-Welt
+/// Zeigt: Statistiken, kürzliche Recherchen, Aktivitäts-Timeline, Quick-Actions
+class MaterieHomeTab extends StatefulWidget {
+  const MaterieHomeTab({super.key});
+
+  @override
+  State<MaterieHomeTab> createState() => _MaterieHomeTabState();
+}
+
+class _MaterieHomeTabState extends State<MaterieHomeTab> with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  MaterieProfile? _profile;
+  final CloudflareApiService _api = CloudflareApiService();
+  List<Map<String, dynamic>> _recentActivities = [];
+  List<Map<String, dynamic>> _recentTopics = [];
+  bool _isLoadingData = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(seconds: 3),
+      vsync: this,
+    )..repeat();
+    _loadProfile();
+    _loadRecentData();
+  }
+
+  Future<void> _loadRecentData() async {
+    try {
+      // Lade echte Chat-Nachrichten als Aktivitäten (Materie-Realm)
+      final messages = await _api.getChatMessages(
+        'weltenbibliothek-general', // Room ID
+        realm: 'materie',
+        limit: 5,
+      );
+      
+      // Lade echte Artikel als Research Topics
+      final articles = await _api.getArticles(
+        realm: 'materie',
+        limit: 4,
+      );
+
+      if (mounted) {
+        setState(() {
+          _recentActivities = messages;
+          _recentTopics = articles;
+          _isLoadingData = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingData = false;
+          _recentActivities = [];
+          _recentTopics = [];
+        });
+      }
+    }
+  }
+
+  void _loadProfile() {
+    final profile = StorageService().getMaterieProfile();
+    setState(() {
+      _profile = profile; // Null wenn kein Profil vorhanden
+    });
+  }
+
+  void _editProfile() {
+    if (_profile == null) return;
+    
+    showDialog(
+      context: context,
+      builder: (context) => MaterieProfileEditDialog(
+        profile: _profile!,
+        onSave: (updatedProfile) {
+          setState(() {
+            _profile = updatedProfile;
+          });
+        },
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Color(0xFF0D47A1), // Dunkelblau
+            Color(0xFF000000), // Schwarz
+          ],
+        ),
+      ),
+      child: SafeArea(
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Willkommens-Header
+                _buildWelcomeHeader(),
+                const SizedBox(height: 24),
+
+                // PROFIL-CARD (Anklickbar & Editierbar)
+                _buildProfileCard(),
+                const SizedBox(height: 24),
+
+                // Statistik-Cards
+                _buildStatisticsSection(),
+                const SizedBox(height: 24),
+
+                // Aktivitäts-Timeline
+                _buildActivityTimeline(),
+                const SizedBox(height: 24),
+
+                // Kürzliche Recherchen
+                _buildRecentResearch(),
+                const SizedBox(height: 24),
+
+                // Quick Actions
+                _buildQuickActions(),
+                const SizedBox(height: 40),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWelcomeHeader() {
+    final username = _profile?.username ?? 'Forscher';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Willkommen zurück,',
+          style: PremiumTextStyles.materieSubtitle.copyWith(
+            fontSize: 14,
+            color: const Color(0xFF90CAF9),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          username,
+          style: PremiumTextStyles.materieTitle.copyWith(
+            fontSize: 32,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: const Color(0xFF2196F3).withValues(alpha: 0.2),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: const Color(0xFF2196F3).withValues(alpha: 0.4),
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF4CAF50),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF4CAF50).withValues(alpha: 0.6),
+                      blurRadius: 8,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Aktiv · Recherche-Modus',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Color(0xFF90CAF9),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildProfileCard() {
+    return InkWell(
+      onTap: _editProfile,
+      borderRadius: BorderRadius.circular(16),
+      child: HoverGlowCard(
+        glowColor: const Color(0xFF2196F3),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1E1E1E),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: const Color(0xFF2196F3).withValues(alpha: 0.4),
+              width: 2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF2196F3).withValues(alpha: 0.2),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              // Avatar
+              Container(
+                width: 70,
+                height: 70,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF1976D2), Color(0xFF2196F3)],
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF2196F3).withValues(alpha: 0.5),
+                      blurRadius: 12,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: Text(
+                    _profile?.username.isNotEmpty == true
+                        ? _profile!.username[0].toUpperCase()
+                        : 'M',
+                    style: const TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 20),
+              
+              // Info
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'BENUTZERPROFIL',
+                      style: PremiumTextStyles.materieBadge.copyWith(
+                        fontSize: 11,
+                        color: const Color(0xFF64B5F6),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      _profile?.username ?? 'Unbekannt',
+                      style: PremiumTextStyles.materieCardTitle.copyWith(
+                        fontSize: 20,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Tippen zum Bearbeiten',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.white.withValues(alpha: 0.5),
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              
+              // Edit Icon
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF2196F3).withValues(alpha: 0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.edit,
+                  color: Color(0xFF2196F3),
+                  size: 24,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatisticsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'ÜBERSICHT',
+          style: PremiumTextStyles.materieBadge.copyWith(
+            letterSpacing: 2.0,
+            color: const Color(0xFF64B5F6),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: _buildStatCard(
+                icon: Icons.article_outlined,
+                label: 'Recherchen',
+                value: '47',
+                color: const Color(0xFF2196F3),
+                trend: '+12',
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildStatCard(
+                icon: Icons.people_outline,
+                label: 'Community',
+                value: '156',
+                color: const Color(0xFF00BCD4),
+                trend: '+23',
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _buildStatCard(
+                icon: Icons.explore_outlined,
+                label: 'Entdeckt',
+                value: '89',
+                color: const Color(0xFF03A9F4),
+                trend: '+8',
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildStatCard(
+                icon: Icons.bookmark_outline,
+                label: 'Gespeichert',
+                value: '34',
+                color: const Color(0xFF0288D1),
+                trend: '+5',
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatCard({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+    required String trend,
+  }) {
+    return HoverGlowCard(
+      glowColor: color,
+      // ✅ FIXED: Removed deprecated 'elevation' parameter
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1E1E1E),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: color.withValues(alpha: 0.3),
+          ),
+          // ✅ FIXED: Use boxShadow instead for elevation effect
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.3),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(icon, color: color, size: 20),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF4CAF50).withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    trend,
+                    style: const TextStyle(
+                      fontSize: 10,
+                      color: Color(0xFF4CAF50),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+                shadows: [
+                  Shadow(
+                    color: color.withValues(alpha: 0.5),
+                    blurRadius: 8,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 12,
+                color: Color(0xFF90CAF9),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActivityTimeline() {
+    if (_isLoadingData) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(20),
+          child: CircularProgressIndicator(color: Color(0xFF2196F3)),
+        ),
+      );
+    }
+
+    if (_recentActivities.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1E1E1E),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Color(0xFF2196F3).withValues(alpha: 0.3)),
+        ),
+        child: const Center(
+          child: Text(
+            'Noch keine Aktivitäten.\nStarte eine Unterhaltung im Chat!',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.white70),
+          ),
+        ),
+      );
+    }
+
+    final activities = _recentActivities;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'AKTIVITÄTEN',
+          style: PremiumTextStyles.materieBadge.copyWith(
+            letterSpacing: 2.0,
+            color: const Color(0xFF64B5F6),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF1E1E1E),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: const Color(0xFF2196F3).withValues(alpha: 0.3),
+            ),
+          ),
+          child: ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: activities.length,
+            separatorBuilder: (context, index) => Divider(
+              color: Colors.white.withValues(alpha: 0.1),
+              height: 1,
+            ),
+            itemBuilder: (context, index) {
+              final activity = activities[index];
+              final createdAt = activity['created_at'] != null 
+                  ? DateTime.parse(activity['created_at'])
+                  : DateTime.now();
+              final timeAgo = _getTimeAgo(createdAt);
+              
+              return _buildActivityItem(
+                time: timeAgo,
+                title: '${activity['username'] ?? 'Unbekannt'}: ${activity['message'] ?? 'Nachricht'}',
+                type: 'message',
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActivityItem({
+    required String time,
+    required String title,
+    required String type,
+  }) {
+    final iconData = _getActivityIcon(type);
+    final color = _getActivityColor(type);
+
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.2),
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: color.withValues(alpha: 0.4),
+                width: 2,
+              ),
+            ),
+            child: Icon(iconData, color: color, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'vor $time',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.white.withValues(alpha: 0.5),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Icon(
+            Icons.chevron_right,
+            color: Colors.white.withValues(alpha: 0.3),
+            size: 20,
+          ),
+        ],
+      ),
+    );
+  }
+
+  IconData _getActivityIcon(String type) {
+    switch (type) {
+      case 'research':
+        return Icons.science_outlined;
+      case 'community':
+        return Icons.forum_outlined;
+      case 'analysis':
+        return Icons.analytics_outlined;
+      case 'map':
+        return Icons.map_outlined;
+      case 'message':
+        return Icons.chat_bubble_outline;
+      default:
+        return Icons.circle_outlined;
+    }
+  }
+
+  Color _getActivityColor(String type) {
+    switch (type) {
+      case 'research':
+        return const Color(0xFF2196F3);
+      case 'community':
+        return const Color(0xFF00BCD4);
+      case 'analysis':
+        return const Color(0xFF03A9F4);
+      case 'map':
+        return const Color(0xFF0288D1);
+      case 'message':
+        return const Color(0xFF64B5F6);
+      default:
+        return const Color(0xFF2196F3);
+    }
+  }
+
+  String _getTimeAgo(DateTime dateTime) {
+    final now = DateTime.now();
+    final difference = now.difference(dateTime);
+
+    if (difference.inMinutes < 1) {
+      return 'Gerade eben';
+    } else if (difference.inMinutes < 60) {
+      return 'vor ${difference.inMinutes} Min';
+    } else if (difference.inHours < 24) {
+      return 'vor ${difference.inHours} Std';
+    } else if (difference.inDays < 7) {
+      return 'vor ${difference.inDays} Tag${difference.inDays > 1 ? 'en' : ''}';
+    } else {
+      return 'vor ${(difference.inDays / 7).floor()} Woche${(difference.inDays / 7).floor() > 1 ? 'n' : ''}';
+    }
+  }
+
+  Widget _buildRecentResearch() {
+    if (_isLoadingData) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(20),
+          child: CircularProgressIndicator(color: Color(0xFF2196F3)),
+        ),
+      );
+    }
+
+    if (_recentTopics.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1E1E1E),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Color(0xFF2196F3).withValues(alpha: 0.3)),
+        ),
+        child: const Center(
+          child: Text(
+            'Noch keine Artikel.\nErstelle deinen ersten Artikel!',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.white70),
+          ),
+        ),
+      );
+    }
+
+    final topics = _recentTopics.take(4).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'KÜRZLICHE RECHERCHEN',
+              style: PremiumTextStyles.materieBadge.copyWith(
+                letterSpacing: 2.0,
+                color: const Color(0xFF64B5F6),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                ToastHelper.showInfo(context, 'Alle Recherchen werden geladen...');
+              },
+              child: const Text(
+                'Alle anzeigen',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Color(0xFF2196F3),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        SizedBox(
+          height: 180,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: topics.length,
+            separatorBuilder: (context, index) => const SizedBox(width: 12),
+            itemBuilder: (context, index) => _buildResearchCard(topics[index]),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildResearchCard(Map<String, dynamic> topic) {
+    final title = topic['title'] ?? 'Unbekannt';
+    final createdAt = topic['created_at'] != null 
+        ? DateTime.parse(topic['created_at'])
+        : DateTime.now();
+    
+    return HoverGlowCard(
+      glowColor: const Color(0xFF2196F3),
+      onTap: () {
+        ToastHelper.showSuccess(context, '$title wird geöffnet...');
+      },
+      child: Container(
+        width: 220,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1E1E1E),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: const Color(0xFF2196F3).withValues(alpha: 0.3),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF2196F3).withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.analytics,
+                    color: Color(0xFF2196F3),
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _getTimeAgo(createdAt),
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.white.withValues(alpha: 0.5),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const Spacer(),
+            Row(
+              children: [
+                Icon(
+                  Icons.article_outlined,
+                  size: 14,
+                  color: Colors.white.withValues(alpha: 0.5),
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  topic['realm'] ?? 'materie',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.white.withValues(alpha: 0.5),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickActions() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'SCHNELLZUGRIFF',
+          style: PremiumTextStyles.materieBadge.copyWith(
+            letterSpacing: 2.0,
+            color: const Color(0xFF64B5F6),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: _buildQuickActionButton(
+                icon: Icons.add_circle_outline,
+                label: 'Neue Recherche',
+                color: const Color(0xFF2196F3),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildQuickActionButton(
+                icon: Icons.map_outlined,
+                label: 'Karte öffnen',
+                color: const Color(0xFF00BCD4),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildQuickActionButton({
+    required IconData icon,
+    required String label,
+    required Color color,
+  }) {
+    // ✅ FIXED: Replaced RippleButton with InkWell (Material ripple effect)
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          ToastHelper.showInfo(context, '$label wird geöffnet...');
+        },
+        borderRadius: BorderRadius.circular(16),
+        splashColor: color.withValues(alpha: 0.3),
+        highlightColor: color.withValues(alpha: 0.1),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1E1E1E),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: color.withValues(alpha: 0.2),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.2),
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: color.withValues(alpha: 0.4),
+                width: 2,
+              ),
+            ),
+            child: Icon(icon, color: color, size: 28),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              color: Colors.white.withValues(alpha: 0.9),
+              fontWeight: FontWeight.w600,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+        ), // ✅ FIXED: Added missing closing for InkWell
+      ), // ✅ FIXED: Closing for Material
+    );
+  }
+}

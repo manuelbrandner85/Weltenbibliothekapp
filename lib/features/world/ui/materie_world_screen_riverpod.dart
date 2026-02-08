@@ -1,0 +1,346 @@
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../screens/materie/home_tab_v2.dart';
+import '../../../screens/materie/recherche_tab_mobile.dart';
+import '../../../screens/materie/community_tab_modern.dart';
+import '../../../screens/materie/materie_karte_tab_pro.dart';
+import '../../../screens/shared/unified_knowledge_tab.dart';
+import '../../../screens/shared/stats_dashboard_screen.dart';
+import '../../../screens/shared/world_admin_dashboard.dart';
+import '../../../services/haptic_service.dart';
+import '../../admin/state/admin_state.dart';
+import '../../../screens/profile_settings_screen.dart';
+
+/// 🌍 MATERIE-WELT DASHBOARD (RIVERPOD VERSION)
+///
+/// Migration von StatefulWidget → ConsumerStatefulWidget
+/// - Admin-Status kommt jetzt von Riverpod statt setState
+/// - Offline-First mit Backend-Sync
+/// - Automatische Refresh bei Profil-Änderungen
+///
+/// ARCHITEKTUR-VERBESSERUNGEN:
+/// ✅ Single Source of Truth (AdminStateNotifier)
+/// ✅ Kein Code-Duplikation mit Energie-Welt
+/// ✅ Backend-safe (Timeouts blockieren nie die UI)
+/// ✅ Automatische Refresh bei App-Resume
+
+class MaterieWorldScreen extends ConsumerStatefulWidget {
+  const MaterieWorldScreen({super.key});
+
+  @override
+  ConsumerState<MaterieWorldScreen> createState() => _MaterieWorldScreenState();
+}
+
+class _MaterieWorldScreenState extends ConsumerState<MaterieWorldScreen>
+    with WidgetsBindingObserver {
+  int _currentIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    // Observer für App-Lifecycle
+    WidgetsBinding.instance.addObserver(this);
+
+    // Haptic Feedback beim Betreten
+    Future.delayed(const Duration(milliseconds: 1000), () {
+      HapticService.lightImpact();
+    });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  // Refresh bei App-Resume
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // Admin-Status neu laden
+      ref.read(adminStateProvider('materie').notifier).refresh();
+    }
+  }
+
+  final List<Widget> _tabs = [
+    const MaterieHomeTabV2(),
+    const MobileOptimierterRechercheTab(),
+    const MaterieCommunityTabModern(),
+    const MaterieKarteTabPro(),
+    const UnifiedKnowledgeTab(world: 'materie'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    // 🔥 RIVERPOD: Admin-Status aus State lesen
+    final adminState = ref.watch(adminStateProvider('materie'));
+
+    return Scaffold(
+      backgroundColor: const Color(0xFF0A0A0A),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFF0D47A1),
+              Color(0xFF1A1A1A),
+              Color(0xFF000000),
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              // Custom Header
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      const Color(0xFF1976D2).withValues(alpha: 0.3),
+                      Colors.transparent,
+                    ],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        // Zurück-Button
+                        IconButton(
+                          icon: const Icon(Icons.arrow_back, color: Colors.white),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                        const SizedBox(width: 8),
+
+                        // Titel
+                        const Expanded(
+                          child: Text(
+                            'MATERIE',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                              letterSpacing: 4,
+                            ),
+                          ),
+                        ),
+
+                        // Portal-Wechsel Button
+                        Container(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF2196F3).withValues(alpha: 0.5),
+                                blurRadius: 20,
+                                spreadRadius: 5,
+                              ),
+                            ],
+                          ),
+                          child: IconButton(
+                            icon: const Icon(Icons.swap_horiz, color: Color(0xFF2196F3)),
+                            iconSize: 28,
+                            onPressed: () => Navigator.pop(context),
+                            tooltip: 'Zur Portal-Auswahl',
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+
+                        // Stats Button
+                        IconButton(
+                          icon: const Icon(Icons.analytics_outlined, color: Color(0xFF2196F3)),
+                          iconSize: 24,
+                          onPressed: () {
+                            HapticService.selectionClick();
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const StatsDashboardScreen(world: 'materie'),
+                              ),
+                            );
+                          },
+                          tooltip: 'Statistiken',
+                        ),
+                        const SizedBox(width: 8),
+
+                        // 🐛 DEBUG BUTTON (Optional - kann später entfernt werden)
+                        if (kDebugMode)
+                          Container(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: adminState.isAdmin ? Colors.green : Colors.red,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: (adminState.isAdmin ? Colors.green : Colors.red)
+                                      .withValues(alpha: 0.5),
+                                  blurRadius: 20,
+                                  spreadRadius: 5,
+                                ),
+                              ],
+                            ),
+                            child: IconButton(
+                              icon: Icon(
+                                adminState.isAdmin ? Icons.check_circle : Icons.cancel,
+                                color: Colors.white,
+                              ),
+                              iconSize: 24,
+                              onPressed: () {
+                                showDialog(
+                                  context: context,
+                                  builder: (context) => AlertDialog(
+                                    title: const Text('🐛 ADMIN STATUS DEBUG'),
+                                    content: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text('isAdmin: ${adminState.isAdmin}'),
+                                        Text('isRootAdmin: ${adminState.isRootAdmin}'),
+                                        Text('World: ${adminState.world}'),
+                                        Text('Backend Verified: ${adminState.backendVerified}'),
+                                        Text('Username: ${adminState.username ?? "null"}'),
+                                        Text('Role: ${adminState.role ?? "null"}'),
+                                      ],
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () {
+                                          // Refresh Admin-Status
+                                          ref.read(adminStateProvider('materie').notifier).refresh();
+                                          Navigator.pop(context);
+                                        },
+                                        child: const Text('🔄 REFRESH'),
+                                      ),
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(context),
+                                        child: const Text('OK'),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                              tooltip: 'Debug: Admin-Status',
+                            ),
+                          ),
+
+                        // 🛡️ ADMIN BUTTON - NUR SICHTBAR FÜR ADMINS
+                        if (adminState.isAdmin) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.orange.withValues(alpha: 0.5),
+                                  blurRadius: 20,
+                                  spreadRadius: 5,
+                                ),
+                              ],
+                            ),
+                            child: IconButton(
+                              icon: const Icon(
+                                Icons.admin_panel_settings,
+                                color: Colors.orange,
+                              ),
+                              iconSize: 28,
+                              onPressed: () {
+                                HapticService.mediumImpact();
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const WorldAdminDashboard(world: 'materie'),
+                                  ),
+                                );
+                              },
+                              tooltip: 'Admin-Dashboard',
+                            ),
+                          ),
+                        ],
+
+                        // Profil-Einstellungen Button
+                        IconButton(
+                          icon: const Icon(Icons.settings, color: Colors.white),
+                          onPressed: () async {
+                            HapticService.selectionClick();
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const ProfileSettingsScreen(),
+                              ),
+                            );
+                            // 🔥 WICHTIG: Admin-Status nach Profil-Änderungen neu laden
+                            if (mounted) {
+                              ref.read(adminStateProvider('materie').notifier).refresh();
+                            }
+                          },
+                          tooltip: 'Profil-Einstellungen',
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              // Tab Content
+              Expanded(
+                child: _tabs[_currentIndex],
+              ),
+
+              // Bottom Navigation
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.transparent,
+                      const Color(0xFF1976D2).withValues(alpha: 0.2),
+                    ],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
+                ),
+                child: BottomNavigationBar(
+                  currentIndex: _currentIndex,
+                  onTap: (index) {
+                    HapticService.selectionClick();
+                    setState(() => _currentIndex = index);
+                  },
+                  backgroundColor: Colors.transparent,
+                  selectedItemColor: const Color(0xFF2196F3),
+                  unselectedItemColor: Colors.white54,
+                  type: BottomNavigationBarType.fixed,
+                  elevation: 0,
+                  items: const [
+                    BottomNavigationBarItem(
+                      icon: Icon(Icons.home),
+                      label: 'Home',
+                    ),
+                    BottomNavigationBarItem(
+                      icon: Icon(Icons.search),
+                      label: 'Recherche',
+                    ),
+                    BottomNavigationBarItem(
+                      icon: Icon(Icons.people),
+                      label: 'Community',
+                    ),
+                    BottomNavigationBarItem(
+                      icon: Icon(Icons.map),
+                      label: 'Karte',
+                    ),
+                    BottomNavigationBarItem(
+                      icon: Icon(Icons.menu_book),
+                      label: 'Wissen',
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

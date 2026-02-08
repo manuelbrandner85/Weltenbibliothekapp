@@ -1,0 +1,162 @@
+name: weltenbibliothek
+description: "Weltenbibliothek - Wissens- und Bewusstseins-Plattform mit zwei Welten: Materie und Energie"
+# The following line prevents the package from being accidentally published to
+# pub.dev using `flutter pub publish`. This is preferred for private packages.
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+# The following defines the version and build number for your application.
+# A version number is three numbers separated by dots, like 1.2.43
+# followed by an optional build number separated by a +.
+# Both the version and the builder number may be overridden in flutter
+# build by specifying --build-name and --build-number, respectively.
+# In Android, build-name is used as versionName while build-number used as versionCode.
+# Read more about Android versioning at https://developer.android.com/studio/publish/versioning
+# In iOS, build-name is used as CFBundleShortVersionString while build-number is used as CFBundleVersion.
+# Read more about iOS versioning at
+# https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
+# In Windows, build-name is used as the major, minor, and patch parts
+# of the product and file versions while build-number is used as the build suffix.
+version: 45.0.0+450000
+
+environment:
+  sdk: ^3.9.2
+
+# Dependencies specify other packages that your package needs in order to work.
+# To automatically upgrade your package dependencies to the latest versions
+# consider running `flutter pub upgrade --major-versions`. Alternatively,
+# dependencies can be manually updated by changing the version numbers below to
+# the latest version available on pub.dev. To see which dependencies have newer
+# versions available, run `flutter pub outdated`.
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # UI & State Management
+  cupertino_icons: ^1.0.8
+  provider: 6.1.5+1          # Legacy state management (kept for backward compatibility)
+  flutter_riverpod: ^2.6.1   # 🆕 NEW: Riverpod für Admin-System
+  
+  # Local Storage
+  shared_preferences: 2.5.3
+  hive: ^2.2.3
+  hive_flutter: 1.1.0
+  share_plus: ^7.2.1  # 🆕 Sharing functionality
+  qr_flutter: ^4.1.0  # QR Code generation
+  pdf: ^3.11.1  # PDF generation for export
+  
+  # HTTP & Networking
+  http: 1.5.0
+  xml: ^6.5.0  # RSS Feed parsing
+  crypto: ^3.0.3  # Hashing for image consistency
+  url_launcher: ^6.3.1  # URL Launcher (Web-kompatibel)
+  cached_network_image: ^3.4.1  # 🆕 Image Caching für bessere Performance
+  
+  # Sensors (v5.37 - for gyroscope parallax)
+  sensors_plus: ^6.0.1
+  
+  # Video Player (für Intro-Video)
+  video_player: ^2.8.2  # Web-kompatibel
+  
+  # Internationalization (für deutsches Datum)
+  intl: 0.20.2
+  
+  # OpenStreetMap Integration (Web-kompatibel)
+  flutter_map: ^7.0.2
+  latlong2: ^0.9.1
+  flutter_map_marker_cluster: ^1.3.6  # 🆕 Marker-Clustering
+  
+  # Visualisierungen & Charts (NEUE PACKAGES)
+  fl_chart: 0.69.0          # Charts, Graphen, Heatmaps
+  graphview: 1.2.0          # Interaktive Netzwerk-Graphen
+  
+  # PDF & Multimedia (v7.2 - In-App Viewer)
+  path_provider: 2.1.5      # Dateipfade
+  photo_view: ^0.14.0       # Image Gallery mit Zoom & Pan
+  # PDF wird via embedded HTML iframe angezeigt (Web-kompatibel)
+  
+  # Voice Search & Connectivity (v64 NEUE FEATURES)
+  speech_to_text: ^7.0.0    # Spracherkennung für Voice Search
+  permission_handler: ^11.3.1  # Mikrofon-Berechtigungen
+  connectivity_plus: ^6.1.2  # Offline-Mode Detection
+  # record: ^5.1.2            # ❌ DEAKTIVIERT für Android Build (record_linux Kompatibilitätsproblem)
+  flutter_cache_manager: ^3.3.0  # 🆕 Offline Cache Management
+  pdfx: ^2.6.0              # 🆕 PDF Reader Integration
+  shimmer: ^3.0.0           # 🆕 Loading Skeleton Effects
+  flutter_webrtc: ^1.3.0    # 🆕 WebRTC Voice Streaming (max 10 users) - Updated for Dart 3.9.2
+  
+  # Firebase DEAKTIVIERT - Jetzt mit Cloudflare D1 + Workers + R2
+  # firebase_core: 3.6.0              
+  # cloud_firestore: 5.4.3            # -> Cloudflare D1
+  # firebase_messaging: 15.1.3        # -> Cloudflare Workers
+  # firebase_storage: 12.3.2          # -> Cloudflare R2
+  flutter_local_notifications: ^18.0.1  # Lokale Benachrichtigungen
+  image_picker: ^1.0.0              # Bilder/Videos aufnehmen
+  file_picker: ^8.0.0               # 📁 File Upload Support
+  # record: ^5.0.0                    # ❌ DEAKTIVIERT für Android Build (record_linux Kompatibilitätsproblem)
+  flutter_sound: ^9.2.13            # ✅ Audio Recording für Android/iOS/Web
+  audioplayers: ^6.1.0              # Audio playback für Voice Messages
+  just_audio: ^0.9.36               # 🆕 Low-latency audio für Frequenzgenerator
+  flutter_tts: ^4.0.0               # Text-to-Speech
+  geolocator: ^13.0.1               # GPS Location für AR
+  web_socket_channel: ^3.0.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  # The "flutter_lints" package below contains a set of recommended lints to
+  # encourage good coding practices. The lint set provided by the package is
+  # activated in the `analysis_options.yaml` file located at the root of your
+  # package. See that file for information about deactivating specific lint
+  # rules and activating additional ones.
+  flutter_lints: ^5.0.0
+
+# For information on the generic Dart part of this file, see the
+# following page: https://dart.dev/tools/pub/pubspec
+
+# The following section is specific to Flutter packages.
+flutter:
+
+  # The following line ensures that the Material Icons font is
+  # included with your application, so that you can use the icons in
+  # the material Icons class.
+  uses-material-design: true
+
+  # Assets
+  assets:
+    - assets/icons/
+    - assets/images/
+    - assets/sounds/  # ✅ PRODUCTION-READY: Real audio assets
+    - assets/audio/   # 🎵 FREQUENCY AUDIO FILES (432Hz, 528Hz)
+    # ✅ WELTEN-ÜBERGANGSVIDEOS AKTIVIERT
+    - assets/videos/weltenbibliothek_intro.mp4
+    - assets/videos/transition_materie_to_energie.mp4
+    - assets/videos/transition_energie_to_materie.mp4
+
+  # An image asset can refer to one or more resolution-specific "variants", see
+  # https://flutter.dev/to/resolution-aware-images
+
+  # For details regarding adding assets from package dependencies, see
+  # https://flutter.dev/to/asset-from-package
+
+  # To add custom fonts to your application, add a fonts section here,
+  # in this "flutter" section. Each entry in this list should have a
+  # "family" key with the font family name, and a "fonts" key with a
+  # list giving the asset and other descriptors for the font. For
+  # example:
+  # fonts:
+  #   - family: Schyler
+  #     fonts:
+  #       - asset: fonts/Schyler-Regular.ttf
+  #       - asset: fonts/Schyler-Italic.ttf
+  #         style: italic
+  #   - family: Trajan Pro
+  #     fonts:
+  #       - asset: fonts/TrajanPro.ttf
+  #       - asset: fonts/TrajanPro_Bold.ttf
+  #         weight: 700
+  #
+  # For details regarding fonts from package dependencies,
+  # see https://flutter.dev/to/font-from-package

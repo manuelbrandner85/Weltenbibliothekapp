@@ -1,0 +1,1046 @@
+import 'package:flutter/material.dart';
+import '../../theme/premium_text_styles.dart';
+import '../../widgets/micro_interactions.dart';
+
+import '../../widgets/profile_edit_dialogs.dart';
+import '../../models/energie_profile.dart';
+import '../../models/spirit_dashboard.dart';
+import '../../services/storage_service.dart';
+import '../../services/spirit_dashboard_service.dart';
+
+// Calculator-Screens importieren
+import 'calculators/numerology_calculator_screen.dart';
+import 'calculators/archetype_calculator_screen.dart';
+import 'calculators/astrology_calculator_screen.dart';
+import 'calculators/chakra_calculator_screen.dart';
+
+
+/// ✨ PERSONALISIERTES ENERGIE-HOME DASHBOARD
+/// 
+/// KONZEPT: Zeigt nur Spirit-basierte, personalisierte Informationen
+/// 
+/// INHALT:
+/// - Persönliche Spirit-Signatur (Numerologie)
+/// - Aktuelle Zyklus-Phase (Jahres-/Monats-Energie)
+/// - Archetypen-Status (Dein aktueller Archetyp)
+/// - Heute's Synchronizitäten
+/// - Journaling-Streak
+/// - Schnellzugriff auf Berechnungen
+class EnergieHomeTabPersonalized extends StatefulWidget {
+  const EnergieHomeTabPersonalized({super.key});
+
+  @override
+  State<EnergieHomeTabPersonalized> createState() => _EnergieHomeTabPersonalizedState();
+}
+
+class _EnergieHomeTabPersonalizedState extends State<EnergieHomeTabPersonalized> {
+  EnergieProfile? _profile;
+  SpiritDashboard? _dashboard;
+  int _todaySynchronicities = 0;
+  int _journalStreak = 0;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    setState(() => _isLoading = true);
+
+    // Profil laden (null wenn nicht vorhanden)
+    final profile = StorageService().getEnergieProfile();
+
+    SpiritDashboard? dashboard;
+    
+    // Dashboard nur berechnen, wenn Profil vorhanden
+    if (profile != null) {
+      final dashboardService = SpiritDashboardService();
+      dashboard = dashboardService.calculateDashboard(profile);
+    }
+
+    // Echte Synchronizitäten aus Storage laden
+    final storage = StorageService();
+    final spiritEntries = await storage.getAllSpiritEntries();
+    final today = DateTime.now();
+    final todayEntries = spiritEntries.where((entry) {
+      return entry.createdAt.year == today.year &&
+             entry.createdAt.month == today.month &&
+             entry.createdAt.day == today.day;
+    }).length;
+
+    // Journal-Streak berechnen (Tage hintereinander mit Einträgen)
+    int streak = 0;
+    DateTime checkDate = DateTime.now();
+    for (int i = 0; i < 30; i++) {
+      final hasEntry = spiritEntries.any((entry) {
+        return entry.createdAt.year == checkDate.year &&
+               entry.createdAt.month == checkDate.month &&
+               entry.createdAt.day == checkDate.day;
+      });
+      if (hasEntry) {
+        streak++;
+        checkDate = checkDate.subtract(const Duration(days: 1));
+      } else {
+        break;
+      }
+    }
+
+    setState(() {
+      _profile = profile;
+      _dashboard = dashboard;
+      _todaySynchronicities = todayEntries;
+      _journalStreak = streak;
+      _isLoading = false;
+    });
+  }
+
+  void _editProfile() {
+    showDialog(
+      context: context,
+      builder: (context) => EnergieProfileEditDialog(
+        profile: _profile ?? EnergieProfile.empty(), // Leeres Profil wenn nicht vorhanden
+        onSave: (updatedProfile) {
+          setState(() {
+            _profile = updatedProfile;
+          });
+          _loadData(); // Neu berechnen
+        },
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Color(0xFF4A148C), // Dunkel-Lila
+            Color(0xFF000000), // Schwarz
+          ],
+        ),
+      ),
+      child: SafeArea(
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator(color: Color(0xFF9C27B0)))
+            : SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildPersonalizedGreeting(),
+                      const SizedBox(height: 24),
+                      _buildSpiritSignatureCard(),
+                      const SizedBox(height: 24),
+                      _buildCyclePhaseCard(),
+                      const SizedBox(height: 24),
+                      _buildArchetypeStatusCard(),
+                      const SizedBox(height: 24),
+                      _buildTodayActivityRow(),
+                      const SizedBox(height: 24),
+                      _buildQuickCalculationsGrid(),
+                      const SizedBox(height: 40),
+                    ],
+                  ),
+                ),
+              ),
+      ),
+    );
+  }
+
+  Widget _buildPersonalizedGreeting() {
+    // Wenn kein Profil vorhanden - zeige Onboarding
+    if (_profile == null) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Willkommen in der ENERGIE-Welt!',
+            style: PremiumTextStyles.energieTitle.copyWith(fontSize: 28),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Erstelle dein spirituelles Profil für personalisierte Berechnungen.',
+            style: PremiumTextStyles.energieSubtitle.copyWith(
+              fontSize: 14,
+              color: const Color(0xFFCE93D8),
+            ),
+          ),
+          const SizedBox(height: 20),
+          ElevatedButton.icon(
+            onPressed: _editProfile,
+            icon: const Icon(Icons.auto_awesome, color: Colors.white),
+            label: const Text(
+              'Spirituelles Profil erstellen',
+              style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF9C27B0),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+        ],
+      );
+    }
+    
+    final hour = DateTime.now().hour;
+    String greeting;
+    if (hour < 12) {
+      greeting = 'Guten Morgen';
+    } else if (hour < 18) {
+      greeting = 'Namaste';
+    } else {
+      greeting = 'Gesegneten Abend';
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          greeting,
+          style: PremiumTextStyles.energieSubtitle.copyWith(
+            fontSize: 14,
+            color: const Color(0xFFCE93D8),
+          ),
+        ),
+        const SizedBox(height: 4),
+        GestureDetector(
+          onTap: _editProfile,
+          child: Row(
+            children: [
+              // Display Name (Vollständiger Name)
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _profile?.fullName ?? 'Suchender',
+                      style: PremiumTextStyles.energieTitle.copyWith(fontSize: 32),
+                    ),
+                    // Username mit @ (immer anzeigen)
+                    if (_profile?.username != null && _profile!.username.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          '@${_profile!.username}',
+                          style: PremiumTextStyles.energieSubtitle.copyWith(
+                            fontSize: 14,
+                            color: const Color(0xFFCE93D8).withValues(alpha: 0.7),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF9C27B0).withValues(alpha: 0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.edit, color: Color(0xFF9C27B0), size: 16),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF9C27B0), Color(0xFFFFD700)],
+            ),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.auto_awesome, color: Colors.white, size: 14),
+              const SizedBox(width: 8),
+              Text(
+                'Lebenszahl ${_dashboard?.lifePathNumber ?? '-'}',
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSpiritSignatureCard() {
+    if (_dashboard == null) return const SizedBox.shrink();
+
+    return HoverGlowCard(
+      glowColor: const Color(0xFFFFD700),
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              const Color(0xFF9C27B0).withValues(alpha: 0.4),
+              const Color(0xFF4A148C).withValues(alpha: 0.3),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: const Color(0xFFFFD700).withValues(alpha: 0.4),
+            width: 2,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Color(0xFF9C27B0), Color(0xFFFFD700)],
+                    ),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.fingerprint, color: Colors.white, size: 28),
+                ),
+                const SizedBox(width: 16),
+                const Expanded(
+                  child: Text(
+                    'DEINE SPIRIT-SIGNATUR',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFFFFD700),
+                      letterSpacing: 1.5,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildSignatureItem(
+                    'Lebensweg',
+                    _dashboard!.lifePathNumber.toString(),
+                    const Color(0xFFE91E63),
+                  ),
+                ),
+                Expanded(
+                  child: _buildSignatureItem(
+                    'Seele',
+                    _dashboard!.soulNumber.toString(),
+                    const Color(0xFF9C27B0),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildSignatureItem(
+                    'Ausdruck',
+                    _dashboard!.expressionNumber.toString(),
+                    const Color(0xFF673AB7),
+                  ),
+                ),
+                Expanded(
+                  child: _buildSignatureItem(
+                    'Kernfrequenz',
+                    _dashboard!.coreFrequency.toStringAsFixed(1),
+                    const Color(0xFFFFD700),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSignatureItem(String label, String value, Color color) {
+    // Detaillierte Erklärungen für jede Zahl
+    final explanation = _getSignatureExplanation(label, value);
+    
+    return Container(
+      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(right: 8),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              color: color,
+              shadows: [Shadow(color: color.withValues(alpha: 0.5), blurRadius: 8)],
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 11, color: Colors.white70, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            explanation,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 10,
+              color: Colors.white.withValues(alpha: 0.8),
+              height: 1.3,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  String _getSignatureExplanation(String label, String value) {
+    final number = int.tryParse(value.replaceAll('.', '')) ?? 0;
+    
+    switch (label) {
+      case 'Lebensweg':
+        return _getLifePathMeaning(number);
+      case 'Seele':
+        return _getSoulNumberMeaning(number);
+      case 'Ausdruck':
+        return _getExpressionNumberMeaning(number);
+      case 'Kernfrequenz':
+        final freq = double.tryParse(value) ?? 0.0;
+        if (freq < 3) return 'Ruhige, stabile Energie';
+        if (freq < 6) return 'Ausgeglichene Energie';
+        if (freq < 8) return 'Dynamische, aktive Energie';
+        return 'Hochfrequente Transformation';
+      default:
+        return '';
+    }
+  }
+  
+  String _getLifePathMeaning(int number) {
+    switch (number) {
+      case 1: return 'Führer & Pionier - Du ebnest neue Wege';
+      case 2: return 'Friedensstifter - Du bringst Menschen zusammen';
+      case 3: return 'Kreativer Ausdruck - Du inspirierst andere';
+      case 4: return 'Baumeister - Du schaffst solide Fundamente';
+      case 5: return 'Freier Geist - Du liebst Veränderung';
+      case 6: return 'Fürsorglicher - Du heilst durch Liebe';
+      case 7: return 'Weiser Sucher - Du findest tiefe Wahrheiten';
+      case 8: return 'Manifestor - Du erschaffst Großes';
+      case 9: return 'Humanitärer - Du dienst der Menschheit';
+      case 11: return 'Meisterlehrer - Du erleuchtest andere';
+      case 22: return 'Meisterbaumeister - Große Visionen';
+      case 33: return 'Meister der Liebe - Höchste Führung';
+      default: return 'Dein einzigartiger Lebensweg';
+    }
+  }
+  
+  String _getSoulNumberMeaning(int number) {
+    switch (number) {
+      case 1: return 'Innere Unabhängigkeit - Du brauchst Freiheit';
+      case 2: return 'Innere Harmonie - Du sehnst dich nach Frieden';
+      case 3: return 'Innere Freude - Du willst dich ausdrücken';
+      case 4: return 'Innere Sicherheit - Du brauchst Stabilität';
+      case 5: return 'Inneres Abenteuer - Du willst erleben';
+      case 6: return 'Innere Liebe - Du möchtest dienen';
+      case 7: return 'Innere Weisheit - Du suchst Wahrheit';
+      case 8: return 'Innere Macht - Du willst gestalten';
+      case 9: return 'Inneres Mitgefühl - Du fühlst alles';
+      case 11: return 'Innere Erleuchtung - Spirituelle Tiefe';
+      case 22: return 'Innere Vision - Große Träume';
+      case 33: return 'Innere Hingabe - Selbstlose Liebe';
+      default: return 'Deine einzigartige Seele';
+    }
+  }
+  
+  String _getExpressionNumberMeaning(int number) {
+    switch (number) {
+      case 1: return 'Äußere Stärke - Du wirkst selbstbewusst';
+      case 2: return 'Äußere Sanftheit - Du wirkst friedlich';
+      case 3: return 'Äußere Lebendigkeit - Du strahlst Freude aus';
+      case 4: return 'Äußere Zuverlässigkeit - Du wirkst stabil';
+      case 5: return 'Äußere Dynamik - Du wirkst spannend';
+      case 6: return 'Äußere Wärme - Du wirkst liebevoll';
+      case 7: return 'Äußere Tiefe - Du wirkst geheimnisvoll';
+      case 8: return 'Äußere Autorität - Du wirkst mächtig';
+      case 9: return 'Äußere Güte - Du wirkst weise';
+      case 11: return 'Äußere Inspiration - Du erleuchtest';
+      case 22: return 'Äußere Visionärität - Große Präsenz';
+      case 33: return 'Äußere Heilung - Meisterliche Ausstrahlung';
+      default: return 'Dein einzigartiger Ausdruck';
+    }
+  }
+
+  Widget _buildCyclePhaseCard() {
+    if (_dashboard == null) return const SizedBox.shrink();
+
+    return HoverGlowCard(
+      glowColor: const Color(0xFF9C27B0),
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1E1E1E),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: const Color(0xFF9C27B0).withValues(alpha: 0.4),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF9C27B0).withValues(alpha: 0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.timelapse, color: Color(0xFF9C27B0), size: 24),
+                ),
+                const SizedBox(width: 12),
+                const Text(
+                  'DEIN AKTUELLER ZYKLUS',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFFCE93D8),
+                    letterSpacing: 1.2,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                _buildCycleBox('Jahr', _dashboard!.personalYear.toString(), const Color(0xFFE91E63)),
+                const SizedBox(width: 12),
+                _buildCycleBox('Monat', _dashboard!.personalMonth.toString(), const Color(0xFF9C27B0)),
+                const SizedBox(width: 12),
+                _buildCycleBox('Tag', _dashboard!.personalDay.toString(), const Color(0xFF673AB7)),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFD700).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: const Color(0xFFFFD700).withValues(alpha: 0.3),
+                ),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.info_outline, color: Color(0xFFFFD700), size: 20),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      '9-Jahres-Zyklus: Jahr ${_dashboard!.nineYearCycle['position'] ?? _dashboard!.personalYear}${_dashboard!.isTransitionYear ? ' (Übergangsjahr)' : ''}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFFFFD700),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCycleBox(String label, String value, Color color) {
+    final explanation = _getCycleExplanation(label, value);
+    
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.2),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
+        ),
+        child: Column(
+          children: [
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: const TextStyle(fontSize: 11, color: Colors.white60, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              explanation,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 10,
+                color: Colors.white.withValues(alpha: 0.8),
+                height: 1.3,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  
+  String _getCycleExplanation(String label, String value) {
+    final number = int.tryParse(value) ?? 0;
+    
+    if (label == 'Jahr') {
+      return _getPersonalYearMeaning(number);
+    } else if (label == 'Monat') {
+      return _getPersonalMonthMeaning(number);
+    } else if (label == 'Tag') {
+      return _getPersonalDayMeaning(number);
+    }
+    return '';
+  }
+  
+  String _getPersonalYearMeaning(int number) {
+    switch (number) {
+      case 1: return 'Neuanfang - Starte neue Projekte!';
+      case 2: return 'Kooperation - Arbeite mit anderen!';
+      case 3: return 'Kreativität - Drücke dich aus!';
+      case 4: return 'Fundament - Baue solide Strukturen!';
+      case 5: return 'Veränderung - Sei offen für Neues!';
+      case 6: return 'Verantwortung - Kümmere dich um andere!';
+      case 7: return 'Reflexion - Geh nach innen!';
+      case 8: return 'Manifestation - Erntest deine Erfolge!';
+      case 9: return 'Vollendung - Schließe Kreise ab!';
+      case 11: return 'Erleuchtung - Spirituelles Wachstum!';
+      case 22: return 'Meisterung - Große Ziele erreichen!';
+      default: return 'Dein besonderes Jahr';
+    }
+  }
+  
+  String _getPersonalMonthMeaning(int number) {
+    switch (number) {
+      case 1: return 'Initiative ergreifen';
+      case 2: return 'Geduld üben';
+      case 3: return 'Freude teilen';
+      case 4: return 'Organisieren';
+      case 5: return 'Flexibel bleiben';
+      case 6: return 'Fürsorge zeigen';
+      case 7: return 'Meditieren';
+      case 8: return 'Handeln';
+      case 9: return 'Loslassen';
+      default: return 'Dein Monat';
+    }
+  }
+  
+  String _getPersonalDayMeaning(int number) {
+    switch (number) {
+      case 1: return 'Führe heute!';
+      case 2: return 'Höre zu!';
+      case 3: return 'Sei kreativ!';
+      case 4: return 'Arbeite hart!';
+      case 5: return 'Sei spontan!';
+      case 6: return 'Liebe geben!';
+      case 7: return 'Denke nach!';
+      case 8: return 'Setze um!';
+      case 9: return 'Gib ab!';
+      default: return 'Dein Tag';
+    }
+  }
+
+  Widget _buildArchetypeStatusCard() {
+    if (_dashboard == null) return const SizedBox.shrink();
+
+    return HoverGlowCard(
+      glowColor: const Color(0xFF673AB7),
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              const Color(0xFF673AB7).withValues(alpha: 0.3),
+              const Color(0xFF1E1E1E),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: const Color(0xFF673AB7).withValues(alpha: 0.4),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Row(
+              children: [
+                Icon(Icons.psychology, color: Color(0xFF9C27B0), size: 28),
+                SizedBox(width: 12),
+                Text(
+                  'DEINE ARCHETYPEN-MATRIX',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFFCE93D8),
+                    letterSpacing: 1.2,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            _buildArchetypeRow('Primär', _dashboard!.primaryArchetype['name'] ?? 'Unbekannt', const Color(0xFF9C27B0), Icons.star),
+            const SizedBox(height: 12),
+            _buildArchetypeRow('Sekundär', _dashboard!.secondaryArchetype['name'] ?? 'Unbekannt', const Color(0xFF7B1FA2), Icons.show_chart),
+            const SizedBox(height: 12),
+            _buildArchetypeRow('Schatten', _dashboard!.shadowArchetype['name'] ?? 'Unbekannt', const Color(0xFF4A148C), Icons.visibility_off),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildArchetypeRow(String label, String archetype, Color color, IconData icon) {
+    final explanation = _getArchetypeExplanation(label, archetype);
+    
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.3),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.6), fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  archetype,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  explanation,
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: Colors.white.withValues(alpha: 0.7),
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  String _getArchetypeExplanation(String label, String archetype) {
+    // Archetypen-spezifische Kurzerklärungen
+    final archetypes = {
+      'Der Weise': 'Suche nach Wahrheit und Wissen',
+      'Der Krieger': 'Mut und Durchsetzungskraft',
+      'Der Liebende': 'Leidenschaft und Verbindung',
+      'Der Schöpfer': 'Kreativität und Innovation',
+      'Der Magier': 'Transformation und Veränderung',
+      'Der Herrscher': 'Führung und Kontrolle',
+      'Der Held': 'Mut und Selbstüberwindung',
+      'Der Unschuldige': 'Optimismus und Reinheit',
+      'Der Entdecker': 'Freiheit und Abenteuer',
+      'Der Rebell': 'Revolution und Wandel',
+      'Der Narr': 'Spontaneität und Lebensfreude',
+      'Der Betreuer': 'Fürsorge und Unterstützung',
+    };
+    
+    final explanation = archetypes[archetype] ?? 'Deine einzigartige Kraft';
+    
+    if (label == 'Primär') {
+      return 'JETZT aktiv: $explanation';
+    } else if (label == 'Sekundär') {
+      return 'Unterstützt: $explanation';
+    } else if (label == 'Schatten') {
+      return 'Zu integrieren: $explanation';
+    }
+    return explanation;
+  }
+
+  Widget _buildTodayActivityRow() {
+    return Row(
+      children: [
+        Expanded(
+          child: _buildActivityCard(
+            'Synchronizitäten',
+            _todaySynchronicities.toString(),
+            'Heute',
+            const Color(0xFFFFD700),
+            Icons.auto_awesome,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _buildActivityCard(
+            'Journal-Streak',
+            _journalStreak.toString(),
+            'Tage',
+            const Color(0xFF9C27B0),
+            Icons.book,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActivityCard(String label, String value, String unit, Color color, IconData icon) {
+    final explanation = _getActivityExplanation(label, value);
+    final motivation = _getActivityMotivation(label, value);
+    
+    return HoverGlowCard(
+      glowColor: color,
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1E1E1E),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 32),
+            const SizedBox(height: 12),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.bold,
+                color: color,
+                shadows: [Shadow(color: color.withValues(alpha: 0.5), blurRadius: 8)],
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              unit,
+              style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.5)),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: const TextStyle(fontSize: 13, color: Colors.white70, fontWeight: FontWeight.w600),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Column(
+                children: [
+                  Text(
+                    explanation,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Colors.white.withValues(alpha: 0.8),
+                      height: 1.3,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    motivation,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: color,
+                      fontWeight: FontWeight.w600,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  
+  String _getActivityExplanation(String label, String value) {
+    final count = int.tryParse(value) ?? 0;
+    
+    if (label == 'Synchronizitäten') {
+      if (count == 0) return 'Keine Zeichen heute - bleib offen!';
+      if (count == 1) return 'Ein bedeutsames Zeichen!';
+      if (count <= 3) return 'Das Universum spricht zu dir!';
+      return 'Hochfrequente Zeichen - du bist im Flow!';
+    } else if (label == 'Journal-Streak') {
+      if (count == 0) return 'Starte heute deine Reise!';
+      if (count == 1) return 'Erster Tag - gut gemacht!';
+      if (count <= 7) return 'Du baust eine Gewohnheit auf!';
+      if (count <= 30) return 'Starke Routine etabliert!';
+      return 'Meisterhafte Selbstreflexion!';
+    }
+    return '';
+  }
+  
+  String _getActivityMotivation(String label, String value) {
+    final count = int.tryParse(value) ?? 0;
+    
+    if (label == 'Synchronizitäten') {
+      if (count == 0) return '👁️ Achte auf Zeichen!';
+      if (count <= 3) return '✨ Magische Momente!';
+      return '🌟 Du bist verbunden!';
+    } else if (label == 'Journal-Streak') {
+      if (count == 0) return '📔 Beginne jetzt!';
+      if (count <= 7) return '🔥 Mach weiter so!';
+      if (count <= 30) return '💪 Du bist stark!';
+      return '👑 Du bist ein Meister!';
+    }
+    return '';
+  }
+
+  Widget _buildQuickCalculationsGrid() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'SCHNELLE BERECHNUNGEN',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFFCE93D8),
+            letterSpacing: 1.5,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(child: _buildCalculationButton('Numerologie', Icons.calculate, const Color(0xFF9C27B0))),
+            const SizedBox(width: 12),
+            Expanded(child: _buildCalculationButton('Archetypen', Icons.psychology, const Color(0xFF673AB7))),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(child: _buildCalculationButton('Astrologie', Icons.star_border, const Color(0xFFE91E63))),
+            const SizedBox(width: 12),
+            Expanded(child: _buildCalculationButton('Chakren', Icons.spa, const Color(0xFFFFD700))),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCalculationButton(String label, IconData icon, Color color) {
+    return HoverGlowCard(
+      glowColor: color,
+      onTap: () {
+        // Navigation zu Calculator-Screens
+        _handleCalculationAction(label);
+      },
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1E1E1E),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.2),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color, size: 28),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 13,
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _handleCalculationAction(String action) {
+    // Direkte Navigation zu Calculator-Screens
+    Widget? targetScreen;
+    
+    switch (action) {
+      case 'Numerologie':
+        targetScreen = const NumerologyCalculatorScreen();
+        break;
+      case 'Archetypen':
+        targetScreen = const ArchetypeCalculatorScreen();
+        break;
+      case 'Astrologie':
+        targetScreen = const AstrologyCalculatorScreen();
+        break;
+      case 'Chakren':
+        targetScreen = const ChakraCalculatorScreen();
+        break;
+    }
+    
+    if (targetScreen != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => targetScreen!),
+      );
+    }
+  }
+}

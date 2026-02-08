@@ -1,0 +1,441 @@
+import 'package:flutter/material.dart';
+import 'dart:async';
+import 'package:http/http.dart' as http;
+import '../../services/cloudflare_api_service.dart';
+import 'dart:convert';
+
+/// 🎯 DEBATTENKARTE - Kollaborative Pro/Contra Argumente
+class DebattenKarte extends StatefulWidget {
+  final String roomId;
+  const DebattenKarte({super.key, required this.roomId});
+
+  @override
+  State<DebattenKarte> createState() => _DebattenKarteState();
+}
+
+class _DebattenKarteState extends State<DebattenKarte> {
+  final _themaController = TextEditingController();
+  final _argumentController = TextEditingController();
+  List<Map<String, dynamic>> _argumente = [];
+  Timer? _refreshTimer;
+  bool _isLoading = false;
+  String _selectedTyp = 'Pro';
+  int _activeDebaters = 0;
+  int _proCount = 0;
+  int _contraCount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadArgumente();
+    _refreshTimer = Timer.periodic(const Duration(seconds: 10), (_) => _loadArgumente());
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    _themaController.dispose();
+    _argumentController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadArgumente() async {
+    try {
+      final response = await http.get(
+        Uri.parse('https://weltenbibliothek-community-api.brandy13062.workers.dev/api/tools/debatte'),
+        headers: {'Authorization': 'Bearer _C578hgIAimVPG0WjfeAjk23RxQMQ9gox0W7ebLv'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as List;
+        setState(() {
+          _argumente = data.cast<Map<String, dynamic>>();
+          _activeDebaters = _argumente.map((e) => e['username'] as String?).toSet().length;
+          _proCount = _argumente.where((e) => e['argument_type'] == 'Pro').length;
+          _contraCount = _argumente.where((e) => e['argument_type'] == 'Contra').length;
+        });
+      }
+    } catch (e) {
+      // Fehler ignorieren
+    }
+  }
+
+  Future<void> _addArgument() async {
+    if (_themaController.text.isEmpty || _argumentController.text.isEmpty) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final response = await http.post(
+        Uri.parse('https://weltenbibliothek-community-api.brandy13062.workers.dev/api/tools/debatte'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer _C578hgIAimVPG0WjfeAjk23RxQMQ9gox0W7ebLv',
+        },
+        body: jsonEncode({
+          'room_id': widget.roomId,
+          'thema': _themaController.text.trim(),
+          'argument': _argumentController.text.trim(),
+          'argument_type': _selectedTyp,
+          'username': 'Debatteur${DateTime.now().millisecondsSinceEpoch % 1000}',
+        }),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        _argumentController.clear();
+        await _loadArgumente();
+        // Chat-Aktivität posten
+                try {
+                  final api = CloudflareApiService();
+                  await api.sendToolActivityMessage(
+                    roomId: widget.roomId,
+                    realm: 'materie',
+                    toolName: 'Debattenkarte',
+                    username: 'Debatteur${DateTime.now().millisecondsSinceEpoch % 1000}', // ✅ Direkt wiederholt
+                    activity: '$_selectedTyp-Argument: ${_themaController.text.trim()}',
+                  );
+                } catch (e) {
+                  debugPrint('Chat-Aktivität fehlgeschlagen: $e');
+                }
+
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('🎯 $_selectedTyp-Argument hinzugefügt!'),
+              backgroundColor: _selectedTyp == 'Pro' ? Colors.green : Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Fehler: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Statistik-Header
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Colors.blue[800]!, Colors.blue[900]!],
+              ),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildStatChip('👥 $_activeDebaters Debattierende', Colors.white),
+                    _buildStatChip('✅ $_proCount Pro', Colors.green),
+                    _buildStatChip('❌ $_contraCount Contra', Colors.red),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                // Fortschrittsbalken Pro vs. Contra
+                if (_argumente.isNotEmpty)
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          flex: _proCount,
+                          child: Container(
+                            height: 8,
+                            color: Colors.green,
+                          ),
+                        ),
+                        Expanded(
+                          flex: _contraCount,
+                          child: Container(
+                            height: 8,
+                            color: Colors.red,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // Eingabeformular
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey[850],
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+            ),
+            child: Column(
+              children: [
+                TextField(
+                  controller: _themaController,
+                  decoration: InputDecoration(
+                    labelText: 'Thema',
+                    hintText: 'z.B. Klimawandel - Realität oder Manipulation?',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    prefixIcon: const Icon(Icons.topic),
+                    filled: true,
+                    fillColor: Colors.grey[800],
+                  ),
+                  style: const TextStyle(color: Colors.white),
+                ),
+                const SizedBox(height: 12),
+                // Pro/Contra Toggle
+                Row(
+                  children: [
+                    Expanded(
+                      child: ChoiceChip(
+                        label: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.check_circle, color: Colors.white, size: 18),
+                            SizedBox(width: 6),
+                            Text('PRO', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                        selected: _selectedTyp == 'Pro',
+                        onSelected: (selected) => setState(() => _selectedTyp = 'Pro'),
+                        selectedColor: Colors.green[700],
+                        backgroundColor: Colors.grey[700],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ChoiceChip(
+                        label: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.cancel, color: Colors.white, size: 18),
+                            SizedBox(width: 6),
+                            Text('CONTRA', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                        selected: _selectedTyp == 'Contra',
+                        onSelected: (selected) => setState(() => _selectedTyp = 'Contra'),
+                        selectedColor: Colors.red[700],
+                        backgroundColor: Colors.grey[700],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _argumentController,
+                  decoration: InputDecoration(
+                    labelText: 'Dein Argument',
+                    hintText: 'Begründe deine Position...',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    prefixIcon: const Icon(Icons.comment),
+                    filled: true,
+                    fillColor: Colors.grey[800],
+                  ),
+                  maxLines: 3,
+                  style: const TextStyle(color: Colors.white),
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: _isLoading ? null : _addArgument,
+                    icon: _isLoading
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          )
+                        : const Icon(Icons.add_comment),
+                    label: Text(_isLoading ? 'Wird hinzugefügt...' : 'Argument teilen'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _selectedTyp == 'Pro' ? Colors.green[700] : Colors.red[700],
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // Argumenten-Liste (Pro/Contra getrennt)
+          Expanded(
+            child: _argumente.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.forum, size: 64, color: Colors.grey[600]),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Noch keine Argumente',
+                          style: TextStyle(color: Colors.grey[400], fontSize: 16),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Sei der Erste, der eine Position bezieht!',
+                          style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView(
+                    children: [
+                      // Pro-Argumente
+                      if (_proCount > 0) ...[
+                        _buildSectionHeader('✅ PRO-ARGUMENTE', Colors.green, _proCount),
+                        ..._argumente
+                            .where((arg) => arg['argument_type'] == 'Pro')
+                            .map((arg) => _buildArgumentCard(arg, Colors.green)),
+                        const SizedBox(height: 20),
+                      ],
+                      // Contra-Argumente
+                      if (_contraCount > 0) ...[
+                        _buildSectionHeader('❌ CONTRA-ARGUMENTE', Colors.red, _contraCount),
+                        ..._argumente
+                            .where((arg) => arg['argument_type'] == 'Contra')
+                            .map((arg) => _buildArgumentCard(arg, Colors.red)),
+                      ],
+                    ],
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatChip(String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withValues(alpha: 0.5)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 12),
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title, Color color, int count) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withValues(alpha: 0.5)),
+      ),
+      child: Row(
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+          ),
+          const Spacer(),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              count.toString(),
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildArgumentCard(Map<String, dynamic> arg, Color color) {
+    final username = arg['username'] as String? ?? 'Anonym';
+    final thema = arg['thema'] as String? ?? 'Unbekannt';
+    final argument = arg['argument'] as String? ?? '';
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      color: Colors.grey[850],
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header: Username + Thema
+            Row(
+              children: [
+                CircleAvatar(
+                  backgroundColor: color.withValues(alpha: 0.3),
+                  child: Text(
+                    username[0].toUpperCase(),
+                    style: TextStyle(color: color, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        username,
+                        style: TextStyle(
+                          color: Colors.grey[400],
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      Text(
+                        thema,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            // Argument Text
+            Text(
+              argument,
+              style: TextStyle(
+                color: Colors.grey[300],
+                fontSize: 14,
+                height: 1.5,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

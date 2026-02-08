@@ -1,0 +1,164 @@
+/// 🎙️ SPEAKING INDICATOR
+/// Visual indicator for active speakers
+library;
+
+import 'package:flutter/material.dart';
+
+class SpeakingIndicator extends StatefulWidget {
+  final bool isSpeaking;
+  final Color color;
+  final double size;
+
+  const SpeakingIndicator({
+    super.key,
+    required this.isSpeaking,
+    this.color = Colors.green,
+    this.size = 80,
+  });
+
+  @override
+  State<SpeakingIndicator> createState() => _SpeakingIndicatorState();
+}
+
+class _SpeakingIndicatorState extends State<SpeakingIndicator>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _opacityAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    );
+
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.3).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+
+    _opacityAnimation = Tween<double>(begin: 0.6, end: 0.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
+    );
+
+    if (widget.isSpeaking) {
+      _controller.repeat();
+    }
+  }
+
+  @override
+  void didUpdateWidget(SpeakingIndicator oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isSpeaking != oldWidget.isSpeaking) {
+      if (widget.isSpeaking) {
+        _controller.repeat();
+      } else {
+        _controller.stop();
+        _controller.reset();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!widget.isSpeaking) {
+      return SizedBox(width: widget.size, height: widget.size);
+    }
+
+    return SizedBox(
+      width: widget.size,
+      height: widget.size,
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          return Stack(
+            alignment: Alignment.center,
+            children: [
+              // 💥 Glow Effect (Enhanced)
+              Container(
+                width: widget.size * 1.5,
+                height: widget.size * 1.5,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: widget.color.withOpacity(0.6 * _opacityAnimation.value),
+                      blurRadius: 30 * _scaleAnimation.value,
+                      spreadRadius: 10 * _scaleAnimation.value,
+                    ),
+                    BoxShadow(
+                      color: widget.color.withOpacity(0.3 * _opacityAnimation.value),
+                      blurRadius: 50 * _scaleAnimation.value,
+                      spreadRadius: 15 * _scaleAnimation.value,
+                    ),
+                  ],
+                ),
+              ),
+              // Outer pulse ring
+              Container(
+                width: widget.size * _scaleAnimation.value,
+                height: widget.size * _scaleAnimation.value,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: widget.color.withOpacity(_opacityAnimation.value),
+                    width: 3,
+                  ),
+                ),
+              ),
+              // Inner pulse ring
+              Container(
+                width: widget.size * (0.8 + 0.2 * _scaleAnimation.value),
+                height: widget.size * (0.8 + 0.2 * _scaleAnimation.value),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: widget.color.withOpacity(0.3 * _opacityAnimation.value),
+                    width: 2,
+                  ),
+                ),
+              ),
+              // Solid indicator with gradient
+              Container(
+                width: widget.size,
+                height: widget.size,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      widget.color.withOpacity(0.4),
+                      widget.color.withOpacity(0.1),
+                    ],
+                  ),
+                  border: Border.all(
+                    color: widget.color,
+                    width: 3,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: widget.color.withOpacity(0.5),
+                      blurRadius: 15,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  Icons.mic,
+                  color: widget.color,
+                  size: widget.size * 0.5,
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}

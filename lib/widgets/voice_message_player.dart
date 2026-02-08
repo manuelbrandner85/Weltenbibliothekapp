@@ -1,0 +1,218 @@
+import 'package:flutter/material.dart';
+import 'package:audioplayers/audioplayers.dart';
+import 'dart:async';
+
+/// Chat Voice Message Player Widget
+/// Displays and plays voice messages in chat
+class ChatVoicePlayer extends StatefulWidget {
+  final String audioUrl;
+  final Duration duration;
+  final Color accentColor;
+  
+  const ChatVoicePlayer({
+    super.key,
+    required this.audioUrl,
+    required this.duration,
+    this.accentColor = const Color(0xFF9B51E0),
+  });
+  
+  @override
+  State<ChatVoicePlayer> createState() => _ChatVoicePlayerState();
+}
+
+class _ChatVoicePlayerState extends State<ChatVoicePlayer> {
+  final AudioPlayer _audioPlayer = AudioPlayer();
+  bool _isPlaying = false;
+  bool _isLoading = false;
+  Duration _currentPosition = Duration.zero;
+  Duration _totalDuration = Duration.zero;
+  StreamSubscription? _positionSubscription;
+  StreamSubscription? _durationSubscription;
+  StreamSubscription? _stateSubscription;
+  
+  @override
+  void initState() {
+    super.initState();
+    _totalDuration = widget.duration;
+    _setupAudioPlayer();
+  }
+  
+  @override
+  void dispose() {
+    _positionSubscription?.cancel();
+    _durationSubscription?.cancel();
+    _stateSubscription?.cancel();
+    _audioPlayer.dispose();
+    super.dispose();
+  }
+  
+  void _setupAudioPlayer() {
+    // Listen to position changes
+    _positionSubscription = _audioPlayer.onPositionChanged.listen((position) {
+      if (mounted) {
+        setState(() {
+          _currentPosition = position;
+        });
+      }
+    });
+    
+    // Listen to duration changes
+    _durationSubscription = _audioPlayer.onDurationChanged.listen((duration) {
+      if (mounted) {
+        setState(() {
+          _totalDuration = duration;
+        });
+      }
+    });
+    
+    // Listen to player state changes
+    _stateSubscription = _audioPlayer.onPlayerStateChanged.listen((state) {
+      if (mounted) {
+        setState(() {
+          _isPlaying = state == PlayerState.playing;
+          _isLoading = false;
+          
+          // Auto-stop at end
+          if (state == PlayerState.completed) {
+            _currentPosition = Duration.zero;
+            _isPlaying = false;
+          }
+        });
+      }
+    });
+  }
+  
+  Future<void> _togglePlayPause() async {
+    try {
+      if (_isPlaying) {
+        await _audioPlayer.pause();
+      } else {
+        setState(() => _isLoading = true);
+        
+        if (_currentPosition == Duration.zero) {
+          await _audioPlayer.play(UrlSource(widget.audioUrl));
+        } else {
+          await _audioPlayer.resume();
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Fehler beim Abspielen: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+  
+  String _formatDuration(Duration duration) {
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+    final minutes = twoDigits(duration.inMinutes.remainder(60));
+    final seconds = twoDigits(duration.inSeconds.remainder(60));
+    return '$minutes:$seconds';
+  }
+  
+  @override
+  Widget build(BuildContext context) {
+    final progress = _totalDuration.inMilliseconds > 0
+        ? _currentPosition.inMilliseconds / _totalDuration.inMilliseconds
+        : 0.0;
+    
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: widget.accentColor.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: widget.accentColor.withValues(alpha: 0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          // Play/Pause Button
+          GestureDetector(
+            onTap: _togglePlayPause,
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: widget.accentColor,
+                shape: BoxShape.circle,
+              ),
+              child: _isLoading
+                  ? const Padding(
+                      padding: EdgeInsets.all(10),
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : Icon(
+                      _isPlaying ? Icons.pause : Icons.play_arrow,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+            ),
+          ),
+          
+          const SizedBox(width: 12),
+          
+          // Waveform + Duration
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Progress Bar
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: progress.clamp(0.0, 1.0),
+                    backgroundColor: Colors.grey.shade300,
+                    valueColor: AlwaysStoppedAnimation(widget.accentColor),
+                    minHeight: 4,
+                  ),
+                ),
+                
+                const SizedBox(height: 4),
+                
+                // Time Display
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      _formatDuration(_currentPosition),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                    Text(
+                      _formatDuration(_totalDuration),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          
+          const SizedBox(width: 8),
+          
+          // Voice Icon
+          Icon(
+            Icons.graphic_eq,
+            color: widget.accentColor,
+            size: 20,
+          ),
+        ],
+      ),
+    );
+  }
+}

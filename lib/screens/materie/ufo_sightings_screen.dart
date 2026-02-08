@@ -1,0 +1,309 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
+import '../../services/group_tools_service.dart';
+import '../../services/user_service.dart';
+
+/// 🛸 UFO-Sichtungen Screen
+/// Globale Karte von UFO-Sichtungen & Begegnungen
+class UfoSightingsScreen extends StatefulWidget {
+  final String roomId;
+  
+  const UfoSightingsScreen({
+    super.key,
+    this.roomId = 'ufos',
+  });
+
+  @override
+  State<UfoSightingsScreen> createState() => _UfoSightingsScreenState();
+}
+
+class _UfoSightingsScreenState extends State<UfoSightingsScreen> {
+  final GroupToolsService _toolsService = GroupToolsService();
+  final UserService _userService = UserService();
+  
+  List<Map<String, dynamic>> _sightings = [];
+  bool _isLoading = false;
+  String _username = '';
+  String _userId = '';
+  
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+    _loadSightings();
+  }
+  
+  Future<void> _loadUserData() async {
+    final user = await _userService.getCurrentUser();
+    setState(() {
+      _username = user.username;
+      _userId = 'user_${user.username.toLowerCase()}';
+    });
+  }
+  
+  Future<void> _loadSightings() async {
+    setState(() => _isLoading = true);
+    try {
+      // TODO: Add Flutter Service method
+      final response = await _toolsService.getUfoSightings(roomId: widget.roomId);
+      setState(() {
+        _sightings = response;
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ Error: $e');
+      setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF0A0A0F),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF1A1A2E),
+        title: const Text('🛸 UFO-Sichtungen'),
+        actions: [
+          IconButton(icon: const Icon(Icons.refresh), onPressed: _loadSightings),
+        ],
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _sightings.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.rocket_launch, size: 64, color: Colors.green.shade400),
+                      const SizedBox(height: 16),
+                      const Text('Noch keine Sichtungen', style: TextStyle(color: Colors.white38)),
+                    ],
+                  ),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: _sightings.length,
+                  itemBuilder: (context, index) {
+                    final sighting = _sightings[index];
+                    return _buildSightingCard(sighting);
+                  },
+                ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _showAddSightingDialog(),
+        backgroundColor: Colors.green,
+        icon: const Icon(Icons.add_location),
+        label: const Text('Sichtung melden'),
+      ),
+    );
+  }
+  
+  Widget _buildSightingCard(Map<String, dynamic> sighting) {
+    final title = sighting['sighting_title'] ?? 'Unbekannt';
+    final description = sighting['sighting_description'] ?? '';
+    final username = sighting['username'] ?? 'Anonym';
+    final objectType = sighting['object_type'] ?? 'unknown';
+    final witnesses = sighting['witnesses'] ?? 1;
+    final verified = sighting['verified'] == 1 || sighting['verified'] == true;
+    
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      color: const Color(0xFF1A1A2E),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: [Colors.green.shade600, Colors.green.shade900],
+                    ),
+                  ),
+                  child: const Icon(Icons.rocket_launch, color: Colors.white),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        objectType.toUpperCase(),
+                        style: TextStyle(color: Colors.green.shade400, fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+                if (verified)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.verified, size: 14, color: Colors.blue),
+                        SizedBox(width: 4),
+                        Text('Verifiziert', style: TextStyle(color: Colors.blue, fontSize: 11)),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              description,
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.8)),
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                const Icon(Icons.person, size: 16, color: Colors.white54),
+                const SizedBox(width: 4),
+                Text(username, style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                const SizedBox(width: 16),
+                const Icon(Icons.group, size: 16, color: Colors.white54),
+                const SizedBox(width: 4),
+                Text('$witnesses Zeugen', style: const TextStyle(color: Colors.white54, fontSize: 12)),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  
+  void _showAddSightingDialog() {
+    if (_username.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('⚠️ Bitte erstelle erst ein Profil')),
+      );
+      return;
+    }
+    
+    showDialog(
+      context: context,
+      builder: (context) {
+        final titleCtrl = TextEditingController();
+        final descCtrl = TextEditingController();
+        String objectType = 'light';
+        int witnesses = 1;
+        
+        return StatefulBuilder(
+          builder: (context, setState) => AlertDialog(
+            backgroundColor: const Color(0xFF1A1A2E),
+            title: const Text('🛸 Sichtung melden', style: TextStyle(color: Colors.white)),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: titleCtrl,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: const InputDecoration(
+                      labelText: 'Titel',
+                      labelStyle: TextStyle(color: Colors.white70),
+                    ),
+                  ),
+                  TextField(
+                    controller: descCtrl,
+                    style: const TextStyle(color: Colors.white),
+                    maxLines: 3,
+                    decoration: const InputDecoration(
+                      labelText: 'Beschreibung',
+                      labelStyle: TextStyle(color: Colors.white70),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    initialValue: objectType,
+                    dropdownColor: const Color(0xFF1A1A2E),
+                    style: const TextStyle(color: Colors.white),
+                    decoration: const InputDecoration(
+                      labelText: 'Objekt-Typ',
+                      labelStyle: TextStyle(color: Colors.white70),
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: 'light', child: Text('Licht')),
+                      DropdownMenuItem(value: 'craft', child: Text('Raumschiff')),
+                      DropdownMenuItem(value: 'orb', child: Text('Orb')),
+                      DropdownMenuItem(value: 'triangle', child: Text('Dreieck')),
+                      DropdownMenuItem(value: 'disc', child: Text('Scheibe')),
+                    ],
+                    onChanged: (val) => setState(() => objectType = val!),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      const Text('Zeugen:', style: TextStyle(color: Colors.white70)),
+                      const SizedBox(width: 16),
+                      IconButton(
+                        icon: const Icon(Icons.remove, color: Colors.white),
+                        onPressed: () {
+                          if (witnesses > 1) setState(() => witnesses--);
+                        },
+                      ),
+                      Text('$witnesses', style: const TextStyle(color: Colors.white, fontSize: 18)),
+                      IconButton(
+                        icon: const Icon(Icons.add, color: Colors.white),
+                        onPressed: () => setState(() => witnesses++),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Abbrechen'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  final sightingId = await _toolsService.createUfoSighting(
+                    roomId: widget.roomId,
+                    userId: _userId,
+                    username: _username,
+                    title: titleCtrl.text,
+                    description: descCtrl.text,
+                    objectType: objectType,
+                    witnesses: witnesses,
+                  );
+                  if (context.mounted) {
+                    Navigator.pop(context);
+                    if (sightingId != null) _loadSightings();
+                  }
+                },
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                child: const Text('Melden'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    // 🧹 PHASE B: Proper resource disposal
+    super.dispose();
+  }
+}

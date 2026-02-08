@@ -1,0 +1,54 @@
+{
+  "query": "Ukraine Krieg aktuelle Lage Januar 2026",
+  "timestamp": "2026-01-03T14:15:00Z",
+  "sources": [
+    {
+      "id": "source_1",
+      "title": "Ukraine-News: Kiew kündigt Wechsel im Verteidigungsministerium an",
+      "url": "https://www.mdr.de/nachrichten/welt/osteuropa/politik/ukraine-krieg-selenskyj-verteidigungsminister-fedorow-budanow-100.html",
+      "source": "mdr.de",
+      "type": "news",
+      "snippet": "Die Ukraine weist die Vorwürfe zurück und spricht von einem Vorwand für weitere russische Angriffe.",
+      "content": "Sicherheitsberater der Ukraine-Unterstützerstaaten beraten in Kiew\n\nIm Bemühen um ein Ende des Russland-Kriegs kommen heute in Kiew internationale Sicherheitsberater zusammen. Nach Angaben des ukrainischen Präsidenten Wolodymyr Selenskyj beteiligen sich an dem Treffen 15 Länder sowie Vertreter der EU und der Nato. Eine US-Delegation werde per Video zugeschaltet. Selenskyj zufolge geht es vor allem um Sicherheitsgarantien für sein Land.\n\nSelenskyj will Verteidigungsministerium neu ausrichten\n\nDer ukrainische Präsident Wolodymyr Selenskyj will den Posten des Verteidigungsministers neu besetzen. Der bisherige Digitalminister und Vizeregierungschef Mychajlo Fedorow soll Denys Schmyhal ablösen. Selenskyj begründete den Schritt mit einer Neuausrichtung des Ministeriums, insbesondere mit Blick auf Drohnen und Digitalisierung im Krieg gegen Russland.\n\nRussland übergibt USA angebliche Beweise\n\nRussland hat nach eigenen Angaben den USA angebliche Beweise für einen geplanten ukrainischen Drohnenangriff auf eine Residenz von Präsident Wladimir Putin übergeben. Das russische Verteidigungsministerium erklärte, entschlüsselte Navigationsdaten einer Drohne seien dem Militärattaché der US-Botschaft in Moskau vorgelegt worden. Die Ukraine weist die Vorwürfe zurück.",
+      "published_at": "2026-01-03T06:00:00Z",
+      "author": "MDR Redaktion",
+      "length": 1247
+    },
+    {
+      "id": "source_2",
+      "title": "Ukraine - aktuelle Nachrichten | tagesschau.de",
+      "url": "https://www.tagesschau.de/thema/ukraine",
+      "source": "tagesschau.de",
+      "type": "news",
+      "snippet": "Ukraine ordnet Evakuierung von tausenden Kindern im Osten an.",
+      "content": "Ukraine ordnet Evakuierung von tausenden Kindern im Osten an\n\nWegen der angespannten Sicherheitslage ordnet die Ukraine die Evakuierung von mehr als 3.000 Kindern und deren Eltern aus umkämpften Gebieten in den Regionen Saporischschja und Dnipropetrowsk an. Russische Soldaten waren in den vergangenen Monaten in beiden Gebieten vorgerückt.\n\nSelenskyj: Friedensabkommen zu 90 Prozent fertig\n\nNach Angaben des ukrainischen Präsidenten Wolodymyr Selenskyj ist die Ukraine \"zehn Prozent\" von einem Abkommen zur Beendigung des Krieges mit Russland entfernt. \"Das Friedensabkommen ist zu 90 Prozent fertig\", sagte Selenskyj in seiner Neujahrsansprache. Sein Land wolle ein Ende des Krieges, aber nicht \"um jeden Preis\". Ein Abkommen müsse starke Sicherheitsgarantien beinhalten.",
+      "published_at": "2026-01-02T23:25:00Z",
+      "author": "tagesschau",
+      "length": 856
+    },
+    {
+      "id": "source_3",
+      "title": "Ukraine-Krieg im Liveticker - Aktuelle News",
+      "url": "https://www.zdfheute.de/politik/ausland/ukraine-russland-konflikt-blog-102.html",
+      "source": "zdf.de",
+      "type": "news",
+      "snippet": "Seit Februar 2022 führt Russland einen Angriffskrieg gegen die Ukraine.",
+      "content": "Selenskyj: Verteidigungsminister Schmyhal soll Energieminister werden\n\nDer ukrainische Verteidigungsminister Denys Schmyhal soll nach dem Willen von Präsident Selenskyj neuer Energieminister werden. Die Erfahrung Schmyhals sei angesichts der zunehmenden russischen Angriffe für die Stabilität des Energiesektors von entscheidender Bedeutung.\n\nStrack-Zimmermann: Bundeswehr soll sich an Friedenssicherung beteiligen\n\nFDP-Politikerin Marie-Agnes Strack-Zimmermann hält einen Einsatz von Bundeswehrsoldaten für eine mögliche Friedenssicherung in der Ukraine für möglich. \"Deutschland muss bei einer mglichen Friedensabsicherung selbstverständlich dabei sein\", sagt die Vorsitzende des Verteidigungsausschusses im EU-Parlament.\n\nKiesewetter: Bundeswehr-Einsatz nicht ausschließen\n\nCDU-Außenpolitiker Roderich Kiesewetter hält einen Einsatz der Bundeswehr in der Ukraine nach einem Waffenstillstand für möglich. Deutschland sollte die sogenannte Koalition der Willigen mit einer umfangreichen deutschen Beteiligung organisieren.",
+      "published_at": "2026-01-03T15:01:00Z",
+      "author": "ZDF Redaktion",
+      "length": 982
+    }
+  ],
+  "summary": {
+    "total_sources": 3,
+    "date_range": "2026-01-02 bis 2026-01-03",
+    "main_topics": [
+      "Friedensverhandlungen (90% fertig)",
+      "Sicherheitsgarantien für Ukraine",
+      "Ministerwechsel im Verteidigungsressort",
+      "Möglicher Bundeswehr-Einsatz",
+      "Evakuierung im Osten",
+      "Russische Vorwürfe wegen Drohnenangriff"
+    ]
+  }
+}

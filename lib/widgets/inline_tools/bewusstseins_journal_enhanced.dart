@@ -1,0 +1,436 @@
+import 'package:flutter/material.dart';
+import 'dart:async';
+import 'package:weltenbibliothek/services/tool_api_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../services/user_auth_service.dart'; // ✅ Real Auth
+
+/// ENHANCED BEWUSSTSEINS-JOURNAL - Mit kollaborativen Features
+class BewusstseinsJournalEnhanced extends StatefulWidget {
+  final String roomId;
+  const BewusstseinsJournalEnhanced({super.key, required this.roomId});
+  @override
+  State<BewusstseinsJournalEnhanced> createState() => _BewusstseinsJournalEnhancedState();
+}
+
+class _BewusstseinsJournalEnhancedState extends State<BewusstseinsJournalEnhanced> {
+  final _apiService = ToolApiService();
+  List<Map<String, dynamic>> _entries = [];
+  bool _isLoading = false;
+  Timer? _pollTimer;
+  
+  // ✅ Real User Auth
+  String? _currentUsername;
+  String? _currentUserId;
+  bool _isAuthenticated = false;
+  
+  final _titleController = TextEditingController();
+  final _insightController = TextEditingController();
+  final _synchronicityController = TextEditingController();
+  
+  @override
+  void initState() {
+    super.initState();
+    _loadUserAuth();
+    _loadEntries();
+    _pollTimer = Timer.periodic(const Duration(seconds: 10), (_) => _loadEntries());
+  }
+  
+  @override
+  void dispose() {
+    _pollTimer?.cancel();
+    _titleController.dispose();
+    _insightController.dispose();
+    _synchronicityController.dispose();
+    super.dispose();
+  }
+
+  // ✅ Load real user auth
+  Future<void> _loadUserAuth() async {
+    _currentUsername = await UserAuthService.getUsername();
+    _currentUserId = await UserAuthService.getUserId();
+    setState(() {
+      _isAuthenticated = _currentUsername != null && _currentUsername!.isNotEmpty;
+    });
+  }
+  
+  Future<void> _loadEntries() async {
+    if (_isLoading) return;
+    setState(() => _isLoading = true);
+    try {
+      final data = await _apiService.getToolData(
+        endpoint: '/api/tools/bewusstseins-eintraege',
+        roomId: widget.roomId,
+      );
+      setState(() {
+        _entries = data;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() => _isLoading = false);
+    }
+  }
+  
+  Future<void> _addEntry() async {
+    // ✅ Check authentication
+    if (!_isAuthenticated || _currentUsername == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('⚠️ Bitte erstelle zuerst ein Profil'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+      return;
+    }
+    
+    if (_insightController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Bitte Erkenntnis eingeben')),
+      );
+      return;
+    }
+    try {
+      await _apiService.postToolData(
+        endpoint: '/api/tools/bewusstseins-eintraege',
+        data: {
+          'room_id': widget.roomId,
+          'title': _titleController.text,
+          'insight': _insightController.text,
+          'synchronicity': _synchronicityController.text,
+          'username': _currentUsername, // ✅ Real username
+          'user_id': _currentUserId,    // ✅ Real user ID
+          'created_at': DateTime.now().millisecondsSinceEpoch,
+        },
+      );
+      _titleController.clear();
+      _insightController.clear();
+      _synchronicityController.clear();
+      await _loadEntries();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('✨ Eintrag geteilt!')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Fehler: $e')),
+        );
+      }
+    }
+  }
+  
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.grey[900],
+        border: Border(
+          bottom: BorderSide(color: Colors.amber.withValues(alpha: 0.3), width: 2),
+        ),
+      ),
+      child: Column(
+        children: [
+          // Enhanced Header mit Live-Counter
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Colors.amber[800]!, Colors.amber[900]!],
+              ),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.auto_awesome, color: Colors.amberAccent, size: 20),
+                const SizedBox(width: 8),
+                const Text(
+                  '🔮 BEWUSSTSEINS-JOURNAL',
+                  style: TextStyle(
+                    color: Colors.amberAccent,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+                const Spacer(),
+                // Live-User-Counter
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.greenAccent.withValues(alpha: 0.3)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: Colors.greenAccent,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        '${_entries.length} Einträge',
+                        style: const TextStyle(color: Colors.greenAccent, fontSize: 11),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          // Quick Add Form
+          Container(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              children: [
+                // Username Anzeige
+                Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 12,
+                      backgroundColor: Colors.amberAccent,
+                      child: Text(
+                        (_currentUsername ?? 'U')[0].toUpperCase(),
+                        style: const TextStyle(color: Colors.black, fontSize: 12, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      _currentUsername ?? 'Anonym',
+                      style: TextStyle(color: Colors.grey[400], fontSize: 12),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _titleController,
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                  decoration: InputDecoration(
+                    hintText: 'Titel (Optional)',
+                    hintStyle: TextStyle(color: Colors.grey[600], fontSize: 13),
+                    filled: true,
+                    fillColor: Colors.grey[850],
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _insightController,
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                  maxLines: 3,
+                  decoration: InputDecoration(
+                    hintText: 'Spirituelle Erkenntnis',
+                    hintStyle: TextStyle(color: Colors.grey[600], fontSize: 13),
+                    filled: true,
+                    fillColor: Colors.grey[850],
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.all(12),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _synchronicityController,
+                        style: const TextStyle(color: Colors.white, fontSize: 13),
+                        decoration: InputDecoration(
+                          hintText: 'Synchronizität (Optional)',
+                          hintStyle: TextStyle(color: Colors.grey[600], fontSize: 13),
+                          filled: true,
+                          fillColor: Colors.grey[850],
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide.none,
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton(
+                      onPressed: _addEntry,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.amberAccent,
+                        foregroundColor: Colors.black,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.send, size: 16),
+                          SizedBox(width: 4),
+                          Text('Teilen'),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          
+          // Enhanced Entries List
+          Container(
+            constraints: const BoxConstraints(maxHeight: 250),
+            child: _isLoading && _entries.isEmpty
+                ? const Center(child: CircularProgressIndicator(color: Colors.amberAccent))
+                : _entries.isEmpty
+                    ? Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.lightbulb_outline, color: Colors.grey[600], size: 48),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Noch keine Einträge.\nTeile deine erste Erkenntnis!',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        itemCount: _entries.length,
+                        itemBuilder: (context, index) {
+                          final entry = _entries[index];
+                          final username = entry['username'] ?? 'Anonym';
+                          
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.grey[850],
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: Colors.amberAccent.withValues(alpha: 0.2),
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // User Header
+                                Row(
+                                  children: [
+                                    CircleAvatar(
+                                      radius: 14,
+                                      backgroundColor: Colors.amberAccent.withValues(alpha: 0.3),
+                                      child: Text(
+                                        username[0].toUpperCase(),
+                                        style: const TextStyle(
+                                          color: Colors.amberAccent,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      username,
+                                      style: const TextStyle(
+                                        color: Colors.amberAccent,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                    const Spacer(),
+                                    Text(
+                                      _formatTime(entry['created_at']),
+                                      style: TextStyle(
+                                        color: Colors.grey[500],
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                // Title
+                                if (entry['title'] != null && (entry['title'] as String).isNotEmpty) ...[
+                                  Text(
+                                    entry['title'],
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                ],
+                                // Insight
+                                Text(
+                                  entry['insight'] ?? '',
+                                  style: TextStyle(color: Colors.grey[300], fontSize: 13),
+                                ),
+                                // Synchronicity
+                                if (entry['synchronicity'] != null && (entry['synchronicity'] as String).isNotEmpty) ...[
+                                  const SizedBox(height: 6),
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.purple.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: Colors.purpleAccent.withValues(alpha: 0.3),
+                                      ),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        const Icon(Icons.flash_on, color: Colors.purpleAccent, size: 14),
+                                        const SizedBox(width: 6),
+                                        Expanded(
+                                          child: Text(
+                                            entry['synchronicity'],
+                                            style: const TextStyle(
+                                              color: Colors.purpleAccent,
+                                              fontSize: 11,
+                                              fontStyle: FontStyle.italic,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  String _formatTime(dynamic timestamp) {
+    if (timestamp == null) return '';
+    final dt = DateTime.fromMillisecondsSinceEpoch(timestamp as int);
+    final now = DateTime.now();
+    final diff = now.difference(dt);
+    
+    if (diff.inMinutes < 1) return 'Jetzt';
+    if (diff.inMinutes < 60) return 'vor ${diff.inMinutes}m';
+    if (diff.inHours < 24) return 'vor ${diff.inHours}h';
+    return 'vor ${diff.inDays}d';
+  }
+}

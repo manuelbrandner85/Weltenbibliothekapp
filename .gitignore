@@ -1,0 +1,22 @@
+# Large files and build artifacts
+downloads/
+cloudflare/node_modules/
+*.apk
+*.aab
+
+# Flutter/Dart build outputs
+build/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db

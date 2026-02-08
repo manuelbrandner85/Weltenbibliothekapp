@@ -1,0 +1,392 @@
+import 'package:flutter/material.dart';
+import 'dart:async';
+import 'package:weltenbibliothek/services/tool_api_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+/// GRUPPEN-MEDITATIONS-TIMER - Synchronisierte Sessions
+class GroupMeditationEnhanced extends StatefulWidget {
+  final String roomId;
+  const GroupMeditationEnhanced({super.key, required this.roomId});
+  @override
+  State<GroupMeditationEnhanced> createState() => _GroupMeditationEnhancedState();
+}
+
+class _GroupMeditationEnhancedState extends State<GroupMeditationEnhanced> {
+  final _apiService = ToolApiService();
+  List<Map<String, dynamic>> _activeSessions = [];
+  // UNUSED FIELD: List<Map<String, dynamic>> _participants = [];
+  bool _isLoading = false;
+  Timer? _pollTimer;
+  String _currentUsername = 'User';
+  // UNUSED FIELD: int? _mySessionId;
+  int _remainingSeconds = 0;
+  Timer? _countdownTimer;
+  
+  @override
+  void initState() {
+    super.initState();
+    _loadUsername();
+    _loadSessions();
+    _pollTimer = Timer.periodic(const Duration(seconds: 5), (_) => _loadSessions()); // Häufiger für Live-Updates
+  }
+  
+  @override
+  void dispose() {
+    _pollTimer?.cancel();
+    _countdownTimer?.cancel();
+    super.dispose();
+  }
+  
+  Future<void> _loadUsername() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _currentUsername = prefs.getString('username') ?? 'User${DateTime.now().millisecondsSinceEpoch % 1000}';
+    });
+  }
+  
+  Future<void> _loadSessions() async {
+    if (_isLoading) return;
+    setState(() => _isLoading = true);
+    try {
+      final data = await _apiService.getToolData(
+        endpoint: '/api/tools/meditation-sessions',
+        roomId: widget.roomId,
+      );
+      
+      // Filtere aktive Sessions (noch nicht abgelaufen)
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final active = data.where((s) {
+        final created = s['created_at'] as int;
+        final duration = (s['duration'] as int) * 60 * 1000; // Minuten zu Millisekunden
+        return (created + duration) > now;
+      }).toList();
+      
+      setState(() {
+        _activeSessions = active;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() => _isLoading = false);
+    }
+  }
+  
+  Future<void> _startSession(int minutes) async {
+    try {
+      await _apiService.postToolData(
+        endpoint: '/api/tools/meditation-sessions',
+        data: {
+          'room_id': widget.roomId,
+          'duration': minutes,
+          'username': _currentUsername,
+          'notes': 'Gruppen-Meditation gestartet',
+          'created_at': DateTime.now().millisecondsSinceEpoch,
+        },
+      );
+      
+      setState(() {
+        _remainingSeconds = minutes * 60;
+      });
+      
+      _startCountdown();
+      await _loadSessions();
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('🧘 ${minutes}min Meditation gestartet!')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Fehler: $e')),
+        );
+      }
+    }
+  }
+  
+  void _startCountdown() {
+    _countdownTimer?.cancel();
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      setState(() {
+        if (_remainingSeconds > 0) {
+          _remainingSeconds--;
+        } else {
+          timer.cancel();
+          _showCompletionDialog();
+        }
+      });
+    });
+  }
+  
+  void _showCompletionDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        title: const Row(
+          children: [
+            Icon(Icons.check_circle, color: Colors.greenAccent),
+            SizedBox(width: 8),
+            Text('Meditation beendet', style: TextStyle(color: Colors.white)),
+          ],
+        ),
+        content: const Text(
+          'Namaste 🙏\nDeine Meditation ist abgeschlossen.',
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.grey[900],
+        border: Border(
+          bottom: BorderSide(color: Colors.blue.withValues(alpha: 0.3), width: 2),
+        ),
+      ),
+      child: Column(
+        children: [
+          // Header mit Live-Teilnehmer
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Colors.blue[800]!, Colors.blue[900]!],
+              ),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.self_improvement, color: Colors.blueAccent, size: 20),
+                const SizedBox(width: 8),
+                const Text(
+                  '🧘 GRUPPEN-MEDITATION',
+                  style: TextStyle(
+                    color: Colors.blueAccent,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.greenAccent.withValues(alpha: 0.3)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: Colors.greenAccent,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        '${_activeSessions.length} aktive Sessions',
+                        style: const TextStyle(color: Colors.greenAccent, fontSize: 11),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          // Countdown Display (wenn aktiv)
+          if (_remainingSeconds > 0) ...[
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Colors.purple[900]!, Colors.indigo[900]!],
+                ),
+              ),
+              child: Column(
+                children: [
+                  const Text(
+                    '🧘 Meditation läuft',
+                    style: TextStyle(color: Colors.purpleAccent, fontSize: 12),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    _formatCountdown(_remainingSeconds),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                      fontFeatures: [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  LinearProgressIndicator(
+                    value: _remainingSeconds / (_remainingSeconds + 1),
+                    backgroundColor: Colors.grey[800],
+                    valueColor: const AlwaysStoppedAnimation<Color>(Colors.purpleAccent),
+                  ),
+                ],
+              ),
+            ),
+          ],
+          
+          // Dauer-Buttons
+          Container(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Neue Session starten:',
+                  style: TextStyle(color: Colors.grey[400], fontSize: 12),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [5, 10, 15, 20, 30].map((min) {
+                    return ElevatedButton(
+                      onPressed: _remainingSeconds > 0 ? null : () => _startSession(min),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blueAccent,
+                        foregroundColor: Colors.black,
+                        disabledBackgroundColor: Colors.grey[800],
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                      ),
+                      child: Text('$min Min', style: const TextStyle(fontWeight: FontWeight.bold)),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
+          ),
+          
+          // Aktive Sessions Liste
+          Container(
+            constraints: const BoxConstraints(maxHeight: 180),
+            child: _isLoading && _activeSessions.isEmpty
+                ? const Center(child: CircularProgressIndicator(color: Colors.blueAccent))
+                : _activeSessions.isEmpty
+                    ? Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.people_outline, color: Colors.grey[600], size: 48),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Keine aktiven Sessions.\nStarte die erste Gruppen-Meditation!',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        itemCount: _activeSessions.length,
+                        itemBuilder: (context, index) {
+                          final session = _activeSessions[index];
+                          final username = session['username'] ?? 'Anonym';
+                          final duration = session['duration'] as int;
+                          final created = session['created_at'] as int;
+                          final elapsed = (DateTime.now().millisecondsSinceEpoch - created) ~/ 1000;
+                          final remaining = (duration * 60) - elapsed;
+                          
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.grey[850],
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: Colors.blueAccent.withValues(alpha: 0.3),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                CircleAvatar(
+                                  radius: 16,
+                                  backgroundColor: Colors.blueAccent.withValues(alpha: 0.3),
+                                  child: Text(
+                                    username[0].toUpperCase(),
+                                    style: const TextStyle(
+                                      color: Colors.blueAccent,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        username,
+                                        style: const TextStyle(
+                                          color: Colors.blueAccent,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                      Text(
+                                        '$duration Min Meditation',
+                                        style: TextStyle(color: Colors.grey[400], fontSize: 11),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: remaining > 0 
+                                        ? Colors.green.withValues(alpha: 0.2)
+                                        : Colors.grey.withValues(alpha: 0.2),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    remaining > 0 
+                                        ? _formatCountdown(remaining)
+                                        : '✓ Fertig',
+                                    style: TextStyle(
+                                      color: remaining > 0 ? Colors.greenAccent : Colors.grey[500],
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  String _formatCountdown(int seconds) {
+    final min = seconds ~/ 60;
+    final sec = seconds % 60;
+    return '${min.toString().padLeft(2, '0')}:${sec.toString().padLeft(2, '0')}';
+  }
+}

@@ -1,0 +1,157 @@
+// 🎙️ VOICE RECORDING METHODS - Add these to MaterieLiveChatScreen State
+
+// Start voice recording
+Future<void> _startVoiceRecording() async {
+  try {
+    final hasPermission = await _audioService.requestPermission();
+    
+    if (!hasPermission) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('🎤 Mikrofon-Berechtigung erforderlich'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+      return;
+    }
+    
+    final started = await _audioService.startRecording();
+    
+    if (started) {
+      setState(() {
+        _isRecordingVoice = true;
+        _recordingDuration = Duration.zero;
+      });
+      
+      // Start timer to update duration
+      _recordingTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+        setState(() {
+          _recordingDuration = _audioService.recordingDuration;
+        });
+      });
+      
+      if (kDebugMode) {
+        debugPrint('🎙️ Voice recording started');
+      }
+    }
+  } catch (e) {
+    if (kDebugMode) {
+      debugPrint('❌ Start recording error: $e');
+    }
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ Aufnahme-Fehler: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+}
+
+// Stop voice recording and send
+Future<void> _stopVoiceRecordingAndSend() async {
+  try {
+    final path = await _audioService.stopRecording();
+    
+    _recordingTimer?.cancel();
+    
+    setState(() {
+      _isRecordingVoice = false;
+      _recordingDuration = Duration.zero;
+    });
+    
+    if (path != null) {
+      if (kDebugMode) {
+        debugPrint('🎙️ Voice recording stopped: $path');
+      }
+      
+      // TODO: Upload audio file and send message
+      // For now, show success message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('🎵 Sprachnachricht wird hochgeladen...'),
+            backgroundColor: Colors.blue,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+      
+      // TODO: Implement audio upload and chat message send
+      // await _uploadAndSendVoiceMessage(path);
+    }
+  } catch (e) {
+    if (kDebugMode) {
+      debugPrint('❌ Stop recording error: $e');
+    }
+  }
+}
+
+// Cancel voice recording
+Future<void> _cancelVoiceRecording() async {
+  try {
+    await _audioService.cancelRecording();
+    
+    _recordingTimer?.cancel();
+    
+    setState(() {
+      _isRecordingVoice = false;
+      _recordingDuration = Duration.zero;
+    });
+    
+    if (kDebugMode) {
+      debugPrint('🗑️ Voice recording cancelled');
+    }
+  } catch (e) {
+    if (kDebugMode) {
+      debugPrint('❌ Cancel recording error: $e');
+    }
+  }
+}
+
+// ✅ READ RECEIPTS METHODS
+
+// Mark message as read
+void _markMessageAsRead(String messageId) {
+  _readReceiptsService.markMessageAsRead(
+    roomId: _selectedRoom,
+    messageId: messageId,
+    username: _username,
+  );
+}
+
+// Mark all visible messages as read
+void _markAllVisibleMessagesAsRead() {
+  final messageIds = _messages
+      .where((msg) => msg['username'] != _username) // Skip own messages
+      .map((msg) => msg['id'] as String?)
+      .whereType<String>()
+      .toList();
+  
+  if (messageIds.isNotEmpty) {
+    _readReceiptsService.markRoomAsRead(
+      roomId: _selectedRoom,
+      username: _username,
+      messageIds: messageIds,
+    );
+  }
+}
+
+// 🟢 ONLINE STATUS METHODS
+
+// Initialize online status
+void _initializeOnlineStatus() {
+  _onlineStatusService.initialize(_username);
+  
+  if (kDebugMode) {
+    debugPrint('🟢 Online status initialized for: $_username');
+  }
+}
+
+// Update user seen (when they send a message)
+void _updateUserOnlineStatus(String username) {
+  _onlineStatusService.updateUserSeen(username);
+}

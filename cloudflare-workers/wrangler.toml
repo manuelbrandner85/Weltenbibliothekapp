@@ -1,0 +1,36 @@
+# Cloudflare Worker Configuration
+# Security Headers Worker for Weltenbibliothek
+
+name = "weltenbibliothek-security-headers"
+main = "cloudflare-workers/security-headers.js"
+compatibility_date = "2025-01-20"
+account_id = "3472f5994537c3a30c5caeaff4de21fb"
+
+# Worker settings
+workers_dev = false
+
+# Routes configuration
+# This worker will run on all requests to your Pages site
+routes = [
+  { pattern = "weltenbibliothek-ey9.pages.dev/*", zone_name = "pages.dev" }
+]
+
+# Environment variables (if needed)
+[env.production]
+name = "weltenbibliothek-security-headers"
+
+[env.staging]
+name = "weltenbibliothek-security-headers-staging"
+
+# Limits and performance
+[limits]
+cpu_ms = 10
+
+# Build configuration
+[build]
+command = ""
+
+# Observability
+[observability]
+enabled = true
+head_sampling_rate = 1

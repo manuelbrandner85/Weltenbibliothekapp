@@ -1,0 +1,55 @@
+{
+  "klimawandel": {
+    "urls": [
+      {
+        "url": "https://www.dwd.de/DE/wetter/thema_des_tages/2026/1/1.html",
+        "title": "Wetter und Klima - Turbulente erste Tage im Jahr 2026! - DWD",
+        "source": "Deutscher Wetterdienst"
+      },
+      {
+        "url": "https://www.deutschlandfunk.de/schon-eine-hitzewelle-veraendert-dauerhaft-das-leben-im-ozean-102.html",
+        "title": "Schon eine Hitzewelle verändert dauerhaft das Leben im Ozean",
+        "source": "Deutschlandfunk"
+      },
+      {
+        "url": "https://www.klimareporter.de/finanzen-wirtschaft/das-jahr-2026-und-die-welt-danach",
+        "title": "Das Jahr 2026 und die Welt danach",
+        "source": "klimareporter°"
+      },
+      {
+        "url": "https://www.stuttgarter-zeitung.de/inhalt.folgen-der-erderwaermung-warum-der-klimawandel-extremwetter-wahrscheinlicher-macht.507a89e3-8499-484f-810b-0ddb24dc7e52.html",
+        "title": "Extremwetter: So brutal werden die Folgen des Klimawandels",
+        "source": "Stuttgarter Zeitung"
+      },
+      {
+        "url": "https://www.germanwatch.org/de/cri",
+        "title": "Climate Risk Index 2026",
+        "source": "Germanwatch e.V."
+      }
+    ]
+  },
+  "ukraine": {
+    "urls": [
+      {
+        "url": "https://www.tagesspiegel.de/internationales/ukraine-treffen-ohne-ergebnis-in-diesen-drei-kernfragen-weiss-auch-der-us-prasident-keine-antwort-15086462.html",
+        "title": "Könnte die Ukraine 2026 den Krieg verlieren?",
+        "source": "Tagesspiegel"
+      },
+      {
+        "url": "https://www.zdfheute.de/politik/ausland/ukraine-russland-konflikt-blog-102.html",
+        "title": "Ukraine-Krieg im Liveticker - Aktuelle News",
+        "source": "ZDF heute"
+      },
+      {
+        "url": "https://www.mdr.de/nachrichten/welt/osteuropa/politik/ukraine-krieg-selenskyj-verteidigungsminister-fedorow-budanow-100.html",
+        "title": "Ukraine-News: Kiew kündigt Wechsel im Verteidigungsministerium an",
+        "source": "MDR"
+      },
+      {
+        "url": "https://www.tagesschau.de/thema/ukraine",
+        "title": "Ukraine - aktuelle Nachrichten",
+        "source": "Tagesschau"
+      }
+    ]
+  }
+}
