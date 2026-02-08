@@ -38,7 +38,7 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
   
   // ✅ NEU: Root-Admin Flow
   final _passwordController = TextEditingController();
-  bool _isWeltenbibliothek = false;  // Zeigt Root-Admin Passwortfeld an
+  bool _isWeltenbibliothek = false;  // Zeigt Admin Passwortfeld an (Root-Admin ODER Content-Editor)
   
   // Materie-spezifisch
   final _nameController = TextEditingController();
@@ -347,8 +347,9 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
             debugPrint('⚠️ Admin-Status erfordert Backend-Verbindung');
           }
           
-          // ✅ Zeige Warnung wenn User "Weltenbibliothek" ist
-          if (profile.username.toLowerCase() == 'weltenbibliothek' && mounted) {
+          // ✅ Zeige Warnung wenn User ein Admin-Account ist
+          final username = profile.username.toLowerCase();
+          if ((username == 'weltenbibliothek' || username == 'weltenbibliothekedit') && mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text('⚠️ Admin-Status erfordert Server-Verbindung'),
@@ -434,8 +435,9 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
             debugPrint('⚠️ Admin-Status erfordert Backend-Verbindung');
           }
           
-          // ✅ Zeige Warnung wenn User "Weltenbibliothek" ist
-          if (profile.username.toLowerCase() == 'weltenbibliothek' && mounted) {
+          // ✅ Zeige Warnung wenn User ein Admin-Account ist
+          final username = profile.username.toLowerCase();
+          if ((username == 'weltenbibliothek' || username == 'weltenbibliothekedit') && mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text('⚠️ Admin-Status erfordert Server-Verbindung'),
@@ -634,7 +636,9 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
                       // ✅ NEU: Username-Änderung überwachen
                       onChanged: (value) {
                         setState(() {
-                          _isWeltenbibliothek = (value.trim() == 'Weltenbibliothek');
+                          final username = value.trim();
+                          // Prüfe BEIDE Admin-Accounts: Weltenbibliothek UND Weltenbibliothekedit
+                          _isWeltenbibliothek = (username == 'Weltenbibliothek' || username == 'Weltenbibliothekedit');
                         });
                       },
                       validator: (value) {
@@ -663,7 +667,9 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
                                 const Icon(Icons.admin_panel_settings, color: Colors.amber),
                                 const SizedBox(width: 8),
                                 Text(
-                                  '👑 Root-Admin Zugriff',
+                                  _usernameController.text.trim() == 'Weltenbibliothek' 
+                                      ? '👑 Root-Admin Zugriff' 
+                                      : '✏️ Content-Editor Zugriff',
                                   style: TextStyle(
                                     color: Colors.amber.shade700,
                                     fontWeight: FontWeight.bold,
@@ -677,8 +683,12 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
                               controller: _passwordController,
                               obscureText: true,
                               decoration: InputDecoration(
-                                labelText: '🔐 Root-Admin Passwort',
-                                hintText: 'Erforderlich für Root-Admin Rechte',
+                                labelText: _usernameController.text.trim() == 'Weltenbibliothek'
+                                    ? '🔐 Root-Admin Passwort'
+                                    : '🔐 Content-Editor Passwort',
+                                hintText: _usernameController.text.trim() == 'Weltenbibliothek'
+                                    ? 'Erforderlich für Root-Admin Rechte'
+                                    : 'Erforderlich für Content-Editor Rechte',
                                 prefixIcon: const Icon(Icons.lock),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
@@ -688,14 +698,16 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
                               ),
                               validator: (value) {
                                 if (_isWeltenbibliothek && (value == null || value.isEmpty)) {
-                                  return 'Passwort erforderlich für Root-Admin';
+                                  return 'Passwort erforderlich für Admin-Zugriff';
                                 }
                                 return null;
                               },
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'ℹ️ Nur der Username "Weltenbibliothek" benötigt ein Root-Admin Passwort.',
+                              'ℹ️ Admin-Accounts benötigen ein Passwort:\n'
+                              '👑 "Weltenbibliothek" = Root-Admin (Vollzugriff)\n'
+                              '✏️ "Weltenbibliothekedit" = Content-Editor (nur Content)',
                               style: TextStyle(
                                 fontSize: 12,
                                 color: Colors.grey.shade600,
