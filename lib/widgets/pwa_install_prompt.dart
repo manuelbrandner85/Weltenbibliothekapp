@@ -1,5 +1,6 @@
 /// 📱 WELTENBIBLIOTHEK - PWA INSTALL PROMPT
 /// Shows install prompt for Progressive Web App
+library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;

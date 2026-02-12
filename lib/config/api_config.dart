@@ -9,6 +9,7 @@
 /// Migration Status: ✅ COMPLETE
 /// - V2 API (Primary): weltenbibliothek-api-v2.brandy13062.workers.dev
 /// - All core services migrated to V2
+library;
 
 import 'package:flutter/foundation.dart';
 

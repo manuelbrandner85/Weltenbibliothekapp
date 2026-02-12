@@ -1,6 +1,7 @@
 /// 🌐 WELTENBIBLIOTHEK - WEBSOCKET CHAT SERVICE
 /// Real-time messaging with WebSocket instead of HTTP polling
 /// Features: Instant delivery, typing indicators, online status
+library;
 
 import 'dart:async';
 import 'dart:convert';

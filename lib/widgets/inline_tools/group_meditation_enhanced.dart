@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:weltenbibliothek/services/tool_api_service.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../../services/user_auth_service.dart'; // ✅ Real Auth
 
 /// GRUPPEN-MEDITATIONS-TIMER - Synchronisierte Sessions

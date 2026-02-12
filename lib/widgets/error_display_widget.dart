@@ -1,5 +1,6 @@
 /// 🎨 WELTENBIBLIOTHEK - ERROR DISPLAY WIDGET
 /// Professional error handling with retry functionality
+library;
 
 import 'package:flutter/material.dart';
 

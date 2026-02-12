@@ -1124,7 +1124,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                       }
                       setState(() {}); // Rebuild to update UI
                     },
-                    activeColor: Colors.orange,
+                    activeThumbColor: Colors.orange,
                   ),
                 ],
               ),

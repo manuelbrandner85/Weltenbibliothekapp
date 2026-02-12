@@ -6,6 +6,7 @@
 /// - Grund-Eingabe (Vordefiniert + Custom)
 /// - Warnung bei permanentem Ban
 /// - Confirmation
+library;
 
 import 'package:flutter/material.dart';
 import '../../models/admin_action.dart';
@@ -112,7 +113,7 @@ class _BanUserDialogState extends State<BanUserDialog> {
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
-                      color: (durationInfo['color'] as Color).withOpacity(0.2),
+                      color: (durationInfo['color'] as Color).withValues(alpha: 0.2),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
@@ -138,7 +139,7 @@ class _BanUserDialogState extends State<BanUserDialog> {
                         Text(
                           widget.username,
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.7),
+                            color: Colors.white.withValues(alpha: 0.7),
                             fontSize: 14,
                           ),
                         ),
@@ -159,10 +160,10 @@ class _BanUserDialogState extends State<BanUserDialog> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.1),
+                    color: Colors.red.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: Colors.red.withOpacity(0.3),
+                      color: Colors.red.withValues(alpha: 0.3),
                     ),
                   ),
                   child: Row(
@@ -190,10 +191,10 @@ class _BanUserDialogState extends State<BanUserDialog> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.orange.withOpacity(0.1),
+                    color: Colors.orange.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: Colors.orange.withOpacity(0.3),
+                      color: Colors.orange.withValues(alpha: 0.3),
                     ),
                   ),
                   child: Row(
@@ -250,7 +251,7 @@ class _BanUserDialogState extends State<BanUserDialog> {
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? (info['color'] as Color).withOpacity(0.2)
+                            ? (info['color'] as Color).withValues(alpha: 0.2)
                             : const Color(0xFF252538),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
@@ -268,7 +269,7 @@ class _BanUserDialogState extends State<BanUserDialog> {
                                 : Icons.radio_button_unchecked,
                             color: isSelected
                                 ? info['color'] as Color
-                                : Colors.white.withOpacity(0.3),
+                                : Colors.white.withValues(alpha: 0.3),
                             size: 24,
                           ),
                           const SizedBox(width: 12),
@@ -276,7 +277,7 @@ class _BanUserDialogState extends State<BanUserDialog> {
                             info['icon'] as IconData,
                             color: isSelected
                                 ? Colors.white
-                                : Colors.white.withOpacity(0.5),
+                                : Colors.white.withValues(alpha: 0.5),
                             size: 20,
                           ),
                           const SizedBox(width: 12),
@@ -289,7 +290,7 @@ class _BanUserDialogState extends State<BanUserDialog> {
                                   style: TextStyle(
                                     color: isSelected
                                         ? Colors.white
-                                        : Colors.white.withOpacity(0.7),
+                                        : Colors.white.withValues(alpha: 0.7),
                                     fontSize: 16,
                                     fontWeight: isSelected
                                         ? FontWeight.bold
@@ -300,7 +301,7 @@ class _BanUserDialogState extends State<BanUserDialog> {
                                 Text(
                                   info['description'] as String,
                                   style: TextStyle(
-                                    color: Colors.white.withOpacity(0.5),
+                                    color: Colors.white.withValues(alpha: 0.5),
                                     fontSize: 12,
                                   ),
                                 ),
@@ -346,7 +347,7 @@ class _BanUserDialogState extends State<BanUserDialog> {
                       ),
                       decoration: BoxDecoration(
                         color: _selectedReason == reason
-                            ? Colors.red.withOpacity(0.2)
+                            ? Colors.red.withValues(alpha: 0.2)
                             : const Color(0xFF252538),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
@@ -364,7 +365,7 @@ class _BanUserDialogState extends State<BanUserDialog> {
                                 : Icons.radio_button_unchecked,
                             color: _selectedReason == reason
                                 ? Colors.red
-                                : Colors.white.withOpacity(0.3),
+                                : Colors.white.withValues(alpha: 0.3),
                             size: 20,
                           ),
                           const SizedBox(width: 12),
@@ -373,7 +374,7 @@ class _BanUserDialogState extends State<BanUserDialog> {
                             style: TextStyle(
                               color: _selectedReason == reason
                                   ? Colors.white
-                                  : Colors.white.withOpacity(0.7),
+                                  : Colors.white.withValues(alpha: 0.7),
                               fontSize: 14,
                               fontWeight: _selectedReason == reason
                                   ? FontWeight.w600
@@ -415,7 +416,7 @@ class _BanUserDialogState extends State<BanUserDialog> {
                   decoration: InputDecoration(
                     hintText: 'Grund für Ban eingeben...',
                     hintStyle: TextStyle(
-                      color: Colors.white.withOpacity(0.3),
+                      color: Colors.white.withValues(alpha: 0.3),
                     ),
                     filled: true,
                     fillColor: const Color(0xFF252538),
@@ -456,7 +457,7 @@ class _BanUserDialogState extends State<BanUserDialog> {
                       onPressed: () => Navigator.pop(context),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: Colors.white,
-                        side: BorderSide(color: Colors.white.withOpacity(0.3)),
+                        side: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),

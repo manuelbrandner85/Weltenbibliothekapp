@@ -91,11 +91,11 @@ class _VoiceRecordingControlsState extends State<VoiceRecordingControls> {
           height: 12,
           margin: const EdgeInsets.only(right: 8),
           decoration: BoxDecoration(
-            color: Colors.red.withOpacity(value),
+            color: Colors.red.withValues(alpha: value),
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: Colors.red.withOpacity(value * 0.5),
+                color: Colors.red.withValues(alpha: value * 0.5),
                 blurRadius: 8,
                 spreadRadius: 2,
               ),

@@ -7,7 +7,6 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'dart:convert';
 
 /// ============================================================================
 /// 1. BASE MODELS - Grundlegende Datenstrukturen

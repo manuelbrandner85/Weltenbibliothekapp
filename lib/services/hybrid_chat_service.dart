@@ -1,6 +1,7 @@
 /// 🔄 WELTENBIBLIOTHEK - HYBRID CHAT SERVICE
 /// Combines WebSocket (real-time) + HTTP (fallback) for reliable messaging
 /// Automatically switches between WebSocket and HTTP based on connection quality
+library;
 
 import 'dart:async';
 import 'package:flutter/foundation.dart';

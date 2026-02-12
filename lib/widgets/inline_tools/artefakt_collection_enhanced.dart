@@ -57,7 +57,7 @@ class _ArtefaktCollectionEnhancedState extends State<ArtefaktCollectionEnhanced>
   Future<void> _loadArtefakte() async {
     try {
       final response = await http.get(
-        Uri.parse(ApiConfig.artefakteUrl + '?room_id=${widget.roomId}'),
+        Uri.parse('${ApiConfig.artefakteUrl}?room_id=${widget.roomId}'),
         headers: {'Authorization': 'Bearer _C578hgIAimVPG0WjfeAjk23RxQMQ9gox0W7ebLv'},
       );
 

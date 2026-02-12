@@ -144,7 +144,6 @@ class _VoiceChatButtonState extends State<VoiceChatButton> {
     try {
       // STEP 1: Init microphone if not already done
       if (_voiceController.localStream == null) {
-        print('🎤 [VoiceChatButton] Initializing microphone...');
         final micSuccess = await _voiceController.initMicrophone();
         if (!micSuccess) {
           if (mounted) {
@@ -157,11 +156,9 @@ class _VoiceChatButtonState extends State<VoiceChatButton> {
           }
           return;
         }
-        print('✅ [VoiceChatButton] Microphone initialized');
       }
 
       // STEP 2: Join room
-      print('🚀 [VoiceChatButton] Joining room: ${widget.roomName}');
       final success = await _voiceController.joinVoiceRoom(
         widget.roomId,
         widget.roomName,
@@ -170,7 +167,6 @@ class _VoiceChatButtonState extends State<VoiceChatButton> {
       );
 
       if (success && mounted) {
-        print('✅ [VoiceChatButton] Join successful, opening voice screen');
         // Open Voice Screen
         Navigator.of(context).push(
           MaterialPageRoute(
@@ -178,7 +174,6 @@ class _VoiceChatButtonState extends State<VoiceChatButton> {
           ),
         );
       } else if (mounted) {
-        print('❌ [VoiceChatButton] Join failed');
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Fehler beim Beitritt zum Voice-Chat. Bitte erneut versuchen.'),

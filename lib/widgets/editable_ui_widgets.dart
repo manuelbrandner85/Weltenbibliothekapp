@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 
 /// 🔲 PHASE 4: Universal Editable Button Widget
 /// 
@@ -23,7 +22,7 @@ class EditableButton extends StatelessWidget {
   final Function(String, Map<String, dynamic>)? onEdit;
 
   const EditableButton({
-    Key? key,
+    super.key,
     required this.buttonId,
     required this.label,
     this.icon,
@@ -34,7 +33,7 @@ class EditableButton extends StatelessWidget {
     this.isEditMode = false,
     this.canEdit = false,
     this.onEdit,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -126,7 +125,7 @@ class EditableIconButton extends StatelessWidget {
   final Function(String, Map<String, dynamic>)? onEdit;
 
   const EditableIconButton({
-    Key? key,
+    super.key,
     required this.buttonId,
     required this.icon,
     required this.tooltip,
@@ -135,7 +134,7 @@ class EditableIconButton extends StatelessWidget {
     this.isEditMode = false,
     this.canEdit = false,
     this.onEdit,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -207,7 +206,7 @@ class EditableText extends StatelessWidget {
   final TextAlign? textAlign;
 
   const EditableText({
-    Key? key,
+    super.key,
     required this.textId,
     required this.content,
     this.style,
@@ -216,7 +215,7 @@ class EditableText extends StatelessWidget {
     this.onEdit,
     this.maxLines,
     this.textAlign,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

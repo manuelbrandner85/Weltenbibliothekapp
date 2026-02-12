@@ -5,12 +5,12 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart' as provider; // ✅ Provider aliased
 import 'package:flutter_riverpod/flutter_riverpod.dart'; // 🆕 RIVERPOD für Admin-System
 import 'package:hive_flutter/hive_flutter.dart'; // 🗄️ HIVE LOCAL STORAGE
+// 💾 SHARED PREFERENCES
 // Firebase DEAKTIVIERT - Jetzt Cloudflare
 // import 'package:firebase_core/firebase_core.dart';
 // import 'firebase_options.dart';
 import 'screens/intro_image_screen.dart';
 import 'screens/portal_home_screen.dart'; // 🌀 Portal (NACH Tutorial)
-import 'screens/shared/onboarding_enhanced_screen.dart'; // 🎓 ENHANCED ONBOARDING v8.0
 import 'screens/energie/dashboard_screen.dart';
 import 'screens/energie/achievements_screen.dart';
 import 'screens/daily_challenges_screen.dart';  // 🎯 Daily Challenges
@@ -145,27 +145,12 @@ class WeltenbibliothekApp extends StatefulWidget {
 }
 
 class _WeltenbibliothekAppState extends State<WeltenbibliothekApp> {
-  bool _showOnboarding = false;
-  bool _isCheckingOnboarding = true;
-
   @override
   void initState() {
     super.initState();
-    _checkNewOnboarding();
     
     // 🏆 Achievement Unlock Listener
     _setupAchievementListeners();
-  }
-  
-  /// Check if new onboarding should be shown
-  Future<void> _checkNewOnboarding() async {
-    // ❌ TUTORIAL KOMPLETT DEAKTIVIERT - Direkt zum Portal
-    if (mounted) {
-      setState(() {
-        _showOnboarding = false; // Kein Tutorial, direkt zum Portal
-        _isCheckingOnboarding = false;
-      });
-    }
   }
   
   /// 🏆 Setup Achievement Listeners
@@ -269,27 +254,8 @@ class _WeltenbibliothekAppState extends State<WeltenbibliothekApp> {
             Locale('en', 'US'), // Englisch als Fallback
           ],
           locale: const Locale('de', 'DE'),
-          // ✅ FIXED: Kein Onboarding mehr, direkt zum Intro
-          home: _isCheckingOnboarding
-              ? const Scaffold(
-                  backgroundColor: Colors.black,
-                  body: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        CircularProgressIndicator(color: Colors.blue),
-                        SizedBox(height: 20),
-                        Text(
-                          'Dual Realms wird geladen...',
-                          style: TextStyle(color: Colors.white70, fontSize: 16),
-                        ),
-                      ],
-                    ),
-                  ),
-                )
-              : _showOnboarding
-                  ? const OnboardingEnhancedScreen() // 📖 Tutorial-Seiten (ENERGIE, MATERIE, etc.)
-                  : const PortalHomeScreen(), // 🌀 Direkt zum Portal
+          // ✅ FIXED: DIREKT ZUM PORTAL - KEIN INTRO, KEINE CHECKS
+          home: const PortalHomeScreen(), // 🌀 Direkt zum Portal
           routes: {
             '/home': (context) => const IntroImageScreen(),
             '/dashboard': (context) => const DashboardScreen(),

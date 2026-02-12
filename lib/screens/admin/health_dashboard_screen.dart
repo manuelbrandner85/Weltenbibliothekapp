@@ -1,6 +1,7 @@
 /// 🏥 WELTENBIBLIOTHEK - HEALTH DASHBOARD SCREEN
 /// Admin monitoring dashboard for backend services
 /// Features: Real-time status, latency graphs, error rates
+library;
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';

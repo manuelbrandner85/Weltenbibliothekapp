@@ -1,5 +1,6 @@
 /// 📊 WELTENBIBLIOTHEK - CLOUDFLARE ANALYTICS SERVICE
 /// Track user behavior, events, and app performance
+library;
 
 import 'dart:convert';
 import 'package:flutter/foundation.dart';

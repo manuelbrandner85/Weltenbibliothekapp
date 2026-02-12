@@ -175,7 +175,7 @@ class _WaveCirclePainter extends CustomPainter {
     for (int i = 0; i < 3; i++) {
       final waveRadius = radius * (0.8 + (animationValue + i * 0.2) % 1.0);
       final opacity = 1.0 - ((animationValue + i * 0.2) % 1.0);
-      paint.color = color.withOpacity(opacity * 0.3);
+      paint.color = color.withValues(alpha: opacity * 0.3);
       canvas.drawCircle(center, waveRadius, paint);
     }
   }

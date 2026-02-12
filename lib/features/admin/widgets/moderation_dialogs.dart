@@ -165,7 +165,7 @@ class _UserMuteDialogState extends State<UserMuteDialog> {
               ),
               activeColor: Colors.orange,
               tileColor: _muteType == '24h' 
-                  ? Colors.orange.withOpacity(0.1)
+                  ? Colors.orange.withValues(alpha: 0.1)
                   : null,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
@@ -211,7 +211,7 @@ class _UserMuteDialogState extends State<UserMuteDialog> {
               ),
               activeColor: Colors.red,
               tileColor: _muteType == 'permanent'
-                  ? Colors.red.withOpacity(0.1)
+                  ? Colors.red.withValues(alpha: 0.1)
                   : null,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
@@ -257,9 +257,9 @@ class _UserMuteDialogState extends State<UserMuteDialog> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.1),
+                color: Colors.red.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.red.withOpacity(0.3)),
+                border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
               ),
               child: Row(
                 children: [
@@ -493,9 +493,9 @@ class _FlagContentDialogState extends State<FlagContentDialog> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.blue.withOpacity(0.1),
+                color: Colors.blue.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
               ),
               child: Row(
                 children: [

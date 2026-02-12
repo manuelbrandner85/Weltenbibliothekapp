@@ -4,6 +4,7 @@
 /// - Inactive: Shows "Join Voice Chat" button
 /// 
 /// This is the MAIN way to access voice chat in Telegram-style
+library;
 
 import 'package:flutter/material.dart';
 
@@ -15,13 +16,13 @@ class TelegramVoiceHeaderBar extends StatelessWidget {
   final VoidCallback? onJoin;
 
   const TelegramVoiceHeaderBar({
-    Key? key,
+    super.key,
     required this.isActive,
     required this.participants,
     required this.accentColor,
     required this.onTap,
     this.onJoin,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -33,13 +34,13 @@ class TelegramVoiceHeaderBar extends StatelessWidget {
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              accentColor.withOpacity(0.2),
-              accentColor.withOpacity(0.1),
+              accentColor.withValues(alpha: 0.2),
+              accentColor.withValues(alpha: 0.1),
             ],
           ),
           border: Border(
             bottom: BorderSide(
-              color: accentColor.withOpacity(0.3),
+              color: accentColor.withValues(alpha: 0.3),
               width: 1,
             ),
           ),
@@ -58,7 +59,7 @@ class TelegramVoiceHeaderBar extends StatelessWidget {
           width: 40,
           height: 40,
           decoration: BoxDecoration(
-            color: accentColor.withOpacity(0.2),
+            color: accentColor.withValues(alpha: 0.2),
             shape: BoxShape.circle,
             border: Border.all(
               color: accentColor,
@@ -94,11 +95,11 @@ class TelegramVoiceHeaderBar extends StatelessWidget {
                         height: 44,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: accentColor.withOpacity(0.2),
+                          color: accentColor.withValues(alpha: 0.2),
                           border: Border.all(
                             color: isSpeaking
                                 ? Colors.green
-                                : accentColor.withOpacity(0.5),
+                                : accentColor.withValues(alpha: 0.5),
                             width: isSpeaking ? 3 : 2,
                           ),
                         ),
@@ -161,7 +162,7 @@ class TelegramVoiceHeaderBar extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: accentColor.withOpacity(0.2),
+            color: accentColor.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: accentColor,
@@ -201,16 +202,16 @@ class TelegramVoiceHeaderBar extends StatelessWidget {
           width: 40,
           height: 40,
           decoration: BoxDecoration(
-            color: accentColor.withOpacity(0.1),
+            color: accentColor.withValues(alpha: 0.1),
             shape: BoxShape.circle,
             border: Border.all(
-              color: accentColor.withOpacity(0.3),
+              color: accentColor.withValues(alpha: 0.3),
               width: 2,
             ),
           ),
           child: Icon(
             Icons.people_outline,
-            color: accentColor.withOpacity(0.7),
+            color: accentColor.withValues(alpha: 0.7),
             size: 20,
           ),
         ),

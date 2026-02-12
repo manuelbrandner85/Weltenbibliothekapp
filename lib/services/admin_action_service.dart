@@ -7,6 +7,7 @@
 /// - Warning-System (3-Strike-Rule)
 /// - Timeout-System
 /// - Admin-Transparenz
+library;
 
 import 'dart:async';
 import 'package:flutter/foundation.dart';

@@ -24,7 +24,7 @@ import 'frequency_session_screen.dart'; // 🎵 Frequenz-Sessions Screen
 import '../../widgets/enhanced_message_bubble.dart'; // 💬 Enhanced Message Bubble
 import '../../widgets/message_reactions_widget.dart'; // 😀 Message Reactions
 import '../../widgets/message_edit_widget.dart'; // ✏️ Message Edit
-import '../../widgets/message_delete_dialog.dart'; // 🗑️ Message Delete
+// 🗑️ Message Delete
 import '../../widgets/message_search_widget.dart'; // 🔍 Message Search
 // 📁 File Upload
 // 👁️ Read Receipts
@@ -36,9 +36,9 @@ import '../../widgets/voice/voice_participant_header_bar.dart'; // 🎤 Voice Pa
 import '../shared/telegram_voice_chat_screen.dart'; // 🎤 Telegram Voice Chat Screen (TELEGRAM)
 // 🎤 Admin Dialogs & Notifications
 import '../../widgets/admin/kick_user_dialog.dart'; // 🚫 Kick User Dialog
-import '../../widgets/admin/ban_user_dialog.dart'; // 🔴 Ban User Dialog
-import '../../widgets/admin/warning_dialog.dart'; // ⚠️ Warning Dialog
-import '../../widgets/admin/admin_action_notification.dart'; // 📢 Admin Notifications
+// 🔴 Ban User Dialog
+// ⚠️ Warning Dialog
+// 📢 Admin Notifications
 import '../../models/admin_action.dart'; // 📋 Admin Action Models
 import '../../services/admin_action_service.dart'; // 🔧 Admin Action Service
 // import '../../widgets/telegram_voice_recorder.dart'; // 🎙️ Telegram Voice Recorder (Disabled for Android)
@@ -180,10 +180,12 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
     
     // 🔧 FIX 10: Listen for input focus changes with explicit state
     _inputFocusNode.addListener(() {
-      if (mounted) setState(() {
+      if (mounted) {
+        setState(() {
         _isInputFocused = _inputFocusNode.hasFocus; // Update explicit state
         debugPrint('🎯 [INPUT FOCUS] hasFocus: $_isInputFocused'); // Debug log
       });
+      }
     });
     
     // 🔄 Auto-Refresh alle 5 Sekunden für Nachrichten, Profil UND Polls
@@ -222,12 +224,14 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
     
     // ✅ Nur update wenn sich etwas geändert hat
     if (_username != user.username || _avatar != finalAvatar || _avatarUrl != finalAvatarUrl) {
-      if (mounted) setState(() {
+      if (mounted) {
+        setState(() {
         _username = user.username;
         _avatar = finalAvatar; // ✅ Avatar aus EnergieProfile laden!
         _avatarUrl = finalAvatarUrl; // 🖼️ Hochgeladenes Bild aus EnergieProfile!
         _userId = 'user_${user.username.toLowerCase()}'; // 🆕 Set user ID
       });
+      }
       
       debugPrint('✅ State updated: avatar = $_avatar, avatarUrl = $_avatarUrl');
     } else {
@@ -244,10 +248,12 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
   }
 
   Future<void> _loadMessages({bool silent = false}) async {
-    if (!silent) setState(() {
+    if (!silent) {
+      setState(() {
       _isLoading = true;
       _errorMessage = null; // Clear previous error
     });
+    }
     
     try {
       final messages = await _api.getChatMessages(
@@ -262,13 +268,15 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
         debugPrint('🔍 First message: ${messages.first}');
       }
       
-      if (mounted) setState(() {
+      if (mounted) {
+        setState(() {
         // Reverse messages if they come in descending order (newest first)
         // We want chronological order: oldest first, newest last
         _messages = messages.reversed.toList();
         _isLoading = false;
         _errorMessage = null;
       });
+      }
       
       // Auto-scroll zum Ende
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -311,9 +319,11 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
     final cursorPos = _messageController.selection.baseOffset;
     
     // 🎤➤ UPDATE BUTTON STATE: Voice/Send
-    if (mounted) setState(() {
+    if (mounted) {
+      setState(() {
       _hasText = text.trim().isNotEmpty;
     });
+    }
     
     // 🆕 SEND TYPING INDICATOR
     if (text.trim().isNotEmpty) {
@@ -335,7 +345,8 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
             .toSet()
             .toList();
         
-        if (mounted) setState(() {
+        if (mounted) {
+          setState(() {
           _mentionSuggestions = allUsers
               .where((u) => u!.toLowerCase().contains(query))
               .take(5)
@@ -343,11 +354,14 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
               .toList();
           _showMentionPicker = _mentionSuggestions.isNotEmpty;
         });
+        }
       } else {
-        if (mounted) setState(() {
+        if (mounted) {
+          setState(() {
           _showMentionPicker = false;
           _mentionSuggestions = [];
         });
+        }
       }
     }
   }
@@ -368,10 +382,12 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
       );
     }
     
-    if (mounted) setState(() {
+    if (mounted) {
+      setState(() {
       _showMentionPicker = false;
       _mentionSuggestions = [];
     });
+    }
   }
 
   Future<void> _sendMessage() async {
@@ -391,7 +407,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
     try {
       // 📡 OFFLINE-FIRST: Check network status
       final offlineService = OfflineSyncService();
-      final isOnline = await offlineService.isOnline;
+      final isOnline = offlineService.isOnline;
       
       if (!isOnline) {
         // Queue message for later
@@ -1184,9 +1200,11 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
                 if (_isInputFocused) {
                   debugPrint('👆 [TAP OUTSIDE] Unfocus input → Headers wieder anzeigen');
                   FocusScope.of(context).unfocus(); // Unfocus TextField
-                  if (mounted) setState(() {
+                  if (mounted) {
+                    setState(() {
                     _isInputFocused = false;
                   });
+                  }
                 }
               },
               child: Column(
@@ -1265,11 +1283,13 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
                 return GestureDetector(
                   onTap: () async {
                     if (roomId != _selectedRoom) {
-                      if (mounted) setState(() {
+                      if (mounted) {
+                        setState(() {
                         _selectedRoom = roomId;
                         _messages.clear(); // ← Clear old messages
                         _isLoading = true;
                       });
+                      }
                       
                       // 🔧 CRITICAL FIX: Switch WebRTC Voice Room
                       await _voiceService.switchRoom(_selectedRoom);
@@ -1534,10 +1554,12 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
                     onTap: () {
                       debugPrint('🎯 [DIREKTER TAP] Input angeklickt!');
                       if (!_isInputFocused) {
-                        if (mounted) setState(() {
+                        if (mounted) {
+                          setState(() {
                           _isInputFocused = true;
                           debugPrint('🔥 [DIREKTER TAP] _isInputFocused = true');
                         });
+                        }
                       }
                     },
                     style: const TextStyle(color: Colors.white),
@@ -1635,9 +1657,11 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
       worldColor: const Color(0xFF9B51E0), // ENERGIE Purple
       onReply: () {
         // TODO: Thread-Reply implementieren
-        if (mounted) setState(() {
+        if (mounted) {
+          setState(() {
           _messageController.text = '@${msg['username']} ';
         });
+        }
       },
       onEdit: () {
         _editMessage(msg);
@@ -1717,7 +1741,8 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
     // Listen to participants
     _voiceService.participantsStream.listen((participants) {
       if (!mounted) return;
-      if (mounted) setState(() {
+      if (mounted) {
+        setState(() {
         _voiceParticipants = participants.map((p) => {
           'userId': p.userId,
           'username': p.username,
@@ -1726,16 +1751,19 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
           'isMuted': p.isMuted,
         }).toList();
       });
+      }
     });
   }
   
   Future<void> _toggleVoiceRoom() async {
     if (_isInVoiceRoom) {
       await _voiceService.leaveVoiceRoom();
-      if (mounted) setState(() {
+      if (mounted) {
+        setState(() {
         _isInVoiceRoom = false;
         _voiceParticipants = [];
       });
+      }
       _showSnackBar('🔇 Voice Room verlassen', Colors.grey);
     } else {
       // ✅ PHASE 2: Enhanced Error Handling
@@ -1747,9 +1775,11 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
         );
         
         if (success) {
-          if (mounted) setState(() {
+          if (mounted) {
+            setState(() {
             _isInVoiceRoom = true;
           });
+          }
           _showSnackBar('🎤 Voice Room beigetreten', const Color(0xFF9B51E0));
         } else {
           // Check for specific error
@@ -1780,9 +1810,11 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
   
   Future<void> _toggleMute() async {
     await _voiceService.toggleMute();
-    if (mounted) setState(() {
+    if (mounted) {
+      setState(() {
       _isMuted = !_isMuted;
     });
+    }
     _showSnackBar(
       _isMuted ? '🔇 Stummgeschaltet' : '🎤 Mikrofon aktiv',
       const Color(0xFF9B51E0),
@@ -1804,9 +1836,11 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
       );
       
       if (success) {
-        if (mounted) setState(() {
+        if (mounted) {
+          setState(() {
           _isInVoiceRoom = true;
         });
+        }
         
         // Wait a moment for state to update
         await Future.delayed(const Duration(milliseconds: 300));
@@ -2316,7 +2350,8 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
   }
   
   void _addReaction(Map<String, dynamic> msg, String emoji) {
-    if (mounted) setState(() {
+    if (mounted) {
+      setState(() {
       // Initialize reactions map if not exists
       if (msg['reactions'] == null) {
         msg['reactions'] = <String, dynamic>{};
@@ -2341,23 +2376,28 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
         userList.add(_username);
       }
     });
+    }
   }
   
   // ✏️ MESSAGE EDIT
   void _startEditingMessage(Map<String, dynamic> msg) {
     final messageId = msg['id']?.toString() ?? msg['timestamp']?.toString() ?? '';
-    if (mounted) setState(() {
+    if (mounted) {
+      setState(() {
       _editingMessageId = messageId;
     });
+    }
   }
   
   void _saveEditedMessage(Map<String, dynamic> msg, String newContent) {
-    if (mounted) setState(() {
+    if (mounted) {
+      setState(() {
       msg['message'] = newContent;
       msg['edited'] = true;
       msg['editedAt'] = DateTime.now().toIso8601String();
       _editingMessageId = null;
     });
+    }
     
     // TODO: Send update to server
     if (kDebugMode) {
@@ -2366,22 +2406,26 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
   }
   
   void _cancelEditingMessage() {
-    if (mounted) setState(() {
+    if (mounted) {
+      setState(() {
       _editingMessageId = null;
     });
+    }
   }
   
   // 🗑️ MESSAGE DELETE
   
   // 🔍 MESSAGE SEARCH
   void _toggleSearch() {
-    if (mounted) setState(() {
+    if (mounted) {
+      setState(() {
       _showSearch = !_showSearch;
       if (!_showSearch) {
         // Reset search when closing
         FocusScope.of(context).unfocus();
       }
     });
+    }
   }
   
   void _jumpToMessage(Map<String, dynamic> msg) {
@@ -2443,9 +2487,11 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
   
   // 💬 SWIPE TO REPLY
   void _replyToMessage(Map<String, dynamic> msg) {
-    if (mounted) setState(() {
+    if (mounted) {
+      setState(() {
       _replyingTo = msg;
     });
+    }
     _inputFocusNode.requestFocus();
   }
   
@@ -2670,9 +2716,11 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
           IconButton(
             icon: const Icon(Icons.close, color: Colors.grey),
             onPressed: () {
-              if (mounted) setState(() {
+              if (mounted) {
+                setState(() {
                 _replyingTo = null;
               });
+              }
             },
           ),
         ],
@@ -3046,9 +3094,11 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
                       value: '24h',
                       groupValue: muteType,
                       onChanged: (value) {
-                        if (mounted) setState(() {
+                        if (mounted) {
+                          setState(() {
                           muteType = value!;
                         });
+                        }
                       },
                       activeColor: const Color(0xFF9B51E0),
                     ),
@@ -3060,9 +3110,11 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
                         value: 'permanent',
                         groupValue: muteType,
                         onChanged: (value) {
-                          if (mounted) setState(() {
+                          if (mounted) {
+                            setState(() {
                             muteType = value!;
                           });
+                          }
                         },
                         activeColor: Colors.red,
                       ),

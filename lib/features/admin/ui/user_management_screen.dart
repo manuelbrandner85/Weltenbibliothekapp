@@ -224,7 +224,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
         _loadUsers();
       },
       backgroundColor: const Color(0xFF16213E),
-      selectedColor: color.withOpacity(0.3),
+      selectedColor: color.withValues(alpha: 0.3),
       checkmarkColor: color,
       side: BorderSide(color: color, width: 1),
     );
@@ -356,7 +356,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
-          color: user.isSuspended ? Colors.red : worldColor.withOpacity(0.3),
+          color: user.isSuspended ? Colors.red : worldColor.withValues(alpha: 0.3),
           width: user.isSuspended ? 2 : 1,
         ),
       ),
@@ -382,7 +382,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
               // AVATAR
               CircleAvatar(
                 radius: 28,
-                backgroundColor: worldColor.withOpacity(0.2),
+                backgroundColor: worldColor.withValues(alpha: 0.2),
                 child: user.avatarEmoji != null
                     ? Text(user.avatarEmoji!, style: const TextStyle(fontSize: 24))
                     : Text(
@@ -416,7 +416,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                           decoration: BoxDecoration(
-                            color: roleBadgeColor.withOpacity(0.2),
+                            color: roleBadgeColor.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(color: roleBadgeColor, width: 1),
                           ),

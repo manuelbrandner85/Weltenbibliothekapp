@@ -28,6 +28,8 @@ import '../../widgets/visualisierung/visualisierungen.dart';
 import '../../widgets/media_grid_widget.dart';
 import 'materie_research_screen.dart'; // 🌐 RESEARCH SCREEN
 import '../research/epstein_files_simple.dart'; // 📁 EPSTEIN FILES WEBVIEW (NEUE VERSION)
+import '../research/additional_sources_screen.dart'; // 🔗 ADDITIONAL SOURCES
+import '../research/timeline_screen.dart'; // 📅 RESEARCH TIMELINE
 
 class MobileOptimierterRechercheTab extends StatefulWidget {
   const MobileOptimierterRechercheTab({super.key});
@@ -72,8 +74,8 @@ class _MobileOptimierterRechercheTabState extends State<MobileOptimierterRecherc
     _rechercheService = BackendRechercheService();
     _analyseService = AnalyseService();
     
-    // Initialize TabController (9 Tabs: +MULTIMEDIA +EPSTEIN FILES)
-    _tabController = TabController(length: 9, vsync: this);
+    // Initialize TabController (11 Tabs: +MULTIMEDIA +EPSTEIN FILES +QUELLEN +NOTIZEN)
+    _tabController = TabController(length: 11, vsync: this);
   }
   
   @override
@@ -1477,6 +1479,8 @@ class _MobileOptimierterRechercheTabState extends State<MobileOptimierterRecherc
                 Tab(text: 'ALTERNATIVE'),
                 Tab(text: 'META'),
                 Tab(text: 'EPSTEIN FILES'), // 🆕 EPSTEIN FILES TAB
+                Tab(text: 'QUELLEN'), // 🆕 ADDITIONAL SOURCES
+                Tab(text: 'NOTIZEN'), // 🆕 RESEARCH NOTES
               ],
             ),
           ),
@@ -1490,11 +1494,13 @@ class _MobileOptimierterRechercheTabState extends State<MobileOptimierterRecherc
                 _buildMultimediaTab(),
                 _buildMachtanalyseTab(),
                 _buildNarrativeTab(),
-                _buildTimelineTab(),
+                const ResearchTimelineScreen(), // 🆕 NEUE TIMELINE
                 _buildKarteTab(),
                 _buildAlternativeTab(),
                 _buildMetaTab(),
                 _buildEpsteinFilesTab(), // 🆕 EPSTEIN FILES TAB CONTENT
+                const AdditionalSourcesScreen(), // 🆕 ADDITIONAL SOURCES
+                _buildNotizenTab(), // 🆕 NOTIZEN TAB
               ],
             ),
           ),
@@ -2427,6 +2433,64 @@ class _MobileOptimierterRechercheTabState extends State<MobileOptimierterRecherc
   Widget _buildEpsteinFilesTab() {
     // EINFACHE VERSION: PDF öffnen + Übersetzen-Button
     return const EpsteinFilesSimpleScreen();
+  }
+  
+  /// 📝 NOTIZEN TAB - Lokale Forschungsnotizen
+  Widget _buildNotizenTab() {
+    return Container(
+      color: const Color(0xFF0A0A0A),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.note_add,
+              size: 80,
+              color: Colors.cyan.withValues(alpha: 0.5),
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              '📝 Notizen-Funktion',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 40),
+              child: Text(
+                'Speichere deine Recherche-Erkenntnisse und Notizen lokal auf deinem Gerät.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.grey[400],
+                  fontSize: 14,
+                ),
+              ),
+            ),
+            const SizedBox(height: 32),
+            ElevatedButton.icon(
+              onPressed: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Notizen-Feature wird in Kürze verfügbar sein!'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.add),
+              label: const Text('Neue Notiz erstellen'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.cyan,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
   
   Widget _buildSectionHeader(String title) {

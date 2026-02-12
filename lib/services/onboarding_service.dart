@@ -1,5 +1,6 @@
 /// 🎓 WELTENBIBLIOTHEK - ONBOARDING SERVICE
 /// Manages onboarding tutorial state and progress
+library;
 
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';

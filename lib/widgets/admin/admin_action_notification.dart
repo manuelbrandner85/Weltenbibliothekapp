@@ -6,6 +6,7 @@
 /// - Muted Notification (Admin Lock)
 /// - Banned Notification (mit Dauer)
 /// - Warning Notification (mit Counter)
+library;
 
 import 'package:flutter/material.dart';
 import 'dart:async';
@@ -185,12 +186,12 @@ class _AdminActionNotificationState extends State<AdminActionNotification> {
               color: const Color(0xFF1A1A2E),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: (config['color'] as Color).withOpacity(0.5),
+                color: (config['color'] as Color).withValues(alpha: 0.5),
                 width: 2,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: (config['color'] as Color).withOpacity(0.3),
+                  color: (config['color'] as Color).withValues(alpha: 0.3),
                   blurRadius: 20,
                   spreadRadius: 5,
                 ),
@@ -206,7 +207,7 @@ class _AdminActionNotificationState extends State<AdminActionNotification> {
                     width: 80,
                     height: 80,
                     decoration: BoxDecoration(
-                      color: (config['color'] as Color).withOpacity(0.2),
+                      color: (config['color'] as Color).withValues(alpha: 0.2),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
@@ -248,7 +249,7 @@ class _AdminActionNotificationState extends State<AdminActionNotification> {
                     Text(
                       'Von: ${widget.adminUsername}',
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.5),
+                        color: Colors.white.withValues(alpha: 0.5),
                         fontSize: 12,
                       ),
                     ),
@@ -260,10 +261,10 @@ class _AdminActionNotificationState extends State<AdminActionNotification> {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: (config['color'] as Color).withOpacity(0.1),
+                        color: (config['color'] as Color).withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: (config['color'] as Color).withOpacity(0.3),
+                          color: (config['color'] as Color).withValues(alpha: 0.3),
                         ),
                       ),
                       child: Row(
@@ -278,7 +279,7 @@ class _AdminActionNotificationState extends State<AdminActionNotification> {
                             child: Text(
                               config['footer'] as String,
                               style: TextStyle(
-                                color: (config['color'] as Color).withOpacity(0.9),
+                                color: (config['color'] as Color).withValues(alpha: 0.9),
                                 fontSize: 12,
                               ),
                             ),

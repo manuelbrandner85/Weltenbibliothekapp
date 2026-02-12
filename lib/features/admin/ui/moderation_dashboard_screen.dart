@@ -267,13 +267,13 @@ class _ModerationDashboardScreenState extends State<ModerationDashboardScreen> w
             Icon(
               Icons.check_circle_outline,
               size: 64,
-              color: Colors.green.withOpacity(0.5),
+              color: Colors.green.withValues(alpha: 0.5),
             ),
             const SizedBox(height: 16),
             Text(
               'Keine ausstehenden Meldungen',
               style: TextStyle(
-                color: Colors.white.withOpacity(0.7),
+                color: Colors.white.withValues(alpha: 0.7),
                 fontSize: 16,
               ),
             ),
@@ -325,7 +325,7 @@ class _ModerationDashboardScreenState extends State<ModerationDashboardScreen> w
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.2),
+                    color: Colors.red.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: Colors.red),
                   ),
@@ -448,7 +448,7 @@ class _ModerationDashboardScreenState extends State<ModerationDashboardScreen> w
         child: Text(
           'Keine Einträge im Moderation-Log',
           style: TextStyle(
-            color: Colors.white.withOpacity(0.7),
+            color: Colors.white.withValues(alpha: 0.7),
             fontSize: 16,
           ),
         ),
@@ -476,8 +476,8 @@ class _ModerationDashboardScreenState extends State<ModerationDashboardScreen> w
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: entry.isRootAdmin 
-              ? Colors.purple.withOpacity(0.3)
-              : Colors.orange.withOpacity(0.3),
+              ? Colors.purple.withValues(alpha: 0.3)
+              : Colors.orange.withValues(alpha: 0.3),
           child: Icon(
             entry.isRootAdmin ? Icons.shield : Icons.admin_panel_settings,
             color: entry.isRootAdmin ? Colors.purple : Colors.orange,

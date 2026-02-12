@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
-import 'dart:math' as math;
 import '../../models/energie_profile.dart';
 import '../../services/storage_service.dart';
 import '../../services/cloudflare_api_service.dart';

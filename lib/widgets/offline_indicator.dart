@@ -1,12 +1,13 @@
 /// 📴 WELTENBIBLIOTHEK - OFFLINE INDICATOR
 /// Visual feedback for network state and pending sync actions
 /// Features: Network status, sync progress, pending actions count
+library;
 
 import 'package:flutter/material.dart';
 import '../services/offline_sync_service.dart';
 
 class OfflineIndicator extends StatefulWidget {
-  const OfflineIndicator({Key? key}) : super(key: key);
+  const OfflineIndicator({super.key});
 
   @override
   State<OfflineIndicator> createState() => _OfflineIndicatorState();
@@ -281,7 +282,7 @@ class _OfflineIndicatorState extends State<OfflineIndicator>
 
 /// Floating Offline Badge
 class OfflineFloatingBadge extends StatelessWidget {
-  const OfflineFloatingBadge({Key? key}) : super(key: key);
+  const OfflineFloatingBadge({super.key});
 
   @override
   Widget build(BuildContext context) {

@@ -1,5 +1,6 @@
 /// 🎤 VOICE CHAT BUTTON WIDGET
 /// Modern voice chat button for AppBar with pulsing animation and participant count
+library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
@@ -11,12 +12,12 @@ class VoiceChatButton extends StatefulWidget {
   final Color accentColor;
 
   const VoiceChatButton({
-    Key? key,
+    super.key,
     required this.isInVoiceRoom,
     required this.participantCount,
     required this.onPressed,
     this.accentColor = Colors.purple,
-  }) : super(key: key);
+  });
 
   @override
   State<VoiceChatButton> createState() => _VoiceChatButtonState();

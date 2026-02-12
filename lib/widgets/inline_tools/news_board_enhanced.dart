@@ -53,7 +53,7 @@ class _NewsBoardEnhancedState extends State<NewsBoardEnhanced> {
 
   Future<void> _loadNews() async {
     try {
-      final response = await http.get(Uri.parse(ApiConfig.newsTrackerUrl + '?room_id=${widget.roomId}'), headers: {'Authorization': 'Bearer _C578hgIAimVPG0WjfeAjk23RxQMQ9gox0W7ebLv'});
+      final response = await http.get(Uri.parse('${ApiConfig.newsTrackerUrl}?room_id=${widget.roomId}'), headers: {'Authorization': 'Bearer _C578hgIAimVPG0WjfeAjk23RxQMQ9gox0W7ebLv'});
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as List;
         setState(() {

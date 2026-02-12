@@ -1,6 +1,7 @@
 /// 📴 WELTENBIBLIOTHEK - OFFLINE SYNC SERVICE
 /// Comprehensive offline-first architecture with background sync
 /// Features: Message queue, auto-sync, conflict resolution, network detection
+library;
 
 import 'dart:async';
 import 'dart:convert';
@@ -493,6 +494,7 @@ class OfflineSyncService extends ChangeNotifier {
   }
 
   /// Dispose
+  @override
   Future<void> dispose() async {
     _syncTimer?.cancel();
     await _connectivitySubscription?.cancel();

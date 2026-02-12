@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'portal_home_screen.dart'; // ORIGINAL CINEMA-QUALITY PORTAL
+import 'shared/onboarding_enhanced_screen.dart'; // ONBOARDING
 
 /// Intro-Screen mit Bild und Überspringen-Button
 class IntroImageScreen extends StatefulWidget {
@@ -76,25 +78,36 @@ class _IntroImageScreenState extends State<IntroImageScreen> with SingleTickerPr
     super.dispose();
   }
   
-  void _navigateToApp() {
+  void _navigateToApp() async {
     debugPrint('🎬 IntroImageScreen: _navigateToApp aufgerufen');
     try {
-      Navigator.pushReplacement(
-        context,
-        PageRouteBuilder(
-          pageBuilder: (context, animation, secondaryAnimation) {
-            debugPrint('🎬 IntroImageScreen: PortalHomeScreen wird geladen...');
-            return const PortalHomeScreen(); // ORIGINAL CINEMA PORTAL
-          },
-          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            return FadeTransition(
-              opacity: animation,
-              child: child,
-            );
-          },
-          transitionDuration: const Duration(milliseconds: 500),
-        ),
-      );
+      // ✅ Prüfe ob Onboarding schon gesehen wurde
+      final prefs = await SharedPreferences.getInstance();
+      final hasSeenOnboarding = prefs.getBool('has_seen_onboarding') ?? false;
+      
+      final nextScreen = hasSeenOnboarding
+          ? const PortalHomeScreen() // Direkt zum Portal wenn schon gesehen
+          : const OnboardingEnhancedScreen(); // Onboarding wenn noch nicht gesehen
+      
+      debugPrint('🎬 IntroImageScreen: Navigiere zu ${hasSeenOnboarding ? "Portal" : "Onboarding"}');
+      
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) {
+              return nextScreen;
+            },
+            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+              return FadeTransition(
+                opacity: animation,
+                child: child,
+              );
+            },
+            transitionDuration: const Duration(milliseconds: 500),
+          ),
+        );
+      }
       debugPrint('🎬 IntroImageScreen: Navigation abgeschlossen');
     } catch (e) {
       debugPrint('❌ IntroImageScreen: Navigation error: $e');

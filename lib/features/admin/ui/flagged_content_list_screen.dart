@@ -110,7 +110,7 @@ class _FlaggedContentListScreenState extends State<FlaggedContentListScreen> {
                       Icon(
                         Icons.check_circle,
                         size: 64,
-                        color: worldColor.withOpacity(0.5),
+                        color: worldColor.withValues(alpha: 0.5),
                       ),
                       const SizedBox(height: 16),
                       Text(
@@ -172,7 +172,7 @@ class _FlaggedContentListScreenState extends State<FlaggedContentListScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                   decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.2),
+                    color: statusColor.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: statusColor),
                   ),

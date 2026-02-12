@@ -4,6 +4,7 @@
 /// - Notification categories (Messages, Mentions, Replies, System)
 /// - Do-Not-Disturb schedule
 /// - Sound & vibration preferences
+library;
 
 import 'package:flutter/material.dart';
 import '../services/push_notification_service_v2.dart';

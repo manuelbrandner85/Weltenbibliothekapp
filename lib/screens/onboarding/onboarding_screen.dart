@@ -1,11 +1,11 @@
 /// 🎓 WELTENBIBLIOTHEK - ONBOARDING SCREEN
 /// Interactive 5-step tutorial for new users
+library;
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/onboarding_service.dart';
 import '../../services/haptic_feedback_service.dart';
-import 'dart:ui';
 
 class OnboardingScreen extends StatefulWidget {
   final VoidCallback onComplete;

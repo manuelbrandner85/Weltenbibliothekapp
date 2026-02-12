@@ -6,6 +6,7 @@
 /// - Mute/Unmute mit Admin-Lock
 /// - Ban aus Voice Chat
 /// - Participant-Info für Admins
+library;
 
 import 'dart:async';
 import 'dart:convert';

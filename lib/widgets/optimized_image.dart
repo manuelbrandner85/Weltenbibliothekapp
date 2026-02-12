@@ -1,6 +1,7 @@
 /// 🖼️ WELTENBIBLIOTHEK - OPTIMIZED IMAGE WIDGET
 /// Smart image loading with caching, progressive loading, and error handling
 /// Features: Memory cache, disk cache, thumbnails, WebP support
+library;
 
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -20,7 +21,7 @@ class OptimizedImage extends StatelessWidget {
   final Color? backgroundColor;
   
   const OptimizedImage({
-    Key? key,
+    super.key,
     required this.imageUrl,
     this.width,
     this.height,
@@ -31,7 +32,7 @@ class OptimizedImage extends StatelessWidget {
     this.enableDiskCache = true,
     this.fadeInDuration = const Duration(milliseconds: 300),
     this.backgroundColor,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -137,11 +138,11 @@ class OptimizedAvatar extends StatelessWidget {
   final String? fallbackText;
   
   const OptimizedAvatar({
-    Key? key,
+    super.key,
     required this.imageUrl,
     this.radius = 24,
     this.fallbackText,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -168,11 +169,11 @@ class OptimizedThumbnail extends StatelessWidget {
   final VoidCallback? onTap;
   
   const OptimizedThumbnail({
-    Key? key,
+    super.key,
     required this.imageUrl,
     this.size = 80,
     this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -196,11 +197,11 @@ class OptimizedHeroImage extends StatelessWidget {
   final VoidCallback? onTap;
   
   const OptimizedHeroImage({
-    Key? key,
+    super.key,
     required this.imageUrl,
     required this.tag,
     this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

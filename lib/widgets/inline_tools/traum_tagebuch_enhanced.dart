@@ -51,7 +51,7 @@ class _TraumTagebuchEnhancedState extends State<TraumTagebuchEnhanced> {
 
   Future<void> _loadDreams() async {
     try {
-      final response = await http.get(Uri.parse(ApiConfig.traeumeUrl + '?room_id=${widget.roomId}'), headers: {'Authorization': 'Bearer _C578hgIAimVPG0WjfeAjk23RxQMQ9gox0W7ebLv'});
+      final response = await http.get(Uri.parse('${ApiConfig.traeumeUrl}?room_id=${widget.roomId}'), headers: {'Authorization': 'Bearer _C578hgIAimVPG0WjfeAjk23RxQMQ9gox0W7ebLv'});
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as List;
         setState(() {

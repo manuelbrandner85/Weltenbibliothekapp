@@ -7,9 +7,9 @@
 /// - User-spezifische History
 /// - Export-Funktion
 /// - Nur für Root Admin & Admin
+library;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import '../../models/admin_action.dart';
 import '../../services/admin_action_service.dart';
 
@@ -76,7 +76,7 @@ class _AdminLogScreenState extends State<AdminLogScreen> {
                 value: null,
                 child: Text('Alle Aktionen'),
               ),
-              const PopupMenuItemDivider(),
+              const PopupMenuDivider(),
               ...AdminActionType.values.map((type) {
                 String label;
                 IconData icon;
@@ -150,7 +150,7 @@ class _AdminLogScreenState extends State<AdminLogScreen> {
               style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(
                 hintText: 'Nach User oder Admin suchen...',
-                hintStyle: TextStyle(color: Colors.white.withOpacity(0.3)),
+                hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
                 prefixIcon: const Icon(Icons.search, color: Colors.white),
                 filled: true,
                 fillColor: const Color(0xFF252538),
@@ -203,13 +203,13 @@ class _AdminLogScreenState extends State<AdminLogScreen> {
                         Icon(
                           Icons.inbox_outlined,
                           size: 64,
-                          color: Colors.white.withOpacity(0.3),
+                          color: Colors.white.withValues(alpha: 0.3),
                         ),
                         const SizedBox(height: 16),
                         Text(
                           'Keine Aktionen gefunden',
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.5),
+                            color: Colors.white.withValues(alpha: 0.5),
                             fontSize: 16,
                           ),
                         ),
@@ -245,7 +245,7 @@ class _AdminLogScreenState extends State<AdminLogScreen> {
         Text(
           label,
           style: TextStyle(
-            color: Colors.white.withOpacity(0.7),
+            color: Colors.white.withValues(alpha: 0.7),
             fontSize: 12,
           ),
         ),
@@ -291,7 +291,7 @@ class _AdminLogScreenState extends State<AdminLogScreen> {
         color: const Color(0xFF1A1A2E),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: actionColor.withOpacity(0.3),
+          color: actionColor.withValues(alpha: 0.3),
           width: 1,
         ),
       ),
@@ -301,7 +301,7 @@ class _AdminLogScreenState extends State<AdminLogScreen> {
           width: 48,
           height: 48,
           decoration: BoxDecoration(
-            color: actionColor.withOpacity(0.2),
+            color: actionColor.withValues(alpha: 0.2),
             shape: BoxShape.circle,
           ),
           child: Icon(
@@ -335,14 +335,14 @@ class _AdminLogScreenState extends State<AdminLogScreen> {
             Text(
               'Von: ${action.adminUsername}',
               style: TextStyle(
-                color: Colors.white.withOpacity(0.7),
+                color: Colors.white.withValues(alpha: 0.7),
                 fontSize: 12,
               ),
             ),
             Text(
               timeAgo,
               style: TextStyle(
-                color: Colors.white.withOpacity(0.5),
+                color: Colors.white.withValues(alpha: 0.5),
                 fontSize: 11,
               ),
             ),
@@ -351,7 +351,7 @@ class _AdminLogScreenState extends State<AdminLogScreen> {
               Text(
                 'Room: ${action.roomId}',
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.5),
+                  color: Colors.white.withValues(alpha: 0.5),
                   fontSize: 11,
                 ),
               ),
@@ -365,7 +365,7 @@ class _AdminLogScreenState extends State<AdminLogScreen> {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: actionColor.withOpacity(0.2),
+                  color: actionColor.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(

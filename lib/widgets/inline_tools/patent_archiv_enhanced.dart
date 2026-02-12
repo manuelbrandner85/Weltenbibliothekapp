@@ -54,7 +54,7 @@ class _PatentArchivEnhancedState extends State<PatentArchivEnhanced> {
   Future<void> _loadPatents() async {
     try {
       final response = await http.get(
-        Uri.parse(ApiConfig.patenteUrl + '?room_id=${widget.roomId}'),
+        Uri.parse('${ApiConfig.patenteUrl}?room_id=${widget.roomId}'),
         headers: {'Authorization': 'Bearer _C578hgIAimVPG0WjfeAjk23RxQMQ9gox0W7ebLv'},
       );
       if (response.statusCode == 200) {

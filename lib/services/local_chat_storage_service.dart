@@ -1,22 +1,19 @@
 import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import '../config/api_config.dart';
 
-/**
- * LOCAL CHAT STORAGE SERVICE
- * 
- * Produktionsreife lokale Chat-Speicherung mit Hive
- * Bereitet Synchronisation mit Backend vor
- * 
- * Features:
- * - Offline-First Architektur
- * - Lokale Message-Speicherung
- * - Room-based Message Management
- * - Presence Tracking
- * - Typing Indicators
- * - Backend Sync Preparation
- */
+/// LOCAL CHAT STORAGE SERVICE
+/// 
+/// Produktionsreife lokale Chat-Speicherung mit Hive
+/// Bereitet Synchronisation mit Backend vor
+/// 
+/// Features:
+/// - Offline-First Architektur
+/// - Lokale Message-Speicherung
+/// - Room-based Message Management
+/// - Presence Tracking
+/// - Typing Indicators
+/// - Backend Sync Preparation
 
 class LocalChatStorageService {
   static final LocalChatStorageService _instance = LocalChatStorageService._internal();

@@ -16,6 +16,7 @@
 ///   emptyMessage: 'Keine Nachrichten',
 /// )
 /// ```
+library;
 
 import 'package:flutter/material.dart';
 

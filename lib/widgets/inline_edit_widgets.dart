@@ -4,10 +4,7 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import '../models/dynamic_ui_models.dart';
-import '../services/dynamic_content_service.dart';
-import '../services/user_auth_service.dart';
 
 /// ============================================================================
 /// INLINE EDIT WRAPPER - Macht jedes Widget editierbar

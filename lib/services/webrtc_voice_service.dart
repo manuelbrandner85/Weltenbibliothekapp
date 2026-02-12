@@ -1,6 +1,7 @@
 /// 🎤 WELTENBIBLIOTHEK - WEBRTC VOICE CHAT SERVICE
 /// Real-time voice communication using WebRTC
 /// Features: 1-to-1 calls, group rooms (max 10), echo cancellation, quality monitoring
+library;
 
 import 'dart:async';
 import 'dart:convert';
@@ -10,7 +11,6 @@ import 'package:permission_handler/permission_handler.dart';
 import '../services/websocket_chat_service.dart';
 import '../services/error_reporting_service.dart';
 import '../services/admin_action_service.dart';
-import '../models/admin_action.dart';
 
 /// Voice chat connection state
 enum VoiceConnectionState {
@@ -619,7 +619,7 @@ class WebRTCVoiceService {
       // Check if we have local stream
       if (_localStream != null) {
         final tracks = _localStream!.getAudioTracks();
-        if (tracks.isNotEmpty && tracks.first.enabled != null) {
+        if (tracks.isNotEmpty) {
           if (kDebugMode) {
             print('✅ WebRTC: Connection healthy - local stream active');
           }

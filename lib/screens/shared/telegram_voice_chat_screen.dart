@@ -6,6 +6,7 @@
 /// - "listening" / "speaking" status
 /// - "You are Live" indicator
 /// - Admin long-press menu
+library;
 
 import 'package:flutter/material.dart';
 import '../../widgets/admin/warning_dialog.dart';
@@ -30,7 +31,7 @@ class TelegramVoiceChatScreen extends StatefulWidget {
   final int Function(String userId)? getWarningCount;
 
   const TelegramVoiceChatScreen({
-    Key? key,
+    super.key,
     required this.roomId,
     required this.roomName,
     required this.userId,
@@ -46,7 +47,7 @@ class TelegramVoiceChatScreen extends StatefulWidget {
     this.onBanUser,
     this.isAdmin = false,
     this.getWarningCount,
-  }) : super(key: key);
+  });
 
   @override
   State<TelegramVoiceChatScreen> createState() => _TelegramVoiceChatScreenState();
@@ -182,7 +183,7 @@ class _TelegramVoiceChatScreenState extends State<TelegramVoiceChatScreen> {
       },
       leading: CircleAvatar(
         radius: 20, // Small like Telegram!
-        backgroundColor: widget.accentColor.withOpacity(0.2),
+        backgroundColor: widget.accentColor.withValues(alpha: 0.2),
         child: Text(
           avatarEmoji,
           style: const TextStyle(fontSize: 20),
@@ -203,7 +204,7 @@ class _TelegramVoiceChatScreenState extends State<TelegramVoiceChatScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
-                color: widget.accentColor.withOpacity(0.2),
+                color: widget.accentColor.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(
@@ -250,7 +251,7 @@ class _TelegramVoiceChatScreenState extends State<TelegramVoiceChatScreen> {
             width: 64,
             height: 64,
             decoration: BoxDecoration(
-              color: isActive ? color.withOpacity(0.2) : const Color(0xFF2A2A2A),
+              color: isActive ? color.withValues(alpha: 0.2) : const Color(0xFF2A2A2A),
               shape: BoxShape.circle,
               border: Border.all(
                 color: isActive ? color : Colors.transparent,
@@ -301,7 +302,7 @@ class _TelegramVoiceChatScreenState extends State<TelegramVoiceChatScreen> {
                   children: [
                     CircleAvatar(
                       radius: 24,
-                      backgroundColor: widget.accentColor.withOpacity(0.2),
+                      backgroundColor: widget.accentColor.withValues(alpha: 0.2),
                       child: Text(
                         participant['avatarEmoji']?.toString() ?? '👤',
                         style: const TextStyle(fontSize: 24),
@@ -323,7 +324,7 @@ class _TelegramVoiceChatScreenState extends State<TelegramVoiceChatScreen> {
                           Text(
                             'User ID: $participantId',
                             style: TextStyle(
-                              color: Colors.white.withOpacity(0.5),
+                              color: Colors.white.withValues(alpha: 0.5),
                               fontSize: 12,
                             ),
                           ),
@@ -346,7 +347,7 @@ class _TelegramVoiceChatScreenState extends State<TelegramVoiceChatScreen> {
                     Text(
                       'ADMIN ACTIONS',
                       style: TextStyle(
-                        color: Colors.blue.withOpacity(0.8),
+                        color: Colors.blue.withValues(alpha: 0.8),
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 1.2,
@@ -371,7 +372,7 @@ class _TelegramVoiceChatScreenState extends State<TelegramVoiceChatScreen> {
                 subtitle: Text(
                   isMuted ? 'User kann wieder sprechen' : 'Mikrofon sperren',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.5),
+                    color: Colors.white.withValues(alpha: 0.5),
                     fontSize: 11,
                   ),
                 ),
@@ -391,7 +392,7 @@ class _TelegramVoiceChatScreenState extends State<TelegramVoiceChatScreen> {
                 subtitle: Text(
                   '30 Sekunden Cooldown',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.5),
+                    color: Colors.white.withValues(alpha: 0.5),
                     fontSize: 11,
                   ),
                 ),
@@ -413,7 +414,7 @@ class _TelegramVoiceChatScreenState extends State<TelegramVoiceChatScreen> {
                     Text(
                       'MODERATION',
                       style: TextStyle(
-                        color: Colors.orange.withOpacity(0.8),
+                        color: Colors.orange.withValues(alpha: 0.8),
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 1.2,
@@ -433,7 +434,7 @@ class _TelegramVoiceChatScreenState extends State<TelegramVoiceChatScreen> {
                 subtitle: Text(
                   'User erhält offizielle Warnung',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.5),
+                    color: Colors.white.withValues(alpha: 0.5),
                     fontSize: 11,
                   ),
                 ),
@@ -470,7 +471,7 @@ class _TelegramVoiceChatScreenState extends State<TelegramVoiceChatScreen> {
                 subtitle: Text(
                   'Temporärer Ban (5min - 24h)',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.5),
+                    color: Colors.white.withValues(alpha: 0.5),
                     fontSize: 11,
                   ),
                 ),
@@ -503,7 +504,7 @@ class _TelegramVoiceChatScreenState extends State<TelegramVoiceChatScreen> {
                 subtitle: Text(
                   'Permanent vom Chat ausschließen',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.5),
+                    color: Colors.white.withValues(alpha: 0.5),
                     fontSize: 11,
                   ),
                 ),

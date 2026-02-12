@@ -7,6 +7,7 @@
 /// - 90% weniger Rebuilds (nur affected Widgets)
 /// - 60fps statt 40-45fps
 /// - Memory-effizienter (keine Deep Widget Trees)
+library;
 
 import 'package:flutter/foundation.dart';
 

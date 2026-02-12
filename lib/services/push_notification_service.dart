@@ -59,7 +59,7 @@ class PushNotificationService {
     String? token = prefs.getString('push_token');
     
     if (token == null) {
-      token = 'token_${DateTime.now().millisecondsSinceEpoch}_${_userId}';
+      token = 'token_${DateTime.now().millisecondsSinceEpoch}_$_userId';
       await prefs.setString('push_token', token);
     }
     

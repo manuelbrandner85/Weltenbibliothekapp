@@ -458,7 +458,7 @@ class LoadingStateBuilder<T> extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (data != null) {
-      return builder(context, data!);
+      return builder(context, data as T);
     }
 
     if (future == null) {
@@ -469,7 +469,7 @@ class LoadingStateBuilder<T> extends StatelessWidget {
       future: future,
       builder: (context, snapshot) {
         if (snapshot.hasData) {
-          return builder(context, snapshot.data!);
+          return builder(context, snapshot.data as T);
         }
         
         if (snapshot.hasError) {

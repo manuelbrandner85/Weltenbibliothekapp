@@ -1,6 +1,7 @@
 /// 🖼️ WELTENBIBLIOTHEK - IMAGE CACHE SERVICE
 /// Centralized image cache management with cleanup and optimization
 /// Features: Memory limits, cache clearing, statistics, preloading
+library;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';

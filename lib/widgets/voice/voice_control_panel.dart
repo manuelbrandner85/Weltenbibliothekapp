@@ -1,5 +1,6 @@
 /// 🎤 VOICE CONTROL PANEL WIDGET
 /// Bottom sheet with comprehensive voice chat controls
+library;
 
 import 'package:flutter/material.dart';
 
@@ -19,7 +20,7 @@ class VoiceControlPanel extends StatefulWidget {
   final Function(String userId)? onMuteUser;
 
   const VoiceControlPanel({
-    Key? key,
+    super.key,
     required this.roomId,
     required this.userId,
     required this.username,
@@ -33,7 +34,7 @@ class VoiceControlPanel extends StatefulWidget {
     required this.onToggleMute,
     this.onKickUser,
     this.onMuteUser,
-  }) : super(key: key);
+  });
 
   @override
   State<VoiceControlPanel> createState() => _VoiceControlPanelState();

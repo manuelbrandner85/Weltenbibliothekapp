@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import '../../services/image_cache_service.dart';
 
 class ImageCacheSettingsScreen extends StatefulWidget {
-  const ImageCacheSettingsScreen({Key? key}) : super(key: key);
+  const ImageCacheSettingsScreen({super.key});
 
   @override
   State<ImageCacheSettingsScreen> createState() => _ImageCacheSettingsScreenState();

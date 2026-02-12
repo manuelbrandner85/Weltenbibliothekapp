@@ -6,6 +6,7 @@
 /// - Warning-Counter (X/3)
 /// - Automatischer Ban bei 3 Warnings
 /// - Vordefinierte Gründe + Custom
+library;
 
 import 'package:flutter/material.dart';
 
@@ -86,7 +87,7 @@ class _WarningDialogState extends State<WarningDialog> {
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
-                      color: Colors.orange.withOpacity(0.2),
+                      color: Colors.orange.withValues(alpha: 0.2),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
@@ -112,7 +113,7 @@ class _WarningDialogState extends State<WarningDialog> {
                         Text(
                           widget.username,
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.7),
+                            color: Colors.white.withValues(alpha: 0.7),
                             fontSize: 14,
                           ),
                         ),
@@ -133,13 +134,13 @@ class _WarningDialogState extends State<WarningDialog> {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: willBeBanned
-                      ? Colors.red.withOpacity(0.1)
-                      : Colors.orange.withOpacity(0.1),
+                      ? Colors.red.withValues(alpha: 0.1)
+                      : Colors.orange.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: willBeBanned
-                        ? Colors.red.withOpacity(0.3)
-                        : Colors.orange.withOpacity(0.3),
+                        ? Colors.red.withValues(alpha: 0.3)
+                        : Colors.orange.withValues(alpha: 0.3),
                   ),
                 ),
                 child: Column(
@@ -156,7 +157,7 @@ class _WarningDialogState extends State<WarningDialog> {
                                 : Icons.warning_amber_outlined,
                             color: isFilled
                                 ? (willBeBanned ? Colors.red : Colors.orange)
-                                : Colors.white.withOpacity(0.3),
+                                : Colors.white.withValues(alpha: 0.3),
                             size: 32,
                           ),
                         );
@@ -195,10 +196,10 @@ class _WarningDialogState extends State<WarningDialog> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.blue.withOpacity(0.1),
+                  color: Colors.blue.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: Colors.blue.withOpacity(0.3),
+                    color: Colors.blue.withValues(alpha: 0.3),
                   ),
                 ),
                 child: Row(
@@ -242,7 +243,7 @@ class _WarningDialogState extends State<WarningDialog> {
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.2),
+                      color: Colors.red.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: const Text(
@@ -277,7 +278,7 @@ class _WarningDialogState extends State<WarningDialog> {
                       ),
                       decoration: BoxDecoration(
                         color: _selectedReason == reason
-                            ? Colors.orange.withOpacity(0.2)
+                            ? Colors.orange.withValues(alpha: 0.2)
                             : const Color(0xFF252538),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
@@ -295,7 +296,7 @@ class _WarningDialogState extends State<WarningDialog> {
                                 : Icons.radio_button_unchecked,
                             color: _selectedReason == reason
                                 ? Colors.orange
-                                : Colors.white.withOpacity(0.3),
+                                : Colors.white.withValues(alpha: 0.3),
                             size: 20,
                           ),
                           const SizedBox(width: 12),
@@ -304,7 +305,7 @@ class _WarningDialogState extends State<WarningDialog> {
                             style: TextStyle(
                               color: _selectedReason == reason
                                   ? Colors.white
-                                  : Colors.white.withOpacity(0.7),
+                                  : Colors.white.withValues(alpha: 0.7),
                               fontSize: 14,
                               fontWeight: _selectedReason == reason
                                   ? FontWeight.w600
@@ -347,7 +348,7 @@ class _WarningDialogState extends State<WarningDialog> {
                   decoration: InputDecoration(
                     hintText: 'Grund für Verwarnung eingeben... (Pflichtfeld)',
                     hintStyle: TextStyle(
-                      color: Colors.white.withOpacity(0.3),
+                      color: Colors.white.withValues(alpha: 0.3),
                     ),
                     filled: true,
                     fillColor: const Color(0xFF252538),
@@ -388,7 +389,7 @@ class _WarningDialogState extends State<WarningDialog> {
                       onPressed: () => Navigator.pop(context),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: Colors.white,
-                        side: BorderSide(color: Colors.white.withOpacity(0.3)),
+                        side: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),

@@ -7,6 +7,7 @@
 /// - Do-Not-Disturb Settings
 /// - Rate Limiting (100 req/min)
 /// - Offline Queue
+library;
 
 import 'dart:async';
 import 'dart:convert';

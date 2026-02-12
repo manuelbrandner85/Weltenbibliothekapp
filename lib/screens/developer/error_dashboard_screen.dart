@@ -9,7 +9,7 @@ import 'package:intl/intl.dart';
 import '../../services/error_reporting_service.dart';
 
 class ErrorDashboardScreen extends StatefulWidget {
-  const ErrorDashboardScreen({Key? key}) : super(key: key);
+  const ErrorDashboardScreen({super.key});
 
   @override
   State<ErrorDashboardScreen> createState() => _ErrorDashboardScreenState();
@@ -233,7 +233,7 @@ class _ErrorDashboardScreenState extends State<ErrorDashboardScreen> {
                       ),
                     )
                   else
-                    ..._errors.reversed.map((error) => _buildErrorTile(error)).toList(),
+                    ..._errors.reversed.map((error) => _buildErrorTile(error)),
                 ],
               ),
             ),

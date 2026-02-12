@@ -654,7 +654,7 @@ class _UserModerationScreenV16ListState extends ConsumerState<UserModerationScre
                 _buildInfoRow('User-ID:', user.userId),
                 _buildInfoRow('Display Name:', user.displayName ?? user.username),
                 _buildInfoRow('Rolle:', user.role),
-                _buildInfoRow('Erstellt:', user.createdAt?.split('T')[0] ?? 'N/A'),
+                _buildInfoRow('Erstellt:', user.createdAt.split('T')[0] ?? 'N/A'),
                 
                 const Divider(height: 24),
                 

@@ -506,7 +506,7 @@ class _UserDetailScreenState extends State<UserDetailScreen> with SingleTickerPr
                 children: [
                   CircleAvatar(
                     radius: 48,
-                    backgroundColor: worldColor.withOpacity(0.2),
+                    backgroundColor: worldColor.withValues(alpha: 0.2),
                     child: widget.user.avatarEmoji != null
                         ? Text(widget.user.avatarEmoji!, style: const TextStyle(fontSize: 48))
                         : Text(
@@ -531,7 +531,7 @@ class _UserDetailScreenState extends State<UserDetailScreen> with SingleTickerPr
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                     decoration: BoxDecoration(
-                      color: roleBadgeColor.withOpacity(0.2),
+                      color: roleBadgeColor.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: roleBadgeColor, width: 1),
                     ),
@@ -554,7 +554,7 @@ class _UserDetailScreenState extends State<UserDetailScreen> with SingleTickerPr
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.red.withOpacity(0.2),
+                        color: Colors.red.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(color: Colors.red, width: 2),
                       ),
@@ -739,7 +739,7 @@ class _UserDetailScreenState extends State<UserDetailScreen> with SingleTickerPr
       color: const Color(0xFF16213E),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: iconColor.withOpacity(0.2),
+          backgroundColor: iconColor.withValues(alpha: 0.2),
           child: Icon(icon, color: iconColor, size: 20),
         ),
         title: Text(
@@ -847,7 +847,7 @@ class _UserDetailScreenState extends State<UserDetailScreen> with SingleTickerPr
       color: const Color(0xFF16213E),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(8),
-        side: BorderSide(color: noteColor.withOpacity(0.5), width: 1),
+        side: BorderSide(color: noteColor.withValues(alpha: 0.5), width: 1),
       ),
       child: Padding(
         padding: const EdgeInsets.all(12),

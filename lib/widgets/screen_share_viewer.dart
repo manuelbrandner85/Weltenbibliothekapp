@@ -1,13 +1,14 @@
 /// 🖥️ WELTENBIBLIOTHEK - SCREEN SHARE VIEWER WIDGET
 /// Displays shared screens in voice chat
 /// Features: Full screen view, PiP mode, quality indicator
+library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import '../services/screen_sharing_service.dart';
 
 class ScreenShareViewer extends StatefulWidget {
-  const ScreenShareViewer({Key? key}) : super(key: key);
+  const ScreenShareViewer({super.key});
 
   @override
   State<ScreenShareViewer> createState() => _ScreenShareViewerState();
@@ -246,11 +247,11 @@ class ScreenShareButton extends StatefulWidget {
   final bool isAdmin;
   
   const ScreenShareButton({
-    Key? key,
+    super.key,
     required this.userId,
     required this.username,
     this.isAdmin = false,
-  }) : super(key: key);
+  });
 
   @override
   State<ScreenShareButton> createState() => _ScreenShareButtonState();

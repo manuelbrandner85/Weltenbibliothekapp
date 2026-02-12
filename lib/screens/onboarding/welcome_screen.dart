@@ -4,7 +4,6 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../utils/app_animations.dart';
 import '../../config/enhanced_app_themes.dart';
 import '../../utils/responsive_helper.dart';
 import 'feature_tour_screen.dart';

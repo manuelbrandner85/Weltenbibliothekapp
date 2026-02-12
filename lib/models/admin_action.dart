@@ -1,5 +1,6 @@
 /// ADMIN ACTION MODEL
 /// Protokolliert alle Admin-Aktionen für Transparenz und Nachverfolgung
+library;
 
 enum AdminActionType {
   kick,           // User aus Voice Chat entfernen

@@ -1,12 +1,13 @@
 /// 🎤 WELTENBIBLIOTHEK - VOICE CHAT FLOATING BUTTON
 /// Floating voice chat controls that work across all screens
 /// Features: Join/leave, mute/unmute, participant list, quality indicator
+library;
 
 import 'package:flutter/material.dart';
 import '../services/webrtc_voice_service.dart';
 
 class VoiceChatFloatingButton extends StatefulWidget {
-  const VoiceChatFloatingButton({Key? key}) : super(key: key);
+  const VoiceChatFloatingButton({super.key});
 
   @override
   State<VoiceChatFloatingButton> createState() => _VoiceChatFloatingButtonState();
@@ -98,7 +99,7 @@ class _VoiceChatFloatingButtonState extends State<VoiceChatFloatingButton>
                     ],
                   ),
                   const Divider(height: 16),
-                  ..._participants.map((p) => _buildParticipantTile(p)).toList(),
+                  ..._participants.map((p) => _buildParticipantTile(p)),
                   _buildParticipantTile(VoiceParticipant(
                     userId: 'me',
                     username: 'Du',

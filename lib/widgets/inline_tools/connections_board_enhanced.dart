@@ -56,7 +56,7 @@ class _ConnectionsBoardEnhancedState extends State<ConnectionsBoardEnhanced> {
   Future<void> _loadConnections() async {
     try {
       final response = await http.get(
-        Uri.parse(ApiConfig.connectionsUrl + '?room_id=${widget.roomId}'),
+        Uri.parse('${ApiConfig.connectionsUrl}?room_id=${widget.roomId}'),
         headers: {'Authorization': 'Bearer _C578hgIAimVPG0WjfeAjk23RxQMQ9gox0W7ebLv'},
       );
       if (response.statusCode == 200) {

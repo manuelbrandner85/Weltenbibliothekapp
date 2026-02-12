@@ -4,13 +4,13 @@
 /// - Lädt offiziell veröffentlichte Epstein-Dokumente von justice.gov
 /// - PDF-Download und In-App-Anzeige mit Übersetzungsfunktion
 /// - Vollständiger Zugriff auf die Epstein Document Library
+library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 import 'package:translator/translator.dart';
-import 'dart:typed_data';
 import 'dart:io';
 
 class EpsteinFilesSimpleScreen extends StatefulWidget {
@@ -23,9 +23,8 @@ class EpsteinFilesSimpleScreen extends StatefulWidget {
 class _EpsteinFilesSimpleScreenState extends State<EpsteinFilesSimpleScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   
-  // 🌐 Auto-Translation State
-  bool _autoTranslateEnabled = false;
-  late WebViewController _jmailWebViewController; // KORRIGIERT: JMail bleibt!
+  late WebViewController _jmailWebViewController;
+  bool _translateEnabled = false; // 🌐 Übersetzung AN/AUS
   
   // PDF Viewing State entfernt - Dokumenten-Archiv wurde gelöscht
   // (Code bleibt für potenzielle zukünftige Nutzung)
@@ -59,42 +58,94 @@ class _EpsteinFilesSimpleScreenState extends State<EpsteinFilesSimpleScreen> wit
         NavigationDelegate(
           onPageFinished: (String url) {
             if (kDebugMode) {
-              debugPrint('✅ JMail Page loaded: $url');
+              debugPrint('✅ Page loaded: $url');
             }
-            // 🌐 Automatische deutsche Übersetzung für JMail-Seite
-            _injectGoogleTranslateFrame();
+            // 🌐 Verstecke Google Translate Banner wenn Übersetzung aktiv
+            if (_translateEnabled) {
+              _hideGoogleTranslateBanner();
+            }
+          },
+          onNavigationRequest: (NavigationRequest request) {
+            // 🌐 Nur übersetzen wenn _translateEnabled = true
+            if (_translateEnabled && request.url.startsWith('http') && !request.url.contains('translate.google.com')) {
+              final translatedUrl = 'https://translate.google.com/translate?sl=auto&tl=de&u=${Uri.encodeComponent(request.url)}';
+              _jmailWebViewController.loadRequest(Uri.parse(translatedUrl));
+              return NavigationDecision.prevent;
+            }
+            // Erlaube alle Navigationen
+            return NavigationDecision.navigate;
           },
         ),
       )
-      // 🌐 Lade JMail über Google Translate Proxy (automatisch übersetzt)
-      ..loadRequest(Uri.parse('https://jmail-world.translate.goog/?_x_tr_sl=en&_x_tr_tl=de&_x_tr_hl=de'));
+      // 🌐 Lade JMail DIREKT (OHNE Übersetzung beim Start)
+      ..loadRequest(Uri.parse('https://jmail.world/'));
   }
   
-  // PDF Handler & Dokumenten-Archiv entfernt - nicht mehr benötigt
+  /// 🌐 Toggle Übersetzung - Lädt Seite mit/ohne Google Translate neu
+  void _toggleTranslation() {
+    setState(() {
+      _translateEnabled = !_translateEnabled;
+    });
+    
+    // Lade Seite neu mit/ohne Übersetzung
+    if (_translateEnabled) {
+      _jmailWebViewController.loadRequest(
+        Uri.parse('https://translate.google.com/translate?sl=en&tl=de&u=https://jmail.world/')
+      );
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('🌐 Übersetzung aktiviert - Seite wird übersetzt'),
+          duration: Duration(seconds: 2),
+          backgroundColor: Color(0xFF4CAF50),
+        ),
+      );
+    } else {
+      _jmailWebViewController.loadRequest(Uri.parse('https://jmail.world/'));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('🌐 Übersetzung deaktiviert - Original-Seite'),
+          duration: Duration(seconds: 2),
+          backgroundColor: Color(0xFF2196F3),
+        ),
+      );
+    }
+  }
   
-  /// 🌐 Google Translate Frame - Verstecke Translate-Bar
-  void _injectGoogleTranslateFrame() {
+  /// 🌐 Verstecke Google Translate Banner - Sieht sauberer aus
+  void _hideGoogleTranslateBanner() {
     final jsCode = '''
       (function() {
-        // Verstecke Google Translate Top-Bar (störend)
-        const style = document.createElement('style');
-        style.textContent = `
-          body { top: 0 !important; }
-          .goog-te-banner-frame { display: none !important; }
-          .goog-te-balloon-frame { display: none !important; }
-          #goog-gt-tt { display: none !important; }
-          iframe.skiptranslate { display: none !important; }
-        `;
-        document.head.appendChild(style);
-        console.log('✅ Google Translate Bar versteckt');
+        // Entferne Google Translate Banner
+        const banner = document.querySelector('.goog-te-banner-frame');
+        if (banner) banner.style.display = 'none';
+        
+        // Entferne Top-Frame
+        const topFrame = document.getElementById(':1.container');
+        if (topFrame) topFrame.style.display = 'none';
+        
+        // Setze Body-Top zurück (Banner verschiebt Body nach unten)
+        document.body.style.top = '0';
+        document.body.style.position = 'relative';
+        
+        console.log('✅ Google Translate Banner versteckt');
       })();
     ''';
     
     // JavaScript nach 1 Sekunde ausführen
     Future.delayed(const Duration(seconds: 1), () {
-      _jmailWebViewController.runJavaScript(jsCode);
+      try {
+        _jmailWebViewController.runJavaScript(jsCode);
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('⚠️ Konnte Banner nicht verstecken: $e');
+        }
+      }
     });
   }
+  
+  // PDF Handler & Dokumenten-Archiv entfernt - nicht mehr benötigt
+  
+
   
   Future<void> _openPdfInApp(String pdfUrl) async {
     if (_isLoadingPdf) {
@@ -345,15 +396,32 @@ class _EpsteinFilesSimpleScreenState extends State<EpsteinFilesSimpleScreen> wit
                 ],
               ),
         actions: [
-          if (!_showPdfViewer)
+          if (!_showPdfViewer) ...[
+            // 🌐 Übersetzungs-Toggle Button
+            IconButton(
+              icon: Icon(
+                _translateEnabled ? Icons.translate : Icons.translate_outlined,
+                color: _translateEnabled ? Colors.green : Colors.white,
+              ),
+              onPressed: _toggleTranslation,
+              tooltip: _translateEnabled ? 'Übersetzung AUS' : 'Übersetzung AN',
+            ),
+            // 🔄 Refresh Button
             IconButton(
               icon: const Icon(Icons.refresh),
               onPressed: () {
-                // Nur noch 1 Tab - JMail (umbenannt als Epstein Files)
                 _jmailWebViewController.reload();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('🔄 Seite wird neu geladen...'),
+                    duration: Duration(seconds: 1),
+                    backgroundColor: Color(0xFF4CAF50),
+                  ),
+                );
               },
               tooltip: 'Neu laden',
             ),
+          ],
         ],
       ),
       body: _showPdfViewer 

@@ -17,8 +17,8 @@ import '../services/leaderboard_service.dart';
 import '../services/reward_service.dart';
 import '../services/daily_knowledge_service.dart';
 import '../config/enhanced_app_themes.dart';  // 🎨 NEW
-import '../utils/responsive_helper.dart';  // 📱 NEW
-import '../widgets/micro_interactions.dart';  // ✨ NEW
+// 📱 NEW
+// ✨ NEW
 
 class EnhancedProfileScreen extends StatefulWidget {
   const EnhancedProfileScreen({super.key});

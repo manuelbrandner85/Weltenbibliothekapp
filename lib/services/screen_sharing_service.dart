@@ -1,6 +1,7 @@
 /// 🖥️ WELTENBIBLIOTHEK - SCREEN SHARING SERVICE
 /// WebRTC Screen Sharing for Admins/Moderators
 /// Features: Share screen, view shared screens, quality controls, PiP mode
+library;
 
 import 'dart:async';
 import 'package:flutter/foundation.dart';
@@ -370,6 +371,7 @@ class ScreenSharingService extends ChangeNotifier {
   }
 
   /// Dispose
+  @override
   Future<void> dispose() async {
     await stopScreenShare();
     

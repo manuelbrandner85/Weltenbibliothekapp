@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../portal_home_screen.dart'; // 🌀 PORTAL
 
 /// 🎓 ENHANCED ONBOARDING FLOW v8.0
 /// 
@@ -111,14 +112,17 @@ class _OnboardingEnhancedScreenState extends State<OnboardingEnhancedScreen>
   Future<void> _completeOnboarding() async {
     final prefs = await SharedPreferences.getInstance();
     
-    // Mark ALL onboarding types as completed (to prevent any confusion)
+    // ✅ Mark onboarding as seen (wichtig für IntroImageScreen!)
+    await prefs.setBool('has_seen_onboarding', true);
     await prefs.setBool('enhanced_onboarding_completed', true);
     await prefs.setBool('new_onboarding_completed', true);
     await prefs.setBool('onboarding_completed', true);
     
     if (mounted) {
-      // Navigate to main app (IntroImageScreen)
-      Navigator.of(context).pushReplacementNamed('/home');
+      // ✅ Navigate direkt zum Portal (KEIN Loop mehr!)
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const PortalHomeScreen()),
+      );
     }
   }
 

@@ -10,8 +10,8 @@ import '../services/sound_service.dart';
 import '../services/haptic_service.dart';
 import '../utils/responsive_helper.dart';
 import '../utils/portal_enhancements.dart';
-import '../utils/app_animations.dart'; // 🎨 NEW: Animation System
-import '../config/enhanced_app_themes.dart'; // 🎨 NEW: Enhanced Themes
+// 🎨 NEW: Animation System
+// 🎨 NEW: Enhanced Themes
 import '../painters/energy_effects_painter.dart';
 import '../widgets/tutorial_overlay.dart';
 import '../widgets/pwa_install_prompt.dart'; // 📱 PWA INSTALL PROMPT (NEW Phase 3)

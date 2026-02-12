@@ -416,7 +416,7 @@ class _UserModerationScreenV16State extends ConsumerState<UserModerationScreenV1
                             ? Colors.blue
                             : Colors.grey,
                     child: Text(
-                      user.avatarEmoji,
+                      user.avatarEmoji ?? '👤',
                       style: const TextStyle(fontSize: 20),
                     ),
                   ),

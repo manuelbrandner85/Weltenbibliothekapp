@@ -1,12 +1,12 @@
 /// 🚨 WELTENBIBLIOTHEK - ERROR REPORTING SERVICE
 /// Centralized error tracking and reporting
 /// Features: Error logging, crash reports, user feedback, analytics
+library;
 
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import '../config/api_config.dart';
 
 /// Service for tracking and reporting app errors
 class ErrorReportingService {

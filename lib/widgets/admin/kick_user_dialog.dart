@@ -6,6 +6,7 @@
 /// - Optional: Grund-Text eingeben
 /// - Confirmation
 /// - Cooldown-Info
+library;
 
 import 'package:flutter/material.dart';
 
@@ -72,7 +73,7 @@ class _KickUserDialogState extends State<KickUserDialog> {
                   width: 48,
                   height: 48,
                   decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.2),
+                    color: Colors.red.withValues(alpha: 0.2),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -98,7 +99,7 @@ class _KickUserDialogState extends State<KickUserDialog> {
                       Text(
                         widget.username,
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.7),
+                          color: Colors.white.withValues(alpha: 0.7),
                           fontSize: 14,
                         ),
                       ),
@@ -118,10 +119,10 @@ class _KickUserDialogState extends State<KickUserDialog> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.orange.withOpacity(0.1),
+                color: Colors.orange.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: Colors.orange.withOpacity(0.3),
+                  color: Colors.orange.withValues(alpha: 0.3),
                 ),
               ),
               child: Row(
@@ -177,7 +178,7 @@ class _KickUserDialogState extends State<KickUserDialog> {
                     ),
                     decoration: BoxDecoration(
                       color: _selectedReason == reason
-                          ? Colors.red.withOpacity(0.2)
+                          ? Colors.red.withValues(alpha: 0.2)
                           : const Color(0xFF252538),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
@@ -195,7 +196,7 @@ class _KickUserDialogState extends State<KickUserDialog> {
                               : Icons.radio_button_unchecked,
                           color: _selectedReason == reason
                               ? Colors.red
-                              : Colors.white.withOpacity(0.3),
+                              : Colors.white.withValues(alpha: 0.3),
                           size: 20,
                         ),
                         const SizedBox(width: 12),
@@ -204,7 +205,7 @@ class _KickUserDialogState extends State<KickUserDialog> {
                           style: TextStyle(
                             color: _selectedReason == reason
                                 ? Colors.white
-                                : Colors.white.withOpacity(0.7),
+                                : Colors.white.withValues(alpha: 0.7),
                             fontSize: 14,
                             fontWeight: _selectedReason == reason
                                 ? FontWeight.w600
@@ -246,7 +247,7 @@ class _KickUserDialogState extends State<KickUserDialog> {
                 decoration: InputDecoration(
                   hintText: 'Grund für Entfernung eingeben...',
                   hintStyle: TextStyle(
-                    color: Colors.white.withOpacity(0.3),
+                    color: Colors.white.withValues(alpha: 0.3),
                   ),
                   filled: true,
                   fillColor: const Color(0xFF252538),
@@ -287,7 +288,7 @@ class _KickUserDialogState extends State<KickUserDialog> {
                     onPressed: () => Navigator.pop(context),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.white,
-                      side: BorderSide(color: Colors.white.withOpacity(0.3)),
+                      side: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),

@@ -10,6 +10,7 @@
 /// 
 /// WICHTIG: Die eigentliche Rollenvergabe erfolgt im Backend (index.js)
 /// Diese Klasse dient nur zur UI-Darstellung und Client-seitigen Checks
+library;
 
 import 'package:flutter/foundation.dart';
 

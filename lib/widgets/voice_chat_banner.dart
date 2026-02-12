@@ -88,14 +88,12 @@ class _VoiceChatBannerState extends State<VoiceChatBanner> with SingleTickerProv
     return GestureDetector(
       onTap: () async {
         // 🎯 CRITICAL FIX: Join voice room BEFORE opening screen!
-        print('🎤 [VoiceChatBanner] Banner tapped - joining voice room...');
         
         final voiceController = SimpleVoiceController();
         
         try {
           // STEP 1: Init microphone
           if (voiceController.localStream == null) {
-            print('🎤 [VoiceChatBanner] Initializing microphone...');
             final micSuccess = await voiceController.initMicrophone();
             if (!micSuccess) {
               if (context.mounted) {
@@ -108,11 +106,9 @@ class _VoiceChatBannerState extends State<VoiceChatBanner> with SingleTickerProv
               }
               return;
             }
-            print('✅ [VoiceChatBanner] Microphone initialized');
           }
           
           // STEP 2: Join room
-          print('🚀 [VoiceChatBanner] Joining room: ${widget.roomName}');
           final success = await voiceController.joinVoiceRoom(
             widget.roomId,
             widget.roomName,
@@ -121,14 +117,12 @@ class _VoiceChatBannerState extends State<VoiceChatBanner> with SingleTickerProv
           );
           
           if (success && context.mounted) {
-            print('✅ [VoiceChatBanner] Join successful, opening voice screen');
             Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (context) => const TelegramVoiceScreen(),
               ),
             );
           } else if (context.mounted) {
-            print('❌ [VoiceChatBanner] Join failed');
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text('Fehler beim Beitritt zum Voice-Chat'),
@@ -137,7 +131,6 @@ class _VoiceChatBannerState extends State<VoiceChatBanner> with SingleTickerProv
             );
           }
         } catch (e) {
-          print('❌ [VoiceChatBanner] Error: $e');
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
