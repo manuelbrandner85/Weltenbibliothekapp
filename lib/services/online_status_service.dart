@@ -13,7 +13,7 @@ class OnlineStatusService {
   OnlineStatusService._internal();
   
   // ✅ Backend URL (Cloudflare Worker)
-  static const String _baseUrl = 'https://weltenbibliothek-worker.brandy13062.workers.dev';
+  static const String _baseUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
   static const Duration _apiTimeout = Duration(seconds: 5);
   
   // Online users cache

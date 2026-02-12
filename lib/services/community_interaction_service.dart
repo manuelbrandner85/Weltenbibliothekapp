@@ -7,7 +7,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 /// Handles Likes, Comments, Shares with Cloudflare D1 Backend + Local Cache
 class CommunityInteractionService {
   // Backend URLs
-  static const String _backendUrl = 'https://api-backend.brandy13062.workers.dev';
+  static const String _backendUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
   
   // Hive Boxes
   static const String _likesBox = 'user_likes';

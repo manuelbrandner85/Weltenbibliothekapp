@@ -1,0 +1,877 @@
+Resolving dependencies...
+Downloading packages...
+  audio_session 0.1.25 (0.2.2 available)
+  characters 1.4.0 (1.4.1 available)
+  connectivity_plus 6.1.5 (7.0.0 available)
+  cross_file 0.3.5+1 (0.3.5+2 available)
+  dbus 0.7.11 (0.7.12 available)
+  device_info_plus 9.1.2 (12.3.0 available)
+  equatable 2.0.7 (2.0.8 available)
+  extension 0.6.0 (1.0.0 available)
+  ffi 2.1.4 (2.1.5 available)
+  file_picker 8.3.7 (10.3.10 available)
+  fl_chart 0.69.0 (1.1.1 available)
+  flutter_lints 5.0.0 (6.0.0 available)
+  flutter_local_notifications 18.0.1 (20.0.0 available)
+  flutter_local_notifications_linux 5.0.0 (7.0.0 available)
+  flutter_local_notifications_platform_interface 8.0.0 (10.0.0 available)
+  flutter_map 7.0.2 (8.2.2 available)
+  flutter_map_marker_cluster 1.4.0 (8.2.2 available)
+  flutter_map_marker_popup 7.0.0 (8.1.0 available)
+  flutter_riverpod 2.6.1 (3.2.1 available)
+  flutter_sound_platform_interface 9.30.0 (10.3.8 available)
+  flutter_sound_web 9.30.0 (10.3.8 available)
+  geolocator 13.0.4 (14.0.2 available)
+  geolocator_android 4.6.2 (5.0.2 available)
+  graphview 1.2.0 (1.5.1 available)
+  http 1.5.0 (1.6.0 available)
+  image 4.5.4 (4.7.2 available)
+  image_picker_android 0.8.13+10 (0.8.13+13 available)
+  image_picker_ios 0.8.13+3 (0.8.13+6 available)
+  js 0.6.7 (0.7.2 available)
+  json_annotation 4.9.0 (4.10.0 available)
+  just_audio 0.9.46 (0.10.5 available)
+  lints 5.1.1 (6.1.0 available)
+  matcher 0.12.17 (0.12.18 available)
+  material_color_utilities 0.11.1 (0.13.0 available)
+  meta 1.16.0 (1.18.1 available)
+  mgrs_dart 2.0.0 (3.0.0 available)
+  mime 1.0.6 (2.0.0 available)
+  path_provider_foundation 2.5.1 (2.6.0 available)
+  pdfx 2.6.0 (2.9.2 available)
+  permission_handler 11.4.0 (12.0.1 available)
+  permission_handler_android 12.1.0 (13.0.1 available)
+  photo_view 0.14.0 (0.15.0 available)
+  proj4dart 2.1.0 (3.0.0 available)
+  riverpod 2.6.1 (3.2.1 available)
+  sensors_plus 6.1.2 (7.0.0 available)
+  share_plus 7.2.2 (12.0.1 available)
+  share_plus_platform_interface 3.4.0 (6.1.0 available)
+  shared_preferences 2.5.3 (2.5.4 available)
+  shared_preferences_android 2.4.18 (2.4.20 available)
+  source_span 1.10.1 (1.10.2 available)
+  test_api 0.7.6 (0.7.9 available)
+  timezone 0.10.1 (0.11.0 available)
+  unicode 0.3.1 (1.1.9 available)
+  url_launcher_web 2.4.1 (2.4.2 available)
+  video_player_avfoundation 2.8.8 (2.9.1 available)
+  win32_registry 1.1.5 (2.1.0 available)
+Got dependencies!
+56 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+Analyzing flutter_app...                                        
+
+   info • Dangling library doc comment • VOICE_CHAT_ARCHITECTURE.dart:1:1 • dangling_library_doc_comments
+   info • The file name 'VOICE_CHAT_ARCHITECTURE.dart' isn't a lower_case_with_underscores identifier • VOICE_CHAT_ARCHITECTURE.dart:1:1 • file_names
+   info • Dangling library doc comment • VOICE_CHAT_ARCHITECTURE.dart:2:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_ARCHITECTURE.dart:3:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_EXAMPLE.dart:1:1 • dangling_library_doc_comments
+   info • The file name 'VOICE_CHAT_INTEGRATION_EXAMPLE.dart' isn't a lower_case_with_underscores identifier • VOICE_CHAT_INTEGRATION_EXAMPLE.dart:1:1 • file_names
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_EXAMPLE.dart:2:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_EXAMPLE.dart:3:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:1:1 • dangling_library_doc_comments
+   info • The file name 'VOICE_CHAT_INTEGRATION_GUIDE.dart' isn't a lower_case_with_underscores identifier • VOICE_CHAT_INTEGRATION_GUIDE.dart:1:1 • file_names
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:2:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:3:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:4:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:5:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:6:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:7:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:15:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:16:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:17:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:30:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:31:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:33:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:34:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:35:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:70:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:71:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:72:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:140:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:141:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:142:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:144:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:145:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:146:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:147:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:148:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:149:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:150:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:152:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:153:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:154:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:155:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:156:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:157:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:159:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:160:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:161:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:162:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:163:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:164:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:166:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:167:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:168:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:169:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:170:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:172:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:173:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:174:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:290:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:291:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:292:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:294:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:302:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:303:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:304:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:305:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:306:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:307:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:309:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:310:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:311:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:313:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:314:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:315:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:316:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:317:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:318:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:319:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:321:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:322:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:323:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:325:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:326:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:327:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:329:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:330:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:331:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:333:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:334:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:335:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:337:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:338:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:339:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:340:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:342:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:343:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:344:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:346:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:347:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:348:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:350:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_INTEGRATION_GUIDE.dart:351:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_QUICK_REFERENCE.dart:1:1 • dangling_library_doc_comments
+   info • The file name 'VOICE_CHAT_QUICK_REFERENCE.dart' isn't a lower_case_with_underscores identifier • VOICE_CHAT_QUICK_REFERENCE.dart:1:1 • file_names
+   info • Dangling library doc comment • VOICE_CHAT_QUICK_REFERENCE.dart:2:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • VOICE_CHAT_QUICK_REFERENCE.dart:3:1 • dangling_library_doc_comments
+warning • The option 'avoid_print' isn't supported by 'linter'. Try using the only supported option: ''rules'' • analysis_options.yaml:31:3 • unsupported_option_with_legal_value
+   info • The import of 'package:hive/hive.dart' is unnecessary because all of the used elements are also provided by the import of 'package:hive_flutter/hive_flutter.dart' • create_test_profile.dart:1:8 • unnecessary_import
+   info • Don't invoke 'print' in production code • create_test_profile.dart:29:3 • avoid_print
+   info • Don't invoke 'print' in production code • create_test_profile.dart:30:3 • avoid_print
+   info • Don't invoke 'print' in production code • create_test_profile.dart:31:3 • avoid_print
+   info • Don't invoke 'print' in production code • create_test_profile.dart:32:3 • avoid_print
+   info • Don't invoke 'print' in production code • create_test_profile.dart:38:3 • avoid_print
+   info • Don't invoke 'print' in production code • create_test_profile.dart:42:3 • avoid_print
+   info • Don't invoke 'print' in production code • create_test_profile.dart:43:3 • avoid_print
+   info • Dangling library doc comment • lib/config/api_config.dart:1:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • lib/core/state/chat_state_notifier.dart:1:1 • dangling_library_doc_comments
+   info • Don't invoke 'print' in production code • lib/emergency_voice_main.dart:44:5 • avoid_print
+   info • 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre • lib/features/admin/ui/user_detail_screen.dart:180:23 • deprecated_member_use
+   info • 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre • lib/features/admin/ui/user_detail_screen.dart:181:23 • deprecated_member_use
+   info • 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre • lib/features/admin/ui/user_detail_screen.dart:194:25 • deprecated_member_use
+   info • 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre • lib/features/admin/ui/user_detail_screen.dart:195:25 • deprecated_member_use
+   info • 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre • lib/features/admin/widgets/moderation_dialogs.dart:149:15 • deprecated_member_use
+   info • 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre • lib/features/admin/widgets/moderation_dialogs.dart:150:15 • deprecated_member_use
+   info • 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre • lib/features/admin/widgets/moderation_dialogs.dart:179:15 • deprecated_member_use
+   info • 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre • lib/features/admin/widgets/moderation_dialogs.dart:180:15 • deprecated_member_use
+   info • 'value' is deprecated and shouldn't be used. Use component accessors like .r or .g, or toARGB32 for an explicit conversion • lib/models/dynamic_content_models.dart:112:22 • deprecated_member_use
+   info • The variable name 'zentrale_akteure' isn't a lowerCamelCase identifier • lib/models/recherche_extended_models.dart:82:26 • non_constant_identifier_names
+   info • The variable name 'zentrale_akteure' isn't a lowerCamelCase identifier • lib/models/recherche_extended_models.dart:87:19 • non_constant_identifier_names
+   info • The variable name 'zentrale_unterschiede' isn't a lowerCamelCase identifier • lib/models/recherche_extended_models.dart:198:17 • non_constant_identifier_names
+   info • The variable name 'zentrale_unterschiede' isn't a lowerCamelCase identifier • lib/models/recherche_extended_models.dart:203:19 • non_constant_identifier_names
+warning • The value of the field '_selectedCategory' isn't used • lib/screens/achievements_screen.dart:21:23 • unused_field
+   info • Dangling library doc comment • lib/screens/admin/health_dashboard_screen.dart:1:1 • dangling_library_doc_comments
+   info • Parameter 'key' could be a super parameter • lib/screens/developer/error_dashboard_screen.dart:12:9 • use_super_parameters
+   info • Unnecessary use of 'toList' in a spread • lib/screens/developer/error_dashboard_screen.dart:236:80 • unnecessary_to_list_in_spreads
+warning • The value of the field '_dominantChakra' isn't used • lib/screens/energie/calculators/chakra_calculator_screen.dart:21:25 • unused_field
+warning • The value of the field '_blockedChakra' isn't used • lib/screens/energie/calculators/chakra_calculator_screen.dart:22:25 • unused_field
+warning • The value of the field '_hebrewFirstName' isn't used • lib/screens/energie/calculators/gematria_calculator_screen.dart:27:7 • unused_field
+warning • The value of the field '_hebrewLastName' isn't used • lib/screens/energie/calculators/gematria_calculator_screen.dart:28:7 • unused_field
+warning • The value of the field '_latinFirstName' isn't used • lib/screens/energie/calculators/gematria_calculator_screen.dart:29:7 • unused_field
+warning • The value of the field '_latinLastName' isn't used • lib/screens/energie/calculators/gematria_calculator_screen.dart:30:7 • unused_field
+warning • The value of the field '_compatibilityHistory' isn't used • lib/screens/energie/calculators/gematria_calculator_screen.dart:1605:30 • unused_field
+   info • The parameter name 'num' matches a visible type name • lib/screens/energie/calculators/gematria_calculator_screen.dart:2286:36 • avoid_types_as_parameter_names
+   info • Don't use 'BuildContext's across async gaps • lib/screens/energie/calculators/new_spirit_tool_screens.dart:1913:7 • use_build_context_synchronously
+warning • The value of the local variable 'achievementService' isn't used • lib/screens/energie/calculators/new_spirit_tool_screens.dart:2226:11 • unused_local_variable
+warning • The field doesn't override an inherited getter or setter • lib/screens/energie/calculators/numerology_calculator_screen.dart:50:25 • override_on_non_overriding_member
+   info • The parameter name 'num' matches a visible type name • lib/screens/energie/calculators/numerology_calculator_screen.dart:305:37 • avoid_types_as_parameter_names
+   info • The parameter name 'num' matches a visible type name • lib/screens/energie/calculators/numerology_calculator_screen.dart:315:36 • avoid_types_as_parameter_names
+   info • Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check • lib/screens/energie/calculators/numerology_calculator_screen.dart:2821:42 • use_build_context_synchronously
+   info • Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check • lib/screens/energie/calculators/numerology_calculator_screen.dart:2917:44 • use_build_context_synchronously
+   info • Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check • lib/screens/energie/chakra_scan_screen.dart:123:36 • use_build_context_synchronously
+warning • The value of the field '_favoritesService' isn't used • lib/screens/energie/energie_community_tab.dart:31:26 • unused_field
+   info • Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check • lib/screens/energie/energie_community_tab.dart:1036:52 • use_build_context_synchronously
+warning • The value of the field '_messageReactions' isn't used • lib/screens/energie/energie_live_chat_screen.dart:98:48 • unused_field
+warning • The value of the field '_selectedFile' isn't used • lib/screens/energie/energie_live_chat_screen.dart:105:9 • unused_field
+warning • The value of the field '_selectedFileType' isn't used • lib/screens/energie/energie_live_chat_screen.dart:106:11 • unused_field
+   info • Statements in an if should be enclosed in a block • lib/screens/energie/energie_live_chat_screen.dart:171:20 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block • lib/screens/energie/energie_live_chat_screen.dart:213:20 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block • lib/screens/energie/energie_live_chat_screen.dart:235:18 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block • lib/screens/energie/energie_live_chat_screen.dart:253:20 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block • lib/screens/energie/energie_live_chat_screen.dart:302:18 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block • lib/screens/energie/energie_live_chat_screen.dart:326:22 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block • lib/screens/energie/energie_live_chat_screen.dart:335:22 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block • lib/screens/energie/energie_live_chat_screen.dart:359:18 • curly_braces_in_flow_control_structures
+   info • Uses 'await' on an instance of 'bool', which is not a subtype of 'Future' • lib/screens/energie/energie_live_chat_screen.dart:382:24 • await_only_futures
+   info • Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check • lib/screens/energie/energie_live_chat_screen.dart:554:36 • use_build_context_synchronously
+   info • Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check • lib/screens/energie/energie_live_chat_screen.dart:561:29 • use_build_context_synchronously
+   info • Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check • lib/screens/energie/energie_live_chat_screen.dart:568:36 • use_build_context_synchronously
+warning • The declaration '_showGroupTool' isn't referenced • lib/screens/energie/energie_live_chat_screen.dart:1002:8 • unused_element
+   info • Statements in an if should be enclosed in a block • lib/screens/energie/energie_live_chat_screen.dart:1260:32 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block • lib/screens/energie/energie_live_chat_screen.dart:1336:36 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block • lib/screens/energie/energie_live_chat_screen.dart:1605:38 • curly_braces_in_flow_control_structures
+warning • The declaration '_buildMessageBubble' isn't referenced • lib/screens/energie/energie_live_chat_screen.dart:1696:10 • unused_element
+   info • Statements in an if should be enclosed in a block • lib/screens/energie/energie_live_chat_screen.dart:1706:22 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block • lib/screens/energie/energie_live_chat_screen.dart:1788:20 • curly_braces_in_flow_control_structures
+warning • The declaration '_toggleVoiceRoom' isn't referenced • lib/screens/energie/energie_live_chat_screen.dart:1800:16 • unused_element
+   info • Statements in an if should be enclosed in a block • lib/screens/energie/energie_live_chat_screen.dart:1803:20 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block • lib/screens/energie/energie_live_chat_screen.dart:1811:22 • curly_braces_in_flow_control_structures
+warning • The declaration '_toggleMute' isn't referenced • lib/screens/energie/energie_live_chat_screen.dart:1821:16 • unused_element
+   info • Statements in an if should be enclosed in a block • lib/screens/energie/energie_live_chat_screen.dart:1823:18 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block • lib/screens/energie/energie_live_chat_screen.dart:2116:18 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block • lib/screens/energie/energie_live_chat_screen.dart:2146:18 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block • lib/screens/energie/energie_live_chat_screen.dart:2152:18 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block • lib/screens/energie/energie_live_chat_screen.dart:2166:18 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block • lib/screens/energie/energie_live_chat_screen.dart:2216:18 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block • lib/screens/energie/energie_live_chat_screen.dart:2284:18 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block • lib/screens/energie/energie_live_chat_screen.dart:2336:28 • curly_braces_in_flow_control_structures
+warning • The declaration '_adminDeleteMessage' isn't referenced • lib/screens/energie/energie_live_chat_screen.dart:2628:8 • unused_element
+   info • 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre • lib/screens/energie/energie_live_chat_screen.dart:2706:23 • deprecated_member_use
+   info • 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre • lib/screens/energie/energie_live_chat_screen.dart:2707:23 • deprecated_member_use
+   info • Statements in an if should be enclosed in a block • lib/screens/energie/energie_live_chat_screen.dart:2708:38 • curly_braces_in_flow_control_structures
+   info • 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre • lib/screens/energie/energie_live_chat_screen.dart:2720:25 • deprecated_member_use
+   info • 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre • lib/screens/energie/energie_live_chat_screen.dart:2721:25 • deprecated_member_use
+   info • Statements in an if should be enclosed in a block • lib/screens/energie/energie_live_chat_screen.dart:2722:40 • curly_braces_in_flow_control_structures
+   info • Don't use 'BuildContext's across async gaps • lib/screens/energie/frequency_session_screen.dart:226:28 • use_build_context_synchronously
+   info • Don't use 'BuildContext's across async gaps • lib/screens/energie/frequency_session_screen.dart:235:28 • use_build_context_synchronously
+warning • Unused import: 'dart:math' • lib/screens/energie/home_tab_v3.dart:3:8 • unused_import
+warning • The value of the field '_statsService' isn't used • lib/screens/energie/home_tab_v3.dart:36:26 • unused_field
+   info • The type of the right operand ('bool') isn't a subtype or a supertype of the left operand ('bool Function()?') • lib/screens/energie/home_tab_v3.dart:284:39 • unrelated_type_equality_checks
+   info • The type of the right operand ('bool') isn't a subtype or a supertype of the left operand ('bool Function()?') • lib/screens/energie/home_tab_v3.dart:332:35 • unrelated_type_equality_checks
+   info • Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check • lib/screens/energie/tools/meditation_timer_enhanced.dart:760:44 • use_build_context_synchronously
+   info • Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check • lib/screens/energie_world_screen.dart:292:37 • use_build_context_synchronously
+warning • The value of the field '_showOnboarding' isn't used • lib/screens/energie_world_wrapper.dart:16:8 • unused_field
+warning • Unused import: '../utils/responsive_helper.dart' • lib/screens/enhanced_profile_screen.dart:20:8 • unused_import
+warning • Unused import: '../widgets/micro_interactions.dart' • lib/screens/enhanced_profile_screen.dart:21:8 • unused_import
+warning • The value of the field '_leaderboardService' isn't used • lib/screens/enhanced_profile_screen.dart:32:9 • unused_field
+warning • The declaration '_buildEngagementStat' isn't referenced • lib/screens/materie/community_tab_modern.dart:706:10 • unused_element
+warning • The declaration '_buildActionButton' isn't referenced • lib/screens/materie/community_tab_modern.dart:727:10 • unused_element
+   info • Don't use 'BuildContext's across async gaps • lib/screens/materie/geopolitik_map_screen.dart:90:38 • use_build_context_synchronously
+   info • Don't use 'BuildContext's across async gaps • lib/screens/materie/geopolitik_map_screen.dart:95:38 • use_build_context_synchronously
+   info • Don't use 'BuildContext's across async gaps • lib/screens/materie/history_timeline_screen.dart:218:28 • use_build_context_synchronously
+   info • Don't use 'BuildContext's across async gaps • lib/screens/materie/history_timeline_screen.dart:224:28 • use_build_context_synchronously
+warning • Unused import: 'dart:math' • lib/screens/materie/home_tab_v3.dart:3:8 • unused_import
+warning • The value of the field '_statsService' isn't used • lib/screens/materie/home_tab_v3.dart:36:26 • unused_field
+   info • The type of the right operand ('bool') isn't a subtype or a supertype of the left operand ('bool Function()?') • lib/screens/materie/home_tab_v3.dart:284:39 • unrelated_type_equality_checks
+   info • The type of the right operand ('bool') isn't a subtype or a supertype of the left operand ('bool Function()?') • lib/screens/materie/home_tab_v3.dart:332:35 • unrelated_type_equality_checks
+warning • The value of the field '_favoritesService' isn't used • lib/screens/materie/materie_community_tab.dart:29:26 • unused_field
+warning • The declaration '_likePost' isn't referenced • lib/screens/materie/materie_community_tab.dart:147:16 • unused_element
+   info • Don't use 'BuildContext's across async gaps • lib/screens/materie/materie_community_tab.dart:171:28 • use_build_context_synchronously
+   info • Don't use 'BuildContext's across async gaps • lib/screens/materie/materie_community_tab.dart:175:28 • use_build_context_synchronously
+warning • The declaration '_showCommentsDialog' isn't referenced • lib/screens/materie/materie_community_tab.dart:182:16 • unused_element
+   info • Don't use 'BuildContext's across async gaps • lib/screens/materie/materie_community_tab.dart:284:38 • use_build_context_synchronously
+   info • Don't use 'BuildContext's across async gaps • lib/screens/materie/materie_community_tab.dart:287:46 • use_build_context_synchronously
+   info • Don't use 'BuildContext's across async gaps • lib/screens/materie/materie_community_tab.dart:291:46 • use_build_context_synchronously
+warning • Dead code • lib/screens/materie/materie_community_tab.dart:814:29 • dead_code
+warning • Dead code • lib/screens/materie/materie_community_tab.dart:817:29 • dead_code
+warning • Dead code • lib/screens/materie/materie_community_tab.dart:825:27 • dead_code
+   info • Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check • lib/screens/materie/materie_community_tab.dart:1200:52 • use_build_context_synchronously
+warning • The value of the field '_ws' isn't used • lib/screens/materie/materie_live_chat_screen.dart:56:30 • unused_field
+warning • The value of the field '_wsMessageSubscription' isn't used • lib/screens/materie/materie_live_chat_screen.dart:65:45 • unused_field
+warning • The value of the field '_wsTypingSubscription' isn't used • lib/screens/materie/materie_live_chat_screen.dart:66:31 • unused_field
+warning • The value of the field '_wsOnlineSubscription' isn't used • lib/screens/materie/materie_live_chat_screen.dart:67:37 • unused_field
+warning • The value of the field '_currentTypingUser' isn't used • lib/screens/materie/materie_live_chat_screen.dart:105:11 • unused_field
+   info • The private field _onlineUsers could be 'final' • lib/screens/materie/materie_live_chat_screen.dart:106:16 • prefer_final_fields
+warning • The value of the field '_onlineUsers' isn't used • lib/screens/materie/materie_live_chat_screen.dart:106:16 • unused_field
+warning • The value of the field '_messageReactions' isn't used • lib/screens/materie/materie_live_chat_screen.dart:116:48 • unused_field
+   info • Statements in an if should be enclosed in a block • lib/screens/materie/materie_live_chat_screen.dart:187:20 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block • lib/screens/materie/materie_live_chat_screen.dart:211:24 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block • lib/screens/materie/materie_live_chat_screen.dart:262:22 • curly_braces_in_flow_control_structures
+warning • The declaration '_navigateToTool' isn't referenced • lib/screens/materie/materie_live_chat_screen.dart:309:8 • unused_element
+   info • Statements in an if should be enclosed in a block • lib/screens/materie/materie_live_chat_screen.dart:339:18 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block • lib/screens/materie/materie_live_chat_screen.dart:364:20 • curly_braces_in_flow_control_structures
+   info • Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check • lib/screens/materie/materie_live_chat_screen.dart:551:36 • use_build_context_synchronously
+   info • Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check • lib/screens/materie/materie_live_chat_screen.dart:558:29 • use_build_context_synchronously
+   info • Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check • lib/screens/materie/materie_live_chat_screen.dart:565:36 • use_build_context_synchronously
+   info • Statements in an if should be enclosed in a block • lib/screens/materie/materie_live_chat_screen.dart:726:18 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block • lib/screens/materie/materie_live_chat_screen.dart:750:22 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block • lib/screens/materie/materie_live_chat_screen.dart:759:22 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block • lib/screens/materie/materie_live_chat_screen.dart:784:18 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block • lib/screens/materie/materie_live_chat_screen.dart:886:32 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block • lib/screens/materie/materie_live_chat_screen.dart:1094:30 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block • lib/screens/materie/materie_live_chat_screen.dart:1300:36 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block • lib/screens/materie/materie_live_chat_screen.dart:1755:20 • curly_braces_in_flow_control_structures
+warning • The declaration '_toggleVoiceRoom' isn't referenced • lib/screens/materie/materie_live_chat_screen.dart:1767:16 • unused_element
+   info • Statements in an if should be enclosed in a block • lib/screens/materie/materie_live_chat_screen.dart:1770:20 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block • lib/screens/materie/materie_live_chat_screen.dart:1778:22 • curly_braces_in_flow_control_structures
+warning • The declaration '_toggleMute' isn't referenced • lib/screens/materie/materie_live_chat_screen.dart:1788:16 • unused_element
+   info • Statements in an if should be enclosed in a block • lib/screens/materie/materie_live_chat_screen.dart:1790:18 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block • lib/screens/materie/materie_live_chat_screen.dart:1955:18 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block • lib/screens/materie/materie_live_chat_screen.dart:1985:18 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block • lib/screens/materie/materie_live_chat_screen.dart:1991:18 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block • lib/screens/materie/materie_live_chat_screen.dart:2004:18 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block • lib/screens/materie/materie_live_chat_screen.dart:2054:18 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block • lib/screens/materie/materie_live_chat_screen.dart:2218:18 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block • lib/screens/materie/materie_live_chat_screen.dart:2270:28 • curly_braces_in_flow_control_structures
+warning • The declaration '_adminDeleteMessage' isn't referenced • lib/screens/materie/materie_live_chat_screen.dart:2562:8 • unused_element
+   info • 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre • lib/screens/materie/materie_live_chat_screen.dart:2640:23 • deprecated_member_use
+   info • 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre • lib/screens/materie/materie_live_chat_screen.dart:2641:23 • deprecated_member_use
+   info • Statements in an if should be enclosed in a block • lib/screens/materie/materie_live_chat_screen.dart:2642:38 • curly_braces_in_flow_control_structures
+   info • 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre • lib/screens/materie/materie_live_chat_screen.dart:2654:25 • deprecated_member_use
+   info • 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre • lib/screens/materie/materie_live_chat_screen.dart:2655:25 • deprecated_member_use
+   info • Statements in an if should be enclosed in a block • lib/screens/materie/materie_live_chat_screen.dart:2656:40 • curly_braces_in_flow_control_structures
+   info • Dangling library doc comment • lib/screens/materie/materie_live_chat_screen_optimized.dart:1:1 • dangling_library_doc_comments
+warning • The value of the field '_selectedRoom' isn't used • lib/screens/materie/materie_live_chat_screen_optimized.dart:59:15 • unused_field
+warning • The value of the field '_username' isn't used • lib/screens/materie/materie_live_chat_screen_optimized.dart:60:15 • unused_field
+warning • The value of the field '_panOffset' isn't used • lib/screens/materie/power_network_mapper_screen.dart:14:16 • unused_field
+warning • The value of the field '_scale' isn't used • lib/screens/materie/power_network_mapper_screen.dart:15:16 • unused_field
+warning • The value of the field '_useAI' isn't used • lib/screens/materie/propaganda_detector_screen.dart:16:14 • unused_field
+warning • The value of the field '_isSearching' isn't used • lib/screens/materie/recherche_tab_mobile.dart:53:8 • unused_field
+warning • The declaration '_buildQuickSearchChip' isn't referenced • lib/screens/materie/recherche_tab_mobile.dart:696:10 • unused_element
+warning • The operand can't be 'null', so the condition is always 'true' • lib/screens/materie/recherche_tab_mobile.dart:1435:56 • unnecessary_null_comparison
+   info • Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check • lib/screens/materie/search_history_screen.dart:277:31 • use_build_context_synchronously
+   info • Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check • lib/screens/materie/search_history_screen.dart:278:38 • use_build_context_synchronously
+warning • Dead code • lib/screens/materie/wissen_tab_modern.dart:437:43 • dead_code
+warning • The left operand can't be null, so the right operand is never executed • lib/screens/materie/wissen_tab_modern.dart:437:46 • dead_null_aware_expression
+   info • Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check • lib/screens/materie_world_screen.dart:292:37 • use_build_context_synchronously
+warning • The value of the field '_showOnboarding' isn't used • lib/screens/materie_world_wrapper.dart:16:8 • unused_field
+   info • Dangling library doc comment • lib/screens/onboarding/onboarding_screen.dart:1:1 • dangling_library_doc_comments
+   info • The import of 'dart:ui' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart' • lib/screens/onboarding/onboarding_screen.dart:8:8 • unnecessary_import
+  error • Undefined name 'AppPageTransitions' • lib/screens/onboarding/welcome_screen.dart:72:7 • undefined_identifier
+warning • Unused import: '../utils/app_animations.dart' • lib/screens/portal_home_screen.dart:13:8 • unused_import
+warning • Unused import: '../config/enhanced_app_themes.dart' • lib/screens/portal_home_screen.dart:14:8 • unused_import
+   info • Don't use 'BuildContext's across async gaps • lib/screens/portal_home_screen.dart:1349:7 • use_build_context_synchronously
+warning • The declaration '_buildHealthMonitorCard' isn't referenced • lib/screens/profile_settings_screen.dart:841:10 • unused_element
+   info • 'activeColor' is deprecated and shouldn't be used. Use activeThumbColor instead. This feature was deprecated after v3.31.0-2.0.pre • lib/screens/profile_settings_screen.dart:1127:21 • deprecated_member_use
+   info • Dangling library doc comment • lib/screens/push_notification_settings_screen.dart:1:1 • dangling_library_doc_comments
+warning • The value of the field '_formattedResult' isn't used • lib/screens/recherche_screen_hybrid.dart:34:10 • unused_field
+warning • This default clause is covered by the previous cases • lib/screens/recherche_screen_hybrid.dart:275:7 • unreachable_switch_default
+   info • Don't use 'BuildContext's across async gaps • lib/screens/recherche_screen_v2.dart:764:28 • use_build_context_synchronously
+   info • Don't use 'BuildContext's across async gaps • lib/screens/recherche_screen_v2.dart:886:28 • use_build_context_synchronously
+   info • Parameter 'key' could be a super parameter • lib/screens/settings/image_cache_settings_screen.dart:10:9 • use_super_parameters
+warning • Dead code • lib/screens/shared/advanced_search_delegate.dart:321:51 • dead_code
+warning • The left operand can't be null, so the right operand is never executed • lib/screens/shared/advanced_search_delegate.dart:321:54 • dead_null_aware_expression
+warning • The left operand can't be null, so the right operand is never executed • lib/screens/shared/advanced_search_delegate.dart:325:46 • dead_null_aware_expression
+warning • The left operand can't be null, so the right operand is never executed • lib/screens/shared/advanced_search_delegate.dart:326:54 • dead_null_aware_expression
+warning • The left operand can't be null, so the right operand is never executed • lib/screens/shared/advanced_search_delegate.dart:365:62 • dead_null_aware_expression
+warning • The left operand can't be null, so the right operand is never executed • lib/screens/shared/advanced_search_delegate.dart:369:55 • dead_null_aware_expression
+warning • The left operand can't be null, so the right operand is never executed • lib/screens/shared/advanced_search_delegate.dart:373:64 • dead_null_aware_expression
+warning • Dead code • lib/screens/shared/bookmarks_screen.dart:316:41 • dead_code
+warning • The left operand can't be null, so the right operand is never executed • lib/screens/shared/bookmarks_screen.dart:316:44 • dead_null_aware_expression
+   info • Don't use 'BuildContext's across async gaps • lib/screens/shared/knowledge_reader_mode.dart:107:26 • use_build_context_synchronously
+warning • The value of the field '_isUploadingImage' isn't used • lib/screens/shared/profile_editor_screen.dart:61:8 • unused_field
+   info • Don't invoke 'print' in production code • lib/screens/shared/telegram_voice_screen.dart:24:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/screens/shared/telegram_voice_screen.dart:25:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/screens/shared/telegram_voice_screen.dart:26:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/screens/shared/telegram_voice_screen.dart:27:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/screens/shared/telegram_voice_screen.dart:37:9 • avoid_print
+   info • Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check • lib/screens/shared/telegram_voice_screen.dart:178:40 • use_build_context_synchronously
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/screens/shared/telegram_voice_screen.dart:237:43 • deprecated_member_use
+   info • Don't use 'BuildContext's across async gaps • lib/screens/shared/unified_knowledge_tab.dart:462:7 • use_build_context_synchronously
+   info • Don't use 'BuildContext's across async gaps • lib/screens/shared/unified_knowledge_tab.dart:728:48 • use_build_context_synchronously
+warning • The value of the field '_dreams' isn't used • lib/screens/spirit/spirit_tools_mega_screen.dart:25:20 • unused_field
+warning • The value of the field '_achievement' isn't used • lib/screens/spirit/spirit_tools_mega_screen.dart:204:9 • unused_field
+   info • Don't invoke 'print' in production code • lib/screens/test/simple_voice_test_screen.dart:340:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/screens/test/simple_voice_test_screen.dart:344:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/screens/test/simple_voice_test_screen.dart:354:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/screens/test/simple_voice_test_screen.dart:361:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/screens/test/simple_voice_test_screen.dart:380:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/screens/test/simple_voice_test_screen.dart:389:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/screens/test/simple_voice_test_screen.dart:401:11 • avoid_print
+   info • Don't invoke 'print' in production code • lib/screens/test/simple_voice_test_screen.dart:406:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/screens/test/simple_voice_test_screen.dart:413:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/screens/test/simple_voice_test_screen.dart:427:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/screens/test/simple_voice_test_screen.dart:430:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/screens/test/simple_voice_test_screen.dart:441:7 • avoid_print
+   info • Dangling library doc comment • lib/screens/test/websocket_test_screen.dart:1:1 • dangling_library_doc_comments
+  error • Target of URI doesn't exist: '../services/websocket_chat_service.dart' • lib/screens/test/websocket_test_screen.dart:5:8 • uri_does_not_exist
+  error • Target of URI doesn't exist: '../config/api_config.dart' • lib/screens/test/websocket_test_screen.dart:6:8 • uri_does_not_exist
+   info • Parameter 'key' could be a super parameter • lib/screens/test/websocket_test_screen.dart:9:9 • use_super_parameters
+  error • Undefined class 'WebSocketChatService' • lib/screens/test/websocket_test_screen.dart:16:9 • undefined_class
+  error • The method 'WebSocketChatService' isn't defined for the type '_WebSocketTestScreenState' • lib/screens/test/websocket_test_screen.dart:16:43 • undefined_method
+  error • Undefined name 'ApiConfig' • lib/screens/test/websocket_test_screen.dart:169:22 • undefined_identifier
+   info • Dangling library doc comment • lib/services/admin_permissions.dart:1:1 • dangling_library_doc_comments
+warning • The value of the local variable 'level' isn't used • lib/services/admin_permissions.dart:194:11 • unused_local_variable
+   info • Don't invoke 'print' in production code • lib/services/ai_service.dart:155:7 • avoid_print
+   info • Dangling library doc comment • lib/services/analytics_service.dart:1:1 • dangling_library_doc_comments
+   info • 'desiredAccuracy' is deprecated and shouldn't be used. use settings parameter with AndroidSettings, AppleSettings, WebSettings, or LocationSettings • lib/services/ar_location_service.dart:45:9 • deprecated_member_use
+warning • The value of the field '_currentUsername' isn't used • lib/services/cloudflare_signaling_service.dart:31:11 • unused_field
+warning • Dead code: Catch clauses after a 'catch (e)' or an 'on Object catch (e)' are never reached • lib/services/community_service.dart:82:7 • dead_code_catch_following_catch
+warning • The value of the local variable 'postIndex' isn't used • lib/services/community_service_v2.dart:161:15 • unused_local_variable
+   info • Dangling library doc comment • lib/services/error_reporting_service.dart:1:1 • dangling_library_doc_comments
+warning • Unused import: '../config/api_config.dart' • lib/services/error_reporting_service.dart:9:8 • unused_import
+   info • 'dart:html' is deprecated and shouldn't be used. Use package:web and dart:js_interop instead • lib/services/export_import_service_web.dart:12:1 • deprecated_member_use
+   info • Don't use web-only libraries outside Flutter web plugins • lib/services/export_import_service_web.dart:12:1 • avoid_web_libraries_in_flutter
+warning • The value of the local variable 'anchor' isn't used • lib/services/export_import_service_web.dart:134:13 • unused_local_variable
+   info • Don't invoke 'print' in production code • lib/services/haptic_feedback_service.dart:28:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/haptic_feedback_service.dart:30:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/haptic_feedback_service.dart:41:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/haptic_feedback_service.dart:43:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/haptic_feedback_service.dart:61:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/haptic_feedback_service.dart:72:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/haptic_feedback_service.dart:83:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/haptic_feedback_service.dart:94:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/haptic_feedback_service.dart:105:7 • avoid_print
+   info • Dangling library doc comment • lib/services/health_check_service.dart:1:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • lib/services/hybrid_chat_service.dart:1:1 • dangling_library_doc_comments
+warning • The value of the local variable 'toolMessage' isn't used • lib/services/hybrid_chat_service.dart:169:11 • unused_local_variable
+   info • Dangling library doc comment • lib/services/image_cache_service.dart:1:1 • dangling_library_doc_comments
+   info • Statements in an if should be enclosed in a block • lib/services/intelligent_search_service.dart:119:43 • curly_braces_in_flow_control_structures
+warning • The value of the field '_baseUrl' isn't used • lib/services/leaderboard_service.dart:114:23 • unused_field
+warning • The value of the field '_timeout' isn't used • lib/services/leaderboard_service.dart:115:25 • unused_field
+warning • The value of the field '_leaderboardKey' isn't used • lib/services/leaderboard_service.dart:117:23 • unused_field
+warning • The value of the field '_weeklyKey' isn't used • lib/services/leaderboard_service.dart:118:23 • unused_field
+warning • The value of the field '_monthlyKey' isn't used • lib/services/leaderboard_service.dart:119:23 • unused_field
+warning • The value of the field '_friendsKey' isn't used • lib/services/leaderboard_service.dart:120:23 • unused_field
+warning • The name kIsWeb is shown, but isn't used • lib/services/live_feed_service.dart:8:71 • unused_shown_name
+   info • 'dart:html' is deprecated and shouldn't be used. Use package:web and dart:js_interop instead • lib/services/notification_service_web.dart:7:1 • deprecated_member_use
+   info • Don't use web-only libraries outside Flutter web plugins • lib/services/notification_service_web.dart:7:1 • avoid_web_libraries_in_flutter
+   info • Dangling library doc comment • lib/services/offline_sync_service.dart:1:1 • dangling_library_doc_comments
+   info • The member 'dispose' overrides an inherited member but isn't annotated with '@override' • lib/services/offline_sync_service.dart:496:16 • annotate_overrides
+   info • Dangling library doc comment • lib/services/onboarding_service.dart:1:1 • dangling_library_doc_comments
+   info • The constant name 'STATUS_ONLINE' isn't a lowerCamelCase identifier • lib/services/online_status_service.dart:32:23 • constant_identifier_names
+   info • The constant name 'STATUS_AWAY' isn't a lowerCamelCase identifier • lib/services/online_status_service.dart:33:23 • constant_identifier_names
+   info • The constant name 'STATUS_BUSY' isn't a lowerCamelCase identifier • lib/services/online_status_service.dart:34:23 • constant_identifier_names
+   info • The constant name 'STATUS_OFFLINE' isn't a lowerCamelCase identifier • lib/services/online_status_service.dart:35:23 • constant_identifier_names
+   info • Unnecessary braces in a string interpolation • lib/services/push_notification_service.dart:62:63 • unnecessary_brace_in_string_interps
+  error • The getter 'v2ApiUrl' isn't defined for the type 'ApiConfig' • lib/services/push_notification_service.dart:73:32 • undefined_getter
+  error • The getter 'v2ApiUrl' isn't defined for the type 'ApiConfig' • lib/services/push_notification_service.dart:108:32 • undefined_getter
+  error • The getter 'v2ApiUrl' isn't defined for the type 'ApiConfig' • lib/services/push_notification_service.dart:135:32 • undefined_getter
+  error • The getter 'v2ApiUrl' isn't defined for the type 'ApiConfig' • lib/services/push_notification_service.dart:175:32 • undefined_getter
+  error • The getter 'v2ApiUrl' isn't defined for the type 'ApiConfig' • lib/services/push_notification_service.dart:254:32 • undefined_getter
+   info • Dangling library doc comment • lib/services/push_notification_service_v2.dart:1:1 • dangling_library_doc_comments
+   info • Don't invoke 'print' in production code • lib/services/push_notification_service_v2.dart:52:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/push_notification_service_v2.dart:54:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/push_notification_service_v2.dart:91:11 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/push_notification_service_v2.dart:96:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/push_notification_service_v2.dart:99:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/push_notification_service_v2.dart:111:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/push_notification_service_v2.dart:114:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/push_notification_service_v2.dart:147:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/push_notification_service_v2.dart:149:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/push_notification_service_v2.dart:163:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/push_notification_service_v2.dart:206:11 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/push_notification_service_v2.dart:210:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/push_notification_service_v2.dart:214:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/push_notification_service_v2.dart:217:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/push_notification_service_v2.dart:248:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/push_notification_service_v2.dart:266:5 • avoid_print
+   info • Dangling library doc comment • lib/services/screen_sharing_service.dart:1:1 • dangling_library_doc_comments
+warning • The value of the field '_voiceController' isn't used • lib/services/screen_sharing_service.dart:43:31 • unused_field
+warning • The value of the field '_signaling' isn't used • lib/services/screen_sharing_service.dart:44:36 • unused_field
+warning • The value of the local variable 'videoTrack' isn't used • lib/services/screen_sharing_service.dart:235:13 • unused_local_variable
+   info • The member 'dispose' overrides an inherited member but isn't annotated with '@override' • lib/services/screen_sharing_service.dart:373:16 • annotate_overrides
+warning • Unused import: 'analytics_service.dart' • lib/services/service_manager.dart:31:8 • unused_import
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_call_controller.dart:36:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_call_controller.dart:45:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_call_controller.dart:47:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_call_controller.dart:55:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_call_controller.dart:66:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_call_controller.dart:72:5 • avoid_print
+warning • The value of the field '_lastBitrateCheck' isn't used • lib/services/simple_voice_controller.dart:93:13 • unused_field
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:226:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:227:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:230:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:232:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:235:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:239:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:246:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:279:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:282:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:283:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:289:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:294:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:297:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:304:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:323:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:324:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:325:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:329:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:332:11 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:344:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:354:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:355:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:358:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:360:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:385:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:401:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:405:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:411:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:427:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:428:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:436:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:443:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:447:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:459:11 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:465:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:466:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:474:11 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:476:13 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:484:13 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:487:11 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:495:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:500:11 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:509:11 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:515:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:519:13 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:522:13 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:525:13 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:532:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:536:13 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:539:13 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:542:13 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:545:13 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:548:13 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:552:13 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:555:13 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:564:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:568:13 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:574:13 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:579:13 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:584:13 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:593:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:596:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:612:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:617:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:630:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:645:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:646:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:654:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:678:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:682:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:689:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:727:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:728:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:733:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:739:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:740:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:743:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:746:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:751:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:755:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:763:11 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:769:11 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:781:11 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:794:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:805:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:816:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:820:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:829:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:834:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:866:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:869:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:879:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:883:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:892:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:895:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:907:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:911:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:920:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:923:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:929:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:945:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:953:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:957:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:965:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:969:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:980:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:983:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:995:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:1018:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:1022:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:1052:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:1056:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:1070:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:1090:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:1106:13 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:1114:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:1117:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:1119:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:1145:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:1147:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:1199:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:1207:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:1214:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:1217:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:1223:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:1227:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:1231:7 • avoid_print
+warning • The declaration '_safeAsync' isn't referenced • lib/services/simple_voice_controller.dart:1240:14 • unused_element
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:1324:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:1337:7 • avoid_print
+warning • The declaration '_batchCleanupParticipants' isn't referenced • lib/services/simple_voice_controller.dart:1343:16 • unused_element
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:1344:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:1370:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:1384:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:1391:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:1430:17 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:1433:17 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:1438:17 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:1439:17 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:1453:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:1462:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:1476:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:1485:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:1493:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:1500:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:1505:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:1519:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:1530:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:1594:15 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:1603:19 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:1620:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:1657:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:1672:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:1683:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:1698:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:1713:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:1726:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:1735:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:1759:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:1760:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:1761:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:1762:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:1763:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:1764:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:1765:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:1766:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:1767:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:1768:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:1773:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:1774:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:1784:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:1790:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_controller.dart:1797:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_service.dart:91:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_service.dart:95:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_service.dart:98:11 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_service.dart:101:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_service.dart:114:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_service.dart:118:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_service.dart:122:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_service.dart:123:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_service.dart:126:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_service.dart:141:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_service.dart:142:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_service.dart:143:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_service.dart:147:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_service.dart:153:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_service.dart:156:11 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_service.dart:170:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_service.dart:171:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_service.dart:176:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_service.dart:189:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_service.dart:199:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_service.dart:211:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_service.dart:215:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_service.dart:235:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_service.dart:249:11 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_service.dart:255:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_service.dart:261:13 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_service.dart:262:13 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_service.dart:269:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_service.dart:275:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_service.dart:277:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_service.dart:286:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_service.dart:292:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_service.dart:301:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_service.dart:317:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_service.dart:319:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_service.dart:344:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_service.dart:352:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_service.dart:353:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_service.dart:354:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_service.dart:355:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_service.dart:357:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_service.dart:359:5 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/simple_voice_service.dart:360:5 • avoid_print
+   info • The parameter name 'num' matches a visible type name • lib/services/spirit_calculations/energy_field_engine.dart:249:37 • avoid_types_as_parameter_names
+   info • Statements in an if should be enclosed in a block • lib/services/spirit_calculations/energy_field_engine.dart:440:37 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block • lib/services/spirit_calculations/energy_field_engine.dart:441:44 • curly_braces_in_flow_control_structures
+   info • Statements in an if should be enclosed in a block • lib/services/spirit_calculations/energy_field_engine.dart:442:12 • curly_braces_in_flow_control_structures
+warning • The value of the field '_achievementsKey' isn't used • lib/services/stats_service.dart:135:23 • unused_field
+warning • The value of the field '_postDraftsBox' isn't used • lib/services/storage_service.dart:54:23 • unused_field
+warning • The value of the field '_scheduledPostsBox' isn't used • lib/services/storage_service.dart:55:23 • unused_field
+warning • The value of the field '_userService' isn't used • lib/services/user_stats_service.dart:22:9 • unused_field
+  error • The name 'VoiceParticipant' is defined in the libraries 'package:weltenbibliothek/models/chat_models.dart' and 'package:weltenbibliothek/services/webrtc_voice_service.dart' • lib/services/voice_call_controller.dart:41:8 • ambiguous_import
+  error • The name 'VoiceParticipant' is defined in the libraries 'package:weltenbibliothek/models/chat_models.dart' and 'package:weltenbibliothek/services/webrtc_voice_service.dart' • lib/services/voice_call_controller.dart:71:8 • ambiguous_import
+   info • Don't invoke 'print' in production code • lib/services/voice_call_controller.dart:82:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/voice_call_controller.dart:83:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/voice_call_controller.dart:84:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/voice_call_controller.dart:94:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/voice_call_controller.dart:108:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/voice_call_controller.dart:116:7 • avoid_print
+  error • 'VoiceParticipant' isn't a function • lib/services/voice_call_controller.dart:126:27 • invocation_of_non_function
+  error • The name 'VoiceParticipant' is defined in the libraries 'package:weltenbibliothek/models/chat_models.dart' and 'package:weltenbibliothek/services/webrtc_voice_service.dart' • lib/services/voice_call_controller.dart:126:27 • ambiguous_import
+   info • Don't invoke 'print' in production code • lib/services/voice_call_controller.dart:132:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/voice_call_controller.dart:133:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/voice_call_controller.dart:134:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/voice_call_controller.dart:148:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/voice_call_controller.dart:162:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/voice_call_controller.dart:163:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/voice_call_controller.dart:173:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/voice_call_controller.dart:174:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/services/voice_call_controller.dart:175:7 • avoid_print
+  error • The method 'startPushToTalk' isn't defined for the type 'WebRTCVoiceService' • lib/services/voice_call_controller.dart:243:26 • undefined_method
+  error • The method 'stopPushToTalk' isn't defined for the type 'WebRTCVoiceService' • lib/services/voice_call_controller.dart:249:26 • undefined_method
+  error • 'VoiceParticipant' isn't a function • lib/services/voice_call_controller.dart:281:22 • invocation_of_non_function
+  error • The name 'VoiceParticipant' is defined in the libraries 'package:weltenbibliothek/models/chat_models.dart' and 'package:weltenbibliothek/services/webrtc_voice_service.dart' • lib/services/voice_call_controller.dart:281:22 • ambiguous_import
+  error • The argument type 'Map<String, bool>' can't be assigned to the parameter type 'String'.  • lib/services/voice_call_controller.dart:299:28 • argument_type_not_assignable
+warning • The value of the field '_moderatorId' isn't used • lib/services/voice_chat_recording_service.dart:29:11 • unused_field
+   info • 'dart:html' is deprecated and shouldn't be used. Use package:web and dart:js_interop instead • lib/services/voice_message_service_web.dart:7:1 • deprecated_member_use
+   info • Don't use web-only libraries outside Flutter web plugins • lib/services/voice_message_service_web.dart:7:1 • avoid_web_libraries_in_flutter
+   info • 'partialResults' is deprecated and shouldn't be used. Use SpeechListenOptions.partialResults instead • lib/services/voice_search_service.dart:116:9 • deprecated_member_use
+   info • 'cancelOnError' is deprecated and shouldn't be used. Use SpeechListenOptions.cancelOnError instead • lib/services/voice_search_service.dart:118:9 • deprecated_member_use
+   info • 'dart:html' is deprecated and shouldn't be used. Use package:web and dart:js_interop instead • lib/services/web_notification_service_web.dart:6:1 • deprecated_member_use
+   info • Don't use web-only libraries outside Flutter web plugins • lib/services/web_notification_service_web.dart:6:1 • avoid_web_libraries_in_flutter
+   info • 'dart:html' is deprecated and shouldn't be used. Use package:web and dart:js_interop instead • lib/services/web_push_notification_service_web.dart:2:1 • deprecated_member_use
+   info • Don't use web-only libraries outside Flutter web plugins • lib/services/web_push_notification_service_web.dart:2:1 • avoid_web_libraries_in_flutter
+warning • The declaration '_createPeerConnection' isn't referenced • lib/services/webrtc_voice_service.backup.dart:286:29 • unused_element
+   info • Dangling library doc comment • lib/services/webrtc_voice_service.dart:1:1 • dangling_library_doc_comments
+warning • The declaration '_createPeerConnection' isn't referenced • lib/services/webrtc_voice_service.old.dart:286:29 • unused_element
+   info • Dangling library doc comment • lib/services/websocket_chat_service.dart:1:1 • dangling_library_doc_comments
+   info • Angle brackets will be interpreted as HTML • lib/services/world_admin_service.dart:104:20 • unintended_html_in_doc_comment
+   info • Angle brackets will be interpreted as HTML • lib/services/world_admin_service.dart:324:20 • unintended_html_in_doc_comment
+   info • 'textScaleFactor' is deprecated and shouldn't be used. Use textScaler instead. Use of textScaleFactor was deprecated in preparation for the upcoming nonlinear text scaling support. This feature was deprecated after v3.12.0-2.0.pre • lib/utils/accessibility_helper.dart:164:35 • deprecated_member_use
+warning • The value of the local variable 'delayDuration' isn't used • lib/utils/animation_system_v2.dart:369:11 • unused_local_variable
+   info • The null check operator shouldn't be used on a variable whose type is a potentially nullable type parameter • lib/utils/enhanced_loading.dart:461:35 • null_check_on_nullable_type_parameter
+   info • The null check operator shouldn't be used on a variable whose type is a potentially nullable type parameter • lib/utils/enhanced_loading.dart:472:48 • null_check_on_nullable_type_parameter
+   info • Dangling library doc comment • lib/utils/map_clustering_integration_example.dart:1:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • lib/utils/map_clustering_integration_example.dart:2:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • lib/utils/map_clustering_integration_example.dart:3:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • lib/utils/map_clustering_integration_example.dart:4:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • lib/utils/map_clustering_integration_example.dart:5:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • lib/utils/map_clustering_integration_example.dart:53:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • lib/utils/map_clustering_integration_example.dart:54:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • lib/utils/map_clustering_integration_example.dart:55:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • lib/utils/map_clustering_integration_example.dart:56:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • lib/utils/map_clustering_integration_example.dart:57:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • lib/utils/map_clustering_integration_example.dart:59:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • lib/utils/map_clustering_integration_example.dart:60:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • lib/utils/map_clustering_integration_example.dart:61:1 • dangling_library_doc_comments
+   info • Dangling library doc comment • lib/utils/map_clustering_integration_example.dart:62:1 • dangling_library_doc_comments
+warning • The value of the field '_checkAnimation' isn't used • lib/utils/micro_interactions.dart:345:26 • unused_field
+warning • The value of the local variable 'timer' isn't used • lib/utils/performance_helper.dart:34:12 • unused_local_variable
+warning • The value of the field '_future' isn't used • lib/utils/performance_helper.dart:154:17 • unused_field
+   info • 'dart:html' is deprecated and shouldn't be used. Use package:web and dart:js_interop instead • lib/utils/recherche_exporter_web.dart:14:1 • deprecated_member_use
+warning • The value of the local variable 'anchor' isn't used • lib/utils/recherche_exporter_web.dart:261:13 • unused_local_variable
+   info • Don't use 'BuildContext's across async gaps • lib/widgets/android_voice_recorder.dart:128:28 • use_build_context_synchronously
+   info • Don't use 'BuildContext's across async gaps • lib/widgets/android_voice_recorder.dart:143:28 • use_build_context_synchronously
+   info • Don't use 'BuildContext's across async gaps • lib/widgets/android_voice_recorder.dart:167:28 • use_build_context_synchronously
+warning • The value of the field '_storage' isn't used • lib/widgets/article_like_button.dart:26:24 • unused_field
+warning • The name kIsWeb is shown, but isn't used • lib/widgets/create_post_dialog.dart:2:47 • unused_shown_name
+warning • The value of the field '_isUploadingMedia' isn't used • lib/widgets/create_post_dialog_v2.dart:62:8 • unused_field
+warning • The value of the field '_selectedMedia' isn't used • lib/widgets/create_post_dialog_v2.dart:69:10 • unused_field
+warning • The value of the field '_selectedFilter' isn't used • lib/widgets/create_post_dialog_v2.dart:72:11 • unused_field
+warning • The declaration '_pickMedia' isn't referenced • lib/widgets/create_post_dialog_v2.dart:234:16 • unused_element
+warning • The declaration '_removeMedia' isn't referenced • lib/widgets/create_post_dialog_v2.dart:317:8 • unused_element
+warning • The value of the local variable 'extendedPost' isn't used • lib/widgets/create_post_dialog_v2.dart:453:11 • unused_local_variable
+   info • Don't invoke 'print' in production code • lib/widgets/enhanced_message_bubble.dart:174:11 • avoid_print
+   info • Don't invoke 'print' in production code • lib/widgets/enhanced_message_bubble.dart:181:13 • avoid_print
+warning • The value of the local variable 'fileUrl' isn't used • lib/widgets/enhanced_message_bubble.dart:533:13 • unused_local_variable
+   info • Dangling library doc comment • lib/widgets/error_display_widget.dart:1:1 • dangling_library_doc_comments
+warning • The value of the field '_currentPosition' isn't used • lib/widgets/frequency_audio_player.dart:28:12 • unused_field
+warning • The value of the field '_totalDuration' isn't used • lib/widgets/frequency_audio_player.dart:29:12 • unused_field
+warning • The value of the field '_selectedNodePosition' isn't used • lib/widgets/graph_3d_enhanced_widget.dart:42:11 • unused_field
+warning • Unused import: '../core/constants/roles.dart' • lib/widgets/inline_content_editor.dart:10:8 • unused_import
+   info • Use interpolation to compose strings and values • lib/widgets/inline_tools/artefakt_collection_enhanced.dart:60:19 • prefer_interpolation_to_compose_strings
+warning • Unused import: 'package:shared_preferences/shared_preferences.dart' • lib/widgets/inline_tools/bewusstseins_journal_enhanced.dart:4:8 • unused_import
+   info • Use interpolation to compose strings and values • lib/widgets/inline_tools/chakra_scanner_enhanced.dart:57:49 • prefer_interpolation_to_compose_strings
+   info • Use interpolation to compose strings and values • lib/widgets/inline_tools/connections_board_enhanced.dart:59:19 • prefer_interpolation_to_compose_strings
+warning • Unused import: 'package:shared_preferences/shared_preferences.dart' • lib/widgets/inline_tools/group_meditation_enhanced.dart:4:8 • unused_import
+warning • The value of the field '_activeSession' isn't used • lib/widgets/inline_tools/group_meditation_widget.dart:17:25 • unused_field
+   info • Use interpolation to compose strings and values • lib/widgets/inline_tools/heilfrequenz_player_enhanced.dart:53:49 • prefer_interpolation_to_compose_strings
+   info • Use interpolation to compose strings and values • lib/widgets/inline_tools/news_board_enhanced.dart:56:49 • prefer_interpolation_to_compose_strings
+   info • Use interpolation to compose strings and values • lib/widgets/inline_tools/patent_archiv_enhanced.dart:57:19 • prefer_interpolation_to_compose_strings
+   info • Use interpolation to compose strings and values • lib/widgets/inline_tools/traum_tagebuch_enhanced.dart:54:49 • prefer_interpolation_to_compose_strings
+warning • The value of the field '_isAuthenticated' isn't used • lib/widgets/inline_tools/ufo_sichtungen_enhanced.dart:27:8 • unused_field
+   info • Use interpolation to compose strings and values • lib/widgets/inline_tools/ufo_sichtungen_enhanced.dart:59:19 • prefer_interpolation_to_compose_strings
+warning • The declaration '_buildHeatmapCircles' isn't referenced • lib/widgets/interactive_map_enhanced_widget.dart:404:22 • unused_element
+   info • Dangling library doc comment • lib/widgets/lazy_loading_list_view.dart:1:1 • dangling_library_doc_comments
+warning • The declaration '_highlightMatch' isn't referenced • lib/widgets/message_search_widget.dart:70:10 • unused_element
+   info • Dangling library doc comment • lib/widgets/offline_indicator.dart:1:1 • dangling_library_doc_comments
+   info • Parameter 'key' could be a super parameter • lib/widgets/offline_indicator.dart:9:9 • use_super_parameters
+   info • Parameter 'key' could be a super parameter • lib/widgets/offline_indicator.dart:284:9 • use_super_parameters
+   info • Dangling library doc comment • lib/widgets/optimized_image.dart:1:1 • dangling_library_doc_comments
+   info • Parameter 'key' could be a super parameter • lib/widgets/optimized_image.dart:22:9 • use_super_parameters
+   info • Parameter 'key' could be a super parameter • lib/widgets/optimized_image.dart:139:9 • use_super_parameters
+   info • Parameter 'key' could be a super parameter • lib/widgets/optimized_image.dart:170:9 • use_super_parameters
+   info • Parameter 'key' could be a super parameter • lib/widgets/optimized_image.dart:198:9 • use_super_parameters
+warning • The name kDebugMode is shown, but isn't used • lib/widgets/post_actions_row.dart:2:55 • unused_shown_name
+warning • The name debugPrint is shown, but isn't used • lib/widgets/post_actions_row.dart:2:67 • unused_shown_name
+warning • The value of the field '_communityService' isn't used • lib/widgets/post_actions_row.dart:29:26 • unused_field
+   info • The file name 'INTEGRATION_GUIDE.dart' isn't a lower_case_with_underscores identifier • lib/widgets/productive_tools/INTEGRATION_GUIDE.dart:1:1 • file_names
+   info • Don't use 'BuildContext's across async gaps • lib/widgets/productive_tools/energie_tool.dart:94:30 • use_build_context_synchronously
+   info • Don't use 'BuildContext's across async gaps • lib/widgets/productive_tools/energie_tool.dart:116:28 • use_build_context_synchronously
+   info • Don't use 'BuildContext's across async gaps • lib/widgets/productive_tools/heilung_tool.dart:125:30 • use_build_context_synchronously
+   info • Don't use 'BuildContext's across async gaps • lib/widgets/productive_tools/heilung_tool.dart:136:28 • use_build_context_synchronously
+warning • The value of the field '_api' isn't used • lib/widgets/productive_tools/session_tool.dart:18:30 • unused_field
+   info • Don't use 'BuildContext's across async gaps • lib/widgets/productive_tools/weisheit_tool.dart:129:30 • use_build_context_synchronously
+   info • Don't use 'BuildContext's across async gaps • lib/widgets/productive_tools/weisheit_tool.dart:140:28 • use_build_context_synchronously
+warning • The value of the field '_showPasswordField' isn't used • lib/widgets/profile_edit_dialogs.dart:475:8 • unused_field
+warning • The value of the field '_isSaving' isn't used • lib/widgets/profile_edit_dialogs.dart:476:8 • unused_field
+   info • Dangling library doc comment • lib/widgets/pwa_install_prompt.dart:1:1 • dangling_library_doc_comments
+warning • The value of the field '_showExportMenu' isn't used • lib/widgets/research_timeline_widget.dart:30:14 • unused_field
+   info • Dangling library doc comment • lib/widgets/screen_share_viewer.dart:1:1 • dangling_library_doc_comments
+   info • Parameter 'key' could be a super parameter • lib/widgets/screen_share_viewer.dart:10:9 • use_super_parameters
+   info • Parameter 'key' could be a super parameter • lib/widgets/screen_share_viewer.dart:248:9 • use_super_parameters
+   info • Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check • lib/widgets/screen_share_viewer.dart:295:34 • use_build_context_synchronously
+   info • 'foregroundColor' is deprecated and shouldn't be used. use colors in eyeStyle and dataModuleStyle instead • lib/widgets/share_dialog.dart:140:15 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/widgets/speaking_indicator.dart:92:43 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/widgets/speaking_indicator.dart:97:43 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/widgets/speaking_indicator.dart:111:41 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/widgets/speaking_indicator.dart:123:41 • deprecated_member_use
+   info • Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check • lib/widgets/spirit_journal_widget.dart:537:37 • use_build_context_synchronously
+   info • Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check • lib/widgets/synchronicity_tracker_widget.dart:410:34 • use_build_context_synchronously
+   info • Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check • lib/widgets/synchronicity_tracker_widget.dart:437:27 • use_build_context_synchronously
+   info • Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check • lib/widgets/synchronicity_tracker_widget.dart:438:34 • use_build_context_synchronously
+  error • The name 'VoiceParticipant' is defined in the libraries 'package:weltenbibliothek/models/chat_models.dart' and 'package:weltenbibliothek/services/webrtc_voice_service.dart' • lib/widgets/telegram_voice_panel.dart:36:8 • ambiguous_import
+  error • The name 'VoiceParticipant' is defined in the libraries 'package:weltenbibliothek/models/chat_models.dart' and 'package:weltenbibliothek/services/webrtc_voice_service.dart' • lib/widgets/telegram_voice_panel.dart:40:27 • ambiguous_import
+  error • The method 'raiseHand' isn't defined for the type 'WebRTCVoiceService' • lib/widgets/telegram_voice_panel.dart:100:27 • undefined_method
+  error • The method 'lowerHand' isn't defined for the type 'WebRTCVoiceService' • lib/widgets/telegram_voice_panel.dart:103:27 • undefined_method
+   info • 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre • lib/widgets/user_profile_settings.dart:166:11 • deprecated_member_use
+   info • 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre • lib/widgets/user_profile_settings.dart:167:11 • deprecated_member_use
+   info • 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre • lib/widgets/user_profile_settings.dart:214:11 • deprecated_member_use
+   info • 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre • lib/widgets/user_profile_settings.dart:215:11 • deprecated_member_use
+   info • 'scale' is deprecated and shouldn't be used. Use scaleByVector3, scaleByVector4, or scaleByDouble instead • lib/widgets/visualisierung/mindmap_widget.dart:124:20 • deprecated_member_use
+   info • 'scale' is deprecated and shouldn't be used. Use scaleByVector3, scaleByVector4, or scaleByDouble instead • lib/widgets/visualisierung/mindmap_widget.dart:132:20 • deprecated_member_use
+   info • Don't invoke 'print' in production code • lib/widgets/voice_chat_banner.dart:91:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/widgets/voice_chat_banner.dart:98:13 • avoid_print
+   info • Don't invoke 'print' in production code • lib/widgets/voice_chat_banner.dart:111:13 • avoid_print
+   info • Don't invoke 'print' in production code • lib/widgets/voice_chat_banner.dart:115:11 • avoid_print
+   info • Don't invoke 'print' in production code • lib/widgets/voice_chat_banner.dart:124:13 • avoid_print
+   info • Don't invoke 'print' in production code • lib/widgets/voice_chat_banner.dart:131:13 • avoid_print
+   info • Don't invoke 'print' in production code • lib/widgets/voice_chat_banner.dart:140:11 • avoid_print
+   info • Don't invoke 'print' in production code • lib/widgets/voice_chat_button.dart:147:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/widgets/voice_chat_button.dart:160:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/widgets/voice_chat_button.dart:164:7 • avoid_print
+   info • Don't invoke 'print' in production code • lib/widgets/voice_chat_button.dart:173:9 • avoid_print
+   info • Don't invoke 'print' in production code • lib/widgets/voice_chat_button.dart:181:9 • avoid_print
+   info • Dangling library doc comment • lib/widgets/voice_chat_floating_button.dart:1:1 • dangling_library_doc_comments
+   info • Parameter 'key' could be a super parameter • lib/widgets/voice_chat_floating_button.dart:9:9 • use_super_parameters
+warning • The value of the field '_isMuted' isn't used • lib/widgets/voice_chat_floating_button.dart:22:8 • unused_field
+   info • Unnecessary use of 'toList' in a spread • lib/widgets/voice_chat_floating_button.dart:101:73 • unnecessary_to_list_in_spreads
+warning • The declaration 'show' isn't referenced • lib/widgets/voice_filters_panel.dart:292:23 • unused_element
+warning • The value of the local variable 'isInCall' isn't used • lib/widgets/voice_header_button.dart:38:15 • unused_local_variable
+   info • 'RawKeyEvent' is deprecated and shouldn't be used. Use KeyEvent instead. This feature was deprecated after v3.18.0-2.0.pre • lib/widgets/voice_keyboard_shortcuts.dart:44:32 • deprecated_member_use
+   info • 'RawKeyDownEvent' is deprecated and shouldn't be used. Use KeyDownEvent instead. This feature was deprecated after v3.18.0-2.0.pre • lib/widgets/voice_keyboard_shortcuts.dart:45:19 • deprecated_member_use
+   info • 'isShiftPressed' is deprecated and shouldn't be used. Use HardwareKeyboard.instance.isShiftPressed instead. This feature was deprecated after v3.18.0-2.0.pre • lib/widgets/voice_keyboard_shortcuts.dart:113:19 • deprecated_member_use
+   info • 'RawKeyboardListener' is deprecated and shouldn't be used. Use KeyboardListener instead. This feature was deprecated after v3.18.0-2.0.pre • lib/widgets/voice_keyboard_shortcuts.dart:143:12 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/widgets/voice_mini_player.dart:178:27 • deprecated_member_use
+warning • The value of the field '_isLoading' isn't used • lib/widgets/voice_player_widget.dart:25:8 • unused_field
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/widgets/voice_recording_controls.dart:94:31 • deprecated_member_use
+   info • 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss • lib/widgets/voice_recording_controls.dart:98:35 • deprecated_member_use
+
+812 issues found. (ran in 14.9s)

@@ -8,7 +8,7 @@ import 'package:image_picker/image_picker.dart';
 class ImageUploadService {
   // Cloudflare Worker Endpoint für Image Upload
   static const String uploadEndpoint = 
-      'https://weltenbibliothek-media-api.brandy13062.workers.dev/api/media/upload';
+      'https://weltenbibliothek-api-v2.brandy13062.workers.dev/api/media/upload';
   
   // Singleton Pattern
   static final ImageUploadService _instance = ImageUploadService._internal();

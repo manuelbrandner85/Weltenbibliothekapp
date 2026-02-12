@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart' as provider; // ✅ Provider aliased
 import 'package:flutter_riverpod/flutter_riverpod.dart'; // 🆕 RIVERPOD für Admin-System
+import 'package:hive_flutter/hive_flutter.dart'; // 🗄️ HIVE LOCAL STORAGE
 // Firebase DEAKTIVIERT - Jetzt Cloudflare
 // import 'package:firebase_core/firebase_core.dart';
 // import 'firebase_options.dart';
@@ -45,6 +46,9 @@ import 'utils/error_boundary.dart';  // 🛡️ Error Boundary
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // 🗄️ HIVE LOCAL STORAGE - Initialize
+  await Hive.initFlutter();
   
   // 🛡️ ERROR BOUNDARY - Verhindert App-Crashes
   ErrorBoundary.initialize();

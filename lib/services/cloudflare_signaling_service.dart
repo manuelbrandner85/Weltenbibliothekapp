@@ -22,7 +22,7 @@ class CloudflareSignalingService {
 
   // Cloudflare Worker Configuration
   // ✅ PRODUCTION: Deployed and working!
-  static const String _workerBaseUrl = 'https://weltenbibliothek-voice.brandy13062.workers.dev';
+  static const String _workerBaseUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
   static const String _apiToken = 'y-Xiv3kKeiybDm2CV0yLFu7TSd22co6NBw3udn5Y';
   
   // State

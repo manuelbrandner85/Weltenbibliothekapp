@@ -27,6 +27,7 @@ import '../../services/cloudflare_api_service.dart';
 import '../../widgets/visualisierung/visualisierungen.dart';
 import '../../widgets/media_grid_widget.dart';
 import 'materie_research_screen.dart'; // 🌐 RESEARCH SCREEN
+import '../research/epstein_files_simple.dart'; // 📁 EPSTEIN FILES WEBVIEW (NEUE VERSION)
 
 class MobileOptimierterRechercheTab extends StatefulWidget {
   const MobileOptimierterRechercheTab({super.key});
@@ -71,8 +72,8 @@ class _MobileOptimierterRechercheTabState extends State<MobileOptimierterRecherc
     _rechercheService = BackendRechercheService();
     _analyseService = AnalyseService();
     
-    // Initialize TabController (8 Tabs: +MULTIMEDIA)
-    _tabController = TabController(length: 8, vsync: this);
+    // Initialize TabController (9 Tabs: +MULTIMEDIA +EPSTEIN FILES)
+    _tabController = TabController(length: 9, vsync: this);
   }
   
   @override
@@ -1151,6 +1152,22 @@ class _MobileOptimierterRechercheTabState extends State<MobileOptimierterRecherc
                         Navigator.of(context).pushNamed('/event-predictor');
                       },
                     ),
+                    // 📁 EPSTEIN FILES TOOL (KORREKT!)
+                    _buildKIToolCard(
+                      context,
+                      icon: Icons.folder_special,
+                      title: 'Epstein\nFiles',
+                      color: const Color(0xFFD32F2F),
+                      description: 'Justice.gov PDF\nLesen & Übersetzen',
+                      onTap: () {
+                        // Direkter Aufruf des WebView Epstein Files Tools
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const EpsteinFilesSimpleScreen(),
+                          ),
+                        );
+                      },
+                    ),
                   ],
                 ),
               ],
@@ -1459,6 +1476,7 @@ class _MobileOptimierterRechercheTabState extends State<MobileOptimierterRecherc
                 Tab(text: 'KARTE'),
                 Tab(text: 'ALTERNATIVE'),
                 Tab(text: 'META'),
+                Tab(text: 'EPSTEIN FILES'), // 🆕 EPSTEIN FILES TAB
               ],
             ),
           ),
@@ -1476,6 +1494,7 @@ class _MobileOptimierterRechercheTabState extends State<MobileOptimierterRecherc
                 _buildKarteTab(),
                 _buildAlternativeTab(),
                 _buildMetaTab(),
+                _buildEpsteinFilesTab(), // 🆕 EPSTEIN FILES TAB CONTENT
               ],
             ),
           ),
@@ -2402,6 +2421,12 @@ class _MobileOptimierterRechercheTabState extends State<MobileOptimierterRecherc
         ],
       ),
     );
+  }
+  
+  /// 📁 EPSTEIN FILES TAB - Korrektes Tool
+  Widget _buildEpsteinFilesTab() {
+    // EINFACHE VERSION: PDF öffnen + Übersetzen-Button
+    return const EpsteinFilesSimpleScreen();
   }
   
   Widget _buildSectionHeader(String title) {

@@ -12,7 +12,7 @@ class EmojiReactionsService {
   factory EmojiReactionsService() => _instance;
   EmojiReactionsService._internal();
 
-  final String _baseUrl = 'https://chat-features-weltenbibliothek.brandy13062.workers.dev';
+  final String _baseUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
 
   /// Add or Remove Reaction (Toggle)
   Future<Map<String, dynamic>?> toggleReaction({

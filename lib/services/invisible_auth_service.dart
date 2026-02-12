@@ -24,7 +24,7 @@ class InvisibleAuthService {
   static const String _deviceIdKey = 'device_id';
   
   // Cloudflare Worker URL
-  static const String _backendUrl = 'https://weltenbibliothek-auth.brandy13062.workers.dev';
+  static const String _backendUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
   
   // Singleton
   static final InvisibleAuthService _instance = InvisibleAuthService._internal();

@@ -8,7 +8,7 @@ import 'achievement_service.dart';  // 🏆 Achievement System
 /// Manages daily featured narratives and user engagement streaks
 class DailyKnowledgeService {
   // Backend URL
-  static const String _backendUrl = 'https://api-backend.brandy13062.workers.dev';
+  static const String _backendUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
   
   // SharedPreferences Keys
   static const String _lastVisitKey = 'daily_knowledge_last_visit';

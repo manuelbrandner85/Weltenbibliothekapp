@@ -4,10 +4,10 @@ import 'package:flutter/foundation.dart';
 import '../models/recherche_extended_models.dart';
 
 /// Recherche Service für Cloudflare Worker Backend V16.0
-/// Worker-URL: https://recherche-engine.brandy13062.workers.dev
+/// Worker-URL: https://weltenbibliothek-api-v2.brandy13062.workers.dev
 /// Features: 16 Analyse-Module inkl. Machtanalyse, Netzwerk, Timeline, Narrativ-Vergleich, Meta-System
 class RechercheService {
-  static const String _workerUrl = 'https://recherche-engine.brandy13062.workers.dev/recherche';
+  static const String _workerUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev/recherche';
   
   /// Führt eine Recherche durch
   Future<RechercheResult> recherchieren({

@@ -15,7 +15,7 @@ import 'real_source_enhancer.dart';  // 🔍 REAL SOURCE ENHANCER
 /// - Alternative Quellen Priorisierung
 class BackendRechercheService {
   // PRODUCTION: Nutze Backend-Proxy
-  static const String _backendUrl = 'https://api-backend.brandy13062.workers.dev';
+  static const String _backendUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
   
   // Alternative & unabhängige Quellen Domains
   static const Set<String> _alternativeSources = {

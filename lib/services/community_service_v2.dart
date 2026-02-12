@@ -19,7 +19,7 @@ class CommunityService {
   CommunityService._internal();
 
   // Backend URL
-  static const String _backendUrl = 'https://weltenbibliothek-community-api.brandy13062.workers.dev';
+  static const String _backendUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
   
   // Auth Service
   final InvisibleAuthService _authService = InvisibleAuthService();

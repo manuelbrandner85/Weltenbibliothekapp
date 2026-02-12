@@ -182,7 +182,7 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
               // TAB 1: Community Posts (Original)
               _buildPostsView(),
               
-              // TAB 2: Live Chat (NEU!)
+              // TAB 2: Live Chat (ACTIVATED!)
               const MaterieLiveChatScreen(),
             ],
           ),

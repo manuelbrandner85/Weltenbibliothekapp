@@ -551,3 +551,196 @@ class AuditLogEntry {
     );
   }
 }
+
+// ════════════════════════════════════════════════════════════
+// 🆕 BACKEND V16.2 ADMIN APIS - EXTENSION
+// ════════════════════════════════════════════════════════════
+
+/// Extension mit neuen Backend V16.2 Admin APIs
+/// Fügt User Ban/Mute/Status, Dashboard und Analytics hinzu
+/// 
+/// ⚠️ WICHTIG: ROLLEN-PRÜFUNG
+/// Alle Ban/Mute/Management-Funktionen erfordern:
+/// - Root Admin Rolle (AdminPermissions.canManageAdmins)
+/// - Verifizierung über AdminState (adminStateProvider)
+/// 
+/// Bitte VOR dem Aufruf prüfen:
+/// ```dart
+/// final admin = ref.read(adminStateProvider(world));
+/// if (!admin.isRootAdmin) {
+///   // Keine Berechtigung!
+///   return;
+/// }
+/// ```
+extension WorldAdminServiceV162 on WorldAdminService {
+  /// 🆕 Ban User (V16.2)
+  /// ⚠️ REQUIRES: Root Admin (AdminPermissions.canManageAdmins)
+  static Future<bool> banUser({
+    required String userId,
+    required String reason,
+    int durationHours = 24,
+    String? adminUserId,
+  }) async {
+    try {
+      final url = Uri.parse('${WorldAdminService._baseUrl}/api/admin/users/$userId/ban');
+      final storage = UnifiedStorageService();
+      final adminUser = adminUserId ?? storage.getUsername('materie') ?? 'admin';
+      
+      final response = await http.post(
+        url,
+        headers: {
+          'X-Role': 'root_admin',
+          'X-User-ID': adminUser,
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({'reason': reason, 'durationHours': durationHours}),
+      ).timeout(WorldAdminService._timeout);
+      
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// 🆕 Unban User (V16.2)
+  /// ⚠️ REQUIRES: Root Admin (AdminPermissions.canManageAdmins)
+  static Future<bool> unbanUser({required String userId, String? adminUserId}) async {
+    try {
+      final url = Uri.parse('${WorldAdminService._baseUrl}/api/admin/users/$userId/unban');
+      final storage = UnifiedStorageService();
+      final adminUser = adminUserId ?? storage.getUsername('materie') ?? 'admin';
+      
+      final response = await http.post(
+        url,
+        headers: {'X-Role': 'root_admin', 'X-User-ID': adminUser},
+      ).timeout(WorldAdminService._timeout);
+      
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// 🆕 Mute User (V16.2)
+  static Future<bool> muteUser({
+    required String userId,
+    required String reason,
+    int durationMinutes = 60,
+    String? adminUserId,
+  }) async {
+    try {
+      final url = Uri.parse('${WorldAdminService._baseUrl}/api/admin/users/$userId/mute');
+      final storage = UnifiedStorageService();
+      final adminUser = adminUserId ?? storage.getUsername('materie') ?? 'admin';
+      
+      final response = await http.post(
+        url,
+        headers: {
+          'X-Role': 'root_admin',
+          'X-User-ID': adminUser,
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({'reason': reason, 'durationMinutes': durationMinutes}),
+      ).timeout(WorldAdminService._timeout);
+      
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// 🆕 Unmute User (V16.2)
+  static Future<bool> unmuteUser({
+    required String userId,
+    String? adminUserId,
+  }) async {
+    try {
+      final url = Uri.parse('${WorldAdminService._baseUrl}/api/admin/users/$userId/unmute');
+      final storage = UnifiedStorageService();
+      final adminUser = adminUserId ?? storage.getUsername('materie') ?? 'admin';
+      
+      final response = await http.post(
+        url,
+        headers: {
+          'X-Role': 'root_admin',
+          'X-User-ID': adminUser,
+          'Content-Type': 'application/json',
+        },
+      ).timeout(WorldAdminService._timeout);
+      
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// 🆕 Check User Status (V16.2)
+  static Future<Map<String, dynamic>> checkUserStatus({
+    required String userId,
+    String? adminUserId,
+  }) async {
+    try {
+      final url = Uri.parse('${WorldAdminService._baseUrl}/api/admin/users/$userId/status');
+      final storage = UnifiedStorageService();
+      final adminUser = adminUserId ?? storage.getUsername('materie') ?? 'admin';
+      
+      final response = await http.get(
+        url,
+        headers: {'X-Role': 'root_admin', 'X-User-ID': adminUser},
+      ).timeout(WorldAdminService._timeout);
+      
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      }
+      return {'userId': userId, 'banned': false, 'muted': false};
+    } catch (e) {
+      return {'userId': userId, 'banned': false, 'muted': false, 'error': e.toString()};
+    }
+  }
+
+  /// 🆕 Get Admin Dashboard (V16.2)
+  static Future<Map<String, dynamic>> getAdminDashboard({String? adminUserId}) async {
+    try {
+      final url = Uri.parse('${WorldAdminService._baseUrl}/api/admin/dashboard');
+      final storage = UnifiedStorageService();
+      final adminUser = adminUserId ?? storage.getUsername('materie') ?? 'admin';
+      
+      final response = await http.get(
+        url,
+        headers: {'X-Role': 'root_admin', 'X-User-ID': adminUser},
+      ).timeout(WorldAdminService._timeout);
+      
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      }
+      return {'error': 'Failed'};
+    } catch (e) {
+      return {'error': e.toString()};
+    }
+  }
+
+  /// 🆕 Get Analytics (V16.2)
+  static Future<Map<String, dynamic>> getAnalytics({
+    required String realm,
+    int days = 7,
+    String? adminUserId,
+  }) async {
+    try {
+      final url = Uri.parse('${WorldAdminService._baseUrl}/api/admin/analytics/$realm?days=$days');
+      final storage = UnifiedStorageService();
+      final adminUser = adminUserId ?? storage.getUsername('materie') ?? 'admin';
+      
+      final response = await http.get(
+        url,
+        headers: {'X-Role': 'root_admin', 'X-User-ID': adminUser},
+      ).timeout(WorldAdminService._timeout);
+      
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      }
+      return {'error': 'Failed'};
+    } catch (e) {
+      return {'error': e.toString()};
+    }
+  }
+}

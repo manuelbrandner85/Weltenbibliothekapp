@@ -4,7 +4,7 @@ import '../../models/community_post.dart';
 import '../../services/community_service.dart'; // ✅ Cloudflare API
 import '../../widgets/create_post_dialog_v2.dart'; // ✅ Post-Dialog
 import '../../widgets/post_actions_row.dart'; // ✅ POST ACTIONS
-import 'materie_live_chat_screen.dart'; // 💬 LIVE-CHAT INTEGRATION
+// import 'materie_live_chat_screen.dart'; // TEMPORARILY DISABLED // 💬 LIVE-CHAT INTEGRATION
 import '../../services/chat_notification_service.dart'; // 🔔 NOTIFICATION SERVICE
 
 /// Moderner Materie-Community-Tab - Spiritueller Feed-Style
@@ -184,7 +184,9 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
               _buildPostsView(),
               
               // TAB 2: Live Chat (NEU!)
+              // TAB 2: Live Chat (ACTIVATED!)
               const MaterieLiveChatScreen(),
+              // const MaterieLiveChatScreen(), // Temporarily disabled
             ],
           ),
         ),

@@ -271,13 +271,13 @@
               
               newWorker.addEventListener('statechange', function() {
                 if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                  console.log('✅ [PWA] New Service Worker installed, please refresh');
+                  console.log('✅ [PWA] New Service Worker installed - auto-updating silently');
                   
-                  // Optional: Show update notification
-                  if (window.confirm('🔄 Neue Version verfügbar! Jetzt aktualisieren?')) {
-                    newWorker.postMessage({ type: 'SKIP_WAITING' });
+                  // ✅ SILENT UPDATE: No dialog, just reload automatically
+                  newWorker.postMessage({ type: 'SKIP_WAITING' });
+                  setTimeout(function() {
                     window.location.reload();
-                  }
+                  }, 1000); // Small delay for smooth transition
                 }
               });
             });

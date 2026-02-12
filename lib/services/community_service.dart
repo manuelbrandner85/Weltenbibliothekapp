@@ -14,8 +14,8 @@ import 'cloudflare_api_service.dart';
 /// - Offline fallback with cached data
 /// - No simulated delays or mock data
 class CommunityService {
-  // 🔧 Cloudflare Worker URL (LIVE!)
-  static const String _baseUrl = 'https://weltenbibliothek-community-api.brandy13062.workers.dev';
+  // 🔧 Cloudflare Worker URL (CONSOLIDATED TO MAIN API!)
+  static const String _baseUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
   static const Duration _timeout = Duration(seconds: 10);
   final CloudflareApiService _cloudflareApi = CloudflareApiService();
   

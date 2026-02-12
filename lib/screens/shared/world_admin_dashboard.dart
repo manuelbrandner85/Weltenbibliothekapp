@@ -7,6 +7,7 @@ import '../../features/admin/state/admin_state.dart';
 import '../../features/admin/ui/moderation_dashboard_screen.dart';
 import '../../features/admin/ui/user_management_screen.dart'; // ✅ PHASE 2: USER MANAGEMENT
 import '../admin/health_dashboard_screen.dart'; // 🏥 HEALTH DASHBOARD (NEW Phase 3)
+import '../admin/user_moderation_screen_v16_list.dart'; // 🔧 V16.2 ADMIN APIs (MIT USER-LISTE!)
 import '../../core/storage/unified_storage_service.dart'; // ✅ FALLBACK: Storage Service
 
 /// 🛡️ WORLD ADMIN DASHBOARD (RIVERPOD VERSION)
@@ -51,7 +52,7 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 6, vsync: this); // ✅ PHASE 3: 6 Tabs (User Mgmt, Users, Content, Audit-Log, Moderation, Health)
+    _tabController = TabController(length: 7, vsync: this); // ✅ PHASE 3 + V16.2: 7 Tabs (User Mgmt, Users, Content, Audit-Log, Moderation, Health, V16.2 Moderation)
     
     // 🔥 SIMPLIFIED: State wurde bereits VOR Navigation geladen
     // Direkt Dashboard-Daten laden (State ist garantiert frisch)
@@ -554,6 +555,7 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
             Tab(icon: Icon(Icons.history), text: 'Audit-Log'),
             Tab(icon: Icon(Icons.shield), text: 'Moderation'),
             Tab(icon: Icon(Icons.health_and_safety), text: 'Health'), // 🏥 NEW: Health Dashboard
+            Tab(icon: Icon(Icons.gavel), text: 'V16.2 Mod'), // 🔧 NEW: V16.2 Professional Admin APIs
           ],
         ),
       ),
@@ -568,6 +570,7 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
                 _buildAuditLogTab(),
                 _buildModerationTab(admin),
                 const HealthDashboardScreen(), // 🏥 NEW: Health Dashboard
+                UserModerationScreenV16List(world: widget.world), // 🔧 NEW: V16.2 Professional Admin APIs (MIT USER-LISTE!)
               ],
             ),
     );

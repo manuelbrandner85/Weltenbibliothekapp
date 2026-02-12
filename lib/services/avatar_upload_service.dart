@@ -20,7 +20,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 
 class AvatarUploadService {
   static const String _avatarKeyPrefix = 'user_avatar_';
-  static const String _backendUrl = 'https://weltenbibliothek-worker.brandy13062.workers.dev';
+  static const String _backendUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
   
   final ImagePicker _picker = ImagePicker();
   

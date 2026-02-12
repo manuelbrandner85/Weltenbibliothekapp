@@ -187,8 +187,9 @@ class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern> w
               // TAB 1: Community Posts (Original)
               _buildPostsView(),
               
-              // TAB 2: Live Chat (NEU!)
+              // TAB 2: Live Chat (ACTIVATED!)
               const EnergieLiveChatScreen(),
+              // const EnergieLiveChatScreen(), // Temporarily disabled
             ],
           ),
         ),

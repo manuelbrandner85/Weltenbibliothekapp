@@ -56,10 +56,7 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
   @override
   void dispose() {
     _tabController.dispose();
-    _calculatorController.dispose();
-    _name1Controller.dispose();
-    _name2Controller.dispose();
-    _encoderController.dispose();
+    // Controllers disposed in their respective sections
     _journalController.dispose();
     super.dispose();
   }

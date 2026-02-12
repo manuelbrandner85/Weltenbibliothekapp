@@ -16,7 +16,7 @@ class RabbitHoleService {
   bool _isCancelled = false;
 
   RabbitHoleService({
-    this.workerUrl = 'https://recherche-engine.brandy13062.workers.dev',
+    this.workerUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev',
     this.timeout = const Duration(seconds: 30),
   });
 

@@ -399,7 +399,7 @@ class InternationalProgressUpdate {
 /// 
 /// ```dart
 /// final service = InternationalResearchService(
-///   workerUrl: 'https://weltenbibliothek-worker.brandy13062.workers.dev',
+///   workerUrl: 'https://weltenbibliothek-api-v2.brandy13062.workers.dev',
 /// );
 /// 
 /// // Methode 1: Parallel (schnellste)

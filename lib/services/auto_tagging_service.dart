@@ -13,7 +13,7 @@ class AutoTaggingService {
   factory AutoTaggingService() => _instance;
   AutoTaggingService._internal();
 
-  static const String _backendUrl = 'https://api-backend.brandy13062.workers.dev';
+  static const String _backendUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
 
   // Pre-defined tag categories for Weltenbibliothek
   static const Map<String, List<String>> _tagCategories = {

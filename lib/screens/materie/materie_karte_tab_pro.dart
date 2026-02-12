@@ -851,6 +851,8 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro> {
         return const Color(0xFF6A1B9A); // Purple Dark
       case LocationCategory.censorship:
         return const Color(0xFF212121); // Almost Black
+      case LocationCategory.epstein:
+        return const Color(0xFFD32F2F); // 🔥 Dunkelrot - Epstein
     }
   }
 
@@ -908,6 +910,8 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro> {
         return Icons.volume_up;
       case LocationCategory.censorship:
         return Icons.block;
+      case LocationCategory.epstein:
+        return Icons.warning_amber; // 🔥 Warnung - Epstein
     }
   }
 
@@ -1123,6 +1127,8 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro> {
         return 'Propaganda';
       case LocationCategory.censorship:
         return 'Zensur';
+      case LocationCategory.epstein:
+        return '🔥 Epstein'; // Gesonderte Kategorie
     }
   }
   
@@ -1288,6 +1294,7 @@ enum LocationCategory {
   falseFlags,            // False Flag Operations
   propaganda,            // Propaganda & Manipulation
   censorship,            // Zensur & Informationskontrolle
+  epstein,               // 🔥 Jeffrey Epstein & Netzwerk (GESONDERT)
 }
 
 class MaterieLocationDetail {
@@ -1340,7 +1347,8 @@ BEWEISE: Klaus Schmidt Ausgrabungen (1995-2014); Radiokarbondatierung bestätigt
     category: LocationCategory.ancientCivilizations,
     keywords: ['Göbekli Tepe', 'Steinzeit', 'Megalithen', 'Türkei', 'Neolithikum', 'Tempel'],
     date: DateTime(-9600, 1, 1),
-    imageUrls: [
+    imageUrls: ['https://www.genspark.ai/api/files/s/oPY0luBZ?cache_control=3600', // 🎨 HYPERREALISTISCH
+      
       'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c8/G%C3%B6bekli_Tepe%2C_Urfa.jpg/1200px-G%C3%B6bekli_Tepe%2C_Urfa.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/Gobekli_Tepe_pillar.jpg/800px-Gobekli_Tepe_pillar.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f9/Göbekli_Tepe_excavation.jpg/1200px-Göbekli_Tepe_excavation.jpg',
@@ -1368,7 +1376,8 @@ BEWEISE: Radiokarbondatierung 3000-2000 v.Chr.; Sarsen-Steine 25 Tonnen; Blauste
     category: LocationCategory.ancientCivilizations,
     keywords: ['Stonehenge', 'England', 'Megalithen', 'Druiden', 'Astronomie'],
     date: DateTime(-3000, 1, 1),
-    imageUrls: [
+    imageUrls: ['https://www.genspark.ai/api/files/s/hTwsqNWv?cache_control=3600', // 🎨 HYPERREALISTISCH
+      
       'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/Stonehenge2007_07_30.jpg/1200px-Stonehenge2007_07_30.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f4/Stonehenge_Closeup.jpg/1200px-Stonehenge_Closeup.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/9/93/Stonehenge_Summer_Solstice.jpg/1200px-Stonehenge_Summer_Solstice.jpg',
@@ -1396,7 +1405,8 @@ BEWEISE: Radiokarbondatierung ~2550 v.Chr.; 2,3 Millionen Steinblöcke; Präzisi
     category: LocationCategory.ancientCivilizations,
     keywords: ['Gizeh', 'Pyramiden', 'Ägypten', 'Cheops', 'Pharao', 'Weltwunder'],
     date: DateTime(-2560, 1, 1),
-    imageUrls: [
+    imageUrls: ['https://www.genspark.ai/api/files/s/Jf0BCsdJ?cache_control=3600', // 🎨 HYPERREALISTISCH
+      
       'https://upload.wikimedia.org/wikipedia/commons/thumb/a/af/All_Gizah_Pyramids.jpg/1200px-All_Gizah_Pyramids.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/Kheops-Pyramid.jpg/1200px-Kheops-Pyramid.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/9/93/Great_Pyramid_of_Giza_Interior.jpg/800px-Great_Pyramid_of_Giza_Interior.jpg',
@@ -1424,7 +1434,8 @@ BEWEISE: Platon Dialoge "Timaios" & "Kritias" (360 v.Chr.); keine archäologisch
     category: LocationCategory.ancientCivilizations,
     keywords: ['Atlantis', 'Platon', 'Versunkene Zivilisation', 'Azoren', 'Santorin'],
     date: DateTime(-9600, 1, 1),
-    imageUrls: [
+    imageUrls: ['https://www.genspark.ai/api/files/s/Jybe15oz?cache_control=3600', // 🎨 HYPERREALISTISCH
+      
       'https://upload.wikimedia.org/wikipedia/commons/thumb/0/05/Atlantis_map_Kircher_1669.jpg/1200px-Atlantis_map_Kircher_1669.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/Santorini_Landsat.jpg/1200px-Santorini_Landsat.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/3/35/Richat_Structure.jpg/1200px-Richat_Structure.jpg',
@@ -1452,7 +1463,8 @@ BEWEISE: Keilschrift-Tafeln 3200 v.Chr.; Uruk größte Stadt der Welt (~3000 v.C
     category: LocationCategory.ancientCivilizations,
     keywords: ['Sumer', 'Mesopotamien', 'Keilschrift', 'Uruk', 'Anunnaki', 'Gilgamesch'],
     date: DateTime(-4000, 1, 1),
-    imageUrls: [
+    imageUrls: ['https://www.genspark.ai/api/files/s/575YEhXB?cache_control=3600', // 🎨 HYPERREALISTISCH
+      
       'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Uruk_archaeological_site.jpg/1200px-Uruk_archaeological_site.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/f/fc/Cuneiform_script2.jpg/1200px-Cuneiform_script2.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/9/93/Ziggurat_of_Ur_001.jpg/1200px-Ziggurat_of_Ur_001.jpg',
@@ -1482,7 +1494,8 @@ BEWEISE: Torah/Altes Testament (Exodus-Buch); keine ägyptischen Quellen; archä
     category: LocationCategory.religion,
     keywords: ['Exodus', 'Moses', 'Ägypten', 'Bibel', 'Sinai', 'Zehn Gebote'],
     date: DateTime(-1300, 1, 1),
-    imageUrls: [
+    imageUrls: ['https://www.genspark.ai/api/files/s/ySdzMiYf?cache_control=3600', // 🎨 HYPERREALISTISCH
+      
       'https://upload.wikimedia.org/wikipedia/commons/thumb/f/fc/Foster_Bible_Pictures_0074-1_The_Israelites_Leaving_Egypt.jpg/1200px-Foster_Bible_Pictures_0074-1_The_Israelites_Leaving_Egypt.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8d/Mount_Sinai.jpg/1200px-Mount_Sinai.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/2/24/Ten_Commandments_tablets.jpg/800px-Ten_Commandments_tablets.jpg',
@@ -1510,7 +1523,8 @@ BEWEISE: Ashoka-Säule in Lumbini (249 v.Chr., UNESCO Weltkulturerbe); Pali-Kano
     category: LocationCategory.religion,
     keywords: ['Buddha', 'Buddhismus', 'Lumbini', 'Erleuchtung', 'Nepal'],
     date: DateTime(-563, 1, 1),
-    imageUrls: [
+    imageUrls: ['https://www.genspark.ai/api/files/s/m1bTOcsd?cache_control=3600', // 🎨 HYPERREALISTISCH
+      
       'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Lumbini_birthplace_of_Buddha.jpg/1200px-Lumbini_birthplace_of_Buddha.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f3/Buddha_statue_Bodhgaya.jpg/800px-Buddha_statue_Bodhgaya.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/Ashoka_Pillar_Lumbini.jpg/800px-Ashoka_Pillar_Lumbini.jpg',
@@ -1538,7 +1552,8 @@ BEWEISE: Evangelien (Matthäus, Markus, Lukas, Johannes, ca. 70-100 n.Chr.); Tac
     category: LocationCategory.religion,
     keywords: ['Jesus', 'Christentum', 'Kreuzigung', 'Jerusalem', 'Auferstehung'],
     date: DateTime(33, 4, 3),
-    imageUrls: [
+    imageUrls: ['https://www.genspark.ai/api/files/s/vZXarQFh?cache_control=3600', // 🎨 HYPERREALISTISCH
+      
       'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Jerusalem_Holy_Sepulchre_BW_19.JPG/1200px-Jerusalem_Holy_Sepulchre_BW_19.JPG',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/8/82/Christ_Carrying_the_Cross_1580.jpg/800px-Christ_Carrying_the_Cross_1580.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/3/39/Golgotha_Jerusalem.jpg/1200px-Golgotha_Jerusalem.jpg',
@@ -1565,7 +1580,8 @@ BEWEISE: Koran (Sammlung unter Kalif Uthman, 650 n.Chr.); Hadith-Sammlungen (Buk
     position: const LatLng(21.4225, 39.8262),
     category: LocationCategory.religion,
     keywords: ['Mohammed', 'Islam', 'Koran', 'Mekka', 'Offenbarung', 'Prophet'],
-    imageUrls: [
+    imageUrls: ['https://www.genspark.ai/api/files/s/Ye99UeDb?cache_control=3600', // 🎨 HYPERREALISTISCH
+      
       'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5f/Masjid_al-Haram_aerial_view.jpg/1200px-Masjid_al-Haram_aerial_view.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/6/66/Hira_cave_-_Flickr.jpg/1200px-Hira_cave_-_Flickr.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/9/92/Quran_manuscript_8th_century.jpg/800px-Quran_manuscript_8th_century.jpg',
@@ -1593,7 +1609,8 @@ BEWEISE: Sueton "De Vita Caesarum" (121 n.Chr.); Plutarch "Bioi Paralleloi" (ca.
     category: LocationCategory.assassinations,
     keywords: ['Caesar', 'Rom', 'Senat', 'Brutus', 'Iden des März', 'Attentat'],
     date: DateTime(-44, 3, 15),
-    imageUrls: [
+    imageUrls: ['https://www.genspark.ai/api/files/s/VBaBIs3B?cache_control=3600', // 🎨 HYPERREALISTISCH
+      
       'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/Death_of_Caesar_by_Vincenzo_Camuccini.jpg/1200px-Death_of_Caesar_by_Vincenzo_Camuccini.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/0/00/Julius_Caesar_Coustou_Louvre_MR1798.jpg/800px-Julius_Caesar_Coustou_Louvre_MR1798.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f6/Roman_Forum_Ruins.jpg/1200px-Roman_Forum_Ruins.jpg',
@@ -1623,7 +1640,8 @@ BEWEISE: Sturm auf Bastille 14. Juli 1789 (heute Nationalfeiertag); "Déclaratio
     category: LocationCategory.revolution,
     keywords: ['Revolution', 'Frankreich', 'Bastille', 'Aufklärung', '1789'],
     date: DateTime(1789, 7, 14),
-    imageUrls: [
+    imageUrls: ['https://www.genspark.ai/api/files/s/QDKsOrn3?cache_control=3600', // 🎨 HYPERREALISTISCH
+      
       'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Prise_de_la_Bastille.jpg/1200px-Prise_de_la_Bastille.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6c/Declaration_of_the_Rights_of_Man_and_of_the_Citizen.jpg/800px-Declaration_of_the_Rights_of_Man_and_of_the_Citizen.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/5/54/Execution_of_Louis_XVI.jpg/1200px-Execution_of_Louis_XVI.jpg',
@@ -1651,7 +1669,8 @@ BEWEISE: Unabhängigkeitserklärung 4. Juli 1776 (Originalurkunde in Washington 
     category: LocationCategory.revolution,
     keywords: ['USA', 'Unabhängigkeit', 'Philadelphia', 'Declaration', '1776'],
     date: DateTime(1776, 7, 4),
-    imageUrls: [
+    imageUrls: ['https://www.genspark.ai/api/files/s/Qr4HnbNx?cache_control=3600', // 🎨 HYPERREALISTISCH
+      
       'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8f/Declaration_independence.jpg/1200px-Declaration_independence.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/7/70/United_States_Declaration_of_Independence.jpg/1200px-United_States_Declaration_of_Independence.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/1/15/Independence_Hall_Assembly_Room.jpg/1200px-Independence_Hall_Assembly_Room.jpg',
@@ -1678,7 +1697,8 @@ BEWEISE: Gutenberg-Bibel (ca. 1455, 48 erhaltene Exemplare); Straßburger Gerich
     position: const LatLng(50.0, 8.2711),
     category: LocationCategory.technology,
     keywords: ['Gutenberg', 'Buchdruck', 'Mainz', 'Revolution', 'Bibel'],
-    imageUrls: [
+    imageUrls: ['https://www.genspark.ai/api/files/s/PxpY6FGn?cache_control=3600', // 🎨 HYPERREALISTISCH
+      
       'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/Gutenberg_Bible.jpg/800px-Gutenberg_Bible.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b4/Gutenberg_press.jpg/1200px-Gutenberg_press.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/3/33/Gutenberg.jpg/800px-Gutenberg.jpg',
@@ -1706,7 +1726,8 @@ BEWEISE: Attentat Sarajevo 28. Juni 1914; Österreichisches Ultimatum 23. Juli; 
     category: LocationCategory.wars,
     keywords: ['WW1', 'Sarajevo', 'Gavrilo Princip', 'Attentat', '1914', 'Weltkrieg'],
     date: DateTime(1914, 7, 28),
-    imageUrls: [
+    imageUrls: ['https://www.genspark.ai/api/files/s/BTzHP7Gl?cache_control=3600', // 🎨 HYPERREALISTISCH
+      
       'https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/Gavrilo_Princip_captured_in_Sarajevo_1914.jpg/1200px-Gavrilo_Princip_captured_in_Sarajevo_1914.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/2/26/WWI_Trench_Warfare.jpg/1200px-WWI_Trench_Warfare.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/9/93/Archduke_Franz_Ferdinand_and_Sophie_before_assassination.jpg/1200px-Archduke_Franz_Ferdinand_and_Sophie_before_assassination.jpg',
@@ -1734,7 +1755,8 @@ BEWEISE: Abwurf 6. August 1945, 8:15 Uhr; Enola Gay (B-29 Bomber); Manhattan Pro
     category: LocationCategory.wars,
     keywords: ['Hiroshima', 'Atombombe', 'Japan', 'Manhattan Project', 'WW2'],
     date: DateTime(1945, 8, 6),
-    imageUrls: [
+    imageUrls: ['https://www.genspark.ai/api/files/s/UIaxERGc?cache_control=3600', // 🎨 HYPERREALISTISCH
+      
       'https://upload.wikimedia.org/wikipedia/commons/thumb/5/54/Atomic_cloud_over_Hiroshima.jpg/1200px-Atomic_cloud_over_Hiroshima.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a6/Hiroshima_aftermath.jpg/1200px-Hiroshima_aftermath.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c4/Atomic_Dome_Hiroshima.jpg/1200px-Atomic_Dome_Hiroshima.jpg',
@@ -1772,7 +1794,8 @@ Gutenbergs Erfindung basierte möglicherweise auf ostasiatischen Techniken - Chi
     position: LatLng(50.0012, 8.2737), // Mainz, Deutschland
     category: LocationCategory.technology,
     keywords: ['Gutenberg', 'Buchdruck', 'Mainz', 'Renaissance', 'Information', 'Reformation'],
-    imageUrls: [
+    imageUrls: ['https://www.genspark.ai/api/files/s/HRchkbKx?cache_control=3600', // 🎨 HYPERREALISTISCH
+      
       'https://upload.wikimedia.org/wikipedia/commons/5/58/Gutenberg_Bible%2C_Lenox_Copy%2C_New_York_Public_Library%2C_2009._Pic_01.jpg', // Gutenberg-Bibel
       'https://upload.wikimedia.org/wikipedia/commons/3/33/PrintMus_038.jpg', // Gutenberg-Druckerpresse Replik
       'https://upload.wikimedia.org/wikipedia/commons/e/e6/Gutenberg.jpg', // Johannes Gutenberg Portrait
@@ -1810,7 +1833,9 @@ Die berühmte "Apfel-Geschichte" ist höchstwahrscheinlich eine Legende, die New
     position: LatLng(52.2053, 0.1218), // Cambridge, England - Trinity College
     category: LocationCategory.science,
     keywords: ['Newton', 'Gravitation', 'Physik', 'Cambridge', 'Principia', 'Mathematik'],
-    imageUrls: [
+    imageUrls: ['https://www.genspark.ai/api/files/s/1CSj3Kjj?cache_control=3600', // 🎨 HYPERREALISTISCH
+      'https://www.genspark.ai/api/files/s/yqVLyikO?cache_control=3600', // 🎨 HYPERREALISTISCH
+      
       'https://upload.wikimedia.org/wikipedia/commons/b/b2/Prinicipia-title.png', // Principia Titelseite
       'https://upload.wikimedia.org/wikipedia/commons/3/3b/Portrait_of_Sir_Isaac_Newton%2C_1689.jpg', // Newton Portrait 1689
       'https://upload.wikimedia.org/wikipedia/commons/f/f7/Newtons_cradle_animation_book_2.gif', // Newtons Wiege (Impulserhaltung)
@@ -1848,7 +1873,9 @@ Darwin zögerte 20 Jahre mit der Veröffentlichung seiner Theorie aus Angst vor 
     position: LatLng(51.5074, -0.1278), // London, England - Down House (Darwins Wohnort)
     category: LocationCategory.science,
     keywords: ['Darwin', 'Evolution', 'Biologie', 'Galapagos', 'Natürliche Selektion', 'HMS Beagle'],
-    imageUrls: [
+    imageUrls: ['https://www.genspark.ai/api/files/s/szkMwJnu?cache_control=3600', // 🎨 HYPERREALISTISCH
+      'https://www.genspark.ai/api/files/s/gQQtz0Su?cache_control=3600', // 🎨 HYPERREALISTISCH
+      
       'https://upload.wikimedia.org/wikipedia/commons/2/2e/Origin_of_Species_title_page.jpg', // Origin of Species Titelseite
       'https://upload.wikimedia.org/wikipedia/commons/1/1e/Charles_Darwin_1854.jpg', // Darwin 1854
       'https://upload.wikimedia.org/wikipedia/commons/e/e0/Geospiza_magnirostris_%28Darwin%27s_finch%29.jpg', // Galapagos-Fink
@@ -1886,7 +1913,9 @@ Einstein war 1905 ein unbekannter Patentamtsbeamter in Bern - seine Theorien wur
     position: LatLng(46.9480, 7.4474), // Bern, Schweiz - Einsteins Wohnort 1905
     category: LocationCategory.science,
     keywords: ['Einstein', 'Relativität', 'Physik', 'E=mc²', 'Bern', 'Quantenphysik'],
-    imageUrls: [
+    imageUrls: ['https://www.genspark.ai/api/files/s/Gyj7wtFi?cache_control=3600', // 🎨 HYPERREALISTISCH
+      'https://www.genspark.ai/api/files/s/yV9ZfkoJ?cache_control=3600', // 🎨 HYPERREALISTISCH
+      
       'https://upload.wikimedia.org/wikipedia/commons/d/d3/Albert_Einstein_Head.jpg', // Einstein Portrait
       'https://upload.wikimedia.org/wikipedia/commons/f/f5/Einsteins_office_at_the_Patent_Office_in_Bern%2C_Switzerland.jpg', // Einsteins Patentamtbüro Bern
       'https://upload.wikimedia.org/wikipedia/commons/4/4f/E%3Dmc2.svg', // E=mc² Formel
@@ -1924,7 +1953,9 @@ Die wahre Heldin der DNA-Entdeckung war Rosalind Franklin, eine brillante Chemik
     position: LatLng(52.2053, 0.1218), // Cambridge, England - Cavendish Laboratory
     category: LocationCategory.science,
     keywords: ['DNA', 'Watson', 'Crick', 'Franklin', 'Genetik', 'Doppelhelix'],
-    imageUrls: [
+    imageUrls: ['https://www.genspark.ai/api/files/s/ybhttWEk?cache_control=3600', // 🎨 HYPERREALISTISCH
+      'https://www.genspark.ai/api/files/s/BXC66y7i?cache_control=3600', // 🎨 HYPERREALISTISCH
+      
       'https://upload.wikimedia.org/wikipedia/commons/d/d4/Photo_51.jpg', // Rosalind Franklins Photo 51
       'https://upload.wikimedia.org/wikipedia/commons/4/4c/DNA_Structure%2BKey%2BLabelled.pn_NoBB.png', // DNA Doppelhelix Modell
       'https://upload.wikimedia.org/wikipedia/commons/c/c1/Rosalind_Franklin.jpg', // Rosalind Franklin Portrait
@@ -1962,7 +1993,8 @@ Mehrere alternative Theorien existieren: 1) UFO-Absturz oder außerirdische Raum
     position: LatLng(60.8833, 101.8833), // Tunguska, Sibirien, Russland
     category: LocationCategory.disasters,
     keywords: ['Tunguska', 'Explosion', 'Sibirien', 'Meteor', 'Mysterium', 'Katastrophe'],
-    imageUrls: [
+    imageUrls: ['https://www.genspark.ai/api/files/s/bIljx3eB?cache_control=3600', // 🎨 HYPERREALISTISCH
+      
       'https://upload.wikimedia.org/wikipedia/commons/c/c4/Tunguska_event_fallen_trees.jpg', // Umgestürzte Bäume Tunguska
       'https://upload.wikimedia.org/wikipedia/commons/1/15/Tunguska_Ereignis.png', // Karte der Explosion
       'https://upload.wikimedia.org/wikipedia/commons/2/2b/Kulik_expedition.jpg', // Leonid Kulik Expedition Foto 1927
@@ -2000,7 +2032,8 @@ Mehrere kontroverse Theorien: 1) Versicherungsbetrug: Die Titanic war in Wahrhei
     position: LatLng(41.7325, -49.9469), // Titanic Wrack Position, Nordatlantik
     category: LocationCategory.disasters,
     keywords: ['Titanic', 'Untergang', 'Eisberg', 'Katastrophe', 'J.P. Morgan', 'Verschwörung'],
-    imageUrls: [
+    imageUrls: ['https://www.genspark.ai/api/files/s/7n5zUubs?cache_control=3600', // 🎨 HYPERREALISTISCH
+      
       'https://upload.wikimedia.org/wikipedia/commons/f/fd/RMS_Titanic_3.jpg', // Titanic in Southampton 1912
       'https://upload.wikimedia.org/wikipedia/commons/1/10/Titanic_wreck_bow.jpg', // Titanic Wrack 1985
       'https://upload.wikimedia.org/wikipedia/commons/c/c4/Stöwer_Titanic.jpg', // Titanic Untergang Gemälde (Stöwer)
@@ -2038,7 +2071,8 @@ Mehrere Theorien deuten auf Sabotage: 1) Anti-Nazi-Sabotage: Das Luftschiff war 
     position: LatLng(40.0328, -74.3238), // Lakehurst, New Jersey, USA - Naval Air Station
     category: LocationCategory.disasters,
     keywords: ['Hindenburg', 'Luftschiff', 'Explosion', 'Katastrophe', 'Lakehurst', 'Nazi'],
-    imageUrls: [
+    imageUrls: ['https://www.genspark.ai/api/files/s/iKN5H31o?cache_control=3600', // 🎨 HYPERREALISTISCH
+      
       'https://upload.wikimedia.org/wikipedia/commons/1/1c/Hindenburg_disaster.jpg', // Hindenburg Explosion Foto
       'https://upload.wikimedia.org/wikipedia/commons/6/6c/Hindenburg_at_lakehurst.jpg', // Hindenburg vor der Landung
       'https://upload.wikimedia.org/wikipedia/commons/9/94/Bundesarchiv_Bild_146-1978-043-28%2C_Lakehurst%2C_Explosion_des_Zeppelin_LZ_129.jpg', // Hindenburg Explosion Sequenz
@@ -2076,7 +2110,8 @@ Massive sowjetische Vertuschung: Die Katastrophe wurde erst 36 Stunden später �
     position: LatLng(51.3886, 30.0996), // Tschernobyl, Ukraine - Reaktor 4
     category: LocationCategory.disasters,
     keywords: ['Tschernobyl', 'Reaktor', 'Nuklear', 'Katastrophe', 'Radioaktiv', 'Sowjetunion'],
-    imageUrls: [
+    imageUrls: ['https://www.genspark.ai/api/files/s/sJY751PZ?cache_control=3600', // 🎨 HYPERREALISTISCH
+      
       'https://upload.wikimedia.org/wikipedia/commons/2/23/Chernobyl_Disaster.jpg', // Reaktor 4 nach Explosion
       'https://upload.wikimedia.org/wikipedia/commons/9/9a/Chernobyl_radiation_map_1996.svg', // Radioaktivität-Karte Europa
       'https://upload.wikimedia.org/wikipedia/commons/0/00/Pripyat_abandoned_city.jpg', // Verlassene Stadt Pripyat
@@ -2114,7 +2149,8 @@ Massive Vertuschung durch Betreiber TEPCO (Tokyo Electric Power Company): TEPCO 
     position: LatLng(37.4213, 141.0325), // Fukushima Dai-ichi, Japan
     category: LocationCategory.disasters,
     keywords: ['Fukushima', 'Erdbeben', 'Tsunami', 'Nuklear', 'Katastrophe', 'TEPCO'],
-    imageUrls: [
+    imageUrls: ['https://www.genspark.ai/api/files/s/BhkhME2p?cache_control=3600', // 🎨 HYPERREALISTISCH
+      
       'https://upload.wikimedia.org/wikipedia/commons/5/50/Fukushima_I_by_Digital_Globe.jpg', // Fukushima nach Explosion
       'https://upload.wikimedia.org/wikipedia/commons/9/98/2011_Tohoku_earthquake_tsunami_flooding_Sendai_Airport.jpg', // Tsunami Sendai
       'https://upload.wikimedia.org/wikipedia/commons/b/bf/Radiation_dose_chart_%28XKCD%29.svg', // Strahlungsdosis Vergleich
@@ -2152,7 +2188,8 @@ Zahlreiche Zeugen berichteten, dass die Trümmer ungewöhnlich waren: Metall, da
     position: LatLng(33.3943, -104.5230), // Roswell, New Mexico, USA
     category: LocationCategory.ufo,
     keywords: ['Roswell', 'UFO', 'Aliens', 'Crash', 'Vertuschung', 'Area 51'],
-    imageUrls: [
+    imageUrls: ['https://www.genspark.ai/api/files/s/xy08DS0W?cache_control=3600', // 🎨 HYPERREALISTISCH
+      
       'https://upload.wikimedia.org/wikipedia/commons/f/fb/RoswellDailyRecordJuly8%2C1947.jpg', // Roswell Daily Record Schlagzeile
       'https://upload.wikimedia.org/wikipedia/commons/e/ed/General_Ramey_and_Colonel_Dubose_with_weather_balloon.jpg', // General Ramey mit Wetterballon
       'https://upload.wikimedia.org/wikipedia/commons/4/44/Roswell_crash_site.jpg', // Foster Ranch Crash-Site
@@ -2190,7 +2227,8 @@ Area 51 ist das Zentrum zahlreicher Verschwörungstheorien: 1) Alien-Technologie
     position: LatLng(37.2350, -115.8111), // Area 51, Nevada, USA - Groom Lake
     category: LocationCategory.ufo,
     keywords: ['Area 51', 'UFO', 'Aliens', 'CIA', 'Geheim', 'Dreamland'],
-    imageUrls: [
+    imageUrls: ['https://www.genspark.ai/api/files/s/Bqrmr9ta?cache_control=3600', // 🎨 HYPERREALISTISCH
+      
       'https://upload.wikimedia.org/wikipedia/commons/9/9c/Area_51_satellite_image.jpg', // Area 51 Satellitenbild
       'https://upload.wikimedia.org/wikipedia/commons/8/88/Lockheed_U-2.jpg', // U-2 Spionageflugzeug
       'https://upload.wikimedia.org/wikipedia/commons/f/f0/%22This_Is_the_Place%22_-_Area_51_-_panoramio.jpg', // Area 51 Warning Sign
@@ -2228,7 +2266,8 @@ Betty und Barney Hills Berichte waren konsistent und detailliert: Graue Aliens m
     position: LatLng(44.2901, -71.6200), // US Route 3, New Hampshire - Entführungsort
     category: LocationCategory.ufo,
     keywords: ['Betty Hill', 'Barney Hill', 'Alien', 'Entführung', 'UFO', 'Greys'],
-    imageUrls: [
+    imageUrls: ['https://www.genspark.ai/api/files/s/XaCN9nx2?cache_control=3600', // 🎨 HYPERREALISTISCH
+      
       'https://upload.wikimedia.org/wikipedia/commons/2/28/Betty_and_Barney_Hill.jpg', // Betty & Barney Hill Foto
       'https://upload.wikimedia.org/wikipedia/commons/f/f4/Betty_Hill_Star_Map.jpg', // Betty Hills Star Map
       'https://upload.wikimedia.org/wikipedia/commons/e/ef/Grey_alien.jpg', // Grey Alien Darstellung (basiert auf Hills Beschreibung)
@@ -2266,7 +2305,8 @@ Tausende Augenzeugen beschrieben ein massives, solides V-förmiges Objekt, nicht
     position: LatLng(33.4484, -112.0740), // Phoenix, Arizona, USA
     category: LocationCategory.ufo,
     keywords: ['Phoenix Lights', 'UFO', 'Massenbeobachtung', 'Arizona', 'V-förmig', 'Vertuschung'],
-    imageUrls: [
+    imageUrls: ['https://www.genspark.ai/api/files/s/AkESZIlO?cache_control=3600', // 🎨 HYPERREALISTISCH
+      
       'https://upload.wikimedia.org/wikipedia/commons/8/87/Phoenix_Lights_1997.jpg', // Phoenix Lights Foto 1997
       'https://upload.wikimedia.org/wikipedia/commons/5/5b/Phoenix_lights_formation.jpg', // V-Formation Illustration
       'https://upload.wikimedia.org/wikipedia/commons/3/3a/Fife_Symington_official_photo.jpg', // Gouverneur Fife Symington
@@ -2304,7 +2344,8 @@ US-Navy-Piloten beschrieben unglaubliche Flugmanöver: Objekte, die von 24.000 M
     position: LatLng(38.8719, -77.0563), // Pentagon, Arlington, Virginia, USA
     category: LocationCategory.ufo,
     keywords: ['Pentagon', 'UFO', 'UAP', 'Navy', 'Tic Tac', 'Offenlegung'],
-    imageUrls: [
+    imageUrls: ['https://www.genspark.ai/api/files/s/NSp3ceOr?cache_control=3600', // 🎨 HYPERREALISTISCH
+      
       'https://upload.wikimedia.org/wikipedia/commons/1/1a/GIMBAL.jpg', // Pentagon "Gimbal" UFO Video Screenshot
       'https://upload.wikimedia.org/wikipedia/commons/3/30/Unidentified_flying_object_-_Aerial_Phenomena_-_US_Navy.jpg', // Pentagon UFO Video Frame
       'https://upload.wikimedia.org/wikipedia/commons/e/e7/The_Pentagon_January_2008.jpg', // Pentagon Gebäude
@@ -2343,7 +2384,8 @@ Mehrere Theorien behaupten, Roosevelt wusste vom Angriff im Voraus und ließ ihn
     category: LocationCategory.wars,
     keywords: ['Pearl Harbor', 'WWII', 'Japan', 'Roosevelt', 'USA', 'Kriegseintritt'],
     date: DateTime(1941, 12, 7),
-    imageUrls: [
+    imageUrls: ['https://www.genspark.ai/api/files/s/F91TV8h1?cache_control=3600', // 🎨 HYPERREALISTISCH
+      
       'https://upload.wikimedia.org/wikipedia/commons/0/09/The_USS_Arizona_%28BB-39%29_burning_after_the_Japanese_attack_on_Pearl_Harbor_-_NARA_195617_-_Edit.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/4/49/Battleship_row_USS_California_sinking.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/5/54/Pearl_Harbor_attack.jpg',
@@ -2382,7 +2424,8 @@ Kontroverse Aspekte: 1) Stalin drängte seit 1942 auf eine Zweite Front - die Ve
     category: LocationCategory.wars,
     keywords: ['D-Day', 'Normandie', 'WWII', 'Eisenhower', 'Omaha Beach', 'Operation Overlord'],
     date: DateTime(1944, 6, 6),
-    imageUrls: [
+    imageUrls: ['https://www.genspark.ai/api/files/s/f0jiWdnL?cache_control=3600', // 🎨 HYPERREALISTISCH
+      
       'https://upload.wikimedia.org/wikipedia/commons/a/a5/Into_the_Jaws_of_Death_23-0455M_edit.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/f/f9/Bundesarchiv_Bild_101I-299-1805-16%2C_Nordfrankreich%2C_Soldaten_hinter_Strandhindernissen.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/7/78/Normandy_Invasion%2C_June_1944.jpg',
@@ -2421,7 +2464,8 @@ Nach WWII spaltete sich Europa: Westeuropa (US-unterstützt) vs. Osteuropa (Sowj
     category: LocationCategory.deepState,
     keywords: ['Kalter Krieg', 'USA', 'UdSSR', 'NATO', 'Berlin', 'MKUltra', 'Gladio'],
     date: DateTime(1947, 3, 12),
-    imageUrls: [
+    imageUrls: ['https://www.genspark.ai/api/files/s/UdbT7XJX?cache_control=3600', // 🎨 HYPERREALISTISCH
+      
       'https://upload.wikimedia.org/wikipedia/commons/0/05/Iron_Curtain_map.svg',
       'https://upload.wikimedia.org/wikipedia/commons/1/1a/Berlinermauer.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/c/c8/Churchill_waves_to_crowds.jpg',
@@ -2460,7 +2504,8 @@ Die Berliner Mauer wurde 1961 errichtet, um die Flucht von DDR-Bürgern in den W
     category: LocationCategory.geopolitics,
     keywords: ['Berlin', 'Mauerfall', 'DDR', 'Wiedervereinigung', 'Kalter Krieg', 'Stasi'],
     date: DateTime(1989, 11, 9),
-    imageUrls: [
+    imageUrls: ['https://www.genspark.ai/api/files/s/2Lw79HpV?cache_control=3600', // 🎨 HYPERREALISTISCH
+      
       'https://upload.wikimedia.org/wikipedia/commons/8/89/Thefalloftheberlinwall1989.JPG',
       'https://upload.wikimedia.org/wikipedia/commons/1/1a/Berlinermauer.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/d/da/Bundesarchiv_Bild_183-1989-1118-028%2C_Berlin%2C_Brandenburger_Tor%2C_%C3%96ffnung.jpg',
@@ -2499,7 +2544,8 @@ Sputnik 1 wog 83,6 kg und umkreiste die Erde in 96 Minuten. Der Start markierte 
     category: LocationCategory.technology,
     keywords: ['Sputnik', 'Weltraumrennen', 'UdSSR', 'NASA', 'Kalter Krieg', 'Raumfahrt'],
     date: DateTime(1957, 10, 4),
-    imageUrls: [
+    imageUrls: ['https://www.genspark.ai/api/files/s/ojuaqNZJ?cache_control=3600', // 🎨 HYPERREALISTISCH
+      
       'https://upload.wikimedia.org/wikipedia/commons/b/be/Sputnik_asm.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/0/0f/Sputnik_1_replica.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/4/44/Laika_ac_Sputnik_2_%28cropped%29.jpg',
@@ -2538,7 +2584,8 @@ Die Mondlandung ist eine der meistdiskutierten Verschwörungstheorien: 1) Fehlen
     category: LocationCategory.technology,
     keywords: ['Mondlandung', 'Apollo 11', 'Neil Armstrong', 'NASA', 'Verschwörung', 'Weltraum'],
     date: DateTime(1969, 7, 20),
-    imageUrls: [
+    imageUrls: ['https://www.genspark.ai/api/files/s/OwMvihGp?cache_control=3600', // 🎨 HYPERREALISTISCH
+      
       'https://upload.wikimedia.org/wikipedia/commons/9/98/Aldrin_Apollo_11_original.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/2/27/Apollo_11_bootprint.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/a/a8/Apollo_11_first_step.jpg',
@@ -2577,7 +2624,8 @@ Kontroverse Theorien: 1) Wuhan Labor-Ursprung: Das Wuhan Institute of Virology l
     category: LocationCategory.biotech,
     keywords: ['COVID-19', 'Pandemie', 'Wuhan', 'Labor', 'Impfung', 'Lockdown', 'WHO'],
     date: DateTime(2019, 12, 31),
-    imageUrls: [
+    imageUrls: ['https://www.genspark.ai/api/files/s/GyguPnOp?cache_control=3600', // 🎨 HYPERREALISTISCH
+      
       'https://upload.wikimedia.org/wikipedia/commons/f/f0/Wuhan_Institute_of_Virology_main_entrance.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/8/82/SARS-CoV-2_without_background.png',
       'https://upload.wikimedia.org/wikipedia/commons/3/3b/COVID-19_Outbreak_World_Map.svg',
@@ -2616,7 +2664,8 @@ Dutzende Theorien: 1) Piloten-Suizid-Mordplan: Kapitän Zaharie simulierte den K
     category: LocationCategory.disasters,
     keywords: ['MH370', 'Malaysia Airlines', 'Verschwinden', 'Mysterium', 'Flugzeug', 'Diego Garcia'],
     date: DateTime(2014, 3, 8),
-    imageUrls: [
+    imageUrls: ['https://www.genspark.ai/api/files/s/g5oWHXwN?cache_control=3600', // 🎨 HYPERREALISTISCH
+      
       'https://upload.wikimedia.org/wikipedia/commons/3/3c/9M-MRO_Malaysia_Airlines_Boeing_777-200ER_%2819826016672%29.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/b/b4/MH370_search_area.svg',
       'https://upload.wikimedia.org/wikipedia/commons/6/62/MH370_Flaperon_debris_found_on_R%C3%A9union.jpg',
@@ -2655,7 +2704,8 @@ Snowden sieht sich als Whistleblower, nicht Verräter: 1) Massenüberwachung ist
     category: LocationCategory.surveillance,
     keywords: ['Snowden', 'NSA', 'Überwachung', 'PRISM', 'Whistleblower', 'Spionage'],
     date: DateTime(2013, 6, 6),
-    imageUrls: [
+    imageUrls: ['https://www.genspark.ai/api/files/s/ih0OegSW?cache_control=3600', // 🎨 HYPERREALISTISCH
+      
       'https://upload.wikimedia.org/wikipedia/commons/6/60/Edward_Snowden-2.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/c/c7/Prism_slide_5.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/3/32/NSA_headquarters%2C_Fort_Meade%2C_Maryland.jpg',
@@ -2692,10 +2742,11 @@ Ungereimtheiten und Verdachtsmomente: 1) Kameras fielen aus: CCTV vor Epsteins Z
 • Little St. James Insel (Virgin Islands) - "Pädophilen-Insel", zahlreiche Besucher
 • Ghislaine Maxwell verurteilt zu 20 Jahren Haft (2022) - aber keine Namen genannt''',
     position: LatLng(40.7143, -74.0000), // Metropolitan Correctional Center, Manhattan
-    category: LocationCategory.deepState,
+    category: LocationCategory.epstein, // 🔥 GESONDERTE KATEGORIE
     keywords: ['Epstein', 'Selbstmord', 'Verschwörung', 'Missbrauch', 'Mord', 'Eliten'],
     date: DateTime(2019, 8, 10),
-    imageUrls: [
+    imageUrls: ['https://www.genspark.ai/api/files/s/HYIcKq1T?cache_control=3600', // 🎨 HYPERREALISTISCH
+      
       'https://upload.wikimedia.org/wikipedia/commons/8/8f/Jeffrey_Epstein_mug_shot.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/d/d8/Little_Saint_James%2C_U.S._Virgin_Islands.jpg',
       'https://upload.wikimedia.org/wikipedia/commons/5/51/Metropolitan_Correctional_Center_New_York.JPG',
@@ -4002,6 +4053,120 @@ Okkulte Zeremonie: "Cremation of Care" vor 12m hoher Moloch-Eule-Statue - Mensch
       'Thor Heyerdahl: "Aku-Aku: The Secret of Easter Island" (1958)',
       'Carl Lipo & Terry Hunt: "The Statues that Walked" (2011)',
       'Katherine Routledge: "The Mystery of Easter Island" (1919)',
+    ],
+  ),
+
+  // 🔥 ============================================
+  // EPSTEIN-NETZWERK - GESONDERTE KATEGORIE
+  // ============================================
+  
+  MaterieLocationDetail(
+    name: 'Little St. James - Epstein Island',
+    description: 'Jeffrey Epsteins private Insel (Virgin Islands) - "Pädophilen-Insel", Missbrauch, prominente Gäste',
+    detailedInfo: '''Little St. James, auch bekannt als "Pädophilen-Insel" oder "Orgy Island", war Jeffrey Epsteins privates Paradies in den US Virgin Islands. Epstein kaufte die Insel 1998 für 7,95 Millionen Dollar. Auf der 28 Hektar großen Insel befanden sich luxuriöse Anwesen, ein Tempel-ähnliches Gebäude mit goldener Kuppel, und zahlreiche versteckte Kameras.
+
+📘 OFFIZIELLE FAKTEN:
+- Gekauft 1998 für 7,95 Millionen Dollar
+- Luxuriöse Villa, Pool, Hubschrauberlandeplatz
+- Mysteriöser "Tempel" mit goldener Kuppel (angeblich Fitness-Studio)
+- Zahlreiche prominente Besucher: Bill Clinton, Prinz Andrew, Bill Gates, Donald Trump, Stephen Hawking
+- Epstein nutzte die Insel für "Entspannung" und "wissenschaftliche Konferenzen"
+
+🔍 MISSBRAUCHSVORWÜRFE:
+- Virginia Giuffre: Als 17-Jährige auf die Insel gebracht, dort missbraucht
+- Mehrere Überlebende berichten von sexuellem Missbrauch Minderjähriger
+- Versteckte Kameras überall - Epstein sammelte kompromittierende Videos
+- "Lolita Express" (Epsteins Privatjet) brachte Gäste zur Insel
+- Ghislaine Maxwell rekrutierte junge Mädchen für die Insel
+- FBI-Razzia 2019: Beweise gesichert, aber vieles bleibt geheim
+
+🔒 BEWEISE:
+- FBI-Razzia 10. August 2019
+- Flugprotokolle des "Lolita Express"
+- Aussagen von Virginia Giuffre und anderen Überlebenden
+- Fotos und Videos vom Tempel-Gebäude
+- Epsteins Testament: Insel wurde in Trust überführt''',
+    position: const LatLng(18.3000, -64.8256), // Little St. James, Virgin Islands
+    category: LocationCategory.epstein,
+    keywords: ['Little St. James', 'Epstein Island', 'Pädophilen-Insel', 'Missbrauch', 'Virgin Islands'],
+    date: DateTime(1998, 1, 1), // Kauf der Insel
+    imageUrls: [
+      'https://upload.wikimedia.org/wikipedia/commons/d/d8/Little_Saint_James%2C_U.S._Virgin_Islands.jpg',
+    ],
+    videoUrls: ['B3zj27WOrWE'], // Netflix: Jeffrey Epstein - Stinkreich
+    sources: [
+      'Virginia Giuffre Deposition (2016) - Aussagen über Little St. James',
+      'FBI Raid Little St. James (August 2019)',
+      'Flight Logs Lolita Express (1997-2005)',
+    ],
+  ),
+  
+  MaterieLocationDetail(
+    name: 'Ghislaine Maxwell Verhaftung - New Hampshire',
+    description: 'Epsteins Komplizin verhaftet (2. Juli 2020) - Rekrutierung Minderjähriger, 20 Jahre Haft',
+    detailedInfo: '''Ghislaine Maxwell, Tochter des britischen Medienmoguls Robert Maxwell, war Jeffrey Epsteins engste Vertraute und Komplizin. Sie rekrutierte und "pflegte" junge Mädchen für Epsteins sexuelle Übergriffe. Nach Epsteins Tod 2019 tauchte sie unter, wurde aber 2020 vom FBI in New Hampshire verhaftet.
+
+📘 OFFIZIELLE VERSION:
+- Verhaftet 2. Juli 2020 in Bradford, New Hampshire
+- Angeklagt wegen Sexhandel mit Minderjährigen (1994-2004)
+- Verurteilt 29. Dezember 2021 zu 20 Jahren Haft
+- Maxwell rekrutierte Mädchen für Epstein, teilweise selbst beteiligt
+- Keine weiteren Namen genannt - schützt sie das Netzwerk?
+
+🔍 VERSCHWÖRUNGSTHEORIE:
+- Maxwell könnte Verbindungen zu Geheimdiensten haben (Mossad?)
+- Ihr Vater Robert Maxwell war angeblich Mossad-Agent
+- Warum nannte sie keine Namen? Deal mit US-Regierung?
+- Epsteins Netzwerk bleibt unberührt - Maxwell als Sündenbock?
+
+🔒 BEWEISE:
+- FBI-Verhaftung 2. Juli 2020
+- Aussagen von Virginia Giuffre und anderen Überlebenden
+- Urteil: 20 Jahre Haft (29. Dezember 2021)
+- Keine Namen weiterer Täter genannt''',
+    position: const LatLng(43.2681, -71.9133), // Bradford, New Hampshire
+    category: LocationCategory.epstein,
+    keywords: ['Ghislaine Maxwell', 'Epstein', 'Verhaftung', 'Sexhandel', 'New Hampshire'],
+    date: DateTime(2020, 7, 2),
+    imageUrls: [],
+    videoUrls: ['B3zj27WOrWE'], // Netflix: Jeffrey Epstein - Stinkreich
+    sources: [
+      'Ghislaine Maxwell Trial Transcripts (2021)',
+      'FBI Arrest Warrant (July 2020)',
+      'Sentencing Document (December 2021) - 20 Jahre Haft',
+    ],
+  ),
+  
+  MaterieLocationDetail(
+    name: 'Zorro Ranch - Epsteins New Mexico Anwesen',
+    description: 'Epsteins 33.000 Hektar Ranch in New Mexico - Gerüchte über "Baby-Ranch", DNA-Experimente',
+    detailedInfo: '''Zorro Ranch war Jeffrey Epsteins riesiges Anwesen in New Mexico, etwa 10.000 Acres (33 km²) groß. Die Ranch wurde selten erwähnt, aber Überlebende berichten, dass auch dort Missbrauch stattfand. Es gibt Gerüchte, Epstein habe auf der Ranch seine "DNA verbreiten" wollen - eine Art "Baby-Ranch".
+
+📘 OFFIZIELLE FAKTEN:
+- Gekauft 1993, Größe: 10.000 Acres
+- Luxuriöse Villa, Gästehaus, Flugzeughangar
+- Epstein plante angeblich "wissenschaftliche Experimente"
+- Wenige Informationen, da Ranch sehr abgelegen
+
+🔍 GERÜCHTE & THEORIEN:
+- "Baby-Ranch": Epstein wollte Dutzende Frauen mit seinem Sperma schwängern
+- Transhumanismus-Experimente (Epstein interessierte sich für Genetik)
+- Verbindungen zu wissenschaftlichen Institutionen (MIT, Harvard)
+- Wurde nach Epsteins Tod verkauft - Beweise vernichtet?
+
+🔒 BEWEISE:
+- Kaufvertrag 1993
+- Aussagen von Überlebenden über Besuche auf der Ranch
+- MIT Media Lab Donations (Jeffrey Epstein Foundation)''',
+    position: const LatLng(35.5500, -105.3000), // Stanley, New Mexico
+    category: LocationCategory.epstein,
+    keywords: ['Zorro Ranch', 'Epstein', 'New Mexico', 'Baby-Ranch', 'DNA'],
+    date: DateTime(1993, 1, 1),
+    imageUrls: [],
+    videoUrls: [],
+    sources: [
+      'Property Records Stanley, New Mexico (1993)',
+      'Vanity Fair: "The Jeffrey Epstein Scandal" (2003)',
     ],
   ),
 

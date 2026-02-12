@@ -9,6 +9,8 @@ import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../services/websocket_chat_service.dart';
 import '../services/error_reporting_service.dart';
+import '../services/admin_action_service.dart';
+import '../models/admin_action.dart';
 
 /// Voice chat connection state
 enum VoiceConnectionState {
@@ -26,6 +28,7 @@ class VoiceParticipant {
   final bool isSpeaking;
   final RTCPeerConnection? peerConnection;
   final MediaStream? stream;
+  final String? avatarEmoji; // 🆕 Avatar emoji for UI
   
   VoiceParticipant({
     required this.userId,
@@ -34,6 +37,7 @@ class VoiceParticipant {
     this.isSpeaking = false,
     this.peerConnection,
     this.stream,
+    this.avatarEmoji,
   });
   
   VoiceParticipant copyWith({
@@ -41,6 +45,7 @@ class VoiceParticipant {
     bool? isSpeaking,
     RTCPeerConnection? peerConnection,
     MediaStream? stream,
+    String? avatarEmoji,
   }) {
     return VoiceParticipant(
       userId: userId,
@@ -49,6 +54,7 @@ class VoiceParticipant {
       isSpeaking: isSpeaking ?? this.isSpeaking,
       peerConnection: peerConnection ?? this.peerConnection,
       stream: stream ?? this.stream,
+      avatarEmoji: avatarEmoji ?? this.avatarEmoji,
     );
   }
 }
@@ -61,6 +67,9 @@ class WebRTCVoiceService {
 
   // WebSocket for signaling
   final WebSocketChatService _signaling = WebSocketChatService();
+  
+  // Admin Action Service
+  final AdminActionService _adminService = AdminActionService();
   
   // Local media stream
   MediaStream? _localStream;
@@ -96,6 +105,7 @@ class WebRTCVoiceService {
   bool get isMuted => _isMuted;
   bool get isConnected => _state == VoiceConnectionState.connected;
   List<VoiceParticipant> get participants => _participants.values.toList();
+  AdminActionService get adminService => _adminService;  // 🆕 Admin Service Access
   
   // WebRTC configuration
   final Map<String, dynamic> _configuration = {
@@ -126,25 +136,54 @@ class WebRTCVoiceService {
     try {
       _setState(VoiceConnectionState.connecting);
       
+      // ✅ PHASE 2: Enhanced Permission Handling
+      final permissionStatus = await Permission.microphone.status;
+      
+      if (kDebugMode) {
+        print('🎤 WebRTC: Current permission status: $permissionStatus');
+      }
+      
       // Request microphone permission
       final permission = await Permission.microphone.request();
+      
+      if (kDebugMode) {
+        print('🎤 WebRTC: Permission result: ${permission.toString()}');
+      }
+      
       if (!permission.isGranted) {
         if (kDebugMode) {
           print('❌ WebRTC: Microphone permission denied');
         }
         _setState(VoiceConnectionState.error);
-        return false;
+        
+        // ✅ PHASE 2: Provide user-friendly error message
+        throw Exception(
+          permission.isPermanentlyDenied
+              ? 'Mikrofon-Berechtigung dauerhaft verweigert. Bitte in Einstellungen aktivieren.'
+              : 'Mikrofon-Berechtigung erforderlich für Voice Chat.'
+        );
       }
       
-      // Get local media stream
-      _localStream = await navigator.mediaDevices.getUserMedia(_mediaConstraints);
+      // ✅ PHASE 2: Enhanced Media Stream Error Handling
+      try {
+        _localStream = await navigator.mediaDevices.getUserMedia(_mediaConstraints);
+      } catch (mediaError) {
+        if (kDebugMode) {
+          print('❌ WebRTC: getUserMedia failed - $mediaError');
+        }
+        throw Exception('Mikrofon konnte nicht aktiviert werden: $mediaError');
+      }
       
       if (_localStream == null) {
         if (kDebugMode) {
           print('❌ WebRTC: Failed to get local stream');
         }
         _setState(VoiceConnectionState.error);
-        return false;
+        throw Exception('Mikrofon-Stream konnte nicht erstellt werden.');
+      }
+      
+      if (kDebugMode) {
+        print('✅ WebRTC: Local stream acquired successfully');
       }
       
       _currentRoomId = roomId;
@@ -568,6 +607,97 @@ class WebRTCVoiceService {
   void _setState(VoiceConnectionState newState) {
     _state = newState;
     _stateController.add(_state);
+    
+    if (kDebugMode) {
+      print('🎤 WebRTC: State changed to ${newState.toString()}');
+    }
+  }
+  
+  // ✅ PHASE 2: Connection Health Check
+  Future<bool> checkConnection() async {
+    try {
+      // Check if we have local stream
+      if (_localStream != null) {
+        final tracks = _localStream!.getAudioTracks();
+        if (tracks.isNotEmpty && tracks.first.enabled != null) {
+          if (kDebugMode) {
+            print('✅ WebRTC: Connection healthy - local stream active');
+          }
+          return true;
+        }
+      }
+      
+      // Check WebSocket connection
+      // TODO: Add WebSocket health check
+      
+      if (kDebugMode) {
+        print('⚠️ WebRTC: Connection check - no active stream');
+      }
+      
+      return _state == VoiceConnectionState.connected;
+      
+    } catch (e) {
+      if (kDebugMode) {
+        print('❌ WebRTC: Connection check failed - $e');
+      }
+      return false;
+    }
+  }
+  
+  // ✅ PHASE 2: Auto-Recovery
+  Future<bool> attemptReconnect() async {
+    if (kDebugMode) {
+      print('🔄 WebRTC: Attempting reconnection...');
+    }
+    
+    try {
+      // Save current room info
+      final savedRoomId = _currentRoomId;
+      final savedUserId = _currentUserId;
+      
+      if (savedRoomId == null || savedUserId == null) {
+        if (kDebugMode) {
+          print('❌ WebRTC: Cannot reconnect - no previous room info');
+        }
+        return false;
+      }
+      
+      // Clean up current connection
+      await leaveRoom();
+      
+      // Wait a bit
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      // Attempt rejoin
+      final success = await joinRoom(
+        roomId: savedRoomId,
+        userId: savedUserId,
+        username: 'user',
+        pushToTalk: _isPushToTalk,
+      );
+      
+      if (success && kDebugMode) {
+        print('✅ WebRTC: Reconnection successful');
+      } else if (!success && kDebugMode) {
+        print('❌ WebRTC: Reconnection failed');
+      }
+      
+      return success;
+      
+    } catch (e) {
+      if (kDebugMode) {
+        print('❌ WebRTC: Reconnection error - $e');
+      }
+      return false;
+    }
+  }
+  
+  // ✅ PHASE 2: Get Error Message
+  String? getLastError() {
+    if (_state == VoiceConnectionState.error) {
+      return 'Voice Chat Verbindung fehlgeschlagen';
+    }
+    return null;
   }
 
   /// Dispose
@@ -576,5 +706,196 @@ class WebRTCVoiceService {
     await _stateController.close();
     await _participantsController.close();
     await _speakingController.close();
+  }
+  
+  // ============================================================================
+  // ADDITIONAL METHODS (for compatibility with live chat screens)
+  // ============================================================================
+  
+  /// Initialize voice service
+  Future<void> initialize() async {
+    if (kDebugMode) {
+      print('🎤 WebRTC Voice Service initialized');
+    }
+    // Service is already initialized via singleton
+  }
+  
+  /// Join voice room (alias for joinRoom)
+  Future<bool> joinVoiceRoom({
+    required String roomId,
+    required String userId,
+    required String username,
+    bool pushToTalk = false,
+  }) async {
+    return await joinRoom(
+      roomId: roomId,
+      userId: userId,
+      username: username,
+      pushToTalk: pushToTalk,
+    );
+  }
+  
+  /// Leave voice room (alias for leaveRoom)
+  Future<void> leaveVoiceRoom() async {
+    await leaveRoom();
+  }
+  
+  /// Switch to different room
+  Future<bool> switchRoom(String newRoomId) async {
+    if (kDebugMode) {
+      print('🔄 Switching voice room: $_currentRoomId → $newRoomId');
+    }
+    
+    // Leave current room
+    await leaveRoom();
+    
+    // Join new room with current user info
+    if (_currentUserId != null) {
+      return await joinRoom(
+        roomId: newRoomId,
+        userId: _currentUserId!,
+        username: 'user', // TODO: Get actual username
+        pushToTalk: _isPushToTalk,
+      );
+    }
+    
+    return false;
+  }
+  
+  // ✅ PHASE 3: Admin Controls
+  
+  /// Kick user from voice room (Admin only)
+  Future<bool> kickUser({
+    required String userId,
+    required String adminId,
+  }) async {
+    try {
+      if (_currentRoomId == null) {
+        if (kDebugMode) {
+          print('❌ WebRTC: Cannot kick - not in room');
+        }
+        return false;
+      }
+      
+      // Send kick message via signaling
+      await _signaling.sendMessage(
+        room: _currentRoomId!,
+        message: jsonEncode({
+          'type': 'voice_kick',
+          'userId': userId,
+          'adminId': adminId,
+        }),
+        username: 'admin',
+        realm: 'voice',
+      );
+      
+      // Remove from participants
+      _participants.remove(userId);
+      _participantsController.add(participants);
+      
+      if (kDebugMode) {
+        print('🚫 WebRTC: User $userId kicked by admin $adminId');
+      }
+      
+      return true;
+      
+    } catch (e) {
+      if (kDebugMode) {
+        print('❌ WebRTC: Kick user error - $e');
+      }
+      return false;
+    }
+  }
+  
+  /// Mute another user (Admin only)
+  Future<bool> muteUser({
+    required String userId,
+    required String adminId,
+  }) async {
+    try {
+      if (_currentRoomId == null) {
+        if (kDebugMode) {
+          print('❌ WebRTC: Cannot mute - not in room');
+        }
+        return false;
+      }
+      
+      // Send admin mute message
+      await _signaling.sendMessage(
+        room: _currentRoomId!,
+        message: jsonEncode({
+          'type': 'voice_admin_mute',
+          'userId': userId,
+          'adminId': adminId,
+          'muted': true,
+        }),
+        username: 'admin',
+        realm: 'voice',
+      );
+      
+      // Update participant state
+      if (_participants.containsKey(userId)) {
+        _participants[userId] = _participants[userId]!.copyWith(isMuted: true);
+        _participantsController.add(participants);
+      }
+      
+      if (kDebugMode) {
+        print('🔇 WebRTC: User $userId muted by admin $adminId');
+      }
+      
+      return true;
+      
+    } catch (e) {
+      if (kDebugMode) {
+        print('❌ WebRTC: Mute user error - $e');
+      }
+      return false;
+    }
+  }
+  
+  // ✅ PHASE 3: Audio Quality Settings
+  
+  /// Set audio quality
+  Future<void> setAudioQuality(String quality) async {
+    // low, medium, high
+    Map<String, dynamic> newConstraints;
+    
+    switch (quality) {
+      case 'low':
+        newConstraints = {
+          'audio': {
+            'echoCancellation': true,
+            'noiseSuppression': true,
+            'autoGainControl': true,
+            'sampleRate': 16000,
+            'channelCount': 1,
+          },
+          'video': false,
+        };
+        break;
+        
+      case 'high':
+        newConstraints = {
+          'audio': {
+            'echoCancellation': true,
+            'noiseSuppression': true,
+            'autoGainControl': true,
+            'sampleRate': 48000,
+            'channelCount': 2,
+          },
+          'video': false,
+        };
+        break;
+        
+      default: // medium
+        newConstraints = _mediaConstraints;
+    }
+    
+    if (kDebugMode) {
+      print('🎧 WebRTC: Audio quality set to $quality');
+    }
+    
+    // TODO: Apply new constraints to existing stream
+    // This requires recreating the media stream
   }
 }

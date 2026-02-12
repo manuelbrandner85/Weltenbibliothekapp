@@ -111,7 +111,7 @@ class LeaderboardService {
   LeaderboardService._internal();
 
   // 🌐 Backend API Configuration
-  static const String _baseUrl = 'https://api-backend.brandy13062.workers.dev';
+  static const String _baseUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
   static const Duration _timeout = Duration(seconds: 10);
 
   static const String _leaderboardKey = 'global_leaderboard';

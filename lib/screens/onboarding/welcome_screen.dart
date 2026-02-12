@@ -69,7 +69,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
   Future<void> _startTour() async {
     Navigator.pushReplacement(
       context,
-      AppPageTransitions.slideFromRight(const FeatureTourScreen()),
+      MaterialPageRoute(builder: (context) => const FeatureTourScreen()),
     );
   }
 

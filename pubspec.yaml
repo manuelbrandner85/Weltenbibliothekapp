@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 45.0.0+450000
+version: 50.0.0+500000
 
 environment:
   sdk: ^3.9.2
@@ -101,6 +101,12 @@ dependencies:
   flutter_tts: ^4.0.0               # Text-to-Speech
   geolocator: ^13.0.1               # GPS Location für AR
   web_socket_channel: ^3.0.3
+  
+  # 🔍 Epstein Files Research Tool
+  webview_flutter: 4.13.0           # WebView für Justice.gov Integration
+  html: ^0.15.4                     # HTML Parsing für PDF-Link-Extraktion
+  syncfusion_flutter_pdf: ^28.1.36  # PDF Text Extraction
+  translator: ^1.0.0                # Kostenlose Übersetzung (Google Translate API ohne Key)
 
 dev_dependencies:
   flutter_test:

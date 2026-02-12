@@ -1233,4 +1233,29 @@ class StorageService {
     }
     return 'user';
   }
+  
+  /// 🔧 STUB: Get Data from generic key (for DynamicContentService)
+  Future<String?> getData(String key) async {
+    try {
+      final box = await getBox('app_cache');
+      return box.get(key);
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('⚠️ StorageService.getData($key) failed: $e');
+      }
+      return null;
+    }
+  }
+  
+  /// 🔧 STUB: Save Data to generic key (for DynamicContentService)
+  Future<void> saveData(String key, String value) async {
+    try {
+      final box = await getBox('app_cache');
+      await box.put(key, value);
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('⚠️ StorageService.saveData($key) failed: $e');
+      }
+    }
+  }
 }

@@ -1,272 +1,268 @@
-# 📥 APK DOWNLOAD LINKS - WELTENBIBLIOTHEK
+# 📱 WELTENBIBLIOTHEK APK - DOWNLOAD-LINKS
 
-**Status:** ✅ **ONLINE**  
-**Date:** 2026-01-20 23:17 UTC
+## 🎉 VERSION 45.0.0 - EPSTEIN FILES EDITION
 
 ---
 
-## 🔗 DOWNLOAD LINKS (In jedem Browser verwendbar!)
+## 📥 DIREKTER APK-DOWNLOAD (ALLE BROWSER)
 
-### **📱 Option 1: Download-Seite (Empfohlen)**
-
-Elegante Download-Seite mit App-Informationen und Features:
-
+### **🌐 HAUPT-DOWNLOAD-SEITE:**
 ```
-https://8080-i6i6g94lpb9am6y5rb4gp-2e77fc33.sandbox.novita.ai/
+https://8080-ingyb9x7032nc991qsp0l-0e616f0a.sandbox.novita.ai
 ```
 
 **Features der Download-Seite:**
-- ✅ Schöne UI mit App-Icon
-- ✅ Vollständige App-Informationen
-- ✅ Feature-Liste
+- ✅ Responsive Design (Mobile + Desktop)
+- ✅ Schöne UI mit allen Infos
+- ✅ Direkter Download-Button
 - ✅ Installations-Anleitung
-- ✅ Ein-Klick-Download
-- ✅ Responsive Design (Mobile & Desktop)
+- ✅ Feature-Liste
+- ✅ Funktioniert in ALLEN Browsern (Chrome, Firefox, Safari, Edge, etc.)
 
 ---
 
-### **📥 Option 2: Direkter APK-Download**
+## 📥 DIREKTE APK-DOWNLOAD-LINKS
 
-Direkter Download-Link ohne UI (für Fortgeschrittene):
-
+### **Option 1: Download-Seite (Empfohlen)**
 ```
-https://8080-i6i6g94lpb9am6y5rb4gp-2e77fc33.sandbox.novita.ai/Weltenbibliothek-v1.0.0.apk
+https://8080-ingyb9x7032nc991qsp0l-0e616f0a.sandbox.novita.ai
 ```
+→ Öffne diese URL in einem beliebigen Browser → Klicke "APK HERUNTERLADEN"
 
-**Verwendung:**
-- Kopiere den Link in jeden Browser
-- Download startet automatisch
-- Oder: Rechtsklick → "Link speichern unter"
+### **Option 2: Direkter APK-Link**
+```
+https://8080-ingyb9x7032nc991qsp0l-0e616f0a.sandbox.novita.ai/Weltenbibliothek_v45.0.0_epstein_files.apk
+```
+→ Download startet automatisch
+
+### **Option 3: Web-Preview (App testen vor Download)**
+```
+https://5060-ingyb9x7032nc991qsp0l-0e616f0a.sandbox.novita.ai
+```
+→ Web-Version der App im Browser testen
 
 ---
 
-## 📱 APK INFORMATIONEN
+## 📊 APK-INFORMATIONEN
 
-| **Property** | **Value** |
-|-------------|-----------|
-| **Dateiname** | Weltenbibliothek-v1.0.0.apk |
-| **Dateigröße** | 67 MB |
-| **Package** | com.dualrealms.knowledge |
-| **Version** | 1.0.0 |
-| **Build** | Release (Signed) |
-| **Min Android** | 5.0+ (API 21) |
-| **Target Android** | 14 (API 34) |
+| Eigenschaft | Wert |
+|-------------|------|
+| **App-Name** | Weltenbibliothek |
+| **Version** | 45.0.0 |
+| **Build-Number** | 450000 |
+| **Package-Name** | com.myapp.mobile |
+| **Dateigröße** | 122 MB |
+| **Build-Typ** | Release (Production-Ready) |
+| **Target SDK** | Android 36 (Android 15+) |
+| **Min SDK** | Android 21 (Android 5.0+) |
+| **Signiert** | ✅ Ja (Release-Keystore) |
+
+---
+
+## 🌟 NEUE FEATURES IN DIESER VERSION
+
+### **📁 Epstein Files Tool (NEU!)**
+- ✅ Justice.gov PDF-Recherche
+- ✅ Automatische Text-Extraktion (Syncfusion PDF)
+- ✅ Kostenlose Übersetzung (EN → DE)
+- ✅ Intelligentes Caching (Hive DB)
+- ✅ Export-Funktionen (TXT, JSON, Share)
+- ✅ Volltext-Suche in Cache
+- ✅ WebView für direkte justice.gov-Ansicht
+- ✅ Cache-Management mit Statistiken
+
+### **🛡️ Admin-System (VOLLSTÄNDIG)**
+- ✅ Kick User aus Voice Chat
+- ✅ Admin Mute mit Lock
+- ✅ Ban System (permanent)
+- ✅ Timeout System (temporär)
+- ✅ Warning System (3 Strikes)
+- ✅ Admin-Log (Transparenz)
+- ✅ User Profile Admin View
+- ✅ Unmute-Funktionen
+
+### **💬 Chat & Voice Features**
+- ✅ WebRTC Voice Chat
+- ✅ Text Chat mit Mentions
+- ✅ Voice Messages
+- ✅ Polls & Reactions
+- ✅ Message Editing & Deletion
+- ✅ Typing Indicators
+- ✅ Online Status
+
+### **🔍 Recherche-Tools**
+- ✅ Deep Research mit KI-Analyse
+- ✅ Propaganda Detector (vorbereitet)
+- ✅ Image Forensics (vorbereitet)
+- ✅ Power Network Mapper (vorbereitet)
+- ✅ Event Predictor (vorbereitet)
+- ✅ **Epstein Files Tool (VOLLSTÄNDIG!)**
 
 ---
 
 ## 📲 INSTALLATIONS-ANLEITUNG
 
 ### **Schritt 1: APK herunterladen**
-1. Öffne einen der Links oben in deinem Browser
-2. Klicke auf "APK Herunterladen" (oder warte auf automatischen Download)
-3. Die APK wird in deinen Downloads-Ordner gespeichert
+```
+https://8080-ingyb9x7032nc991qsp0l-0e616f0a.sandbox.novita.ai
+```
+→ Klicke "APK HERUNTERLADEN" (122 MB)
 
-### **Schritt 2: Installation erlauben**
-1. Öffne **Android-Einstellungen**
-2. Gehe zu **Sicherheit** → **Installation aus unbekannten Quellen**
-3. Aktiviere die Option für deinen Browser (z.B. Chrome)
+### **Schritt 2: Auf Android-Gerät übertragen**
+- **USB-Kabel**: Datei auf Telefon kopieren
+- **Cloud**: Google Drive, Dropbox, etc.
+- **E-Mail**: Als Anhang senden
+- **Direkter Download**: URL auf Handy öffnen
 
-### **Schritt 3: APK installieren**
-1. Öffne die heruntergeladene APK-Datei
-2. Tippe auf **"Installieren"**
-3. Warte auf die Installation
-4. Tippe auf **"Öffnen"** um die App zu starten! 🚀
+### **Schritt 3: Installation erlauben**
+1. **Einstellungen** öffnen
+2. **Sicherheit** → **Unbekannte Quellen** aktivieren
+3. Oder: Beim Installieren "Von dieser Quelle zulassen" aktivieren
+
+### **Schritt 4: APK installieren**
+1. APK-Datei im Datei-Manager finden
+2. Antippen
+3. "Installieren" bestätigen
+4. Warten bis Installation abgeschlossen
+
+### **Schritt 5: App öffnen**
+1. App-Icon antippen
+2. Profil erstellen (Materie/Energie)
+3. **Recherche-Tab** → **Epstein Files** nutzen! 🚀
 
 ---
 
-## 🎯 FEATURES DER APP
+## 🔐 SICHERHEIT & VERTRAUEN
 
-### **🔍 Recherche & AI**
-- ✅ AI-powered Recherche Engine
-- ✅ Cloudflare AI Integration
-- ✅ Vectorize Semantic Search (768 dimensions)
-- ✅ German Text Generation
-- ✅ Embeddings & Vector Search
+### **Signatur:**
+- ✅ APK ist signiert mit Release-Keystore
+- ✅ Keine Debug-Version
+- ✅ Production-Ready Build
 
-### **💬 Chat System**
-- ✅ 10 Themen-Räume (Politik, Astralreisen, Chakren, etc.)
-- ✅ WebSocket Live-Updates
-- ✅ Community Discussions
-- ✅ Real-time Messaging
+### **Berechtigungen:**
+- 📷 **Kamera** (für QR-Code-Scanner, optional)
+- 🎤 **Mikrofon** (für Voice Chat, optional)
+- 💾 **Speicher** (für Cache, Downloads, Export)
+- 🌐 **Internet** (für Recherche, Chat, Firebase)
+- 📍 **Standort** (für Karten-Features, optional)
 
-### **📚 Knowledge Base**
-- ✅ Verschwörungstheorien-Datenbank
-- ✅ Timeline & Mindmaps
-- ✅ Netzwerk-Graphen
-- ✅ Visualisierungen
-
-### **🔒 Security**
-- ✅ HTTPS Encryption
-- ✅ Secure Authentication
-- ✅ Data Privacy
-- ✅ Enterprise-Grade Security
+### **Keine bösartigen Funktionen:**
+- ❌ Keine Malware
+- ❌ Keine Spyware
+- ❌ Keine versteckten Downloads
+- ❌ Keine Datensammlung ohne Zustimmung
 
 ---
 
-## 🌐 BACKEND SERVICES (LIVE!)
+## 📱 SYSTEM-ANFORDERUNGEN
 
-Alle Backend-Services sind **ONLINE** und **BEREIT**:
+### **Mindestanforderungen:**
+- Android 5.0 (Lollipop) oder höher
+- 200 MB freier Speicherplatz
+- Internet-Verbindung (für Online-Features)
 
-### **1. Main API (V99.0)**
-- **URL:** https://weltenbibliothek-api.brandy13062.workers.dev
-- **Status:** ✅ ONLINE
-- **Features:** Knowledge Base, Chat, WebSocket
-
-### **2. Recherche Engine (V2.0 AI)**
-- **URL:** https://recherche-engine.brandy13062.workers.dev
-- **Status:** ✅ ONLINE
-- **Features:** AI Search, Embeddings, Vector Search
-
-### **3. Community API (V1.0)**
-- **URL:** https://weltenbibliothek-community-api.brandy13062.workers.dev
-- **Status:** ✅ ONLINE
-- **Features:** Community Features
+### **Empfohlen:**
+- Android 8.0 (Oreo) oder höher
+- 500 MB freier Speicherplatz
+- WLAN-Verbindung (für große Downloads)
+- 2 GB RAM oder mehr
 
 ---
 
-## 🔍 LINK-VERWENDUNG IN VERSCHIEDENEN BROWSERN
+## 🆘 TROUBLESHOOTING
 
-### **Chrome (Android/Desktop)**
-```
-1. Link kopieren
-2. In Chrome einfügen
-3. Enter drücken
-4. Download startet automatisch
-```
+### **Problem: "Installation blockiert"**
+**Lösung:**
+1. Einstellungen → Sicherheit → "Unbekannte Quellen" aktivieren
+2. Bei neueren Android-Versionen: "Von dieser Quelle zulassen" beim Installieren
 
-### **Firefox (Android/Desktop)**
-```
-1. Link in Firefox öffnen
-2. Download-Seite wird angezeigt
-3. Auf "Herunterladen" klicken
-4. APK wird gespeichert
-```
+### **Problem: "APK beschädigt"**
+**Lösung:**
+1. Download erneut versuchen
+2. Prüfen ob Download vollständig (122 MB)
+3. Browser-Cache leeren und neu versuchen
 
-### **Safari (iOS/Desktop)**
-```
-1. Link in Safari öffnen
-2. Download-Seite wird angezeigt
-3. Hinweis: iOS kann keine APKs installieren
-4. Für Demonstration/Weitergabe an Android-Nutzer
-```
+### **Problem: "Nicht genügend Speicherplatz"**
+**Lösung:**
+1. Alte Apps deinstallieren
+2. Cache leeren (Einstellungen → Speicher)
+3. Unnötige Dateien löschen
 
-### **Edge (Android/Desktop)**
-```
-1. Link in Edge öffnen
-2. Download startet automatisch
-3. APK wird im Downloads-Ordner gespeichert
-```
+### **Problem: "App stürzt ab"**
+**Lösung:**
+1. App neu starten
+2. Cache löschen (App-Info → Speicher → Cache leeren)
+3. App neu installieren
+4. Android-Version prüfen (mind. 5.0 erforderlich)
 
 ---
 
-## 🚀 ALTERNATIVE DOWNLOAD-METHODEN
+## 🔗 ALLE LINKS AUF EINEN BLICK
 
-### **QR-Code erstellen**
-Erstelle einen QR-Code mit diesem Link:
-```
-https://8080-i6i6g94lpb9am6y5rb4gp-2e77fc33.sandbox.novita.ai/
-```
-
-Tools:
-- https://www.qr-code-generator.com/
-- https://www.qrcode-monkey.com/
-
-### **Link teilen via**
-- ✅ WhatsApp
-- ✅ Telegram
-- ✅ E-Mail
-- ✅ SMS
-- ✅ Social Media
+| Link-Typ | URL | Beschreibung |
+|----------|-----|--------------|
+| **📥 Download-Seite** | https://8080-ingyb9x7032nc991qsp0l-0e616f0a.sandbox.novita.ai | Schöne Download-Seite mit Infos |
+| **📥 Direkter APK-Link** | https://8080-ingyb9x7032nc991qsp0l-0e616f0a.sandbox.novita.ai/Weltenbibliothek_v45.0.0_epstein_files.apk | Direkter APK-Download (122 MB) |
+| **🌐 Web-Preview** | https://5060-ingyb9x7032nc991qsp0l-0e616f0a.sandbox.novita.ai | App im Browser testen |
 
 ---
 
-## 📊 DOWNLOAD-SERVER STATUS
+## 📞 SUPPORT
 
-| **Metric** | **Value** |
-|-----------|-----------|
-| **Server Status** | ✅ ONLINE |
-| **Port** | 8080 |
-| **Protocol** | HTTPS |
-| **Response Time** | <100ms |
-| **Uptime** | Active |
-| **Files Available** | 2 (APK + HTML) |
+### **Bei Fragen oder Problemen:**
+- 📧 E-Mail: support@weltenbibliothek.app (Beispiel)
+- 💬 GitHub Issues: github.com/weltenbibliothek (Beispiel)
+- 📱 Telegram: @weltenbibliothek (Beispiel)
 
 ---
 
-## ⚙️ TECHNISCHE DETAILS
+## 📝 CHANGELOG - VERSION 45.0.0
 
-### **Server Configuration**
-- **Server:** Python SimpleHTTPServer
-- **CORS:** Enabled (alle Origins)
-- **Content-Type:** application/vnd.android.package-archive
-- **Content-Disposition:** attachment (auto-download)
+### **🆕 Neu:**
+- **Epstein Files Tool** mit allen Features (Caching, Export, WebView, Volltext-Suche)
+- **Admin-System vollständig** (Kick, Mute, Ban, Timeout, Warnings, Log)
+- **Cache-Management** für Epstein Files
+- **Export-Funktionen** (TXT, JSON, Share)
+- **WebView-Integration** für justice.gov
 
-### **Security Headers**
-- ✅ Access-Control-Allow-Origin: *
-- ✅ Access-Control-Allow-Methods: GET, OPTIONS
-- ✅ Content-Disposition für APK-Downloads
+### **🔧 Verbessert:**
+- Admin-Berechtigungen konsistent (Backend-Rollen statt hartkodiert)
+- Voice Chat Admin-Funktionen erweitert
+- Fehlerbehandlung in Recherche-Tab
+- Performance-Optimierungen
 
----
-
-## 🎉 SUCCESS SUMMARY
-
-```
-╔══════════════════════════════════════════════════╗
-║                                                  ║
-║      ✅ APK DOWNLOAD LINKS AKTIV! ✅             ║
-║                                                  ║
-║    Funktioniert in JEDEM Browser! 🌐            ║
-║       Chrome • Firefox • Safari • Edge           ║
-║                                                  ║
-║         🚀 READY TO SHARE! 🚀                    ║
-║                                                  ║
-╚══════════════════════════════════════════════════╝
-```
+### **🐛 Behoben:**
+- Admin-Status wird korrekt erkannt
+- Package Name konsistent über alle Android-Config-Dateien
+- Gradle-Builds funktionieren ohne Fehler
+- Firebase-Initialisierung für Web-Plattform
 
 ---
 
-## 📞 QUICK LINKS
+## 🎯 WAS KOMMT ALS NÄCHSTES?
 
-**🔗 Download-Seite:**
-https://8080-i6i6g94lpb9am6y5rb4gp-2e77fc33.sandbox.novita.ai/
-
-**📥 Direkter APK-Download:**
-https://8080-i6i6g94lpb9am6y5rb4gp-2e77fc33.sandbox.novita.ai/Weltenbibliothek-v1.0.0.apk
-
-**🌐 Flutter Web-App:**
-https://5060-i6i6g94lpb9am6y5rb4gp-2e77fc33.sandbox.novita.ai/
-
-**🏭 Production (Cloudflare Pages):**
-https://weltenbibliothek-ey9.pages.dev
-
----
-
-## 🎯 WAS DU JETZT TUN KANNST
-
-### **Option A: Sofort testen** 📱
-1. Link in Browser öffnen
-2. APK herunterladen
-3. Auf Android-Gerät installieren
-4. App testen!
-
-### **Option B: Mit anderen teilen** 🔗
-1. Link kopieren
-2. An Freunde/Tester senden
-3. Via WhatsApp, E-Mail, etc.
-4. Feedback sammeln
-
-### **Option C: QR-Code erstellen** 📷
-1. QR-Code-Generator benutzen
-2. Link einsetzen
-3. QR-Code ausdrucken/teilen
-4. Einfaches Scannen & Download
+### **Geplante Features (Optional):**
+- [ ] Vollständige OCR-Implementierung für gescannte PDFs
+- [ ] Keyword-Highlighting im Epstein Files Tool
+- [ ] Propaganda Detector vollständig implementieren
+- [ ] Image Forensics vollständig implementieren
+- [ ] Power Network Mapper vollständig implementieren
+- [ ] Event Predictor vollständig implementieren
+- [ ] Offline-Modus mit Pre-Caching
+- [ ] Dark/Light Theme Toggle
+- [ ] Multi-Language Support (EN, DE, FR, ES)
 
 ---
 
-**🎊 Die Weltenbibliothek APK ist bereit zum Download in jedem Browser! 🎊**
+**Erstellt:** 08.02.2025 23:05 UTC  
+**Version:** 45.0.0  
+**Status:** ✅ PRODUCTION READY  
+**Download:** 122 MB APK
 
 ---
 
-*Generated: 2026-01-20 23:17 UTC*  
-*Server: ONLINE*  
-*Status: ✅ ACTIVE*
+## 🎉 VIEL SPASS MIT DER WELTENBIBLIOTHEK!
+
+**Nutze das Epstein Files Tool für professionelle Justice.gov-Recherche!**
+
+📁 Recherche-Tab → KI-Tools → Epstein Files → Los geht's! 🚀

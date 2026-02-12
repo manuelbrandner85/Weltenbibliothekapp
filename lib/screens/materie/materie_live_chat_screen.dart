@@ -15,6 +15,7 @@ import '../../services/typing_indicator_service.dart'; // ⌨️ TYPING
 // import '../../widgets/voice_record_button.dart'; // 🎙️ VOICE RECORD BUTTON (Disabled for Android)
 import '../../services/webrtc_voice_service.dart'; // 🎤 WEBRTC VOICE
 import '../../widgets/voice_chat_banner.dart'; // 🎙️ Voice Chat Banner
+import '../../widgets/voice/voice_participant_header_bar.dart'; // 🎤 Voice Participant Header Bar
 import '../../widgets/offline_indicator.dart'; // 📡 OFFLINE INDICATOR (NEW Phase 3)
 // 👤 MATERIE PROFIL MODEL
 import '../shared/profile_editor_screen.dart'; // ✅ Profile Editor
@@ -28,6 +29,15 @@ import '../../widgets/message_delete_dialog.dart'; // 🗑️ Message Delete
 import '../../widgets/message_search_widget.dart'; // 🔍 Message Search
 import '../../widgets/poll_widget.dart'; // 🗳️ Poll Widget
 import '../../widgets/pinned_message_banner.dart'; // 📌 Pinned Message Banner
+
+import '../shared/telegram_voice_chat_screen.dart'; // 🎤 Telegram Voice Chat Screen (TELEGRAM)
+// 🎤 Admin Dialogs & Notifications
+import '../../widgets/admin/kick_user_dialog.dart'; // 🚫 Kick User Dialog
+import '../../widgets/admin/ban_user_dialog.dart'; // 🔴 Ban User Dialog
+import '../../widgets/admin/warning_dialog.dart'; // ⚠️ Warning Dialog
+import '../../widgets/admin/admin_action_notification.dart'; // 📢 Admin Notifications
+import '../../models/admin_action.dart'; // 📋 Admin Action Models
+import '../../services/admin_action_service.dart'; // 🔧 Admin Action Service
 // 🎤 Voice Player Widget
 import '../../widgets/android_voice_recorder.dart'; // 🎤 Android Voice Recorder (flutter_sound)
 // import '../../widgets/telegram_voice_recorder.dart'; // 🎙️ Telegram Voice Recorder (Disabled for Android)
@@ -98,6 +108,9 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
   bool _isInVoiceRoom = false;
   bool _isMuted = false;
   List<Map<String, dynamic>> _voiceParticipants = [];
+  
+  // 🆕 ADMIN ACTION SERVICE
+  final AdminActionService _adminService = AdminActionService();
   
   // 🆕 FEATURE 2: TYPING INDICATORS
   final Set<String> _typingUsers = {};
@@ -854,6 +867,14 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
         backgroundColor: const Color(0xFF121212),
         title: const Text('💬 MATERIE LIVE-CHAT'),
         actions: [
+          // 🎤 VOICE CHAT JOIN BUTTON (Telegram-Style: Only when NOT in voice chat)
+          if (!_isInVoiceRoom)
+            IconButton(
+              icon: const Icon(Icons.group, color: Colors.white),
+              onPressed: _joinVoiceChatAndOpen,
+              tooltip: 'Voice Chat beitreten',
+            ),
+          // 🔍 SEARCH BUTTON
           IconButton(
             icon: Icon(
               _showSearch ? Icons.close : Icons.search,
@@ -927,8 +948,13 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
                         color: Colors.red, // MATERIE Red
                       ),
                     ),
-                  // 🎤 VOICE ROOM BAR (wenn aktiv)
-                  if (_isInVoiceRoom) _buildVoiceRoomBar(),
+                  // 🎤 TELEGRAM VOICE HEADER BAR (ONLY WHEN ACTIVE - like real Telegram)
+                  if (_isInVoiceRoom)
+                    VoiceParticipantHeaderBar(
+                      participants: _voiceParticipants,
+                      accentColor: Colors.red,
+                      onTap: _openTelegramVoiceScreen,
+                    ),
                   // ⌨️ TYPING INDICATORS
                   if (_typingUsers.isNotEmpty) _buildTypingIndicators(),
                   _buildRoomSelector(),
@@ -988,7 +1014,6 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
           ],
         ), // End Stack
       ), // End SafeArea
-      ), // End Scaffold
     );
   }
 
@@ -1532,156 +1557,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
     }
   }
 
-  void _editMessage(Map<String, dynamic> message) {
-    // 🔍 DEBUG: Message-Struktur ausgeben
-    if (kDebugMode) {
-      debugPrint('🔍 _editMessage aufgerufen');
-      debugPrint('   Message keys: ${message.keys.toList()}');
-      debugPrint('   Message id: ${message['id']}');
-      debugPrint('   Message id type: ${message['id'].runtimeType}');
-      debugPrint('   Message: ${message.toString()}');
-    }
-    
-    final controller = TextEditingController(text: message['message']);
-    
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF121212),
-        title: const Text('Nachricht bearbeiten', style: TextStyle(color: Colors.white)),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          style: const TextStyle(color: Colors.white, fontSize: 16),
-          maxLines: null,
-          minLines: 3,
-          decoration: InputDecoration(
-            hintText: 'Neue Nachricht',
-            hintStyle: TextStyle(color: Colors.grey[600]),
-            filled: true,
-            fillColor: const Color(0xFF2A2A2A),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: Colors.grey[700]!),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: Colors.grey[700]!),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: Colors.blue, width: 2),
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Abbrechen'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              
-              if (kDebugMode) {
-                debugPrint('🔧 Edit button pressed');
-                debugPrint('🔧 roomId: $_selectedRoom');
-                debugPrint('🔧 messageId: ${message['id']}');
-                debugPrint('🔧 userId: $_userId');
-                debugPrint('🔧 newMessage: ${controller.text}');
-              }
-              
-              try {
-                await _api.editChatMessage(
-                  roomId: _selectedRoom,
-                  messageId: message['id'],
-                  userId: _userId,
-                  username: _username, // ✅ Username übergeben
-                  newMessage: controller.text,
-                  realm: 'materie',  // 🔧 FIX: Add realm parameter
-                );
-                
-                if (kDebugMode) {
-                  debugPrint('✅ Edit successful');
-                }
-                
-                // Reload messages from server to get updated data
-                await _loadMessages();
-                
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('✅ Nachricht bearbeitet')),
-                );
-              } catch (e) {
-                if (kDebugMode) {
-                  debugPrint('❌ Edit failed: $e');
-                }
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('❌ Fehler: $e'), backgroundColor: Colors.red),
-                );
-              }
-            },
-            child: const Text('Speichern'),
-          ),
-        ],
-      ),
-    );
-  }
 
-  void _deleteMessage(Map<String, dynamic> message) {
-    // 🔍 DEBUG: Message-Struktur ausgeben
-    if (kDebugMode) {
-      debugPrint('🔍 _deleteMessage aufgerufen');
-      debugPrint('   Message keys: ${message.keys.toList()}');
-      debugPrint('   Message id: ${message['id']}');
-      debugPrint('   Message: ${message.toString()}');
-    }
-    
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF121212),
-        title: const Text('Nachricht löschen?', style: TextStyle(color: Colors.white)),
-        content: const Text(
-          'Diese Aktion kann nicht rückgängig gemacht werden.',
-          style: TextStyle(color: Colors.white70),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Abbrechen'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () async {
-              Navigator.pop(context);
-              
-              try {
-                await _api.deleteChatMessage(
-                  roomId: _selectedRoom,
-                  messageId: message['id'],
-                  userId: _userId,
-                  username: _username, // ✅ Username übergeben
-                  realm: 'materie',  // 🔧 FIX: Add realm parameter
-                );
-                
-                // Reload messages from server
-                await _loadMessages();
-                
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('✅ Nachricht gelöscht')),
-                );
-              } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('❌ Fehler: $e'), backgroundColor: Colors.red),
-                );
-              }
-            },
-            child: const Text('Löschen'),
-          ),
-        ],
-      ),
-    );
-  }
   */ // END OLD VERSION
 
   void _showUsernameDialog() {
@@ -1774,14 +1650,42 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
       });
       _showSnackBar('🔇 Voice Room verlassen', Colors.grey);
     } else {
-      final success = await _voiceService.joinVoiceRoom(_selectedRoom, _userId, _username);
-      if (success) {
-        if (mounted) setState(() {
-          _isInVoiceRoom = true;
-        });
-        _showSnackBar('🎤 Voice Room beigetreten', Colors.red);
-      } else {
-        _showSnackBar('❌ Fehler beim Beitreten', Colors.red);
+      // ✅ PHASE 2: Enhanced Error Handling
+      try {
+        final success = await _voiceService.joinVoiceRoom(
+          roomId: _selectedRoom,
+          userId: _userId,
+          username: _username,
+        );
+        
+        if (success) {
+          if (mounted) setState(() {
+            _isInVoiceRoom = true;
+          });
+          _showSnackBar('🎤 Voice Room beigetreten', Colors.red);
+        } else {
+          // Check for specific error
+          final error = _voiceService.getLastError();
+          _showSnackBar(
+            error ?? '❌ Fehler beim Beitreten',
+            Colors.red,
+          );
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('❌ Voice Room Join Error: $e');
+        }
+        
+        // Show user-friendly error message
+        String errorMessage = '❌ Voice Chat Fehler';
+        
+        if (e.toString().contains('Berechtigung')) {
+          errorMessage = '🎤 Mikrofon-Berechtigung erforderlich';
+        } else if (e.toString().contains('aktiviert')) {
+          errorMessage = '🎤 Mikrofon konnte nicht aktiviert werden';
+        }
+        
+        _showSnackBar(errorMessage, Colors.red);
       }
     }
   }
@@ -1796,6 +1700,243 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
       Colors.red,
     );
   }
+  
+  // 🎤 JOIN VOICE CHAT AND OPEN SCREEN (NEW)
+  Future<void> _joinVoiceChatAndOpen() async {
+    if (kDebugMode) {
+      debugPrint('🎤 [JOIN] Joining voice chat and opening screen...');
+    }
+    
+    // First join the voice room
+    try {
+      final success = await _voiceService.joinVoiceRoom(
+        roomId: _selectedRoom,
+        userId: _userId,
+        username: _username,
+      );
+      
+      if (success) {
+        if (mounted) setState(() {
+          _isInVoiceRoom = true;
+        });
+        
+        // Wait a moment for state to update
+        await Future.delayed(const Duration(milliseconds: 300));
+        
+        // Then open the Telegram Voice Screen
+        if (mounted) {
+          _openTelegramVoiceScreen();
+        }
+      } else {
+        final error = _voiceService.getLastError();
+        _showSnackBar(
+          error ?? '❌ Fehler beim Beitreten',
+          Colors.red,
+        );
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Voice Join Error: $e');
+      }
+      
+      String errorMessage = '❌ Voice Chat Fehler';
+      
+      if (e.toString().contains('Berechtigung')) {
+        errorMessage = '🎤 Mikrofon-Berechtigung erforderlich';
+      } else if (e.toString().contains('aktiviert')) {
+        errorMessage = '🎤 Mikrofon konnte nicht aktiviert werden';
+      }
+      
+      _showSnackBar(errorMessage, Colors.red);
+    }
+  }
+  
+  // 🎤 OPEN TELEGRAM VOICE CHAT SCREEN (NEW)
+  void _openTelegramVoiceScreen() {
+    if (kDebugMode) {
+      debugPrint('🎤 [TELEGRAM] Opening Telegram Voice Chat Screen...');
+    }
+    
+    // 🔑 Get Admin Status from Backend Role (EXACT Dashboard Match!)
+    final storage = StorageService();
+    final profile = storage.getMaterieProfile();
+    final backendRole = profile?.role;  // 'root_admin', 'admin', or 'user'
+    
+    // ✅ FIX: Use Backend Role instead of hardcoded lists
+    final adminLevel = AdminPermissions.getAdminLevelFromBackendRole(backendRole);
+    final isAdmin = adminLevel != AdminLevel.user;
+    
+    if (kDebugMode) {
+      debugPrint('🔑 [ADMIN CHECK - BACKEND ROLE]');
+      debugPrint('   userId: $_userId');
+      debugPrint('   backendRole: $backendRole');
+      debugPrint('   adminLevel: $adminLevel');
+      debugPrint('   isAdmin: $isAdmin');
+    }
+    
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => TelegramVoiceChatScreen(
+          roomId: _selectedRoom,
+          roomName: 'Materie Chat - $_selectedRoom', // ✅ FIX: Simple room name
+          userId: _userId,
+          username: _username,
+          participants: _voiceParticipants,
+          isMuted: _isMuted,
+          accentColor: Colors.red, // Materie red
+          isAdmin: isAdmin, // ✅ FIX: Real admin status from AdminPermissions
+          onToggleMute: _toggleMute,
+          onLeave: _toggleVoiceRoom,
+          onKickUser: (userId) async {
+            // Find participant info
+            final participant = _voiceParticipants.firstWhere(
+              (p) => p['userId'] == userId,
+              orElse: () => {'username': 'Unknown', 'userId': userId},
+            );
+            
+            // Show Kick Dialog with Reason
+            await showDialog(
+              context: context,
+              builder: (context) => KickUserDialog(
+                username: participant['username']?.toString() ?? 'Unknown',
+                userId: userId,
+                onKick: (reason) async {
+                  // Log admin action
+                  await _adminService.kickUser(
+                    adminId: _userId,
+                    adminUsername: _username,
+                    targetUserId: userId,
+                    targetUsername: participant['username']?.toString() ?? 'Unknown',
+                    reason: reason,
+                    roomId: _selectedRoom,
+                  );
+                  
+                  // Perform kick
+                  final success = await _voiceService.kickUser(
+                    userId: userId,
+                    adminId: _userId,
+                  );
+                  
+                  if (success) {
+                    _showSnackBar(
+                      reason != null
+                          ? '🚫 User entfernt (Grund: $reason)'
+                          : '🚫 User entfernt',
+                      Colors.red,
+                    );
+                  } else {
+                    _showSnackBar('❌ Fehler beim Entfernen', Colors.red);
+                  }
+                },
+              ),
+            );
+          },
+          onMuteUser: (userId) async {
+            // Find participant info
+            final participant = _voiceParticipants.firstWhere(
+              (p) => p['userId'] == userId,
+              orElse: () => {'username': 'Unknown', 'userId': userId, 'isMuted': false},
+            );
+            
+            final isMuted = participant['isMuted'] == true;
+            
+            if (isMuted) {
+              // Unmute user (no dialog needed)
+              await _adminService.unmuteUser(
+                adminId: _userId,
+                adminUsername: _username,
+                targetUserId: userId,
+                targetUsername: participant['username']?.toString() ?? 'Unknown',
+                roomId: _selectedRoom,
+              );
+              
+              final success = await _voiceService.muteUser(
+                userId: userId,
+                adminId: _userId,
+              );
+              
+              if (success) {
+                _showSnackBar('🔊 Stummschaltung aufgehoben', Colors.green);
+              } else {
+                _showSnackBar('❌ Fehler beim Entmuten', Colors.red);
+              }
+            } else {
+              // Mute user (simple action, no reason needed)
+              await _adminService.muteUser(
+                adminId: _userId,
+                adminUsername: _username,
+                targetUserId: userId,
+                targetUsername: participant['username']?.toString() ?? 'Unknown',
+                roomId: _selectedRoom,
+              );
+              
+              final success = await _voiceService.muteUser(
+                userId: userId,
+                adminId: _userId,
+              );
+              
+              if (success) {
+                _showSnackBar('🔇 User stummgeschaltet', Colors.orange);
+              } else {
+                _showSnackBar('❌ Fehler beim Stummschalten', Colors.red);
+              }
+            }
+          },
+          onWarnUser: (userId, reason) async {
+            // Log warning
+            await _adminService.warnUser(
+              adminId: _userId,
+              adminUsername: _username,
+              targetUserId: userId,
+              targetUsername: _voiceParticipants.firstWhere(
+                (p) => p['userId'] == userId,
+                orElse: () => {'username': 'Unknown'},
+              )['username']?.toString() ?? 'Unknown',
+              reason: reason,
+              roomId: _selectedRoom,
+            );
+            
+            final warningCount = _adminService.getWarningCount(userId);
+            _showSnackBar(
+              '⚠️ Verwarnung ausgesprochen ($warningCount/3)',
+              warningCount >= 3 ? Colors.red : Colors.orange,
+            );
+          },
+          onBanUser: (userId, duration, reason) async {
+            // Log ban
+            await _adminService.banUser(
+              adminId: _userId,
+              adminUsername: _username,
+              targetUserId: userId,
+              targetUsername: _voiceParticipants.firstWhere(
+                (p) => p['userId'] == userId,
+                orElse: () => {'username': 'Unknown'},
+              )['username']?.toString() ?? 'Unknown',
+              reason: reason,
+              duration: duration,
+            );
+            
+            // Kick user from voice
+            await _voiceService.kickUser(
+              userId: userId,
+              adminId: _userId,
+            );
+            
+            final durationText = duration == BanDuration.permanent
+                ? 'permanent'
+                : duration.name;
+            _showSnackBar(
+              '🔴 User gebannt ($durationText)',
+              Colors.red.shade900,
+            );
+          },
+          getWarningCount: (userId) => _adminService.getWarningCount(userId),
+        ),
+      ),
+    );
+  }
+
   
   // 🎤 VOICE ROOM BAR
   Widget _buildVoiceRoomBar() {
@@ -2008,48 +2149,6 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
   }
   
   // 🗑️ MESSAGE DELETE
-  Future<void> _deleteMessage(Map<String, dynamic> msg) async {
-    final confirmed = await MessageDeleteDialog.show(context, msg);
-    
-    if (!confirmed) return;
-    
-    try {
-      // ✅ FIX: Call API to delete message persistently
-      await _api.deleteChatMessage(
-        roomId: _selectedRoom,
-        messageId: msg['id'],
-        userId: _userId,
-        username: _username,
-        realm: 'materie',  // 🔧 FIX: Correct realm for MATERIE
-      );
-      
-      // ✅ CRITICAL FIX: Reload messages from server to ensure sync
-      await _loadMessages(silent: true);
-      
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✅ Nachricht gelöscht'),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ MATERIE Delete failed: $e');
-      }
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ Fehler beim Löschen: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-  
   // 🔍 MESSAGE SEARCH
   void _toggleSearch() {
     if (mounted) setState(() {
@@ -2073,12 +2172,18 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
   void _showMessageOptions(BuildContext context, Map<String, dynamic> msg) async {
     final isOwnMessage = msg['username'] == _username;
     
-    // ✅ SECURE: Check admin status via AdminPermissions (not local profile!)
-    final canDeleteAny = AdminPermissions.canDeleteAnyMessage(_userId, roomId: _selectedRoom);
-    final canBan = AdminPermissions.canBanUsers(_userId);
-    final adminLevel = AdminPermissions.getAdminLevel(_userId);
+    // ✅ SECURE: Check admin status from Backend Role (EXACT Dashboard Match!)
+    final storage = StorageService();
+    final profile = storage.getMaterieProfile();
+    final backendRole = profile?.role;  // 'root_admin', 'admin', or 'user'
+    
+    final adminLevel = AdminPermissions.getAdminLevelFromBackendRole(backendRole);
     final isAdmin = adminLevel != AdminLevel.user;
-    final adminBadge = AdminPermissions.getAdminBadge(_userId);
+    final adminBadge = AdminPermissions.getAdminBadgeFromBackendRole(backendRole);
+    
+    // Admin-Rechte basierend auf Backend-Rolle
+    final canDeleteAny = isAdmin;  // root_admin oder admin
+    final canBan = isAdmin;        // root_admin oder admin
     
     await showModalBottomSheet(
       context: context,
@@ -2222,6 +2327,181 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
     _inputFocusNode.requestFocus();
   }
   
+  /// 🆕 SHOW MESSAGE ACTIONS (Long-Press on own messages)
+  void _showMessageActions(Map<String, dynamic> msg) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF1A1A2E),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[600],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 8),
+            ListTile(
+              leading: const Icon(Icons.edit, color: Colors.blue),
+              title: const Text('Bearbeiten', style: TextStyle(color: Colors.white)),
+              onTap: () {
+                Navigator.pop(context);
+                _editMessage(msg);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete, color: Colors.red),
+              title: const Text('Löschen', style: TextStyle(color: Colors.white)),
+              onTap: () {
+                Navigator.pop(context);
+                _deleteMessage(msg);
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+  
+  /// 🆕 EDIT MESSAGE
+  Future<void> _editMessage(Map<String, dynamic> msg) async {
+    final controller = TextEditingController(text: msg['message']?.toString() ?? '');
+    final newText = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A2E),
+        title: const Text('Nachricht bearbeiten', style: TextStyle(color: Colors.white)),
+        content: TextField(
+          controller: controller,
+          style: const TextStyle(color: Colors.white),
+          maxLines: 3,
+          autofocus: true,
+          decoration: InputDecoration(
+            hintText: 'Nachricht eingeben...',
+            hintStyle: TextStyle(color: Colors.grey[600]),
+            border: const OutlineInputBorder(),
+            focusedBorder: const OutlineInputBorder(
+              borderSide: BorderSide(color: Colors.red, width: 2),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Abbrechen', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(context, controller.text),
+            child: const Text('Speichern'),
+          ),
+        ],
+      ),
+    );
+    
+    if (newText != null && newText.trim().isNotEmpty && newText != msg['message']) {
+      try {
+        await _api.editChatMessage(
+          messageId: msg['message_id'] ?? msg['id'],
+          roomId: _selectedRoom,
+          realm: 'materie',
+          newMessage: newText.trim(),
+          userId: _userId,
+          username: _username,
+        );
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('✅ Nachricht bearbeitet'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
+            ),
+          );
+          await _loadMessages(silent: true);
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('❌ Fehler: $e'),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+      }
+    }
+  }
+  
+  /// 🆕 DELETE MESSAGE
+  Future<void> _deleteMessage(Map<String, dynamic> msg) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A2E),
+        title: const Text('Nachricht löschen?', style: TextStyle(color: Colors.white)),
+        content: const Text(
+          'Diese Aktion kann nicht rückgängig gemacht werden.',
+          style: TextStyle(color: Colors.grey),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Abbrechen', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Löschen'),
+          ),
+        ],
+      ),
+    );
+    
+    if (confirm == true) {
+      try {
+        await _api.deleteChatMessage(
+          messageId: msg['message_id'] ?? msg['id'],
+          roomId: _selectedRoom,
+          realm: 'materie',
+          userId: _userId,
+          username: _username,
+        );
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('✅ Nachricht gelöscht'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
+            ),
+          );
+          await _loadMessages(silent: true);
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('❌ Fehler: $e'),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+      }
+    }
+  }
+  
   Widget _buildReplyPreview() {
     if (_replyingTo == null) return const SizedBox.shrink();
     
@@ -2343,9 +2623,12 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
           
           // Bubble mit Tail
           Flexible(
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
+            child: InkWell(
+              onLongPress: isOwn ? () => _showMessageActions(msg) : null,
+              borderRadius: BorderRadius.circular(16),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
                 color: isOwn ? Colors.red : Colors.grey[800],
                 borderRadius: BorderRadius.only(
                   topLeft: const Radius.circular(16),
@@ -2446,8 +2729,9 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
                   ),
                 ],
               ),
-            ),
-          ),
+            ), // Container
+            ), // InkWell
+          ), // Flexible
         ],
       ),
     );

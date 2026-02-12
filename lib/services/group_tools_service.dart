@@ -6,7 +6,7 @@ import 'dart:convert';
 /// Verbindung zu Cloudflare Worker API für alle 18 Tools
 /// (Migrated to community-api as fallback)
 class GroupToolsService {
-  static const String _baseUrl = 'https://weltenbibliothek-community-api.brandy13062.workers.dev/api/tools';
+  static const String _baseUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev/api/tools';
 
   // ========================================
   // 🔮 ENERGIE-WELT TOOLS

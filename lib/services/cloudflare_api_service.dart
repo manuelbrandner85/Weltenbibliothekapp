@@ -4,32 +4,36 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 import '../config/api_config.dart';
+import 'local_chat_storage_service.dart';
 
 /// Cloudflare API Service für Weltenbibliothek
 /// Ersetzt Firebase Firestore mit Cloudflare D1 + Workers
 /// 
-/// ✅ PRODUCTION MODE: Echtes Backend-API System
+/// ✅ PRODUCTION MODE: Offline-First Chat mit lokaler Speicherung
 class CloudflareApiService {
   // ✅ PRODUCTION MODE: Mock-Service deaktiviert
+  
+  // 📦 Local Chat Storage for offline-first functionality
+  final LocalChatStorageService _localChat = LocalChatStorageService();
   
   // 🌐 API URLs - Centralized via ApiConfig
   // Migration Status: ✅ V2 Complete
   
   // Community API (Articles, Users, Analytics)
   // Note: Separate Worker, will migrate when community-v2 available
-  static String get baseUrl => 'https://weltenbibliothek-community-api.brandy13062.workers.dev';
+  static String get baseUrl => 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
   
   // Main API (Chat + Knowledge + WebSocket) - Using Deployed WebSocket Worker
   // FIXED: Use actual deployed worker name
-  static String get mainApiUrl => 'https://weltenbibliothek-websocket.brandy13062.workers.dev';
+  static String get mainApiUrl => 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
   
   // Media Upload API (R2 Storage)
   // Note: Separate Worker, will migrate when media-v2 available
-  static String get mediaApiUrl => 'https://weltenbibliothek-media-api.brandy13062.workers.dev';
+  static String get mediaApiUrl => 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
   
   // Chat Features API (Reactions, Read Receipts, Polls)
   // Note: Separate Worker, will migrate when chat-features-v2 available
-  static String get chatFeaturesApiUrl => 'https://chat-features-weltenbibliothek.brandy13062.workers.dev';
+  static String get chatFeaturesApiUrl => 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
   
   // Chat Reactions API (Redirect to Chat Features)
   static String get reactionsApiUrl => chatFeaturesApiUrl;
@@ -135,19 +139,19 @@ class CloudflareApiService {
     String? realm,
     int limit = 50,
   }) async {
-    // 🔧 MOCK MODE: Use local mock service if enabled
+    // 🎯 PRODUCTION MODE: Backend-First mit Local Storage Fallback
+    if (kDebugMode) {
+      debugPrint('💬 Loading chat messages for room $roomId (realm: $realm)');
+    }
     
-    // PRODUCTION MODE: Use real API
-    // API: /api/chat/:room endpoint with realm query parameter
+    // Try Backend API first
     final queryParams = {
+      'room': roomId,
+      'realm': realm ?? 'energie',
       'limit': limit.toString(),
     };
     
-    if (realm != null) {
-      queryParams['realm'] = realm;
-    }
-    
-    final uri = Uri.parse('$mainApiUrl/api/chat/$roomId').replace(queryParameters: queryParams);
+    final uri = Uri.parse('$mainApiUrl/api/chat/messages').replace(queryParameters: queryParams);
     
     try {
       // 🔍 DEBUG: Log request details
@@ -167,18 +171,21 @@ class CloudflareApiService {
       }
 
       if (response.statusCode == 200) {
-        // New API returns {success, room_id, messages, count}
+        // Backend returns {messages, total, hasMore}
         final data = json.decode(response.body);
         
-        if (data['success'] == true && data['messages'] != null) {
+        if (data['messages'] != null) {
           final List<dynamic> messages = data['messages'];
           
-          if (kDebugMode && messages.isNotEmpty) {
-            debugPrint('🔍 API Response - Room: ${data['room_id']}, Count: ${data['count']}');
-            debugPrint('   First message: ${messages.first}');
+          if (kDebugMode) {
+            debugPrint('✅ Chat Messages loaded: ${messages.length} messages');
+            debugPrint('   Total: ${data['total']}, HasMore: ${data['hasMore']}');
+            if (messages.isNotEmpty) {
+              debugPrint('   First message: ${messages.first['message']}');
+            }
           }
           
-          // ✅ FIX: Filter out deleted messages
+          // ✅ Filter out deleted messages
           final activeMessages = messages
               .map((e) => e as Map<String, dynamic>)
               .where((msg) => msg['deleted'] != true)
@@ -243,17 +250,28 @@ class CloudflareApiService {
       }
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('❌ Network Error: $e');
+        debugPrint('❌ Backend Error: $e - Falling back to local storage');
       }
       
-      // ✨ VERBESSERUNG: Offline-Detection
-      if (e.toString().contains('SocketException') || 
-          e.toString().contains('Failed host lookup') ||
-          e.toString().contains('Network is unreachable')) {
-        throw Exception('⚠️ Keine Internetverbindung\n\nBitte überprüfe deine Verbindung und versuche es erneut.');
+      // Fallback to local storage if backend fails
+      try {
+        final messages = await _localChat.getMessages(
+          roomId,
+          realm ?? 'energie',
+          limit: limit,
+        );
+        
+        if (kDebugMode) {
+          debugPrint('✅ Loaded ${messages.length} messages from local storage (fallback)');
+        }
+        
+        return messages;
+      } catch (localError) {
+        if (kDebugMode) {
+          debugPrint('❌ Local storage also failed: $localError');
+        }
+        return [];
       }
-      
-      rethrow;
     }
   }
 
@@ -269,52 +287,86 @@ class CloudflareApiService {
     String? mediaType, // 'image' or 'audio'
     String? mediaUrl,  // R2 URL
   }) async {
-    // 🔧 MOCK MODE: Use local mock service if enabled
+    // 🎯 PRODUCTION MODE: Backend-First mit Local Storage Fallback
+    if (kDebugMode) {
+      debugPrint('💬 Sending message for $username in $roomId');
+    }
     
-    // API: Complete body structure for chat API
-    final body = {
-      'userId': userId,
-      'username': username,
-      'message': message,
-      'realm': realm,
-      'avatar': avatarEmoji ?? '👤',
-    };
-    
-    // Add optional fields
-    if (avatarUrl != null) body['avatarUrl'] = avatarUrl;
-    if (mediaType != null) body['mediaType'] = mediaType;
-    if (mediaUrl != null) body['mediaUrl'] = mediaUrl;
+    // Try Backend API first
+    final uri = Uri.parse('$mainApiUrl/api/chat/messages');
     
     try {
+      final body = {
+        'roomId': roomId,
+        'realm': realm,
+        'userId': userId,
+        'username': username,
+        'message': message,
+        'avatarEmoji': avatarEmoji ?? '👤',
+        'avatarUrl': avatarUrl,
+        'mediaType': mediaType,
+        'mediaUrl': mediaUrl,
+      };
+      
       final response = await http.post(
-        Uri.parse('$mainApiUrl/api/chat/$roomId'),  // NEW: /api/chat/:room
+        uri,
         headers: _headers,
         body: json.encode(body),
-      ).timeout(
-        const Duration(seconds: 30),
-        onTimeout: () {
-          throw TimeoutException('Server antwortet nicht innerhalb von 30 Sekunden');
-        },
-      );
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        // API returns 201 Created for new messages
-        return json.decode(response.body);
-      } else {
-        if (kDebugMode) {
-          debugPrint('❌ Send Message Error ${response.statusCode}: ${response.body}');
+      ).timeout(const Duration(seconds: 10));
+      
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        
+        if (data['success'] == true && data['message'] != null) {
+          if (kDebugMode) {
+            debugPrint('✅ Message sent to backend successfully');
+          }
+          return data['message'];
         }
-        throw Exception('Server Fehler: ${response.statusCode}');
       }
-    } on SocketException {
-      throw Exception('Keine Internetverbindung');
-    } on TimeoutException catch (e) {
-      throw Exception('Timeout: ${e.message}');
+      
+      // If backend fails, fallback to local storage
+      throw Exception('Backend returned: ${response.statusCode}');
+      
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('❌ Unexpected Error: $e');
+        debugPrint('⚠️ Backend failed, using local storage: $e');
       }
-      rethrow;
+      
+      // Fallback: Store locally
+      try {
+        final result = await _localChat.sendMessage(
+          roomId: roomId,
+          realm: realm,
+          userId: userId,
+          username: username,
+          message: message,
+          avatarEmoji: avatarEmoji,
+          avatarUrl: avatarUrl,
+          mediaType: mediaType,
+          mediaUrl: mediaUrl,
+        );
+        
+        // Update presence
+        await _localChat.updatePresence(
+          realm,
+          roomId,
+          userId,
+          username,
+          avatarEmoji ?? '👤',
+        );
+        
+        if (kDebugMode) {
+          debugPrint('✅ Message stored locally (will sync later)');
+        }
+        
+        return result;
+      } catch (localError) {
+        if (kDebugMode) {
+          debugPrint('❌ Both backend and local storage failed: $localError');
+        }
+        throw Exception('Failed to send message: $localError');
+      }
     }
   }
 
@@ -373,9 +425,9 @@ class CloudflareApiService {
     
     try {
       final body = {
-        'messageId': messageId,
+        'roomId': roomId,
         'userId': userId,
-        'message': newMessage,
+        'message': newMessage,  // Backend expects 'message', not 'newMessage'
       };
       
       // ✅ FIX: Add realm parameter to request body
@@ -384,7 +436,7 @@ class CloudflareApiService {
       }
       
       final response = await http.put(
-        Uri.parse('$mainApiUrl/api/chat/$roomId'),  // NEW: /api/chat/:room
+        Uri.parse('$mainApiUrl/api/chat/messages/$messageId'),
         headers: _headers,
         body: json.encode(body),
       ).timeout(
@@ -431,7 +483,7 @@ class CloudflareApiService {
     try {
       // Build request body with realm
       final body = {
-        'messageId': messageId,
+        'roomId': roomId,
         'userId': userId,
       };
       
@@ -443,7 +495,7 @@ class CloudflareApiService {
       // Dart http.delete doesn't support body, use Request instead
       final request = http.Request(
         'DELETE',
-        Uri.parse('$mainApiUrl/api/chat/$roomId'),
+        Uri.parse('$mainApiUrl/api/chat/messages/$messageId'),
       );
       request.headers.addAll(_headers);
       request.body = json.encode(body);

@@ -4,6 +4,7 @@ import 'dart:async';
 // Service imports (static imports required in Dart)
 import 'storage_service.dart';
 import 'theme_service.dart';
+import 'local_chat_storage_service.dart';  // 💬 Local Chat Storage
 import 'invisible_auth_service.dart';  // 🔐 PHASE 1: AUTHENTICATION
 import 'sound_service.dart';  // ✅ PRODUCTION-READY: Real audio system
 import 'unified_knowledge_service.dart';
@@ -105,6 +106,16 @@ class ServiceManager {
         },
         critical: true,
         timeout: const Duration(seconds: 1),
+      );
+      
+      // 💬 LocalChatStorageService - Offline-First Chat (NEW)
+      await _initializeService(
+        'LocalChatStorageService',
+        () async {
+          await LocalChatStorageService().initialize();
+        },
+        critical: true,
+        timeout: const Duration(seconds: 2),
       );
       
       // 🔐 CRITICAL FIX: InvisibleAuthService OPTIONAL (kann offline funktionieren)

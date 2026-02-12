@@ -7,7 +7,7 @@ import 'storage_service.dart';
 
 /// Cloudflare Sync Service für Profile & Chat-History
 class CloudflareSyncService {
-  static const String baseUrl = 'https://weltenbibliothek.manuel-brandner75.workers.dev';
+  static const String baseUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
   
   final Map<String, String> _headers = {
     'Content-Type': 'application/json',

@@ -14,12 +14,12 @@ import 'package:flutter/foundation.dart';
 
 class BackendHealthService {
   // 🌐 BACKEND ENDPOINTS (Updated to API-V2)
-  static const String communityApiUrl = 'https://weltenbibliothek-community-api.brandy13062.workers.dev';
+  static const String communityApiUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
   static const String mainApiUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev'; // Updated to V2
-  static const String rechercheApiUrl = 'https://api-backend.brandy13062.workers.dev';
-  static const String rechercheWorkerUrl = 'https://recherche-engine.brandy13062.workers.dev'; // Fixed URL
-  static const String mediaApiUrl = 'https://weltenbibliothek-media-api.brandy13062.workers.dev';
-  static const String groupToolsApiUrl = 'https://weltenbibliothek-community-api.brandy13062.workers.dev'; // Fallback to community-api
+  static const String rechercheApiUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
+  static const String rechercheWorkerUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev'; // Fixed URL
+  static const String mediaApiUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
+  static const String groupToolsApiUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev'; // Fallback to community-api
 
   // 💾 Cache für Health-Status (5 Minuten)
   static final Map<String, HealthStatus> _cache = {};

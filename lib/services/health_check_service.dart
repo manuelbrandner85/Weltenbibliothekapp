@@ -67,9 +67,9 @@ class HealthCheckService extends ChangeNotifier {
   HealthCheckService._internal();
 
   // Service endpoints
-  static const String _chatApiUrl = 'https://weltenbibliothek-websocket.brandy13062.workers.dev';
-  static const String _voiceApiUrl = 'https://weltenbibliothek-voice.brandy13062.workers.dev';
-  static const String _storageApiUrl = 'https://weltenbibliothek-r2.brandy13062.workers.dev';
+  static const String _chatApiUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
+  static const String _voiceApiUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
+  static const String _storageApiUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
 
   // Health data
   final Map<String, ServiceHealth> _serviceHealth = {};

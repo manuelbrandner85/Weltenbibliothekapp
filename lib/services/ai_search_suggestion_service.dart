@@ -8,7 +8,7 @@ import 'search_history_service.dart';
 /// Analyzes user behavior and provides intelligent recommendations
 class AISearchSuggestionService {
   // Backend URL
-  static const String _backendUrl = 'https://api-backend.brandy13062.workers.dev';
+  static const String _backendUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
   
   // SharedPreferences Keys
   static const String _interestsKey = 'ai_user_interests';

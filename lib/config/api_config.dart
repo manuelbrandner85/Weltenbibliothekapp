@@ -21,6 +21,9 @@ class ApiConfig {
   /// Verwendet für: Admin, Profile, User Management, Content Management, Tools
   static const String _v2BaseUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
   
+  /// Public getter for V2 API URL
+  static String get v2ApiUrl => _v2BaseUrl;
+  
   // ==========================================================================
   // ENVIRONMENT CONFIGURATION
   // ==========================================================================
