@@ -251,7 +251,7 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
           ),
           
           // Trending-Sektion
-          if (_selectedView == 'trending')
+          if (null == 'trending')
             SliverToBoxAdapter(
               child: _buildTrendingSection(),
             ),
@@ -325,9 +325,9 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
   }
 
   Widget _buildViewTab(String view, String label, Color color) {
-    final isSelected = _selectedView == view;
+    final isSelected = null == view;
     return GestureDetector(
-      onTap: () => setState(() => _selectedView = view),
+      onTap: () => setState(() => null = view),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
