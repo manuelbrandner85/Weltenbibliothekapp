@@ -122,27 +122,9 @@ class _MobileOptimierterRechercheTabState extends State<MobileOptimierterRecherc
         })
         .toList() ?? [];
     
-    // CRITICAL: Falls Worker LEERE Daten liefert, füge TEST-DATEN hinzu!
+    // ✅ FIX #1: Keine TEST-DATEN in Production
     if (alleAkteure.isEmpty && kDebugMode) {
-      debugPrint('⚠️ [DEBUG] Worker lieferte LEERE Akteure - füge TEST-DATEN hinzu');
-      alleAkteure = [
-        Akteur(
-          id: 'test_akteur_1',
-          name: 'Beispiel-Organisation A',
-          typ: AkteurTyp.organisation,
-          rolle: 'Hauptakteur',
-          machtindex: 0.8,
-          beschreibung: 'Dies ist ein TEST-Akteur, weil der Worker keine echten Daten lieferte.',
-        ),
-        Akteur(
-          id: 'test_akteur_2',
-          name: 'Beispiel-Person B',
-          typ: AkteurTyp.person,
-          rolle: 'Nebenakteur',
-          machtindex: 0.5,
-          beschreibung: 'Zweiter TEST-Akteur für UI-Testing.',
-        ),
-      ];
+      debugPrint('⚠️ [DEBUG] Worker lieferte LEERE Akteure');
     }
     
     // Narrative konvertieren (KORREKTE MODEL-STRUKTUR)
@@ -189,23 +171,9 @@ class _MobileOptimierterRechercheTabState extends State<MobileOptimierterRecherc
       }
     }
     
-    // CRITICAL: Falls Worker LEERE Daten liefert, füge TEST-DATEN hinzu!
+    // ✅ FIX #1: Keine TEST-DATEN in Production
     if (timeline.isEmpty && kDebugMode) {
-      debugPrint('⚠️ [DEBUG] Worker lieferte LEERE Timeline - füge TEST-DATEN hinzu');
-      timeline = [
-        HistorischerKontext(
-          id: 'test_timeline_1',
-          ereignis: 'Test-Ereignis 1',
-          datum: DateTime.now().subtract(const Duration(days: 30)),
-          beschreibung: 'Erstes TEST-Ereignis für Suchbegriff "$suchbegriff"',
-        ),
-        HistorischerKontext(
-          id: 'test_timeline_2',
-          ereignis: 'Test-Ereignis 2',
-          datum: DateTime.now(),
-          beschreibung: 'Aktuelles TEST-Ereignis - zeigt, dass die Timeline-UI funktioniert!',
-        ),
-      ];
+      debugPrint('⚠️ [DEBUG] Worker lieferte LEERE Timeline');
     }
     
     // Alternative Sichtweisen konvertieren (KORREKTE MODEL-STRUKTUR)
