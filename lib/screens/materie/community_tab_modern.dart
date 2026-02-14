@@ -19,7 +19,7 @@ class MaterieCommunityTabModern extends StatefulWidget {
 
 class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> with SingleTickerProviderStateMixin {
   bool _isLoading = false;
-  String _selectedView = 'trending'; // 'trending', 'following', 'community'
+  String? _errorMessage; // ✅ FIX #7: Error state
   
   // 💬 TAB CONTROLLER für Posts vs Chat
   late TabController _tabController;
@@ -64,6 +64,7 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
       
       setState(() {
         _posts = posts;
+        _errorMessage = null; // ✅ FIX #7: Clear error
         _isLoading = false;
       });
     } catch (e) {
@@ -71,7 +72,10 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
         debugPrint('🔵 MATERIE Community (AKTIV): Error loading posts: $e');
       }
       
-      setState(() => _isLoading = false);
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Fehler beim Laden der Posts. Bitte erneut versuchen.'; // ✅ FIX #7
+      });
     }
   }
   
