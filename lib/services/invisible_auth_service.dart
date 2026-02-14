@@ -15,6 +15,8 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:http/http.dart' as http;
+import '../core/exceptions/exception_guard.dart';  // 🛡️ EXCEPTION GUARD
+import '../core/exceptions/specialized_exceptions.dart';  // 🚨 AUTH EXCEPTIONS
 
 /// 🆔 AUTH SERVICE - Unsichtbare Benutzer-Authentifizierung
 class InvisibleAuthService {
@@ -38,127 +40,152 @@ class InvisibleAuthService {
   
   /// Initialize Auth (call on app start)
   Future<void> initialize() async {
-    try {
-      final box = await Hive.openBox(_authBox);
-      
-      // Load existing auth
-      _userId = box.get(_userIdKey);
-      _authToken = box.get(_authTokenKey);
-      _deviceId = box.get(_deviceIdKey);
-      
-      if (_userId == null || _authToken == null) {
-        // CRITICAL: First time user - create invisible auth
-        await _createInvisibleUser();
-      } else {
-        // Validate existing token with backend
-        final isValid = await _validateToken();
-        if (!isValid) {
-          // Token expired/invalid - refresh
-          await _refreshToken();
+    await guard(
+      () async {
+        final box = await Hive.openBox(_authBox);
+        
+        // Load existing auth
+        _userId = box.get(_userIdKey);
+        _authToken = box.get(_authTokenKey);
+        _deviceId = box.get(_deviceIdKey);
+        
+        if (_userId == null || _authToken == null) {
+          // CRITICAL: First time user - create invisible auth
+          await _createInvisibleUser();
+        } else {
+          // Validate existing token with backend
+          final isValid = await _validateToken();
+          if (!isValid) {
+            // Token expired/invalid - refresh
+            await _refreshToken();
+          }
         }
-      }
-      
-      if (kDebugMode) {
-        debugPrint('🔐 [Auth] Initialized: userId=$_userId');
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ [Auth] Initialization failed: $e');
-      }
-      rethrow;
-    }
+        
+        if (kDebugMode) {
+          debugPrint('🔐 [Auth] Initialized: userId=$_userId');
+        }
+      },
+      operationName: 'InvisibleAuth.initialize',
+      context: {
+        'backendUrl': _backendUrl,
+      },
+    );
   }
   
   /// Create invisible user (no UI, automatic)
   Future<void> _createInvisibleUser() async {
-    try {
-      // Generate unique IDs
-      _userId = _generateUserId();
-      _deviceId = _generateDeviceId();
-      _authToken = _generateAuthToken(_userId!, _deviceId!);
-      
-      if (kDebugMode) {
-        debugPrint('🆕 [Auth] Creating invisible user: $_userId');
-      }
-      
-      // Register with backend
-      final response = await http.post(
-        Uri.parse('$_backendUrl/auth/register'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'user_id': _userId,
-          'device_id': _deviceId,
-          'auth_token': _authToken,
-          'created_at': DateTime.now().toIso8601String(),
-        }),
-      );
-      
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        // Save locally
-        final box = await Hive.openBox(_authBox);
-        await box.put(_userIdKey, _userId);
-        await box.put(_authTokenKey, _authToken);
-        await box.put(_deviceIdKey, _deviceId);
+    await guardApi(
+      () async {
+        // Generate unique IDs
+        _userId = _generateUserId();
+        _deviceId = _generateDeviceId();
+        _authToken = _generateAuthToken(_userId!, _deviceId!);
         
         if (kDebugMode) {
-          debugPrint('✅ [Auth] Invisible user created successfully');
+          debugPrint('🆕 [Auth] Creating invisible user: $_userId');
         }
-      } else {
-        throw Exception('Backend registration failed: ${response.statusCode}');
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ [Auth] Failed to create user: $e');
-      }
-      rethrow;
-    }
+        
+        // Register with backend
+        final response = await http.post(
+          Uri.parse('$_backendUrl/auth/register'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'user_id': _userId,
+            'device_id': _deviceId,
+            'auth_token': _authToken,
+            'created_at': DateTime.now().toIso8601String(),
+          }),
+        );
+        
+        if (response.statusCode == 200 || response.statusCode == 201) {
+          // Save locally
+          final box = await Hive.openBox(_authBox);
+          await box.put(_userIdKey, _userId);
+          await box.put(_authTokenKey, _authToken);
+          await box.put(_deviceIdKey, _deviceId);
+          
+          if (kDebugMode) {
+            debugPrint('✅ [Auth] Invisible user created successfully');
+          }
+        } else if (response.statusCode == 401) {
+          throw AuthException(
+            'Authentication failed',
+            cause: {'userId': _userId},
+          );
+        } else {
+          throw BackendException(
+            'Backend registration failed',
+            endpoint: '/auth/register',
+            statusCode: response.statusCode,
+          );
+        }
+      },
+      url: '$_backendUrl/auth/register',
+      method: 'POST',
+      operationName: 'InvisibleAuth.createUser',
+    );
   }
   
   /// Validate auth token with backend
   Future<bool> _validateToken() async {
-    try {
-      final response = await http.get(
-        Uri.parse('$_backendUrl/auth/validate'),
-        headers: {
-          'Authorization': 'Bearer $_authToken',
-          'X-User-ID': _userId!,
-        },
-      );
-      
-      return response.statusCode == 200;
-    } catch (e) {
-      return false;
-    }
+    return await guard(
+      () async {
+        final response = await http.get(
+          Uri.parse('$_backendUrl/auth/validate'),
+          headers: {
+            'Authorization': 'Bearer $_authToken',
+            'X-User-ID': _userId!,
+          },
+        );
+        
+        return response.statusCode == 200;
+      },
+      operationName: 'InvisibleAuth.validateToken',
+      context: {'userId': _userId},
+      onError: (e, stack) async => false,  // Return false on any error
+    );
   }
   
   /// Refresh auth token
   Future<void> _refreshToken() async {
-    try {
-      final response = await http.post(
-        Uri.parse('$_backendUrl/auth/refresh'),
-        headers: {
-          'Authorization': 'Bearer $_authToken',
-          'X-User-ID': _userId!,
-        },
-      );
-      
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        _authToken = data['auth_token'];
+    await guardApi(
+      () async {
+        final response = await http.post(
+          Uri.parse('$_backendUrl/auth/refresh'),
+          headers: {
+            'Authorization': 'Bearer $_authToken',
+            'X-User-ID': _userId!,
+          },
+        );
         
-        // Save new token
-        final box = await Hive.openBox(_authBox);
-        await box.put(_authTokenKey, _authToken);
-        
-        if (kDebugMode) {
-          debugPrint('🔄 [Auth] Token refreshed');
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body);
+          _authToken = data['auth_token'];
+          
+          // Save new token
+          final box = await Hive.openBox(_authBox);
+          await box.put(_authTokenKey, _authToken);
+          
+          if (kDebugMode) {
+            debugPrint('🔄 [Auth] Token refreshed');
+          }
+        } else if (response.statusCode == 401) {
+          throw AuthException(
+            'Token refresh failed - authentication required',
+            errorType: AuthErrorType.sessionExpired,
+          );
+        } else {
+          throw BackendException(
+            'Token refresh failed',
+            endpoint: '/auth/refresh',
+            statusCode: response.statusCode,
+          );
         }
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ [Auth] Token refresh failed: $e');
-      }
-    }
+      },
+      url: '$_backendUrl/auth/refresh',
+      method: 'POST',
+      operationName: 'InvisibleAuth.refreshToken',
+    );
   }
   
   /// Generate unique User ID (UUID-like)
@@ -212,54 +239,71 @@ class InvisibleAuthService {
     String? world,  // ✅ Welt (materie/energie)
     String? role,   // ✅ Rolle (user/admin/root_admin)
   }) async {
-    try {
-      final response = await http.post(
-        Uri.parse('$_backendUrl/auth/link-profile'),
-        headers: authHeaders(world: world, role: role)..addAll({'Content-Type': 'application/json'}),
-        body: jsonEncode({
-          'username': username,
-          'avatar': avatar,
-          'avatar_url': avatarUrl,
-          if (world != null) 'world': world,  // ✅ Welt mitschicken
-          if (role != null) 'role': role,     // ✅ Rolle mitschicken
-        }),
-      );
-      
-      if (response.statusCode == 200) {
-        if (kDebugMode) {
-          debugPrint('✅ [Auth] Profile linked: $username (world: $world, role: $role)');
+    await guardApi(
+      () async {
+        final response = await http.post(
+          Uri.parse('$_backendUrl/auth/link-profile'),
+          headers: authHeaders(world: world, role: role)..addAll({'Content-Type': 'application/json'}),
+          body: jsonEncode({
+            'username': username,
+            'avatar': avatar,
+            'avatar_url': avatarUrl,
+            if (world != null) 'world': world,  // ✅ Welt mitschicken
+            if (role != null) 'role': role,     // ✅ Rolle mitschicken
+          }),
+        );
+        
+        if (response.statusCode == 200) {
+          if (kDebugMode) {
+            debugPrint('✅ [Auth] Profile linked: $username (world: $world, role: $role)');
+          }
+        } else {
+          throw BackendException(
+            'Profile linking failed',
+            endpoint: '/auth/link-profile',
+            statusCode: response.statusCode,
+          );
         }
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ [Auth] Profile linking failed: $e');
-      }
-    }
+      },
+      url: '$_backendUrl/auth/link-profile',
+      method: 'POST',
+      operationName: 'InvisibleAuth.linkProfile',
+    );
   }
   
   /// Logout (clear local auth, keep profile)
   Future<void> logout() async {
-    try {
-      // Notify backend
-      await http.post(
-        Uri.parse('$_backendUrl/auth/logout'),
-        headers: authHeaders(), // ✅ FIX: Methode aufrufen
-      );
-      
-      // Clear local auth (but keep profile data!)
-      final box = await Hive.openBox(_authBox);
-      await box.delete(_authTokenKey);
-      
-      _authToken = null;
-      
-      if (kDebugMode) {
-        debugPrint('👋 [Auth] Logged out');
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ [Auth] Logout failed: $e');
-      }
-    }
+    await guardApi(
+      () async {
+        // Notify backend
+        await http.post(
+          Uri.parse('$_backendUrl/auth/logout'),
+          headers: authHeaders(), // ✅ FIX: Methode aufrufen
+        );
+        
+        // Clear local auth (but keep profile data!)
+        final box = await Hive.openBox(_authBox);
+        await box.delete(_authTokenKey);
+        
+        _authToken = null;
+        
+        if (kDebugMode) {
+          debugPrint('👋 [Auth] Logged out');
+        }
+      },
+      url: '$_backendUrl/auth/logout',
+      method: 'POST',
+      operationName: 'InvisibleAuth.logout',
+      onError: (e, stack) async {
+        // Even if backend fails, clear local auth
+        final box = await Hive.openBox(_authBox);
+        await box.delete(_authTokenKey);
+        _authToken = null;
+        if (kDebugMode) {
+          debugPrint('👋 [Auth] Logged out (backend notification failed)');
+        }
+      },
+    );
   }
 }
 

@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import '../../services/storage_service.dart';
 import '../../theme/premium_text_styles.dart';
 import '../../widgets/micro_interactions.dart';
 import '../../widgets/sacred_geometry.dart';
 import '../../widgets/profile_edit_dialogs.dart';
 import '../../models/energie_profile.dart';
 import '../../models/spirit_entry.dart';
-import '../../services/storage_service.dart';
+import '../../core/storage/unified_storage_service.dart';
 import '../../services/cloudflare_api_service.dart'; // 🌐 Cloudflare API
 // Demo data removed - using real Cloudflare API
 import '../../utils/time_helper.dart';

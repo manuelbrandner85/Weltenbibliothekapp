@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import '../../services/storage_service.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../../models/materie_profile.dart';
 import '../../models/energie_profile.dart';

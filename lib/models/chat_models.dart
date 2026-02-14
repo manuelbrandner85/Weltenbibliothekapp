@@ -1,328 +1,413 @@
-/// 💬 MODERN CHAT MODELS
-/// Shared data models for both Materie & Energie Chat
+/// 💬 CHAT MODELS
+/// 
+/// Complete chat message model with support for:
+/// - Text, image, voice, file messages
+/// - Reactions (emoji)
+/// - Replies (threading)
+/// - Message editing
+/// - Read receipts
+/// - Delivery status
 library;
 
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 
-/// Chat Realm (World)
-enum ChatRealm {
-  materie,
-  energie,
-  spirit;
-
-  String get displayName {
-    switch (this) {
-      case ChatRealm.materie:
-        return 'MATERIE';
-      case ChatRealm.energie:
-        return 'ENERGIE';
-      case ChatRealm.spirit:
-        return 'SPIRIT';
-    }
-  }
-
-  Color get primaryColor {
-    switch (this) {
-      case ChatRealm.materie:
-        return Colors.red;
-      case ChatRealm.energie:
-        return const Color(0xFF9B51E0);
-      case ChatRealm.spirit:
-        return const Color(0xFF9B51E0);
-    }
-  }
-
-  Color get accentColor {
-    switch (this) {
-      case ChatRealm.materie:
-        return const Color(0xFFE53935);
-      case ChatRealm.energie:
-        return const Color(0xFF6A5ACD);
-      case ChatRealm.spirit:
-        return const Color(0xFF6A5ACD);
-    }
-  }
+/// Message Type Enum
+enum MessageType {
+  text,
+  image,
+  voice,
+  file,
+  system,
+  deleted,
 }
 
-/// Message Status
+/// Message Status Enum
 enum MessageStatus {
-  sending,    // 🕐 Wird gesendet
-  sent,       // ✓ Auf Server
-  delivered,  // ✓✓ Empfangen
-  read,       // ✓✓ Gelesen (blau)
-  failed;     // ❌ Fehler
-
-  IconData get icon {
-    switch (this) {
-      case MessageStatus.sending:
-        return Icons.access_time;
-      case MessageStatus.sent:
-        return Icons.done;
-      case MessageStatus.delivered:
-        return Icons.done_all;
-      case MessageStatus.read:
-        return Icons.done_all;
-      case MessageStatus.failed:
-        return Icons.error_outline;
-    }
-  }
-
-  Color get color {
-    switch (this) {
-      case MessageStatus.sending:
-        return Colors.grey;
-      case MessageStatus.sent:
-        return Colors.grey;
-      case MessageStatus.delivered:
-        return Colors.white70;
-      case MessageStatus.read:
-        return Colors.blue;
-      case MessageStatus.failed:
-        return Colors.red;
-    }
-  }
+  sending,
+  sent,
+  delivered,
+  read,
+  failed,
 }
 
-/// Chat Message (Enhanced)
+/// Chat Message Model
+@immutable
 class ChatMessage {
   final String id;
-  final String userId;
-  final String username;
-  final String message;
-  final DateTime timestamp;
-  final String? avatarEmoji;
-  final String? avatarUrl;
+  final String senderId;
+  final String senderName;
+  final String? senderAvatarUrl;
+  final String content;
+  final MessageType type;
   final MessageStatus status;
-  
-  // Media
-  final String? mediaType;  // 'image', 'voice', 'video'
-  final String? mediaUrl;
-  
-  // Reactions
-  final Map<String, List<String>> reactions;  // emoji -> [userIds]
-  
-  // Threading
-  final String? replyToId;
-  final ChatMessage? replyToMessage;
-  
-  // Editing
-  final bool isEdited;
+  final DateTime timestamp;
   final DateTime? editedAt;
   
-  // Pinning
-  final bool isPinned;
-  final DateTime? pinnedAt;
-  final String? pinnedBy;
+  // Reply/Thread support
+  final String? replyToMessageId;
+  final String? replyToContent;
+  final String? replyToSenderName;
   
-  // Rich Text
-  final List<MessageSegment>? segments;
+  // Reactions
+  final Map<String, List<String>> reactions; // emoji -> [userId1, userId2]
+  
+  // Media attachments
+  final String? imageUrl;
+  final String? voiceUrl;
+  final String? fileUrl;
+  final String? fileName;
+  final int? fileSize;
+  
+  // Read receipts
+  final List<String> readBy;
+  
+  // Additional metadata
+  final Map<String, dynamic> metadata;
 
-  ChatMessage({
+  const ChatMessage({
     required this.id,
-    required this.userId,
-    required this.username,
-    required this.message,
+    required this.senderId,
+    required this.senderName,
+    this.senderAvatarUrl,
+    required this.content,
+    this.type = MessageType.text,
+    this.status = MessageStatus.sending,
     required this.timestamp,
-    this.avatarEmoji,
-    this.avatarUrl,
-    this.status = MessageStatus.sent,
-    this.mediaType,
-    this.mediaUrl,
-    this.reactions = const {},
-    this.replyToId,
-    this.replyToMessage,
-    this.isEdited = false,
     this.editedAt,
-    this.isPinned = false,
-    this.pinnedAt,
-    this.pinnedBy,
-    this.segments,
+    this.replyToMessageId,
+    this.replyToContent,
+    this.replyToSenderName,
+    this.reactions = const {},
+    this.imageUrl,
+    this.voiceUrl,
+    this.fileUrl,
+    this.fileName,
+    this.fileSize,
+    this.readBy = const [],
+    this.metadata = const {},
   });
 
-  factory ChatMessage.fromJson(Map<String, dynamic> json) {
-    return ChatMessage(
-      id: json['id'] ?? json['message_id'] ?? '',
-      userId: json['user_id'] ?? json['userId'] ?? '',
-      username: json['username'] ?? '',
-      message: json['message'] ?? json['text'] ?? '',
-      timestamp: json['timestamp'] != null
-          ? DateTime.parse(json['timestamp'])
-          : DateTime.now(),
-      avatarEmoji: json['avatar_emoji'] ?? json['avatarEmoji'],
-      avatarUrl: json['avatar_url'] ?? json['avatarUrl'],
-      status: MessageStatus.sent,
-      mediaType: json['media_type'] ?? json['mediaType'],
-      mediaUrl: json['media_url'] ?? json['mediaUrl'],
-      reactions: _parseReactions(json['reactions']),
-      replyToId: json['reply_to_id'] ?? json['replyToId'],
-      isEdited: json['is_edited'] ?? json['isEdited'] ?? false,
-      editedAt: json['edited_at'] != null
-          ? DateTime.parse(json['edited_at'])
-          : null,
-      isPinned: json['is_pinned'] ?? json['isPinned'] ?? false,
-      pinnedAt: json['pinned_at'] != null
-          ? DateTime.parse(json['pinned_at'])
-          : null,
-      pinnedBy: json['pinned_by'] ?? json['pinnedBy'],
-    );
-  }
-
-  static Map<String, List<String>> _parseReactions(dynamic reactions) {
-    if (reactions == null) return {};
-    if (reactions is Map) {
-      return reactions.map((key, value) {
-        if (value is List) {
-          return MapEntry(key.toString(), value.cast<String>());
-        }
-        return MapEntry(key.toString(), <String>[]);
-      });
-    }
-    return {};
-  }
-
-  ChatMessage copyWith({
-    MessageStatus? status,
-    Map<String, List<String>>? reactions,
-    bool? isEdited,
-    DateTime? editedAt,
-    bool? isPinned,
+  /// Factory: Create text message
+  factory ChatMessage.text({
+    required String id,
+    required String senderId,
+    required String senderName,
+    String? senderAvatarUrl,
+    required String content,
+    DateTime? timestamp,
+    String? replyToMessageId,
+    String? replyToContent,
+    String? replyToSenderName,
   }) {
     return ChatMessage(
       id: id,
-      userId: userId,
-      username: username,
-      message: message,
-      timestamp: timestamp,
-      avatarEmoji: avatarEmoji,
-      avatarUrl: avatarUrl,
-      status: status ?? this.status,
-      mediaType: mediaType,
-      mediaUrl: mediaUrl,
-      reactions: reactions ?? this.reactions,
-      replyToId: replyToId,
-      replyToMessage: replyToMessage,
-      isEdited: isEdited ?? this.isEdited,
-      editedAt: editedAt ?? this.editedAt,
-      isPinned: isPinned ?? this.isPinned,
-      pinnedAt: pinnedAt,
-      pinnedBy: pinnedBy,
-      segments: segments,
+      senderId: senderId,
+      senderName: senderName,
+      senderAvatarUrl: senderAvatarUrl,
+      content: content,
+      type: MessageType.text,
+      timestamp: timestamp ?? DateTime.now(),
+      replyToMessageId: replyToMessageId,
+      replyToContent: replyToContent,
+      replyToSenderName: replyToSenderName,
     );
   }
-}
 
-/// Message Segment (Rich Text)
-class MessageSegment {
-  final String text;
-  final MessageSegmentType type;
-  final String? data;  // Link URL, mention userId, etc.
-
-  MessageSegment({
-    required this.text,
-    required this.type,
-    this.data,
-  });
-}
-
-enum MessageSegmentType {
-  text,
-  bold,
-  italic,
-  code,
-  strikethrough,
-  mention,
-  link,
-  channel,
-}
-
-/// Voice Room Participant
-/// Voice Room Mode
-enum VoiceRoomMode {
-  openMic,      // 🎤 Alle können sprechen
-  raiseHand,    // ✋ Moderator-Freigabe nötig
-  speakerOnly,  // 🔊 Nur Speaker sprechen
-  listenOnly    // 👂 Nur zuhören
-}
-
-/// Voice Participant Role
-enum VoiceRole {
-  participant,  // 👤 Normaler Teilnehmer
-  speaker,      // 🔊 Speaker (kann sprechen)
-  moderator     // 👑 Moderator (volle Kontrolle)
-}
-
-class VoiceParticipant {
-  final String userId;
-  final String username;
-  final String? avatarEmoji;
-  final bool isSpeaking;
-  final bool isMuted;
-  final double volume;
-  final VoiceRole role;
-  final bool handRaised;
-
-  VoiceParticipant({
-    required this.userId,
-    required this.username,
-    this.avatarEmoji,
-    this.isSpeaking = false,
-    this.isMuted = false,
-    this.volume = 1.0,
-    this.role = VoiceRole.participant,
-    this.handRaised = false,
-  });
-
-  VoiceParticipant copyWith({
-    bool? isSpeaking,
-    bool? isMuted,
-    double? volume,
-    VoiceRole? role,
-    bool? handRaised,
+  /// Factory: Create image message
+  factory ChatMessage.image({
+    required String id,
+    required String senderId,
+    required String senderName,
+    String? senderAvatarUrl,
+    required String imageUrl,
+    String content = '',
+    DateTime? timestamp,
   }) {
-    return VoiceParticipant(
-      userId: userId,
-      username: username,
-      avatarEmoji: avatarEmoji,
-      isSpeaking: isSpeaking ?? this.isSpeaking,
-      isMuted: isMuted ?? this.isMuted,
-      volume: volume ?? this.volume,
-      role: role ?? this.role,
-      handRaised: handRaised ?? this.handRaised,
+    return ChatMessage(
+      id: id,
+      senderId: senderId,
+      senderName: senderName,
+      senderAvatarUrl: senderAvatarUrl,
+      content: content,
+      type: MessageType.image,
+      imageUrl: imageUrl,
+      timestamp: timestamp ?? DateTime.now(),
     );
   }
-}
 
-/// Voice Room
-class VoiceRoom {
-  final String roomId;
-  final List<VoiceParticipant> participants;
-  final int maxParticipants;
-  final VoiceRoomMode mode;
+  /// Factory: Create voice message
+  factory ChatMessage.voice({
+    required String id,
+    required String senderId,
+    required String senderName,
+    String? senderAvatarUrl,
+    required String voiceUrl,
+    required int duration,
+    DateTime? timestamp,
+  }) {
+    return ChatMessage(
+      id: id,
+      senderId: senderId,
+      senderName: senderName,
+      senderAvatarUrl: senderAvatarUrl,
+      content: 'Voice message ($duration sec)',
+      type: MessageType.voice,
+      voiceUrl: voiceUrl,
+      timestamp: timestamp ?? DateTime.now(),
+      metadata: {'duration': duration},
+    );
+  }
 
-  VoiceRoom({
-    required this.roomId,
-    this.participants = const [],
-    this.maxParticipants = 10,
-    this.mode = VoiceRoomMode.openMic,
-  });
+  /// Factory: Create file message
+  factory ChatMessage.file({
+    required String id,
+    required String senderId,
+    required String senderName,
+    String? senderAvatarUrl,
+    required String fileUrl,
+    required String fileName,
+    required int fileSize,
+    DateTime? timestamp,
+  }) {
+    return ChatMessage(
+      id: id,
+      senderId: senderId,
+      senderName: senderName,
+      senderAvatarUrl: senderAvatarUrl,
+      content: fileName,
+      type: MessageType.file,
+      fileUrl: fileUrl,
+      fileName: fileName,
+      fileSize: fileSize,
+      timestamp: timestamp ?? DateTime.now(),
+    );
+  }
 
-  bool get isFull => participants.length >= maxParticipants;
-  int get participantCount => participants.length;
-}
+  /// Factory: Create system message
+  factory ChatMessage.system({
+    required String id,
+    required String content,
+    DateTime? timestamp,
+  }) {
+    return ChatMessage(
+      id: id,
+      senderId: 'system',
+      senderName: 'System',
+      content: content,
+      type: MessageType.system,
+      timestamp: timestamp ?? DateTime.now(),
+    );
+  }
 
-/// Typing Indicator
-class TypingUser {
-  final String userId;
-  final String username;
-  final DateTime timestamp;
+  /// Factory: From JSON
+  factory ChatMessage.fromJson(Map<String, dynamic> json) {
+    return ChatMessage(
+      id: json['id'] as String,
+      senderId: json['sender_id'] as String,
+      senderName: json['sender_name'] as String,
+      senderAvatarUrl: json['sender_avatar_url'] as String?,
+      content: json['content'] as String,
+      type: MessageType.values.firstWhere(
+        (t) => t.name == json['type'],
+        orElse: () => MessageType.text,
+      ),
+      status: MessageStatus.values.firstWhere(
+        (s) => s.name == json['status'],
+        orElse: () => MessageStatus.sent,
+      ),
+      timestamp: DateTime.parse(json['timestamp'] as String),
+      editedAt: json['edited_at'] != null 
+          ? DateTime.parse(json['edited_at'] as String)
+          : null,
+      replyToMessageId: json['reply_to_message_id'] as String?,
+      replyToContent: json['reply_to_content'] as String?,
+      replyToSenderName: json['reply_to_sender_name'] as String?,
+      reactions: (json['reactions'] as Map<String, dynamic>?)
+          ?.map((key, value) => MapEntry(
+                key,
+                (value as List<dynamic>).map((e) => e.toString()).toList(),
+              )) ?? {},
+      imageUrl: json['image_url'] as String?,
+      voiceUrl: json['voice_url'] as String?,
+      fileUrl: json['file_url'] as String?,
+      fileName: json['file_name'] as String?,
+      fileSize: json['file_size'] as int?,
+      readBy: (json['read_by'] as List<dynamic>?)
+          ?.map((e) => e.toString())
+          .toList() ?? [],
+      metadata: json['metadata'] as Map<String, dynamic>? ?? {},
+    );
+  }
 
-  TypingUser({
-    required this.userId,
-    required this.username,
-    required this.timestamp,
-  });
+  /// To JSON
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'sender_id': senderId,
+      'sender_name': senderName,
+      'sender_avatar_url': senderAvatarUrl,
+      'content': content,
+      'type': type.name,
+      'status': status.name,
+      'timestamp': timestamp.toIso8601String(),
+      'edited_at': editedAt?.toIso8601String(),
+      'reply_to_message_id': replyToMessageId,
+      'reply_to_content': replyToContent,
+      'reply_to_sender_name': replyToSenderName,
+      'reactions': reactions,
+      'image_url': imageUrl,
+      'voice_url': voiceUrl,
+      'file_url': fileUrl,
+      'file_name': fileName,
+      'file_size': fileSize,
+      'read_by': readBy,
+      'metadata': metadata,
+    };
+  }
 
-  bool get isExpired {
-    return DateTime.now().difference(timestamp).inSeconds > 3;
+  /// Copy with
+  ChatMessage copyWith({
+    String? id,
+    String? senderId,
+    String? senderName,
+    String? senderAvatarUrl,
+    String? content,
+    MessageType? type,
+    MessageStatus? status,
+    DateTime? timestamp,
+    DateTime? editedAt,
+    String? replyToMessageId,
+    String? replyToContent,
+    String? replyToSenderName,
+    Map<String, List<String>>? reactions,
+    String? imageUrl,
+    String? voiceUrl,
+    String? fileUrl,
+    String? fileName,
+    int? fileSize,
+    List<String>? readBy,
+    Map<String, dynamic>? metadata,
+  }) {
+    return ChatMessage(
+      id: id ?? this.id,
+      senderId: senderId ?? this.senderId,
+      senderName: senderName ?? this.senderName,
+      senderAvatarUrl: senderAvatarUrl ?? this.senderAvatarUrl,
+      content: content ?? this.content,
+      type: type ?? this.type,
+      status: status ?? this.status,
+      timestamp: timestamp ?? this.timestamp,
+      editedAt: editedAt ?? this.editedAt,
+      replyToMessageId: replyToMessageId ?? this.replyToMessageId,
+      replyToContent: replyToContent ?? this.replyToContent,
+      replyToSenderName: replyToSenderName ?? this.replyToSenderName,
+      reactions: reactions ?? this.reactions,
+      imageUrl: imageUrl ?? this.imageUrl,
+      voiceUrl: voiceUrl ?? this.voiceUrl,
+      fileUrl: fileUrl ?? this.fileUrl,
+      fileName: fileName ?? this.fileName,
+      fileSize: fileSize ?? this.fileSize,
+      readBy: readBy ?? this.readBy,
+      metadata: metadata ?? this.metadata,
+    );
+  }
+
+  /// Check if message is edited
+  bool get isEdited => editedAt != null;
+  
+  /// Check if message is a reply
+  bool get isReply => replyToMessageId != null;
+  
+  /// Check if message has reactions
+  bool get hasReactions => reactions.isNotEmpty;
+  
+  /// Get total reaction count
+  int get reactionCount {
+    return reactions.values.fold(0, (sum, users) => sum + users.length);
+  }
+  
+  /// Check if message is read by user
+  bool isReadBy(String userId) => readBy.contains(userId);
+  
+  /// Check if user reacted with emoji
+  bool hasUserReactedWith(String userId, String emoji) {
+    return reactions[emoji]?.contains(userId) ?? false;
+  }
+  
+  /// Get formatted file size
+  String get formattedFileSize {
+    if (fileSize == null) return '';
+    final kb = fileSize! / 1024;
+    if (kb < 1024) return '${kb.toStringAsFixed(1)} KB';
+    final mb = kb / 1024;
+    return '${mb.toStringAsFixed(1)} MB';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    
+    return other is ChatMessage &&
+        other.id == id &&
+        other.senderId == senderId &&
+        other.senderName == senderName &&
+        other.senderAvatarUrl == senderAvatarUrl &&
+        other.content == content &&
+        other.type == type &&
+        other.status == status &&
+        other.timestamp == timestamp &&
+        other.editedAt == editedAt &&
+        other.replyToMessageId == replyToMessageId &&
+        other.replyToContent == replyToContent &&
+        other.replyToSenderName == replyToSenderName &&
+        mapEquals(other.reactions, reactions) &&
+        other.imageUrl == imageUrl &&
+        other.voiceUrl == voiceUrl &&
+        other.fileUrl == fileUrl &&
+        other.fileName == fileName &&
+        other.fileSize == fileSize &&
+        listEquals(other.readBy, readBy) &&
+        mapEquals(other.metadata, metadata);
+  }
+
+  @override
+  int get hashCode {
+    return Object.hash(
+      id,
+      senderId,
+      senderName,
+      senderAvatarUrl,
+      content,
+      type,
+      status,
+      timestamp,
+      editedAt,
+      replyToMessageId,
+      replyToContent,
+      replyToSenderName,
+      reactions,
+      imageUrl,
+      voiceUrl,
+      fileUrl,
+      fileName,
+      fileSize,
+      Object.hashAll(readBy),
+      metadata,
+    );
+  }
+
+  @override
+  String toString() {
+    return 'ChatMessage('
+        'id: $id, '
+        'sender: $senderName, '
+        'type: $type, '
+        'status: $status, '
+        'content: ${content.length > 50 ? content.substring(0, 50) + '...' : content}, '
+        'timestamp: $timestamp, '
+        'isEdited: $isEdited, '
+        'isReply: $isReply, '
+        'reactionCount: $reactionCount'
+        ')';
   }
 }

@@ -8,7 +8,9 @@ import 'package:image_picker/image_picker.dart'; // Image Picker
 import '../../services/cloudflare_api_service.dart';
 import '../../services/offline_sync_service.dart'; // 📡 OFFLINE SYNC (NEW Phase 3)
 import '../../services/user_service.dart';
-import '../../services/storage_service.dart';
+import '../../core/storage/unified_storage_service.dart';
+import '../../services/storage_service.dart'; // StorageService for profile access
+import 'package:flutter_riverpod/flutter_riverpod.dart'; // Riverpod
 import '../../services/profile_sync_service.dart'; // 🔥 BACKEND SYNC
 import '../../models/energie_profile.dart';
 import '../shared/profile_editor_screen.dart'; // ✅ Profile Editor
@@ -33,7 +35,8 @@ import '../../widgets/android_voice_recorder.dart'; // 🎤 Android Voice Record
 import '../../widgets/poll_widget.dart'; // 🗳️ Poll Widget
 import '../../widgets/pinned_message_banner.dart'; // 📌 Pinned Message Banner
 import '../../widgets/voice/voice_participant_header_bar.dart'; // 🎤 Voice Participant Header Bar (Telegram-Style)
-import '../shared/telegram_voice_chat_screen.dart'; // 🎤 Telegram Voice Chat Screen (TELEGRAM)
+import '../shared/modern_voice_chat_screen.dart'; // 🎤 Modern Voice Chat Screen (Phase B)
+import '../../providers/webrtc_call_provider.dart'; // Riverpod provider
 // 🎤 Admin Dialogs & Notifications
 import '../../widgets/admin/kick_user_dialog.dart'; // 🚫 Kick User Dialog
 // 🔴 Ban User Dialog
@@ -1772,6 +1775,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
           roomId: _selectedRoom,
           userId: _userId,
           username: _username,
+          world: 'energie',  // 🆕 World parameter
         );
         
         if (success) {
@@ -1833,6 +1837,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
         roomId: _selectedRoom,
         userId: _userId,
         username: _username,
+        world: 'energie',  // 🆕 World parameter
       );
       
       if (success) {
@@ -1873,187 +1878,48 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
     }
   }
   
-  // 🎤 OPEN TELEGRAM VOICE CHAT SCREEN (NEW)
+  // 🎤 OPEN MODERN VOICE CHAT SCREEN (Phase B - Grid Layout)
   void _openTelegramVoiceScreen() {
     if (kDebugMode) {
-      debugPrint('🎤 [TELEGRAM ENERGIE] Opening Telegram Voice Chat Screen...');
+      debugPrint('🎤 [MODERN ENERGIE] Opening Modern Voice Chat Screen (2×5 Grid)...');
     }
     
-    // 🔑 Get Admin Status from Backend Role (EXACT Dashboard Match!)
+    // 🔑 Get Admin Status from Backend Role
     final storage = StorageService();
     final profile = storage.getEnergieProfile();
     final backendRole = profile?.role;  // 'root_admin', 'admin', or 'user'
-    
-    // ✅ FIX: Use Backend Role instead of hardcoded lists
     final adminLevel = AdminPermissions.getAdminLevelFromBackendRole(backendRole);
     final isAdmin = adminLevel != AdminLevel.user;
+    final isRootAdmin = adminLevel == AdminLevel.rootAdmin;
     
     if (kDebugMode) {
-      debugPrint('🔑 [ADMIN CHECK ENERGIE - BACKEND ROLE]');
+      debugPrint('🔑 [ADMIN CHECK ENERGIE]');
       debugPrint('   userId: $_userId');
       debugPrint('   backendRole: $backendRole');
       debugPrint('   adminLevel: $adminLevel');
       debugPrint('   isAdmin: $isAdmin');
+      debugPrint('   isRootAdmin: $isRootAdmin');
     }
     
+    // ✅ Phase A: Set admin status in Riverpod provider
+    // This enables admin controls in the UI
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final notifier = ProviderScope.containerOf(context).read(webrtcCallProvider.notifier);
+      notifier.setAdminStatus(isAdmin, isRootAdmin);
+    });
+    
+    // ✅ Phase B: Navigate to Modern Grid UI
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => TelegramVoiceChatScreen(
+        builder: (context) => ModernVoiceChatScreen(
           roomId: _selectedRoom,
           roomName: _rooms[_selectedRoom]?['name'] ?? 'Voice Chat',
           userId: _userId,
           username: _username,
-          participants: _voiceParticipants,
-          isMuted: _isMuted,
           accentColor: const Color(0xFF9B51E0), // Energie purple
-          isAdmin: isAdmin, // ✅ FIX: Real admin status from AdminPermissions
-          onToggleMute: _toggleMute,
-          onLeave: _toggleVoiceRoom,
-          onKickUser: (userId) async {
-            // Find participant info
-            final participant = _voiceParticipants.firstWhere(
-              (p) => p['userId'] == userId,
-              orElse: () => {'username': 'Unknown', 'userId': userId},
-            );
-            
-            // Show Kick Dialog with Reason
-            await showDialog(
-              context: context,
-              builder: (context) => KickUserDialog(
-                username: participant['username']?.toString() ?? 'Unknown',
-                userId: userId,
-                onKick: (reason) async {
-                  // Log admin action
-                  await _adminService.kickUser(
-                    adminId: _userId,
-                    adminUsername: _username,
-                    targetUserId: userId,
-                    targetUsername: participant['username']?.toString() ?? 'Unknown',
-                    reason: reason,
-                    roomId: _selectedRoom,
-                  );
-                  
-                  // Perform kick
-                  final success = await _voiceService.kickUser(
-                    userId: userId,
-                    adminId: _userId,
-                  );
-                  
-                  if (success) {
-                    _showSnackBar(
-                      reason != null
-                          ? '🚫 User entfernt (Grund: $reason)'
-                          : '🚫 User entfernt',
-                      Colors.red,
-                    );
-                  } else {
-                    _showSnackBar('❌ Fehler beim Entfernen', Colors.red);
-                  }
-                },
-              ),
-            );
-          },
-          onMuteUser: (userId) async {
-            // Find participant info
-            final participant = _voiceParticipants.firstWhere(
-              (p) => p['userId'] == userId,
-              orElse: () => {'username': 'Unknown', 'userId': userId, 'isMuted': false},
-            );
-            
-            final isMuted = participant['isMuted'] == true;
-            
-            if (isMuted) {
-              // Unmute user (no dialog needed)
-              await _adminService.unmuteUser(
-                adminId: _userId,
-                adminUsername: _username,
-                targetUserId: userId,
-                targetUsername: participant['username']?.toString() ?? 'Unknown',
-                roomId: _selectedRoom,
-              );
-              
-              final success = await _voiceService.muteUser(
-                userId: userId,
-                adminId: _userId,
-              );
-              
-              if (success) {
-                _showSnackBar('🔊 Stummschaltung aufgehoben', Colors.green);
-              } else {
-                _showSnackBar('❌ Fehler beim Entmuten', Colors.red);
-              }
-            } else {
-              // Mute user (simple action, no reason needed)
-              await _adminService.muteUser(
-                adminId: _userId,
-                adminUsername: _username,
-                targetUserId: userId,
-                targetUsername: participant['username']?.toString() ?? 'Unknown',
-                roomId: _selectedRoom,
-              );
-              
-              final success = await _voiceService.muteUser(
-                userId: userId,
-                adminId: _userId,
-              );
-              
-              if (success) {
-                _showSnackBar('🔇 User stummgeschaltet', Colors.orange);
-              } else {
-                _showSnackBar('❌ Fehler beim Stummschalten', Colors.red);
-              }
-            }
-          },
-          onWarnUser: (userId, reason) async {
-            // Log warning
-            await _adminService.warnUser(
-              adminId: _userId,
-              adminUsername: _username,
-              targetUserId: userId,
-              targetUsername: _voiceParticipants.firstWhere(
-                (p) => p['userId'] == userId,
-                orElse: () => {'username': 'Unknown'},
-              )['username']?.toString() ?? 'Unknown',
-              reason: reason,
-              roomId: _selectedRoom,
-            );
-            
-            final warningCount = _adminService.getWarningCount(userId);
-            _showSnackBar(
-              '⚠️ Verwarnung ausgesprochen ($warningCount/3)',
-              warningCount >= 3 ? Colors.red : Colors.orange,
-            );
-          },
-          onBanUser: (userId, duration, reason) async {
-            // Log ban
-            await _adminService.banUser(
-              adminId: _userId,
-              adminUsername: _username,
-              targetUserId: userId,
-              targetUsername: _voiceParticipants.firstWhere(
-                (p) => p['userId'] == userId,
-                orElse: () => {'username': 'Unknown'},
-              )['username']?.toString() ?? 'Unknown',
-              reason: reason,
-              duration: duration,
-            );
-            
-            // Kick user from voice
-            await _voiceService.kickUser(
-              userId: userId,
-              adminId: _userId,
-            );
-            
-            final durationText = duration == BanDuration.permanent
-                ? 'permanent'
-                : duration.name;
-            _showSnackBar(
-              '🔴 User gebannt ($durationText)',
-              Colors.red.shade900,
-            );
-          },
-          getWarningCount: (userId) => _adminService.getWarningCount(userId),
+          // ✅ NO participants prop - Riverpod provider handles it!
+          // ✅ NO callbacks - Riverpod notifier handles everything!
         ),
       ),
     );

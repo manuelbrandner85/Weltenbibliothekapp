@@ -1,12 +1,12 @@
 /// 🏥 WELTENBIBLIOTHEK - HEALTH CHECK SERVICE
 /// Real-time backend service monitoring for admin dashboard
 /// Features: API health, latency tracking, error rates, WebSocket status
-library;
 
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import '../config/api_config.dart';
 
 /// Service Health Status
 enum HealthStatus {
@@ -68,9 +68,9 @@ class HealthCheckService extends ChangeNotifier {
   HealthCheckService._internal();
 
   // Service endpoints
-  static const String _chatApiUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
-  static const String _voiceApiUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
-  static const String _storageApiUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
+  static final String _chatApiUrl = ApiConfig.baseUrl;
+  static final String _voiceApiUrl = ApiConfig.baseUrl;
+  static final String _storageApiUrl = ApiConfig.baseUrl;
 
   // Health data
   final Map<String, ServiceHealth> _serviceHealth = {};

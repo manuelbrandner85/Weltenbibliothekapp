@@ -1,9 +1,9 @@
 /// Achievements Gallery Screen - Badge-System
 /// Weltenbibliothek v61
-library;
 
 import 'package:flutter/material.dart';
-import 'package:weltenbibliothek/services/storage_service.dart';
+import '../../services/storage_service.dart';
+import '../../services/storage_service.dart';
 
 class AchievementsScreen extends StatefulWidget {
   const AchievementsScreen({super.key});

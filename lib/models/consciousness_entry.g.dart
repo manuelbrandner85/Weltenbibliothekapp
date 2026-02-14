@@ -2,6 +2,10 @@
 
 part of 'consciousness_entry.dart';
 
+// **************************************************************************
+// TypeAdapterGenerator
+// **************************************************************************
+
 class ConsciousnessEntryAdapter extends TypeAdapter<ConsciousnessEntry> {
   @override
   final int typeId = 10;

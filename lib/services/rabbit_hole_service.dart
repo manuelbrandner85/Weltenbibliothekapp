@@ -1,12 +1,12 @@
 /// WELTENBIBLIOTHEK v5.13 – KANINCHENBAU-SERVICE
 /// 
 /// Backend-Integration für automatische Tiefenrecherche
-library;
 
 import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/rabbit_hole_models.dart';
+import '../config/api_config.dart';
 
 class RabbitHoleService {
   final String workerUrl;
@@ -16,9 +16,9 @@ class RabbitHoleService {
   bool _isCancelled = false;
 
   RabbitHoleService({
-    this.workerUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev',
+    String? workerUrl,
     this.timeout = const Duration(seconds: 30),
-  });
+  }) : workerUrl = workerUrl ?? ApiConfig.baseUrl;
 
   /// Bricht laufende Recherche ab
   void cancelResearch() {

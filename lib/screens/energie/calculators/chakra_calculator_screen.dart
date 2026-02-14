@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../models/energie_profile.dart';
+import '../../../core/storage/unified_storage_service.dart';
 import '../../../services/storage_service.dart';
 import '../../../services/spirit_calculations/chakra_engine.dart';
 import '../../../widgets/profile_required_widget.dart';

@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
+import '../services/storage_service.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'invisible_auth_service.dart'; // ✅ Auth-Integration
@@ -741,6 +742,233 @@ extension WorldAdminServiceV162 on WorldAdminService {
       return {'error': 'Failed'};
     } catch (e) {
       return {'error': e.toString()};
+    }
+  }
+
+  // ════════════════════════════════════════════════════════════
+  // 🆕 ADMIN DASHBOARD ENDPOINTS (V99)
+  // ════════════════════════════════════════════════════════════
+
+  /// Get active voice calls in a world
+  /// 
+  /// Returns list of active calls with participants, duration, etc.
+  /// 
+  /// Example response:
+  /// ```json
+  /// {
+  ///   "success": true,
+  ///   "world": "materie",
+  ///   "calls": [
+  ///     {
+  ///       "room_id": "politik",
+  ///       "room_name": "Politik Diskussion",
+  ///       "participant_count": 5,
+  ///       "participants": [...],
+  ///       "started_at": "2026-02-13T17:00:00.000Z",
+  ///       "duration_seconds": 1234
+  ///     }
+  ///   ]
+  /// }
+  /// ```
+  static Future<List<Map<String, dynamic>>> getActiveVoiceCalls(String world) async {
+    try {
+      // Use API token from ApiConfig
+      const token = 'y-Xiv3kKeiybDm2CV0yLFu7TSd22co6NBw3udn5Y';
+      
+      final url = Uri.parse('${WorldAdminService._baseUrl}/api/admin/voice-calls/$world');
+      
+      if (kDebugMode) {
+        debugPrint('📊 Fetching active voice calls for: $world');
+      }
+      
+      final response = await http.get(
+        url,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      ).timeout(WorldAdminService._timeout);
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        
+        if (data['success'] == true) {
+          final calls = data['calls'] as List<dynamic>;
+          
+          if (kDebugMode) {
+            debugPrint('✅ Found ${calls.length} active calls');
+          }
+          
+          return calls.cast<Map<String, dynamic>>();
+        }
+      } else if (response.statusCode == 401) {
+        if (kDebugMode) {
+          debugPrint('⚠️  Unauthorized: Invalid API token');
+        }
+        throw Exception('Unauthorized: Invalid API token');
+      }
+      
+      if (kDebugMode) {
+        debugPrint('⚠️  Failed to fetch active calls: ${response.statusCode}');
+      }
+      
+      return [];
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Error fetching active calls: $e');
+      }
+      throw Exception('Failed to fetch active calls: $e');
+    }
+  }
+
+  /// Get call history for a world
+  /// 
+  /// Returns list of past voice calls with statistics
+  /// 
+  /// Example response:
+  /// ```json
+  /// {
+  ///   "success": true,
+  ///   "world": "materie",
+  ///   "calls": [
+  ///     {
+  ///       "room_id": "politik",
+  ///       "started_at": "2026-02-13T16:00:00.000Z",
+  ///       "ended_at": "2026-02-13T16:45:00.000Z",
+  ///       "duration_seconds": 2700,
+  ///       "max_participants": 8
+  ///     }
+  ///   ]
+  /// }
+  /// ```
+  static Future<List<Map<String, dynamic>>> getCallHistory(
+    String world, {
+    int limit = 50,
+  }) async {
+    try {
+      const token = 'y-Xiv3kKeiybDm2CV0yLFu7TSd22co6NBw3udn5Y';
+      
+      final url = Uri.parse('${WorldAdminService._baseUrl}/api/admin/call-history/$world?limit=$limit');
+      
+      if (kDebugMode) {
+        debugPrint('📚 Fetching call history for: $world (limit: $limit)');
+      }
+      
+      final response = await http.get(
+        url,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      ).timeout(WorldAdminService._timeout);
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        
+        if (data['success'] == true) {
+          final calls = data['calls'] as List<dynamic>;
+          
+          if (kDebugMode) {
+            debugPrint('✅ Found ${calls.length} past calls');
+          }
+          
+          return calls.cast<Map<String, dynamic>>();
+        }
+      } else if (response.statusCode == 401) {
+        if (kDebugMode) {
+          debugPrint('⚠️  Unauthorized: Invalid API token');
+        }
+        throw Exception('Unauthorized: Invalid API token');
+      }
+      
+      if (kDebugMode) {
+        debugPrint('⚠️  Failed to fetch call history: ${response.statusCode}');
+      }
+      
+      return [];
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Error fetching call history: $e');
+      }
+      throw Exception('Failed to fetch call history: $e');
+    }
+  }
+
+  /// Get user profile with activity stats
+  /// 
+  /// Returns detailed user information including:
+  /// - Basic profile (username, role, avatar)
+  /// - Voice call statistics (total calls, minutes)
+  /// - Moderation history (warnings, kicks, bans)
+  /// 
+  /// Example response:
+  /// ```json
+  /// {
+  ///   "success": true,
+  ///   "user": {
+  ///     "user_id": "materie_Weltenbibliothek",
+  ///     "username": "Weltenbibliothek",
+  ///     "role": "root_admin",
+  ///     "total_calls": 45,
+  ///     "total_minutes": 3240,
+  ///     "warnings": 0,
+  ///     "kicks": 0,
+  ///     "bans": 0
+  ///   }
+  /// }
+  /// ```
+  static Future<Map<String, dynamic>> getUserProfile(String userId) async {
+    try {
+      const token = 'y-Xiv3kKeiybDm2CV0yLFu7TSd22co6NBw3udn5Y';
+      
+      final url = Uri.parse('${WorldAdminService._baseUrl}/api/admin/user-profile/$userId');
+      
+      if (kDebugMode) {
+        debugPrint('👤 Fetching user profile for: $userId');
+      }
+      
+      final response = await http.get(
+        url,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      ).timeout(WorldAdminService._timeout);
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        
+        if (data['success'] == true) {
+          final user = data['user'] as Map<String, dynamic>;
+          
+          if (kDebugMode) {
+            debugPrint('✅ User profile loaded: ${user['username']}');
+          }
+          
+          return user;
+        }
+      } else if (response.statusCode == 404) {
+        if (kDebugMode) {
+          debugPrint('⚠️  User not found: $userId');
+        }
+        throw Exception('User not found');
+      } else if (response.statusCode == 401) {
+        if (kDebugMode) {
+          debugPrint('⚠️  Unauthorized: Invalid API token');
+        }
+        throw Exception('Unauthorized: Invalid API token');
+      }
+      
+      if (kDebugMode) {
+        debugPrint('⚠️  Failed to fetch user profile: ${response.statusCode}');
+      }
+      
+      throw Exception('Failed to fetch user profile');
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Error fetching user profile: $e');
+      }
+      throw Exception('Failed to fetch user profile: $e');
     }
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import '../services/storage_service.dart';
 import 'dart:async';
 
 // Service imports (static imports required in Dart)
@@ -10,7 +11,7 @@ import 'sound_service.dart';  // ✅ PRODUCTION-READY: Real audio system
 import 'unified_knowledge_service.dart';
 import 'cloudflare_api_service.dart';
 import 'cloudflare_push_service.dart';
-import 'offline_storage_service.dart';
+import '../services/offline_storage_service.dart';
 import 'checkin_service.dart';
 import 'favorites_service.dart';
 import 'search_history_service.dart';  // 🆕 Search History Service
@@ -233,7 +234,7 @@ class ServiceManager {
           () async => await OfflineStorageService().initialize(),
           timeout: const Duration(seconds: 1),
         ).catchError((e) {
-          debugPrint('⚠️ OfflineStorageService init failed: $e');
+          debugPrint('⚠️ UnifiedStorageService init failed: $e');
           return null;
         }),
         _initializeService(

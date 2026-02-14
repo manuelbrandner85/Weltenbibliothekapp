@@ -1,0 +1,19 @@
+# Weltenbibliothek API V2.4 - Master Worker Configuration
+name = "weltenbibliothek-api-v2"
+main = "master_worker_v2.4_extended.js"
+compatibility_date = "2024-02-12"
+account_id = "3472f5994537c3a30c5caeaff4de21fb"
+
+# D1 Database Binding
+[[d1_databases]]
+binding = "DB"
+database_name = "weltenbibliothek-db"
+database_id = "4fbea23c-8c00-4e09-aebd-2b4dceacbce5"
+
+# AI Binding for Cloudflare AI models
+[ai]
+binding = "AI"
+
+# Workers Environment
+[env.production]
+workers_dev = false

@@ -23,7 +23,7 @@ class ResearchNoteAdapter extends TypeAdapter<ResearchNote> {
       sourceUrl: fields[3] as String,
       createdAt: fields[4] as DateTime,
       updatedAt: fields[5] as DateTime,
-      tags: (fields[6] as List?)?.cast<String>() ?? [],
+      tags: (fields[6] as List).cast<String>(),
     );
   }
 

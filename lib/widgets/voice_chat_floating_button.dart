@@ -5,6 +5,8 @@ library;
 
 import 'package:flutter/material.dart';
 import '../services/webrtc_voice_service.dart';
+import '../models/webrtc_call_state.dart'; // CallConnectionState
+import '../core/exceptions/specialized_exceptions.dart'; // 🚨 VOICE EXCEPTIONS
 
 class VoiceChatFloatingButton extends StatefulWidget {
   const VoiceChatFloatingButton({super.key});
@@ -18,9 +20,8 @@ class _VoiceChatFloatingButtonState extends State<VoiceChatFloatingButton>
   final WebRTCVoiceService _voiceService = WebRTCVoiceService();
   late AnimationController _pulseController;
   
-  VoiceConnectionState _state = VoiceConnectionState.disconnected;
+  CallConnectionState _state = CallConnectionState.idle;
   List<VoiceParticipant> _participants = [];
-  bool _isMuted = false;
   bool _isExpanded = false;
 
   @override
@@ -53,7 +54,7 @@ class _VoiceChatFloatingButtonState extends State<VoiceChatFloatingButton>
 
   @override
   Widget build(BuildContext context) {
-    if (_state == VoiceConnectionState.disconnected) {
+    if (_state == CallConnectionState.disconnected) {
       return const SizedBox.shrink();
     }
     
@@ -152,10 +153,33 @@ class _VoiceChatFloatingButtonState extends State<VoiceChatFloatingButton>
                       ? Colors.red
                       : Colors.grey[300],
                   onPressed: () async {
-                    await _voiceService.toggleMute();
-                    setState(() {
-                      _isMuted = _voiceService.isMuted;
-                    });
+                    try {
+                      await _voiceService.toggleMute();
+                      if (mounted) {
+                        setState(() {});
+                      }
+                    } on VoiceException catch (e) {
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('⚠️ Fehler beim Stummschalten: ${e.message}'),
+                          backgroundColor: Colors.orange,
+                          action: SnackBarAction(
+                            label: 'OK',
+                            textColor: Colors.white,
+                            onPressed: () {},
+                          ),
+                        ),
+                      );
+                    } catch (e) {
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('❌ Unerwarteter Fehler: $e'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
                   },
                   child: Icon(
                     _voiceService.isMuted ? Icons.mic_off : Icons.mic,
@@ -172,8 +196,41 @@ class _VoiceChatFloatingButtonState extends State<VoiceChatFloatingButton>
                   heroTag: 'voice_leave',
                   backgroundColor: Colors.red,
                   onPressed: () async {
-                    await _voiceService.leaveRoom();
-                    setState(() => _isExpanded = false);
+                    try {
+                      await _voiceService.leaveRoom();
+                      if (!mounted) return;
+                      setState(() => _isExpanded = false);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('✅ Voice Chat verlassen'),
+                          backgroundColor: Colors.green,
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    } on VoiceException catch (e) {
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('⚠️ Fehler beim Verlassen: ${e.message}'),
+                          backgroundColor: Colors.orange,
+                          action: SnackBarAction(
+                            label: 'OK',
+                            textColor: Colors.white,
+                            onPressed: () {},
+                          ),
+                        ),
+                      );
+                      setState(() => _isExpanded = false);
+                    } catch (e) {
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('❌ Unerwarteter Fehler: $e'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                      setState(() => _isExpanded = false);
+                    }
                   },
                   child: const Icon(
                     Icons.call_end,
@@ -241,11 +298,11 @@ class _VoiceChatFloatingButtonState extends State<VoiceChatFloatingButton>
 
   Color _getStateColor() {
     switch (_state) {
-      case VoiceConnectionState.connecting:
+      case CallConnectionState.connecting:
         return Colors.orange;
-      case VoiceConnectionState.connected:
+      case CallConnectionState.connected:
         return Colors.green;
-      case VoiceConnectionState.error:
+      case CallConnectionState.error:
         return Colors.red;
       default:
         return Colors.grey;
@@ -254,11 +311,11 @@ class _VoiceChatFloatingButtonState extends State<VoiceChatFloatingButton>
 
   IconData _getStateIcon() {
     switch (_state) {
-      case VoiceConnectionState.connecting:
+      case CallConnectionState.connecting:
         return Icons.connecting_airports;
-      case VoiceConnectionState.connected:
+      case CallConnectionState.connected:
         return Icons.phone_in_talk;
-      case VoiceConnectionState.error:
+      case CallConnectionState.error:
         return Icons.error;
       default:
         return Icons.phone;

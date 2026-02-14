@@ -1,7 +1,6 @@
 /// 🌐 API CONFIGURATION
 /// 
 /// Central configuration for all API endpoints
-library;
 
 class ApiConfig {
   // Private constructor

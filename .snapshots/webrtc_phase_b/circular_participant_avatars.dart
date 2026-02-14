@@ -1,0 +1,227 @@
+/// 👥 CIRCULAR PARTICIPANT AVATARS
+/// Displays participants in a circular layout around the active speaker
+library;
+
+import 'package:flutter/material.dart';
+import 'dart:math' as math;
+import '../models/chat_models.dart';
+
+class CircularParticipantAvatars extends StatefulWidget {
+  final List<VoiceParticipant> participants;
+  final String? activeSpeakerId;
+  final double radius;
+
+  const CircularParticipantAvatars({
+    super.key,
+    required this.participants,
+    this.activeSpeakerId,
+    this.radius = 150,
+  });
+
+  @override
+  State<CircularParticipantAvatars> createState() =>
+      _CircularParticipantAvatarsState();
+}
+
+class _CircularParticipantAvatarsState extends State<CircularParticipantAvatars>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _rotationController;
+
+  @override
+  void initState() {
+    super.initState();
+    _rotationController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 20),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _rotationController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.participants.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return SizedBox(
+      width: widget.radius * 2 + 80,
+      height: widget.radius * 2 + 80,
+      child: AnimatedBuilder(
+        animation: _rotationController,
+        builder: (context, child) {
+          return Stack(
+            alignment: Alignment.center,
+            children: [
+              // 🎙️ Center Active Speaker (if any)
+              if (widget.activeSpeakerId != null)
+                _buildActiveSpeaker(),
+
+              // 👥 Circular Layout for Other Participants
+              ...List.generate(
+                widget.participants.length,
+                (index) => _buildParticipantAvatar(index),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  /// 🎙️ Active Speaker (Center)
+  Widget _buildActiveSpeaker() {
+    final activeSpeaker = widget.participants.firstWhere(
+      (p) => p.userId == widget.activeSpeakerId,
+      orElse: () => widget.participants.first,
+    );
+
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 1.0, end: 1.1),
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.easeInOut,
+      builder: (context, scale, child) {
+        return Transform.scale(
+          scale: scale,
+          child: Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.greenAccent,
+                  Colors.green,
+                ],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.greenAccent.withValues(alpha: 0.6),
+                  blurRadius: 25,
+                  spreadRadius: 8,
+                ),
+              ],
+            ),
+            child: Center(
+              child: Text(
+                activeSpeaker.username[0].toUpperCase(),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+      onEnd: () {
+        if (mounted) setState(() {});
+      },
+    );
+  }
+
+  /// 👤 Participant Avatar (Circular Layout)
+  Widget _buildParticipantAvatar(int index) {
+    final participant = widget.participants[index];
+
+    // Skip active speaker (already in center)
+    if (participant.userId == widget.activeSpeakerId) {
+      return const SizedBox.shrink();
+    }
+
+    // Calculate position on circle
+    final angle = (index * 2 * math.pi / widget.participants.length) +
+        (_rotationController.value * 2 * math.pi);
+
+    final x = widget.radius * math.cos(angle);
+    final y = widget.radius * math.sin(angle);
+
+    return Transform.translate(
+      offset: Offset(x, y),
+      child: Container(
+        width: 60,
+        height: 60,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              _getColorForUser(participant.userId),
+              _getColorForUser(participant.userId).withValues(alpha: 0.6),
+            ],
+          ),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.3),
+            width: 2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: _getColorForUser(participant.userId).withValues(alpha: 0.3),
+              blurRadius: 10,
+              spreadRadius: 2,
+            ),
+          ],
+        ),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            // Avatar Letter
+            Text(
+              participant.username[0].toUpperCase(),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+
+            // Mute Indicator
+            if (participant.isMuted)
+              Positioned(
+                bottom: 0,
+                right: 0,
+                child: Container(
+                  width: 20,
+                  height: 20,
+                  decoration: const BoxDecoration(
+                    color: Colors.red,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.mic_off,
+                    size: 12,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 🎨 Get Color for User
+  Color _getColorForUser(String userId) {
+    final colors = [
+      const Color(0xFF6A5ACD), // Slate Blue
+      const Color(0xFFFF6B6B), // Red
+      const Color(0xFF4ECDC4), // Turquoise
+      const Color(0xFFFFD93D), // Yellow
+      const Color(0xFF95E1D3), // Mint
+      const Color(0xFFF38181), // Pink
+      const Color(0xFF6C5CE7), // Purple
+      const Color(0xFF00B894), // Green
+    ];
+
+    final hash = userId.hashCode.abs();
+    return colors[hash % colors.length];
+  }
+}

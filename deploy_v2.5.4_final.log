@@ -1,0 +1,13 @@
+
+ ⛅️ wrangler 4.43.0 (update available 4.65.0)
+─────────────────────────────────────────────
+Total Upload: 33.05 KiB / gzip: 7.18 KiB
+Your Worker has access to the following bindings:
+Binding                           Resource         
+env.DB (weltenbibliothek-db)      D1 Database      
+env.AI                            AI               
+
+Uploaded weltenbibliothek-api-v2 (4.07 sec)
+Deployed weltenbibliothek-api-v2 triggers (1.07 sec)
+  https://weltenbibliothek-api-v2.brandy13062.workers.dev
+Current Version ID: 4530339b-4524-4f64-8433-c954567607e9

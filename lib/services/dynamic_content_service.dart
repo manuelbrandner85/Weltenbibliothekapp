@@ -2,7 +2,6 @@
 /// 
 /// Lädt und cached alle dynamischen Inhalte vom Backend
 /// Unterstützt Offline-Modus, Versionierung, Live-Updates
-library;
 
 import 'dart:convert';
 import 'package:flutter/foundation.dart';

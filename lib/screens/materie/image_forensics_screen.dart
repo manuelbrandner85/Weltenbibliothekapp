@@ -21,6 +21,13 @@ class _ImageForensicsScreenState extends State<ImageForensicsScreen> {
   final Map<String, Map<String, dynamic>> _analysisCache = {};
 
   @override
+  void initState() {
+    super.initState();
+    // 🔄 Cache-Clear: Lösche alte Analysen beim Screen-Start
+    _analysisCache.clear();
+  }
+
+  @override
   void dispose() {
     super.dispose();
   }

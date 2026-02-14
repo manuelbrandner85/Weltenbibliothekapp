@@ -1,272 +1,588 @@
-# 🚀 WELTENBIBLIOTHEK - DEPLOYMENT GUIDE
+# 🚀 Weltenbibliothek V5.7.0 - Deployment Guide
 
-## 📱 App-Informationen
-
-**App Name:** Weltenbibliothek  
-**Version:** 15.10.0 (Build 151000)  
-**Package ID:** com.dualrealms.knowledge  
-**Beschreibung:** Wissens- und Bewusstseins-Plattform mit zwei Welten (Materie & Energie)
+**Version**: 5.7.0 (Build 57)  
+**Release Date**: 2026-02-13  
+**Package**: com.weltenbibliothek.v49  
+**Size**: 122 MB
 
 ---
 
-## 🌐 LIVE DEMO
+## 📦 **DEPLOYMENT ÜBERSICHT**
 
-**Web App:** https://5060-i3ljq6glesmiov7u6fk9u-02b9cc79.sandbox.novita.ai
+### **1. Flutter Mobile App (Android APK)**
+
+**Build Info:**
+- **Version**: 5.7.0
+- **Build Number**: 57
+- **Target SDK**: Android 36
+- **Minimum SDK**: Android 21 (Lollipop)
+- **File Size**: 122 MB
+- **Build Type**: Release (Production-ready)
+
+**APK Location:**
+```
+build/app/outputs/flutter-apk/app-release.apk
+```
+
+**Installation:**
+```bash
+# Via ADB
+adb install build/app/outputs/flutter-apk/app-release.apk
+
+# Or manually transfer to device and install
+```
 
 ---
 
-## 📦 BUILD-BEFEHLE
+### **2. Cloudflare Worker API (Backend)**
 
-### Web Build (Production)
+**Worker URL:** https://weltenbibliothek-api-v2.brandy13062.workers.dev
+
+**Version:** 2.4.0  
+**Deployment:** Cloudflare Workers  
+**Storage:** D1 Database (SQLite)  
+**AI Engine:** Cloudflare AI (@cf/meta/llama-3.1-8b-instruct)
+
+**Configuration Files:**
+- `wrangler-v2.toml` - Worker configuration
+- `master_worker_v2.4_extended.js` - Main worker code (20.60 KiB)
+
+**Bindings:**
+- D1 Database: `weltenbibliothek-db` (UUID: 4fbea23c-8c00-4e09-aebd-2b4dceacbce5)
+- Cloudflare AI: Enabled
+
+**Deployment Command:**
 ```bash
 cd /home/user/flutter_app
-flutter build web --release
+wrangler deploy --config wrangler-v2.toml
 ```
-**Output:** `build/web/`  
-**Serve:** `python3 -m http.server 5060 --directory build/web --bind 0.0.0.0`
 
-### Android APK (Debug)
+**Re-deployment:**
 ```bash
-cd /home/user/flutter_app
-flutter build apk --debug
+export CLOUDFLARE_API_TOKEN="your_token"
+wrangler deploy --config wrangler-v2.toml
 ```
-**Output:** `build/app/outputs/flutter-apk/app-debug.apk`
 
-### Android APK (Release)
+---
+
+### **3. D1 Database**
+
+**Database Name:** weltenbibliothek-db  
+**Database ID:** 4fbea23c-8c00-4e09-aebd-2b4dceacbce5  
+**Type:** SQLite (Cloudflare D1)  
+**Size:** 593,920 bytes
+
+**Schema:**
+```sql
+CREATE TABLE chat_messages (
+  id TEXT PRIMARY KEY,
+  room_id TEXT NOT NULL,
+  realm TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  username TEXT NOT NULL,
+  message TEXT NOT NULL,
+  avatar_emoji TEXT DEFAULT '👤',
+  avatar_url TEXT,
+  timestamp TEXT NOT NULL,
+  edited INTEGER DEFAULT 0,
+  edited_at TEXT,
+  deleted INTEGER DEFAULT 0,
+  deleted_at TEXT,
+  reply_to TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+**Current Data:**
+- Total Messages: 19
+- Rooms: general, politik, energie
+- Realms: materie, energie
+
+**Database Operations:**
 ```bash
-cd /home/user/flutter_app
-flutter build apk --release
-```
-**Output:** `build/app/outputs/flutter-apk/app-release.apk`
+# Query database (local)
+wrangler d1 execute weltenbibliothek-db --local --command="SELECT COUNT(*) FROM chat_messages"
 
-### Android App Bundle (Release - für Google Play)
+# Query database (remote)
+wrangler d1 execute weltenbibliothek-db --remote --command="SELECT COUNT(*) FROM chat_messages"
+
+# Initialize with SQL file
+wrangler d1 execute weltenbibliothek-db --remote --file=init_chat_db.sql
+```
+
+---
+
+## 🆕 **NEUE FEATURES (V5.7.0)**
+
+### **Bug Fixes**
+✅ Image Forensics Cache-Problem gelöst  
+✅ Propaganda Detector Offline-Warning behoben  
+✅ Chat Grey Box Problem gelöst (API implementiert)
+
+### **AI Features (17 neue Funktionen)**
+
+#### **Energie-Welt**
+1. **Traum-Analyse** - `POST /api/ai/dream-analysis`
+2. **Chakra-Empfehlungen** - `POST /api/ai/chakra-advice`
+3. **Meditation-Generator** - `POST /api/ai/meditation-script`
+
+#### **Analyse & Insights**
+4. **Netzwerk-Analyse** - `POST /api/ai/network-analysis`
+5. **Fakten-Check** - `POST /api/ai/fact-check`
+6. **Zeitstrahl-Generator** - `POST /api/ai/timeline`
+
+#### **Sprache & Übersetzung**
+7. **Echtzeit-Übersetzung** - `POST /api/ai/translate`
+8. **Sprach-Erkennung** - `POST /api/ai/detect-language`
+
+#### **Image & Media**
+9. **Bildbeschreibung** - `POST /api/ai/image-describe`
+10. **Bild-Kategorisierung** - `POST /api/ai/image-classify`
+
+#### **Moderation**
+11. **Auto-Moderation** - `POST /api/ai/moderate`
+
+#### **Personalisierung**
+12. **Content-Empfehlungen** - `POST /api/ai/content-recommend`
+
+#### **Link Wrapper**
+13. **Telegram-Wrapper** - `GET /go/tg/{username}`
+14. **External-Link-Wrapper** - `GET /out?url={url}`
+15. **Media-Proxy** - `GET /media?src={url}`
+
+### **Recherche Tool Verbesserungen**
+✅ AI-generierte offizielle Texte (500+ Wörter)  
+✅ AI-generierte alternative Perspektiven (500+ Wörter)  
+✅ Echte Telegram-Kanäle (25 Kanäle Datenbank)  
+✅ Intelligente Kanal-Auswahl basierend auf Query
+
+---
+
+## 📡 **API ENDPOINTS**
+
+### **Base URL**
+```
+https://weltenbibliothek-api-v2.brandy13062.workers.dev
+```
+
+### **Core Endpoints**
+
+#### **Health Check**
 ```bash
-cd /home/user/flutter_app
-flutter build appbundle --release
-```
-**Output:** `build/app/outputs/bundle/release/app-release.aab`
-
----
-
-## 🔑 SIGNING CONFIGURATION
-
-**Keystore Location:** `android/release-key.jks` (falls vorhanden)  
-**Key Properties:** `android/key.properties`
-
-**Für Production Release:**
-1. Keystore erstellen: `keytool -genkey -v -keystore android/release-key.jks -keyalg RSA -keysize 2048 -validity 10000 -alias weltenbibliothek`
-2. `key.properties` konfigurieren mit Passwörtern
-3. Build mit: `flutter build apk --release` oder `flutter build appbundle --release`
-
----
-
-## 🌐 BACKEND-ENDPOINTS
-
-| Service | URL | Status |
-|---------|-----|--------|
-| Community API | https://weltenbibliothek-community-api.brandy13062.workers.dev | ✅ |
-| Main API | https://weltenbibliothek-api.brandy13062.workers.dev | ✅ |
-| Backend Recherche | https://api-backend.brandy13062.workers.dev | ✅ |
-| Recherche Worker | https://weltenbibliothek-worker.brandy13062.workers.dev | ✅ |
-| Media API | https://weltenbibliothek-media-api.brandy13062.workers.dev | ✅ |
-| Group Tools API | https://weltenbibliothek-group-tools.brandy13062.workers.dev | ✅ |
-
-**Health Monitor:** In-App unter Profil → Backend Status
-
----
-
-## 🎨 FEATURES (20/20 - 100%)
-
-### 🔴 MATERIE-Welt
-- ✅ Live Chat mit Voice Messages
-- ✅ Community Feed mit Loading Skeletons
-- ✅ Deep Research (Recherche Tab)
-- ✅ Karte mit Marker Clustering
-- ✅ Bookmark-System (Liste, Suche, Filter, Export)
-- ✅ PDF-Viewer (extern)
-- ✅ Multimedia-Integration
-- ✅ Offline Indicator
-
-### 🟣 ENERGIE-Welt
-- ✅ Live Chat mit Voice Messages
-- ✅ Community Feed mit Loading Skeletons
-- ✅ Dashboard mit Streaks
-- ✅ Karte mit Marker Clustering
-- ✅ Spirit Tools (10+ Tools)
-- ✅ Avatar Upload
-- ✅ Offline Indicator
-
-### 🌐 GLOBALE Features
-- ✅ Dark Theme
-- ✅ Zwischen Welten wechseln
-- ✅ Cloud-Sync (Profile)
-- ✅ Backend Health Monitor
-- ✅ Analytics & Tracking
-- ✅ Push Notifications (Cloudflare)
-
----
-
-## 📊 TECHNISCHE DETAILS
-
-**Flutter Version:** 3.35.4  
-**Dart Version:** 3.9.2  
-**Target Platforms:** Web, Android  
-**State Management:** Provider  
-**Database:** Hive (lokal), Firebase Firestore (Cloud)  
-**Backend:** Cloudflare Workers
-
-### Packages (Top 15)
-```yaml
-dependencies:
-  firebase_core: 3.6.0
-  cloud_firestore: 5.4.3
-  provider: 6.1.5+1
-  hive: 2.2.3
-  hive_flutter: 1.1.0
-  shared_preferences: 2.5.3
-  http: 1.5.0
-  url_launcher: 6.3.1
-  cached_network_image: 3.4.1
-  flutter_map: 7.0.2
-  latlong2: 0.9.1
-  video_player: 2.9.2
-  intl: 0.19.0
-  record: 5.1.2
-  audioplayers: 6.1.0
+GET /
+GET /health
 ```
 
----
-
-## 🐛 BEKANNTE PROBLEME
-
-### Assets Warning (nicht kritisch)
+**Response:**
+```json
+{
+  "status": "ok",
+  "service": "Weltenbibliothek API v2",
+  "version": "2.4.0",
+  "features": { ... }
+}
 ```
-Error: unable to find directory entry in pubspec.yaml: /home/user/flutter_app/assets/icons/
-```
-**Status:** Ordner existiert jetzt, aber leer (für zukünftige Icons)
 
-### Unused Imports/Variables (Warnings)
-- Mehrere unused imports in verschiedenen Screens
-- Mehrere unused fields in Widgets
-- **Impact:** Keine - nur Code-Cleanup nötig
-
----
-
-## 🧪 TESTING CHECKLIST
-
-### Pre-Deployment Tests
-- [ ] Web Build erfolgreich
-- [ ] Android APK Build erfolgreich
-- [ ] Alle Backend-APIs erreichbar (Health Monitor)
-- [ ] Login/Registrierung funktioniert
-- [ ] Voice Messages: Aufnahme + Playback
-- [ ] Karten: Marker Clustering
-- [ ] Recherche: Suche + Multimedia
-- [ ] Offline Mode: Banner erscheint
-- [ ] Cloud-Sync funktioniert
-- [ ] Dark Theme aktiv
-
-### Post-Deployment Tests
-- [ ] Web App lädt korrekt
-- [ ] APK installiert auf Android-Gerät
-- [ ] Keine Crashes beim Start
-- [ ] Backend-Verbindungen stabil
-- [ ] Push Notifications funktionieren
-
----
-
-## 📦 DEPLOYMENT-WORKFLOW
-
-### 1. Pre-Deployment
+#### **Recherche (Enhanced)**
 ```bash
-# Code-Qualität prüfen
-flutter analyze
+POST /recherche
+Content-Type: application/json
 
-# Tests ausführen (falls vorhanden)
-flutter test
+{
+  "query": "Great Reset WEF",
+  "perspective": "alternative",
+  "depth": "deep"
+}
+```
 
-# Dependencies aktualisieren
+**Response:**
+```json
+{
+  "success": true,
+  "scraper_status": "daten_gefunden",
+  "sources": [
+    {
+      "title": "Offizielle Perspektive: Great Reset WEF",
+      "url": "...",
+      "fullText": "500+ Wörter AI-generierter Text...",
+      "perspective": "official"
+    },
+    {
+      "title": "Alternative Perspektive: Great Reset WEF",
+      "url": "...",
+      "fullText": "500+ Wörter kritische Analyse...",
+      "perspective": "alternative"
+    }
+  ],
+  "telegram_channels": [
+    {
+      "name": "Great Reset Watch",
+      "url": "https://weltenbibliothek-api-v2.brandy13062.workers.dev/go/tg/great_reset_watch"
+    }
+  ]
+}
+```
+
+#### **Chat API**
+```bash
+# Get Messages
+GET /api/chat/messages?room={room}&realm={realm}&limit={limit}
+
+# Post Message
+POST /api/chat/messages
+Content-Type: application/json
+
+{
+  "room": "general",
+  "realm": "materie",
+  "user_id": "user123",
+  "username": "Manuel",
+  "message": "Hallo Weltenbibliothek!",
+  "avatar_emoji": "👤"
+}
+
+# Edit Message
+PUT /api/chat/messages/{messageId}
+
+# Delete Message
+DELETE /api/chat/messages/{messageId}
+```
+
+#### **AI Features**
+
+**Traum-Analyse:**
+```bash
+POST /api/ai/dream-analysis
+Content-Type: application/json
+
+{
+  "dream_text": "Ich flog über eine goldene Stadt..."
+}
+```
+
+**Chakra-Empfehlungen:**
+```bash
+POST /api/ai/chakra-advice
+Content-Type: application/json
+
+{
+  "symptoms": ["Müdigkeit", "Kreativitätsblock"],
+  "energy_level": "niedrig"
+}
+```
+
+**Übersetzung:**
+```bash
+POST /api/ai/translate
+Content-Type: application/json
+
+{
+  "text": "Die Wahrheit wird ans Licht kommen",
+  "target_lang": "en",
+  "source_lang": "de"
+}
+```
+
+**Netzwerk-Analyse:**
+```bash
+POST /api/ai/network-analysis
+Content-Type: application/json
+
+{
+  "topic": "Great Reset WEF",
+  "entities": ["Klaus Schwab", "Bill Gates", "WHO"]
+}
+```
+
+**Fakten-Check:**
+```bash
+POST /api/ai/fact-check
+Content-Type: application/json
+
+{
+  "statement": "Die WHO plant eine weltweite Pandemie-Diktatur",
+  "perspective": "alternative"
+}
+```
+
+**Link Wrapper:**
+```bash
+# Telegram Redirect
+GET /go/tg/{username}
+# → Redirects to https://t.me/{username}
+
+# External Link Wrapper
+GET /out?url={encoded_url}
+# → Redirects to external URL with tracking
+
+# Media Proxy
+GET /media?src={encoded_url}
+# → Returns proxied & cached media
+```
+
+---
+
+## 🛠️ **DEVELOPMENT SETUP**
+
+### **Prerequisites**
+- Flutter 3.35.4
+- Dart 3.9.2
+- Android SDK (API Level 36)
+- Node.js 18+
+- Wrangler CLI
+
+### **Installation**
+
+1. **Clone Repository:**
+```bash
+git clone <repository-url>
+cd flutter_app
+```
+
+2. **Install Flutter Dependencies:**
+```bash
 flutter pub get
 ```
 
-### 2. Web Deployment
+3. **Install Wrangler (Cloudflare):**
 ```bash
-# Build
+npm install -g wrangler
+```
+
+4. **Configure Cloudflare:**
+```bash
+# Login to Cloudflare
+wrangler login
+
+# Or use API token
+export CLOUDFLARE_API_TOKEN="your_token"
+```
+
+### **Local Development**
+
+**Flutter Web Preview:**
+```bash
+cd /home/user/flutter_app
 flutter build web --release
-
-# Upload zu Hosting (z.B. Firebase, Vercel, Cloudflare Pages)
-# Oder lokal testen:
-cd build/web
-python3 -m http.server 5060
+python3 -m http.server 5060 --directory build/web --bind 0.0.0.0
 ```
 
-### 3. Android Deployment
+**Cloudflare Worker Local:**
 ```bash
-# Release APK
-flutter build apk --release
-
-# Release AAB (für Google Play)
-flutter build appbundle --release
-
-# APK testen
-adb install build/app/outputs/flutter-apk/app-release.apk
+wrangler dev --config wrangler-v2.toml
 ```
 
-### 4. Post-Deployment
-- Health Monitor prüfen
-- User Testing durchführen
-- Logs überwachen
-- Feedback sammeln
+### **Building**
+
+**Android APK:**
+```bash
+flutter build apk --release --build-number=57 --build-name="5.7.0"
+```
+
+**Android AAB (Play Store):**
+```bash
+flutter build appbundle --release --build-number=57 --build-name="5.7.0"
+```
+
+### **Testing**
+
+**Unit Tests:**
+```bash
+flutter test
+```
+
+**Integration Tests:**
+```bash
+flutter test integration_test/
+```
+
+**API Tests:**
+```bash
+# Test all endpoints
+./test_all_endpoints_v2.sh
+```
 
 ---
 
-## 🔐 SICHERHEIT
+## 📚 **FLUTTER SERVICES**
 
-**API-Token:** Nicht im Repository committed (nur in Runtime-Environment)  
-**Firebase Config:** Nicht im Repository (separate Konfiguration)  
-**Keystore:** Nicht im Repository (separate Speicherung)
+### **1. ai_service_extended.dart**
+
+**Import:**
+```dart
+import 'package:flutter_app/services/ai_service_extended.dart';
+```
+
+**Usage:**
+```dart
+// Traum-Analyse
+final result = await AIServiceExtended.analyzeDream(
+  dreamText: 'Ich flog über eine goldene Stadt...',
+);
+
+// Chakra-Empfehlungen
+final advice = await AIServiceExtended.getChakraAdvice(
+  symptoms: ['Müdigkeit', 'Kreativitätsblock'],
+  energyLevel: 'niedrig',
+);
+
+// Übersetzung
+final translation = await AIServiceExtended.translateText(
+  text: 'Die Wahrheit wird ans Licht kommen',
+  targetLang: 'en',
+);
+
+// Netzwerk-Analyse
+final network = await AIServiceExtended.analyzeNetwork(
+  topic: 'Great Reset WEF',
+  entities: ['Klaus Schwab', 'Bill Gates'],
+);
+```
+
+### **2. wrapper_service.dart**
+
+**Import:**
+```dart
+import 'package:flutter_app/services/wrapper_service.dart';
+```
+
+**Usage:**
+```dart
+// Telegram-Link wrappen
+final wrappedUrl = WrapperService.wrapTelegramLink('great_reset_watch');
+// → https://weltenbibliothek-api-v2.brandy13062.workers.dev/go/tg/great_reset_watch
+
+// External-Link wrappen
+final safeUrl = WrapperService.wrapExternalLink('https://example.com');
+
+// Auto-Wrap (erkennt Link-Typ automatisch)
+final smartUrl = WrapperService.autoWrap('https://t.me/channel');
+
+// Telegram-Kanäle nach Kategorie
+final channels = WrapperService.getWrappedChannels('gesundheit');
+// → [
+//     {name: 'Impfschaden Deutschland', wrapped_url: '...'},
+//     {name: 'Corona Ausschuss', wrapped_url: '...'},
+//   ]
+```
 
 ---
 
-## 📞 SUPPORT
+## 🔐 **SECURITY & BEST PRACTICES**
 
-**Issues:** GitHub Issues  
-**Backend-Status:** In-App Health Monitor  
-**Logs:** Flutter DevTools
+### **API Keys**
+- Cloudflare API Token: Store in environment variable `CLOUDFLARE_API_TOKEN`
+- Never commit tokens to Git
+- Use `.env` files for local development (already in `.gitignore`)
 
----
+### **Database Security**
+- D1 Database access only through Worker
+- No direct database connections from client
+- Use proper authentication for write operations
 
-## 📝 VERSION HISTORY
-
-### v15.10.0 (2025-01-31) - DEPLOYMENT READY
-- ✅ Alle 20 Features implementiert
-- ✅ Backend Health Monitor integriert
-- ✅ 4 kritische Fehler behoben
-- ✅ Assets/Icons-Ordner erstellt
-- ✅ Deployment-Ready Status
-
-### v15.9.1 (2025-01-31) - Backend Health Monitor
-- Backend Health Monitor System
-- Fallback-Logik für Worker ohne /health
-- Integration in Profil-Einstellungen
-
-### v15.9.0 (2025-01-31) - Production Ready
-- Alle kritischen Fehler behoben
-- UI-Verifizierung abgeschlossen
-- 0 Build-Fehler
-
-### v15.0.0 - v15.8.0
-- Feature-Entwicklung (Voice, Skeletons, Clustering, etc.)
-- UI-Integrationen
-- Backend-Services
+### **Flutter Security**
+- Release builds use ProGuard/R8 for code obfuscation
+- SSL/TLS for all API communications
+- Local data encryption with Hive
 
 ---
 
-## ✅ DEPLOYMENT-STATUS: **READY** 🚀
+## 📊 **MONITORING & ANALYTICS**
 
-**Build:** ✅ Erfolgreich  
-**Tests:** ✅ Manuell getestet  
-**Backend:** ✅ Alle Services online  
-**Documentation:** ✅ Vollständig  
+### **Cloudflare Analytics**
+Access Worker analytics at:
+```
+https://dash.cloudflare.com/
+→ Workers & Pages
+→ weltenbibliothek-api-v2
+→ Analytics
+```
 
-**🎉 App ist bereit für Production-Deployment!**
+**Metrics:**
+- Requests per second
+- Error rate
+- CPU time
+- D1 Database queries
+
+### **Flutter Crashlytics**
+Firebase Crashlytics is integrated for crash reporting:
+- Real-time crash alerts
+- Stack traces
+- User impact analysis
+
+---
+
+## 🐛 **TROUBLESHOOTING**
+
+### **APK Installation Failed**
+```bash
+# Check device connection
+adb devices
+
+# Uninstall old version first
+adb uninstall com.weltenbibliothek.v49
+
+# Reinstall
+adb install -r build/app/outputs/flutter-apk/app-release.apk
+```
+
+### **Worker Deployment Failed**
+```bash
+# Check Wrangler login
+wrangler whoami
+
+# Re-authenticate
+wrangler login
+
+# Check configuration
+wrangler deploy --config wrangler-v2.toml --dry-run
+```
+
+### **D1 Database Issues**
+```bash
+# Check database status
+wrangler d1 list
+
+# Verify table schema
+wrangler d1 execute weltenbibliothek-db --remote --command="SELECT sql FROM sqlite_master WHERE type='table' AND name='chat_messages'"
+
+# Reset database (CAUTION: Deletes all data)
+wrangler d1 execute weltenbibliothek-db --remote --file=init_chat_db.sql
+```
+
+### **Flutter Build Issues**
+```bash
+# Clean build cache
+flutter clean
+rm -rf build/
+
+# Update dependencies
+flutter pub get
+
+# Rebuild
+flutter build apk --release
+```
+
+---
+
+## 📞 **SUPPORT**
+
+**Project Repository:** (GitHub URL after setup)  
+**Worker API:** https://weltenbibliothek-api-v2.brandy13062.workers.dev  
+**Documentation:** This file
+
+**Contact:**
+- GitHub Issues: For bug reports and feature requests
+- Developer: Manuel Brandner
+
+---
+
+## 📄 **LICENSE**
+
+(Add license information here)
+
+---
+
+**Last Updated:** 2026-02-13  
+**Version:** 5.7.0 (Build 57)  
+**Maintained by:** Manuel Brandner

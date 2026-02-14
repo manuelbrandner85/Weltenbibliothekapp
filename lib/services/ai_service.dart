@@ -1,6 +1,7 @@
 import 'dart:convert';
 import '../config/api_config.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 
 /// 🤖 KI-SERVICE für Weltenbibliothek
 /// Nutzt Cloudflare AI Workers für echte KI-Analyse
@@ -21,7 +22,7 @@ class AIService {
           'perspective': 'alternative', // Alternative Sichtweise
           'model': 'llama-3.1-8b', // Cloudflare AI Model
         }),
-      ).timeout(const Duration(seconds: 30));
+      ).timeout(const Duration(seconds: 45)); // Erhöhtes Timeout für Worker Response
       
       if (response.statusCode == 200) {
         return json.decode(response.body);
@@ -30,6 +31,9 @@ class AIService {
       }
     } catch (e) {
       // Fallback auf lokale Analyse
+      if (kDebugMode) {
+        debugPrint('⚠️ Propaganda-Analyse Fehler: $e');
+      }
       return _fallbackPropagandaAnalysis(text);
     }
   }
@@ -216,26 +220,32 @@ class AIService {
     // Vereinfachte lokale Analyse
     final score = 50.0 + (text.length % 30);
     return {
+      'propaganda_score': score, // Konsistent mit Worker Response
       'biasScore': score,
+      'level': score > 70 ? 'HOCH' : score > 40 ? 'MODERAT' : 'NIEDRIG',
       'verdict': score > 70 ? 'Mainstream-Propaganda' : 'Moderat',
-      'techniques': {
-        'Emotionale Sprache': 60.0,
-        'Framing': 45.0,
-      },
-      'warnings': ['KI-Worker nicht erreichbar - Lokale Analyse'],
+      'techniques': [
+        'Emotionale Sprache (60%)',
+        'Framing (45%)',
+      ],
+      'alternative_view': 'Lokale Offline-Analyse - Für genauere Ergebnisse bitte Internet-Verbindung prüfen',
+      'warnings': ['⚠️ KI-Worker nicht erreichbar', 'Verwende lokale Basis-Analyse', 'Für präzisere Ergebnisse Online-Modus nutzen'],
       'isLocalFallback': true,
+      'timestamp': DateTime.now().toIso8601String(),
     };
   }
   
   static Map<String, dynamic> _fallbackImageAnalysis() {
     return {
-      'overallVerdict': 'FEHLER',
+      'overallVerdict': 'ANALYSE NICHT MÖGLICH',
       'manipulationScore': 0,
       'confidence': 0,
-      'evidence': ['Analyse fehlgeschlagen'],
-      'warnings': ['Technischer Fehler bei der Analyse'],
+      'evidence': ['⚠️ Bildanalyse konnte nicht durchgeführt werden'],
+      'warnings': ['Das Bildformat wird nicht unterstützt oder die Datei ist beschädigt', 'Bitte verwenden Sie JPEG oder PNG Formate'],
       'isLocalFallback': true,
       'isRealAI': false,
+      'tests': {},
+      'timestamp': DateTime.now().toIso8601String(),
     };
   }
   

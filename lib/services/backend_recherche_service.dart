@@ -55,10 +55,9 @@ class BackendRechercheService {
     _trackSearchAchievement();
     
     try {
-      final response = await http.post(
-        Uri.parse('$_backendUrl/api/research'),
+      final response = await http.get(
+        Uri.parse('$_backendUrl/recherche?q=${Uri.encodeComponent(query)}'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'query': query}),
       ).timeout(
         const Duration(seconds: 45),
         onTimeout: () {

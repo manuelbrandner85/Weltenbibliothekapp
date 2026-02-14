@@ -9,6 +9,8 @@ import '../models/spirit_entry.dart';
 import '../models/community_post.dart';
 import '../models/spirit_extended_models.dart';
 import '../models/app_data.dart'; // 🆕 NEUE DATENMODELLE
+import '../core/exceptions/exception_guard.dart'; // 🛡️ EXCEPTION GUARD
+import '../core/exceptions/specialized_exceptions.dart'; // 🚨 STORAGE EXCEPTIONS
 
 /// Lokaler Storage Service mit Hive
 /// Für offline-first Funktionalität
@@ -61,52 +63,56 @@ class StorageService {
   
   /// 🔄 ONE-TIME MIGRATION: Alte Box-Namen → Neue Box-Namen
   Future<void> _migrateOldBoxes() async {
-    try {
-      // Materie: materie_profile → materie_profiles
-      if (await Hive.boxExists('materie_profile')) {
-        if (kDebugMode) debugPrint('🔄 Migration: materie_profile → materie_profiles');
-        final oldBox = await Hive.openBox('materie_profile');
-        final newBox = await Hive.openBox('materie_profiles');
-        
-        // Kopiere alle Daten
-        for (var key in oldBox.keys) {
-          await newBox.put(key, oldBox.get(key));
-          if (kDebugMode) debugPrint('  ✅ Kopiert: $key');
+    await guardStorage(
+      () async {
+        // Materie: materie_profile → materie_profiles
+        if (await Hive.boxExists('materie_profile')) {
+          if (kDebugMode) debugPrint('🔄 Migration: materie_profile → materie_profiles');
+          final oldBox = await Hive.openBox('materie_profile');
+          final newBox = await Hive.openBox('materie_profiles');
+          
+          // Kopiere alle Daten
+          for (var key in oldBox.keys) {
+            await newBox.put(key, oldBox.get(key));
+            if (kDebugMode) debugPrint('  ✅ Kopiert: $key');
+          }
+          
+          // Lösche alte Box
+          await oldBox.clear();
+          await oldBox.close();
+          await Hive.deleteBoxFromDisk('materie_profile');
+          if (kDebugMode) debugPrint('  ✅ Alte Box gelöscht');
         }
         
-        // Lösche alte Box
-        await oldBox.clear();
-        await oldBox.close();
-        await Hive.deleteBoxFromDisk('materie_profile');
-        if (kDebugMode) debugPrint('  ✅ Alte Box gelöscht');
-      }
-      
-      // Energie: energie_profile → energie_profiles
-      if (await Hive.boxExists('energie_profile')) {
-        if (kDebugMode) debugPrint('🔄 Migration: energie_profile → energie_profiles');
-        final oldBox = await Hive.openBox('energie_profile');
-        final newBox = await Hive.openBox('energie_profiles');
-        
-        // Kopiere alle Daten
-        for (var key in oldBox.keys) {
-          await newBox.put(key, oldBox.get(key));
-          if (kDebugMode) debugPrint('  ✅ Kopiert: $key');
+        // Energie: energie_profile → energie_profiles
+        if (await Hive.boxExists('energie_profile')) {
+          if (kDebugMode) debugPrint('🔄 Migration: energie_profile → energie_profiles');
+          final oldBox = await Hive.openBox('energie_profile');
+          final newBox = await Hive.openBox('energie_profiles');
+          
+          // Kopiere alle Daten
+          for (var key in oldBox.keys) {
+            await newBox.put(key, oldBox.get(key));
+            if (kDebugMode) debugPrint('  ✅ Kopiert: $key');
+          }
+          
+          // Lösche alte Box
+          await oldBox.clear();
+          await oldBox.close();
+          await Hive.deleteBoxFromDisk('energie_profile');
+          if (kDebugMode) debugPrint('  ✅ Alte Box gelöscht');
         }
         
-        // Lösche alte Box
-        await oldBox.clear();
-        await oldBox.close();
-        await Hive.deleteBoxFromDisk('energie_profile');
-        if (kDebugMode) debugPrint('  ✅ Alte Box gelöscht');
-      }
-      
-      if (kDebugMode) debugPrint('✅ Migration abgeschlossen');
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('⚠️ Migration Fehler: $e');
-        debugPrint('💡 Keine alten Boxen vorhanden - OK');
-      }
-    }
+        if (kDebugMode) debugPrint('✅ Migration abgeschlossen');
+      },
+      operation: 'migrateOldBoxes',
+      onError: (e, stack) async {
+        if (kDebugMode) {
+          debugPrint('💡 Keine alten Boxen vorhanden - OK');
+        }
+        // Return void (Function<Future<void>>)
+      },
+    );
   }
   
   /// Hive initialisieren (✅ ANDROID-OPTIMIERT: Nur kritische Boxen beim Start)
@@ -126,29 +132,27 @@ class StorageService {
     
     // ✅ NUR KRITISCHE BOXEN beim Start öffnen (schneller App-Start!)
     // Alle anderen Boxen werden lazy geladen bei Bedarf
-    try {
-      await Hive.openBox(_materieProfileBox);
-      if (kDebugMode) debugPrint('✅ Hive: materieProfile geöffnet');
-      
-      await Hive.openBox(_energieProfileBox);
-      if (kDebugMode) debugPrint('✅ Hive: energieProfile geöffnet');
-      
-      await Hive.openBox(_researchTopicsBox);
-      if (kDebugMode) debugPrint('✅ Hive: researchTopics geöffnet');
-      
-      await Hive.openBox(_communityPostsBox);
-      if (kDebugMode) debugPrint('✅ Hive: communityPosts geöffnet');
-      
-      if (kDebugMode) {
-        debugPrint('✅ Hive: Kritische Boxen geöffnet (4/25)');
-        debugPrint('💡 Hive: Weitere Boxen werden bei Bedarf geladen');
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ Hive: Fehler beim Öffnen der Boxen: $e');
-      }
-      rethrow;
-    }
+    await guardStorage(
+      () async {
+        await Hive.openBox(_materieProfileBox);
+        if (kDebugMode) debugPrint('✅ Hive: materieProfile geöffnet');
+        
+        await Hive.openBox(_energieProfileBox);
+        if (kDebugMode) debugPrint('✅ Hive: energieProfile geöffnet');
+        
+        await Hive.openBox(_researchTopicsBox);
+        if (kDebugMode) debugPrint('✅ Hive: researchTopics geöffnet');
+        
+        await Hive.openBox(_communityPostsBox);
+        if (kDebugMode) debugPrint('✅ Hive: communityPosts geöffnet');
+        
+        if (kDebugMode) {
+          debugPrint('✅ Hive: Kritische Boxen geöffnet (4/25)');
+          debugPrint('💡 Hive: Weitere Boxen werden bei Bedarf geladen');
+        }
+      },
+      operation: 'openCriticalBoxes',
+    );
     
     // ⚡ ALLE ANDEREN BOXEN werden lazy geladen via getBox()
     // Dies beschleunigt den App-Start erheblich!
@@ -190,7 +194,10 @@ class StorageService {
         if (kDebugMode) {
           debugPrint('⚠️ MaterieProfile Box not open! Call init() first.');
         }
-        return null;
+        throw StorageException(
+          'MaterieProfile box not initialized',
+          operation: 'getMaterieProfile',
+        );
       }
       final box = Hive.box(_materieProfileBox);
       final data = box.get('current_profile') as Map?;
@@ -202,7 +209,12 @@ class StorageService {
       if (kDebugMode) {
         debugPrint('❌ Error loading materie profile: $e');
       }
-      return null;
+      if (e is StorageException) rethrow;
+      throw StorageException(
+        'Failed to load materie profile',
+        operation: 'getMaterieProfile',
+        cause: e,
+      );
     }
   }
   
@@ -228,7 +240,10 @@ class StorageService {
         if (kDebugMode) {
           debugPrint('⚠️ EnergieProfile Box not open! Call init() first.');
         }
-        return null;
+        throw StorageException(
+          'EnergieProfile box not initialized',
+          operation: 'getEnergieProfile',
+        );
       }
       final box = Hive.box(_energieProfileBox);
       final data = box.get('current_profile') as Map?;
@@ -240,7 +255,12 @@ class StorageService {
       if (kDebugMode) {
         debugPrint('❌ Error loading energie profile: $e');
       }
-      return null;
+      if (e is StorageException) rethrow;
+      throw StorageException(
+        'Failed to load energie profile',
+        operation: 'getEnergieProfile',
+        cause: e,
+      );
     }
   }
 
@@ -251,7 +271,10 @@ class StorageService {
         if (kDebugMode) {
           debugPrint('⚠️ SpiritProfile Box not open!');
         }
-        return null;
+        throw StorageException(
+          'SpiritProfile box not initialized',
+          operation: 'getSpiritProfile',
+        );
       }
       final box = Hive.box(_energieProfileBox);
       final data = box.get('current_profile') as Map?;
@@ -263,22 +286,27 @@ class StorageService {
       if (kDebugMode) {
         debugPrint('❌ Error loading spirit profile: $e');
       }
-      return null;
+      if (e is StorageException) rethrow;
+      throw StorageException(
+        'Failed to load spirit profile',
+        operation: 'getSpiritProfile',
+        cause: e,
+      );
     }
   }
 
   Future<void> saveSpiritProfile(SpiritProfile profile) async {
-    try {
-      final box = Hive.box(_energieProfileBox);
-      await box.put('current_profile', profile.toJson());
-      if (kDebugMode) {
-        debugPrint('✅ Spirit profile saved');
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ Error saving spirit profile: $e');
-      }
-    }
+    await guardStorage(
+      () async {
+        final box = Hive.box(_energieProfileBox);
+        await box.put('current_profile', profile.toJson());
+        if (kDebugMode) {
+          debugPrint('✅ Spirit profile saved');
+        }
+      },
+      operation: 'saveSpiritProfile',
+      key: 'current_profile',
+    );
   }
 
   Future<EnergieProfile?> loadEnergieProfile() async {
@@ -308,7 +336,10 @@ class StorageService {
         if (kDebugMode) {
           debugPrint('⚠️ ResearchTopics Box not open yet!');
         }
-        return [];
+        throw StorageException(
+          'ResearchTopics box not initialized',
+          operation: 'getResearchTopics',
+        );
       }
       
       final box = Hive.box(_researchTopicsBox);
@@ -319,7 +350,12 @@ class StorageService {
       if (kDebugMode) {
         debugPrint('❌ Error loading research topics: $e');
       }
-      return [];
+      if (e is StorageException) rethrow;
+      throw StorageException(
+        'Failed to load research topics',
+        operation: 'getResearchTopics',
+        cause: e,
+      );
     }
   }
   
@@ -393,7 +429,10 @@ class StorageService {
         if (kDebugMode) {
           debugPrint('⚠️ DailyPractices Box not open!');
         }
-        return [];
+        throw StorageException(
+          'DailyPractices box not initialized',
+          operation: 'getDailyPractices',
+        );
       }
       
       final box = Hive.box(_dailyPracticesBox);
@@ -413,7 +452,12 @@ class StorageService {
       if (kDebugMode) {
         debugPrint('❌ Error loading daily practices: $e');
       }
-      return [];
+      if (e is StorageException) rethrow;
+      throw StorageException(
+        'Failed to load daily practices',
+        operation: 'getDailyPractices',
+        cause: e,
+      );
     }
   }
   
@@ -1236,26 +1280,26 @@ class StorageService {
   
   /// 🔧 STUB: Get Data from generic key (for DynamicContentService)
   Future<String?> getData(String key) async {
-    try {
-      final box = await getBox('app_cache');
-      return box.get(key);
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('⚠️ StorageService.getData($key) failed: $e');
-      }
-      return null;
-    }
+    return await guardStorage(
+      () async {
+        final box = await getBox('app_cache');
+        return box.get(key);
+      },
+      operation: 'getData',
+      key: key,
+      onError: (e, stack) async => null,
+    );
   }
   
   /// 🔧 STUB: Save Data to generic key (for DynamicContentService)
   Future<void> saveData(String key, String value) async {
-    try {
-      final box = await getBox('app_cache');
-      await box.put(key, value);
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('⚠️ StorageService.saveData($key) failed: $e');
-      }
-    }
+    await guardStorage(
+      () async {
+        final box = await getBox('app_cache');
+        await box.put(key, value);
+      },
+      operation: 'saveData',
+      key: key,
+    );
   }
 }

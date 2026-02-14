@@ -1,6 +1,5 @@
 /// Moon Journal Screen - Mondtagebuch
 /// Weltenbibliothek v61
-library;
 
 import 'package:flutter/material.dart';
 

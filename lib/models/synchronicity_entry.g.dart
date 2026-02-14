@@ -1,5 +1,10 @@
-// GENERATED CODE
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
 part of 'synchronicity_entry.dart';
+
+// **************************************************************************
+// TypeAdapterGenerator
+// **************************************************************************
 
 class SynchronicityEntryAdapter extends TypeAdapter<SynchronicityEntry> {
   @override

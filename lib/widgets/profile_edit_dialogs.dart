@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/materie_profile.dart';
 import '../models/energie_profile.dart';
-import '../services/storage_service.dart';
+import 'package:weltenbibliothek/services/storage_service.dart';
 import '../services/profile_sync_service.dart';
 import '../theme/premium_text_styles.dart';
 
@@ -89,7 +89,9 @@ class _MaterieProfileEditDialogState extends State<MaterieProfileEditDialog> {
           await StorageService().saveMaterieProfile(updatedProfile);
           
           if (mounted) {
-            widget.onSave(updatedProfile);
+            // ✅ FIX: Profil neu instanziieren um Typ-Konflikte zu vermeiden
+            final profileToSave = MaterieProfile.fromJson(updatedProfile.toJson());
+            widget.onSave(profileToSave);
             Navigator.pop(context);
             
             // ✅ FIX 1: Rollenbasiertes Feedback
@@ -560,7 +562,9 @@ class _EnergieProfileEditDialogState extends State<EnergieProfileEditDialog> {
           await StorageService().saveEnergieProfile(updatedProfile);
           
           if (mounted) {
-            widget.onSave(updatedProfile);
+            // ✅ FIX: Profil neu instanziieren um Typ-Konflikte zu vermeiden
+            final profileToSave = EnergieProfile.fromJson(updatedProfile.toJson());
+            widget.onSave(profileToSave);
             Navigator.pop(context);
             
             // ✅ FIX 1: Rollenbasiertes Feedback

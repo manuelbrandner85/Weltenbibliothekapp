@@ -22,6 +22,9 @@ class _PropagandaDetectorScreenState extends State<PropagandaDetectorScreen> wit
       duration: const Duration(milliseconds: 1500),
       vsync: this,
     )..repeat(reverse: true);
+    
+    // 🔄 Cache-Clear: Lösche alte Analysen beim Screen-Start
+    _analysis = null;
   }
 
   @override

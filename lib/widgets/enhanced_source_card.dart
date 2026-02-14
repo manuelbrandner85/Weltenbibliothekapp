@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-/// Enhanced Source Card - Klickbare Quelle mit Metadata
-class EnhancedSourceCard extends StatelessWidget {
+/// Enhanced Source Card - Expandable Quelle mit vollständigem Text
+class EnhancedSourceCard extends StatefulWidget {
   final Map<String, dynamic> source;
 
   const EnhancedSourceCard({
@@ -11,14 +11,34 @@ class EnhancedSourceCard extends StatelessWidget {
   });
 
   @override
+  State<EnhancedSourceCard> createState() => _EnhancedSourceCardState();
+}
+
+class _EnhancedSourceCardState extends State<EnhancedSourceCard> {
+  bool _isExpanded = false;
+
+  @override
   Widget build(BuildContext context) {
-    final String title = source['title'] ?? 'Quelle';
-    final String url = source['url'] ?? '';
-    final String snippet = source['snippet'] ?? '';
-    final String category = source['category'] ?? 'Unbekannt';
-    final Map<String, dynamic>? metadata = source['metadata'];
+    final String title = widget.source['title'] ?? 'Quelle';
+    final String url = widget.source['url'] ?? '';
+    final String snippet = widget.source['snippet'] ?? '';
+    final String category = widget.source['category'] ?? 'Unbekannt';
+    final Map<String, dynamic>? metadata = widget.source['metadata'];
     final String? domain = metadata?['domain'];
     final String? credibility = metadata?['credibility'];
+
+    // Count lines to determine if "Show More" is needed
+    final textSpan = TextSpan(
+      text: snippet,
+      style: const TextStyle(fontSize: 14),
+    );
+    final textPainter = TextPainter(
+      text: textSpan,
+      maxLines: 5,
+      textDirection: TextDirection.ltr,
+    );
+    textPainter.layout(maxWidth: MediaQuery.of(context).size.width - 64);
+    final bool needsExpansion = textPainter.didExceedMaxLines;
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
@@ -26,16 +46,15 @@ class EnhancedSourceCard extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
-      child: InkWell(
-        onTap: () => _launchUrl(context, url),
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // HEADER: Titel + Icon
-              Row(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // HEADER: Titel + Icon
+            InkWell(
+              onTap: () => _launchUrl(context, url),
+              child: Row(
                 children: [
                   _buildCredibilityIcon(credibility),
                   const SizedBox(width: 8),
@@ -54,56 +73,90 @@ class EnhancedSourceCard extends StatelessWidget {
                   const Icon(Icons.open_in_new, size: 20, color: Colors.grey),
                 ],
               ),
-              
-              const SizedBox(height: 8),
-              
-              // METADATA: Domain + Kategorie
-              Row(
-                children: [
-                  if (domain != null) ...[
-                    const Icon(Icons.language, size: 16, color: Colors.grey),
-                    const SizedBox(width: 4),
-                    Text(
-                      domain,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                  ],
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: _getCategoryColor(category).withAlpha((0.2 * 255).round()),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      category,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        color: _getCategoryColor(category),
-                      ),
+            ),
+            
+            const SizedBox(height: 8),
+            
+            // METADATA: Domain + Kategorie
+            Row(
+              children: [
+                if (domain != null) ...[
+                  const Icon(Icons.language, size: 16, color: Colors.grey),
+                  const SizedBox(width: 4),
+                  Text(
+                    domain,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey,
                     ),
                   ),
+                  const SizedBox(width: 16),
                 ],
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: _getCategoryColor(category).withAlpha((0.2 * 255).round()),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    category,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: _getCategoryColor(category),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            
+            if (snippet.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              
+              // ✅ EXPANDABLE TEXT - Shows full content
+              Text(
+                snippet,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Colors.black87,
+                  height: 1.5,
+                ),
+                maxLines: _isExpanded ? null : 5,
+                overflow: _isExpanded ? TextOverflow.visible : TextOverflow.fade,
               ),
               
-              if (snippet.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                Text(
-                  snippet,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Colors.black87,
+              // ✅ SHOW MORE / SHOW LESS BUTTON
+              if (needsExpansion) ...[
+                const SizedBox(height: 8),
+                InkWell(
+                  onTap: () {
+                    setState(() {
+                      _isExpanded = !_isExpanded;
+                    });
+                  },
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _isExpanded ? 'Weniger anzeigen' : 'Mehr anzeigen',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Colors.blueAccent,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Icon(
+                        _isExpanded ? Icons.expand_less : Icons.expand_more,
+                        size: 20,
+                        color: Colors.blueAccent,
+                      ),
+                    ],
                   ),
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ],
-          ),
+          ],
         ),
       ),
     );

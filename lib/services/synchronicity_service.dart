@@ -1,8 +1,9 @@
 import 'dart:async';
+import '../services/storage_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../models/spirit_extended_models.dart';
-import '../services/storage_service.dart';
+import '../core/storage/unified_storage_service.dart';
 
 /// ============================================
 /// SYNCHRONICITY SERVICE

@@ -1,18 +1,18 @@
 /// 🎨 EMOJI REACTIONS SERVICE
 /// Handle emoji reactions on messages
-library;
 
 import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
+import '../config/api_config.dart';
 
 class EmojiReactionsService {
   static final EmojiReactionsService _instance = EmojiReactionsService._internal();
   factory EmojiReactionsService() => _instance;
   EmojiReactionsService._internal();
 
-  final String _baseUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
+  final String _baseUrl = ApiConfig.baseUrl;
 
   /// Add or Remove Reaction (Toggle)
   Future<Map<String, dynamic>?> toggleReaction({

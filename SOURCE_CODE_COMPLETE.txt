@@ -1,0 +1,5746 @@
+================================================================================
+WELTENBIBLIOTHEK - COMPLETE SOURCE CODE
+================================================================================
+Version: 1.0.0
+Datum: 2026-02-13
+Flutter: 3.35.4 + Dart 3.9.2
+Backend: Cloudflare Workers V100 + D1 Database
+Dateien: 832
+================================================================================
+
+
+================================================================================
+TEIL 1: PROJEKT-KONFIGURATION
+================================================================================
+
+
+######## pubspec.yaml ########
+
+name: weltenbibliothek
+description: "Weltenbibliothek - Wissens- und Bewusstseins-Plattform mit zwei Welten: Materie und Energie"
+# The following line prevents the package from being accidentally published to
+# pub.dev using `flutter pub publish`. This is preferred for private packages.
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+# The following defines the version and build number for your application.
+# A version number is three numbers separated by dots, like 1.2.43
+# followed by an optional build number separated by a +.
+# Both the version and the builder number may be overridden in flutter
+# build by specifying --build-name and --build-number, respectively.
+# In Android, build-name is used as versionName while build-number used as versionCode.
+# Read more about Android versioning at https://developer.android.com/studio/publish/versioning
+# In iOS, build-name is used as CFBundleShortVersionString while build-number is used as CFBundleVersion.
+# Read more about iOS versioning at
+# https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
+# In Windows, build-name is used as the major, minor, and patch parts
+# of the product and file versions while build-number is used as the build suffix.
+version: 5.6.0+56
+
+environment:
+  sdk: ^3.9.2
+
+# Dependencies specify other packages that your package needs in order to work.
+# To automatically upgrade your package dependencies to the latest versions
+# consider running `flutter pub upgrade --major-versions`. Alternatively,
+# dependencies can be manually updated by changing the version numbers below to
+# the latest version available on pub.dev. To see which dependencies have newer
+# versions available, run `flutter pub outdated`.
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # UI & State Management
+  cupertino_icons: ^1.0.8
+  provider: 6.1.5+1          # Legacy state management (kept for backward compatibility)
+  flutter_riverpod: ^2.6.1   # 🆕 NEW: Riverpod für Admin-System
+  freezed_annotation: ^2.4.4  # ✅ PHASE A: Freezed annotations
+  
+  # Local Storage
+  shared_preferences: 2.5.3
+  hive: ^2.2.3
+  hive_flutter: 1.1.0
+  share_plus: ^7.2.1  # 🆕 Sharing functionality
+  qr_flutter: ^4.1.0  # QR Code generation
+  pdf: ^3.11.1  # PDF generation for export
+  
+  # HTTP & Networking
+  http: 1.5.0
+  xml: ^6.5.0  # RSS Feed parsing
+  crypto: ^3.0.3  # Hashing for image consistency
+  url_launcher: ^6.3.1  # URL Launcher (Web-kompatibel)
+  cached_network_image: ^3.4.1  # 🆕 Image Caching für bessere Performance
+  
+  # Sensors (v5.37 - for gyroscope parallax)
+  sensors_plus: ^6.0.1
+  
+  # Video Player (für Intro-Video)
+  video_player: ^2.8.2  # Web-kompatibel
+  
+  # Internationalization (für deutsches Datum)
+  intl: 0.20.2
+  
+  # OpenStreetMap Integration (Web-kompatibel)
+  flutter_map: ^7.0.2
+  latlong2: ^0.9.1
+  flutter_map_marker_cluster: ^1.3.6  # 🆕 Marker-Clustering
+  
+  # Visualisierungen & Charts (NEUE PACKAGES)
+  fl_chart: 0.69.0          # Charts, Graphen, Heatmaps
+  graphview: 1.2.0          # Interaktive Netzwerk-Graphen
+  
+  # PDF & Multimedia (v7.2 - In-App Viewer)
+  path_provider: 2.1.5      # Dateipfade
+  photo_view: ^0.14.0       # Image Gallery mit Zoom & Pan
+  # PDF wird via embedded HTML iframe angezeigt (Web-kompatibel)
+  
+  # Voice Search & Connectivity (v64 NEUE FEATURES)
+  speech_to_text: ^7.0.0    # Spracherkennung für Voice Search
+  permission_handler: ^11.3.1  # Mikrofon-Berechtigungen
+  connectivity_plus: ^6.1.2  # Offline-Mode Detection
+  # record: ^5.1.2            # ❌ DEAKTIVIERT für Android Build (record_linux Kompatibilitätsproblem)
+  flutter_cache_manager: ^3.3.0  # 🆕 Offline Cache Management
+  pdfx: ^2.6.0              # 🆕 PDF Reader Integration
+  shimmer: ^3.0.0           # 🆕 Loading Skeleton Effects
+  flutter_webrtc: ^1.3.0    # 🆕 WebRTC Voice Streaming (max 10 users) - Updated for Dart 3.9.2
+  
+  # Firebase DEAKTIVIERT - Jetzt mit Cloudflare D1 + Workers + R2
+  # firebase_core: 3.6.0              
+  # cloud_firestore: 5.4.3            # -> Cloudflare D1
+  # firebase_messaging: 15.1.3        # -> Cloudflare Workers
+  # firebase_storage: 12.3.2          # -> Cloudflare R2
+  flutter_local_notifications: ^18.0.1  # Lokale Benachrichtigungen
+  image_picker: ^1.0.0              # Bilder/Videos aufnehmen
+  file_picker: ^8.0.0               # 📁 File Upload Support
+  # record: ^5.0.0                    # ❌ DEAKTIVIERT für Android Build (record_linux Kompatibilitätsproblem)
+  flutter_sound: ^9.2.13            # ✅ Audio Recording für Android/iOS/Web
+  audioplayers: ^6.1.0              # Audio playback für Voice Messages
+  just_audio: ^0.9.36               # 🆕 Low-latency audio für Frequenzgenerator
+  flutter_tts: ^4.0.0               # Text-to-Speech
+  geolocator: ^13.0.1               # GPS Location für AR
+  web_socket_channel: ^3.0.3
+  
+  # 🔍 Epstein Files Research Tool
+  webview_flutter: 4.13.0           # WebView für Justice.gov Integration
+  html: ^0.15.4                     # HTML Parsing für PDF-Link-Extraktion
+  syncfusion_flutter_pdf: ^28.1.36  # PDF Text Extraction
+  translator: ^1.0.0                # Kostenlose Übersetzung (Google Translate API ohne Key)
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  
+  # Code generation
+  freezed: ^2.5.2  # ✅ PHASE A: Freezed for immutable models (downgraded for hive_generator compatibility)
+  build_runner: ^2.4.13  # ✅ PHASE A: Code generation runner
+  json_serializable: ^6.8.0  # ✅ PHASE A: JSON serialization
+  hive_generator: ^2.0.1  # ✅ PHASE F2: Hive type adapters generation
+
+  # The "flutter_lints" package below contains a set of recommended lints to
+  # encourage good coding practices. The lint set provided by the package is
+  # activated in the `analysis_options.yaml` file located at the root of your
+  # package. See that file for information about deactivating specific lint
+  # rules and activating additional ones.
+  flutter_lints: ^5.0.0
+
+# For information on the generic Dart part of this file, see the
+# following page: https://dart.dev/tools/pub/pubspec
+
+# The following section is specific to Flutter packages.
+flutter:
+
+  # The following line ensures that the Material Icons font is
+  # included with your application, so that you can use the icons in
+  # the material Icons class.
+  uses-material-design: true
+
+  # Assets
+  assets:
+    - assets/icons/
+    - assets/images/
+    - assets/sounds/  # ✅ PRODUCTION-READY: Real audio assets
+    - assets/audio/   # 🎵 FREQUENCY AUDIO FILES (432Hz, 528Hz)
+    # ✅ WELTEN-ÜBERGANGSVIDEOS AKTIVIERT
+    - assets/videos/weltenbibliothek_intro.mp4
+    - assets/videos/transition_materie_to_energie.mp4
+    - assets/videos/transition_energie_to_materie.mp4
+
+  # An image asset can refer to one or more resolution-specific "variants", see
+  # https://flutter.dev/to/resolution-aware-images
+
+  # For details regarding adding assets from package dependencies, see
+  # https://flutter.dev/to/asset-from-package
+
+  # To add custom fonts to your application, add a fonts section here,
+  # in this "flutter" section. Each entry in this list should have a
+  # "family" key with the font family name, and a "fonts" key with a
+  # list giving the asset and other descriptors for the font. For
+  # example:
+  # fonts:
+  #   - family: Schyler
+  #     fonts:
+  #       - asset: fonts/Schyler-Regular.ttf
+  #       - asset: fonts/Schyler-Italic.ttf
+  #         style: italic
+  #   - family: Trajan Pro
+  #     fonts:
+  #       - asset: fonts/TrajanPro.ttf
+  #       - asset: fonts/TrajanPro_Bold.ttf
+  #         weight: 700
+  #
+  # For details regarding fonts from package dependencies,
+  # see https://flutter.dev/to/font-from-package
+
+
+######## analysis_options.yaml ########
+
+# This file configures the analyzer, which statically analyzes Dart code to
+# check for errors, warnings, and lints.
+#
+# The issues identified by the analyzer are surfaced in the UI of Dart-enabled
+# IDEs (https://dart.dev/tools#ides-and-editors). The analyzer can also be
+# invoked from the command line by running `flutter analyze`.
+
+# The following line activates a set of recommended lints for Flutter apps,
+# packages, and plugins designed to encourage good coding practices.
+include: package:flutter_lints/flutter.yaml
+
+linter:
+  # The lint rules applied to this project can be customized in the
+  # section below to disable rules from the `package:flutter_lints/flutter.yaml`
+  # included above or to enable additional rules. A list of all available lints
+  # and their documentation is published at https://dart.dev/lints.
+  #
+  # Instead of disabling a lint rule for the entire project in the
+  # section below, it can also be suppressed for a single line of code
+  # or a specific dart file by using the `// ignore: name_of_lint` and
+  # `// ignore_for_file: name_of_lint` syntax on the line or in the file
+  # producing the lint.
+  rules:
+    # avoid_print: false  # Uncomment to disable the `avoid_print` rule
+    # prefer_single_quotes: true  # Uncomment to enable the `prefer_single_quotes` rule
+
+# Additional information about this file can be found at
+# https://dart.dev/guides/language/analysis-options
+
+================================================================================
+TEIL 2: MAIN APP & CONFIGURATION
+================================================================================
+
+
+######## lib/main.dart ########
+
+import 'package:flutter/material.dart';
+// ✅ FÜR kDebugMode
+import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:provider/provider.dart' as provider; // ✅ Provider aliased
+import 'package:flutter_riverpod/flutter_riverpod.dart'; // 🆕 RIVERPOD für Admin-System
+import 'package:hive_flutter/hive_flutter.dart'; // 🗄️ HIVE LOCAL STORAGE
+// 💾 SHARED PREFERENCES
+// Firebase DEAKTIVIERT - Jetzt Cloudflare
+// import 'package:firebase_core/firebase_core.dart';
+// import 'firebase_options.dart';
+import 'screens/intro_image_screen.dart';
+import 'screens/portal_home_screen.dart'; // 🌀 Portal (NACH Tutorial)
+import 'screens/energie/dashboard_screen.dart';
+import 'screens/energie/achievements_screen.dart';
+import 'screens/daily_challenges_screen.dart';  // 🎯 Daily Challenges
+import 'screens/leaderboard_screen.dart';  // 🏆 Leaderboard
+import 'screens/enhanced_profile_screen.dart';  // 👤 Enhanced Profile
+import 'screens/cloudflare_notification_settings_screen.dart'; // CLOUDFLARE PUSH
+import 'screens/materie/search_history_screen.dart';
+import 'screens/shared/backend_health_monitor_screen.dart'; // 🏥 HEALTH MONITOR // 🆕 SEARCH HISTORY
+import 'screens/test/simple_voice_test_screen.dart'; // 🧪 SIMPLE VOICE TEST
+// KI-ANALYSE-TOOLS (für Recherche-Tab)
+import 'screens/materie/propaganda_detector_screen.dart';
+import 'screens/materie/image_forensics_screen.dart';
+import 'screens/materie/power_network_mapper_screen.dart';
+import 'screens/materie/event_predictor_screen.dart';
+// 🔐 ADMIN-DASHBOARD (World-Based Admin System)
+import 'screens/shared/world_admin_dashboard.dart';
+// import 'screens/energie/notification_settings_screen.dart'; // FIREBASE - deaktiviert
+// import 'screens/notification_settings_screen.dart' as new_notif; // FIREBASE - deaktiviert
+import 'services/service_manager.dart'; // ✅ NEW: Centralized service initialization
+import 'services/theme_service.dart';
+import 'services/privacy_analytics_service.dart'; // 📊 PRIVACY ANALYTICS
+import 'services/analytics_service.dart'; // 📊 CLOUDFLARE ANALYTICS (NEW)
+import 'services/error_reporting_service.dart'; // 🚨 ERROR REPORTING (NEW)
+import 'services/image_cache_service.dart'; // 🖼️ IMAGE CACHE (NEW)
+import 'services/haptic_feedback_service.dart'; // 📳 HAPTIC FEEDBACK (NEW Phase 3)
+import 'services/offline_sync_service.dart'; // 📡 OFFLINE SYNC (NEW Phase 3)
+import 'config/enhanced_app_themes.dart'; // 🎨 ENHANCED UI/UX THEMES
+import 'services/achievement_service.dart';  // 🏆 Achievement System
+import 'widgets/achievement_unlock_dialog.dart';  // 🏆 Achievement UI
+import 'utils/error_boundary.dart';  // 🛡️ Error Boundary
+// import 'widgets/offline_indicator.dart';  // 📡 OFFLINE INDICATOR (DISABLED - BUILD ISSUE)
+// import 'services/push_notification_service.dart'; // Firebase -> Cloudflare
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // 🗄️ HIVE LOCAL STORAGE - Initialize
+  await Hive.initFlutter();
+  
+  // 🛡️ ERROR BOUNDARY - Verhindert App-Crashes
+  ErrorBoundary.initialize();
+  
+  // 📊 ANALYTICS - Track app start
+  final analytics = PrivacyAnalyticsService();
+  await analytics.trackEvent(PrivacyAnalyticsService.eventAppOpen);
+  
+  // 📊 CLOUDFLARE ANALYTICS - Initialize (NEW)
+  final cloudflareAnalytics = CloudflareAnalyticsService();
+  cloudflareAnalytics.initialize(); // Anonymous zuerst, userId wird nach Login gesetzt
+  
+  // 🚨 ERROR REPORTING - Initialize (NEW Phase 2)
+  await ErrorReportingService().initialize();
+  
+  // 🖼️ IMAGE CACHE - Initialize (NEW Phase 2)
+  ImageCacheService().initialize();
+  await ImageCacheService().cleanupOnStart();
+  
+  // 📳 HAPTIC FEEDBACK - Initialize (NEW Phase 3)
+  await HapticFeedbackService().initialize();
+  
+  // 📡 OFFLINE SYNC - Initialize (NEW Phase 3)
+  await OfflineSyncService().initialize();
+  
+  // ═══════════════════════════════════════════════════════════
+  // MOBILE SYSTEM UI OPTIMIERUNGEN (SYNC - SCHNELL)
+  // ═══════════════════════════════════════════════════════════
+  
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.light,
+      statusBarBrightness: Brightness.dark,
+      systemNavigationBarColor: Color(0xFF0D47A1),
+      systemNavigationBarIconBrightness: Brightness.light,
+    ),
+  );
+  
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+    DeviceOrientation.landscapeLeft,
+    DeviceOrientation.landscapeRight,
+  ]);
+  
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  
+  // ═══════════════════════════════════════════════════════════
+  // KRITISCHE SERVICES (SYNC - NUR DIESE BLOCKIEREN START)
+  // ═══════════════════════════════════════════════════════════
+  
+  // ═══════════════════════════════════════════════════════════
+  // KRITISCHE SERVICES (SYNC - BLOCKING)
+  // Managed by ServiceManager - NO arbitrary delays!
+  // ═══════════════════════════════════════════════════════════
+  
+  try {
+    await ServiceManager().initializeCriticalServices();
+    debugPrint('✅ Critical services ready (Storage + Theme)');
+  } catch (e) {
+    debugPrint('⚠️ Critical service init error: $e');
+    // App cannot start without critical services
+    rethrow;
+  }
+  
+  // ═══════════════════════════════════════════════════════════
+  // APP STARTEN (NICHT BLOCKIEREND)
+  // ═══════════════════════════════════════════════════════════
+  
+  runApp(
+    // 🆕 RIVERPOD: ProviderScope für Admin-System
+    ProviderScope(
+      child: provider.ChangeNotifierProvider(
+        create: (_) => ThemeService(),
+        child: const WeltenbibliothekApp(),
+      ),
+    ),
+  );
+  
+  // ═══════════════════════════════════════════════════════════
+  // NICHT-KRITISCHE SERVICES (ASYNC - IM HINTERGRUND)
+  // Managed by ServiceManager - Priority-based loading
+  // ═══════════════════════════════════════════════════════════
+  
+  ServiceManager().initializeBackgroundServices();
+}
+
+class WeltenbibliothekApp extends StatefulWidget {
+  const WeltenbibliothekApp({super.key});
+
+  @override
+  State<WeltenbibliothekApp> createState() => _WeltenbibliothekAppState();
+}
+
+class _WeltenbibliothekAppState extends State<WeltenbibliothekApp> {
+  @override
+  void initState() {
+    super.initState();
+    
+    // 🏆 Achievement Unlock Listener
+    _setupAchievementListeners();
+  }
+  
+  /// 🏆 Setup Achievement Listeners
+  void _setupAchievementListeners() {
+    final achievementService = AchievementService();
+    
+    // Listen for achievement unlocks
+    achievementService.addUnlockListener((achievement, progress) {
+      Future.delayed(Duration.zero, () {
+        if (mounted) {
+          // Show animated unlock dialog
+          AchievementUnlockDialog.show(
+            context,
+            achievement,
+            progress,
+          );
+        }
+      });
+    });
+    
+    // Listen for level ups
+    achievementService.addLevelUpListener((userLevel) {
+      Future.delayed(Duration.zero, () {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.emoji_events, color: Colors.white),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      '⬆️ LEVEL UP! Du bist jetzt Level ${userLevel.level}!',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.amber,
+              duration: const Duration(seconds: 4),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          );
+        }
+      });
+    });
+  }
+  
+  /// Höre auf Achievement-Unlocks (DISABLED - Toast notifications used instead)
+  // void _listenToAchievementUnlocks() {
+  //   AchievementService().unlockStream.listen((achievement) {
+  //     Future.delayed(const Duration(milliseconds: 500), () {
+  //       if (mounted) {
+  //         showDialog(
+  //           context: context,
+  //           barrierDismissible: true,
+  //           builder: (context) => AchievementUnlockPopup(
+  //             achievement: achievement,
+  //             onDismiss: () => Navigator.of(context).pop(),
+  //           ),
+  //         );
+  //       }
+  //     });
+  //   });
+  // }
+  
+  @override
+  Widget build(BuildContext context) {
+    return provider.Consumer<ThemeService>(
+      builder: (context, themeService, child) {
+        // DISABLED: OfflineIndicator (build issue)
+        return MaterialApp(
+          title: 'Dual Realms - Deep Research',
+          debugShowCheckedModeBanner: false,
+          
+          // 🌙 PERMANENT DARK MODE (unabhängig von System-Einstellungen)
+          themeMode: ThemeMode.dark,
+          theme: EnhancedAppThemes.darkTheme, // Dark als Standard
+          darkTheme: EnhancedAppThemes.darkTheme, // Immer Dark
+          
+          // ═══════════════════════════════════════════════════════════
+          // MOBILE SCROLL PERFORMANCE
+          // ═══════════════════════════════════════════════════════════
+          scrollBehavior: const MaterialScrollBehavior().copyWith(
+            physics: const BouncingScrollPhysics(),
+            scrollbars: false, // Keine Scrollbars auf Mobile
+          ),
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: const [
+            Locale('de', 'DE'), // Deutsch
+            Locale('en', 'US'), // Englisch als Fallback
+          ],
+          locale: const Locale('de', 'DE'),
+          // ✅ FIXED: DIREKT ZUM PORTAL - KEIN INTRO, KEINE CHECKS
+          home: const PortalHomeScreen(), // 🌀 Direkt zum Portal
+          routes: {
+            '/home': (context) => const IntroImageScreen(),
+            '/dashboard': (context) => const DashboardScreen(),
+            '/achievements': (context) => const AchievementsScreen(),
+            '/daily_challenges': (context) => const DailyChallengesScreen(),  // 🎯 Daily Challenges
+            '/leaderboard': (context) => const LeaderboardScreen(),  // 🏆 Leaderboard
+            '/enhanced_profile': (context) => const EnhancedProfileScreen(),  // 👤 Enhanced Profile
+            '/notifications': (context) => const CloudflareNotificationSettingsScreen(), // CLOUDFLARE
+            '/search_history': (context) => const SearchHistoryScreen(), // 🆕 SEARCH HISTORY
+            '/health': (context) => const BackendHealthMonitorScreen(), // 🏥 HEALTH MONITOR
+            '/simple_voice_test': (context) => const SimpleVoiceTestScreen(), // 🧪 SIMPLE VOICE TEST
+            // 🔐 ADMIN-DASHBOARDS (World-specific)
+            '/admin/materie': (context) => const WorldAdminDashboard(world: 'materie'),
+            '/admin/energie': (context) => const WorldAdminDashboard(world: 'energie'),
+            // KI-ANALYSE-TOOLS (für Recherche-Tab)
+            '/propaganda-detector': (context) => const PropagandaDetectorScreen(),
+            '/image-forensics': (context) => const ImageForensicsScreen(),
+            '/power-network-mapper': (context) => const PowerNetworkMapperScreen(),
+            '/event-predictor': (context) => const EventPredictorScreen(),
+          },
+        );
+      },
+    );
+  }
+
+  // TODO: Review unused method: _checkOnboardingCompleted
+  // Future<bool> _checkOnboardingCompleted() async {
+    // final prefs = await SharedPreferences.getInstance();
+    // return prefs.getBool('onboarding_completed') ?? false;
+  // }
+}
+
+
+######## lib/config/api_config.dart ########
+
+/// API CONFIGURATION SERVICE
+/// 
+/// Zentrale Verwaltung aller Backend-URLs und API-Endpoints.
+/// Single Source of Truth für API-Konfiguration.
+/// 
+/// VORHER: 32x hardcoded URLs über 23 Dateien verteilt
+/// NACHHER: 1x zentrale Konfiguration
+///
+/// Migration Status: ✅ COMPLETE
+/// - V2 API (Primary): weltenbibliothek-api-v2.brandy13062.workers.dev
+/// - All core services migrated to V2
+
+import 'package:flutter/foundation.dart';
+
+class ApiConfig {
+  // ==========================================================================
+  // BACKEND URLS
+  // ==========================================================================
+  
+  /// V2 API (PRIMARY) - All Services
+  /// Verwendet für: Admin, Profile, User Management, Content Management, Tools
+  static const String _v2BaseUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
+  
+  /// Public getter for V2 API URL
+  static String get v2ApiUrl => _v2BaseUrl;
+  
+  // ==========================================================================
+  // ENVIRONMENT CONFIGURATION
+  // ==========================================================================
+  
+  /// Cloudflare API Token (Primary)
+  /// 🔐 SECURITY: In production, use environment variables
+  static const String cloudflareApiToken = 'y-Xiv3kKeiybDm2CV0yLFu7TSd22co6NBw3udn5Y';
+  
+  /// Cloudflare API Token (Backup)
+  static const String cloudflareApiTokenBackup = 'XCz3muf7asVj-lBgXXG3ZiY9wJ_TLelzJQZ9jutB';
+  
+  /// Current Environment
+  static const String environment = kDebugMode ? 'development' : 'production';
+  
+  /// Is Development Mode
+  static bool get isDevelopment => kDebugMode;
+  
+  /// Is Production Mode
+  static bool get isProduction => !kDebugMode;
+  
+  // ==========================================================================
+  // PRIMARY API ENDPOINTS
+  // ==========================================================================
+  
+  /// Main API Base URL (V2)
+  static String get baseUrl => _v2BaseUrl;
+  
+  // ==========================================================================
+  // SERVICE-SPECIFIC ENDPOINTS
+  // ==========================================================================
+  
+  // --- ADMIN & MANAGEMENT (V2) ---
+  
+  /// Profile API Base
+  static String get profileApiUrl => '$_v2BaseUrl/api/profile';
+  
+  /// World Admin API Base
+  static String get worldAdminApiUrl => '$_v2BaseUrl/api/admin';
+  
+  /// User Management API Base
+  static String get userManagementApiUrl => '$_v2BaseUrl/api/users';
+  
+  /// Content Management API Base
+  static String get contentManagementApiUrl => '$_v2BaseUrl/api/content';
+  
+  /// Moderation API Base
+  static String get moderationApiUrl => '$_v2BaseUrl/api/moderation';
+  
+  // --- TOOLS & COMMUNITY (V2) ---
+  
+  /// Tools API Base (V2)
+  static String get toolsApiUrl => '$_v2BaseUrl/api/tools';
+  
+  /// Chat API Base
+  /// ✅ PRODUCTION: Deployed Cloudflare Worker
+  /// FIXED: Use actual deployed WebSocket worker
+  static String get chatApiUrl => 'https://weltenbibliothek-websocket.brandy13062.workers.dev';
+  
+  /// Push Notification API Base
+  /// Status: ✅ V2
+  static String get pushApiUrl => '$_v2BaseUrl/api/push';
+  
+  /// AI Service API Base
+  /// Status: ✅ V2
+  static String get aiApiUrl => '$_v2BaseUrl/api/ai';
+  
+  /// Cloud Sync API Base
+  /// Status: ✅ V2
+  static String get cloudSyncApiUrl => '$_v2BaseUrl/api/sync';
+  
+  // --- WEBSOCKET ENDPOINTS ---
+  
+  /// WebSocket Base URL (Production - Cloudflare Durable Objects)
+  /// Status: ✅ DEPLOYED
+  static String get websocketUrl => 'wss://weltenbibliothek-websocket.brandy13062.workers.dev';
+  
+  // ==========================================================================
+  // PUSH NOTIFICATION ENDPOINTS (V2.0.0)
+  // ==========================================================================
+  
+  /// Push Notification Base URL
+  static String get pushNotificationBaseUrl => 'https://weltenbibliothek-websocket.brandy13062.workers.dev';
+  
+  /// Register Push Token
+  static String get pushRegisterUrl => '$pushNotificationBaseUrl/push/register';
+  
+  /// Send Push Notification
+  static String get pushSendUrl => '$pushNotificationBaseUrl/push/send';
+  
+  // ==========================================================================
+  // HEALTH CHECK & MONITORING
+  // ==========================================================================
+  
+  /// Health Check Endpoint (V2)
+  static String get healthCheckUrl => '$_v2BaseUrl/health';
+  
+  /// V1 Health Check (Legacy)
+  /// Status: ✅ V2
+  static String get legacyHealthCheckUrl => '$_v2BaseUrl/health';
+  
+  // ==========================================================================
+  // INLINE-TOOL ENDPOINTS (V1 → V2 Migration)
+  // ==========================================================================
+  
+  /// Chakra Scanner Endpoint
+  static String get chakraReadingsUrl => '$toolsApiUrl/chakra-readings';
+  
+  /// Artefakt Collection Endpoint
+  static String get artefakteUrl => '$toolsApiUrl/artefakte';
+  
+  /// Connections Board Endpoint
+  static String get connectionsUrl => '$toolsApiUrl/connections';
+  
+  /// Heilfrequenz Player Endpoint
+  static String get heilfrequenzUrl => '$toolsApiUrl/heilfrequenz-sessions';
+  
+  /// News Board Endpoint
+  static String get newsTrackerUrl => '$toolsApiUrl/news-tracker';
+  
+  /// Patent Archive Endpoint
+  static String get patenteUrl => '$toolsApiUrl/patente';
+  
+  /// Traum Tagebuch Endpoint
+  static String get traeumeUrl => '$toolsApiUrl/traeume';
+  
+  /// UFO Sichtungen Endpoint
+  static String get ufoSichtungenUrl => '$toolsApiUrl/ufo-sichtungen';
+  
+  /// Bewusstseins Journal Endpoint
+  static String get bewusstseinsEintraegeUrl => '$toolsApiUrl/bewusstseins-eintraege';
+  
+  /// Group Meditation Endpoint
+  static String get meditationSessionsUrl => '$toolsApiUrl/meditation-sessions';
+  
+  // ==========================================================================
+  // TIMEOUT CONFIGURATION
+  // ==========================================================================
+  
+  /// Default HTTP Timeout
+  static const Duration defaultTimeout = Duration(seconds: 30);
+  
+  /// Upload Timeout (für Bilder/Files)
+  static const Duration uploadTimeout = Duration(seconds: 60);
+  
+  /// WebSocket Timeout
+  static const Duration websocketTimeout = Duration(seconds: 10);
+  
+  // ==========================================================================
+  // RETRY CONFIGURATION
+  // ==========================================================================
+  
+  /// Maximum Retry Attempts
+  static const int maxRetries = 3;
+  
+  /// Retry Delay
+  static const Duration retryDelay = Duration(seconds: 2);
+  
+  // ==========================================================================
+  // DEBUG HELPERS
+  // ==========================================================================
+  
+  /// Print API Configuration (Development only)
+  static void printConfig() {
+    if (kDebugMode) {
+      print('=== API CONFIGURATION ===');
+      print('Environment: $environment');
+      print('Base URL (V2): $baseUrl');
+      print('Legacy URL (V1): $_v2BaseUrl');
+      print('Tools API: $toolsApiUrl');
+      print('Profile API: $profileApiUrl');
+      print('Admin API: $worldAdminApiUrl');
+      print('Health Check: $healthCheckUrl');
+      print('========================');
+    }
+  }
+  
+  /// Validate Configuration
+  static bool validate() {
+    try {
+      // Check V2 URL
+      if (!_v2BaseUrl.startsWith('https://')) {
+        if (kDebugMode) print('❌ V2 URL invalid: $_v2BaseUrl');
+        return false;
+      }
+      
+      // Check V1 URL
+      if (!_v2BaseUrl.startsWith('https://')) {
+        if (kDebugMode) print('❌ V1 URL invalid: $_v2BaseUrl');
+        return false;
+      }
+      
+      if (kDebugMode) print('✅ API Config validated');
+      return true;
+    } catch (e) {
+      if (kDebugMode) print('❌ API Config validation failed: $e');
+      return false;
+    }
+  }
+  
+  // ==========================================================================
+  // MIGRATION HELPERS
+  // ==========================================================================
+  
+  /// Get migration status for a service
+  static String getMigrationStatus(String serviceName) {
+    // V2 Services (Complete)
+    const v2Services = [
+      'profile_sync_service',
+      'world_admin_service',
+      'user_management_service',
+      'content_management_service',
+      'moderation_service',
+      'backend_health_service',
+      'admin_state',
+    ];
+    
+    if (v2Services.contains(serviceName)) {
+      return '✅ V2 (Complete)';
+    }
+    
+    return '⏳ V1 (Migration Pending)';
+  }
+}
+
+================================================================================
+TEIL 3: WEBRTC CORE SERVICES
+================================================================================
+
+
+######## lib/services/webrtc_voice_service.dart ########
+
+/// 🎤 WELTENBIBLIOTHEK - WEBRTC VOICE CHAT SERVICE
+/// Real-time voice communication using WebRTC
+/// Features: 1-to-1 calls, group rooms (max 10), echo cancellation, quality monitoring
+library;
+
+import 'dart:async';
+import 'dart:convert';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_webrtc/flutter_webrtc.dart';
+import 'package:permission_handler/permission_handler.dart';
+import '../services/websocket_chat_service.dart';
+import '../services/error_reporting_service.dart';
+import '../services/admin_action_service.dart';
+import '../services/voice_session_tracker.dart'; // 🆕 Session Tracking
+import '../models/webrtc_call_state.dart'; // RoomFullException
+
+/// Voice chat connection state
+enum VoiceConnectionState {
+  disconnected,
+  connecting,
+  connected,
+  error,
+}
+
+/// Participant in voice room
+class VoiceParticipant {
+  final String userId;
+  final String username;
+  final bool isMuted;
+  final bool isSpeaking;
+  final RTCPeerConnection? peerConnection;
+  final MediaStream? stream;
+  final String? avatarEmoji; // 🆕 Avatar emoji for UI
+  
+  VoiceParticipant({
+    required this.userId,
+    required this.username,
+    this.isMuted = false,
+    this.isSpeaking = false,
+    this.peerConnection,
+    this.stream,
+    this.avatarEmoji,
+  });
+  
+  VoiceParticipant copyWith({
+    bool? isMuted,
+    bool? isSpeaking,
+    RTCPeerConnection? peerConnection,
+    MediaStream? stream,
+    String? avatarEmoji,
+  }) {
+    return VoiceParticipant(
+      userId: userId,
+      username: username,
+      isMuted: isMuted ?? this.isMuted,
+      isSpeaking: isSpeaking ?? this.isSpeaking,
+      peerConnection: peerConnection ?? this.peerConnection,
+      stream: stream ?? this.stream,
+      avatarEmoji: avatarEmoji ?? this.avatarEmoji,
+    );
+  }
+}
+
+/// WebRTC Voice Chat Service
+class WebRTCVoiceService {
+  static final WebRTCVoiceService _instance = WebRTCVoiceService._internal();
+  factory WebRTCVoiceService() => _instance;
+  static WebRTCVoiceService get instance => _instance; // ✅ PHASE A: Static getter
+  WebRTCVoiceService._internal() {
+    // 🆕 Listen to speaking events for session tracking
+    _speakingController.stream.listen((speakingMap) {
+      final myUserId = _currentUserId;
+      if (myUserId != null && speakingMap.containsKey(myUserId)) {
+        final isSpeaking = speakingMap[myUserId] ?? false;
+        if (isSpeaking) {
+          _sessionTracker.startSpeaking();
+        } else {
+          _sessionTracker.stopSpeaking();
+        }
+      }
+    });
+  }
+
+  // WebSocket for signaling
+  final WebSocketChatService _signaling = WebSocketChatService();
+  
+  // Admin Action Service
+  final AdminActionService _adminService = AdminActionService();
+  
+  // 🆕 Voice Session Tracker
+  final VoiceSessionTracker _sessionTracker = VoiceSessionTracker();
+  
+  // Local media stream
+  MediaStream? _localStream;
+  
+  // Peer connections (userId -> RTCPeerConnection)
+  final Map<String, RTCPeerConnection> _peerConnections = {};
+  
+  // Remote streams (userId -> MediaStream)
+  final Map<String, MediaStream> _remoteStreams = {};
+  
+  // Participants
+  final Map<String, VoiceParticipant> _participants = {};
+  
+  // State
+  VoiceConnectionState _state = VoiceConnectionState.disconnected;
+  String? _currentRoomId;
+  String? _currentUserId;
+  bool _isMuted = false;
+  bool _isPushToTalk = false;
+  
+  // Stream controllers
+  final _stateController = StreamController<VoiceConnectionState>.broadcast();
+  final _participantsController = StreamController<List<VoiceParticipant>>.broadcast();
+  final _speakingController = StreamController<Map<String, bool>>.broadcast();
+  
+  // Streams
+  Stream<VoiceConnectionState> get stateStream => _stateController.stream;
+  Stream<List<VoiceParticipant>> get participantsStream => _participantsController.stream;
+  Stream<Map<String, bool>> get speakingStream => _speakingController.stream;
+  
+  // Getters
+  VoiceConnectionState get state => _state;
+  bool get isMuted => _isMuted;
+  bool get isConnected => _state == VoiceConnectionState.connected;
+  List<VoiceParticipant> get participants => _participants.values.toList();
+  AdminActionService get adminService => _adminService;  // 🆕 Admin Service Access
+  
+  // WebRTC configuration
+  final Map<String, dynamic> _configuration = {
+    'iceServers': [
+      {'urls': 'stun:stun.l.google.com:19302'},
+      {'urls': 'stun:stun1.l.google.com:19302'},
+    ],
+    'sdpSemantics': 'unified-plan',
+  };
+  
+  // Media constraints
+  final Map<String, dynamic> _mediaConstraints = {
+    'audio': {
+      'echoCancellation': true,
+      'noiseSuppression': true,
+      'autoGainControl': true,
+    },
+    'video': false,
+  };
+
+  /// Join voice room
+  Future<bool> joinRoom({
+    required String roomId,
+    required String userId,
+    required String username,
+    bool pushToTalk = false,
+  }) async {
+    try {
+      // ✅ PHASE A: Check participant limit BEFORE connecting
+      final currentParticipantCount = _participants.length;
+      const maxParticipants = 10;
+      
+      if (currentParticipantCount >= maxParticipants) {
+        if (kDebugMode) {
+          print('❌ WebRTC: Room full ($currentParticipantCount/$maxParticipants)');
+        }
+        _setState(VoiceConnectionState.error);
+        throw RoomFullException(
+          'Raum ist voll (max. $maxParticipants Teilnehmer)',
+          currentCount: currentParticipantCount,
+          maxCapacity: maxParticipants,
+        );
+      }
+      
+      _setState(VoiceConnectionState.connecting);
+      
+      // ✅ PHASE 2: Enhanced Permission Handling
+      final permissionStatus = await Permission.microphone.status;
+      
+      if (kDebugMode) {
+        print('🎤 WebRTC: Current permission status: $permissionStatus');
+      }
+      
+      // Request microphone permission
+      final permission = await Permission.microphone.request();
+      
+      if (kDebugMode) {
+        print('🎤 WebRTC: Permission result: ${permission.toString()}');
+      }
+      
+      if (!permission.isGranted) {
+        if (kDebugMode) {
+          print('❌ WebRTC: Microphone permission denied');
+        }
+        _setState(VoiceConnectionState.error);
+        
+        // ✅ PHASE 2: Provide user-friendly error message
+        throw Exception(
+          permission.isPermanentlyDenied
+              ? 'Mikrofon-Berechtigung dauerhaft verweigert. Bitte in Einstellungen aktivieren.'
+              : 'Mikrofon-Berechtigung erforderlich für Voice Chat.'
+        );
+      }
+      
+      // ✅ PHASE 2: Enhanced Media Stream Error Handling
+      try {
+        _localStream = await navigator.mediaDevices.getUserMedia(_mediaConstraints);
+      } catch (mediaError) {
+        if (kDebugMode) {
+          print('❌ WebRTC: getUserMedia failed - $mediaError');
+        }
+        throw Exception('Mikrofon konnte nicht aktiviert werden: $mediaError');
+      }
+      
+      if (_localStream == null) {
+        if (kDebugMode) {
+          print('❌ WebRTC: Failed to get local stream');
+        }
+        _setState(VoiceConnectionState.error);
+        throw Exception('Mikrofon-Stream konnte nicht erstellt werden.');
+      }
+      
+      if (kDebugMode) {
+        print('✅ WebRTC: Local stream acquired successfully');
+      }
+      
+      _currentRoomId = roomId;
+      _currentUserId = userId;
+      _isPushToTalk = pushToTalk;
+      
+      // Mute if push-to-talk
+      if (_isPushToTalk) {
+        await mute();
+      }
+      
+      // Setup signaling
+      _setupSignaling();
+      
+      // Send join message via WebSocket
+      await _signaling.sendMessage(
+        room: roomId,
+        message: jsonEncode({
+          'type': 'voice_join',
+          'userId': userId,
+          'username': username,
+        }),
+        username: username,
+        realm: 'voice',
+      );
+      
+      _setState(VoiceConnectionState.connected);
+      
+      // 🆕 Start session tracking
+      final world = roomId.contains('materie') ? 'materie' : 'energie';
+      await _sessionTracker.startSession(
+        roomId: roomId,
+        userId: userId,
+        username: username,
+        world: world,
+      );
+      
+      if (kDebugMode) {
+        print('✅ WebRTC: Joined room $roomId');
+        print('📊 Session tracking started');
+      }
+      
+      return true;
+      
+    } catch (e, stack) {
+      if (kDebugMode) {
+        print('❌ WebRTC: Error joining room - $e');
+      }
+      ErrorReportingService().reportError(
+        error: e,
+        stackTrace: stack,
+        context: 'WebRTC Voice - Join Room',
+      );
+      _setState(VoiceConnectionState.error);
+      return false;
+    }
+  }
+
+  /// Leave voice room
+  Future<void> leaveRoom() async {
+    try {
+      if (_currentRoomId != null && _currentUserId != null) {
+        // Send leave message
+        await _signaling.sendMessage(
+          room: _currentRoomId!,
+          message: jsonEncode({
+            'type': 'voice_leave',
+            'userId': _currentUserId!,
+          }),
+          username: 'user',
+          realm: 'voice',
+        );
+      }
+      
+      // Close all peer connections
+      for (final pc in _peerConnections.values) {
+        await pc.close();
+      }
+      _peerConnections.clear();
+      
+      // Stop local stream
+      if (_localStream != null) {
+        _localStream!.getTracks().forEach((track) {
+          track.stop();
+        });
+        await _localStream!.dispose();
+        _localStream = null;
+      }
+      
+      // Clear remote streams
+      for (final stream in _remoteStreams.values) {
+        await stream.dispose();
+      }
+      _remoteStreams.clear();
+      
+      // Clear participants
+      _participants.clear();
+      _participantsController.add([]);
+      
+      _currentRoomId = null;
+      _currentUserId = null;
+      _setState(VoiceConnectionState.disconnected);
+      
+      // 🆕 End session tracking
+      await _sessionTracker.endSession();
+      
+      if (kDebugMode) {
+        print('👋 WebRTC: Left voice room');
+        print('📊 Session tracking ended');
+      }
+      
+    } catch (e, stack) {
+      if (kDebugMode) {
+        print('❌ WebRTC: Error leaving room - $e');
+      }
+      ErrorReportingService().reportError(
+        error: e,
+        stackTrace: stack,
+        context: 'WebRTC Voice - Leave Room',
+      );
+    }
+  }
+
+  /// Mute/unmute microphone
+  Future<void> toggleMute() async {
+    if (_isMuted) {
+      await unmute();
+    } else {
+      await mute();
+    }
+  }
+
+  /// Mute microphone
+  Future<void> mute() async {
+    if (_localStream != null) {
+      _localStream!.getAudioTracks().forEach((track) {
+        track.enabled = false;
+      });
+      _isMuted = true;
+      
+      // Notify other participants
+      if (_currentRoomId != null && _currentUserId != null) {
+        await _signaling.sendMessage(
+          room: _currentRoomId!,
+          message: jsonEncode({
+            'type': 'voice_mute',
+            'userId': _currentUserId!,
+            'muted': true,
+          }),
+          username: 'user',
+          realm: 'voice',
+        );
+      }
+      
+      if (kDebugMode) {
+        print('🔇 WebRTC: Muted');
+      }
+    }
+  }
+
+  /// Unmute microphone
+  Future<void> unmute() async {
+    if (_localStream != null) {
+      _localStream!.getAudioTracks().forEach((track) {
+        track.enabled = true;
+      });
+      _isMuted = false;
+      
+      // Notify other participants
+      if (_currentRoomId != null && _currentUserId != null) {
+        await _signaling.sendMessage(
+          room: _currentRoomId!,
+          message: jsonEncode({
+            'type': 'voice_mute',
+            'userId': _currentUserId!,
+            'muted': false,
+          }),
+          username: 'user',
+          realm: 'voice',
+        );
+      }
+      
+      if (kDebugMode) {
+        print('🔊 WebRTC: Unmuted');
+      }
+    }
+  }
+
+  /// Setup WebSocket signaling
+  void _setupSignaling() {
+    _signaling.messageStream.listen((message) {
+      _handleSignalingMessage(message);
+    });
+  }
+
+  /// Handle signaling messages
+  Future<void> _handleSignalingMessage(Map<String, dynamic> message) async {
+    try {
+      final type = message['type'] as String?;
+      
+      if (type == null) return;
+      
+      switch (type) {
+        case 'voice_join':
+          await _handleUserJoined(message);
+          break;
+        case 'voice_leave':
+          await _handleUserLeft(message);
+          break;
+        case 'voice_offer':
+          await _handleOffer(message);
+          break;
+        case 'voice_answer':
+          await _handleAnswer(message);
+          break;
+        case 'voice_ice_candidate':
+          await _handleIceCandidate(message);
+          break;
+        case 'voice_mute':
+          _handleMuteUpdate(message);
+          break;
+      }
+    } catch (e, stack) {
+      if (kDebugMode) {
+        print('❌ WebRTC: Error handling signaling message - $e');
+      }
+      ErrorReportingService().reportError(
+        error: e,
+        stackTrace: stack,
+        context: 'WebRTC Voice - Signaling',
+        additionalData: {'message': message},
+      );
+    }
+  }
+
+  /// Handle user joined
+  Future<void> _handleUserJoined(Map<String, dynamic> message) async {
+    final userId = message['userId'] as String;
+    final username = message['username'] as String;
+    
+    if (userId == _currentUserId) return;
+    
+    // Add participant
+    _participants[userId] = VoiceParticipant(
+      userId: userId,
+      username: username,
+    );
+    _participantsController.add(participants);
+    
+    // Create peer connection
+    await _createPeerConnection(userId, true);
+    
+    if (kDebugMode) {
+      print('👤 WebRTC: User $username joined');
+    }
+  }
+
+  /// Handle user left
+  Future<void> _handleUserLeft(Map<String, dynamic> message) async {
+    final userId = message['userId'] as String;
+    
+    // Remove participant
+    _participants.remove(userId);
+    _participantsController.add(participants);
+    
+    // Close peer connection
+    final pc = _peerConnections.remove(userId);
+    if (pc != null) {
+      await pc.close();
+    }
+    
+    // Remove remote stream
+    final stream = _remoteStreams.remove(userId);
+    if (stream != null) {
+      await stream.dispose();
+    }
+    
+    if (kDebugMode) {
+      print('👋 WebRTC: User $userId left');
+    }
+  }
+
+  /// Create peer connection
+  Future<void> _createPeerConnection(String userId, bool initiator) async {
+    try {
+      final pc = await createPeerConnection(_configuration);
+      
+      _peerConnections[userId] = pc;
+      
+      // Add local stream
+      if (_localStream != null) {
+        _localStream!.getTracks().forEach((track) {
+          pc.addTrack(track, _localStream!);
+        });
+      }
+      
+      // Handle remote stream
+      pc.onTrack = (RTCTrackEvent event) {
+        if (event.streams.isNotEmpty) {
+          _remoteStreams[userId] = event.streams[0];
+          
+          // Update participant
+          if (_participants.containsKey(userId)) {
+            _participants[userId] = _participants[userId]!.copyWith(
+              stream: event.streams[0],
+            );
+            _participantsController.add(participants);
+          }
+        }
+      };
+      
+      // Handle ICE candidate
+      pc.onIceCandidate = (RTCIceCandidate candidate) {
+        _signaling.sendMessage(
+          room: _currentRoomId!,
+          message: jsonEncode({
+            'type': 'voice_ice_candidate',
+            'userId': _currentUserId!,
+            'targetUserId': userId,
+            'candidate': candidate.toMap(),
+          }),
+          username: 'user',
+          realm: 'voice',
+        );
+      };
+      
+      // If initiator, create offer
+      if (initiator) {
+        final offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        
+        await _signaling.sendMessage(
+          room: _currentRoomId!,
+          message: jsonEncode({
+            'type': 'voice_offer',
+            'userId': _currentUserId!,
+            'targetUserId': userId,
+            'sdp': offer.toMap(),
+          }),
+          username: 'user',
+          realm: 'voice',
+        );
+      }
+      
+    } catch (e, stack) {
+      if (kDebugMode) {
+        print('❌ WebRTC: Error creating peer connection - $e');
+      }
+      ErrorReportingService().reportError(
+        error: e,
+        stackTrace: stack,
+        context: 'WebRTC Voice - Create Peer Connection',
+      );
+    }
+  }
+
+  /// Handle offer
+  Future<void> _handleOffer(Map<String, dynamic> message) async {
+    final userId = message['userId'] as String;
+    final sdpMap = message['sdp'] as Map<String, dynamic>;
+    
+    final pc = _peerConnections[userId];
+    if (pc == null) {
+      await _createPeerConnection(userId, false);
+    }
+    
+    final offer = RTCSessionDescription(
+      sdpMap['sdp'] as String,
+      sdpMap['type'] as String,
+    );
+    
+    await _peerConnections[userId]!.setRemoteDescription(offer);
+    
+    final answer = await _peerConnections[userId]!.createAnswer();
+    await _peerConnections[userId]!.setLocalDescription(answer);
+    
+    await _signaling.sendMessage(
+      room: _currentRoomId!,
+      message: jsonEncode({
+        'type': 'voice_answer',
+        'userId': _currentUserId!,
+        'targetUserId': userId,
+        'sdp': answer.toMap(),
+      }),
+      username: 'user',
+      realm: 'voice',
+    );
+  }
+
+  /// Handle answer
+  Future<void> _handleAnswer(Map<String, dynamic> message) async {
+    final userId = message['userId'] as String;
+    final sdpMap = message['sdp'] as Map<String, dynamic>;
+    
+    final pc = _peerConnections[userId];
+    if (pc == null) return;
+    
+    final answer = RTCSessionDescription(
+      sdpMap['sdp'] as String,
+      sdpMap['type'] as String,
+    );
+    
+    await pc.setRemoteDescription(answer);
+  }
+
+  /// Handle ICE candidate
+  Future<void> _handleIceCandidate(Map<String, dynamic> message) async {
+    final userId = message['userId'] as String;
+    final candidateMap = message['candidate'] as Map<String, dynamic>;
+    
+    final pc = _peerConnections[userId];
+    if (pc == null) return;
+    
+    final candidate = RTCIceCandidate(
+      candidateMap['candidate'] as String,
+      candidateMap['sdpMid'] as String,
+      candidateMap['sdpMLineIndex'] as int,
+    );
+    
+    await pc.addCandidate(candidate);
+  }
+
+  /// Handle mute update
+  void _handleMuteUpdate(Map<String, dynamic> message) {
+    final userId = message['userId'] as String;
+    final muted = message['muted'] as bool;
+    
+    if (_participants.containsKey(userId)) {
+      _participants[userId] = _participants[userId]!.copyWith(isMuted: muted);
+      _participantsController.add(participants);
+    }
+  }
+
+  /// Set state
+  void _setState(VoiceConnectionState newState) {
+    _state = newState;
+    _stateController.add(_state);
+    
+    if (kDebugMode) {
+      print('🎤 WebRTC: State changed to ${newState.toString()}');
+    }
+  }
+  
+  // ✅ PHASE 2: Connection Health Check
+  Future<bool> checkConnection() async {
+    try {
+      // Check if we have local stream
+      if (_localStream != null) {
+        final tracks = _localStream!.getAudioTracks();
+        if (tracks.isNotEmpty) {
+          if (kDebugMode) {
+            print('✅ WebRTC: Connection healthy - local stream active');
+          }
+          return true;
+        }
+      }
+      
+      // Check WebSocket connection
+      // TODO: Add WebSocket health check
+      
+      if (kDebugMode) {
+        print('⚠️ WebRTC: Connection check - no active stream');
+      }
+      
+      return _state == VoiceConnectionState.connected;
+      
+    } catch (e) {
+      if (kDebugMode) {
+        print('❌ WebRTC: Connection check failed - $e');
+      }
+      return false;
+    }
+  }
+  
+  // ✅ PHASE 2: Auto-Recovery
+  Future<bool> attemptReconnect() async {
+    if (kDebugMode) {
+      print('🔄 WebRTC: Attempting reconnection...');
+    }
+    
+    try {
+      // Save current room info
+      final savedRoomId = _currentRoomId;
+      final savedUserId = _currentUserId;
+      
+      if (savedRoomId == null || savedUserId == null) {
+        if (kDebugMode) {
+          print('❌ WebRTC: Cannot reconnect - no previous room info');
+        }
+        return false;
+      }
+      
+      // Clean up current connection
+      await leaveRoom();
+      
+      // Wait a bit
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      // Attempt rejoin
+      final success = await joinRoom(
+        roomId: savedRoomId,
+        userId: savedUserId,
+        username: 'user',
+        pushToTalk: _isPushToTalk,
+      );
+      
+      if (success && kDebugMode) {
+        print('✅ WebRTC: Reconnection successful');
+      } else if (!success && kDebugMode) {
+        print('❌ WebRTC: Reconnection failed');
+      }
+      
+      return success;
+      
+    } catch (e) {
+      if (kDebugMode) {
+        print('❌ WebRTC: Reconnection error - $e');
+      }
+      return false;
+    }
+  }
+  
+  // ✅ PHASE 2: Get Error Message
+  String? getLastError() {
+    if (_state == VoiceConnectionState.error) {
+      return 'Voice Chat Verbindung fehlgeschlagen';
+    }
+    return null;
+  }
+
+  /// Dispose
+  Future<void> dispose() async {
+    await leaveRoom();
+    await _stateController.close();
+    await _participantsController.close();
+    await _speakingController.close();
+  }
+  
+  // ============================================================================
+  // ADDITIONAL METHODS (for compatibility with live chat screens)
+  // ============================================================================
+  
+  /// Initialize voice service
+  Future<void> initialize() async {
+    if (kDebugMode) {
+      print('🎤 WebRTC Voice Service initialized');
+    }
+    // Service is already initialized via singleton
+  }
+  
+  /// Join voice room (alias for joinRoom)
+  Future<bool> joinVoiceRoom({
+    required String roomId,
+    required String userId,
+    required String username,
+    bool pushToTalk = false,
+  }) async {
+    return await joinRoom(
+      roomId: roomId,
+      userId: userId,
+      username: username,
+      pushToTalk: pushToTalk,
+    );
+  }
+  
+  /// Leave voice room (alias for leaveRoom)
+  Future<void> leaveVoiceRoom() async {
+    await leaveRoom();
+  }
+  
+  /// Switch to different room
+  Future<bool> switchRoom(String newRoomId) async {
+    if (kDebugMode) {
+      print('🔄 Switching voice room: $_currentRoomId → $newRoomId');
+    }
+    
+    // Leave current room
+    await leaveRoom();
+    
+    // Join new room with current user info
+    if (_currentUserId != null) {
+      return await joinRoom(
+        roomId: newRoomId,
+        userId: _currentUserId!,
+        username: 'user', // TODO: Get actual username
+        pushToTalk: _isPushToTalk,
+      );
+    }
+    
+    return false;
+  }
+  
+  // ✅ PHASE 3: Admin Controls
+  
+  /// Kick user from voice room (Admin only)
+  Future<bool> kickUser({
+    required String userId,
+    required String adminId,
+  }) async {
+    try {
+      if (_currentRoomId == null) {
+        if (kDebugMode) {
+          print('❌ WebRTC: Cannot kick - not in room');
+        }
+        return false;
+      }
+      
+      // Send kick message via signaling
+      await _signaling.sendMessage(
+        room: _currentRoomId!,
+        message: jsonEncode({
+          'type': 'voice_kick',
+          'userId': userId,
+          'adminId': adminId,
+        }),
+        username: 'admin',
+        realm: 'voice',
+      );
+      
+      // Remove from participants
+      _participants.remove(userId);
+      _participantsController.add(participants);
+      
+      if (kDebugMode) {
+        print('🚫 WebRTC: User $userId kicked by admin $adminId');
+      }
+      
+      return true;
+      
+    } catch (e) {
+      if (kDebugMode) {
+        print('❌ WebRTC: Kick user error - $e');
+      }
+      return false;
+    }
+  }
+  
+  /// Mute another user (Admin only)
+  Future<bool> muteUser({
+    required String userId,
+    required String adminId,
+  }) async {
+    try {
+      if (_currentRoomId == null) {
+        if (kDebugMode) {
+          print('❌ WebRTC: Cannot mute - not in room');
+        }
+        return false;
+      }
+      
+      // Send admin mute message
+      await _signaling.sendMessage(
+        room: _currentRoomId!,
+        message: jsonEncode({
+          'type': 'voice_admin_mute',
+          'userId': userId,
+          'adminId': adminId,
+          'muted': true,
+        }),
+        username: 'admin',
+        realm: 'voice',
+      );
+      
+      // Update participant state
+      if (_participants.containsKey(userId)) {
+        _participants[userId] = _participants[userId]!.copyWith(isMuted: true);
+        _participantsController.add(participants);
+      }
+      
+      if (kDebugMode) {
+        print('🔇 WebRTC: User $userId muted by admin $adminId');
+      }
+      
+      return true;
+      
+    } catch (e) {
+      if (kDebugMode) {
+        print('❌ WebRTC: Mute user error - $e');
+      }
+      return false;
+    }
+  }
+  
+  // ✅ PHASE 3: Audio Quality Settings
+  
+  /// Set audio quality
+  Future<void> setAudioQuality(String quality) async {
+    // low, medium, high
+    Map<String, dynamic> newConstraints;
+    
+    switch (quality) {
+      case 'low':
+        newConstraints = {
+          'audio': {
+            'echoCancellation': true,
+            'noiseSuppression': true,
+            'autoGainControl': true,
+            'sampleRate': 16000,
+            'channelCount': 1,
+          },
+          'video': false,
+        };
+        break;
+        
+      case 'high':
+        newConstraints = {
+          'audio': {
+            'echoCancellation': true,
+            'noiseSuppression': true,
+            'autoGainControl': true,
+            'sampleRate': 48000,
+            'channelCount': 2,
+          },
+          'video': false,
+        };
+        break;
+        
+      default: // medium
+        newConstraints = _mediaConstraints;
+    }
+    
+    if (kDebugMode) {
+      print('🎧 WebRTC: Audio quality set to $quality');
+    }
+    
+    // TODO: Apply new constraints to existing stream
+    // This requires recreating the media stream
+  }
+}
+
+
+######## lib/services/voice_session_tracker.dart ########
+
+/// 📊 VOICE SESSION TRACKER
+/// Automatically tracks WebRTC voice sessions and stores them in backend database
+/// 
+/// Features:
+/// - Session start/end tracking
+/// - Speaking time calculation
+/// - Admin action logging
+/// - Automatic error recovery
+library;
+
+import 'package:flutter/foundation.dart';
+import 'dart:async';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import '../config/api_config.dart';
+
+/// Voice Session Tracker Service
+/// Tracks and stores voice chat sessions in backend D1 database
+class VoiceSessionTracker {
+  static const String _apiToken = 'y-Xiv3kKeiybDm2CV0yLFu7TSd22co6NBw3udn5Y';
+  static const Duration _timeout = Duration(seconds: 10);
+  
+  // Current session tracking
+  String? _currentSessionId;
+  String? _currentRoomId;
+  String? _currentUserId;
+  DateTime? _sessionStartTime;
+  int _totalSpeakingSeconds = 0;
+  Timer? _speakingTimer;
+  bool _isSpeaking = false;
+  
+  /// Start tracking a new voice session
+  /// Called when user joins a voice room
+  Future<bool> startSession({
+    required String roomId,
+    required String userId,
+    required String username,
+    required String world, // 'materie' or 'energie'
+  }) async {
+    try {
+      // Generate unique session ID
+      _currentSessionId = '${roomId}_${userId}_${DateTime.now().millisecondsSinceEpoch}';
+      _currentRoomId = roomId;
+      _currentUserId = userId;
+      _sessionStartTime = DateTime.now();
+      _totalSpeakingSeconds = 0;
+      
+      if (kDebugMode) {
+        debugPrint('🎤 Starting voice session: $_currentSessionId');
+        debugPrint('   Room: $roomId');
+        debugPrint('   User: $username ($userId)');
+        debugPrint('   World: $world');
+      }
+      
+      // Send session start to backend
+      final url = Uri.parse('${ApiConfig.baseUrl}/api/admin/voice-session/start');
+      
+      final response = await http.post(
+        url,
+        headers: {
+          'Authorization': 'Bearer $_apiToken',
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({
+          'session_id': _currentSessionId,
+          'room_id': roomId,
+          'user_id': userId,
+          'username': username,
+          'world': world,
+          'joined_at': _sessionStartTime!.toIso8601String(),
+        }),
+      ).timeout(_timeout);
+      
+      if (response.statusCode == 200) {
+        if (kDebugMode) {
+          debugPrint('✅ Voice session started: $_currentSessionId');
+        }
+        return true;
+      } else {
+        if (kDebugMode) {
+          debugPrint('⚠️ Failed to start session: ${response.statusCode}');
+          debugPrint('   Response: ${response.body}');
+        }
+        return false;
+      }
+      
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Error starting voice session: $e');
+      }
+      return false;
+    }
+  }
+  
+  /// End current voice session
+  /// Called when user leaves voice room
+  Future<bool> endSession() async {
+    if (_currentSessionId == null) {
+      if (kDebugMode) {
+        debugPrint('⚠️ No active session to end');
+      }
+      return false;
+    }
+    
+    try {
+      final duration = DateTime.now().difference(_sessionStartTime!).inSeconds;
+      
+      if (kDebugMode) {
+        debugPrint('🎤 Ending voice session: $_currentSessionId');
+        debugPrint('   Duration: ${duration}s');
+        debugPrint('   Speaking time: ${_totalSpeakingSeconds}s');
+      }
+      
+      // Stop speaking timer if active
+      _speakingTimer?.cancel();
+      
+      // Send session end to backend
+      final url = Uri.parse('${ApiConfig.baseUrl}/api/admin/voice-session/end');
+      
+      final response = await http.post(
+        url,
+        headers: {
+          'Authorization': 'Bearer $_apiToken',
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({
+          'session_id': _currentSessionId,
+          'room_id': _currentRoomId,
+          'user_id': _currentUserId,
+          'left_at': DateTime.now().toIso8601String(),
+          'duration_seconds': duration,
+          'speaking_seconds': _totalSpeakingSeconds,
+        }),
+      ).timeout(_timeout);
+      
+      if (response.statusCode == 200) {
+        if (kDebugMode) {
+          debugPrint('✅ Voice session ended: $_currentSessionId');
+        }
+        
+        // Clear current session
+        _currentSessionId = null;
+        _currentRoomId = null;
+        _currentUserId = null;
+        _sessionStartTime = null;
+        _totalSpeakingSeconds = 0;
+        
+        return true;
+      } else {
+        if (kDebugMode) {
+          debugPrint('⚠️ Failed to end session: ${response.statusCode}');
+          debugPrint('   Response: ${response.body}');
+        }
+        return false;
+      }
+      
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Error ending voice session: $e');
+      }
+      return false;
+    }
+  }
+  
+  /// Start tracking speaking time
+  /// Called when user starts speaking
+  void startSpeaking() {
+    if (_isSpeaking) return;
+    
+    _isSpeaking = true;
+    
+    if (kDebugMode) {
+      debugPrint('🗣️ User started speaking');
+    }
+    
+    // Start 1-second timer to track speaking time
+    _speakingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_isSpeaking) {
+        _totalSpeakingSeconds++;
+        
+        if (kDebugMode && _totalSpeakingSeconds % 10 == 0) {
+          debugPrint('🗣️ Total speaking time: ${_totalSpeakingSeconds}s');
+        }
+      }
+    });
+  }
+  
+  /// Stop tracking speaking time
+  /// Called when user stops speaking
+  void stopSpeaking() {
+    if (!_isSpeaking) return;
+    
+    _isSpeaking = false;
+    _speakingTimer?.cancel();
+    
+    if (kDebugMode) {
+      debugPrint('🤫 User stopped speaking (total: ${_totalSpeakingSeconds}s)');
+    }
+  }
+  
+  /// Log admin action (kick, mute, ban, warn)
+  Future<bool> logAdminAction({
+    required String actionType, // 'kick', 'mute', 'ban', 'warn'
+    required String targetUserId,
+    required String targetUsername,
+    required String adminUserId,
+    required String adminUsername,
+    required String world,
+    String? reason,
+  }) async {
+    try {
+      if (kDebugMode) {
+        debugPrint('👮 Logging admin action: $actionType');
+        debugPrint('   Admin: $adminUsername ($adminUserId)');
+        debugPrint('   Target: $targetUsername ($targetUserId)');
+        debugPrint('   Reason: ${reason ?? "(none)"}');
+      }
+      
+      final url = Uri.parse('${ApiConfig.baseUrl}/api/admin/action/log');
+      
+      final response = await http.post(
+        url,
+        headers: {
+          'Authorization': 'Bearer $_apiToken',
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({
+          'action_type': actionType,
+          'target_user_id': targetUserId,
+          'target_username': targetUsername,
+          'admin_user_id': adminUserId,
+          'admin_username': adminUsername,
+          'world': world,
+          'room_id': _currentRoomId,
+          'reason': reason,
+          'timestamp': DateTime.now().toIso8601String(),
+        }),
+      ).timeout(_timeout);
+      
+      if (response.statusCode == 200) {
+        if (kDebugMode) {
+          debugPrint('✅ Admin action logged');
+        }
+        return true;
+      } else {
+        if (kDebugMode) {
+          debugPrint('⚠️ Failed to log admin action: ${response.statusCode}');
+        }
+        return false;
+      }
+      
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Error logging admin action: $e');
+      }
+      return false;
+    }
+  }
+  
+  /// Get current session info
+  Map<String, dynamic>? getCurrentSession() {
+    if (_currentSessionId == null) return null;
+    
+    return {
+      'session_id': _currentSessionId,
+      'room_id': _currentRoomId,
+      'user_id': _currentUserId,
+      'started_at': _sessionStartTime?.toIso8601String(),
+      'duration_seconds': _sessionStartTime != null 
+          ? DateTime.now().difference(_sessionStartTime!).inSeconds 
+          : 0,
+      'speaking_seconds': _totalSpeakingSeconds,
+      'is_speaking': _isSpeaking,
+    };
+  }
+  
+  /// Dispose resources
+  void dispose() {
+    _speakingTimer?.cancel();
+  }
+}
+
+
+######## lib/services/websocket_chat_service.dart ########
+
+/// 🌐 WELTENBIBLIOTHEK - WEBSOCKET CHAT SERVICE
+/// Real-time messaging with WebSocket instead of HTTP polling
+/// Features: Instant delivery, typing indicators, online status
+library;
+
+import 'dart:async';
+import 'dart:convert';
+import 'package:flutter/foundation.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:web_socket_channel/status.dart' as status;
+import '../config/api_config.dart';
+
+class WebSocketChatService {
+  static final WebSocketChatService _instance = WebSocketChatService._internal();
+  factory WebSocketChatService() => _instance;
+  WebSocketChatService._internal();
+
+  // WebSocket connection
+  WebSocketChannel? _channel;
+  StreamController<Map<String, dynamic>>? _messageController;
+  StreamController<String>? _typingController;
+  StreamController<List<String>>? _onlineUsersController;
+  
+  // Connection state
+  bool _isConnected = false;
+  String? _currentRoom;
+  String? _userId;
+  String? _username;
+  String? _realm;
+  
+  // Reconnection with Exponential Backoff
+  Timer? _reconnectTimer;
+  int _reconnectAttempts = 0;
+  static const int _maxReconnectAttempts = 10;
+  
+  // Exponential Backoff Delays: 1s, 2s, 4s, 8s, 16s (max)
+  static const List<Duration> _reconnectDelays = [
+    Duration(seconds: 1),
+    Duration(seconds: 2),
+    Duration(seconds: 4),
+    Duration(seconds: 8),
+    Duration(seconds: 16),
+  ];
+  
+  // Offline message queue
+  final List<Map<String, dynamic>> _offlineQueue = [];
+  
+  // Heartbeat (keep connection alive)
+  Timer? _heartbeatTimer;
+  static const Duration _heartbeatInterval = Duration(seconds: 30);
+
+  /// Get message stream
+  Stream<Map<String, dynamic>> get messageStream => 
+      _messageController?.stream ?? const Stream.empty();
+  
+  /// Get typing indicator stream
+  Stream<String> get typingStream => 
+      _typingController?.stream ?? const Stream.empty();
+  
+  /// Get online users stream
+  Stream<List<String>> get onlineUsersStream => 
+      _onlineUsersController?.stream ?? const Stream.empty();
+  
+  /// Check if connected
+  bool get isConnected => _isConnected;
+
+  /// Connect to chat room
+  Future<bool> connect({
+    required String room,
+    required String realm,
+    String? userId,
+    String? username,
+  }) async {
+    // Use defaults if not provided
+    final effectiveUserId = userId ?? 'user_anonymous';
+    final effectiveUsername = username ?? 'Anonymous';
+    
+    if (_isConnected && _currentRoom == room) {
+      if (kDebugMode) {
+        debugPrint('🌐 Already connected to room: $room');
+      }
+      return true;
+    }
+
+    try {
+      // Disconnect if already connected to different room
+      if (_isConnected) {
+        await disconnect();
+      }
+
+      _currentRoom = room;
+      _userId = effectiveUserId;
+      _username = effectiveUsername;
+      _realm = realm;
+      _reconnectAttempts = 0;
+
+      // Initialize stream controllers
+      _messageController = StreamController<Map<String, dynamic>>.broadcast();
+      _typingController = StreamController<String>.broadcast();
+      _onlineUsersController = StreamController<List<String>>.broadcast();
+
+      await _establishConnection();
+      
+      return true;
+
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ WebSocket connection failed: $e');
+      }
+      _scheduleReconnect();
+      return false;
+    }
+  }
+
+  /// Establish WebSocket connection
+  Future<void> _establishConnection() async {
+    try {
+      // WebSocket URL (from ApiConfig)
+      final wsUrl = Uri.parse(
+        '${ApiConfig.websocketUrl}/ws'
+        '?room=$_currentRoom'
+        '&realm=$_realm'
+        '&user_id=$_userId'
+        '&username=$_username'
+      );
+
+      if (kDebugMode) {
+        debugPrint('🌐 Connecting to WebSocket: $wsUrl');
+      }
+
+      // Create WebSocket connection
+      _channel = WebSocketChannel.connect(wsUrl);
+
+      // Wait for connection to be established
+      await _channel!.ready;
+
+      _isConnected = true;
+      _reconnectAttempts = 0;
+
+      if (kDebugMode) {
+        debugPrint('✅ WebSocket connected to room: $_currentRoom');
+      }
+
+      // Listen for messages
+      _channel!.stream.listen(
+        _handleMessage,
+        onError: _handleError,
+        onDone: _handleDisconnect,
+        cancelOnError: false,
+      );
+
+      // Start heartbeat
+      _startHeartbeat();
+
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ WebSocket connection error: $e');
+      }
+      _isConnected = false;
+      _scheduleReconnect();
+    }
+  }
+
+  /// Handle incoming message
+  void _handleMessage(dynamic data) {
+    try {
+      final message = json.decode(data as String) as Map<String, dynamic>;
+      final type = message['type'] as String?;
+
+      if (kDebugMode) {
+        debugPrint('📨 WebSocket message received: $type');
+      }
+
+      switch (type) {
+        case 'new_message':
+          // New chat message
+          final messageData = message['data'] as Map<String, dynamic>;
+          _messageController?.add(messageData);
+          break;
+
+        case 'message_deleted':
+          // Message was deleted
+          final messageId = message['message_id'] as String;
+          _messageController?.add({
+            'type': 'deleted',
+            'id': messageId,
+          });
+          break;
+
+        case 'message_edited':
+          // Message was edited
+          final messageData = message['data'] as Map<String, dynamic>;
+          _messageController?.add({
+            'type': 'edited',
+            ...messageData,
+          });
+          break;
+
+        case 'typing':
+          // User is typing
+          final username = message['username'] as String?;
+          if (username != null && username != _username) {
+            _typingController?.add(username);
+          }
+          break;
+
+        case 'online_users':
+          // List of online users
+          final users = (message['users'] as List?)
+              ?.cast<String>()
+              ?? [];
+          _onlineUsersController?.add(users);
+          break;
+
+        case 'pong':
+          // Heartbeat response
+          if (kDebugMode) {
+            debugPrint('💓 Heartbeat received');
+          }
+          break;
+
+        default:
+          if (kDebugMode) {
+            debugPrint('⚠️ Unknown message type: $type');
+          }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Error handling message: $e');
+      }
+    }
+  }
+
+  /// Handle connection error
+  void _handleError(error) {
+    if (kDebugMode) {
+      debugPrint('❌ WebSocket error: $error');
+    }
+    _isConnected = false;
+    _scheduleReconnect();
+  }
+
+  /// Handle disconnection
+  void _handleDisconnect() {
+    if (kDebugMode) {
+      debugPrint('⚠️ WebSocket disconnected');
+    }
+    _isConnected = false;
+    _stopHeartbeat();
+    _scheduleReconnect();
+  }
+
+  /// Send message (with named parameters for HybridChatService compatibility)
+  Future<void> sendMessage({
+    required String room,
+    required String message,
+    required String username,
+    required String realm,
+    String? replyToId,
+    String? imageUrl,
+  }) async {
+    // If not connected, queue message for later
+    if (!_isConnected) {
+      if (kDebugMode) {
+        debugPrint('📦 WebSocket not connected, queueing message...');
+      }
+      
+      _offlineQueue.add({
+        'room': room,
+        'message': message,
+        'username': username,
+        'realm': realm,
+        'reply_to_id': replyToId,
+        'image_url': imageUrl,
+        'timestamp': DateTime.now().millisecondsSinceEpoch,
+      });
+      
+      // Notify UI about queued message
+      _messageController?.add({
+        'type': 'message_queued',
+        'message': message,
+        'queue_size': _offlineQueue.length,
+      });
+      
+      throw Exception('WebSocket not connected. Message queued for sending.');
+    }
+
+    try {
+      final data = json.encode({
+        'type': 'chat_message',
+        'room_id': room,
+        'message': message,
+        'username': username,
+        'realm': realm,
+        'reply_to_id': replyToId,
+        'image_url': imageUrl,
+        'timestamp': DateTime.now().millisecondsSinceEpoch,
+      });
+
+      _channel?.sink.add(data);
+
+      if (kDebugMode) {
+        debugPrint('📤 Message sent via WebSocket: $message');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Failed to send message: $e');
+      }
+      
+      // Queue message if send fails
+      _offlineQueue.add({
+        'room': room,
+        'message': message,
+        'username': username,
+        'realm': realm,
+        'reply_to_id': replyToId,
+        'image_url': imageUrl,
+        'timestamp': DateTime.now().millisecondsSinceEpoch,
+      });
+      
+      rethrow;
+    }
+  }
+  
+  /// Send typing indicator (with boolean parameter)
+  void sendTypingIndicator(bool isTyping) {
+    if (!_isConnected) return;
+
+    try {
+      final data = json.encode({
+        'type': 'typing_indicator',
+        'room_id': _currentRoom,
+        'user_id': _userId,
+        'username': _username,
+        'is_typing': isTyping,
+      });
+
+      _channel?.sink.add(data);
+
+      if (kDebugMode) {
+        debugPrint('⌨️ Typing indicator sent: $isTyping');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Failed to send typing indicator: $e');
+      }
+    }
+  }
+  
+  /// Switch to different room
+  Future<void> switchRoom(String newRoom) async {
+    if (_currentRoom == newRoom) return;
+    
+    if (kDebugMode) {
+      debugPrint('🔄 Switching room from $_currentRoom to $newRoom');
+    }
+    
+    // Disconnect and reconnect to new room
+    await disconnect();
+    
+    if (_realm != null) {
+      await connect(
+        room: newRoom,
+        realm: _realm!,
+        userId: _userId,
+        username: _username,
+      );
+    }
+  }
+
+  /// Request online users
+  void requestOnlineUsers() {
+    if (!_isConnected) return;
+
+    try {
+      final data = json.encode({
+        'type': 'get_online_users',
+      });
+
+      _channel?.sink.add(data);
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Failed to request online users: $e');
+      }
+    }
+  }
+
+  /// Disconnect from chat
+  Future<void> disconnect() async {
+    if (kDebugMode) {
+      debugPrint('🔌 Disconnecting WebSocket...');
+    }
+
+    _isConnected = false;
+    _currentRoom = null;
+    
+    _stopHeartbeat();
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
+
+    await _channel?.sink.close(status.goingAway);
+    _channel = null;
+
+    await _messageController?.close();
+    await _typingController?.close();
+    await _onlineUsersController?.close();
+    
+    _messageController = null;
+    _typingController = null;
+    _onlineUsersController = null;
+  }
+
+  /// Start heartbeat to keep connection alive
+  void _startHeartbeat() {
+    _heartbeatTimer?.cancel();
+    _heartbeatTimer = Timer.periodic(_heartbeatInterval, (_) {
+      if (_isConnected) {
+        try {
+          _channel?.sink.add(json.encode({'type': 'ping'}));
+          if (kDebugMode) {
+            debugPrint('💓 Heartbeat sent');
+          }
+        } catch (e) {
+          if (kDebugMode) {
+            debugPrint('❌ Heartbeat failed: $e');
+          }
+        }
+      }
+    });
+  }
+
+  /// Stop heartbeat
+  void _stopHeartbeat() {
+    _heartbeatTimer?.cancel();
+    _heartbeatTimer = null;
+  }
+
+  /// Schedule reconnection attempt with Exponential Backoff
+  void _scheduleReconnect() {
+    if (_reconnectAttempts >= _maxReconnectAttempts) {
+      if (kDebugMode) {
+        debugPrint('❌ Max reconnect attempts reached (${{_maxReconnectAttempts}}). Giving up.');
+      }
+      // Notify about connection failure
+      _messageController?.add({
+        'type': 'connection_failed',
+        'message': 'Verbindung fehlgeschlagen. Bitte manuell neu verbinden.',
+      });
+      return;
+    }
+
+    if (_reconnectTimer != null && _reconnectTimer!.isActive) {
+      return; // Already scheduled
+    }
+
+    _reconnectAttempts++;
+    
+    // Get delay with exponential backoff (max 16s)
+    final delayIndex = (_reconnectAttempts - 1).clamp(0, _reconnectDelays.length - 1);
+    final delay = _reconnectDelays[delayIndex];
+
+    if (kDebugMode) {
+      debugPrint('🔄 Reconnecting in ${{delay.inSeconds}}s (attempt $_reconnectAttempts/$_maxReconnectAttempts)...');
+    }
+    
+    // Notify UI about reconnection attempt
+    _messageController?.add({
+      'type': 'reconnecting',
+      'attempt': _reconnectAttempts,
+      'max_attempts': _maxReconnectAttempts,
+      'delay_seconds': delay.inSeconds,
+    });
+
+    _reconnectTimer = Timer(delay, () async {
+      if (_currentRoom != null && _realm != null) {
+        try {
+          await connect(
+            room: _currentRoom!,
+            realm: _realm!,
+            userId: _userId,
+            username: _username,
+          );
+          
+          // Send queued messages on successful reconnection
+          if (_isConnected && _offlineQueue.isNotEmpty) {
+            if (kDebugMode) {
+              debugPrint('📦 Sending ${{_offlineQueue.length}} queued messages...');
+            }
+            
+            for (final queuedMsg in _offlineQueue) {
+              try {
+                await sendMessage(
+                  room: queuedMsg['room'],
+                  message: queuedMsg['message'],
+                  username: queuedMsg['username'],
+                  realm: queuedMsg['realm'],
+                );
+              } catch (e) {
+                if (kDebugMode) {
+                  debugPrint('⚠️ Failed to send queued message: $e');
+
+================================================================================
+TEIL 4: ADMIN FEATURES
+================================================================================
+
+
+######## lib/services/world_admin_service.dart ########
+
+import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
+import '../services/storage_service.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'invisible_auth_service.dart'; // ✅ Auth-Integration
+import '../core/storage/unified_storage_service.dart'; // ✅ Storage für Username
+
+/// World-Based Admin Service
+/// Verbindet mit weltenbibliothek-api-v2 für weltspezifische Admin-Funktionen
+/// 
+/// 🔐 ALLE ENDPOINTS ERFORDERN AUTH-HEADERS:
+/// - Authorization: Bearer {token}
+/// - X-World: materie/energie
+/// - X-Role: admin/root_admin
+/// - X-User-ID: {userId}
+/// 
+/// ✅ ENDPOINTS:
+/// - GET /api/admin/check/:world/:username - Admin-Status prüfen
+/// - GET /api/admin/users/:world - User-Liste pro Welt
+/// - POST /api/admin/promote/:world/:userId - User zu Admin
+/// - POST /api/admin/demote/:world/:userId - Admin zu User (nur Root-Admin)
+/// - DELETE /api/admin/delete/:world/:userId - User löschen (nur Root-Admin)
+/// - GET /api/admin/audit/:world - Audit-Log
+/// 
+/// 🛡️ WORLD-ISOLATION:
+/// - Jede Welt hat separate Admin-Rollen
+/// - Root-Admin in Materie ≠ Root-Admin in Energie
+/// - Admin kann nur User in seiner Welt verwalten
+class WorldAdminService {
+  // Cloudflare Worker URL (API v2 - World-Based Multi-Profile System)
+  static const String _baseUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
+  static const Duration _timeout = Duration(seconds: 10);
+  
+  // ✅ AUTH SERVICE
+  static final InvisibleAuthService _auth = InvisibleAuthService();
+
+  // ════════════════════════════════════════════════════════════
+  // ADMIN STATUS CHECK
+  // ════════════════════════════════════════════════════════════
+
+  /// Check if user is admin in a specific world
+  /// ✅ MIT AUTH-HEADER (world + role)
+  /// 
+  /// Returns:
+  /// {
+  ///   "success": true,
+  ///   "isAdmin": true,
+  ///   "isRootAdmin": false,
+  ///   "user": { "userId": "...", "username": "...", "role": "admin", "world": "materie" }
+  /// }
+  static Future<Map<String, dynamic>> checkAdminStatus(String world, String username, {String? role}) async {
+    try {
+      final url = Uri.parse('$_baseUrl/api/admin/check/$world/$username');
+      
+      if (kDebugMode) {
+        debugPrint('🔍 Checking admin status: $world/$username (role: $role)');
+      }
+      
+      final response = await http.get(
+        url,
+        headers: _auth.authHeaders(world: world, role: role), // ✅ Auth-Header
+      ).timeout(_timeout);
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        
+        if (kDebugMode) {
+          debugPrint('✅ Admin check successful');
+          debugPrint('   isAdmin: ${data['isAdmin']}');
+          debugPrint('   isRootAdmin: ${data['isRootAdmin']}');
+        }
+        
+        return data;
+      } else {
+        if (kDebugMode) {
+          debugPrint('⚠️  Admin check failed: ${response.statusCode}');
+        }
+        return {
+          'success': false,
+          'isAdmin': false,
+          'isRootAdmin': false,
+          'error': 'HTTP ${response.statusCode}',
+        };
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Admin check error: $e');
+      }
+      return {
+        'success': false,
+        'isAdmin': false,
+        'isRootAdmin': false,
+        'error': e.toString(),
+      };
+    }
+  }
+
+  // ════════════════════════════════════════════════════════════
+  // USER MANAGEMENT
+  // ════════════════════════════════════════════════════════════
+
+  /// Get list of users in a specific world
+  /// ✅ FIXED AUTH: Uses simple Bearer token (username)
+  /// 
+  /// Returns: List<WorldUser>
+  static Future<List<WorldUser>> getUsersByWorld(String world, {String? role}) async {
+    try {
+      final url = Uri.parse('$_baseUrl/api/admin/users/$world');
+      
+      // ✅ FIX: Get username from storage (same as UserManagementService)
+      final storage = UnifiedStorageService();
+      final username = storage.getUsername(world);
+      
+      if (username == null || username.isEmpty) {
+        if (kDebugMode) {
+          debugPrint('❌ No username found for world: $world');
+        }
+        return [];
+      }
+      
+      if (kDebugMode) {
+        debugPrint('📋 Fetching users for world: $world (admin: $username)');
+      }
+      
+      final response = await http.get(
+        url,
+        headers: {
+          'Authorization': 'Bearer $username', // ✅ NEW: Simple Bearer token
+          'Content-Type': 'application/json',
+        },
+      ).timeout(_timeout);
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final users = (data['users'] as List<dynamic>?) ?? [];
+        
+        if (kDebugMode) {
+          debugPrint('✅ Fetched ${users.length} users');
+        }
+        
+        return users.map((u) => WorldUser.fromJson(u as Map<String, dynamic>)).toList();
+      } else {
+        if (kDebugMode) {
+          debugPrint('⚠️  Failed to fetch users: ${response.statusCode}');
+          debugPrint('   Response: ${response.body}');
+        }
+        return [];
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Error fetching users: $e');
+      }
+      return [];
+    }
+  }
+
+  // ════════════════════════════════════════════════════════════
+  // ROLE MANAGEMENT
+  // ════════════════════════════════════════════════════════════
+
+  /// Promote user to admin
+  /// ✅ FIXED AUTH: Uses simple Bearer token (username)
+  static Future<bool> promoteUser(String world, String userId, {String? role}) async {
+    try {
+      final url = Uri.parse('$_baseUrl/api/admin/promote/$world/$userId');
+      
+      // ✅ FIX: Get username from storage
+      final storage = UnifiedStorageService();
+      final username = storage.getUsername(world);
+      
+      if (username == null || username.isEmpty) {
+        if (kDebugMode) {
+          debugPrint('❌ No username found for world: $world');
+        }
+        return false;
+      }
+      
+      if (kDebugMode) {
+        debugPrint('⬆️  Promoting user: $world/$userId (by: $username)');
+      }
+      
+      final response = await http.post(
+        url,
+        headers: {
+          'Authorization': 'Bearer $username',
+          'Content-Type': 'application/json',
+        },
+      ).timeout(_timeout);
+      
+      if (response.statusCode == 200) {
+        if (kDebugMode) {
+          debugPrint('✅ User promoted successfully');
+          debugPrint('   Response: ${response.body}');
+        }
+        return true;
+      } else {
+        if (kDebugMode) {
+          debugPrint('⚠️  Promotion failed: ${response.statusCode}');
+          debugPrint('   Response: ${response.body}');
+          debugPrint('   Headers sent: ${_auth.authHeaders(world: world, role: role)}');
+        }
+        return false;
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Promotion error: $e');
+      }
+      return false;
+    }
+  }
+
+  /// Demote admin to user
+  /// ✅ FIXED AUTH: Uses simple Bearer token (username)
+  static Future<bool> demoteUser(String world, String userId, {String? role}) async {
+    try {
+      final url = Uri.parse('$_baseUrl/api/admin/demote/$world/$userId');
+      
+      // ✅ FIX: Get username from storage
+      final storage = UnifiedStorageService();
+      final username = storage.getUsername(world);
+      
+      if (username == null || username.isEmpty) {
+        if (kDebugMode) {
+          debugPrint('❌ No username found for world: $world');
+        }
+        return false;
+      }
+      
+      if (kDebugMode) {
+        debugPrint('⬇️  Demoting user: $world/$userId (by: $username)');
+      }
+      
+      final response = await http.post(
+        url,
+        headers: {
+          'Authorization': 'Bearer $username',
+          'Content-Type': 'application/json',
+        },
+      ).timeout(_timeout);
+      
+      if (response.statusCode == 200) {
+        if (kDebugMode) {
+          debugPrint('✅ User demoted successfully');
+          debugPrint('   Response: ${response.body}');
+        }
+        return true;
+      } else {
+        if (kDebugMode) {
+          debugPrint('⚠️  Demotion failed: ${response.statusCode}');
+          debugPrint('   Response: ${response.body}');
+          debugPrint('   Headers sent: ${_auth.authHeaders(world: world, role: role)}');
+        }
+        return false;
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Demotion error: $e');
+      }
+      return false;
+    }
+  }
+
+  // ════════════════════════════════════════════════════════════
+  // USER DELETION
+  // ════════════════════════════════════════════════════════════
+
+  /// Delete user (root admin only)
+  /// ✅ FIXED AUTH: Uses simple Bearer token (username)
+  static Future<bool> deleteUser(String world, String userId, {String? role}) async {
+    try {
+      final url = Uri.parse('$_baseUrl/api/admin/delete/$world/$userId');
+      
+      // ✅ FIX: Get username from storage
+      final storage = UnifiedStorageService();
+      final username = storage.getUsername(world);
+      
+      if (username == null || username.isEmpty) {
+        if (kDebugMode) {
+          debugPrint('❌ No username found for world: $world');
+        }
+        return false;
+      }
+      
+      if (kDebugMode) {
+        debugPrint('🗑️  Deleting user: $world/$userId (by root_admin: $username)');
+      }
+      
+      final response = await http.delete(
+        url,
+        headers: {
+          'Authorization': 'Bearer $username',
+          'Content-Type': 'application/json',
+        },
+      ).timeout(_timeout);
+      
+      if (response.statusCode == 200) {
+        if (kDebugMode) {
+          debugPrint('✅ User deleted successfully');
+          debugPrint('   Response: ${response.body}');
+        }
+        return true;
+      } else {
+        if (kDebugMode) {
+          debugPrint('⚠️  Deletion failed: ${response.statusCode}');
+          debugPrint('   Response: ${response.body}');
+          debugPrint('   Headers sent: ${_auth.authHeaders(world: world, role: role)}');
+        }
+        return false;
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Deletion error: $e');
+      }
+      return false;
+    }
+  }
+
+  // ════════════════════════════════════════════════════════════
+  // AUDIT LOG
+  // ════════════════════════════════════════════════════════════
+
+  /// Get audit log for a world
+  /// ✅ MIT AUTH-HEADER
+  /// 
+  /// Returns: List<AuditLogEntry>
+  static Future<List<AuditLogEntry>> getAuditLog(String world, {int limit = 50, String? role}) async {
+    try {
+      final url = Uri.parse('$_baseUrl/api/admin/audit/$world?limit=$limit');
+      
+      if (kDebugMode) {
+        debugPrint('📜 Fetching audit log for: $world (role: $role)');
+      }
+      
+      final response = await http.get(
+        url,
+        headers: _auth.authHeaders(world: world, role: role), // ✅ Auth-Header
+      ).timeout(_timeout);
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final logs = (data['logs'] as List<dynamic>?) ?? [];
+        
+        if (kDebugMode) {
+          debugPrint('✅ Fetched ${logs.length} audit log entries');
+        }
+        
+        return logs.map((l) => AuditLogEntry.fromJson(l as Map<String, dynamic>)).toList();
+      } else {
+        if (kDebugMode) {
+          debugPrint('⚠️  Failed to fetch audit log: ${response.statusCode}');
+        }
+        return [];
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Error fetching audit log: $e');
+      }
+      return [];
+    }
+  }
+  
+  // ════════════════════════════════════════════════════════════
+  // 🧪 MOCK DATA (für Testing - später durch echte API ersetzen!)
+  // ════════════════════════════════════════════════════════════
+  
+  /// Get mock users for testing (bis Backend ready ist)
+  /// 
+  /// 🧪 TESTING ONLY - Diese Methode gibt Mock-Daten zurück
+  /// ✅ PRODUCTION: getUsersByWorld() verwenden (echte API)
+  static Future<List<WorldUser>> getUsersByWorldMock(String world) async {
+    // Simulate network delay
+    await Future.delayed(const Duration(milliseconds: 500));
+    
+    if (kDebugMode) {
+      debugPrint('🧪 MOCK: Loading sample users for $world');
+    }
+    
+    if (world.toLowerCase() == 'materie') {
+      return [
+        WorldUser(
+          profileId: 'profile_1',
+          userId: 'materie_Weltenbibliothek',
+          username: 'Weltenbibliothek',
+          role: 'root_admin',
+          displayName: 'Weltenbibliothek Admin',
+          avatarEmoji: '👑',
+          createdAt: '2026-02-01T10:00:00Z',
+        ),
+        WorldUser(
+          profileId: 'profile_2',
+          userId: 'materie_TestAdmin',
+          username: 'TestAdmin',
+          role: 'admin',
+          displayName: 'Test Administrator',
+          avatarEmoji: '⭐',
+          createdAt: '2026-02-02T14:30:00Z',
+        ),
+        WorldUser(
+          profileId: 'profile_3',
+          userId: 'materie_ForscherMax',
+          username: 'ForscherMax',
+          role: 'user',
+          displayName: 'Max der Forscher',
+          avatarEmoji: '🔬',
+          createdAt: '2026-02-03T09:15:00Z',
+        ),
+        WorldUser(
+          profileId: 'profile_4',
+          userId: 'materie_WissenschaftlerAnna',
+          username: 'WissenschaftlerAnna',
+          role: 'user',
+          displayName: 'Dr. Anna Schmidt',
+          avatarEmoji: '🧪',
+          createdAt: '2026-02-04T11:20:00Z',
+        ),
+        WorldUser(
+          profileId: 'profile_5',
+          userId: 'materie_AnalystPeter',
+          username: 'AnalystPeter',
+          role: 'user',
+          displayName: 'Peter Analyst',
+          avatarEmoji: '📊',
+          createdAt: '2026-02-05T08:45:00Z',
+        ),
+      ];
+    } else if (world.toLowerCase() == 'energie') {
+      return [
+        WorldUser(
+          profileId: 'profile_6',
+          userId: 'energie_Weltenbibliothek',
+          username: 'Weltenbibliothek',
+          role: 'root_admin',
+          displayName: 'Weltenbibliothek Admin',
+          avatarEmoji: '👑',
+          createdAt: '2026-02-01T10:00:00Z',
+        ),
+        WorldUser(
+          profileId: 'profile_7',
+          userId: 'energie_SpiritGuide',
+          username: 'SpiritGuide',
+          role: 'admin',
+          displayName: 'Spirit Guide',
+          avatarEmoji: '🌟',
+          createdAt: '2026-02-02T15:00:00Z',
+        ),
+        WorldUser(
+          profileId: 'profile_8',
+          userId: 'energie_MysticLuna',
+          username: 'MysticLuna',
+          role: 'user',
+          displayName: 'Luna die Mystikerin',
+          avatarEmoji: '🌙',
+          createdAt: '2026-02-03T10:30:00Z',
+        ),
+        WorldUser(
+          profileId: 'profile_9',
+          userId: 'energie_ZenMaster',
+          username: 'ZenMaster',
+          role: 'user',
+          displayName: 'Meister Zen',
+          avatarEmoji: '🧘',
+          createdAt: '2026-02-04T12:15:00Z',
+        ),
+        WorldUser(
+          profileId: 'profile_10',
+          userId: 'energie_CrystalHealer',
+          username: 'CrystalHealer',
+          role: 'user',
+          displayName: 'Crystal Healer',
+          avatarEmoji: '💎',
+          createdAt: '2026-02-05T09:30:00Z',
+        ),
+      ];
+    }
+    
+    return [];
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// DATA MODELS
+// ════════════════════════════════════════════════════════════
+
+/// World User Model
+class WorldUser {
+  final String profileId;
+  final String userId;
+  final String username;
+  final String role;
+  final String? displayName;
+  final String? avatarUrl;
+  final String? avatarEmoji;
+  final String createdAt;
+
+  WorldUser({
+    required this.profileId,
+    required this.userId,
+    required this.username,
+    required this.role,
+    this.displayName,
+    this.avatarUrl,
+    this.avatarEmoji,
+    required this.createdAt,
+  });
+
+  factory WorldUser.fromJson(Map<String, dynamic> json) {
+    return WorldUser(
+      profileId: json['profile_id'] as String? ?? json['profileId'] as String? ?? '',
+      userId: json['user_id'] as String? ?? json['userId'] as String? ?? '',
+      username: json['username'] as String? ?? '',
+      role: json['role'] as String? ?? 'user',
+      displayName: json['display_name'] as String? ?? json['displayName'] as String?,
+      avatarUrl: json['avatar_url'] as String? ?? json['avatarUrl'] as String?,
+      avatarEmoji: json['avatar_emoji'] as String? ?? json['avatarEmoji'] as String?,
+      createdAt: json['created_at'] as String? ?? json['createdAt'] as String? ?? '',
+    );
+  }
+
+  bool get isAdmin => role == 'admin' || role == 'root_admin';
+  bool get isRootAdmin => role == 'root_admin';
+}
+
+/// Audit Log Entry Model
+class AuditLogEntry {
+  final String logId;
+  final String adminUsername;
+  final String action;
+  final String targetUsername;
+  final String? oldRole;
+  final String? newRole;
+  final String timestamp;
+
+  AuditLogEntry({
+    required this.logId,
+    required this.adminUsername,
+    required this.action,
+    required this.targetUsername,
+    this.oldRole,
+    this.newRole,
+    required this.timestamp,
+  });
+
+  factory AuditLogEntry.fromJson(Map<String, dynamic> json) {
+    return AuditLogEntry(
+      logId: json['log_id'] as String? ?? json['logId'] as String? ?? '',
+      adminUsername: json['admin_username'] as String? ?? json['adminUsername'] as String? ?? '',
+      action: json['action'] as String? ?? '',
+      targetUsername: json['target_username'] as String? ?? json['targetUsername'] as String? ?? '',
+      oldRole: json['old_role'] as String? ?? json['oldRole'] as String?,
+      newRole: json['new_role'] as String? ?? json['newRole'] as String?,
+      timestamp: json['timestamp'] as String? ?? '',
+    );
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+// 🆕 BACKEND V16.2 ADMIN APIS - EXTENSION
+// ════════════════════════════════════════════════════════════
+
+/// Extension mit neuen Backend V16.2 Admin APIs
+/// Fügt User Ban/Mute/Status, Dashboard und Analytics hinzu
+/// 
+/// ⚠️ WICHTIG: ROLLEN-PRÜFUNG
+/// Alle Ban/Mute/Management-Funktionen erfordern:
+/// - Root Admin Rolle (AdminPermissions.canManageAdmins)
+/// - Verifizierung über AdminState (adminStateProvider)
+/// 
+/// Bitte VOR dem Aufruf prüfen:
+/// ```dart
+/// final admin = ref.read(adminStateProvider(world));
+/// if (!admin.isRootAdmin) {
+///   // Keine Berechtigung!
+///   return;
+/// }
+/// ```
+extension WorldAdminServiceV162 on WorldAdminService {
+  /// 🆕 Ban User (V16.2)
+  /// ⚠️ REQUIRES: Root Admin (AdminPermissions.canManageAdmins)
+  static Future<bool> banUser({
+    required String userId,
+    required String reason,
+    int durationHours = 24,
+    String? adminUserId,
+  }) async {
+    try {
+      final url = Uri.parse('${WorldAdminService._baseUrl}/api/admin/users/$userId/ban');
+      final storage = UnifiedStorageService();
+      final adminUser = adminUserId ?? storage.getUsername('materie') ?? 'admin';
+      
+      final response = await http.post(
+        url,
+        headers: {
+          'X-Role': 'root_admin',
+          'X-User-ID': adminUser,
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({'reason': reason, 'durationHours': durationHours}),
+      ).timeout(WorldAdminService._timeout);
+      
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// 🆕 Unban User (V16.2)
+  /// ⚠️ REQUIRES: Root Admin (AdminPermissions.canManageAdmins)
+  static Future<bool> unbanUser({required String userId, String? adminUserId}) async {
+    try {
+      final url = Uri.parse('${WorldAdminService._baseUrl}/api/admin/users/$userId/unban');
+      final storage = UnifiedStorageService();
+      final adminUser = adminUserId ?? storage.getUsername('materie') ?? 'admin';
+      
+      final response = await http.post(
+        url,
+        headers: {'X-Role': 'root_admin', 'X-User-ID': adminUser},
+      ).timeout(WorldAdminService._timeout);
+      
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// 🆕 Mute User (V16.2)
+  static Future<bool> muteUser({
+    required String userId,
+    required String reason,
+    int durationMinutes = 60,
+    String? adminUserId,
+  }) async {
+    try {
+      final url = Uri.parse('${WorldAdminService._baseUrl}/api/admin/users/$userId/mute');
+      final storage = UnifiedStorageService();
+      final adminUser = adminUserId ?? storage.getUsername('materie') ?? 'admin';
+      
+      final response = await http.post(
+        url,
+        headers: {
+          'X-Role': 'root_admin',
+          'X-User-ID': adminUser,
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({'reason': reason, 'durationMinutes': durationMinutes}),
+      ).timeout(WorldAdminService._timeout);
+      
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// 🆕 Unmute User (V16.2)
+  static Future<bool> unmuteUser({
+    required String userId,
+    String? adminUserId,
+  }) async {
+    try {
+      final url = Uri.parse('${WorldAdminService._baseUrl}/api/admin/users/$userId/unmute');
+      final storage = UnifiedStorageService();
+      final adminUser = adminUserId ?? storage.getUsername('materie') ?? 'admin';
+      
+      final response = await http.post(
+        url,
+        headers: {
+          'X-Role': 'root_admin',
+          'X-User-ID': adminUser,
+          'Content-Type': 'application/json',
+        },
+      ).timeout(WorldAdminService._timeout);
+      
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// 🆕 Check User Status (V16.2)
+  static Future<Map<String, dynamic>> checkUserStatus({
+    required String userId,
+    String? adminUserId,
+  }) async {
+    try {
+      final url = Uri.parse('${WorldAdminService._baseUrl}/api/admin/users/$userId/status');
+      final storage = UnifiedStorageService();
+      final adminUser = adminUserId ?? storage.getUsername('materie') ?? 'admin';
+      
+      final response = await http.get(
+        url,
+        headers: {'X-Role': 'root_admin', 'X-User-ID': adminUser},
+      ).timeout(WorldAdminService._timeout);
+      
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      }
+      return {'userId': userId, 'banned': false, 'muted': false};
+    } catch (e) {
+      return {'userId': userId, 'banned': false, 'muted': false, 'error': e.toString()};
+    }
+  }
+
+  /// 🆕 Get Admin Dashboard (V16.2)
+  static Future<Map<String, dynamic>> getAdminDashboard({String? adminUserId}) async {
+    try {
+      final url = Uri.parse('${WorldAdminService._baseUrl}/api/admin/dashboard');
+      final storage = UnifiedStorageService();
+      final adminUser = adminUserId ?? storage.getUsername('materie') ?? 'admin';
+      
+      final response = await http.get(
+        url,
+        headers: {'X-Role': 'root_admin', 'X-User-ID': adminUser},
+      ).timeout(WorldAdminService._timeout);
+      
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      }
+      return {'error': 'Failed'};
+    } catch (e) {
+      return {'error': e.toString()};
+    }
+  }
+
+  /// 🆕 Get Analytics (V16.2)
+  static Future<Map<String, dynamic>> getAnalytics({
+    required String realm,
+    int days = 7,
+    String? adminUserId,
+  }) async {
+    try {
+      final url = Uri.parse('${WorldAdminService._baseUrl}/api/admin/analytics/$realm?days=$days');
+      final storage = UnifiedStorageService();
+      final adminUser = adminUserId ?? storage.getUsername('materie') ?? 'admin';
+      
+      final response = await http.get(
+        url,
+        headers: {'X-Role': 'root_admin', 'X-User-ID': adminUser},
+      ).timeout(WorldAdminService._timeout);
+      
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      }
+      return {'error': 'Failed'};
+    } catch (e) {
+      return {'error': e.toString()};
+    }
+  }
+
+  // ════════════════════════════════════════════════════════════
+  // 🆕 ADMIN DASHBOARD ENDPOINTS (V99)
+  // ════════════════════════════════════════════════════════════
+
+  /// Get active voice calls in a world
+  /// 
+  /// Returns list of active calls with participants, duration, etc.
+  /// 
+  /// Example response:
+  /// ```json
+  /// {
+  ///   "success": true,
+  ///   "world": "materie",
+  ///   "calls": [
+  ///     {
+  ///       "room_id": "politik",
+  ///       "room_name": "Politik Diskussion",
+  ///       "participant_count": 5,
+  ///       "participants": [...],
+  ///       "started_at": "2026-02-13T17:00:00.000Z",
+  ///       "duration_seconds": 1234
+  ///     }
+  ///   ]
+  /// }
+  /// ```
+  static Future<List<Map<String, dynamic>>> getActiveVoiceCalls(String world) async {
+    try {
+      // Use API token from ApiConfig
+      const token = 'y-Xiv3kKeiybDm2CV0yLFu7TSd22co6NBw3udn5Y';
+      
+      final url = Uri.parse('${WorldAdminService._baseUrl}/api/admin/voice-calls/$world');
+      
+      if (kDebugMode) {
+        debugPrint('📊 Fetching active voice calls for: $world');
+      }
+      
+      final response = await http.get(
+        url,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      ).timeout(WorldAdminService._timeout);
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        
+        if (data['success'] == true) {
+          final calls = data['calls'] as List<dynamic>;
+          
+          if (kDebugMode) {
+            debugPrint('✅ Found ${calls.length} active calls');
+          }
+
+
+######## lib/features/admin/ui/active_calls_dashboard.dart ########
+
+/// 📊 ACTIVE CALLS DASHBOARD
+/// Real-time overview of active voice calls in a world
+/// Features:
+/// - Live call list with participant counts
+/// - One-click admin join (observer mode)
+/// - Call duration display
+/// - Participant details
+library;
+
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:async';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import '../../../services/world_admin_service.dart';
+import '../../../config/api_config.dart';
+
+/// Active Call Model
+class ActiveCall {
+  final String roomId;
+  final String roomName;
+  final int participantCount;
+  final List<CallParticipant> participants;
+  final DateTime startedAt;
+  final int durationSeconds;
+
+  ActiveCall({
+    required this.roomId,
+    required this.roomName,
+    required this.participantCount,
+    required this.participants,
+    required this.startedAt,
+    required this.durationSeconds,
+  });
+
+  factory ActiveCall.fromJson(Map<String, dynamic> json) {
+    return ActiveCall(
+      roomId: json['room_id'] as String,
+      roomName: json['room_name'] as String,
+      participantCount: json['participant_count'] as int,
+      participants: (json['participants'] as List)
+          .map((p) => CallParticipant.fromJson(p as Map<String, dynamic>))
+          .toList(),
+      startedAt: DateTime.parse(json['started_at'] as String),
+      durationSeconds: json['duration_seconds'] as int,
+    );
+  }
+
+  String get durationFormatted {
+    final hours = durationSeconds ~/ 3600;
+    final minutes = (durationSeconds % 3600) ~/ 60;
+    final seconds = durationSeconds % 60;
+    
+    if (hours > 0) {
+      return '$hours:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}h';
+    }
+    return '$minutes:${seconds.toString().padLeft(2, '0')}min';
+  }
+}
+
+/// Call Participant Model
+class CallParticipant {
+  final String userId;
+  final String username;
+  final bool isMuted;
+  final DateTime joinedAt;
+
+  CallParticipant({
+    required this.userId,
+    required this.username,
+    required this.isMuted,
+    required this.joinedAt,
+  });
+
+  factory CallParticipant.fromJson(Map<String, dynamic> json) {
+    return CallParticipant(
+      userId: json['user_id'] as String,
+      username: json['username'] as String,
+      isMuted: (json['is_muted'] as int? ?? 0) == 1,
+      joinedAt: DateTime.fromMillisecondsSinceEpoch(json['joined_at'] as int),
+    );
+  }
+}
+
+/// Active Calls Provider
+final activeCallsProvider = FutureProvider.family<List<ActiveCall>, String>((ref, world) async {
+  final calls = await _getActiveVoiceCalls(world);
+  return calls.map((json) => ActiveCall.fromJson(json)).toList();
+});
+
+/// Temporary local implementation until analyzer cache clears
+Future<List<Map<String, dynamic>>> _getActiveVoiceCalls(String world) async {
+  try {
+    const token = 'y-Xiv3kKeiybDm2CV0yLFu7TSd22co6NBw3udn5Y';
+    final url = Uri.parse('${ApiConfig.baseUrl}/api/admin/voice-calls/$world');
+    
+    final response = await http.get(
+      url,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    ).timeout(const Duration(seconds: 10));
+    
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return List<Map<String, dynamic>>.from(data['calls'] ?? []);
+    }
+    
+    return [];
+  } catch (e) {
+    debugPrint('⚠️ Error fetching active calls: $e');
+    return [];
+  }
+}
+
+/// Active Calls Dashboard Screen
+class ActiveCallsDashboard extends ConsumerStatefulWidget {
+  final String world; // 'materie' or 'energie'
+
+  const ActiveCallsDashboard({
+    super.key,
+    required this.world,
+  });
+
+  @override
+  ConsumerState<ActiveCallsDashboard> createState() => _ActiveCallsDashboardState();
+}
+
+class _ActiveCallsDashboardState extends ConsumerState<ActiveCallsDashboard> {
+  Timer? _refreshTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    // Auto-refresh every 5 seconds
+    _refreshTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      ref.invalidate(activeCallsProvider(widget.world));
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final activeCallsAsync = ref.watch(activeCallsProvider(widget.world));
+
+    return Scaffold(
+      backgroundColor: const Color(0xFF0E0E0E),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF1A1A1A),
+        title: Row(
+          children: [
+            Icon(
+              widget.world == 'materie' ? Icons.public : Icons.energy_savings_leaf,
+              color: widget.world == 'materie' ? Colors.blue : Colors.green,
+            ),
+            const SizedBox(width: 12),
+            Text(
+              '${widget.world == 'materie' ? 'Materie' : 'Energie'} - Active Calls',
+              style: const TextStyle(color: Colors.white),
+            ),
+          ],
+        ),
+        actions: [
+          // Refresh Button
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Colors.white),
+            onPressed: () {
+              ref.invalidate(activeCallsProvider(widget.world));
+            },
+          ),
+          // Auto-refresh indicator
+          const Padding(
+            padding: EdgeInsets.only(right: 16),
+            child: Center(
+              child: Row(
+                children: [
+                  Icon(Icons.sync, size: 16, color: Colors.green),
+                  SizedBox(width: 4),
+                  Text(
+                    'Auto 5s',
+                    style: TextStyle(color: Colors.green, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+      body: activeCallsAsync.when(
+        loading: () => const Center(
+          child: CircularProgressIndicator(color: Colors.blue),
+        ),
+        error: (error, stack) => _buildErrorState(error),
+        data: (calls) => calls.isEmpty
+            ? _buildEmptyState()
+            : _buildCallsList(calls),
+      ),
+    );
+  }
+
+  /// Build calls list
+  Widget _buildCallsList(List<ActiveCall> calls) {
+    return RefreshIndicator(
+      onRefresh: () async {
+        ref.invalidate(activeCallsProvider(widget.world));
+      },
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: calls.length,
+        itemBuilder: (context, index) {
+          return _buildCallCard(calls[index]);
+        },
+      ),
+    );
+  }
+
+  /// Build single call card
+  Widget _buildCallCard(ActiveCall call) {
+    return Card(
+      color: const Color(0xFF1A1A1A),
+      margin: const EdgeInsets.only(bottom: 16),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: Colors.green.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header: Room name + duration
+            Row(
+              children: [
+                // Room icon
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.voice_chat,
+                    color: Colors.green,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // Room name + duration
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        call.roomName,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.timer,
+                            size: 14,
+                            color: Colors.grey[400],
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            call.durationFormatted,
+                            style: TextStyle(
+                              color: Colors.grey[400],
+                              fontSize: 13,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Icon(
+                            Icons.people,
+                            size: 14,
+                            color: Colors.grey[400],
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${call.participantCount} / 10',
+                            style: TextStyle(
+                              color: Colors.grey[400],
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                // Live indicator
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.circle, size: 8, color: Colors.white),
+                      SizedBox(width: 4),
+                      Text(
+                        'LIVE',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 16),
+            const Divider(color: Color(0xFF2A2A2A)),
+            const SizedBox(height: 12),
+
+            // Participants list
+            const Text(
+              'Participants:',
+              style: TextStyle(
+                color: Colors.grey,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            ...call.participants.map((participant) => 
+              _buildParticipantTile(participant)
+            ),
+
+            const SizedBox(height: 16),
+
+            // Action buttons
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () => _joinAsObserver(call),
+                    icon: const Icon(Icons.visibility),
+                    label: const Text('Join as Observer'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                ElevatedButton.icon(
+                  onPressed: () => _endCall(call),
+                  icon: const Icon(Icons.stop),
+                  label: const Text('End Call'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Build participant tile
+  Widget _buildParticipantTile(CallParticipant participant) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          // Avatar
+          CircleAvatar(
+            radius: 16,
+            backgroundColor: Colors.grey[800],
+            child: Text(
+              participant.username[0].toUpperCase(),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          // Username
+          Expanded(
+            child: Text(
+              participant.username,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+              ),
+            ),
+          ),
+          // Mute status
+          if (participant.isMuted)
+            const Icon(
+              Icons.mic_off,
+              size: 16,
+              color: Colors.red,
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// Build empty state
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.voice_chat,
+            size: 80,
+            color: Colors.grey[700],
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'No Active Calls',
+            style: TextStyle(
+              color: Colors.grey[400],
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'All voice rooms are currently empty',
+            style: TextStyle(
+              color: Colors.grey[600],
+              fontSize: 14,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Build error state
+  Widget _buildErrorState(Object error) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.error_outline,
+            size: 80,
+            color: Colors.red[400],
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Failed to load active calls',
+            style: TextStyle(
+              color: Colors.grey[400],
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            error.toString(),
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.grey[600],
+              fontSize: 14,
+            ),
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            onPressed: () {
+              ref.invalidate(activeCallsProvider(widget.world));
+            },
+            icon: const Icon(Icons.refresh),
+            label: const Text('Retry'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Join call as observer (admin)
+  void _joinAsObserver(ActiveCall call) {
+    // TODO: Implement observer join logic
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Joining ${call.roomName} as observer...'),
+        backgroundColor: Colors.blue,
+      ),
+    );
+  }
+
+  /// End call (admin action)
+  void _endCall(ActiveCall call) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A1A),
+        title: const Text(
+          'End Call?',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: Text(
+          'Are you sure you want to end the call in "${call.roomName}"?\n\nThis will disconnect all ${call.participantCount} participants.',
+          style: const TextStyle(color: Colors.grey),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // TODO: Implement end call logic
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Ending call in ${call.roomName}...'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('End Call'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+================================================================================
+TEIL 5: STATE MANAGEMENT & MODELS
+================================================================================
+
+
+######## lib/providers/webrtc_call_provider.dart ########
+
+/// 🎙️ WEBRTC CALL STATE PROVIDER
+/// Riverpod StateNotifier for deterministic WebRTC state management
+/// 
+/// Features:
+/// - Single source of truth for call state
+/// - Deterministic state transitions
+/// - Participant management (max 10)
+/// - Auto-reconnect logic
+/// - Admin action integration
+library;
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/foundation.dart';
+import '../models/webrtc_call_state.dart';
+import '../services/webrtc_participant.dart';
+import '../services/webrtc_voice_service.dart';
+
+/// WebRTC Call StateNotifier
+class WebRTCCallNotifier extends StateNotifier<WebRTCCallState> {
+  final WebRTCVoiceService _voiceService;
+  
+  WebRTCCallNotifier(this._voiceService) : super(const WebRTCCallState()) {
+    _initializeListeners();
+  }
+  
+  /// Initialize listeners from voice service
+  void _initializeListeners() {
+    // Listen to participants stream
+    _voiceService.participantsStream.listen((voiceParticipants) {
+      // Convert VoiceParticipant to WebRTCParticipant
+      final webrtcParticipants = voiceParticipants.map((vp) {
+        return WebRTCParticipant(
+          userId: vp.userId,
+          username: vp.username,
+          avatarEmoji: vp.avatarEmoji,
+          isMuted: vp.isMuted,
+          isSpeaking: vp.isSpeaking,
+          peerConnection: vp.peerConnection,
+          audioStream: vp.stream,
+        );
+      }).toList();
+      
+      state = state.copyWith(participants: webrtcParticipants);
+      _updateActiveSpeaker();
+    });
+    
+    // Listen to speaking stream (convert bool to double volume)
+    _voiceService.speakingStream.listen((speakingMap) {
+      final volumeMap = speakingMap.map((userId, isSpeaking) {
+        return MapEntry(userId, isSpeaking ? 1.0 : 0.0);
+      });
+      
+      state = state.copyWith(speakingLevels: volumeMap);
+      _updateActiveSpeaker();
+    });
+  }
+  
+  /// Update active speaker based on speaking levels
+  void _updateActiveSpeaker() {
+    if (state.speakingLevels.isEmpty) {
+      state = state.copyWith(activeSpeakerId: null);
+      return;
+    }
+    
+    // Find participant with highest speaking level
+    final sorted = state.speakingLevels.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    
+    if (sorted.isNotEmpty && sorted.first.value > 0.3) {
+      state = state.copyWith(activeSpeakerId: sorted.first.key);
+    } else {
+      state = state.copyWith(activeSpeakerId: null);
+    }
+  }
+  
+  /// Join room with participant limit enforcement
+  Future<void> joinRoom({
+    required String roomId,
+    required String roomName,
+    required String userId,
+    required String username,
+    bool isPushToTalk = false,
+  }) async {
+    try {
+      // Check if already in a call
+      if (state.isCallActive) {
+        throw Exception('Already in an active call');
+      }
+      
+      // Set connecting state
+      state = state.copyWith(
+        connectionState: CallConnectionState.connecting,
+        roomId: roomId,
+        roomName: roomName,
+        localUserId: userId,
+        isPushToTalk: isPushToTalk,
+        errorMessage: null,
+      );
+      
+      // Join via voice service (handles participant limit check)
+      await _voiceService.joinRoom(
+        roomId: roomId,
+        userId: userId,
+        username: username,
+        pushToTalk: isPushToTalk,
+      );
+      
+      // Set connected state
+      state = state.copyWith(
+        connectionState: CallConnectionState.connected,
+        connectedAt: DateTime.now(),
+        reconnectAttempts: 0,
+      );
+      
+      if (kDebugMode) {
+        debugPrint('✅ WebRTC: Joined room $roomId as $username');
+      }
+      
+    } on RoomFullException catch (e) {
+      state = state.copyWith(
+        connectionState: CallConnectionState.error,
+        errorMessage: e.message,
+        errorOccurredAt: DateTime.now(),
+      );
+      rethrow;
+      
+    } catch (e) {
+      state = state.copyWith(
+        connectionState: CallConnectionState.error,
+        errorMessage: e.toString(),
+        errorOccurredAt: DateTime.now(),
+      );
+      rethrow;
+    }
+  }
+  
+  /// Leave room
+  Future<void> leaveRoom() async {
+    try {
+      await _voiceService.leaveRoom();
+      
+      state = state.copyWith(
+        connectionState: CallConnectionState.disconnected,
+        disconnectedAt: DateTime.now(),
+        activeSpeakerId: null,
+      );
+      
+      if (kDebugMode) {
+        debugPrint('✅ WebRTC: Left room ${state.roomId}');
+      }
+      
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ WebRTC: Error leaving room: $e');
+      }
+    }
+  }
+  
+  /// Toggle mute
+  Future<void> toggleMute() async {
+    try {
+      if (state.isLocalMuted) {
+        await _voiceService.unmute();
+      } else {
+        await _voiceService.mute();
+      }
+      
+      state = state.copyWith(isLocalMuted: !state.isLocalMuted);
+      
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ WebRTC: Error toggling mute: $e');
+      }
+    }
+  }
+  
+  /// Auto-reconnect logic
+  Future<void> attemptReconnect() async {
+    if (!state.shouldReconnect) {
+      if (kDebugMode) {
+        debugPrint('⚠️ WebRTC: Cannot reconnect (max attempts reached)');
+      }
+      return;
+    }
+    
+    state = state.copyWith(
+      connectionState: CallConnectionState.reconnecting,
+      reconnectAttempts: state.reconnectAttempts + 1,
+      lastReconnectAt: DateTime.now(),
+    );
+    
+    try {
+      // Exponential backoff: 2^attempt seconds (4s, 8s, 16s)
+      final delay = Duration(seconds: 2 << state.reconnectAttempts);
+      await Future.delayed(delay);
+      
+      // Try to rejoin
+      if (state.roomId != null && state.localUserId != null) {
+        await _voiceService.joinRoom(
+          roomId: state.roomId!,
+          userId: state.localUserId!,
+          username: 'User', // TODO: Get from profile
+          pushToTalk: state.isPushToTalk,
+        );
+        
+        state = state.copyWith(
+          connectionState: CallConnectionState.connected,
+          reconnectAttempts: 0,
+          errorMessage: null,
+        );
+        
+        if (kDebugMode) {
+          debugPrint('✅ WebRTC: Reconnected successfully');
+        }
+      }
+      
+    } catch (e) {
+      if (state.reconnectAttempts >= state.maxReconnectAttempts) {
+        state = state.copyWith(
+          connectionState: CallConnectionState.error,
+          errorMessage: 'Reconnection failed after ${state.maxReconnectAttempts} attempts',
+        );
+      }
+      
+      if (kDebugMode) {
+        debugPrint('❌ WebRTC: Reconnect attempt ${state.reconnectAttempts} failed: $e');
+      }
+    }
+  }
+  
+  /// Admin: Kick user
+  Future<void> kickUser(String userId) async {
+    if (!state.isAdmin && !state.isRootAdmin) {
+      throw Exception('Only admins can kick users');
+    }
+    
+    if (state.localUserId == null) {
+      throw Exception('Local user ID not set');
+    }
+    
+    try {
+      await _voiceService.kickUser(
+        userId: userId,
+        adminId: state.localUserId!,
+      );
+      
+      if (kDebugMode) {
+        debugPrint('✅ WebRTC: Kicked user $userId');
+      }
+      
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ WebRTC: Error kicking user: $e');
+      }
+      rethrow;
+    }
+  }
+  
+  /// Admin: Mute user
+  Future<void> muteUser(String userId) async {
+    if (!state.isAdmin && !state.isRootAdmin) {
+      throw Exception('Only admins can mute users');
+    }
+    
+    if (state.localUserId == null) {
+      throw Exception('Local user ID not set');
+    }
+    
+    try {
+      await _voiceService.muteUser(
+        userId: userId,
+        adminId: state.localUserId!,
+      );
+      
+      if (kDebugMode) {
+        debugPrint('✅ WebRTC: Muted user $userId');
+      }
+      
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ WebRTC: Error muting user: $e');
+      }
+      rethrow;
+    }
+  }
+  
+  /// Set admin status
+  void setAdminStatus(bool isAdmin, bool isRootAdmin) {
+    state = state.copyWith(
+      isAdmin: isAdmin,
+      isRootAdmin: isRootAdmin,
+    );
+  }
+  
+  /// Reset state
+  void reset() {
+    state = const WebRTCCallState();
+  }
+}
+
+/// Provider for WebRTC call state
+final webrtcCallProvider = StateNotifierProvider<WebRTCCallNotifier, WebRTCCallState>((ref) {
+  // Get voice service (assuming it's already a provider)
+  final voiceService = WebRTCVoiceService.instance;
+  return WebRTCCallNotifier(voiceService);
+});
+
+/// Convenience providers
+final isInCallProvider = Provider<bool>((ref) {
+  return ref.watch(webrtcCallProvider).isCallActive;
+});
+
+final participantCountProvider = Provider<int>((ref) {
+  return ref.watch(webrtcCallProvider).participantCount;
+});
+
+final isRoomFullProvider = Provider<bool>((ref) {
+  return ref.watch(webrtcCallProvider).isRoomFull;
+});
+
+final activeSpeakerProvider = Provider<WebRTCParticipant?>((ref) {
+  return ref.watch(webrtcCallProvider).activeSpeaker;
+});
+
+
+######## lib/models/webrtc_call_state.dart ########
+
+/// 📞 WEBRTC CALL STATE - SINGLE SOURCE OF TRUTH
+/// Deterministic state model for WebRTC group calls
+/// 
+/// Features:
+/// - Max 10 participants enforcement
+/// - Deterministic state machine
+/// - Active speaker detection
+/// - Auto-reconnect tracking
+/// - Admin role integration
+library;
+
+import 'package:freezed_annotation/freezed_annotation.dart';
+import '../services/webrtc_participant.dart';
+
+part 'webrtc_call_state.freezed.dart';
+// ⚠️ NO JSON: WebRTCParticipant contains non-serializable WebRTC objects
+
+/// Connection state enum with deterministic transitions
+enum CallConnectionState {
+  idle,          // No active call
+  connecting,    // Establishing connection
+  connected,     // Active call
+  reconnecting,  // 🆕 Auto-reconnect in progress
+  disconnected,  // Call ended
+  error         // Error occurred
+}
+
+/// Exception for room capacity limit
+class RoomFullException implements Exception {
+  final String message;
+  final int currentCount;
+  final int maxCapacity;
+  
+  RoomFullException(this.message, {this.currentCount = 0, this.maxCapacity = 10});
+  
+  @override
+  String toString() => 'RoomFullException: $message ($currentCount/$maxCapacity)';
+}
+
+/// Immutable WebRTC call state
+@freezed
+class WebRTCCallState with _$WebRTCCallState {
+  const factory WebRTCCallState({
+    // Connection
+    @Default(CallConnectionState.idle) CallConnectionState connectionState,
+    String? roomId,
+    String? roomName,
+    
+    // Participants (max 10)
+    @Default([]) List<WebRTCParticipant> participants,
+    @Default(10) int maxParticipants,
+    
+    // Active speaker
+    String? activeSpeakerId,
+    @Default({}) Map<String, double> speakingLevels, // userId -> volume level
+    
+    // Local user state
+    String? localUserId,
+    @Default(false) bool isLocalMuted,
+    @Default(false) bool isPushToTalk,
+    
+    // Admin
+    @Default(false) bool isAdmin,
+    @Default(false) bool isRootAdmin,
+    
+    // Reconnection
+    @Default(0) int reconnectAttempts,
+    @Default(3) int maxReconnectAttempts,
+    DateTime? lastReconnectAt,
+    
+    // Error tracking
+    String? errorMessage,
+    DateTime? errorOccurredAt,
+    
+    // Timestamps
+    DateTime? connectedAt,
+    DateTime? disconnectedAt,
+  }) = _WebRTCCallState;
+  
+  // ⚠️ NO fromJson: State contains non-serializable WebRTC objects
+}
+
+/// Extension methods for business logic
+extension WebRTCCallStateX on WebRTCCallState {
+  /// Check if room is full
+  bool get isRoomFull => participants.length >= maxParticipants;
+  
+  /// Check if can join room
+  bool get canJoinRoom => !isRoomFull && connectionState == CallConnectionState.idle;
+  
+  /// Check if should reconnect
+  bool get shouldReconnect => 
+      connectionState == CallConnectionState.reconnecting &&
+      reconnectAttempts < maxReconnectAttempts;
+  
+  /// Check if call is active
+  bool get isCallActive => 
+      connectionState == CallConnectionState.connected ||
+      connectionState == CallConnectionState.reconnecting;
+  
+  /// Get participant by userId
+  WebRTCParticipant? getParticipant(String userId) {
+    try {
+      return participants.firstWhere((p) => p.userId == userId);
+    } catch (_) {
+      return null;
+    }
+  }
+  
+  /// Get participant count
+  int get participantCount => participants.length;
+  
+  /// Get active speaker
+  WebRTCParticipant? get activeSpeaker => 
+      activeSpeakerId != null ? getParticipant(activeSpeakerId!) : null;
+  
+  /// Check if user is active speaker
+  bool isActiveSpeaker(String userId) => activeSpeakerId == userId;
+  
+  /// Get connected participants only
+  List<WebRTCParticipant> get connectedParticipants =>
+      participants.where((p) => p.isConnected).toList();
+  
+  /// Get speaking participants
+  List<WebRTCParticipant> get speakingParticipants =>
+      participants.where((p) => p.isSpeaking && !p.isMuted).toList();
+}
+
+================================================================================
+TEIL 6: UI SCREENS & WIDGETS
+================================================================================
+
+
+######## lib/screens/shared/modern_voice_chat_screen.dart ########
+
+/// 🎤 MODERN WEBRTC VOICE CHAT SCREEN
+/// 2×5 Grid layout for up to 10 participants
+/// Features:
+/// - Dynamic participant grid (2 columns, max 5 rows)
+/// - Active speaker highlight with glow effect
+/// - Speaking animations
+/// - Modern Material Design 3 UI
+/// - Admin controls (long-press menu)
+/// - Room full indicator
+/// - Reconnecting state
+library;
+
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../providers/webrtc_call_provider.dart';
+import '../../models/webrtc_call_state.dart';
+import '../../widgets/voice/participant_grid_tile.dart';
+import '../../widgets/admin/warning_dialog.dart';
+import '../../widgets/admin/ban_user_dialog.dart';
+import '../../models/admin_action.dart';
+
+class ModernVoiceChatScreen extends ConsumerStatefulWidget {
+  final String roomId;
+  final String roomName;
+  final String userId;
+  final String username;
+  final Color accentColor;
+
+  const ModernVoiceChatScreen({
+    super.key,
+    required this.roomId,
+    required this.roomName,
+    required this.userId,
+    required this.username,
+    this.accentColor = Colors.blue,
+  });
+
+  @override
+  ConsumerState<ModernVoiceChatScreen> createState() => _ModernVoiceChatScreenState();
+}
+
+class _ModernVoiceChatScreenState extends ConsumerState<ModernVoiceChatScreen> {
+  @override
+  Widget build(BuildContext context) {
+    // Watch WebRTC state
+    final callState = ref.watch(webrtcCallProvider);
+    final isInCall = ref.watch(isInCallProvider);
+    final participantCount = ref.watch(participantCountProvider);
+    final isRoomFull = ref.watch(isRoomFullProvider);
+
+    return Scaffold(
+      backgroundColor: const Color(0xFF0E0E0E), // Dark background
+      appBar: _buildAppBar(callState, participantCount, isRoomFull),
+      body: Column(
+        children: [
+          // Connection status banner
+          if (callState.connectionState == CallConnectionState.reconnecting)
+            _buildReconnectingBanner(callState),
+
+          // Participant Grid
+          Expanded(
+            child: callState.participants.isEmpty
+                ? _buildEmptyState()
+                : _buildParticipantGrid(callState),
+          ),
+
+          // Bottom Controls
+          _buildBottomControls(callState),
+        ],
+      ),
+    );
+  }
+
+  /// App Bar with status
+  PreferredSizeWidget _buildAppBar(
+    WebRTCCallState state,
+    int participantCount,
+    bool isRoomFull,
+  ) {
+    return AppBar(
+      backgroundColor: const Color(0xFF1A1A1A),
+      leading: IconButton(
+        icon: const Icon(Icons.close, color: Colors.white),
+        onPressed: () => Navigator.pop(context),
+      ),
+      title: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                widget.roomName,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Connection status dot
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: _getConnectionColor(state.connectionState),
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ],
+          ),
+          Row(
+            children: [
+              Text(
+                '$participantCount / ${state.maxParticipants} participants',
+                style: const TextStyle(
+                  color: Colors.grey,
+                  fontSize: 13,
+                ),
+              ),
+              if (isRoomFull) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const Text(
+                    'FULL',
+                    style: TextStyle(
+                      color: Colors.red,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Get connection status color
+  Color _getConnectionColor(CallConnectionState state) {
+    switch (state) {
+      case CallConnectionState.connected:
+        return Colors.green;
+      case CallConnectionState.connecting:
+      case CallConnectionState.reconnecting:
+        return Colors.orange;
+      case CallConnectionState.error:
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  /// Reconnecting banner
+  Widget _buildReconnectingBanner(WebRTCCallState state) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      color: Colors.orange.withValues(alpha: 0.2),
+      child: Row(
+        children: [
+          const SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: Colors.orange,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            'Reconnecting... (Attempt ${state.reconnectAttempts}/${state.maxReconnectAttempts})',
+            style: const TextStyle(
+              color: Colors.orange,
+              fontSize: 14,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 2×5 Participant Grid
+  Widget _buildParticipantGrid(WebRTCCallState state) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: GridView.builder(
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2, // 2 columns
+          mainAxisSpacing: 16,
+          crossAxisSpacing: 16,
+          childAspectRatio: 0.8, // Slightly taller than wide
+        ),
+        itemCount: state.participants.length,
+        itemBuilder: (context, index) {
+          final participant = state.participants[index];
+          final isCurrentUser = participant.userId == widget.userId;
+
+          return ParticipantGridTile(
+            participant: participant,
+            isCurrentUser: isCurrentUser,
+            isAdmin: state.isAdmin || state.isRootAdmin,
+            accentColor: widget.accentColor,
+            onLongPress: () => _showAdminMenu(participant.userId),
+          );
+        },
+      ),
+    );
+  }
+
+  /// Empty state
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.people_outline,
+            size: 80,
+            color: Colors.grey.withValues(alpha: 0.3),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Waiting for participants...',
+            style: TextStyle(
+              color: Colors.grey.withValues(alpha: 0.7),
+              fontSize: 16,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Bottom Control Bar
+  Widget _buildBottomControls(WebRTCCallState state) {
+    final notifier = ref.read(webrtcCallProvider.notifier);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+      decoration: const BoxDecoration(
+        color: Color(0xFF1A1A1A),
+        border: Border(
+          top: BorderSide(
+            color: Color(0xFF2A2A2A),
+            width: 1,
+          ),
+        ),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            // Mute/Unmute Button
+            _buildControlButton(
+              icon: state.isLocalMuted ? Icons.mic_off : Icons.mic,
+              label: state.isLocalMuted ? 'Unmute' : 'Mute',
+              onTap: () => notifier.toggleMute(),
+              color: state.isLocalMuted ? Colors.red : widget.accentColor,
+              isActive: !state.isLocalMuted,
+            ),
+
+            // Leave Button
+            _buildControlButton(
+              icon: Icons.call_end,
+              label: 'Leave',
+              onTap: () async {
+                await notifier.leaveRoom();
+                if (mounted) {
+                  Navigator.pop(context);
+                }
+              },
+              color: Colors.red,
+            ),
+
+            // Admin Button (only if admin)
+            if (state.isAdmin || state.isRootAdmin)
+              _buildControlButton(
+                icon: Icons.admin_panel_settings,
+                label: 'Admin',
+                onTap: () => _showAdminPanel(),
+                color: Colors.amber,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Control Button
+  Widget _buildControlButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    required Color color,
+    bool isActive = false,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: isActive ? 0.2 : 0.1),
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: color.withValues(alpha: 0.3),
+                width: 2,
+              ),
+            ),
+            child: Icon(
+              icon,
+              color: color,
+              size: 28,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Show admin menu for participant
+  void _showAdminMenu(String userId) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF1A1A1A),
+      builder: (context) => Container(
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.volume_off, color: Colors.orange),
+              title: const Text(
+                'Mute User',
+                style: TextStyle(color: Colors.white),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                ref.read(webrtcCallProvider.notifier).muteUser(userId);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.person_remove, color: Colors.red),
+              title: const Text(
+                'Kick User',
+                style: TextStyle(color: Colors.white),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                ref.read(webrtcCallProvider.notifier).kickUser(userId);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Show admin panel
+  void _showAdminPanel() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A1A),
+        title: const Text(
+          'Admin Panel',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: const Text(
+          'Long-press any participant to access admin actions.',
+          style: TextStyle(color: Colors.grey),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+
+######## lib/widgets/voice/participant_grid_tile.dart ########
+
+/// 🎤 PARTICIPANT GRID TILE - MODERN WEBRTC UI
+/// Single participant tile for 2×5 grid layout
+/// Features:
+/// - Active speaker highlight
+/// - Speaking animation
+/// - Admin menu (long-press)
+/// - Mute indicator
+/// - Current user badge
+library;
+
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../services/webrtc_participant.dart';
+import '../../providers/webrtc_call_provider.dart';
+
+class ParticipantGridTile extends ConsumerWidget {
+  final WebRTCParticipant participant;
+  final bool isCurrentUser;
+  final bool isAdmin;
+  final VoidCallback? onLongPress;
+  final Color accentColor;
+
+  const ParticipantGridTile({
+    super.key,
+    required this.participant,
+    required this.isCurrentUser,
+    required this.isAdmin,
+    this.onLongPress,
+    this.accentColor = Colors.blue,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Watch active speaker
+    final activeSpeaker = ref.watch(activeSpeakerProvider);
+    final isActiveSpeaker = activeSpeaker?.userId == participant.userId;
+
+    return GestureDetector(
+      onLongPress: isAdmin && !isCurrentUser ? onLongPress : null,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1A1A1A),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isActiveSpeaker
+                ? Colors.green
+                : participant.isSpeaking
+                    ? Colors.green.withValues(alpha: 0.5)
+                    : Colors.transparent,
+            width: isActiveSpeaker ? 3 : 2,
+          ),
+          boxShadow: isActiveSpeaker
+              ? [
+                  BoxShadow(
+                    color: Colors.green.withValues(alpha: 0.3),
+                    blurRadius: 12,
+                    spreadRadius: 2,
+                  ),
+                ]
+              : null,
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Avatar with speaking animation
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                // Speaking animation ring
+                if (participant.isSpeaking)
+                  TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 0.0, end: 1.0),
+                    duration: const Duration(milliseconds: 800),
+                    builder: (context, value, child) {
+                      return Container(
+                        width: 60 + (value * 10),
+                        height: 60 + (value * 10),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Colors.green.withValues(alpha: 1.0 - value),
+                            width: 2,
+                          ),
+                        ),
+                      );
+                    },
+                    onEnd: () {
+                      // Speaking animation - widget will rebuild when state changes
+                    },
+                  ),
+
+                // Avatar
+                CircleAvatar(
+                  radius: 30,
+                  backgroundColor: accentColor.withValues(alpha: 0.2),
+                  child: Text(
+                    participant.avatarEmoji ?? '👤',
+                    style: const TextStyle(fontSize: 32),
+                  ),
+                ),
+
+                // Mute indicator
+                if (participant.isMuted)
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.mic_off,
+                        color: Colors.white,
+                        size: 12,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+
+            const SizedBox(height: 8),
+
+            // Username
+            Text(
+              participant.username,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+            ),
+
+            // Status badge
+            const SizedBox(height: 4),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (isCurrentUser) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: accentColor.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      'You',
+                      style: TextStyle(
+                        color: accentColor,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ] else if (isActiveSpeaker) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.graphic_eq,
+                          color: Colors.green,
+                          size: 10,
+                        ),
+                        SizedBox(width: 2),
+                        Text(
+                          'Speaking',
+                          style: TextStyle(
+                            color: Colors.green,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ] else if (participant.isSpeaking) ...[
+                  const Icon(
+                    Icons.graphic_eq,
+                    color: Colors.green,
+                    size: 12,
+                  ),
+                ],
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+================================================================================
+TEIL 7: BACKEND & DATABASE
+================================================================================
+
+
+######## worker_v100_session_tracking.js ########
+
+// ============================================================================
+// WELTENBIBLIOTHEK V100 - ADMIN DASHBOARD + SESSION TRACKING
+// ============================================================================
+// V100 Features:
+// - GET /api/admin/voice-calls/:world - Active Voice Calls
+// - GET /api/admin/call-history/:world - Call History
+// - GET /api/admin/user-profile/:userId - User Activity
+// - POST /api/admin/voice-session/start - Start Session Tracking
+// - POST /api/admin/voice-session/end - End Session Tracking
+// - POST /api/admin/action/log - Log Admin Actions
+// ============================================================================
+
+// Import ChatRoom Durable Object
+export { ChatRoom } from './chat_room.js';
+
+// API Token Validation
+const VALID_TOKENS = [
+  'y-Xiv3kKeiybDm2CV0yLFu7TSd22co6NBw3udn5Y',
+  'XCz3muf7asVj-lBgXXG3ZiY9wJ_TLelzJQZ9jutB'
+];
+
+function validateToken(request) {
+  const authHeader = request.headers.get('Authorization');
+  if (!authHeader) return false;
+  
+  const token = authHeader.replace('Bearer ', '');
+  return VALID_TOKENS.includes(token);
+}
+
+export default {
+  async fetch(request, env) {
+    const url = new URL(request.url);
+    const path = url.pathname;
+    const method = request.method;
+
+    // CORS Headers für alle Antworten
+    const corsHeaders = {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Expose-Headers': 'Content-Type',
+      'Content-Type': 'application/json',
+    };
+
+    // OPTIONS pre-flight handling
+    if (method === 'OPTIONS') {
+      return new Response(null, { headers: corsHeaders });
+    }
+
+    try {
+      // ====================================================================
+      // HEALTH CHECK
+      // ====================================================================
+      if (path === '/api/health' || path === '/health') {
+        return new Response(JSON.stringify({
+          status: 'ok',
+          version: 'V100',
+          features: [
+            '10 Tool-Endpoints',
+            '10 Chat-Endpoints', 
+            'WebSockets',
+            'Admin Dashboard',
+            'Voice Call Tracking',
+            'Session Tracking (NEW)',
+            'Admin Action Logging (NEW)'
+          ],
+          database: env.DB ? 'connected' : 'not_connected',
+          timestamp: new Date().toISOString()
+        }), { headers: corsHeaders });
+      }
+
+      // ====================================================================
+      // 🆕 ADMIN ENDPOINTS
+      // ====================================================================
+      
+      // GET /api/admin/voice-calls/:world - Aktive Voice Calls
+      const voiceCallsMatch = path.match(/^\/api\/admin\/voice-calls\/(materie|energie)$/);
+      if (voiceCallsMatch && method === 'GET') {
+        if (!validateToken(request)) {
+          return new Response(JSON.stringify({ 
+            error: 'Unauthorized',
+            message: 'Invalid or missing API token'
+          }), { 
+            status: 401, 
+            headers: corsHeaders 
+          });
+        }
+
+        const world = voiceCallsMatch[1];
+        
+        if (!env.DB) {
+          return new Response(JSON.stringify({ 
+            error: 'Database not configured' 
+          }), { 
+            status: 500, 
+            headers: corsHeaders 
+          });
+        }
+
+        try {
+          // Query active voice calls from voice_sessions table
+          const result = await env.DB.prepare(
+            `SELECT 
+              room_id,
+              room_name,
+              COUNT(DISTINCT user_id) as participant_count,
+              MIN(joined_at) as started_at,
+              json_group_array(
+                json_object(
+                  'user_id', user_id,
+                  'username', username,
+                  'is_muted', is_muted,
+                  'joined_at', joined_at
+                )
+              ) as participants
+            FROM voice_sessions
+            WHERE world = ? AND left_at IS NULL
+            GROUP BY room_id, room_name
+            ORDER BY started_at DESC`
+          ).bind(world).all();
+
+          const calls = (result.results || []).map(row => {
+            const now = Date.now();
+            const startedAt = row.started_at || now;
+            
+            return {
+              room_id: row.room_id,
+              room_name: row.room_name || row.room_id,
+              participant_count: row.participant_count || 0,
+              participants: JSON.parse(row.participants || '[]'),
+              started_at: new Date(startedAt).toISOString(),
+              duration_seconds: Math.floor((now - startedAt) / 1000)
+            };
+          });
+
+          return new Response(JSON.stringify({
+            success: true,
+            world: world,
+            calls: calls,
+            total: calls.length,
+            timestamp: new Date().toISOString()
+          }), { headers: corsHeaders });
+
+        } catch (e) {
+          return new Response(JSON.stringify({
+            error: 'Failed to fetch active calls',
+            details: e.message
+          }), { 
+            status: 500, 
+            headers: corsHeaders 
+          });
+        }
+      }
+
+      // GET /api/admin/call-history/:world - Call Historie
+      const callHistoryMatch = path.match(/^\/api\/admin\/call-history\/(materie|energie)$/);
+      if (callHistoryMatch && method === 'GET') {
+        if (!validateToken(request)) {
+          return new Response(JSON.stringify({ 
+            error: 'Unauthorized' 
+          }), { 
+            status: 401, 
+            headers: corsHeaders 
+          });
+        }
+
+        const world = callHistoryMatch[1];
+        const limit = parseInt(url.searchParams.get('limit') || '50');
+        
+        if (!env.DB) {
+          return new Response(JSON.stringify({ 
+            error: 'Database not configured' 
+          }), { 
+            status: 500, 
+            headers: corsHeaders 
+          });
+        }
+
+        try {
+          // Query completed voice calls
+          const result = await env.DB.prepare(
+            `SELECT 
+              room_id,
+              room_name,
+              MIN(joined_at) as started_at,
+              MAX(left_at) as ended_at,
+              COUNT(DISTINCT user_id) as max_participants,
+              COUNT(*) as total_sessions
+            FROM voice_sessions
+            WHERE world = ? AND left_at IS NOT NULL
+            GROUP BY room_id, room_name
+            ORDER BY ended_at DESC
+            LIMIT ?`
+          ).bind(world, limit).all();
+
+          const calls = (result.results || []).map(row => {
+            const startedAt = row.started_at || 0;
+            const endedAt = row.ended_at || 0;
+            
+            return {
+              room_id: row.room_id,
+              room_name: row.room_name || row.room_id,
+              started_at: new Date(startedAt).toISOString(),
+              ended_at: new Date(endedAt).toISOString(),
+              duration_seconds: Math.floor((endedAt - startedAt) / 1000),
+              max_participants: row.max_participants || 0,
+              total_sessions: row.total_sessions || 0
+            };
+          });
+
+          return new Response(JSON.stringify({
+            success: true,
+            world: world,
+            calls: calls,
+            total: calls.length,
+            timestamp: new Date().toISOString()
+          }), { headers: corsHeaders });
+
+        } catch (e) {
+          return new Response(JSON.stringify({
+            error: 'Failed to fetch call history',
+            details: e.message
+          }), { 
+            status: 500, 
+            headers: corsHeaders 
+          });
+        }
+      }
+
+      // GET /api/admin/user-profile/:userId - User Activity
+      const userProfileMatch = path.match(/^\/api\/admin\/user-profile\/([^/]+)$/);
+      if (userProfileMatch && method === 'GET') {
+        if (!validateToken(request)) {
+          return new Response(JSON.stringify({ 
+            error: 'Unauthorized' 
+          }), { 
+            status: 401, 
+            headers: corsHeaders 
+          });
+        }
+
+        const userId = userProfileMatch[1];
+        
+        if (!env.DB) {
+          return new Response(JSON.stringify({ 
+            error: 'Database not configured' 
+          }), { 
+            status: 500, 
+            headers: corsHeaders 
+          });
+        }
+
+        try {
+          // Get user info from users table
+          const userInfo = await env.DB.prepare(
+            `SELECT * FROM users WHERE user_id = ?`
+          ).bind(userId).first();
+
+          if (!userInfo) {
+            return new Response(JSON.stringify({
+              error: 'User not found',
+              user_id: userId
+            }), { 
+              status: 404, 
+              headers: corsHeaders 
+            });
+          }
+
+          // Get voice call stats
+          const voiceStats = await env.DB.prepare(
+            `SELECT 
+              COUNT(DISTINCT room_id) as total_calls,
+              SUM(CASE 
+                WHEN left_at IS NOT NULL 
+                THEN (left_at - joined_at) 
+                ELSE 0 
+              END) / 1000 / 60 as total_minutes
+            FROM voice_sessions
+            WHERE user_id = ?`
+          ).bind(userId).first();
+
+          // Get admin actions (warnings, kicks, bans)
+          const adminActions = await env.DB.prepare(
+            `SELECT 
+              COUNT(CASE WHEN action_type = 'warn' THEN 1 END) as warnings,
+              COUNT(CASE WHEN action_type = 'kick' THEN 1 END) as kicks,
+              COUNT(CASE WHEN action_type = 'ban' THEN 1 END) as bans
+            FROM admin_actions
+            WHERE target_user_id = ?`
+          ).bind(userId).first();
+
+          return new Response(JSON.stringify({
+            success: true,
+            user: {
+              user_id: userInfo.user_id,
+              username: userInfo.username,
+              role: userInfo.role || 'user',
+              avatar_emoji: userInfo.avatar_emoji,
+              bio: userInfo.bio,
+              created_at: new Date(userInfo.created_at).toISOString(),
+              last_active: userInfo.last_active ? new Date(userInfo.last_active).toISOString() : null,
+              total_calls: voiceStats?.total_calls || 0,
+              total_minutes: Math.floor(voiceStats?.total_minutes || 0),
+              warnings: adminActions?.warnings || 0,
+              kicks: adminActions?.kicks || 0,
+              bans: adminActions?.bans || 0
+            },
+            timestamp: new Date().toISOString()
+          }), { headers: corsHeaders });
+
+        } catch (e) {
+          return new Response(JSON.stringify({
+            error: 'Failed to fetch user profile',
+            details: e.message
+          }), { 
+            status: 500, 
+            headers: corsHeaders 
+          });
+        }
+      }
+
+      // ====================================================================
+      // 🆕 VOICE SESSION TRACKING ENDPOINTS
+      // ====================================================================
+      
+      // POST /api/admin/voice-session/start - Start tracking voice session
+      if (path === '/api/admin/voice-session/start' && method === 'POST') {
+        if (!validateToken(request)) {
+          return new Response(JSON.stringify({ 
+            error: 'Unauthorized',
+            message: 'Invalid or missing API token'
+          }), { 
+            status: 401, 
+            headers: corsHeaders 
+          });
+        }
+
+        try {
+          const body = await request.json();
+          const { session_id, room_id, user_id, username, world, joined_at } = body;
+
+          if (!env.DB) {
+            return new Response(JSON.stringify({ 
+              error: 'Database not configured',
+              message: 'D1 database binding missing'
+            }), { 
+              status: 500, 
+              headers: corsHeaders 
+            });
+          }
+
+          // Insert session start into voice_sessions table
+          await env.DB.prepare(`
+            INSERT INTO voice_sessions 
+            (session_id, room_id, user_id, username, world, joined_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+          `).bind(
+            session_id,
+            room_id,
+            user_id,
+            username,
+            world,
+            joined_at
+          ).run();
+
+          return new Response(JSON.stringify({
+            success: true,
+            session_id,
+            message: 'Voice session started',
+            timestamp: new Date().toISOString()
+          }), { headers: corsHeaders });
+
+        } catch (e) {
+          return new Response(JSON.stringify({
+            error: 'Failed to start voice session',
+            details: e.message
+          }), { 
+            status: 500, 
+            headers: corsHeaders 
+          });
+        }
+      }
+
+      // POST /api/admin/voice-session/end - End voice session
+      if (path === '/api/admin/voice-session/end' && method === 'POST') {
+        if (!validateToken(request)) {
+          return new Response(JSON.stringify({ 
+            error: 'Unauthorized',
+            message: 'Invalid or missing API token'
+          }), { 
+            status: 401, 
+            headers: corsHeaders 
+          });
+        }
+
+        try {
+          const body = await request.json();
+          const { session_id, room_id, user_id, left_at, duration_seconds, speaking_seconds } = body;
+
+          if (!env.DB) {
+            return new Response(JSON.stringify({ 
+              error: 'Database not configured',
+              message: 'D1 database binding missing'
+            }), { 
+              status: 500, 
+              headers: corsHeaders 
+            });
+          }
+
+          // Update session with end time and stats
+          await env.DB.prepare(`
+            UPDATE voice_sessions
+            SET left_at = ?,
+                duration_seconds = ?,
+                speaking_seconds = ?
+            WHERE session_id = ?
+          `).bind(
+            left_at,
+            duration_seconds,
+            speaking_seconds || 0,
+            session_id
+          ).run();
+
+          return new Response(JSON.stringify({
+            success: true,
+            session_id,
+            message: 'Voice session ended',
+            stats: {
+              duration_seconds,
+              speaking_seconds: speaking_seconds || 0
+            },
+            timestamp: new Date().toISOString()
+          }), { headers: corsHeaders });
+
+        } catch (e) {
+          return new Response(JSON.stringify({
+            error: 'Failed to end voice session',
+            details: e.message
+          }), { 
+            status: 500, 
+            headers: corsHeaders 
+          });
+        }
+      }
+
+      // POST /api/admin/action/log - Log admin action (kick, mute, ban, warn)
+      if (path === '/api/admin/action/log' && method === 'POST') {
+        if (!validateToken(request)) {
+          return new Response(JSON.stringify({ 
+            error: 'Unauthorized',
+            message: 'Invalid or missing API token'
+          }), { 
+            status: 401, 
+            headers: corsHeaders 
+          });
+        }
+
+        try {
+          const body = await request.json();
+          const { 
+            action_type, 
+            target_user_id, 
+            target_username,
+            admin_user_id, 
+            admin_username,
+            world,
+            room_id,
+            reason,
+            timestamp 
+          } = body;
+
+          if (!env.DB) {
+            return new Response(JSON.stringify({ 
+              error: 'Database not configured',
+              message: 'D1 database binding missing'
+            }), { 
+              status: 500, 
+              headers: corsHeaders 
+            });
+          }
+
+          // Insert admin action into admin_actions table
+          await env.DB.prepare(`
+            INSERT INTO admin_actions 
+            (action_type, target_user_id, target_username, admin_user_id, admin_username, world, room_id, reason, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `).bind(
+            action_type,
+            target_user_id,
+            target_username,
+            admin_user_id,
+            admin_username,
+            world,
+            room_id || null,
+            reason || null,
+            timestamp
+          ).run();
+
+          return new Response(JSON.stringify({
+            success: true,
+            message: 'Admin action logged',
+            action: {
+              type: action_type,
+              target: target_username,
+              admin: admin_username
+            },
+            timestamp: new Date().toISOString()
+          }), { headers: corsHeaders });
+
+        } catch (e) {
+          return new Response(JSON.stringify({
+            error: 'Failed to log admin action',
+            details: e.message
+          }), { 
+            status: 500, 
+            headers: corsHeaders 
+          });
+        }
+      }
+
+      // ====================================================================
+      // WEBSOCKET ENDPOINT
+      // ====================================================================
+      if (path === '/api/ws') {
+        const upgradeHeader = request.headers.get('Upgrade');
+        if (upgradeHeader !== 'websocket') {
+          return new Response('Expected WebSocket', { status: 426 });
+        }
+
+        const roomId = url.searchParams.get('room');
+        if (!roomId) {
+          return new Response('Missing room parameter', { status: 400 });
+        }
+
+        const id = env.CHAT_ROOM.idFromName(roomId);
+        const stub = env.CHAT_ROOM.get(id);
+        
+        return stub.fetch(request);
+      }
+
+      // ====================================================================
+      // CHAT-ENDPOINTS (Existing implementation continues...)
+      // ====================================================================
+      const chatRoomMatch = path.match(/^\/api\/chat\/([a-z]+)$/);
+      if (chatRoomMatch) {
+        const roomId = chatRoomMatch[1];
+        const validRooms = ['politik', 'geschichte', 'ufo', 'verschwoerungen', 'wissenschaft', 
+                           'meditation', 'astralreisen', 'chakren', 'spiritualitaet', 'heilung'];
+        
+        if (!validRooms.includes(roomId)) {
+          return new Response(JSON.stringify({ 
+            error: 'Invalid room ID',
+            valid_rooms: validRooms 
+          }), { 
+            status: 400, 
+            headers: corsHeaders 
+          });
+        }
+
+        // GET - Nachrichten abrufen
+        if (method === 'GET') {
+          if (env.DB) {
+            const result = await env.DB.prepare(
+              `SELECT * FROM chat_messages 
+               WHERE room_id = ? 
+               ORDER BY timestamp DESC 
+               LIMIT 50`
+            ).bind(roomId).all();
+
+            return new Response(JSON.stringify({
+              success: true,
+              room_id: roomId,
+              messages: result.results || [],
+              count: result.results?.length || 0
+            }), { headers: corsHeaders });
+          }
+        }
+
+        // POST - Neue Nachricht senden
+        if (method === 'POST') {
+          const body = await request.json();
+          const { username, message } = body;
+
+          if (!username || !message) {
+            return new Response(JSON.stringify({ 
+              error: 'username and message are required' 
+            }), { 
+              status: 400, 
+              headers: corsHeaders 
+            });
+          }
+
+          const materieRooms = ['politik', 'geschichte', 'ufo', 'verschwoerungen', 'wissenschaft'];
+          const realm = materieRooms.includes(roomId) ? 'materie' : 'energie';
+          const timestamp = Date.now();
+          const messageId = `msg_${timestamp}_${Math.random().toString(36).substr(2, 9)}`;
+          const userId = `user_${username.toLowerCase()}`;
+
+          if (env.DB) {
+            await env.DB.prepare(
+              `INSERT INTO chat_messages (id, room_id, realm, user_id, username, message, timestamp)
+               VALUES (?, ?, ?, ?, ?, ?, ?)`
+            ).bind(
+              messageId,
+              roomId, 
+              realm,
+              userId,
+              username, 
+              message, 
+              timestamp
+            ).run();
+
+            return new Response(JSON.stringify({
+              success: true,
+              id: messageId,
+              room_id: roomId,
+              timestamp: timestamp
+            }), { headers: corsHeaders });
+          }
+        }
+      }
+
+      // ====================================================================
+      // 404 - Endpoint nicht gefunden
+      // ====================================================================
+      return new Response(JSON.stringify({
+        error: 'Endpoint not found',
+        path: path,
+        available_endpoints: [
+          'GET /api/health',
+          'GET /api/admin/voice-calls/:world',
+          'GET /api/admin/call-history/:world',
+          'GET /api/admin/user-profile/:userId',
+          'GET /api/ws',
+          'GET /api/chat/:room',
+          'POST /api/chat/:room'
+        ]
+      }), { 
+        status: 404, 
+        headers: corsHeaders 
+      });
+
+    } catch (error) {
+      return new Response(JSON.stringify({
+        error: 'Internal Server Error',
+        message: error.message,
+        stack: error.stack
+      }), { 
+        status: 500, 
+        headers: corsHeaders 
+      });
+    }
+  }
+};
+
+
+######## schema_v99.sql ########
+
+-- ============================================================================
+-- WELTENBIBLIOTHEK V99 - D1 DATABASE SCHEMA
+-- ============================================================================
+-- Neue Tabellen für Admin Dashboard:
+-- - voice_sessions: Voice Call Tracking
+-- - admin_actions: Moderation Log
+-- ============================================================================
+
+-- Voice Sessions Table (Call Tracking)
+CREATE TABLE IF NOT EXISTS voice_sessions (
+  id TEXT PRIMARY KEY,
+  room_id TEXT NOT NULL,
+  room_name TEXT,
+  user_id TEXT NOT NULL,
+  username TEXT NOT NULL,
+  world TEXT NOT NULL,  -- 'materie' oder 'energie'
+  joined_at INTEGER NOT NULL,  -- Unix timestamp (ms)
+  left_at INTEGER,  -- Unix timestamp (ms), NULL = still active
+  is_muted INTEGER DEFAULT 0,  -- 0 = not muted, 1 = muted
+  created_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
+);
+
+CREATE INDEX IF NOT EXISTS idx_voice_sessions_room 
+  ON voice_sessions(room_id, world);
+CREATE INDEX IF NOT EXISTS idx_voice_sessions_user 
+  ON voice_sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_voice_sessions_active 
+  ON voice_sessions(world, left_at);
+
+-- Admin Actions Table (Moderation Log)
+CREATE TABLE IF NOT EXISTS admin_actions (
+  id TEXT PRIMARY KEY,
+  action_type TEXT NOT NULL,  -- 'kick', 'mute', 'ban', 'warn'
+  target_user_id TEXT NOT NULL,
+  target_username TEXT NOT NULL,
+  admin_user_id TEXT NOT NULL,
+  admin_username TEXT NOT NULL,
+  world TEXT NOT NULL,  -- 'materie' oder 'energie'
+  room_id TEXT,  -- Optional: Room where action occurred
+  reason TEXT,
+  duration_hours INTEGER,  -- For bans/timeouts
+  created_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000),
+  expires_at INTEGER  -- For temporary bans
+);
+
+CREATE INDEX IF NOT EXISTS idx_admin_actions_target 
+  ON admin_actions(target_user_id);
+CREATE INDEX IF NOT EXISTS idx_admin_actions_admin 
+  ON admin_actions(admin_user_id);
+CREATE INDEX IF NOT EXISTS idx_admin_actions_world 
+  ON admin_actions(world, created_at);
+
+-- Users Table (if not exists)
+CREATE TABLE IF NOT EXISTS users (
+  user_id TEXT PRIMARY KEY,
+  username TEXT NOT NULL,
+  role TEXT DEFAULT 'user',  -- 'user', 'admin', 'root_admin'
+  avatar_emoji TEXT,
+  bio TEXT,
+  world TEXT NOT NULL,  -- 'materie' oder 'energie'
+  created_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000),
+  last_active INTEGER
+);
+
+CREATE INDEX IF NOT EXISTS idx_users_world 
+  ON users(world, role);
+
+-- Chat Messages Table (if not exists)
+CREATE TABLE IF NOT EXISTS chat_messages (
+  id TEXT PRIMARY KEY,
+  room_id TEXT NOT NULL,
+  realm TEXT NOT NULL,  -- 'materie' oder 'energie'
+  user_id TEXT NOT NULL,
+  username TEXT NOT NULL,
+  message TEXT NOT NULL,
+  timestamp INTEGER NOT NULL,
+  edited_at INTEGER,
+  deleted INTEGER DEFAULT 0
+);
+
+CREATE INDEX IF NOT EXISTS idx_chat_messages_room 
+  ON chat_messages(room_id, timestamp);
+CREATE INDEX IF NOT EXISTS idx_chat_messages_user 
+  ON chat_messages(user_id);
+
+================================================================================
+ENDE DES QUELLCODES
+================================================================================
+
+Hinweis: Dies ist eine gekürzte Version der wichtigsten Dateien.
+Vollständiger Code (832 Dateien): weltenbibliothek_complete_source.tar.gz
+
+Download: https://8080-isj6lxzkqqbdwx3ntejiv-d0b9e1e2.sandbox.novita.ai/
+
+Dokumentation:
+- SOURCE_CODE_README.md (im Archiv)
+- SYSTEM_ANALYSIS_PHASE1.md (28 KB)
+- WEBRTC_SESSION_TRACKING_COMPLETE.md (13 KB)
+

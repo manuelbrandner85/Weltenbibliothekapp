@@ -1,6 +1,5 @@
 /// 🌟 SPIRIT TOOLS MEGA SCREEN - V115+ Weltenbibliothek
 /// Alle neuen Spirit-Tools in einem kompakten Screen
-library;
 
 import 'package:flutter/material.dart';
 import 'dart:math' as math;

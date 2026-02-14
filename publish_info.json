@@ -1,0 +1,91 @@
+{
+  "project": {
+    "name": "Weltenbibliothek",
+    "version": "5.7.0",
+    "build_number": 57,
+    "release_date": "2026-02-13",
+    "package_name": "com.weltenbibliothek.v49"
+  },
+  "apk": {
+    "file_path": "build/app/outputs/flutter-apk/app-release.apk",
+    "file_size": "122 MB",
+    "download_url": "https://www.genspark.ai/api/code_sandbox/download_file_stream?project_id=3256cccf-20cc-41cc-a7fe-6679fe82d473&file_path=%2Fhome%2Fuser%2Fflutter_app%2Fbuild%2Fapp%2Foutputs%2Fflutter-apk%2Fapp-release.apk&file_name=weltenbibliothek_v5.7.0.apk",
+    "min_sdk": 21,
+    "target_sdk": 36
+  },
+  "backup": {
+    "cdn_url": "https://www.genspark.ai/api/files/s/0nKJ7VKM",
+    "archive_size": "260 MB",
+    "includes": [
+      "Flutter source code",
+      "Cloudflare Workers",
+      "AI Services",
+      "Database configuration",
+      "APK build",
+      "Git history"
+    ]
+  },
+  "cloudflare": {
+    "worker_url": "https://weltenbibliothek-api-v2.brandy13062.workers.dev",
+    "version": "2.4.0",
+    "version_id": "7cce26a7-6eeb-492c-b70b-c47c82189d2c",
+    "deployment_date": "2026-02-13T00:05:51Z",
+    "bindings": {
+      "d1_database": "weltenbibliothek-db",
+      "ai_engine": "Cloudflare AI"
+    }
+  },
+  "database": {
+    "type": "Cloudflare D1 (SQLite)",
+    "name": "weltenbibliothek-db",
+    "uuid": "4fbea23c-8c00-4e09-aebd-2b4dceacbce5",
+    "size": "593 KB",
+    "tables": ["chat_messages"],
+    "records": 19
+  },
+  "features": {
+    "new_in_5.7.0": [
+      "17 AI Features (Traum, Chakra, Translation, Network, etc.)",
+      "Chat API (GET, POST, PUT, DELETE)",
+      "Recherche: AI-generated texts (official & alternative)",
+      "Recherche: Real Telegram channels (25+ channels)",
+      "Telegram Link Wrapper",
+      "External Link Wrapper",
+      "Media Proxy",
+      "Cache-Clear mechanism",
+      "Timeout increased (45s)",
+      "Bug fixes (Image Forensics, Propaganda, Chat)"
+    ],
+    "total_endpoints": 35,
+    "ai_models": [
+      "@cf/meta/llama-3.1-8b-instruct",
+      "@cf/llava-hf/llava-1.5-7b-hf",
+      "@cf/microsoft/resnet-50",
+      "@cf/meta/m2m100-1.2b",
+      "@cf/huggingface/distilbert-sst-2-int8"
+    ]
+  },
+  "documentation": {
+    "readme": "README.md",
+    "deployment_guide": "DEPLOYMENT.md",
+    "changelog": "CHANGELOG.md",
+    "api_docs": "See DEPLOYMENT.md for API documentation"
+  },
+  "github": {
+    "status": "pending_setup",
+    "note": "GitHub authorization required",
+    "next_steps": [
+      "Complete GitHub authorization in code sandbox",
+      "Run setup_github_environment tool",
+      "Push code to repository"
+    ]
+  },
+  "status": {
+    "apk_build": "✅ Complete",
+    "worker_deployment": "✅ Complete",
+    "database_setup": "✅ Complete",
+    "documentation": "✅ Complete",
+    "backup": "✅ Complete",
+    "github": "⏳ Pending authorization"
+  }
+}

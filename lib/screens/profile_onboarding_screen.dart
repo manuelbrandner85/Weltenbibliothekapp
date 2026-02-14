@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import '../services/storage_service.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import '../models/materie_profile.dart';
 import '../models/energie_profile.dart';
-import '../services/storage_service.dart';
+import '../core/storage/unified_storage_service.dart';
 import '../services/profile_sync_service.dart'; // 🔥 BACKEND SYNC
 
 /// Profil-Onboarding-Screen - Zeigt beim ersten App-Start ODER zum Bearbeiten

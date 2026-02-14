@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import '../../services/storage_service.dart';
 import 'dart:ui';
 import 'dart:math' as math;
 import '../../models/energie_profile.dart';
-import '../../services/storage_service.dart';
+import '../../core/storage/unified_storage_service.dart';
 import '../../services/cloudflare_api_service.dart';
 import '../../design/premium_design_system.dart';
 import '../../widgets/premium/premium_stat_card.dart';

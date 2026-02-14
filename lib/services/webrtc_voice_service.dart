@@ -8,17 +8,16 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:permission_handler/permission_handler.dart';
+import '../core/exceptions/exception_guard.dart';
+import '../core/exceptions/specialized_exceptions.dart';
 import '../services/websocket_chat_service.dart';
 import '../services/error_reporting_service.dart';
 import '../services/admin_action_service.dart';
+import '../services/voice_session_tracker.dart'; // 🆕 Session Tracking
+import '../services/voice_backend_service.dart';  // 🆕 Backend-First Flow
+import '../models/webrtc_call_state.dart' hide RoomFullException; // CallConnectionState
 
-/// Voice chat connection state
-enum VoiceConnectionState {
-  disconnected,
-  connecting,
-  connected,
-  error,
-}
+// ⚠️ MIGRATION: VoiceConnectionState removed, using CallConnectionState instead
 
 /// Participant in voice room
 class VoiceParticipant {
@@ -57,19 +56,51 @@ class VoiceParticipant {
       avatarEmoji: avatarEmoji ?? this.avatarEmoji,
     );
   }
+  
+  /// Factory from backend JSON response
+  factory VoiceParticipant.fromBackendJson(Map<String, dynamic> json) {
+    return VoiceParticipant(
+      userId: json['user_id'] as String? ?? json['userId'] as String,
+      username: json['username'] as String,
+      isMuted: json['is_muted'] as bool? ?? json['isMuted'] as bool? ?? false,
+      isSpeaking: json['is_speaking'] as bool? ?? json['isSpeaking'] as bool? ?? false,
+      avatarEmoji: json['avatar_emoji'] as String? ?? json['avatarEmoji'] as String?,
+      // peerConnection and stream are null for backend participants
+    );
+  }
 }
 
 /// WebRTC Voice Chat Service
 class WebRTCVoiceService {
   static final WebRTCVoiceService _instance = WebRTCVoiceService._internal();
   factory WebRTCVoiceService() => _instance;
-  WebRTCVoiceService._internal();
+  static WebRTCVoiceService get instance => _instance; // ✅ PHASE A: Static getter
+  WebRTCVoiceService._internal() {
+    // 🆕 Listen to speaking events for session tracking
+    _speakingController.stream.listen((speakingMap) {
+      final myUserId = _currentUserId;
+      if (myUserId != null && speakingMap.containsKey(myUserId)) {
+        final isSpeaking = speakingMap[myUserId] ?? false;
+        if (isSpeaking) {
+          _sessionTracker.startSpeaking();
+        } else {
+          _sessionTracker.stopSpeaking();
+        }
+      }
+    });
+  }
 
   // WebSocket for signaling
   final WebSocketChatService _signaling = WebSocketChatService();
   
   // Admin Action Service
   final AdminActionService _adminService = AdminActionService();
+  
+  // 🆕 Voice Backend Service (Backend-First Flow)
+  final VoiceBackendService _backendService = VoiceBackendService();
+  
+  // 🆕 Voice Session Tracker
+  final VoiceSessionTracker _sessionTracker = VoiceSessionTracker();
   
   // Local media stream
   MediaStream? _localStream;
@@ -84,26 +115,28 @@ class WebRTCVoiceService {
   final Map<String, VoiceParticipant> _participants = {};
   
   // State
-  VoiceConnectionState _state = VoiceConnectionState.disconnected;
+  CallConnectionState _state = CallConnectionState.idle;
   String? _currentRoomId;
   String? _currentUserId;
+  String? _currentSessionId;  // 🆕 Backend Session-ID
+  String? _currentWorld;       // 🆕 Current World (materie/energie)
   bool _isMuted = false;
   bool _isPushToTalk = false;
   
   // Stream controllers
-  final _stateController = StreamController<VoiceConnectionState>.broadcast();
+  final _stateController = StreamController<CallConnectionState>.broadcast();
   final _participantsController = StreamController<List<VoiceParticipant>>.broadcast();
   final _speakingController = StreamController<Map<String, bool>>.broadcast();
   
   // Streams
-  Stream<VoiceConnectionState> get stateStream => _stateController.stream;
+  Stream<CallConnectionState> get stateStream => _stateController.stream;
   Stream<List<VoiceParticipant>> get participantsStream => _participantsController.stream;
   Stream<Map<String, bool>> get speakingStream => _speakingController.stream;
   
   // Getters
-  VoiceConnectionState get state => _state;
+  CallConnectionState get state => _state;
   bool get isMuted => _isMuted;
-  bool get isConnected => _state == VoiceConnectionState.connected;
+  bool get isConnected => _state == CallConnectionState.connected || _state == CallConnectionState.reconnecting;
   List<VoiceParticipant> get participants => _participants.values.toList();
   AdminActionService get adminService => _adminService;  // 🆕 Admin Service Access
   
@@ -126,110 +159,252 @@ class WebRTCVoiceService {
     'video': false,
   };
 
-  /// Join voice room
+  /// Join voice room (Backend-First Flow)
+  /// 
+  /// Flow: backend.join() → sessionId → tracking → webrtc → provider
+  /// 
+  /// PHASE 1: Backend-Session erstellen
+  /// PHASE 2: Session-Tracking starten
+  /// PHASE 3: WebRTC-Verbindung aufbauen
+  /// PHASE 4: Provider aktualisieren
+  /// Join Voice Room - Backend-First Flow mit 4 Phasen
+  /// 
+  /// PHASE 1: Backend-Session erstellen
+  /// PHASE 2: Session Tracking starten
+  /// PHASE 3: WebRTC-Verbindung aufbauen
+  /// PHASE 4: Provider aktualisieren
   Future<bool> joinRoom({
     required String roomId,
     required String userId,
     required String username,
+    required String world,  // 🆕 World parameter (materie/energie)
     bool pushToTalk = false,
   }) async {
-    try {
-      _setState(VoiceConnectionState.connecting);
-      
-      // ✅ PHASE 2: Enhanced Permission Handling
-      final permissionStatus = await Permission.microphone.status;
-      
-      if (kDebugMode) {
-        print('🎤 WebRTC: Current permission status: $permissionStatus');
-      }
-      
-      // Request microphone permission
-      final permission = await Permission.microphone.request();
-      
-      if (kDebugMode) {
-        print('🎤 WebRTC: Permission result: ${permission.toString()}');
-      }
-      
-      if (!permission.isGranted) {
-        if (kDebugMode) {
-          print('❌ WebRTC: Microphone permission denied');
-        }
-        _setState(VoiceConnectionState.error);
+    return guard(
+      () async {
+        // ==========================================
+        // PHASE 1: BACKEND SESSION ERSTELLEN
+        // ==========================================
         
-        // ✅ PHASE 2: Provide user-friendly error message
-        throw Exception(
-          permission.isPermanentlyDenied
-              ? 'Mikrofon-Berechtigung dauerhaft verweigert. Bitte in Einstellungen aktivieren.'
-              : 'Mikrofon-Berechtigung erforderlich für Voice Chat.'
+        if (kDebugMode) {
+          debugPrint('🚀 [VOICE] Backend-First Flow gestartet');
+          debugPrint('   Room: $roomId');
+          debugPrint('   User: $username');
+          debugPrint('   World: $world');
+        }
+        
+        _setState(CallConnectionState.connecting);
+        
+        // 1.1 Backend-Join Request (guardApi bereits im Service)
+        final backendResponse = await _backendService.joinVoiceRoom(
+          roomId: roomId,
+          userId: userId,
+          username: username,
+          world: world,
         );
-      }
-      
-      // ✅ PHASE 2: Enhanced Media Stream Error Handling
-      try {
-        _localStream = await navigator.mediaDevices.getUserMedia(_mediaConstraints);
-      } catch (mediaError) {
-        if (kDebugMode) {
-          print('❌ WebRTC: getUserMedia failed - $mediaError');
+        
+        if (!backendResponse.success) {
+          throw VoiceException(
+            'Backend-Join failed: ${backendResponse.error}',
+            roomId: roomId,
+            userId: userId,
+          );
         }
-        throw Exception('Mikrofon konnte nicht aktiviert werden: $mediaError');
-      }
-      
-      if (_localStream == null) {
+        
+        // 1.2 Session-ID erhalten
+        final sessionId = backendResponse.sessionId;
+        final maxParticipants = backendResponse.maxParticipants;
+        final currentCount = backendResponse.currentParticipantCount;
+        
         if (kDebugMode) {
-          print('❌ WebRTC: Failed to get local stream');
+          debugPrint('✅ [VOICE] Phase 1: Backend-Session erstellt');
+          debugPrint('   Session-ID: $sessionId');
+          debugPrint('   Teilnehmer: $currentCount/$maxParticipants');
         }
-        _setState(VoiceConnectionState.error);
-        throw Exception('Mikrofon-Stream konnte nicht erstellt werden.');
-      }
-      
-      if (kDebugMode) {
-        print('✅ WebRTC: Local stream acquired successfully');
-      }
-      
-      _currentRoomId = roomId;
-      _currentUserId = userId;
-      _isPushToTalk = pushToTalk;
-      
-      // Mute if push-to-talk
-      if (_isPushToTalk) {
-        await mute();
-      }
-      
-      // Setup signaling
-      _setupSignaling();
-      
-      // Send join message via WebSocket
-      await _signaling.sendMessage(
-        room: roomId,
-        message: jsonEncode({
-          'type': 'voice_join',
-          'userId': userId,
-          'username': username,
-        }),
-        username: username,
-        realm: 'voice',
-      );
-      
-      _setState(VoiceConnectionState.connected);
-      
-      if (kDebugMode) {
-        print('✅ WebRTC: Joined room $roomId');
-      }
-      
-      return true;
-      
-    } catch (e, stack) {
-      if (kDebugMode) {
-        print('❌ WebRTC: Error joining room - $e');
-      }
-      ErrorReportingService().reportError(
-        error: e,
-        stackTrace: stack,
-        context: 'WebRTC Voice - Join Room',
-      );
-      _setState(VoiceConnectionState.error);
-      return false;
-    }
+        
+        // 1.3 Session-ID speichern
+        _currentSessionId = sessionId;
+        _currentWorld = world;
+        
+        // ==========================================
+        // PHASE 2: SESSION TRACKING STARTEN
+        // ==========================================
+        
+        await _sessionTracker.startSession(
+          sessionId: sessionId,
+          roomId: roomId,
+          userId: userId,
+          username: username,
+          world: world,
+        );
+        
+        if (kDebugMode) {
+          debugPrint('✅ [VOICE] Phase 2: Session Tracking gestartet');
+        }
+        
+        // ==========================================
+        // PHASE 3: WEBRTC VERBINDUNG
+        // ==========================================
+        
+        // 3.1 Permission Check
+        final permission = await Permission.microphone.request();
+        
+        if (!permission.isGranted) {
+          if (kDebugMode) {
+            debugPrint('❌ [VOICE] Phase 3: Mikrofon-Berechtigung verweigert');
+          }
+          
+          // Backend-Session wieder beenden (Rollback!)
+          await _backendService.leaveVoiceRoom(sessionId);
+          
+          throw VoiceException.permissionDenied();
+        }
+        
+        // 3.2 Media Stream
+        try {
+          _localStream = await navigator.mediaDevices.getUserMedia(_mediaConstraints);
+        } catch (mediaError) {
+          if (kDebugMode) {
+            debugPrint('❌ [VOICE] Phase 3: getUserMedia failed - $mediaError');
+          }
+          
+          // Backend-Session wieder beenden (Rollback!)
+          await _backendService.leaveVoiceRoom(sessionId);
+          
+          throw VoiceException(
+            'Mikrofon konnte nicht aktiviert werden',
+            roomId: roomId,
+            userId: userId,
+            cause: mediaError,
+          );
+        }
+        
+        if (_localStream == null) {
+          if (kDebugMode) {
+            debugPrint('❌ [VOICE] Phase 3: Failed to get local stream');
+          }
+          
+          // Backend-Session wieder beenden (Rollback!)
+          await _backendService.leaveVoiceRoom(sessionId);
+          
+          throw VoiceException(
+            'Mikrofon-Stream konnte nicht erstellt werden',
+            roomId: roomId,
+            userId: userId,
+          );
+        }
+        
+        _currentRoomId = roomId;
+        _currentUserId = userId;
+        _isPushToTalk = pushToTalk;
+        
+        // Mute if push-to-talk
+        if (_isPushToTalk) {
+          await mute();
+        }
+        
+        // Setup signaling
+        _setupSignaling();
+        
+        // 3.3 WebSocket Signaling (mit Session-ID!)
+        await _signaling.sendMessage(
+          room: roomId,
+          message: jsonEncode({
+            'type': 'voice_join',
+            'sessionId': sessionId,
+            'userId': userId,
+            'username': username,
+          }),
+          username: username,
+          realm: 'voice',
+        );
+        
+        if (kDebugMode) {
+          debugPrint('✅ [VOICE] Phase 3: WebRTC verbunden mit Session: $sessionId');
+        }
+        
+        // ==========================================
+        // PHASE 4: PROVIDER AKTUALISIEREN
+        // ==========================================
+        
+        _setState(CallConnectionState.connected);
+        
+        // Participants aus Backend-Response verwenden
+        for (final participant in backendResponse.participants) {
+          _participants[participant.userId] = participant;
+        }
+        
+        if (kDebugMode) {
+          debugPrint('✅ [VOICE] Phase 4: Provider aktualisiert');
+          debugPrint('   Participants: ${_participants.length}');
+          debugPrint('🎉 [VOICE] Backend-First Flow komplett!');
+        }
+        
+        return true;
+      },
+      operationName: 'Join Voice Room (Backend-First)',
+      context: {
+        'roomId': roomId,
+        'userId': userId,
+        'username': username,
+        'world': world,
+        'pushToTalk': pushToTalk,
+      },
+      onError: (error, stackTrace) async {
+        // Error-Recovery: Cleanup durchführen
+        if (kDebugMode) {
+          debugPrint('🧹 [VOICE] Error occurred, performing cleanup...');
+          debugPrint('   Error Type: ${error.runtimeType}');
+          debugPrint('   Error: $error');
+        }
+        
+        // Cleanup: Backend-Session beenden falls vorhanden
+        if (_currentSessionId != null) {
+          try {
+            await _backendService.leaveVoiceRoom(_currentSessionId!);
+            if (kDebugMode) {
+              debugPrint('🔄 [VOICE] Backend-Session rolled back: $_currentSessionId');
+            }
+          } catch (rollbackError) {
+            if (kDebugMode) {
+              debugPrint('⚠️ [VOICE] Rollback error: $rollbackError');
+            }
+          }
+        }
+        
+        // Error Reporting
+        ErrorReportingService().reportError(
+          error: error,
+          stackTrace: stackTrace,
+          context: 'WebRTC Voice - Backend-First Join Flow',
+        );
+        
+        // State cleanup
+        _setState(CallConnectionState.error);
+        _currentSessionId = null;
+        
+        // Log specific error types
+        if (error is RoomFullException) {
+          if (kDebugMode) {
+            debugPrint('⚠️ [VOICE] Room is full: ${error.currentCount}/${error.maxCount}');
+          }
+        } else if (error is VoiceException) {
+          if (kDebugMode) {
+            debugPrint('🎤 [VOICE] Voice-specific error: ${error.message}');
+          }
+        } else if (error is NetworkException) {
+          if (kDebugMode) {
+            debugPrint('🌐 [VOICE] Network error: ${error.statusCode}');
+          }
+        } else if (error is TimeoutException) {
+          if (kDebugMode) {
+            debugPrint('⏱️ [VOICE] Timeout after ${error.timeout.inSeconds}s');
+          }
+        }
+        
+        return false; // Fallback-Wert
+      },
+    );
   }
 
   /// Leave voice room
@@ -275,10 +450,14 @@ class WebRTCVoiceService {
       
       _currentRoomId = null;
       _currentUserId = null;
-      _setState(VoiceConnectionState.disconnected);
+      _setState(CallConnectionState.disconnected);
+      
+      // 🆕 End session tracking
+      await _sessionTracker.endSession();
       
       if (kDebugMode) {
         print('👋 WebRTC: Left voice room');
+        print('📊 Session tracking ended');
       }
       
     } catch (e, stack) {
@@ -604,12 +783,12 @@ class WebRTCVoiceService {
   }
 
   /// Set state
-  void _setState(VoiceConnectionState newState) {
+  void _setState(CallConnectionState newState) {
     _state = newState;
     _stateController.add(_state);
     
     if (kDebugMode) {
-      print('🎤 WebRTC: State changed to ${newState.toString()}');
+      debugPrint('🎤 WebRTC: State changed to ${newState.name}');
     }
   }
   
@@ -634,7 +813,7 @@ class WebRTCVoiceService {
         print('⚠️ WebRTC: Connection check - no active stream');
       }
       
-      return _state == VoiceConnectionState.connected;
+      return _state == CallConnectionState.connected || _state == CallConnectionState.reconnecting;
       
     } catch (e) {
       if (kDebugMode) {
@@ -673,6 +852,7 @@ class WebRTCVoiceService {
         roomId: savedRoomId,
         userId: savedUserId,
         username: 'user',
+        world: _currentWorld ?? 'materie',  // 🆕 Use saved world or default
         pushToTalk: _isPushToTalk,
       );
       
@@ -694,7 +874,7 @@ class WebRTCVoiceService {
   
   // ✅ PHASE 2: Get Error Message
   String? getLastError() {
-    if (_state == VoiceConnectionState.error) {
+    if (_state == CallConnectionState.error) {
       return 'Voice Chat Verbindung fehlgeschlagen';
     }
     return null;
@@ -725,12 +905,14 @@ class WebRTCVoiceService {
     required String roomId,
     required String userId,
     required String username,
+    required String world,  // 🆕 World parameter
     bool pushToTalk = false,
   }) async {
     return await joinRoom(
       roomId: roomId,
       userId: userId,
       username: username,
+      world: world,  // 🆕 Pass world parameter
       pushToTalk: pushToTalk,
     );
   }
@@ -750,11 +932,12 @@ class WebRTCVoiceService {
     await leaveRoom();
     
     // Join new room with current user info
-    if (_currentUserId != null) {
+    if (_currentUserId != null && _currentWorld != null) {
       return await joinRoom(
         roomId: newRoomId,
         userId: _currentUserId!,
         username: 'user', // TODO: Get actual username
+        world: _currentWorld!,  // 🆕 Use saved world
         pushToTalk: _isPushToTalk,
       );
     }

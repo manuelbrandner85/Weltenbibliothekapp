@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../services/spirit_calculations/numerology_engine.dart';
 import '../../../models/energie_profile.dart';
+import '../../../core/storage/unified_storage_service.dart';
 import '../../../services/storage_service.dart';
 import '../../../services/streak_tracking_service.dart';
 import '../../../widgets/profile_required_widget.dart';
