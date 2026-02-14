@@ -76,8 +76,8 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> with TickerProvider
   // Mini-Game State (v5.40 - 3.1)
   // UNUSED FIELD: bool _showMiniGame = false;
   
-  // ✅ SMOOTH LOADING STATE
-  bool _portalReady = false;
+  // ✅ PORTAL READY STATE - default true für sofortigen Start
+  bool _portalReady = true;
 
   @override
   void initState() {

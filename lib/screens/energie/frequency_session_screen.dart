@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import '../../services/group_tools_service.dart';
+import '../../services/user_service.dart'; // 🆕 User Service für Auth
 import '../../widgets/frequency_audio_player.dart';
 
 /// 🎵 FREQUENZ-SESSIONS SCREEN
@@ -218,7 +219,7 @@ class _FrequencySessionScreenState extends State<FrequencySessionScreen> {
       final freqData = _frequencies[frequency]!;
       await _toolsService.createFrequencySession(
         roomId: widget.roomId,
-        userId: 'user_manuel', // TODO: Get from UserService
+        userId: UserService.getCurrentUserId(), // 🔥 Real User ID from UserService
         frequencyHz: frequency,
         durationMinutes: duration,
       );

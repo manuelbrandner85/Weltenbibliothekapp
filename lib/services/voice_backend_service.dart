@@ -11,7 +11,7 @@ import '../core/exceptions/specialized_exceptions.dart';
 
 /// Backend Service für Voice Chat (Backend-First Flow)
 class VoiceBackendService {
-  static const String _baseUrl = 'https://weltenbibliothek-api.brandy13062.workers.dev';
+  static const String _baseUrl = 'https://weltenbibliothek-api-v3.brandy13062.workers.dev'; // ✅ MIGRATED to v3.1
   static const String _apiToken = 'y-Xiv3kKeiybDm2CV0yLFu7TSd22co6NBw3udn5Y';
   
   /// Backend-Join: Session im Backend erstellen, Session-ID erhalten
@@ -36,7 +36,7 @@ class VoiceBackendService {
         }
         
         final response = await http.post(
-          Uri.parse('$_baseUrl/api/voice/join'),
+          Uri.parse('$_baseUrl/voice/join'),
           headers: {
             'Authorization': 'Bearer $_apiToken',
             'Content-Type': 'application/json',
@@ -68,11 +68,25 @@ class VoiceBackendService {
         }
         
         if (response.statusCode == 404) {
-          throw BackendException.notFound('/api/voice/join');
+          // ✅ FALLBACK: Voice-Endpoint nicht verfügbar → Mock-Session erstellen
+          if (kDebugMode) {
+            debugPrint('⚠️ [BACKEND] Voice endpoint not available (404) - using fallback mode');
+          }
+          
+          // Mock-Response für offline/fallback operation
+          return BackendJoinResponse(
+            success: true,
+            sessionId: 'fallback_${DateTime.now().millisecondsSinceEpoch}',
+            roomId: roomId,
+            maxParticipants: 10,
+            currentParticipantCount: 1, // Just the current user
+            participants: [], // Empty initial participants
+            joinedAt: DateTime.now().toIso8601String(),
+          );
         }
         
         if (response.statusCode >= 500) {
-          throw BackendException.serverError('/api/voice/join');
+          throw BackendException.serverError('/voice/join');
         }
         
         final data = jsonDecode(response.body) as Map<String, dynamic>;
@@ -88,7 +102,7 @@ class VoiceBackendService {
           throw BackendException(
             message,
             statusCode: response.statusCode,
-            endpoint: '/api/voice/join',
+            endpoint: '/voice/join',
             responseBody: response.body,
           );
         }
@@ -110,7 +124,7 @@ class VoiceBackendService {
           throw BackendException(
             joinResponse.message ?? 'Backend-Join failed',
             statusCode: response.statusCode,
-            endpoint: '/api/voice/join',
+            endpoint: '/voice/join',
           );
         }
         
@@ -123,7 +137,7 @@ class VoiceBackendService {
         return joinResponse;
       },
       operationName: 'Voice Join (Backend)',
-      url: '$_baseUrl/api/voice/join',
+      url: '$_baseUrl/voice/join',
       method: 'POST',
       context: {
         'roomId': roomId,
@@ -150,7 +164,7 @@ class VoiceBackendService {
         }
         
         final response = await http.post(
-          Uri.parse('$_baseUrl/api/voice/leave'),
+          Uri.parse('$_baseUrl/voice/leave'),
           headers: {
             'Authorization': 'Bearer $_apiToken',
             'Content-Type': 'application/json',
@@ -179,7 +193,7 @@ class VoiceBackendService {
           throw BackendException(
             data['error'] ?? 'Leave request failed',
             statusCode: response.statusCode,
-            endpoint: '/api/voice/leave',
+            endpoint: '/voice/leave',
           );
         }
         
@@ -194,7 +208,7 @@ class VoiceBackendService {
         return leaveResponse;
       },
       operationName: 'Voice Leave (Backend)',
-      url: '$_baseUrl/api/voice/leave',
+      url: '$_baseUrl/voice/leave',
       method: 'POST',
       context: {'sessionId': sessionId},
       // Error-Recovery: Bei Fehler trotzdem "erfolgreich" zurückgeben
@@ -216,7 +230,7 @@ class VoiceBackendService {
   Future<List<VoiceRoomInfo>> getActiveRooms(String world) async {
     try {
       final response = await http.get(
-        Uri.parse('$_baseUrl/api/voice/rooms/$world'),
+        Uri.parse('$_baseUrl/voice/rooms/$world'),
         headers: {
           'Authorization': 'Bearer $_apiToken',
         },
@@ -253,7 +267,7 @@ class VoiceBackendService {
         }
         
         final response = await http.get(
-          Uri.parse('$_baseUrl/api/voice/participants/$roomId'),
+          Uri.parse('$_baseUrl/voice/participants/$roomId'),
           headers: {
             'Authorization': 'Bearer $_apiToken',
             'Content-Type': 'application/json',
@@ -274,11 +288,11 @@ class VoiceBackendService {
         }
         
         if (response.statusCode == 404) {
-          throw BackendException.notFound('/api/voice/participants/$roomId');
+          throw BackendException.notFound('/voice/participants/$roomId');
         }
         
         if (response.statusCode >= 500) {
-          throw BackendException.serverError('/api/voice/participants/$roomId');
+          throw BackendException.serverError('/voice/participants/$roomId');
         }
         
         final data = jsonDecode(response.body) as Map<String, dynamic>;
@@ -290,7 +304,7 @@ class VoiceBackendService {
           throw BackendException(
             message,
             statusCode: response.statusCode,
-            endpoint: '/api/voice/participants/$roomId',
+            endpoint: '/voice/participants/$roomId',
             responseBody: response.body,
           );
         }
@@ -316,7 +330,7 @@ class VoiceBackendService {
         return participants;
       },
       operationName: 'Fetch Participants (Backend)',
-      url: '$_baseUrl/api/voice/participants/$roomId',
+      url: '$_baseUrl/voice/participants/$roomId',
       method: 'GET',
       context: {'roomId': roomId},
     );

@@ -77,6 +77,11 @@ class PushNotificationService {
           'token': token,
           'platform': 'android',
         }),
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw TimeoutException('Request Timeout (15s)');
+        },
       );
 
       if (response.statusCode == 200) {
@@ -117,6 +122,11 @@ class PushNotificationService {
             'categories': categories,
           },
         }),
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw TimeoutException('Request Timeout (15s)');
+        },
       );
 
       return response.statusCode == 200;
@@ -133,6 +143,11 @@ class PushNotificationService {
     try {
       final response = await http.get(
         Uri.parse('${ApiConfig.v2ApiUrl}/push/settings?userId=$_userId&roomId=$roomId'),
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw TimeoutException('Request Timeout (15s)');
+        },
       );
 
       if (response.statusCode == 200) {
@@ -173,6 +188,11 @@ class PushNotificationService {
     try {
       final response = await http.get(
         Uri.parse('${ApiConfig.v2ApiUrl}/push/pending?userId=$_userId'),
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw TimeoutException('Request Timeout (15s)');
+        },
       );
 
       if (response.statusCode == 200) {
@@ -252,6 +272,11 @@ class PushNotificationService {
     try {
       final response = await http.get(
         Uri.parse('${ApiConfig.v2ApiUrl}/push/stats?userId=$_userId'),
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw TimeoutException('Request Timeout (15s)');
+        },
       );
 
       if (response.statusCode == 200) {

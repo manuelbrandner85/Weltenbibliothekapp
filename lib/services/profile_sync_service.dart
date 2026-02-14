@@ -1,8 +1,8 @@
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
-import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../models/materie_profile.dart';
 import '../models/energie_profile.dart';
+import '../core/network/http_helper.dart';
 
 /// Cloudflare Profile Service
 /// Synchronisiert Profile-Daten mit Cloudflare D1 Backend
@@ -60,39 +60,31 @@ class ProfileSyncService {
         }
       }
       
-      final response = await http.post(
-        url,
+      return await HttpHelper.post<bool>(
+        uri: url,
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(body),
+        body: body,
+        parseResponse: (responseBody) {
+          final data = jsonDecode(responseBody) as Map<String, dynamic>;
+          
+          if (kDebugMode) {
+            debugPrint('✅ Materie-Profil gespeichert: ${profile.username}');
+            if (data['userId'] != null) {
+              debugPrint('   User ID: ${data['userId']}');
+            }
+            if (data['role'] != null) {
+              debugPrint('   Rolle: ${data['role']}');
+            }
+            if (data['isAdmin'] == true) {
+              debugPrint('   ⭐ Admin-Status erkannt');
+            }
+            if (data['isRootAdmin'] == true) {
+              debugPrint('   👑 Root-Admin-Status erkannt');
+            }
+          }
+          return true;
+        },
       );
-      
-      if (response.statusCode == 200) {
-        // ✅ NEU: Backend-Response mit Rollen-Informationen verarbeiten
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
-        
-        if (kDebugMode) {
-          debugPrint('✅ Materie-Profil gespeichert: ${profile.username}');
-          if (data['userId'] != null) {
-            debugPrint('   User ID: ${data['userId']}');
-          }
-          if (data['role'] != null) {
-            debugPrint('   Rolle: ${data['role']}');
-          }
-          if (data['isAdmin'] == true) {
-            debugPrint('   ⭐ Admin-Status erkannt');
-          }
-          if (data['isRootAdmin'] == true) {
-            debugPrint('   👑 Root-Admin-Status erkannt');
-          }
-        }
-        return true;
-      } else {
-        if (kDebugMode) {
-          debugPrint('❌ Fehler beim Speichern: ${response.statusCode}');
-          debugPrint('   Body: ${response.body}');
-        }
-        return false;
-      }
     } catch (e) {
       if (kDebugMode) {
         debugPrint('❌ Netzwerk-Fehler beim Speichern: $e');
@@ -127,31 +119,27 @@ class ProfileSyncService {
     try {
       final url = Uri.parse('$_baseUrl/api/profile/materie/$username');
       
-      final response = await http.get(url);
-      
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (data['success'] == true && data['profile'] != null) {
-          final profileData = data['profile'];
-          
-          return MaterieProfile(
-            username: profileData['username'] as String,
-            userId: profileData['user_id'] as String?,      // ✅ Backend userId
-            role: profileData['role'] as String?,           // ✅ Backend role
-            name: profileData['name'] as String?,
-            avatarUrl: profileData['avatar_url'] as String?,
-            avatarEmoji: profileData['avatar_emoji'] as String?,
-            bio: profileData['bio'] as String?,
-          );
-        }
-      } else if (response.statusCode == 404) {
-        if (kDebugMode) {
-          debugPrint('ℹ️ Profil nicht gefunden: $username');
-        }
-        return null;
-      }
-      
-      return null;
+      return await HttpHelper.get<MaterieProfile?>(
+        uri: url,
+        headers: {},
+        parseResponse: (body) {
+          final data = jsonDecode(body);
+          if (data['success'] == true && data['profile'] != null) {
+            final profileData = data['profile'];
+            
+            return MaterieProfile(
+              username: profileData['username'] as String,
+              userId: profileData['user_id'] as String?,      // ✅ Backend userId
+              role: profileData['role'] as String?,           // ✅ Backend role
+              name: profileData['name'] as String?,
+              avatarUrl: profileData['avatar_url'] as String?,
+              avatarEmoji: profileData['avatar_emoji'] as String?,
+              bio: profileData['bio'] as String?,
+            );
+          }
+          return null;
+        },
+      );
     } catch (e) {
       if (kDebugMode) {
         debugPrint('❌ Fehler beim Laden: $e');
@@ -165,24 +153,25 @@ class ProfileSyncService {
     try {
       final url = Uri.parse('$_baseUrl/api/profiles/materie');
       
-      final response = await http.get(url);
-      
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (data['success'] == true && data['profiles'] != null) {
-          final profilesList = data['profiles'] as List<dynamic>;
-          
-          return profilesList.map((p) => MaterieProfile(
-            username: p['username'] as String,
-            name: p['name'] as String?,
-            avatarUrl: p['avatar_url'] as String?,
-            avatarEmoji: p['avatar_emoji'] as String?,
-            bio: p['bio'] as String?,
-          )).toList();
-        }
-      }
-      
-      return [];
+      return await HttpHelper.get<List<MaterieProfile>>(
+        uri: url,
+        headers: {},
+        parseResponse: (body) {
+          final data = jsonDecode(body);
+          if (data['success'] == true && data['profiles'] != null) {
+            final profilesList = data['profiles'] as List<dynamic>;
+            
+            return profilesList.map((p) => MaterieProfile(
+              username: p['username'] as String,
+              name: p['name'] as String?,
+              avatarUrl: p['avatar_url'] as String?,
+              avatarEmoji: p['avatar_emoji'] as String?,
+              bio: p['bio'] as String?,
+            )).toList();
+          }
+          return [];
+        },
+      );
     } catch (e) {
       if (kDebugMode) {
         debugPrint('❌ Fehler beim Laden aller Profile: $e');
@@ -228,39 +217,31 @@ class ProfileSyncService {
         }
       }
       
-      final response = await http.post(
-        url,
+      return await HttpHelper.post<bool>(
+        uri: url,
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(body),
+        body: body,
+        parseResponse: (responseBody) {
+          final data = jsonDecode(responseBody) as Map<String, dynamic>;
+          
+          if (kDebugMode) {
+            debugPrint('✅ Energie-Profil gespeichert: ${profile.username}');
+            if (data['userId'] != null) {
+              debugPrint('   User ID: ${data['userId']}');
+            }
+            if (data['role'] != null) {
+              debugPrint('   Rolle: ${data['role']}');
+            }
+            if (data['isAdmin'] == true) {
+              debugPrint('   ⭐ Admin-Status erkannt');
+            }
+            if (data['isRootAdmin'] == true) {
+              debugPrint('   👑 Root-Admin-Status erkannt');
+            }
+          }
+          return true;
+        },
       );
-      
-      if (response.statusCode == 200) {
-        // ✅ NEU: Backend-Response mit Rollen-Informationen verarbeiten
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
-        
-        if (kDebugMode) {
-          debugPrint('✅ Energie-Profil gespeichert: ${profile.username}');
-          if (data['userId'] != null) {
-            debugPrint('   User ID: ${data['userId']}');
-          }
-          if (data['role'] != null) {
-            debugPrint('   Rolle: ${data['role']}');
-          }
-          if (data['isAdmin'] == true) {
-            debugPrint('   ⭐ Admin-Status erkannt');
-          }
-          if (data['isRootAdmin'] == true) {
-            debugPrint('   👑 Root-Admin-Status erkannt');
-          }
-        }
-        return true;
-      } else {
-        if (kDebugMode) {
-          debugPrint('❌ Fehler beim Speichern: ${response.statusCode}');
-          debugPrint('   Body: ${response.body}');
-        }
-        return false;
-      }
     } catch (e) {
       if (kDebugMode) {
         debugPrint('❌ Netzwerk-Fehler beim Speichern: $e');
@@ -295,35 +276,31 @@ class ProfileSyncService {
     try {
       final url = Uri.parse('$_baseUrl/api/profile/energie/$username');
       
-      final response = await http.get(url);
-      
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (data['success'] == true && data['profile'] != null) {
-          final p = data['profile'];
-          
-          return EnergieProfile(
-            username: p['username'] as String,
-            userId: p['user_id'] as String?,        // ✅ Backend userId
-            role: p['role'] as String?,             // ✅ Backend role
-            firstName: p['first_name'] as String,
-            lastName: p['last_name'] as String,
-            birthDate: DateTime.parse(p['birth_date'] as String),
-            birthPlace: p['birth_place'] as String,
-            birthTime: p['birth_time'] as String?,
-            avatarUrl: p['avatar_url'] as String?,
-            avatarEmoji: p['avatar_emoji'] as String?,
-            bio: p['bio'] as String?,
-          );
-        }
-      } else if (response.statusCode == 404) {
-        if (kDebugMode) {
-          debugPrint('ℹ️ Profil nicht gefunden: $username');
-        }
-        return null;
-      }
-      
-      return null;
+      return await HttpHelper.get<EnergieProfile?>(
+        uri: url,
+        headers: {},
+        parseResponse: (body) {
+          final data = jsonDecode(body);
+          if (data['success'] == true && data['profile'] != null) {
+            final p = data['profile'];
+            
+            return EnergieProfile(
+              username: p['username'] as String,
+              userId: p['user_id'] as String?,        // ✅ Backend userId
+              role: p['role'] as String?,             // ✅ Backend role
+              firstName: p['first_name'] as String,
+              lastName: p['last_name'] as String,
+              birthDate: DateTime.parse(p['birth_date'] as String),
+              birthPlace: p['birth_place'] as String,
+              birthTime: p['birth_time'] as String?,
+              avatarUrl: p['avatar_url'] as String?,
+              avatarEmoji: p['avatar_emoji'] as String?,
+              bio: p['bio'] as String?,
+            );
+          }
+          return null;
+        },
+      );
     } catch (e) {
       if (kDebugMode) {
         debugPrint('❌ Fehler beim Laden: $e');
@@ -337,28 +314,29 @@ class ProfileSyncService {
     try {
       final url = Uri.parse('$_baseUrl/api/profiles/energie');
       
-      final response = await http.get(url);
-      
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (data['success'] == true && data['profiles'] != null) {
-          final profilesList = data['profiles'] as List<dynamic>;
-          
-          return profilesList.map((p) => EnergieProfile(
-            username: p['username'] as String,
-            firstName: p['first_name'] as String,
-            lastName: p['last_name'] as String,
-            birthDate: DateTime.parse(p['birth_date'] as String),
-            birthPlace: p['birth_place'] as String,
-            birthTime: p['birth_time'] as String?,
-            avatarUrl: p['avatar_url'] as String?,
-            avatarEmoji: p['avatar_emoji'] as String?,
-            bio: p['bio'] as String?,
-          )).toList();
-        }
-      }
-      
-      return [];
+      return await HttpHelper.get<List<EnergieProfile>>(
+        uri: url,
+        headers: {},
+        parseResponse: (body) {
+          final data = jsonDecode(body);
+          if (data['success'] == true && data['profiles'] != null) {
+            final profilesList = data['profiles'] as List<dynamic>;
+            
+            return profilesList.map((p) => EnergieProfile(
+              username: p['username'] as String,
+              firstName: p['first_name'] as String,
+              lastName: p['last_name'] as String,
+              birthDate: DateTime.parse(p['birth_date'] as String),
+              birthPlace: p['birth_place'] as String,
+              birthTime: p['birth_time'] as String?,
+              avatarUrl: p['avatar_url'] as String?,
+              avatarEmoji: p['avatar_emoji'] as String?,
+              bio: p['bio'] as String?,
+            )).toList();
+          }
+          return [];
+        },
+      );
     } catch (e) {
       if (kDebugMode) {
         debugPrint('❌ Fehler beim Laden aller Profile: $e');

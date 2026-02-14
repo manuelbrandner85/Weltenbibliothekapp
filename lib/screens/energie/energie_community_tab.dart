@@ -8,6 +8,7 @@ import '../../services/live_feed_service.dart';
 import '../../services/favorites_service.dart';
 import '../../services/feed_filter_service.dart';
 import '../../services/reading_progress_service.dart';
+import '../../services/user_service.dart'; // 🆕 User Service für Auth
 import '../../services/community_service.dart';
 import '../../widgets/feed_filter_panel.dart';
 import '../../widgets/create_post_dialog.dart';
@@ -828,7 +829,7 @@ class _EnergieCommunityTabState extends State<EnergieCommunityTab> {
                 // Like Button
                 LikeButton(
                   postId: post.id,
-                  userId: 'user_manuel',  // TODO: Get from UserService
+                  userId: UserService.getCurrentUserId(),  // 🔥 REAL USER ID
                   initialLikeCount: post.likes,
                   initialIsLiked: false,  // TODO: Load actual state
                   onLikeChanged: () {
@@ -844,8 +845,8 @@ class _EnergieCommunityTabState extends State<EnergieCommunityTab> {
                 // Comment Button
                 CommentButton(
                   postId: post.id,
-                  userId: 'user_manuel',  // TODO: Get from UserService
-                  username: 'Manuel',  // TODO: Get from UserService
+                  userId: UserService.getCurrentUserId(),  // 🔥 REAL USER ID
+                  username: UserService.getCurrentUsername(),  // 🔥 REAL USERNAME
                   initialCommentCount: post.comments,
                   onCommentAdded: () {
                     setState(() {
@@ -881,7 +882,7 @@ class _EnergieCommunityTabState extends State<EnergieCommunityTab> {
         postId: post.id,
         postTitle: post.authorUsername,
         postContent: post.content,
-        userId: 'user_manuel',  // TODO: Get from UserService
+        userId: UserService.getCurrentUserId(),  // 🔥 REAL USER ID
       ),
     );
   }

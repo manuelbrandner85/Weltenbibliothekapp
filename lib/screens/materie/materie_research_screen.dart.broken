@@ -1,0 +1,959 @@
+/// 🔍 MATERIE RESEARCH SCREEN - ULTRA PRO EDITION
+/// 
+/// Production-Ready Internet Research with Advanced Widgets
+/// 
+/// Features:
+/// ✅ 7 Production-Ready Recherche Widgets
+/// ✅ Mode-Based Research (6 Modi)
+/// ✅ Backend Integration with Adapter
+/// ✅ Favorites & Search History
+/// ✅ Query Suggestions & Auto-Complete
+/// ✅ Multimedia Section
+/// ✅ Follow-up Questions
+/// ✅ Related Topics
+/// ✅ Research Timeline
+/// ✅ Epstein Files Integration (Government Docs)
+/// ✅ Share Functionality
+/// ✅ Tab-Based Navigation
+library;
+
+import 'package:flutter/material.dart';
+import 'dart:async';
+
+// Services
+import '../../services/backend_recherche_service.dart';
+import '../../services/favorites_service.dart';
+import '../../services/search_history_service.dart';
+
+// Models
+import '../../models/favorite.dart';
+import '../../models/recherche_view_state.dart';
+
+// Adapters
+import '../../adapters/recherche_result_adapter.dart';
+
+// New Recherche Widgets (Production-Ready)
+import '../../widgets/recherche/mode_selector.dart';
+import '../../widgets/recherche/progress_pipeline.dart';
+import '../../widgets/recherche/result_summary_card.dart';
+import '../../widgets/recherche/facts_list.dart';
+import '../../widgets/recherche/sources_list.dart';
+import '../../widgets/recherche/perspectives_view.dart';
+import '../../widgets/recherche/rabbit_hole_view.dart';
+
+// Legacy Widgets (Keep for compatibility)
+import '../../widgets/follow_up_questions_widget.dart';
+import '../../widgets/enhanced_multimedia_section.dart';
+import '../../widgets/related_topics_widget.dart';
+import '../../widgets/research_timeline_widget.dart';
+import '../../widgets/native_share_helper.dart';
+
+// Other Screens
+import '../research/epstein_files_simple.dart';
+
+/// MATERIE RESEARCH SCREEN - ULTRA PRO EDITION
+/// 
+/// Tab-Based Navigation:
+/// 1. RECHERCHE: Search + New Widgets (Mode Selector, Progress, Results)
+/// 2. MULTIMEDIA: Enhanced Multimedia + Follow-up + Related Topics
+/// 3. VERLAUF: Search History + Timeline
+class MaterieResearchScreen extends StatefulWidget {
+  const MaterieResearchScreen({super.key});
+
+  @override
+  State<MaterieResearchScreen> createState() => _MaterieResearchScreenState();
+}
+
+class _MaterieResearchScreenState extends State<MaterieResearchScreen> 
+    with SingleTickerProviderStateMixin {
+  
+  // ============================================================================
+  // SERVICES
+  // ============================================================================
+  
+  final BackendRechercheService _searchService = BackendRechercheService();
+  // Services are static - no instance needed
+  
+  // ============================================================================
+  // CONTROLLERS & FOCUS
+  // ============================================================================
+  
+  final TextEditingController _queryController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
+  late TabController _tabController;
+  
+  // ============================================================================
+  // STATE VARIABLES
+  // ============================================================================
+  
+  // Recherche Mode
+  RechercheMode _currentMode = RechercheMode.simple;
+  
+  // Search State
+  bool _isSearching = false;
+  double _searchProgress = 0.0;
+  String? _searchError;
+  
+  // Results (New Model)
+  RechercheResult? _currentResult;
+  
+  // Legacy Result (for backward compatibility)
+  InternetSearchResult? _legacyResult;
+  
+  // Query Suggestions
+  List<String> _querySuggestions = [];
+  bool _showSuggestions = false;
+  
+  // Favorites
+  bool _isFavorite = false;
+  
+  // Debounce Timer
+  Timer? _debounceTimer;
+  
+  // ============================================================================
+  // LIFECYCLE
+  // ============================================================================
+  
+  @override
+  void initState() {
+    super.initState();
+    
+    // Initialize Tab Controller
+    _tabController = TabController(length: 3, vsync: this);
+    
+    // Query change listener
+    _queryController.addListener(_onQueryChanged);
+    
+    // Focus listener
+    _searchFocusNode.addListener(() {
+      setState(() {
+        _showSuggestions = _searchFocusNode.hasFocus && _querySuggestions.isNotEmpty;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    _queryController.dispose();
+    _searchFocusNode.dispose();
+    _debounceTimer?.cancel();
+    super.dispose();
+  }
+  
+  // ============================================================================
+  // QUERY SUGGESTIONS
+  // ============================================================================
+  
+  void _onQueryChanged() {
+    _debounceTimer?.cancel();
+    
+    final query = _queryController.text;
+    
+    if (query.length < 3) {
+      setState(() {
+        _querySuggestions = [];
+        _showSuggestions = false;
+      });
+      return;
+    }
+    
+    _debounceTimer = Timer(const Duration(milliseconds: 300), () {
+      _loadQuerySuggestions(query);
+    });
+  }
+
+  Future<void> _loadQuerySuggestions(String query) async {
+    try {
+      final suggestions = await _searchService.getQuerySuggestions(query);
+      setState(() {
+        _querySuggestions = suggestions;
+        _showSuggestions = suggestions.isNotEmpty && _searchFocusNode.hasFocus;
+      });
+    } catch (e) {
+      debugPrint('Suggestions error: $e');
+    }
+  }
+  
+  // ============================================================================
+  // SEARCH EXECUTION
+  // ============================================================================
+  
+  Future<void> _performSearch(String query) async {
+    if (query.trim().isEmpty) return;
+    
+    // Reset state
+    setState(() {
+      _isSearching = true;
+      _searchProgress = 0.0;
+      _searchError = null;
+      _currentResult = null;
+      _legacyResult = null;
+      _showSuggestions = false;
+    });
+    
+    // Unfocus search field
+    _searchFocusNode.unfocus();
+    
+    try {
+      // Simulate progress phases
+      _updateProgress(0.25); // Phase 1: Query Processing
+      await Future.delayed(const Duration(milliseconds: 300));
+      
+      _updateProgress(0.50); // Phase 2: Source Search
+      
+      // Perform backend search
+      final legacyResult = await _searchService.searchInternet(query);
+      
+      _updateProgress(0.75); // Phase 3: Analysis
+      await Future.delayed(const Duration(milliseconds: 300));
+      
+      // Convert to new model using adapter
+      final newResult = RechercheResultAdapter.convert(legacyResult, _currentMode);
+      
+      _updateProgress(1.0); // Phase 4: Complete
+      
+      // Update state
+      setState(() {
+        _legacyResult = legacyResult;
+        _currentResult = newResult;
+        _isSearching = false;
+        _searchProgress = 1.0;
+      });
+      
+      // Check favorite status
+      _checkFavoriteStatus();
+      
+      // Save to history
+      await _saveToHistory(legacyResult);
+      
+      // Switch to Results tab
+      _tabController.animateTo(0);
+      
+    } catch (e) {
+      setState(() {
+        _isSearching = false;
+        _searchProgress = 0.0;
+        _searchError = e.toString();
+      });
+      
+      // Show error dialog
+      if (mounted) {
+        _showErrorDialog(e.toString());
+      }
+    }
+  }
+  
+  void _updateProgress(double progress) {
+    setState(() {
+      _searchProgress = progress;
+    });
+  }
+  
+  // ============================================================================
+  // FAVORITES
+  // ============================================================================
+  
+  Future<void> _checkFavoriteStatus() async {
+    if (_legacyResult == null) return;
+    
+    try {
+      final favorites = await FavoritesService.getAllFavorites();
+      final isFav = favorites.any((f) => f.title == _legacyResult!.query);
+      
+      setState(() {
+        _isFavorite = isFav;
+      });
+    } catch (e) {
+      debugPrint('Check favorite error: $e');
+    }
+  }
+  
+  Future<void> _toggleFavorite() async {
+    if (_legacyResult == null || _currentResult == null) return;
+    
+    try {
+      if (_isFavorite) {
+        // Remove from favorites
+        final favorites = await FavoritesService.getAllFavorites();
+        final favorite = favorites.firstWhere((f) => f.title == _legacyResult!.query);
+        await FavoritesService.deleteFavorite(favorite.id);
+      } else {
+        // Add to favorites
+        final favorite = Favorite(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          title: _legacyResult!.query,
+          description: _legacyResult!.summary.length > 200 
+              ? '${_legacyResult!.summary.substring(0, 200)}...' 
+              : _legacyResult!.summary,
+          url: '', // No URL for search results
+          tags: _extractTags(_legacyResult!),
+          type: FavoriteType.research,
+          createdAt: DateTime.now(),
+        );
+        
+        await FavoritesService.addFavorite(favorite);
+      }
+      
+      // Update state
+      setState(() {
+        _isFavorite = !_isFavorite;
+      });
+      
+      // Show feedback
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_isFavorite ? '✅ Zu Favoriten hinzugefügt' : '❌ Von Favoriten entfernt'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Toggle favorite error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Fehler: $e')),
+        );
+      }
+    }
+  }
+  }
+  
+  // ============================================================================
+  // SEARCH HISTORY
+  // ============================================================================
+  
+  Future<void> _saveToHistory(InternetSearchResult result) async {
+    try {
+      await SearchHistoryService.addSearch(
+        query: result.query,
+        resultCount: result.sources.length,
+        tags: _extractTags(result),
+      );
+    } catch (e) {
+      debugPrint('Failed to save history: $e');
+    }
+  }
+  
+  List<String> _extractTags(InternetSearchResult result) {
+    final tags = <String>[];
+    
+    // Add mode as tag
+    tags.add(_currentMode.displayName);
+    
+    // Extract from query
+    final words = result.query.split(' ');
+    tags.addAll(words.where((w) => w.length > 3).take(3));
+    
+    return tags;
+  }
+  
+  // ============================================================================
+  // ERROR HANDLING
+  // ============================================================================
+  
+  void _showErrorDialog(String error) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.error_outline, color: Colors.red),
+            SizedBox(width: 8),
+            Text('Recherche Fehler'),
+          ],
+        ),
+        content: Text(error),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  // ============================================================================
+  // BUILD
+  // ============================================================================
+  
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: _buildAppBar(),
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          _buildRechercheTab(),
+          _buildMultimediaTab(),
+          _buildHistoryTab(),
+        ],
+      ),
+      floatingActionButton: _currentResult != null ? _buildShareFAB() : null,
+    );
+  }
+  
+  // ============================================================================
+  // APP BAR
+  // ============================================================================
+  
+  PreferredSizeWidget _buildAppBar() {
+    return AppBar(
+      title: const Text('🔍 Recherche'),
+      actions: [
+        // 🏛️ Government Documents (Epstein Files)
+        IconButton(
+          icon: const Icon(Icons.account_balance),
+          tooltip: 'Government Documents',
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const EpsteinFilesSimpleScreen()),
+            );
+          },
+        ),
+        
+        // Search History
+        IconButton(
+          icon: const Icon(Icons.history),
+          tooltip: 'Suchverlauf',
+          onPressed: () {
+            _tabController.animateTo(2);
+          },
+        ),
+        
+        // Favorites
+        IconButton(
+          icon: Icon(_isFavorite ? Icons.favorite : Icons.favorite_border),
+          tooltip: _isFavorite ? 'Von Favoriten entfernen' : 'Zu Favoriten hinzufügen',
+          onPressed: _currentResult != null ? _toggleFavorite : null,
+          color: _isFavorite ? Colors.red : null,
+        ),
+      ],
+      bottom: TabBar(
+        controller: _tabController,
+        tabs: const [
+          Tab(icon: Icon(Icons.search), text: 'Recherche'),
+          Tab(icon: Icon(Icons.photo_library), text: 'Multimedia'),
+          Tab(icon: Icon(Icons.history), text: 'Verlauf'),
+        ],
+      ),
+    );
+  }
+  
+  // ============================================================================
+  // TAB 1: RECHERCHE
+  // ============================================================================
+  
+  Widget _buildRechercheTab() {
+    return SafeArea(
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const SizedBox(height: 16),
+            
+            // Mode Selector
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: ModeSelector(
+                selectedMode: _currentMode,
+                onModeSelected: (mode) {
+                  setState(() {
+                    _currentMode = mode;
+                  });
+                },
+              ),
+            ),
+            
+            const SizedBox(height: 16),
+            
+            // Search Input
+            _buildSearchInput(),
+            
+            // Query Suggestions
+            if (_showSuggestions)
+              _buildSuggestions(),
+            
+            const SizedBox(height: 16),
+            
+            // Progress Pipeline (while searching)
+            if (_isSearching)
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: ProgressPipeline(
+                  progress: _searchProgress,
+                  mode: _currentMode,
+                ),
+              ),
+            
+            // Error State
+            if (_searchError != null && !_isSearching)
+              _buildErrorCard(),
+            
+            // Results (New Widgets)
+            if (_currentResult != null && !_isSearching) ...[
+              const SizedBox(height: 16),
+              
+              // Result Summary Card
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: ResultSummaryCard(result: _currentResult!),
+              ),
+              
+              const SizedBox(height: 16),
+              
+              // Facts List
+              if (_currentResult!.facts.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: FactsList(facts: _currentResult!.facts),
+                ),
+              
+              const SizedBox(height: 16),
+              
+              // Sources List
+              if (_currentResult!.sources.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: SourcesList(sources: _currentResult!.sources),
+                ),
+              
+              const SizedBox(height: 16),
+              
+              // Perspectives View
+              if (_currentResult!.perspectives.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: PerspectivesView(perspectives: _currentResult!.perspectives),
+                ),
+              
+              const SizedBox(height: 16),
+              
+              // Rabbit Hole View
+              if (_currentResult!.rabbitLayers.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: RabbitHoleView(layers: _currentResult!.rabbitLayers),
+                ),
+              
+              const SizedBox(height: 80), // Space for FAB
+            ],
+            
+            // Empty State
+            if (_currentResult == null && !_isSearching && _searchError == null)
+              _buildEmptyState(),
+          ],
+        ),
+      ),
+    );
+  }
+  
+  // ============================================================================
+  // SEARCH INPUT
+  // ============================================================================
+  
+  Widget _buildSearchInput() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: TextField(
+        controller: _queryController,
+        focusNode: _searchFocusNode,
+        decoration: InputDecoration(
+          hintText: 'Recherche starten...',
+          prefixIcon: const Icon(Icons.search),
+          suffixIcon: _queryController.text.isNotEmpty
+              ? IconButton(
+                  icon: const Icon(Icons.clear),
+                  onPressed: () {
+                    _queryController.clear();
+                    setState(() {
+                      _querySuggestions = [];
+                      _showSuggestions = false;
+                    });
+                  },
+                )
+              : null,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        onSubmitted: _performSearch,
+        textInputAction: TextInputAction.search,
+      ),
+    );
+  }
+  
+  // ============================================================================
+  // QUERY SUGGESTIONS
+  // ============================================================================
+  
+  Widget _buildSuggestions() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ListView.separated(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: _querySuggestions.length,
+        separatorBuilder: (_, __) => const Divider(height: 1),
+        itemBuilder: (context, index) {
+          final suggestion = _querySuggestions[index];
+          return ListTile(
+            leading: const Icon(Icons.search, size: 20),
+            title: Text(suggestion),
+            onTap: () {
+              _queryController.text = suggestion;
+              setState(() {
+                _showSuggestions = false;
+              });
+              _performSearch(suggestion);
+            },
+          );
+        },
+      ),
+    );
+  }
+  
+  // ============================================================================
+  // ERROR CARD
+  // ============================================================================
+  
+  Widget _buildErrorCard() {
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.red.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.red.shade200),
+      ),
+      child: Column(
+        children: [
+          const Icon(Icons.error_outline, color: Colors.red, size: 48),
+          const SizedBox(height: 8),
+          const Text(
+            'Recherche Fehler',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.red,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            _searchError ?? 'Unbekannter Fehler',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.red.shade700),
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton.icon(
+            onPressed: () {
+              final query = _queryController.text;
+              if (query.isNotEmpty) {
+                _performSearch(query);
+              }
+            },
+            icon: const Icon(Icons.refresh),
+            label: const Text('Erneut versuchen'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  // ============================================================================
+  // EMPTY STATE
+  // ============================================================================
+  
+  Widget _buildEmptyState() {
+    return Padding(
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.search,
+            size: 80,
+            color: Colors.grey.shade400,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Starte deine Recherche',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey.shade700,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Gib einen Suchbegriff ein und wähle einen Recherche-Modus',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.grey.shade600,
+            ),
+          ),
+          const SizedBox(height: 24),
+          
+          // Quick Search Chips
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            alignment: WrapAlignment.center,
+            children: [
+              _buildQuickSearchChip('UFOs & Aliens'),
+              _buildQuickSearchChip('9/11 Truth'),
+              _buildQuickSearchChip('Illuminati'),
+              _buildQuickSearchChip('JFK Assassination'),
+              _buildQuickSearchChip('Ancient Mysteries'),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildQuickSearchChip(String label) {
+    return ActionChip(
+      label: Text(label),
+      onPressed: () {
+        _queryController.text = label;
+        _performSearch(label);
+      },
+      backgroundColor: Colors.blue.shade50,
+      labelStyle: TextStyle(color: Colors.blue.shade700),
+    );
+  }
+  
+  // ============================================================================
+  // TAB 2: MULTIMEDIA
+  // ============================================================================
+  
+  Widget _buildMultimediaTab() {
+    if (_legacyResult == null) {
+      return _buildTabEmptyState('Multimedia', Icons.photo_library);
+    }
+    
+    return SafeArea(
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const SizedBox(height: 16),
+            
+            // Enhanced Multimedia Section
+            if (_legacyResult!.multimedia != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: EnhancedMultimediaSection(
+                  multimedia: _legacyResult!.multimedia!,
+                ),
+              ),
+            
+            const SizedBox(height: 16),
+            
+            // Follow-up Questions
+            if (_legacyResult!.followUpQuestions.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: FollowUpQuestionsWidget(
+                  query: _legacyResult!.query,
+                  questions: _legacyResult!.followUpQuestions,
+                  onQuestionTap: (question) {
+                    _queryController.text = question;
+                    _tabController.animateTo(0);
+                    _performSearch(question);
+                  },
+                ),
+              ),
+            
+            const SizedBox(height: 16),
+            
+            // Related Topics
+            if (_legacyResult!.relatedTopics != null && _legacyResult!.relatedTopics!.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: RelatedTopicsWidget(
+                  currentQuery: _legacyResult!.query,
+                  relatedTopics: _legacyResult!.relatedTopics!.map((t) => RelatedTopic(
+                    title: t['title']?.toString() ?? '',
+                    query: t['title']?.toString() ?? '',
+                    category: 'general',
+                    relevanceScore: 4, // 1-5 stars, use 4 as default
+                  )).toList(),
+                  onTopicTap: (topicTitle) {
+                    _queryController.text = topicTitle;
+                    _tabController.animateTo(0);
+                    _performSearch(topicTitle);
+                  },
+                ),
+              ),
+            
+            const SizedBox(height: 80),
+          ],
+        ),
+      ),
+    );
+  }
+  
+  // ============================================================================
+  // TAB 3: HISTORY
+  // ============================================================================
+  
+  Widget _buildHistoryTab() {
+    if (_legacyResult == null) {
+      return _buildTabEmptyState('Verlauf', Icons.history);
+    }
+    
+    return SafeArea(
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const SizedBox(height: 16),
+            
+            // Research Timeline
+            if (_legacyResult!.timeline != null && _legacyResult!.timeline!.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: ResearchTimelineWidget(
+                  title: 'Recherche Zeitstrahl',
+                  events: _legacyResult!.timeline!.map((t) => TimelineEvent(
+                    date: DateTime.tryParse(t['date']?.toString() ?? '') ?? DateTime.now(),
+                    title: t['title']?.toString() ?? '',
+                    description: t['description']?.toString() ?? '',
+                    importance: TimelineImportance.medium,
+                  )).toList(),
+                ),
+              ),
+            
+            const SizedBox(height: 16),
+            
+            // Search History (Future implementation)
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      const Icon(Icons.history, size: 48, color: Colors.grey),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Suchverlauf',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Deine letzten Suchanfragen werden hier angezeigt',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.grey.shade600),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            
+            const SizedBox(height: 80),
+          ],
+        ),
+      ),
+    );
+  }
+  
+  // ============================================================================
+  // TAB EMPTY STATE
+  // ============================================================================
+  
+  Widget _buildTabEmptyState(String title, IconData icon) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 80, color: Colors.grey.shade400),
+            const SizedBox(height: 16),
+            Text(
+              'Keine $title Daten',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey.shade700,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Starte eine Recherche, um $title zu sehen',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey.shade600),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  
+  // ============================================================================
+  // SHARE FAB
+  // ============================================================================
+  
+  Widget _buildShareFAB() {
+    return FloatingActionButton.extended(
+      onPressed: _shareResearch,
+      icon: const Icon(Icons.share),
+      label: const Text('Teilen'),
+    );
+  }
+  
+  Future<void> _shareResearch() async {
+    if (_legacyResult == null || _currentResult == null) return;
+    
+    try {
+      final shareText = '''
+🔍 Recherche: ${_currentResult!.query}
+
+📊 Ergebnisse:
+- ${_currentResult!.sources.length} Quellen
+- ${_currentResult!.facts.length} Fakten
+- ${_currentResult!.perspectives.length} Perspektiven
+- Konfidenz: ${_currentResult!.confidencePercent}%
+
+📝 Zusammenfassung:
+${_currentResult!.summary}
+
+🔬 Modus: ${_currentMode.displayName}
+⏰ ${DateTime.now().toString().substring(0, 16)}
+''';
+      
+      await NativeShareHelper.shareText(text: shareText);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Fehler beim Teilen: $e')),
+        );
+      }
+    }
+  }
+}

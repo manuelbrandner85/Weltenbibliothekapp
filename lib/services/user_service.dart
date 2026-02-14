@@ -81,5 +81,29 @@ class UserService {
   Future<void> setCurrentUser(String username, String avatar) async {
     // Deprecated - Profile werden über StorageService gespeichert
   }
+  
+  // 🔥 STATIC HELPER METHODS (for convenient access)
+  
+  /// Get current user ID (static helper)
+  static String getCurrentUserId() {
+    final auth = InvisibleAuthService();
+    return auth.userId ?? 'user_anonymous';
+  }
+  
+  /// Get current username (static helper)
+  static String getCurrentUsername() {
+    final storage = StorageService();
+    // Try Energie profile first
+    final energieProfile = storage.getEnergieProfile();
+    if (energieProfile != null && energieProfile.username.isNotEmpty) {
+      return energieProfile.username;
+    }
+    // Try Materie profile
+    final materieProfile = storage.getMaterieProfile();
+    if (materieProfile != null && materieProfile.username.isNotEmpty) {
+      return materieProfile.username;
+    }
+    return 'Gast';
+  }
 }
 

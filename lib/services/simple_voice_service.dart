@@ -17,26 +17,43 @@ import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 /// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+/// 📦 VOICE ROLE ENUM
+/// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+enum VoiceRole {
+  speaker,
+  listener,
+  participant,
+}
+
+/// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 /// 📦 VOICE PARTICIPANT MODEL
 /// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 class VoiceParticipant {
   final String userId;
   final String username;
   final bool isSelf;
+  final String? avatarEmoji; // ✅ ADD: Avatar emoji
 
   MediaStream? stream;
   RTCPeerConnection? peer;
   bool isMuted;
   bool isSpeaking;
+  bool handRaised; // ✅ ADD: Hand raised state
+  double volume; // ✅ ADD: Volume level
+  VoiceRole role; // ✅ ADD: Voice role
 
   VoiceParticipant({
     required this.userId,
     required this.username,
     this.isSelf = false,
+    this.avatarEmoji,
     this.stream,
     this.peer,
     this.isMuted = false,
     this.isSpeaking = false,
+    this.handRaised = false,
+    this.volume = 1.0,
+    this.role = VoiceRole.participant,
   });
 
   /// Check if participant has audio

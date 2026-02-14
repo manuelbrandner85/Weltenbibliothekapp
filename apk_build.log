@@ -1,5 +1,20 @@
 Running Gradle task 'assembleRelease'...                        
-Font asset "MaterialIcons-Regular.otf" was tree-shaken, reducing it from 1645184 to 40940 bytes (97.5% reduction). Tree-shaking can be disabled by providing the --no-tree-shake-icons flag when building your app.
-Caught exception: Already watching path: /home/user/flutter_app/android
-Running Gradle task 'assembleRelease'...                          260.6s
-✓ Built build/app/outputs/flutter-apk/app-release.apk (127.6MB)
+Checking the license for package Android SDK Platform 31 in /home/user/android-sdk/licenses
+License for package Android SDK Platform 31 accepted.
+Preparing "Install Android SDK Platform 31 (revision 1)".
+"Install Android SDK Platform 31 (revision 1)" ready.
+Installing Android SDK Platform 31 in /home/user/android-sdk/platforms/android-31
+"Install Android SDK Platform 31 (revision 1)" complete.
+"Install Android SDK Platform 31 (revision 1)" finished.
+Checking the license for package Android SDK Platform 33 in /home/user/android-sdk/licenses
+License for package Android SDK Platform 33 accepted.
+Preparing "Install Android SDK Platform 33 (revision 3)".
+"Install Android SDK Platform 33 (revision 3)" ready.
+Installing Android SDK Platform 33 in /home/user/android-sdk/platforms/android-33
+"Install Android SDK Platform 33 (revision 3)" complete.
+"Install Android SDK Platform 33 (revision 3)" finished.
+Font asset "MaterialIcons-Regular.otf" was tree-shaken, reducing it from 1645184 to 41856 bytes (97.5% reduction). Tree-shaking can be disabled by providing the --no-tree-shake-icons flag when building your app.
+Note: Some input files use or override a deprecated API.
+Note: Recompile with -Xlint:deprecation for details.
+Note: Some input files use unchecked or unsafe operations.
+Note: Recompile with -Xlint:unchecked for details.

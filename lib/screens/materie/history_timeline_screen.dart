@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/group_tools_service.dart';
+import '../../services/user_service.dart'; // 🆕 User Service für Auth
 
 /// 🏛️ GESCHICHTE-ZEITLEISTE SCREEN
 /// Alternative Geschichte gemeinsam dokumentieren
@@ -207,7 +208,7 @@ class _HistoryTimelineScreenState extends State<HistoryTimelineScreen> {
     try {
       await _toolsService.createHistoryEvent(
         roomId: widget.roomId,
-        userId: 'user_manuel',
+        userId: UserService.getCurrentUserId(),
         username: 'Manuel',
         title: title,
         description: description,

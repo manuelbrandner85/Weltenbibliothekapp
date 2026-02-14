@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:io';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import '../services/storage_service.dart';
 import 'package:http/http.dart' as http;
@@ -82,9 +84,29 @@ class WorldAdminService {
           'error': 'HTTP ${response.statusCode}',
         };
       }
+    } on SocketException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Network: Keine Internetverbindung');
+      }
+      return {
+        'success': false,
+        'isAdmin': false,
+        'isRootAdmin': false,
+        'error': e.toString(),
+      };
+    } on TimeoutException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Timeout: $e');
+      }
+      return {
+        'success': false,
+        'isAdmin': false,
+        'isRootAdmin': false,
+        'error': e.toString(),
+      };
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('❌ Admin check error: $e');
+        debugPrint('❌ Admin check error: $e $e');
       }
       return {
         'success': false,
@@ -146,9 +168,19 @@ class WorldAdminService {
         }
         return [];
       }
+    } on SocketException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Network: Keine Internetverbindung');
+      }
+      return [];
+    } on TimeoutException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Timeout: $e');
+      }
+      return [];
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('❌ Error fetching users: $e');
+        debugPrint('❌ Error fetching users: $e $e');
       }
       return [];
     }
@@ -201,9 +233,19 @@ class WorldAdminService {
         }
         return false;
       }
+    } on SocketException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Network: Keine Internetverbindung');
+      }
+      return false;
+    } on TimeoutException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Timeout: $e');
+      }
+      return false;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('❌ Promotion error: $e');
+        debugPrint('❌ Promotion error: $e $e');
       }
       return false;
     }
@@ -252,9 +294,19 @@ class WorldAdminService {
         }
         return false;
       }
+    } on SocketException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Network: Keine Internetverbindung');
+      }
+      return false;
+    } on TimeoutException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Timeout: $e');
+      }
+      return false;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('❌ Demotion error: $e');
+        debugPrint('❌ Demotion error: $e $e');
       }
       return false;
     }
@@ -307,9 +359,19 @@ class WorldAdminService {
         }
         return false;
       }
+    } on SocketException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Network: Keine Internetverbindung');
+      }
+      return false;
+    } on TimeoutException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Timeout: $e');
+      }
+      return false;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('❌ Deletion error: $e');
+        debugPrint('❌ Deletion error: $e $e');
       }
       return false;
     }
@@ -351,130 +413,24 @@ class WorldAdminService {
         }
         return [];
       }
+    } on SocketException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Network: Keine Internetverbindung');
+      }
+      return [];
+    } on TimeoutException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Timeout: $e');
+      }
+      return [];
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('❌ Error fetching audit log: $e');
+        debugPrint('❌ Error fetching audit log: $e $e');
       }
       return [];
     }
   }
   
-  // ════════════════════════════════════════════════════════════
-  // 🧪 MOCK DATA (für Testing - später durch echte API ersetzen!)
-  // ════════════════════════════════════════════════════════════
-  
-  /// Get mock users for testing (bis Backend ready ist)
-  /// 
-  /// 🧪 TESTING ONLY - Diese Methode gibt Mock-Daten zurück
-  /// ✅ PRODUCTION: getUsersByWorld() verwenden (echte API)
-  static Future<List<WorldUser>> getUsersByWorldMock(String world) async {
-    // Simulate network delay
-    await Future.delayed(const Duration(milliseconds: 500));
-    
-    if (kDebugMode) {
-      debugPrint('🧪 MOCK: Loading sample users for $world');
-    }
-    
-    if (world.toLowerCase() == 'materie') {
-      return [
-        WorldUser(
-          profileId: 'profile_1',
-          userId: 'materie_Weltenbibliothek',
-          username: 'Weltenbibliothek',
-          role: 'root_admin',
-          displayName: 'Weltenbibliothek Admin',
-          avatarEmoji: '👑',
-          createdAt: '2026-02-01T10:00:00Z',
-        ),
-        WorldUser(
-          profileId: 'profile_2',
-          userId: 'materie_TestAdmin',
-          username: 'TestAdmin',
-          role: 'admin',
-          displayName: 'Test Administrator',
-          avatarEmoji: '⭐',
-          createdAt: '2026-02-02T14:30:00Z',
-        ),
-        WorldUser(
-          profileId: 'profile_3',
-          userId: 'materie_ForscherMax',
-          username: 'ForscherMax',
-          role: 'user',
-          displayName: 'Max der Forscher',
-          avatarEmoji: '🔬',
-          createdAt: '2026-02-03T09:15:00Z',
-        ),
-        WorldUser(
-          profileId: 'profile_4',
-          userId: 'materie_WissenschaftlerAnna',
-          username: 'WissenschaftlerAnna',
-          role: 'user',
-          displayName: 'Dr. Anna Schmidt',
-          avatarEmoji: '🧪',
-          createdAt: '2026-02-04T11:20:00Z',
-        ),
-        WorldUser(
-          profileId: 'profile_5',
-          userId: 'materie_AnalystPeter',
-          username: 'AnalystPeter',
-          role: 'user',
-          displayName: 'Peter Analyst',
-          avatarEmoji: '📊',
-          createdAt: '2026-02-05T08:45:00Z',
-        ),
-      ];
-    } else if (world.toLowerCase() == 'energie') {
-      return [
-        WorldUser(
-          profileId: 'profile_6',
-          userId: 'energie_Weltenbibliothek',
-          username: 'Weltenbibliothek',
-          role: 'root_admin',
-          displayName: 'Weltenbibliothek Admin',
-          avatarEmoji: '👑',
-          createdAt: '2026-02-01T10:00:00Z',
-        ),
-        WorldUser(
-          profileId: 'profile_7',
-          userId: 'energie_SpiritGuide',
-          username: 'SpiritGuide',
-          role: 'admin',
-          displayName: 'Spirit Guide',
-          avatarEmoji: '🌟',
-          createdAt: '2026-02-02T15:00:00Z',
-        ),
-        WorldUser(
-          profileId: 'profile_8',
-          userId: 'energie_MysticLuna',
-          username: 'MysticLuna',
-          role: 'user',
-          displayName: 'Luna die Mystikerin',
-          avatarEmoji: '🌙',
-          createdAt: '2026-02-03T10:30:00Z',
-        ),
-        WorldUser(
-          profileId: 'profile_9',
-          userId: 'energie_ZenMaster',
-          username: 'ZenMaster',
-          role: 'user',
-          displayName: 'Meister Zen',
-          avatarEmoji: '🧘',
-          createdAt: '2026-02-04T12:15:00Z',
-        ),
-        WorldUser(
-          profileId: 'profile_10',
-          userId: 'energie_CrystalHealer',
-          username: 'CrystalHealer',
-          role: 'user',
-          displayName: 'Crystal Healer',
-          avatarEmoji: '💎',
-          createdAt: '2026-02-05T09:30:00Z',
-        ),
-      ];
-    }
-    
-    return [];
-  }
 }
 
 // ════════════════════════════════════════════════════════════

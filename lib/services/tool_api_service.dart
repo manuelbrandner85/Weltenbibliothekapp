@@ -1,5 +1,7 @@
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:async';
+import 'dart:io';
 
 /// 🛠️ TOOL API SERVICE - Gemeinsame Cloud-Tools für alle Nutzer
 class ToolApiService {

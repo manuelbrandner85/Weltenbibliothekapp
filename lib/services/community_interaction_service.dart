@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:async';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:http/http.dart' as http;
 import 'package:hive_flutter/hive_flutter.dart';
@@ -53,7 +54,10 @@ class CommunityInteractionService {
           'post_id': postId,
           'user_id': userId,
         }),
-      ).timeout(const Duration(seconds: 10));
+      ).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () => throw TimeoutException('Like toggle timeout'),
+      );
       
       if (response.statusCode == 200) {
         if (kDebugMode) {
@@ -106,7 +110,10 @@ class CommunityInteractionService {
     try {
       final response = await http.get(
         Uri.parse('$_backendUrl/api/community/likes/$postId'),
-      ).timeout(const Duration(seconds: 5));
+      ).timeout(
+        const Duration(seconds: 5),
+        onTimeout: () => throw TimeoutException('Get like count timeout'),
+      );
       
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -156,7 +163,10 @@ class CommunityInteractionService {
           'text': text,
           'timestamp': DateTime.now().toIso8601String(),
         }),
-      ).timeout(const Duration(seconds: 10));
+      ).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () => throw TimeoutException('Add comment timeout'),
+      );
       
       if (response.statusCode == 200 || response.statusCode == 201) {
         if (kDebugMode) {
@@ -191,7 +201,10 @@ class CommunityInteractionService {
     try {
       final response = await http.get(
         Uri.parse('$_backendUrl/api/community/comments/$postId'),
-      ).timeout(const Duration(seconds: 5));
+      ).timeout(
+        const Duration(seconds: 5),
+        onTimeout: () => throw TimeoutException('Get comments timeout'),
+      );
       
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -256,7 +269,10 @@ class CommunityInteractionService {
           'platform': platform,
           'timestamp': DateTime.now().toIso8601String(),
         }),
-      ).timeout(const Duration(seconds: 5));
+      ).timeout(
+        const Duration(seconds: 5),
+        onTimeout: () => throw TimeoutException('Track share timeout'),
+      );
       
       if (kDebugMode) {
         debugPrint('✅ Share tracked: $postId on $platform');
@@ -285,7 +301,10 @@ class CommunityInteractionService {
           'post_ids': postIds,
           'user_id': userId,
         }),
-      ).timeout(const Duration(seconds: 10));
+      ).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () => throw TimeoutException('Preload likes timeout'),
+      );
       
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -338,7 +357,10 @@ class CommunityInteractionService {
     try {
       final response = await http.get(
         Uri.parse('$_backendUrl/api/community/user/$userId/stats'),
-      ).timeout(const Duration(seconds: 5));
+      ).timeout(
+        const Duration(seconds: 5),
+        onTimeout: () => throw TimeoutException('Get user stats timeout'),
+      );
       
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);

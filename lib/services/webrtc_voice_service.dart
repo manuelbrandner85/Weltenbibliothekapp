@@ -19,6 +19,13 @@ import '../models/webrtc_call_state.dart' hide RoomFullException; // CallConnect
 
 // ⚠️ MIGRATION: VoiceConnectionState removed, using CallConnectionState instead
 
+/// Voice Role Enum (for compatibility)
+enum VoiceRole {
+  speaker,
+  listener,
+  participant,
+}
+
 /// Participant in voice room
 class VoiceParticipant {
   final String userId;
@@ -28,6 +35,10 @@ class VoiceParticipant {
   final RTCPeerConnection? peerConnection;
   final MediaStream? stream;
   final String? avatarEmoji; // 🆕 Avatar emoji for UI
+  final bool isSelf; // 🆕 Is this the current user
+  final bool handRaised; // 🆕 Hand raised state
+  final double volume; // 🆕 Volume level
+  final VoiceRole role; // 🆕 Voice role
   
   VoiceParticipant({
     required this.userId,
@@ -37,6 +48,10 @@ class VoiceParticipant {
     this.peerConnection,
     this.stream,
     this.avatarEmoji,
+    this.isSelf = false,
+    this.handRaised = false,
+    this.volume = 1.0,
+    this.role = VoiceRole.participant,
   });
   
   VoiceParticipant copyWith({
@@ -45,6 +60,10 @@ class VoiceParticipant {
     RTCPeerConnection? peerConnection,
     MediaStream? stream,
     String? avatarEmoji,
+    bool? isSelf,
+    bool? handRaised,
+    double? volume,
+    VoiceRole? role,
   }) {
     return VoiceParticipant(
       userId: userId,
@@ -54,8 +73,20 @@ class VoiceParticipant {
       peerConnection: peerConnection ?? this.peerConnection,
       stream: stream ?? this.stream,
       avatarEmoji: avatarEmoji ?? this.avatarEmoji,
+      isSelf: isSelf ?? this.isSelf,
+      handRaised: handRaised ?? this.handRaised,
+      volume: volume ?? this.volume,
+      role: role ?? this.role,
     );
   }
+  
+  /// Check if participant has audio
+  bool get hasAudio => stream != null && stream!.getAudioTracks().isNotEmpty;
+
+  /// Check if peer is connected
+  bool get isConnected =>
+      peerConnection != null &&
+      peerConnection!.connectionState == RTCPeerConnectionState.RTCPeerConnectionStateConnected;
   
   /// Factory from backend JSON response
   factory VoiceParticipant.fromBackendJson(Map<String, dynamic> json) {
@@ -65,6 +96,8 @@ class VoiceParticipant {
       isMuted: json['is_muted'] as bool? ?? json['isMuted'] as bool? ?? false,
       isSpeaking: json['is_speaking'] as bool? ?? json['isSpeaking'] as bool? ?? false,
       avatarEmoji: json['avatar_emoji'] as String? ?? json['avatarEmoji'] as String?,
+      handRaised: json['hand_raised'] as bool? ?? json['handRaised'] as bool? ?? false,
+      volume: (json['volume'] as num?)?.toDouble() ?? 1.0,
       // peerConnection and stream are null for backend participants
     );
   }
@@ -246,33 +279,57 @@ class WebRTCVoiceService {
         // PHASE 3: WEBRTC VERBINDUNG
         // ==========================================
         
-        // 3.1 Permission Check
-        final permission = await Permission.microphone.request();
-        
-        if (!permission.isGranted) {
-          if (kDebugMode) {
-            debugPrint('❌ [VOICE] Phase 3: Mikrofon-Berechtigung verweigert');
+        // 3.1 Permission Check (Platform-specific)
+        if (!kIsWeb) {
+          // Android/iOS: Use permission_handler
+          final permission = await Permission.microphone.request();
+          
+          if (!permission.isGranted) {
+            if (kDebugMode) {
+              debugPrint('❌ [VOICE] Phase 3: Mikrofon-Berechtigung verweigert');
+            }
+            
+            // Backend-Session wieder beenden (Rollback!)
+            await _backendService.leaveVoiceRoom(sessionId);
+            
+            throw VoiceException.permissionDenied();
           }
-          
-          // Backend-Session wieder beenden (Rollback!)
-          await _backendService.leaveVoiceRoom(sessionId);
-          
-          throw VoiceException.permissionDenied();
         }
+        // Web: Permission wird automatisch von getUserMedia abgefragt
         
-        // 3.2 Media Stream
+        // 3.2 Media Stream mit verbessertem Error Handling
         try {
           _localStream = await navigator.mediaDevices.getUserMedia(_mediaConstraints);
-        } catch (mediaError) {
+          
           if (kDebugMode) {
-            debugPrint('❌ [VOICE] Phase 3: getUserMedia failed - $mediaError');
+            debugPrint('✅ [VOICE] MediaStream erfolgreich erstellt');
+            debugPrint('   Audio Tracks: ${_localStream!.getAudioTracks().length}');
+          }
+        } catch (mediaError) {
+          final errorMessage = mediaError.toString();
+          String userMessage = 'Mikrofon konnte nicht aktiviert werden';
+          
+          // Spezifische Fehlerbehandlung
+          if (errorMessage.contains('NotAllowedError') || errorMessage.contains('PermissionDenied')) {
+            userMessage = 'Mikrofon-Berechtigung verweigert. Bitte in den Browser-Einstellungen aktivieren.';
+          } else if (errorMessage.contains('NotFoundError') || errorMessage.contains('DeviceNotFound')) {
+            userMessage = 'Kein Mikrofon gefunden. Bitte ein Mikrofon anschließen.';
+          } else if (errorMessage.contains('NotReadableError')) {
+            userMessage = 'Mikrofon wird bereits von einer anderen Anwendung verwendet.';
+          }
+          
+          if (kDebugMode) {
+            debugPrint('❌ [VOICE] Phase 3: getUserMedia failed');
+            debugPrint('   Error Type: ${mediaError.runtimeType}');
+            debugPrint('   Error: $mediaError');
+            debugPrint('   User Message: $userMessage');
           }
           
           // Backend-Session wieder beenden (Rollback!)
           await _backendService.leaveVoiceRoom(sessionId);
           
           throw VoiceException(
-            'Mikrofon konnte nicht aktiviert werden',
+            userMessage,
             roomId: roomId,
             userId: userId,
             cause: mediaError,

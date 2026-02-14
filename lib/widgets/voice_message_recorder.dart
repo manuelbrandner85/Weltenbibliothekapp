@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'package:flutter_sound/flutter_sound.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:flutter/foundation.dart' show kDebugMode, debugPrint, kIsWeb;
 
 /// Voice Message Recorder Widget
 /// Audio-Aufnahme für Chat-Nachrichten
@@ -19,10 +23,13 @@ class VoiceMessageRecorder extends StatefulWidget {
 
 class _VoiceMessageRecorderState extends State<VoiceMessageRecorder>
     with SingleTickerProviderStateMixin {
+  final FlutterSoundRecorder _recorder = FlutterSoundRecorder();
   bool _isRecording = false;
+  bool _isRecorderInitialized = false;
   Duration _recordingDuration = Duration.zero;
   Timer? _timer;
   late AnimationController _pulseController;
+  String? _recordingPath;
   
   @override
   void initState() {
@@ -31,40 +38,126 @@ class _VoiceMessageRecorderState extends State<VoiceMessageRecorder>
       vsync: this,
       duration: const Duration(milliseconds: 1000),
     )..repeat(reverse: true);
+    
+    _initRecorder();
+  }
+  
+  Future<void> _initRecorder() async {
+    try {
+      // Request microphone permission
+      if (!kIsWeb) {
+        final status = await Permission.microphone.request();
+        if (!status.isGranted) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('❌ Mikrofon-Berechtigung verweigert'),
+                backgroundColor: Colors.red,
+              ),
+            );
+            Navigator.pop(context);
+          }
+          return;
+        }
+      }
+      
+      // Open audio session
+      await _recorder.openRecorder();
+      _isRecorderInitialized = true;
+      
+      if (kDebugMode) {
+        debugPrint('✅ [VoiceRecorder] Recorder initialized');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ [VoiceRecorder] Init error: $e');
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Fehler beim Initialisieren: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        Navigator.pop(context);
+      }
+    }
   }
   
   @override
   void dispose() {
     _timer?.cancel();
     _pulseController.dispose();
+    _recorder.closeRecorder();
     super.dispose();
   }
   
-  void _startRecording() {
-    setState(() {
-      _isRecording = true;
-      _recordingDuration = Duration.zero;
-    });
+  Future<void> _startRecording() async {
+    if (!_isRecorderInitialized) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('❌ Recorder nicht bereit'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
     
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+    try {
+      // Generate recording path
+      if (kIsWeb) {
+        _recordingPath = 'audio_${DateTime.now().millisecondsSinceEpoch}.webm';
+      } else {
+        final dir = await getTemporaryDirectory();
+        _recordingPath = '${dir.path}/audio_${DateTime.now().millisecondsSinceEpoch}.aac';
+      }
+      
+      // Start recording
+      await _recorder.startRecorder(
+        toFile: _recordingPath,
+        codec: kIsWeb ? Codec.opusWebM : Codec.aacADTS,
+      );
+      
       setState(() {
-        _recordingDuration = Duration(seconds: timer.tick);
-        
-        // Auto-stop at 60 seconds
-        if (_recordingDuration.inSeconds >= 60) {
-          _stopRecording();
-        }
+        _isRecording = true;
+        _recordingDuration = Duration.zero;
       });
-    });
-    
-    // TODO: Start actual audio recording
+      
+      _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+        setState(() {
+          _recordingDuration = Duration(seconds: timer.tick);
+          
+          // Auto-stop at 60 seconds
+          if (_recordingDuration.inSeconds >= 60) {
+            _stopRecording();
+          }
+        });
+      });
+      
+      if (kDebugMode) {
+        debugPrint('✅ [VoiceRecorder] Recording started: $_recordingPath');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ [VoiceRecorder] Start error: $e');
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Fehler beim Starten: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
   
-  void _stopRecording() {
+  Future<void> _stopRecording() async {
     _timer?.cancel();
     
     if (_recordingDuration.inSeconds < 1) {
       // Too short
+      await _recorder.stopRecorder();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('❌ Aufnahme zu kurz (min 1 Sekunde)'),
@@ -79,17 +172,47 @@ class _VoiceMessageRecorderState extends State<VoiceMessageRecorder>
       return;
     }
     
-    // Simulate audio file path
-    final audioPath = '/path/to/audio_${DateTime.now().millisecondsSinceEpoch}.m4a';
-    
-    widget.onRecordingComplete(audioPath, _recordingDuration);
-    Navigator.pop(context);
+    try {
+      // Stop recording
+      final path = await _recorder.stopRecorder();
+      
+      if (kDebugMode) {
+        debugPrint('✅ [VoiceRecorder] Recording stopped: $path');
+        debugPrint('   Duration: ${_recordingDuration.inSeconds}s');
+      }
+      
+      if (path != null && path.isNotEmpty) {
+        widget.onRecordingComplete(path, _recordingDuration);
+        if (mounted) {
+          Navigator.pop(context);
+        }
+      } else {
+        throw Exception('No recording path returned');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ [VoiceRecorder] Stop error: $e');
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Fehler beim Stoppen: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
   
-  void _cancelRecording() {
+  Future<void> _cancelRecording() async {
     _timer?.cancel();
+    if (_isRecording) {
+      await _recorder.stopRecorder();
+    }
     widget.onCancel();
-    Navigator.pop(context);
+    if (mounted) {
+      Navigator.pop(context);
+    }
   }
   
   String _formatDuration(Duration duration) {

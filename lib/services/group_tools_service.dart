@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:async';
+import 'dart:io';
 
 /// 🛠️ Gruppen-Tools Service
 /// Verbindung zu Cloudflare Worker API für alle 18 Tools
@@ -20,6 +22,11 @@ class GroupToolsService {
     try {
       final response = await http.get(
         Uri.parse('$_baseUrl/energie/meditation?room_id=$roomId&limit=$limit'),
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw TimeoutException('Request Timeout (15s)');
+        },
       );
 
       if (response.statusCode == 200) {
@@ -27,9 +34,19 @@ class GroupToolsService {
         return List<Map<String, dynamic>>.from(data['sessions'] ?? []);
       }
       return [];
+    } on SocketException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Network error: Keine Internetverbindung');
+      }
+      return [];
+    } on TimeoutException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Timeout: $e');
+      }
+      return [];
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('❌ Error fetching meditation sessions: $e');
+        debugPrint('❌ Error fetching meditation sessions: $e $e');
       }
       return [];
     }
@@ -53,6 +70,11 @@ class GroupToolsService {
           'participants': participants,
           'notes': notes,
         }),
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw TimeoutException('Request Timeout (15s)');
+        },
       );
 
       if (response.statusCode == 201) {
@@ -60,9 +82,19 @@ class GroupToolsService {
         return data['session_id'];
       }
       return null;
+    } on SocketException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Network error: Keine Internetverbindung');
+      }
+      return null;
+    } on TimeoutException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Timeout: $e');
+      }
+      return null;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('❌ Error creating meditation session: $e');
+        debugPrint('❌ Error creating meditation session: $e $e');
       }
       return null;
     }
@@ -76,6 +108,11 @@ class GroupToolsService {
     try {
       final response = await http.get(
         Uri.parse('$_baseUrl/energie/astral?room_id=$roomId&limit=$limit'),
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw TimeoutException('Request Timeout (15s)');
+        },
       );
 
       if (response.statusCode == 200) {
@@ -83,9 +120,19 @@ class GroupToolsService {
         return List<Map<String, dynamic>>.from(data['entries'] ?? []);
       }
       return [];
+    } on SocketException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Network error: Keine Internetverbindung');
+      }
+      return [];
+    } on TimeoutException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Timeout: $e');
+      }
+      return [];
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('❌ Error fetching astral journal: $e');
+        debugPrint('❌ Error fetching astral journal: $e $e');
       }
       return [];
     }
@@ -113,6 +160,11 @@ class GroupToolsService {
           'techniques_used': techniques,
           'success_level': successLevel,
         }),
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw TimeoutException('Request Timeout (15s)');
+        },
       );
 
       if (response.statusCode == 201) {
@@ -120,9 +172,19 @@ class GroupToolsService {
         return data['entry_id'];
       }
       return null;
+    } on SocketException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Network error: Keine Internetverbindung');
+      }
+      return null;
+    } on TimeoutException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Timeout: $e');
+      }
+      return null;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('❌ Error creating astral entry: $e');
+        debugPrint('❌ Error creating astral entry: $e $e');
       }
       return null;
     }
@@ -140,16 +202,31 @@ class GroupToolsService {
         url += '&user_id=$userId';
       }
 
-      final response = await http.get(Uri.parse(url));
+      final response = await http.get(Uri.parse(url)).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw TimeoutException('Request Timeout (15s)');
+        },
+      );
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         return List<Map<String, dynamic>>.from(data['scans'] ?? []);
       }
       return [];
+    } on SocketException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Network error: Keine Internetverbindung');
+      }
+      return [];
+    } on TimeoutException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Timeout: $e');
+      }
+      return [];
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('❌ Error fetching chakra scans: $e');
+        debugPrint('❌ Error fetching chakra scans: $e $e');
       }
       return [];
     }
@@ -179,6 +256,11 @@ class GroupToolsService {
           'blockages': blockages,
           'recommendations': recommendations,
         }),
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw TimeoutException('Request Timeout (15s)');
+        },
       );
 
       if (response.statusCode == 201) {
@@ -186,9 +268,19 @@ class GroupToolsService {
         return data['scan_id'];
       }
       return null;
+    } on SocketException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Network error: Keine Internetverbindung');
+      }
+      return null;
+    } on TimeoutException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Timeout: $e');
+      }
+      return null;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('❌ Error creating chakra scan: $e');
+        debugPrint('❌ Error creating chakra scan: $e $e');
       }
       return null;
     }
@@ -206,16 +298,31 @@ class GroupToolsService {
         url += '&search=$search';
       }
 
-      final response = await http.get(Uri.parse(url));
+      final response = await http.get(Uri.parse(url)).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw TimeoutException('Request Timeout (15s)');
+        },
+      );
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         return List<Map<String, dynamic>>.from(data['crystals'] ?? []);
       }
       return [];
+    } on SocketException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Network error: Keine Internetverbindung');
+      }
+      return [];
+    } on TimeoutException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Timeout: $e');
+      }
+      return [];
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('❌ Error fetching crystals: $e');
+        debugPrint('❌ Error fetching crystals: $e $e');
       }
       return [];
     }
@@ -245,6 +352,11 @@ class GroupToolsService {
           'uses': uses,
           'image_url': imageUrl,
         }),
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw TimeoutException('Request Timeout (15s)');
+        },
       );
 
       if (response.statusCode == 201) {
@@ -252,9 +364,19 @@ class GroupToolsService {
         return data['crystal_id'];
       }
       return null;
+    } on SocketException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Network error: Keine Internetverbindung');
+      }
+      return null;
+    } on TimeoutException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Timeout: $e');
+      }
+      return null;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('❌ Error adding crystal: $e');
+        debugPrint('❌ Error adding crystal: $e $e');
       }
       return null;
     }
@@ -268,6 +390,11 @@ class GroupToolsService {
     try {
       final response = await http.get(
         Uri.parse('$_baseUrl/energie/frequency?room_id=$roomId&limit=$limit'),
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw TimeoutException('Request Timeout (15s)');
+        },
       );
 
       if (response.statusCode == 200) {
@@ -275,9 +402,19 @@ class GroupToolsService {
         return List<Map<String, dynamic>>.from(data['sessions'] ?? []);
       }
       return [];
+    } on SocketException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Network error: Keine Internetverbindung');
+      }
+      return [];
+    } on TimeoutException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Timeout: $e');
+      }
+      return [];
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('❌ Error fetching frequency sessions: $e');
+        debugPrint('❌ Error fetching frequency sessions: $e $e');
       }
       return [];
     }
@@ -301,6 +438,11 @@ class GroupToolsService {
           'duration_minutes': durationMinutes,
           'participants': participants,
         }),
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw TimeoutException('Request Timeout (15s)');
+        },
       );
 
       if (response.statusCode == 201) {
@@ -308,9 +450,19 @@ class GroupToolsService {
         return data['session_id'];
       }
       return null;
+    } on SocketException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Network error: Keine Internetverbindung');
+      }
+      return null;
+    } on TimeoutException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Timeout: $e');
+      }
+      return null;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('❌ Error creating frequency session: $e');
+        debugPrint('❌ Error creating frequency session: $e $e');
       }
       return null;
     }
@@ -324,6 +476,11 @@ class GroupToolsService {
     try {
       final response = await http.get(
         Uri.parse('$_baseUrl/energie/dreams?room_id=$roomId&limit=$limit'),
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw TimeoutException('Request Timeout (15s)');
+        },
       );
 
       if (response.statusCode == 200) {
@@ -331,9 +488,19 @@ class GroupToolsService {
         return List<Map<String, dynamic>>.from(data['dreams'] ?? []);
       }
       return [];
+    } on SocketException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Network error: Keine Internetverbindung');
+      }
+      return [];
+    } on TimeoutException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Timeout: $e');
+      }
+      return [];
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('❌ Error fetching dreams: $e');
+        debugPrint('❌ Error fetching dreams: $e $e');
       }
       return [];
     }
@@ -361,6 +528,11 @@ class GroupToolsService {
           'symbols': symbols,
           'lucid': lucid,
         }),
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw TimeoutException('Request Timeout (15s)');
+        },
       );
 
       if (response.statusCode == 201) {
@@ -368,9 +540,19 @@ class GroupToolsService {
         return data['dream_id'];
       }
       return null;
+    } on SocketException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Network error: Keine Internetverbindung');
+      }
+      return null;
+    } on TimeoutException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Timeout: $e');
+      }
+      return null;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('❌ Error creating dream: $e');
+        debugPrint('❌ Error creating dream: $e $e');
       }
       return null;
     }
@@ -395,14 +577,31 @@ class GroupToolsService {
     try {
       final response = await http.get(
         Uri.parse('$_baseUrl/materie/ufos?room_id=$roomId&limit=$limit'),
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw TimeoutException('Request Timeout (15s)');
+        },
       );
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         return List<Map<String, dynamic>>.from(data['sightings'] ?? []);
       }
       return [];
+    } on SocketException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Network error: Keine Internetverbindung');
+      }
+      return [];
+    } on TimeoutException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Timeout: $e');
+      }
+      return [];
     } catch (e) {
-      if (kDebugMode) debugPrint('❌ Error fetching UFO sightings: $e');
+      if (kDebugMode) {
+        debugPrint('❌ Error fetching UFO sightings: $e $e');
+      }
       return [];
     }
   }
@@ -429,14 +628,31 @@ class GroupToolsService {
           'object_type': objectType,
           'witnesses': witnesses,
         }),
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw TimeoutException('Request Timeout (15s)');
+        },
       );
       if (response.statusCode == 201) {
         final data = json.decode(response.body);
         return data['sighting_id'];
       }
       return null;
+    } on SocketException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Network error: Keine Internetverbindung');
+      }
+      return null;
+    } on TimeoutException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Timeout: $e');
+      }
+      return null;
     } catch (e) {
-      if (kDebugMode) debugPrint('❌ Error creating UFO sighting: $e');
+      if (kDebugMode) {
+        debugPrint('❌ Error creating UFO sighting: $e $e');
+      }
       return null;
     }
   }
@@ -449,14 +665,31 @@ class GroupToolsService {
     try {
       final response = await http.get(
         Uri.parse('$_baseUrl/materie/history?room_id=$roomId&limit=$limit'),
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw TimeoutException('Request Timeout (15s)');
+        },
       );
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         return List<Map<String, dynamic>>.from(data['events'] ?? []);
       }
       return [];
+    } on SocketException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Network error: Keine Internetverbindung');
+      }
+      return [];
+    } on TimeoutException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Timeout: $e');
+      }
+      return [];
     } catch (e) {
-      if (kDebugMode) debugPrint('❌ Error fetching history: $e');
+      if (kDebugMode) {
+        debugPrint('❌ Error fetching history: $e $e');
+      }
       return [];
     }
   }
@@ -485,14 +718,31 @@ class GroupToolsService {
           'civilization': civilization,
           'category': category,
         }),
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw TimeoutException('Request Timeout (15s)');
+        },
       );
       if (response.statusCode == 201) {
         final data = json.decode(response.body);
         return data['event_id'];
       }
       return null;
+    } on SocketException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Network error: Keine Internetverbindung');
+      }
+      return null;
+    } on TimeoutException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Timeout: $e');
+      }
+      return null;
     } catch (e) {
-      if (kDebugMode) debugPrint('❌ Error creating history event: $e');
+      if (kDebugMode) {
+        debugPrint('❌ Error creating history event: $e $e');
+      }
       return null;
     }
   }
@@ -505,14 +755,31 @@ class GroupToolsService {
     try {
       final response = await http.get(
         Uri.parse('$_baseUrl/materie/geopolitics?room_id=$roomId&limit=$limit'),
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw TimeoutException('Request Timeout (15s)');
+        },
       );
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         return List<Map<String, dynamic>>.from(data['events'] ?? []);
       }
       return [];
+    } on SocketException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Network error: Keine Internetverbindung');
+      }
+      return [];
+    } on TimeoutException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Timeout: $e');
+      }
+      return [];
     } catch (e) {
-      if (kDebugMode) debugPrint('❌ Error fetching geopolitics: $e');
+      if (kDebugMode) {
+        debugPrint('❌ Error fetching geopolitics: $e $e');
+      }
       return [];
     }
   }
@@ -537,14 +804,31 @@ class GroupToolsService {
           'event_description': description,
           'tags': tags,
         }),
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw TimeoutException('Request Timeout (15s)');
+        },
       );
       if (response.statusCode == 201) {
         final data = json.decode(response.body);
         return data['event_id'];
       }
       return null;
+    } on SocketException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Network error: Keine Internetverbindung');
+      }
+      return null;
+    } on TimeoutException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Timeout: $e');
+      }
+      return null;
     } catch (e) {
-      if (kDebugMode) debugPrint('❌ Error creating geopolitics event: $e');
+      if (kDebugMode) {
+        debugPrint('❌ Error creating geopolitics event: $e $e');
+      }
       return null;
     }
   }
@@ -552,14 +836,31 @@ class GroupToolsService {
   /// 🏛️ Geschichte-Zeitleiste - GET
   Future<List<Map<String, dynamic>>> getHistoryEvents({String roomId = 'geschichte', int limit = 50}) async {
     try {
-      final response = await http.get(Uri.parse('$_baseUrl/materie/history?room_id=$roomId&limit=$limit'));
+      final response = await http.get(Uri.parse('$_baseUrl/materie/history?room_id=$roomId&limit=$limit')).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw TimeoutException('Request Timeout (15s)');
+        },
+      );
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         return List<Map<String, dynamic>>.from(data['events'] ?? []);
       }
       return [];
+    } on SocketException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Network error: Keine Internetverbindung');
+      }
+      return [];
+    } on TimeoutException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Timeout: $e');
+      }
+      return [];
     } catch (e) {
-      if (kDebugMode) debugPrint('❌ Error loading history events: $e');
+      if (kDebugMode) {
+        debugPrint('❌ Error loading history events: $e $e');
+      }
       return [];
     }
   }
@@ -567,14 +868,31 @@ class GroupToolsService {
   /// 👁️ Verschwörungs-Netzwerk - GET
   Future<List<Map<String, dynamic>>> getConspiracyNetwork({String roomId = 'verschwoerungen', int limit = 50}) async {
     try {
-      final response = await http.get(Uri.parse('$_baseUrl/materie/network?room_id=$roomId&limit=$limit'));
+      final response = await http.get(Uri.parse('$_baseUrl/materie/network?room_id=$roomId&limit=$limit')).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw TimeoutException('Request Timeout (15s)');
+        },
+      );
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         return List<Map<String, dynamic>>.from(data['connections'] ?? []);
       }
       return [];
+    } on SocketException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Network error: Keine Internetverbindung');
+      }
+      return [];
+    } on TimeoutException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Timeout: $e');
+      }
+      return [];
     } catch (e) {
-      if (kDebugMode) debugPrint('❌ Error loading conspiracy network: $e');
+      if (kDebugMode) {
+        debugPrint('❌ Error loading conspiracy network: $e $e');
+      }
       return [];
     }
   }
@@ -597,14 +915,31 @@ class GroupToolsService {
           'connection_title': connectionTitle,
           'connection_description': connectionDescription,
         }),
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw TimeoutException('Request Timeout (15s)');
+        },
       );
       if (response.statusCode == 201) {
         final data = json.decode(response.body);
         return data['connection_id'];
       }
       return null;
+    } on SocketException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Network error: Keine Internetverbindung');
+      }
+      return null;
+    } on TimeoutException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Timeout: $e');
+      }
+      return null;
     } catch (e) {
-      if (kDebugMode) debugPrint('❌ Error creating conspiracy connection: $e');
+      if (kDebugMode) {
+        debugPrint('❌ Error creating conspiracy connection: $e $e');
+      }
       return null;
     }
   }
@@ -612,14 +947,31 @@ class GroupToolsService {
   /// 🔬 Forschungs-Archiv - GET
   Future<List<Map<String, dynamic>>> getResearchArchive({String roomId = 'technologie', int limit = 50}) async {
     try {
-      final response = await http.get(Uri.parse('$_baseUrl/materie/research?room_id=$roomId&limit=$limit'));
+      final response = await http.get(Uri.parse('$_baseUrl/materie/research?room_id=$roomId&limit=$limit')).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw TimeoutException('Request Timeout (15s)');
+        },
+      );
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         return List<Map<String, dynamic>>.from(data['documents'] ?? []);
       }
       return [];
+    } on SocketException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Network error: Keine Internetverbindung');
+      }
+      return [];
+    } on TimeoutException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Timeout: $e');
+      }
+      return [];
     } catch (e) {
-      if (kDebugMode) debugPrint('❌ Error loading research archive: $e');
+      if (kDebugMode) {
+        debugPrint('❌ Error loading research archive: $e $e');
+      }
       return [];
     }
   }
@@ -644,14 +996,31 @@ class GroupToolsService {
           'document_description': documentDescription,
           'document_type': documentType,
         }),
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw TimeoutException('Request Timeout (15s)');
+        },
       );
       if (response.statusCode == 201) {
         final data = json.decode(response.body);
         return data['document_id'];
       }
       return null;
+    } on SocketException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Network error: Keine Internetverbindung');
+      }
+      return null;
+    } on TimeoutException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Timeout: $e');
+      }
+      return null;
     } catch (e) {
-      if (kDebugMode) debugPrint('❌ Error creating research document: $e');
+      if (kDebugMode) {
+        debugPrint('❌ Error creating research document: $e $e');
+      }
       return null;
     }
   }
@@ -659,14 +1028,31 @@ class GroupToolsService {
   /// 💚 Alternative Heilmethoden
   Future<List<Map<String, dynamic>>> getHealingMethods({String roomId = 'gesundheit', int limit = 50}) async {
     try {
-      final response = await http.get(Uri.parse('$_baseUrl/materie/healing?room_id=$roomId&limit=$limit'));
+      final response = await http.get(Uri.parse('$_baseUrl/materie/healing?room_id=$roomId&limit=$limit')).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw TimeoutException('Request Timeout (15s)');
+        },
+      );
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         return List<Map<String, dynamic>>.from(data['methods'] ?? []);
       }
       return [];
+    } on SocketException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Network error: Keine Internetverbindung');
+      }
+      return [];
+    } on TimeoutException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Timeout: $e');
+      }
+      return [];
     } catch (e) {
-      if (kDebugMode) debugPrint('❌ Error loading healing methods: $e');
+      if (kDebugMode) {
+        debugPrint('❌ Error loading healing methods: $e $e');
+      }
       return [];
     }
   }
@@ -691,14 +1077,31 @@ class GroupToolsService {
           'method_description': methodDescription,
           'category': category,
         }),
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw TimeoutException('Request Timeout (15s)');
+        },
       );
       if (response.statusCode == 201) {
         final data = json.decode(response.body);
         return data['method_id'];
       }
       return null;
+    } on SocketException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Network error: Keine Internetverbindung');
+      }
+      return null;
+    } on TimeoutException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Timeout: $e');
+      }
+      return null;
     } catch (e) {
-      if (kDebugMode) debugPrint('❌ Error creating healing method: $e');
+      if (kDebugMode) {
+        debugPrint('❌ Error creating healing method: $e $e');
+      }
       return null;
     }
   }

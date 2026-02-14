@@ -13,6 +13,9 @@ library;
 
 import 'package:flutter/foundation.dart';
 import 'dart:async';
+import 'dart:convert'; // 🆕 JSON decoding
+import 'package:http/http.dart' as http; // 🆕 HTTP requests
+import '../config/api_config.dart'; // 🆕 API Configuration
 import '../core/logging/app_logger.dart';
 import '../core/exceptions/specialized_exceptions.dart';
 import '../core/exceptions/exception_guard.dart';
@@ -541,33 +544,43 @@ class RechercheController extends ChangeNotifier {
           context: {'query': query, 'mode': mode.name},
         );
 
-        // Simulate API call to backend
-        await Future.delayed(const Duration(milliseconds: 1000));
+        // 🔥 REAL BACKEND API CALL (NO MOCK DATA)
+        final response = await http.get(
+          Uri.parse('${ApiConfig.getUrl(ApiConfig.recherche)}?q=$query&limit=${_getSourceCountForMode(mode)}&sources=${mode == RechercheMode.conspiracy ? "alternative" : "all"}'),
+          headers: ApiConfig.headers,
+        ).timeout(const Duration(seconds: 45));
 
-        // Generate mock sources based on mode
-        final sourceCount = _getSourceCountForMode(mode);
-        final sources = <RechercheSource>[];
-
-        for (int i = 0; i < sourceCount; i++) {
-          sources.add(RechercheSource(
-            title: 'Source ${i + 1}: $query',
-            url: 'https://example.com/source/${i + 1}',
-            excerpt: 'This is an excerpt from source ${i + 1} about $query...',
-            relevance: 0.9 - (i * 0.1),
-            sourceType: _getSourceType(i),
-            publishDate: DateTime.now().subtract(Duration(days: i * 30)),
-          ));
+        if (response.statusCode != 200) {
+          throw BackendException(
+            'Backend returned status ${response.statusCode}',
+            statusCode: response.statusCode,
+          );
         }
 
-        AppLogger.info('✅ Sources gathered',
-          context: {'count': sources.length},
+        final data = json.decode(response.body);
+        if (data['success'] != true) {
+          throw BackendException('Backend returned error: ${data['message']}');
+        }
+
+        final results = data['results'] as List<dynamic>;
+        final sources = results.map((item) => RechercheSource(
+          title: item['title'] as String? ?? 'Untitled Source',
+          url: item['url'] as String,
+          excerpt: item['snippet'] as String? ?? '',
+          relevance: (item['relevance'] as num?)?.toDouble() ?? 0.5,
+          sourceType: item['category'] as String? ?? 'unknown',
+          publishDate: DateTime.now(), // Backend doesn't provide dates yet
+        )).toList();
+
+        AppLogger.info('✅ Sources gathered from REAL API',
+          context: {'count': sources.length, 'query': query},
         );
 
         return sources;
       },
       operationName: 'RechercheController.gatherSources',
-      url: 'https://api.example.com/recherche/sources',
-      method: 'POST',
+      url: 'https://weltenbibliothek-api-v3.brandy13062.workers.dev/api/recherche',
+      method: 'GET',
       context: {'query': query, 'mode': mode.name},
     );
   }
@@ -586,12 +599,20 @@ class RechercheController extends ChangeNotifier {
       },
     );
 
-    await Future.delayed(const Duration(milliseconds: 1200));
+    // 🔥 REAL ANALYSIS BASED ON ACTUAL SOURCES (NO MOCK DATA)
+    final keyFindings = sources.take(5).map((s) => 
+      '${s.sourceType.toUpperCase()}: ${s.title} (Relevanz: ${(s.relevance * 100).round()}%)'
+    ).toList();
 
+    // Calculate confidence based on source quality
+    final avgRelevance = sources.isEmpty ? 0.0 : 
+      sources.map((s) => s.relevance).reduce((a, b) => a + b) / sources.length;
+    
     return {
-      'key_findings': _generateKeyFindings(query, mode),
-      'confidence': 0.85,
-      'processing_time_ms': 1200,
+      'key_findings': keyFindings,
+      'confidence': avgRelevance,
+      'processing_time_ms': 0, // Instant analysis
+      'source_types': sources.map((s) => s.sourceType).toSet().toList(),
     };
   }
 
@@ -605,13 +626,16 @@ class RechercheController extends ChangeNotifier {
       context: {'query': query, 'mode': mode.name},
     );
 
-    await Future.delayed(const Duration(milliseconds: 800));
+    // 🔥 REAL SUMMARY BASED ON ACTUAL ANALYSIS (NO MOCK DATA)
+    final findings = analysis['key_findings'] as List<dynamic>;
+    final confidence = (analysis['confidence'] as num? ?? 0.85).toDouble();
+    final sourceTypes = (analysis['source_types'] as List<dynamic>? ?? []).join(', ');
 
-    return 'Zusammenfassung der Recherche zu "$query" im Modus ${mode.displayName}:\n\n'
-        'Nach eingehender Analyse von ${analysis['key_findings'].length} Hauptquellen '
-        'ergeben sich folgende zentrale Erkenntnisse. Die Recherche wurde mit einer '
-        'Konfidenz von ${(analysis['confidence'] * 100).round()}% durchgeführt und '
-        'basiert auf umfangreichen Datenquellen aus verschiedenen Bereichen.';
+    return 'Recherche-Ergebnis zu "$query" (Modus: ${mode.displayName}):\n\n'
+        '🔍 Gefundene Quellen: ${findings.length}\n'
+        '📊 Konfidenz-Level: ${(confidence * 100).round()}%\n'
+        '📚 Quellentypen: $sourceTypes\n\n'
+        'Wichtigste Erkenntnisse:\n${findings.take(3).map((f) => '• $f').join('\n')}';
   }
 
   /// Get source count based on mode
@@ -629,60 +653,6 @@ class RechercheController extends ChangeNotifier {
         return 7;
       case RechercheMode.scientific:
         return 9;
-    }
-  }
-
-  /// Get source type based on index
-  String _getSourceType(int index) {
-    const types = ['book', 'article', 'document', 'website'];
-    return types[index % types.length];
-  }
-
-  /// Generate key findings based on mode
-  List<String> _generateKeyFindings(String query, RechercheMode mode) {
-    switch (mode) {
-      case RechercheMode.simple:
-        return [
-          'Grundlegende Information zu "$query" gefunden',
-          'Mehrere Quellen bestätigen die Hauptthese',
-          'Weitere Recherche empfohlen für Details',
-        ];
-      case RechercheMode.advanced:
-        return [
-          'Detaillierte Analyse von "$query" durchgeführt',
-          'Kreuzreferenzierung mehrerer Quellen bestätigt Fakten',
-          'Historischer Kontext identifiziert',
-          'Verschiedene Perspektiven berücksichtigt',
-        ];
-      case RechercheMode.deep:
-        return [
-          'Umfassende Tiefenanalyse zu "$query"',
-          'Verborgene Zusammenhänge aufgedeckt',
-          'Primärquellen identifiziert und verifiziert',
-          'Methodische Analyse durchgeführt',
-          'Kritische Quellenprüfung abgeschlossen',
-        ];
-      case RechercheMode.conspiracy:
-        return [
-          'Verschwörungstheorien zu "$query" untersucht',
-          'Beweise und Gegenbeweise analysiert',
-          'Ursprünge der Theorien zurückverfolgt',
-          'Faktenchecks durchgeführt',
-        ];
-      case RechercheMode.historical:
-        return [
-          'Historische Dokumente zu "$query" gefunden',
-          'Zeitliche Einordnung vorgenommen',
-          'Historischer Kontext rekonstruiert',
-          'Primärquellen aus verschiedenen Epochen',
-        ];
-      case RechercheMode.scientific:
-        return [
-          'Wissenschaftliche Studien zu "$query" analysiert',
-          'Peer-Review-Quellen identifiziert',
-          'Methodische Validität geprüft',
-          'Aktuelle Forschungsstand erfasst',
-        ];
     }
   }
 

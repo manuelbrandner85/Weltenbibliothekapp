@@ -4,7 +4,7 @@ library;
 
 import 'package:flutter/material.dart';
 import '../models/chat_models.dart';
-import '../services/simple_voice_controller.dart';
+import '../../services/webrtc_voice_service.dart'; // ✅ UNIFIED WebRTC Service
 
 class VoiceParticipantsPanel extends StatefulWidget {
   final SimpleVoiceController voiceController;

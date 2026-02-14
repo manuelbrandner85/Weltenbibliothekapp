@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'dart:async';  // ✅ TimeoutException
+import 'dart:io';  // ✅ SocketException
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
@@ -176,9 +178,19 @@ class ImageUploadService {
         }
         return false;
       }
+    } on SocketException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Network: Keine Internetverbindung');
+      }
+      return false;
+    } on TimeoutException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Timeout: $e');
+      }
+      return false;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('❌ Delete error: $e');
+        debugPrint('❌ Delete error: $e $e');
       }
       return false;
     }

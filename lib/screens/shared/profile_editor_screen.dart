@@ -6,13 +6,13 @@ import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart'; // 🆕 RIVERPOD
-import '../../core/storage/unified_storage_service.dart';
 import '../../services/image_upload_service.dart';
 import '../../services/profile_sync_service.dart'; // 🆕 Cloud-Sync
 import '../../services/user_auth_service.dart'; // ✅ User Auth Service
 import '../../models/materie_profile.dart';
 import '../../models/energie_profile.dart';
 import '../../features/admin/state/admin_state.dart'; // 🆕 Admin State Provider
+import '../../core/persistence/auto_save_manager.dart'; // 🔄 Auto-Save System
 
 /// Vollständiger Profil-Editor für Materie & Energie Welten
 /// Alle Felder bearbeitbar + neue Features (Avatar, Bio)
@@ -59,7 +59,6 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
   
   bool _isLoading = true;
   bool _isSaving = false;
-  bool _isUploadingImage = false;
   
   // Emoji-Auswahl
   final List<String> _emojiOptions = [
@@ -72,10 +71,72 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
   void initState() {
     super.initState();
     _loadProfile();
+    _setupAutoSave(); // 🔄 Auto-Save Setup
+  }
+  
+  // 🔄 AUTO-SAVE SETUP
+  void _setupAutoSave() {
+    // Text-Felder mit Auto-Save verbinden (500ms Debounce)
+    _usernameController.addListener(() {
+      AutoSaveManager().scheduleSave(
+        key: 'profile_${widget.world}_username_draft',
+        data: {'username': _usernameController.text},
+        boxName: 'profile_drafts',
+        priority: SavePriority.medium,
+      );
+    });
+    
+    _bioController.addListener(() {
+      AutoSaveManager().scheduleSave(
+        key: 'profile_${widget.world}_bio_draft',
+        data: {'bio': _bioController.text},
+        boxName: 'profile_drafts',
+        priority: SavePriority.low,
+      );
+    });
+    
+    if (widget.world == 'materie') {
+      _nameController.addListener(() {
+        AutoSaveManager().scheduleSave(
+          key: 'profile_materie_name_draft',
+          data: {'name': _nameController.text},
+          boxName: 'profile_drafts',
+          priority: SavePriority.low,
+        );
+      });
+    } else {
+      _firstNameController.addListener(() {
+        AutoSaveManager().scheduleSave(
+          key: 'profile_energie_firstname_draft',
+          data: {'firstName': _firstNameController.text},
+          boxName: 'profile_drafts',
+          priority: SavePriority.low,
+        );
+      });
+      _lastNameController.addListener(() {
+        AutoSaveManager().scheduleSave(
+          key: 'profile_energie_lastname_draft',
+          data: {'lastName': _lastNameController.text},
+          boxName: 'profile_drafts',
+          priority: SavePriority.low,
+        );
+      });
+      _birthPlaceController.addListener(() {
+        AutoSaveManager().scheduleSave(
+          key: 'profile_energie_birthplace_draft',
+          data: {'birthPlace': _birthPlaceController.text},
+          boxName: 'profile_drafts',
+          priority: SavePriority.low,
+        );
+      });
+    }
   }
 
   @override
   void dispose() {
+    // 🔄 AUTO-SAVE: Flush pending saves before dispose
+    AutoSaveManager().flushAll();
+    
     _usernameController.dispose();
     _passwordController.dispose();  // ✅ NEU
     _nameController.dispose();
@@ -125,8 +186,6 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
   }
   
   Future<void> _uploadImageToCloudflare(XFile imageFile) async {
-    setState(() => _isUploadingImage = true);
-    
     try {
       final uploadService = ImageUploadService();
       
@@ -169,8 +228,6 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
         );
       }
       // Behalte lokalen Pfad als Fallback
-    } finally {
-      setState(() => _isUploadingImage = false);
     }
   }
   
@@ -476,8 +533,12 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
         // 🆕 RIVERPOD: Admin-State aktualisieren nach Profil-Speicherung
         ref.read(adminStateProvider(widget.world).notifier).refresh();
         
+        // 🔄 AUTO-SAVE: Clear drafts after successful save
+        AutoSaveManager().clearSavesForPrefix('profile_${widget.world}_');
+        
         if (kDebugMode) {
           debugPrint('🔄 Admin-State für "${widget.world}" wurde refreshed');
+          debugPrint('🗑️ Auto-Save drafts cleared for ${widget.world}');
         }
         
         Navigator.pop(context, true);

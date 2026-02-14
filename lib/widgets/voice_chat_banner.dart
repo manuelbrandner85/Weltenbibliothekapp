@@ -4,8 +4,8 @@ library;
 
 import 'package:flutter/material.dart';
 import '../services/pinned_rooms_service.dart'; // 📌 Pinned Rooms
-import '../screens/shared/telegram_voice_screen.dart';
-import '../services/simple_voice_controller.dart'; // ✅ CRITICAL FIX
+import '../screens/shared/modern_voice_chat_screen.dart'; // ✅ UNIFIED Voice Chat Screen
+import '../services/webrtc_voice_service.dart'; // ✅ UNIFIED WebRTC Service
 import 'dart:math' as math;
 
 class VoiceChatBanner extends StatefulWidget {
@@ -87,49 +87,20 @@ class _VoiceChatBannerState extends State<VoiceChatBanner> with SingleTickerProv
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () async {
-        // 🎯 CRITICAL FIX: Join voice room BEFORE opening screen!
-        
-        final voiceController = SimpleVoiceController();
+        // 🎯 Open ModernVoiceChatScreen directly (WebRTC handles join internally)
         
         try {
-          // STEP 1: Init microphone
-          if (voiceController.localStream == null) {
-            final micSuccess = await voiceController.initMicrophone();
-            if (!micSuccess) {
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('❌ Mikrofon-Zugriff verweigert'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-              }
-              return;
-            }
-          }
-          
-          // STEP 2: Join room
-          final success = await voiceController.joinVoiceRoom(
-            widget.roomId,
-            widget.roomName,
-            widget.userId,
-            widget.username,
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => ModernVoiceChatScreen(
+                roomId: widget.roomId,
+                roomName: widget.roomName,
+                userId: widget.userId,
+                username: widget.username,
+                accentColor: widget.color,
+              ),
+            ),
           );
-          
-          if (success && context.mounted) {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => const TelegramVoiceScreen(),
-              ),
-            );
-          } else if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Fehler beim Beitritt zum Voice-Chat'),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
         } catch (e) {
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(

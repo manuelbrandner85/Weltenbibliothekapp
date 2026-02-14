@@ -219,6 +219,11 @@ class DynamicContentService {
       final response = await http.get(
         Uri.parse('$_baseUrl/api/content/screens'),
         headers: await _getHeaders(),
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw TimeoutException('Request Timeout (15s)');
+        },
       );
       
       if (response.statusCode == 200) {
@@ -244,6 +249,11 @@ class DynamicContentService {
       final response = await http.get(
         Uri.parse('$_baseUrl/api/content/tabs'),
         headers: await _getHeaders(),
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw TimeoutException('Request Timeout (15s)');
+        },
       );
       
       if (response.statusCode == 200) {
@@ -269,6 +279,11 @@ class DynamicContentService {
       final response = await http.get(
         Uri.parse('$_baseUrl/api/content/tools'),
         headers: await _getHeaders(),
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw TimeoutException('Request Timeout (15s)');
+        },
       );
       
       if (response.statusCode == 200) {
@@ -294,6 +309,11 @@ class DynamicContentService {
       final response = await http.get(
         Uri.parse('$_baseUrl/api/content/markers'),
         headers: await _getHeaders(),
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw TimeoutException('Request Timeout (15s)');
+        },
       );
       
       if (response.statusCode == 200) {
@@ -319,6 +339,11 @@ class DynamicContentService {
       final response = await http.get(
         Uri.parse('$_baseUrl/api/content/styles'),
         headers: await _getHeaders(),
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw TimeoutException('Request Timeout (15s)');
+        },
       );
       
       if (response.statusCode == 200) {
@@ -344,6 +369,11 @@ class DynamicContentService {
       final response = await http.get(
         Uri.parse('$_baseUrl/api/content/feature-flags'),
         headers: await _getHeaders(),
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw TimeoutException('Request Timeout (15s)');
+        },
       );
       
       if (response.statusCode == 200) {
@@ -476,6 +506,11 @@ class DynamicContentService {
           'changes': _sandboxChanges,
           'publish_immediately': true,
         }),
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw TimeoutException('Request Timeout (15s)');
+        },
       );
       
       if (response.statusCode == 200) {
@@ -494,9 +529,19 @@ class DynamicContentService {
       }
       
       return false;
+    } on SocketException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Network: Keine Internetverbindung');
+      }
+      return false;
+    } on TimeoutException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Timeout: $e');
+      }
+      return false;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('❌ [DynamicContent] Publish error: $e');
+        debugPrint('❌ [DynamicContent] Publish error: $e $e');
       }
       return false;
     }
@@ -527,6 +572,11 @@ class DynamicContentService {
           'screen': screen.toJson(),
           'version': version.toJson(),
         }),
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw TimeoutException('Request Timeout (15s)');
+        },
       );
       
       if (response.statusCode == 200) {
@@ -536,9 +586,19 @@ class DynamicContentService {
       }
       
       return false;
+    } on SocketException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Network: Keine Internetverbindung');
+      }
+      return false;
+    } on TimeoutException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Timeout: $e');
+      }
+      return false;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('❌ [DynamicContent] Update screen error: $e');
+        debugPrint('❌ [DynamicContent] Update screen error: $e $e');
       }
       return false;
     }
@@ -565,6 +625,11 @@ class DynamicContentService {
           'tab': tab.toJson(),
           'version': version.toJson(),
         }),
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw TimeoutException('Request Timeout (15s)');
+        },
       );
       
       if (response.statusCode == 200) {
@@ -574,9 +639,19 @@ class DynamicContentService {
       }
       
       return false;
+    } on SocketException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Network: Keine Internetverbindung');
+      }
+      return false;
+    } on TimeoutException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Timeout: $e');
+      }
+      return false;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('❌ [DynamicContent] Update tab error: $e');
+        debugPrint('❌ [DynamicContent] Update tab error: $e $e');
       }
       return false;
     }
@@ -603,6 +678,11 @@ class DynamicContentService {
           'tool': tool.toJson(),
           'version': version.toJson(),
         }),
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw TimeoutException('Request Timeout (15s)');
+        },
       );
       
       if (response.statusCode == 200) {
@@ -612,9 +692,19 @@ class DynamicContentService {
       }
       
       return false;
+    } on SocketException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Network: Keine Internetverbindung');
+      }
+      return false;
+    } on TimeoutException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Timeout: $e');
+      }
+      return false;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('❌ [DynamicContent] Update tool error: $e');
+        debugPrint('❌ [DynamicContent] Update tool error: $e $e');
       }
       return false;
     }
@@ -641,6 +731,11 @@ class DynamicContentService {
           'marker': marker.toJson(),
           'version': version.toJson(),
         }),
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw TimeoutException('Request Timeout (15s)');
+        },
       );
       
       if (response.statusCode == 200) {
@@ -650,9 +745,19 @@ class DynamicContentService {
       }
       
       return false;
+    } on SocketException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Network: Keine Internetverbindung');
+      }
+      return false;
+    } on TimeoutException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Timeout: $e');
+      }
+      return false;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('❌ [DynamicContent] Update marker error: $e');
+        debugPrint('❌ [DynamicContent] Update marker error: $e $e');
       }
       return false;
     }
@@ -679,6 +784,11 @@ class DynamicContentService {
           'style': style.toJson(),
           'version': version.toJson(),
         }),
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw TimeoutException('Request Timeout (15s)');
+        },
       );
       
       if (response.statusCode == 200) {
@@ -688,9 +798,19 @@ class DynamicContentService {
       }
       
       return false;
+    } on SocketException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Network: Keine Internetverbindung');
+      }
+      return false;
+    } on TimeoutException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Timeout: $e');
+      }
+      return false;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('❌ [DynamicContent] Update style error: $e');
+        debugPrint('❌ [DynamicContent] Update style error: $e $e');
       }
       return false;
     }
@@ -761,9 +881,19 @@ class DynamicContentService {
         default:
           return false;
       }
+    } on SocketException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Network: Keine Internetverbindung');
+      }
+      return false;
+    } on TimeoutException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Timeout: $e');
+      }
+      return false;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('❌ [DynamicContent] Revert error: $e');
+        debugPrint('❌ [DynamicContent] Revert error: $e $e');
       }
       return false;
     }

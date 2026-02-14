@@ -1,6 +1,6 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
+import '../core/network/http_helper.dart';
 
 /// User Management Service für Admin User Management
 /// 
@@ -56,24 +56,24 @@ class UserManagementService {
         debugPrint('📡 [UserManagement] Auth Header: Bearer $adminToken');
       }
       
-      final response = await http.get(
-        uri,
+      return await HttpHelper.get<Map<String, dynamic>>(
+        uri: uri,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $adminToken',
         },
+        parseResponse: (body) {
+          final data = jsonDecode(body) as Map<String, dynamic>;
+          if (data['success'] == true) {
+            if (kDebugMode) {
+              debugPrint('✅ Users loaded: ${data['users']?.length ?? 0}/${data['total']}');
+            }
+            return data;
+          } else {
+            throw Exception(data['error'] ?? 'Failed to load users');
+          }
+        },
       );
-      
-      final data = jsonDecode(response.body) as Map<String, dynamic>;
-      
-      if (response.statusCode == 200 && data['success'] == true) {
-        if (kDebugMode) {
-          debugPrint('✅ Users loaded: ${data['users']?.length ?? 0}/${data['total']}');
-        }
-        return data;
-      } else {
-        throw Exception(data['error'] ?? 'Failed to load users');
-      }
     } catch (e) {
       if (kDebugMode) {
         debugPrint('❌ Get users error: $e');
@@ -98,24 +98,24 @@ class UserManagementService {
         queryParameters: {'limit': limit.toString()},
       );
       
-      final response = await http.get(
-        uri,
+      return await HttpHelper.get<Map<String, dynamic>>(
+        uri: uri,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $adminToken',
         },
+        parseResponse: (body) {
+          final data = jsonDecode(body) as Map<String, dynamic>;
+          if (data['success'] == true) {
+            if (kDebugMode) {
+              debugPrint('✅ User activity loaded: ${data['count']} entries');
+            }
+            return data;
+          } else {
+            throw Exception(data['error'] ?? 'Failed to load user activity');
+          }
+        },
       );
-      
-      final data = jsonDecode(response.body) as Map<String, dynamic>;
-      
-      if (response.statusCode == 200 && data['success'] == true) {
-        if (kDebugMode) {
-          debugPrint('✅ User activity loaded: ${data['count']} entries');
-        }
-        return data;
-      } else {
-        throw Exception(data['error'] ?? 'Failed to load user activity');
-      }
     } catch (e) {
       if (kDebugMode) {
         debugPrint('❌ Get user activity error: $e');
@@ -136,24 +136,24 @@ class UserManagementService {
     try {
       final uri = Uri.parse('$_baseUrl/api/admin/user/$world/$userId/stats');
       
-      final response = await http.get(
-        uri,
+      return await HttpHelper.get<Map<String, dynamic>>(
+        uri: uri,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $adminToken',
         },
+        parseResponse: (body) {
+          final data = jsonDecode(body) as Map<String, dynamic>;
+          if (data['success'] == true) {
+            if (kDebugMode) {
+              debugPrint('✅ User stats loaded for $userId');
+            }
+            return data;
+          } else {
+            throw Exception(data['error'] ?? 'Failed to load user stats');
+          }
+        },
       );
-      
-      final data = jsonDecode(response.body) as Map<String, dynamic>;
-      
-      if (response.statusCode == 200 && data['success'] == true) {
-        if (kDebugMode) {
-          debugPrint('✅ User stats loaded for $userId');
-        }
-        return data;
-      } else {
-        throw Exception(data['error'] ?? 'Failed to load user stats');
-      }
     } catch (e) {
       if (kDebugMode) {
         debugPrint('❌ Get user stats error: $e');
@@ -180,29 +180,29 @@ class UserManagementService {
     try {
       final uri = Uri.parse('$_baseUrl/api/admin/user/$world/$userId/suspend');
       
-      final response = await http.post(
-        uri,
+      return await HttpHelper.post<Map<String, dynamic>>(
+        uri: uri,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $adminToken',
         },
-        body: jsonEncode({
+        body: {
           'suspension_type': suspensionType,
           'reason': reason,
           if (expiresAt != null) 'expires_at': expiresAt,
-        }),
+        },
+        parseResponse: (body) {
+          final data = jsonDecode(body) as Map<String, dynamic>;
+          if (data['success'] == true) {
+            if (kDebugMode) {
+              debugPrint('✅ User suspended: $userId ($suspensionType)');
+            }
+            return data;
+          } else {
+            throw Exception(data['error'] ?? 'Failed to suspend user');
+          }
+        },
       );
-      
-      final data = jsonDecode(response.body) as Map<String, dynamic>;
-      
-      if (response.statusCode == 200 && data['success'] == true) {
-        if (kDebugMode) {
-          debugPrint('✅ User suspended: $userId ($suspensionType)');
-        }
-        return data;
-      } else {
-        throw Exception(data['error'] ?? 'Failed to suspend user');
-      }
     } catch (e) {
       if (kDebugMode) {
         debugPrint('❌ Suspend user error: $e');
@@ -223,25 +223,25 @@ class UserManagementService {
     try {
       final uri = Uri.parse('$_baseUrl/api/admin/user/$world/$userId/unsuspend');
       
-      final response = await http.post(
-        uri,
+      return await HttpHelper.post<Map<String, dynamic>>(
+        uri: uri,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $adminToken',
         },
-        body: jsonEncode({}),
+        body: {},
+        parseResponse: (body) {
+          final data = jsonDecode(body) as Map<String, dynamic>;
+          if (data['success'] == true) {
+            if (kDebugMode) {
+              debugPrint('✅ User unsuspended: $userId');
+            }
+            return data;
+          } else {
+            throw Exception(data['error'] ?? 'Failed to unsuspend user');
+          }
+        },
       );
-      
-      final data = jsonDecode(response.body) as Map<String, dynamic>;
-      
-      if (response.statusCode == 200 && data['success'] == true) {
-        if (kDebugMode) {
-          debugPrint('✅ User unsuspended: $userId');
-        }
-        return data;
-      } else {
-        throw Exception(data['error'] ?? 'Failed to unsuspend user');
-      }
     } catch (e) {
       if (kDebugMode) {
         debugPrint('❌ Unsuspend user error: $e');
@@ -266,28 +266,28 @@ class UserManagementService {
     try {
       final uri = Uri.parse('$_baseUrl/api/admin/user/$world/$userId/note');
       
-      final response = await http.post(
-        uri,
+      return await HttpHelper.post<Map<String, dynamic>>(
+        uri: uri,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $adminToken',
         },
-        body: jsonEncode({
+        body: {
           'note': note,
           'note_type': noteType,
-        }),
+        },
+        parseResponse: (body) {
+          final data = jsonDecode(body) as Map<String, dynamic>;
+          if (data['success'] == true) {
+            if (kDebugMode) {
+              debugPrint('✅ User note added for $userId');
+            }
+            return data;
+          } else {
+            throw Exception(data['error'] ?? 'Failed to add user note');
+          }
+        },
       );
-      
-      final data = jsonDecode(response.body) as Map<String, dynamic>;
-      
-      if (response.statusCode == 200 && data['success'] == true) {
-        if (kDebugMode) {
-          debugPrint('✅ User note added for $userId');
-        }
-        return data;
-      } else {
-        throw Exception(data['error'] ?? 'Failed to add user note');
-      }
     } catch (e) {
       if (kDebugMode) {
         debugPrint('❌ Add user note error: $e');
@@ -308,27 +308,198 @@ class UserManagementService {
     try {
       final uri = Uri.parse('$_baseUrl/api/admin/user/$world/$userId/notes');
       
-      final response = await http.get(
-        uri,
+      return await HttpHelper.get<Map<String, dynamic>>(
+        uri: uri,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $adminToken',
         },
+        parseResponse: (body) {
+          final data = jsonDecode(body) as Map<String, dynamic>;
+          if (data['success'] == true) {
+            if (kDebugMode) {
+              debugPrint('✅ User notes loaded: ${data['count']} notes');
+            }
+            return data;
+          } else {
+            throw Exception(data['error'] ?? 'Failed to load user notes');
+          }
+        },
       );
-      
-      final data = jsonDecode(response.body) as Map<String, dynamic>;
-      
-      if (response.statusCode == 200 && data['success'] == true) {
-        if (kDebugMode) {
-          debugPrint('✅ User notes loaded: ${data['count']} notes');
-        }
-        return data;
-      } else {
-        throw Exception(data['error'] ?? 'Failed to load user notes');
-      }
     } catch (e) {
       if (kDebugMode) {
         debugPrint('❌ Get user notes error: $e');
+      }
+      rethrow;
+    }
+  }
+  
+  /// Delete user (ROOT ADMIN ONLY)
+  /// @param world - 'materie' or 'energie'
+  /// @param userId - User ID to delete
+  /// @param adminToken - Admin authentication token
+  /// @param reason - Deletion reason (required)
+  Future<Map<String, dynamic>> deleteUser({
+    required String world,
+    required String userId,
+    required String adminToken,
+    required String reason,
+  }) async {
+    try {
+      final uri = Uri.parse('$_baseUrl/api/admin/user/$world/$userId/delete');
+      
+      return await HttpHelper.post<Map<String, dynamic>>(
+        uri: uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $adminToken',
+        },
+        body: {
+          'reason': reason,
+        },
+        parseResponse: (body) {
+          final data = jsonDecode(body) as Map<String, dynamic>;
+          if (data['success'] == true) {
+            if (kDebugMode) {
+              debugPrint('✅ User deleted: $userId');
+            }
+            return data;
+          } else {
+            throw Exception(data['error'] ?? 'Failed to delete user');
+          }
+        },
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Delete user error: $e');
+      }
+      rethrow;
+    }
+  }
+  
+  /// Ban user permanently (ROOT ADMIN ONLY)
+  /// @param world - 'materie' or 'energie'
+  /// @param userId - User ID to ban
+  /// @param adminToken - Admin authentication token
+  /// @param reason - Ban reason
+  Future<Map<String, dynamic>> banUser({
+    required String world,
+    required String userId,
+    required String adminToken,
+    required String reason,
+  }) async {
+    try {
+      final uri = Uri.parse('$_baseUrl/api/admin/user/$world/$userId/ban');
+      
+      return await HttpHelper.post<Map<String, dynamic>>(
+        uri: uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $adminToken',
+        },
+        body: {
+          'reason': reason,
+        },
+        parseResponse: (body) {
+          final data = jsonDecode(body) as Map<String, dynamic>;
+          if (data['success'] == true) {
+            if (kDebugMode) {
+              debugPrint('✅ User banned: $userId');
+            }
+            return data;
+          } else {
+            throw Exception(data['error'] ?? 'Failed to ban user');
+          }
+        },
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Ban user error: $e');
+      }
+      rethrow;
+    }
+  }
+  
+  /// Mute user (prevent sending messages)
+  /// @param world - 'materie' or 'energie'
+  /// @param userId - User ID to mute
+  /// @param adminToken - Admin authentication token
+  /// @param duration - Mute duration in hours (null = permanent)
+  /// @param reason - Mute reason
+  Future<Map<String, dynamic>> muteUser({
+    required String world,
+    required String userId,
+    required String adminToken,
+    int? duration,
+    required String reason,
+  }) async {
+    try {
+      final uri = Uri.parse('$_baseUrl/api/admin/user/$world/$userId/mute');
+      
+      return await HttpHelper.post<Map<String, dynamic>>(
+        uri: uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $adminToken',
+        },
+        body: {
+          if (duration != null) 'duration_hours': duration,
+          'reason': reason,
+        },
+        parseResponse: (body) {
+          final data = jsonDecode(body) as Map<String, dynamic>;
+          if (data['success'] == true) {
+            if (kDebugMode) {
+              debugPrint('✅ User muted: $userId');
+            }
+            return data;
+          } else {
+            throw Exception(data['error'] ?? 'Failed to mute user');
+          }
+        },
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Mute user error: $e');
+      }
+      rethrow;
+    }
+  }
+  
+  /// Unmute user
+  /// @param world - 'materie' or 'energie'
+  /// @param userId - User ID to unmute
+  /// @param adminToken - Admin authentication token
+  Future<Map<String, dynamic>> unmuteUser({
+    required String world,
+    required String userId,
+    required String adminToken,
+  }) async {
+    try {
+      final uri = Uri.parse('$_baseUrl/api/admin/user/$world/$userId/unmute');
+      
+      return await HttpHelper.post<Map<String, dynamic>>(
+        uri: uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $adminToken',
+        },
+        body: {},
+        parseResponse: (body) {
+          final data = jsonDecode(body) as Map<String, dynamic>;
+          if (data['success'] == true) {
+            if (kDebugMode) {
+              debugPrint('✅ User unmuted: $userId');
+            }
+            return data;
+          } else {
+            throw Exception(data['error'] ?? 'Failed to unmute user');
+          }
+        },
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Unmute user error: $e');
       }
       rethrow;
     }

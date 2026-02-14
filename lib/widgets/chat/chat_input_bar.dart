@@ -12,6 +12,7 @@ library;
 
 import 'package:flutter/material.dart';
 import '../../models/chat_models.dart';
+import '../voice_message_recorder.dart';
 
 class ChatInputBar extends StatefulWidget {
   final Function(String content) onSendMessage;
@@ -43,7 +44,7 @@ class _ChatInputBarState extends State<ChatInputBar> {
   final _controller = TextEditingController();
   final _focusNode = FocusNode();
   bool _isComposing = false;
-  bool _isRecordingVoice = false;
+  final bool _isRecordingVoice = false;
   
   @override
   void initState() {
@@ -137,27 +138,29 @@ class _ChatInputBarState extends State<ChatInputBar> {
   }
   
   void _handleVoiceRecording() {
-    setState(() {
-      _isRecordingVoice = !_isRecordingVoice;
-    });
-    
-    if (_isRecordingVoice) {
-      // TODO: Start voice recording
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Voice recording started...'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-    } else {
-      // TODO: Stop voice recording and send
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Voice recording stopped'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-    }
+    // Show voice recorder bottom sheet
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => VoiceMessageRecorder(
+        onRecordingComplete: (audioPath, duration) {
+          // TODO: Upload audio and send message
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('✅ Sprachnachricht aufgenommen (${duration.inSeconds}s)'),
+                backgroundColor: Colors.green,
+                duration: const Duration(seconds: 2),
+              ),
+            );
+          }
+        },
+        onCancel: () {
+          // Recording cancelled
+        },
+      ),
+    );
   }
   
   void _handleEmojiPicker() {

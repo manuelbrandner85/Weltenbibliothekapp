@@ -1,6 +1,6 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
+import '../core/network/http_helper.dart';
 
 /// Moderation Service für Admin Content Moderation
 /// 
@@ -34,36 +34,33 @@ class ModerationService {
     try {
       final url = Uri.parse('$_baseUrl/api/moderation/flag-content');
       
-      final response = await http.post(
-        url,
+      return await HttpHelper.post<Map<String, dynamic>>(
+        uri: url,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $adminToken',
         },
-        body: jsonEncode({
+        body: {
           'world': world,
           'content_type': contentType,
           'content_id': contentId,
           'content_author_id': contentAuthorId,
           'content_author_username': contentAuthorUsername,
           'reason': reason,
-        }),
+        },
+        parseResponse: (body) {
+          final data = jsonDecode(body) as Map<String, dynamic>;
+          if (data['success'] == true) {
+            if (kDebugMode) {
+              debugPrint('✅ Content flagged: $contentType $contentId');
+              debugPrint('   Flag ID: ${data['flag_id']}');
+            }
+            return {'success': true, 'flag_id': data['flag_id']};
+          } else {
+            throw Exception(data['error'] ?? 'Unknown error');
+          }
+        },
       );
-      
-      final data = jsonDecode(response.body) as Map<String, dynamic>;
-      
-      if (response.statusCode == 200 && data['success'] == true) {
-        if (kDebugMode) {
-          debugPrint('✅ Content flagged: $contentType $contentId');
-          debugPrint('   Flag ID: ${data['flag_id']}');
-        }
-        return {'success': true, 'flag_id': data['flag_id']};
-      } else {
-        if (kDebugMode) {
-          debugPrint('❌ Failed to flag content: ${data['error']}');
-        }
-        return {'success': false, 'error': data['error'] ?? 'Unknown error'};
-      }
     } catch (e) {
       if (kDebugMode) {
         debugPrint('❌ Network error flagging content: $e');
@@ -88,30 +85,27 @@ class ModerationService {
     try {
       final url = Uri.parse('$_baseUrl/api/moderation/flagged-content/$world?status=$status');
       
-      final response = await http.get(
-        url,
+      return await HttpHelper.get<Map<String, dynamic>>(
+        uri: url,
         headers: {
           'Authorization': 'Bearer $adminToken',
         },
+        parseResponse: (body) {
+          final data = jsonDecode(body) as Map<String, dynamic>;
+          if (data['success'] == true) {
+            if (kDebugMode) {
+              debugPrint('✅ Loaded flagged content: ${data['count']} items');
+            }
+            return {
+              'success': true,
+              'flagged_content': data['flagged_content'] as List<dynamic>,
+              'count': data['count'],
+            };
+          } else {
+            throw Exception(data['error'] ?? 'Unknown error');
+          }
+        },
       );
-      
-      final data = jsonDecode(response.body) as Map<String, dynamic>;
-      
-      if (response.statusCode == 200 && data['success'] == true) {
-        if (kDebugMode) {
-          debugPrint('✅ Loaded flagged content: ${data['count']} items');
-        }
-        return {
-          'success': true,
-          'flagged_content': data['flagged_content'] as List<dynamic>,
-          'count': data['count'],
-        };
-      } else {
-        if (kDebugMode) {
-          debugPrint('❌ Failed to load flagged content: ${data['error']}');
-        }
-        return {'success': false, 'error': data['error'] ?? 'Unknown error'};
-      }
     } catch (e) {
       if (kDebugMode) {
         debugPrint('❌ Network error loading flagged content: $e');
@@ -135,33 +129,30 @@ class ModerationService {
     try {
       final url = Uri.parse('$_baseUrl/api/moderation/resolve-flag');
       
-      final response = await http.post(
-        url,
+      return await HttpHelper.post<Map<String, dynamic>>(
+        uri: url,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $adminToken',
         },
-        body: jsonEncode({
+        body: {
           'flag_id': flagId,
           'world': world,
           'resolution_action': resolutionAction,
           'resolution_notes': resolutionNotes,
-        }),
+        },
+        parseResponse: (body) {
+          final data = jsonDecode(body) as Map<String, dynamic>;
+          if (data['success'] == true) {
+            if (kDebugMode) {
+              debugPrint('✅ Flag resolved: $flagId → $resolutionAction');
+            }
+            return {'success': true};
+          } else {
+            throw Exception(data['error'] ?? 'Unknown error');
+          }
+        },
       );
-      
-      final data = jsonDecode(response.body) as Map<String, dynamic>;
-      
-      if (response.statusCode == 200 && data['success'] == true) {
-        if (kDebugMode) {
-          debugPrint('✅ Flag resolved: $flagId → $resolutionAction');
-        }
-        return {'success': true};
-      } else {
-        if (kDebugMode) {
-          debugPrint('❌ Failed to resolve flag: ${data['error']}');
-        }
-        return {'success': false, 'error': data['error'] ?? 'Unknown error'};
-      }
     } catch (e) {
       if (kDebugMode) {
         debugPrint('❌ Network error resolving flag: $e');
@@ -180,32 +171,29 @@ class ModerationService {
     try {
       final url = Uri.parse('$_baseUrl/api/moderation/dismiss-flag');
       
-      final response = await http.post(
-        url,
+      return await HttpHelper.post<Map<String, dynamic>>(
+        uri: url,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $adminToken',
         },
-        body: jsonEncode({
+        body: {
           'flag_id': flagId,
           'world': world,
           'notes': notes,
-        }),
+        },
+        parseResponse: (body) {
+          final data = jsonDecode(body) as Map<String, dynamic>;
+          if (data['success'] == true) {
+            if (kDebugMode) {
+              debugPrint('✅ Flag dismissed: $flagId');
+            }
+            return {'success': true};
+          } else {
+            throw Exception(data['error'] ?? 'Unknown error');
+          }
+        },
       );
-      
-      final data = jsonDecode(response.body) as Map<String, dynamic>;
-      
-      if (response.statusCode == 200 && data['success'] == true) {
-        if (kDebugMode) {
-          debugPrint('✅ Flag dismissed: $flagId');
-        }
-        return {'success': true};
-      } else {
-        if (kDebugMode) {
-          debugPrint('❌ Failed to dismiss flag: ${data['error']}');
-        }
-        return {'success': false, 'error': data['error'] ?? 'Unknown error'};
-      }
     } catch (e) {
       if (kDebugMode) {
         debugPrint('❌ Network error dismissing flag: $e');
@@ -234,42 +222,39 @@ class ModerationService {
     try {
       final url = Uri.parse('$_baseUrl/api/moderation/mute-user');
       
-      final response = await http.post(
-        url,
+      return await HttpHelper.post<Map<String, dynamic>>(
+        uri: url,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $adminToken',
         },
-        body: jsonEncode({
+        body: {
           'world': world,
           'user_id': userId,
           'username': username,
           'mute_type': muteType,
           'reason': reason,
-        }),
-      );
-      
-      final data = jsonDecode(response.body) as Map<String, dynamic>;
-      
-      if (response.statusCode == 200 && data['success'] == true) {
-        if (kDebugMode) {
-          debugPrint('✅ User muted: $username ($muteType)');
-          if (data['expires_at'] != null) {
-            debugPrint('   Expires: ${data['expires_at']}');
+        },
+        parseResponse: (body) {
+          final data = jsonDecode(body) as Map<String, dynamic>;
+          if (data['success'] == true) {
+            if (kDebugMode) {
+              debugPrint('✅ User muted: $username ($muteType)');
+              if (data['expires_at'] != null) {
+                debugPrint('   Expires: ${data['expires_at']}');
+              }
+            }
+            return {
+              'success': true,
+              'mute_id': data['mute_id'],
+              'mute_type': data['mute_type'],
+              'expires_at': data['expires_at'],
+            };
+          } else {
+            throw Exception(data['error'] ?? 'Unknown error');
           }
-        }
-        return {
-          'success': true,
-          'mute_id': data['mute_id'],
-          'mute_type': data['mute_type'],
-          'expires_at': data['expires_at'],
-        };
-      } else {
-        if (kDebugMode) {
-          debugPrint('❌ Failed to mute user: ${data['error']}');
-        }
-        return {'success': false, 'error': data['error'] ?? 'Unknown error'};
-      }
+        },
+      );
     } catch (e) {
       if (kDebugMode) {
         debugPrint('❌ Network error muting user: $e');
@@ -287,31 +272,28 @@ class ModerationService {
     try {
       final url = Uri.parse('$_baseUrl/api/moderation/unmute-user');
       
-      final response = await http.post(
-        url,
+      return await HttpHelper.post<Map<String, dynamic>>(
+        uri: url,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $adminToken',
         },
-        body: jsonEncode({
+        body: {
           'world': world,
           'user_id': userId,
-        }),
+        },
+        parseResponse: (body) {
+          final data = jsonDecode(body) as Map<String, dynamic>;
+          if (data['success'] == true) {
+            if (kDebugMode) {
+              debugPrint('✅ User unmuted: $userId');
+            }
+            return {'success': true};
+          } else {
+            throw Exception(data['error'] ?? 'Unknown error');
+          }
+        },
       );
-      
-      final data = jsonDecode(response.body) as Map<String, dynamic>;
-      
-      if (response.statusCode == 200 && data['success'] == true) {
-        if (kDebugMode) {
-          debugPrint('✅ User unmuted: $userId');
-        }
-        return {'success': true};
-      } else {
-        if (kDebugMode) {
-          debugPrint('❌ Failed to unmute user: ${data['error']}');
-        }
-        return {'success': false, 'error': data['error'] ?? 'Unknown error'};
-      }
     } catch (e) {
       if (kDebugMode) {
         debugPrint('❌ Network error unmuting user: $e');
@@ -328,19 +310,22 @@ class ModerationService {
     try {
       final url = Uri.parse('$_baseUrl/api/moderation/check-mute/$world/$userId');
       
-      final response = await http.get(url);
-      
-      final data = jsonDecode(response.body) as Map<String, dynamic>;
-      
-      if (response.statusCode == 200 && data['success'] == true) {
-        return {
-          'success': true,
-          'is_muted': data['is_muted'] as bool,
-          'mute_info': data['mute_info'],
-        };
-      } else {
-        return {'success': false, 'error': data['error'] ?? 'Unknown error'};
-      }
+      return await HttpHelper.get<Map<String, dynamic>>(
+        uri: url,
+        headers: {},
+        parseResponse: (body) {
+          final data = jsonDecode(body) as Map<String, dynamic>;
+          if (data['success'] == true) {
+            return {
+              'success': true,
+              'is_muted': data['is_muted'] as bool,
+              'mute_info': data['mute_info'],
+            };
+          } else {
+            throw Exception(data['error'] ?? 'Unknown error');
+          }
+        },
+      );
     } catch (e) {
       if (kDebugMode) {
         debugPrint('❌ Network error checking mute status: $e');
@@ -365,34 +350,31 @@ class ModerationService {
     try {
       final url = Uri.parse('$_baseUrl/api/moderation/log/$world?limit=$limit');
       
-      final response = await http.get(
-        url,
+      return await HttpHelper.get<Map<String, dynamic>>(
+        uri: url,
         headers: {
           'Authorization': 'Bearer $adminToken',
         },
-      );
-      
-      final data = jsonDecode(response.body) as Map<String, dynamic>;
-      
-      if (response.statusCode == 200 && data['success'] == true) {
-        if (kDebugMode) {
-          debugPrint('✅ Loaded moderation log: ${data['count']} entries');
-          if (data['is_filtered'] == true) {
-            debugPrint('   (Filtered: Only own actions)');
+        parseResponse: (body) {
+          final data = jsonDecode(body) as Map<String, dynamic>;
+          if (data['success'] == true) {
+            if (kDebugMode) {
+              debugPrint('✅ Loaded moderation log: ${data['count']} entries');
+              if (data['is_filtered'] == true) {
+                debugPrint('   (Filtered: Only own actions)');
+              }
+            }
+            return {
+              'success': true,
+              'logs': data['logs'] as List<dynamic>,
+              'count': data['count'],
+              'is_filtered': data['is_filtered'],
+            };
+          } else {
+            throw Exception(data['error'] ?? 'Unknown error');
           }
-        }
-        return {
-          'success': true,
-          'logs': data['logs'] as List<dynamic>,
-          'count': data['count'],
-          'is_filtered': data['is_filtered'],
-        };
-      } else {
-        if (kDebugMode) {
-          debugPrint('❌ Failed to load moderation log: ${data['error']}');
-        }
-        return {'success': false, 'error': data['error'] ?? 'Unknown error'};
-      }
+        },
+      );
     } catch (e) {
       if (kDebugMode) {
         debugPrint('❌ Network error loading moderation log: $e');

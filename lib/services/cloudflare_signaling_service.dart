@@ -11,6 +11,7 @@ library;
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
@@ -109,6 +110,11 @@ class CloudflareSignalingService {
           'username': username,
           'timestamp': DateTime.now().millisecondsSinceEpoch,
         }),
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw TimeoutException('User-Registration Timeout (15s)');
+        },
       );
 
       if (response.statusCode == 200) {
@@ -121,6 +127,14 @@ class CloudflareSignalingService {
           debugPrint('⚠️ [Cloudflare Signaling] Registration response: ${response.statusCode}');
           debugPrint('   Body: ${response.body}');
         }
+      }
+    } on SocketException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ [Cloudflare] Registration: Keine Internetverbindung');
+      }
+    } on TimeoutException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ [Cloudflare] Registration: $e');
       }
     } catch (e) {
       if (kDebugMode) {
@@ -149,10 +163,23 @@ class CloudflareSignalingService {
           'type': offer['type'],
           'timestamp': DateTime.now().millisecondsSinceEpoch,
         }),
+      ).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          throw TimeoutException('Send-Offer Timeout (10s)');
+        },
       );
 
       if (kDebugMode) {
         debugPrint('📤 [Cloudflare Signaling] Sent offer to $targetUserId');
+      }
+    } on SocketException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ [Cloudflare] Send offer: Keine Internetverbindung');
+      }
+    } on TimeoutException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ [Cloudflare] Send offer: $e');
       }
     } catch (e) {
       if (kDebugMode) {
@@ -180,10 +207,23 @@ class CloudflareSignalingService {
           'type': answer['type'],
           'timestamp': DateTime.now().millisecondsSinceEpoch,
         }),
+      ).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          throw TimeoutException('Send-Answer Timeout (10s)');
+        },
       );
 
       if (kDebugMode) {
         debugPrint('📤 [Cloudflare Signaling] Sent answer to $targetUserId');
+      }
+    } on SocketException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ [Cloudflare] Send answer: Keine Internetverbindung');
+      }
+    } on TimeoutException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ [Cloudflare] Send answer: $e');
       }
     } catch (e) {
       if (kDebugMode) {
@@ -212,10 +252,23 @@ class CloudflareSignalingService {
           'sdpMLineIndex': candidate['sdpMLineIndex'],
           'timestamp': DateTime.now().millisecondsSinceEpoch,
         }),
+      ).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          throw TimeoutException('Send-ICE Timeout (10s)');
+        },
       );
 
       if (kDebugMode) {
         debugPrint('📤 [Cloudflare Signaling] Sent ICE candidate to $targetUserId');
+      }
+    } on SocketException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ [Cloudflare] Send ICE: Keine Internetverbindung');
+      }
+    } on TimeoutException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ [Cloudflare] Send ICE: $e');
       }
     } catch (e) {
       if (kDebugMode) {
@@ -254,6 +307,11 @@ class CloudflareSignalingService {
         Uri.parse('$endpoint?roomId=$_currentRoomId&userId=$_currentUserId'),
         headers: {
           'Authorization': 'Bearer $_apiToken',
+        },
+      ).timeout(
+        const Duration(seconds: 8),
+        onTimeout: () {
+          throw TimeoutException('Poll-Signals Timeout (8s)');
         },
       );
 
@@ -339,6 +397,15 @@ class CloudflareSignalingService {
           debugPrint('⚠️ [Cloudflare Poll] Response status: ${response.statusCode}');
         }
       }
+    } on SocketException catch (e) {
+      // Silent fail for polling (expected when offline)
+      if (kDebugMode) {
+        debugPrint('⚠️ [Cloudflare Poll] Keine Internetverbindung (non-critical)');
+      }
+    } on TimeoutException catch (e) {
+      if (kDebugMode) {
+        debugPrint('⚠️ [Cloudflare Poll] Timeout (non-critical)');
+      }
     } catch (e) {
       // Silent fail for polling errors (expected when offline)
       if (kDebugMode) {
@@ -367,6 +434,11 @@ class CloudflareSignalingService {
             'roomId': _currentRoomId,
             'userId': _currentUserId,
           }),
+        ).timeout(
+          const Duration(seconds: 10),
+          onTimeout: () {
+            throw TimeoutException('Leave-Room Timeout (10s)');
+          },
         );
       }
 
@@ -379,6 +451,14 @@ class CloudflareSignalingService {
 
       if (kDebugMode) {
         debugPrint('👋 [Cloudflare Signaling] Left room and cleared participants');
+      }
+    } on SocketException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ [Cloudflare] Leave room: Keine Internetverbindung');
+      }
+    } on TimeoutException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ [Cloudflare] Leave room: $e');
       }
     } catch (e) {
       if (kDebugMode) {

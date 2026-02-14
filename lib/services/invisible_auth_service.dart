@@ -95,7 +95,12 @@ class InvisibleAuthService {
             'auth_token': _authToken,
             'created_at': DateTime.now().toIso8601String(),
           }),
-        );
+        ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw TimeoutException('Request Timeout (15s)', timeout: const Duration(seconds: 15));
+        },
+      );
         
         if (response.statusCode == 200 || response.statusCode == 201) {
           // Save locally
@@ -136,7 +141,12 @@ class InvisibleAuthService {
             'Authorization': 'Bearer $_authToken',
             'X-User-ID': _userId!,
           },
-        );
+        ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw TimeoutException('Request Timeout (15s)', timeout: const Duration(seconds: 15));
+        },
+      );
         
         return response.statusCode == 200;
       },
@@ -156,7 +166,12 @@ class InvisibleAuthService {
             'Authorization': 'Bearer $_authToken',
             'X-User-ID': _userId!,
           },
-        );
+        ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw TimeoutException('Request Timeout (15s)', timeout: const Duration(seconds: 15));
+        },
+      );
         
         if (response.statusCode == 200) {
           final data = jsonDecode(response.body);
@@ -251,7 +266,12 @@ class InvisibleAuthService {
             if (world != null) 'world': world,  // ✅ Welt mitschicken
             if (role != null) 'role': role,     // ✅ Rolle mitschicken
           }),
-        );
+        ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw TimeoutException('Request Timeout (15s)', timeout: const Duration(seconds: 15));
+        },
+      );
         
         if (response.statusCode == 200) {
           if (kDebugMode) {

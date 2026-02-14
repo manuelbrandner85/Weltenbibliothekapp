@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'dart:async';
+import 'dart:io';
 import '../config/api_config.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
@@ -51,12 +53,21 @@ class CloudflarePushService {
           'keys': {},
           'topics': _subscribedTopics,
         }),
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw TimeoutException('Push-Subscribe Timeout (15s)');
+        },
       );
 
       if (response.statusCode == 201) {
         debugPrint('✅ Subscribed to push notifications');
         return true;
       }
+    } on SocketException catch (e) {
+      debugPrint('❌ Push subscribe: Keine Internetverbindung');
+    } on TimeoutException catch (e) {
+      debugPrint('❌ Push subscribe: $e');
     } catch (e) {
       debugPrint('⚠️ Push subscription error: $e');
     }
@@ -70,8 +81,17 @@ class CloudflarePushService {
     try {
       await http.delete(
         Uri.parse('$baseUrl/api/push/unsubscribe/$_userId'),
+      ).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          throw TimeoutException('Push-Unsubscribe Timeout (10s)');
+        },
       );
       debugPrint('✅ Unsubscribed from push notifications');
+    } on SocketException catch (e) {
+      debugPrint('❌ Push unsubscribe: Keine Internetverbindung');
+    } on TimeoutException catch (e) {
+      debugPrint('❌ Push unsubscribe: $e');
     } catch (e) {
       debugPrint('⚠️ Push unsubscribe error: $e');
     }
@@ -92,6 +112,11 @@ class CloudflarePushService {
           'user_id': _userId,
           'topics': topics,
         }),
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw TimeoutException('Topic-Subscribe Timeout (15s)');
+        },
       );
 
       // Save locally
@@ -99,6 +124,10 @@ class CloudflarePushService {
       await prefs.setStringList('push_topics', _subscribedTopics);
 
       debugPrint('✅ Subscribed to topics: $topics');
+    } on SocketException catch (e) {
+      debugPrint('❌ Topic subscribe: Keine Internetverbindung');
+    } on TimeoutException catch (e) {
+      debugPrint('❌ Topic subscribe: $e');
     } catch (e) {
       debugPrint('⚠️ Topic subscription error: $e');
     }
@@ -122,8 +151,17 @@ class CloudflarePushService {
             'timestamp': DateTime.now().toIso8601String(),
           },
         }),
+      ).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          throw TimeoutException('Test-Notification Timeout (10s)');
+        },
       );
       debugPrint('✅ Test notification sent');
+    } on SocketException catch (e) {
+      debugPrint('❌ Test notification: Keine Internetverbindung');
+    } on TimeoutException catch (e) {
+      debugPrint('❌ Test notification: $e');
     } catch (e) {
       debugPrint('⚠️ Test notification error: $e');
     }
@@ -151,8 +189,17 @@ class CloudflarePushService {
           'type': type,
           'data': data ?? {},
         }),
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw TimeoutException('Schedule-Notification Timeout (15s)');
+        },
       );
       debugPrint('✅ Notification scheduled for $scheduledFor');
+    } on SocketException catch (e) {
+      debugPrint('❌ Schedule notification: Keine Internetverbindung');
+    } on TimeoutException catch (e) {
+      debugPrint('❌ Schedule notification: $e');
     } catch (e) {
       debugPrint('⚠️ Schedule notification error: $e');
     }
@@ -165,12 +212,21 @@ class CloudflarePushService {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/api/notifications/$_userId'),
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () {
+          throw TimeoutException('Get-Notifications Timeout (15s)');
+        },
       );
 
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
         return data.cast<Map<String, dynamic>>();
       }
+    } on SocketException catch (e) {
+      debugPrint('❌ Get notifications: Keine Internetverbindung');
+    } on TimeoutException catch (e) {
+      debugPrint('❌ Get notifications: $e');
     } catch (e) {
       debugPrint('⚠️ Get notifications error: $e');
     }

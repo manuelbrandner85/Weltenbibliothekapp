@@ -431,6 +431,295 @@ class _UserDetailScreenState extends State<UserDetailScreen> with SingleTickerPr
     noteController.dispose();
   }
 
+  Future<void> _muteUser() async {
+    final reasonController = TextEditingController();
+    int? muteDuration = 24; // Default 24 hours
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          backgroundColor: const Color(0xFF1A1A2E),
+          title: const Text('User muten', style: TextStyle(color: Colors.white)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'User: ${widget.user.username}',
+                style: TextStyle(color: Colors.grey[400]),
+              ),
+              const SizedBox(height: 16),
+              // MUTE DURATION
+              DropdownButtonFormField<int?>(
+                value: muteDuration,
+                dropdownColor: const Color(0xFF16213E),
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(
+                  labelText: 'Dauer',
+                  labelStyle: TextStyle(color: Colors.grey),
+                  border: OutlineInputBorder(),
+                ),
+                items: const [
+                  DropdownMenuItem(value: 1, child: Text('1 Stunde')),
+                  DropdownMenuItem(value: 6, child: Text('6 Stunden')),
+                  DropdownMenuItem(value: 24, child: Text('24 Stunden')),
+                  DropdownMenuItem(value: 168, child: Text('7 Tage')),
+                  DropdownMenuItem(value: null, child: Text('Permanent')),
+                ],
+                onChanged: (value) {
+                  setState(() {
+                    muteDuration = value;
+                  });
+                },
+              ),
+              const SizedBox(height: 16),
+              // REASON INPUT
+              TextField(
+                controller: reasonController,
+                style: const TextStyle(color: Colors.white),
+                maxLines: 3,
+                decoration: const InputDecoration(
+                  hintText: 'Grund (optional)',
+                  hintStyle: TextStyle(color: Colors.grey),
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Abbrechen'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.amber),
+              child: const Text('Muten'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await _service.muteUser(
+          world: widget.world,
+          userId: widget.user.id,
+          adminToken: widget.adminToken,
+          duration: muteDuration,
+          reason: reasonController.text.trim(),
+        );
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                '✅ User ${widget.user.username} gemutet${muteDuration != null ? ' für $muteDuration Stunden' : ' (permanent)'}',
+              ),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('❌ Fehler: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
+
+    reasonController.dispose();
+  }
+
+  Future<void> _banUser() async {
+    final reasonController = TextEditingController();
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A2E),
+        title: const Text('User bannen', style: TextStyle(color: Colors.red)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'User: ${widget.user.username}',
+              style: TextStyle(color: Colors.grey[400]),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'WARNUNG: Dies ist eine permanente Aktion!',
+              style: TextStyle(color: Colors.red[300], fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            // REASON INPUT (REQUIRED)
+            TextField(
+              controller: reasonController,
+              style: const TextStyle(color: Colors.white),
+              maxLines: 3,
+              decoration: const InputDecoration(
+                hintText: 'Grund (erforderlich)',
+                hintStyle: TextStyle(color: Colors.grey),
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Abbrechen'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Permanent bannen'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && reasonController.text.trim().isNotEmpty) {
+      try {
+        await _service.banUser(
+          world: widget.world,
+          userId: widget.user.id,
+          adminToken: widget.adminToken,
+          reason: reasonController.text.trim(),
+        );
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('✅ User ${widget.user.username} permanent gebannt'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          Navigator.pop(context); // Close detail screen
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('❌ Fehler: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } else if (confirmed == true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('❌ Grund ist erforderlich'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+
+    reasonController.dispose();
+  }
+
+  Future<void> _deleteUser() async {
+    final reasonController = TextEditingController();
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A2E),
+        title: const Text('User löschen', style: TextStyle(color: Colors.red)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'User: ${widget.user.username}',
+              style: TextStyle(color: Colors.grey[400]),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'WARNUNG: Diese Aktion kann NICHT rückgängig gemacht werden!',
+              style: TextStyle(color: Colors.red[300], fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Alle Daten des Users werden permanent gelöscht.',
+              style: TextStyle(color: Colors.white70),
+            ),
+            const SizedBox(height: 16),
+            // REASON INPUT (REQUIRED)
+            TextField(
+              controller: reasonController,
+              style: const TextStyle(color: Colors.white),
+              maxLines: 3,
+              decoration: const InputDecoration(
+                hintText: 'Grund (erforderlich)',
+                hintStyle: TextStyle(color: Colors.grey),
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Abbrechen'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red[900]),
+            child: const Text('Permanent löschen'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && reasonController.text.trim().isNotEmpty) {
+      try {
+        await _service.deleteUser(
+          world: widget.world,
+          userId: widget.user.id,
+          adminToken: widget.adminToken,
+          reason: reasonController.text.trim(),
+        );
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('✅ User ${widget.user.username} gelöscht'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          Navigator.pop(context); // Close detail screen
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('❌ Fehler: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } else if (confirmed == true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('❌ Grund ist erforderlich'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+
+    reasonController.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final worldColor = widget.world == 'materie' 
@@ -456,15 +745,87 @@ class _UserDetailScreenState extends State<UserDetailScreen> with SingleTickerPr
         actions: [
           // ADMIN ACTIONS
           if (!widget.user.isRootAdmin) ...[
-            IconButton(
-              icon: const Icon(Icons.note_add),
-              onPressed: _addNote,
-              tooltip: 'Notiz hinzufügen',
-            ),
-            IconButton(
-              icon: Icon(widget.user.isSuspended ? Icons.lock_open : Icons.block),
-              onPressed: widget.user.isSuspended ? _unsuspendUser : _suspendUser,
-              tooltip: widget.user.isSuspended ? 'Sperre aufheben' : 'User sperren',
+            // More Actions Menu
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert),
+              tooltip: 'Weitere Aktionen',
+              onSelected: (action) {
+                switch (action) {
+                  case 'note':
+                    _addNote();
+                    break;
+                  case 'suspend':
+                    widget.user.isSuspended ? _unsuspendUser() : _suspendUser();
+                    break;
+                  case 'mute':
+                    _muteUser();
+                    break;
+                  case 'ban':
+                    if (widget.isRootAdmin) _banUser();
+                    break;
+                  case 'delete':
+                    if (widget.isRootAdmin) _deleteUser();
+                    break;
+                }
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'note',
+                  child: Row(
+                    children: [
+                      Icon(Icons.note_add, color: Colors.blue),
+                      SizedBox(width: 8),
+                      Text('Notiz hinzufügen'),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'suspend',
+                  child: Row(
+                    children: [
+                      Icon(
+                        widget.user.isSuspended ? Icons.lock_open : Icons.block,
+                        color: widget.user.isSuspended ? Colors.green : Colors.orange,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(widget.user.isSuspended ? 'Sperre aufheben' : 'User sperren'),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'mute',
+                  child: Row(
+                    children: [
+                      Icon(Icons.volume_off, color: Colors.amber),
+                      SizedBox(width: 8),
+                      Text('User muten'),
+                    ],
+                  ),
+                ),
+                if (widget.isRootAdmin) ...[
+                  const PopupMenuDivider(),
+                  const PopupMenuItem(
+                    value: 'ban',
+                    child: Row(
+                      children: [
+                        Icon(Icons.gavel, color: Colors.red),
+                        SizedBox(width: 8),
+                        Text('User bannen', style: TextStyle(color: Colors.red)),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'delete',
+                    child: Row(
+                      children: [
+                        Icon(Icons.delete_forever, color: Colors.red),
+                        SizedBox(width: 8),
+                        Text('User löschen', style: TextStyle(color: Colors.red)),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
             ),
           ],
         ],

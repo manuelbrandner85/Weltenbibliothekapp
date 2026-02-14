@@ -1,5 +1,4 @@
 import 'dart:convert';
-import '../services/storage_service.dart';
 import 'dart:async';
 import 'dart:io';
 import 'package:http/http.dart' as http;
@@ -704,26 +703,56 @@ class CloudflareApiService {
 
   /// Get notifications for user
   Future<List<Map<String, dynamic>>> getNotifications(String userId) async {
-    final response = await http.get(Uri.parse('$baseUrl/api/notifications/$userId'));
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/notifications/$userId')
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () => throw TimeoutException('Notification fetch timeout'),
+      );
 
-    if (response.statusCode == 200) {
-      final List<dynamic> data = json.decode(response.body);
-      return data.cast<Map<String, dynamic>>();
-    } else {
-      throw Exception('Failed to load notifications: ${response.statusCode}');
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        return data.cast<Map<String, dynamic>>();
+      } else {
+        throw Exception('Failed to load notifications: ${response.statusCode}');
+      }
+    } on SocketException {
+      throw Exception('Keine Internetverbindung');
+    } on TimeoutException {
+      throw Exception('Anfrage dauert zu lange');
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Get notifications error: $e');
+      }
+      rethrow;
     }
   }
 
   /// Create notification
   Future<void> createNotification(Map<String, dynamic> notificationData) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/api/notifications'),
-      headers: {'Content-Type': 'application/json'},
-      body: json.encode(notificationData),
-    );
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/notifications'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode(notificationData),
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () => throw TimeoutException('Create notification timeout'),
+      );
 
-    if (response.statusCode != 201) {
-      throw Exception('Failed to create notification: ${response.statusCode}');
+      if (response.statusCode != 201) {
+        throw Exception('Failed to create notification: ${response.statusCode}');
+      }
+    } on SocketException {
+      throw Exception('Keine Internetverbindung');
+    } on TimeoutException {
+      throw Exception('Anfrage dauert zu lange');
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Create notification error: $e');
+      }
+      rethrow;
     }
   }
 
@@ -737,19 +766,33 @@ class CloudflareApiService {
     required String userId,
     required String username,
   }) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/api/articles/$articleId/like'),
-      headers: {'Content-Type': 'application/json'},
-      body: json.encode({
-        'user_id': userId,
-        'username': username,
-      }),
-    );
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/articles/$articleId/like'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'user_id': userId,
+          'username': username,
+        }),
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () => throw TimeoutException('Like article timeout'),
+      );
 
-    if (response.statusCode == 201 || response.statusCode == 409) {
-      return json.decode(response.body);
-    } else {
-      throw Exception('Failed to like article: ${response.statusCode}');
+      if (response.statusCode == 201 || response.statusCode == 409) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Failed to like article: ${response.statusCode}');
+      }
+    } on SocketException {
+      throw Exception('Keine Internetverbindung');
+    } on TimeoutException {
+      throw Exception('Anfrage dauert zu lange');
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Like article error: $e');
+      }
+      rethrow;
     }
   }
 
@@ -758,40 +801,82 @@ class CloudflareApiService {
     required String articleId,
     required String userId,
   }) async {
-    final response = await http.delete(
-      Uri.parse('$baseUrl/api/articles/$articleId/like?user_id=$userId'),
-    );
+    try {
+      final response = await http.delete(
+        Uri.parse('$baseUrl/api/articles/$articleId/like?user_id=$userId'),
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () => throw TimeoutException('Unlike article timeout'),
+      );
 
-    if (response.statusCode != 200) {
-      throw Exception('Failed to unlike article: ${response.statusCode}');
+      if (response.statusCode != 200) {
+        throw Exception('Failed to unlike article: ${response.statusCode}');
+      }
+    } on SocketException {
+      throw Exception('Keine Internetverbindung');
+    } on TimeoutException {
+      throw Exception('Anfrage dauert zu lange');
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Unlike article error: $e');
+      }
+      rethrow;
     }
   }
 
   /// Get article likes
   Future<List<Map<String, dynamic>>> getArticleLikes(String articleId) async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/api/articles/$articleId/likes'),
-    );
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/articles/$articleId/likes'),
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () => throw TimeoutException('Get likes timeout'),
+      );
 
-    if (response.statusCode == 200) {
-      final List<dynamic> data = json.decode(response.body);
-      return data.cast<Map<String, dynamic>>();
-    } else {
-      throw Exception('Failed to load likes: ${response.statusCode}');
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        return data.cast<Map<String, dynamic>>();
+      } else {
+        throw Exception('Failed to load likes: ${response.statusCode}');
+      }
+    } on SocketException {
+      throw Exception('Keine Internetverbindung');
+    } on TimeoutException {
+      throw Exception('Anfrage dauert zu lange');
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Get likes error: $e');
+      }
+      rethrow;
     }
   }
 
   /// Get article comments
   Future<List<Map<String, dynamic>>> getArticleComments(String articleId) async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/api/articles/$articleId/comments'),
-    );
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/articles/$articleId/comments'),
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () => throw TimeoutException('Get comments timeout'),
+      );
 
-    if (response.statusCode == 200) {
-      final List<dynamic> data = json.decode(response.body);
-      return data.cast<Map<String, dynamic>>();
-    } else {
-      throw Exception('Failed to load comments: ${response.statusCode}');
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        return data.cast<Map<String, dynamic>>();
+      } else {
+        throw Exception('Failed to load comments: ${response.statusCode}');
+      }
+    } on SocketException {
+      throw Exception('Keine Internetverbindung');
+    } on TimeoutException {
+      throw Exception('Anfrage dauert zu lange');
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Get comments error: $e');
+      }
+      rethrow;
     }
   }
 
@@ -803,21 +888,35 @@ class CloudflareApiService {
     required String content,
     String? parentCommentId,
   }) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/api/articles/$articleId/comments'),
-      headers: {'Content-Type': 'application/json'},
-      body: json.encode({
-        'user_id': userId,
-        'username': username,
-        'content': content,
-        'parent_comment_id': parentCommentId,
-      }),
-    );
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/articles/$articleId/comments'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'user_id': userId,
+          'username': username,
+          'content': content,
+          'parent_comment_id': parentCommentId,
+        }),
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () => throw TimeoutException('Add comment timeout'),
+      );
 
-    if (response.statusCode == 201) {
-      return json.decode(response.body);
-    } else {
-      throw Exception('Failed to add comment: ${response.statusCode}');
+      if (response.statusCode == 201) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Failed to add comment: ${response.statusCode}');
+      }
+    } on SocketException {
+      throw Exception('Keine Internetverbindung');
+    } on TimeoutException {
+      throw Exception('Anfrage dauert zu lange');
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Add comment error: $e');
+      }
+      rethrow;
     }
   }
 
@@ -826,51 +925,107 @@ class CloudflareApiService {
     required String commentId,
     required String content,
   }) async {
-    final response = await http.put(
-      Uri.parse('$baseUrl/api/comments/$commentId'),
-      headers: {'Content-Type': 'application/json'},
-      body: json.encode({'content': content}),
-    );
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/api/comments/$commentId'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'content': content}),
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () => throw TimeoutException('Edit comment timeout'),
+      );
 
-    if (response.statusCode != 200) {
-      throw Exception('Failed to edit comment: ${response.statusCode}');
+      if (response.statusCode != 200) {
+        throw Exception('Failed to edit comment: ${response.statusCode}');
+      }
+    } on SocketException {
+      throw Exception('Keine Internetverbindung');
+    } on TimeoutException {
+      throw Exception('Anfrage dauert zu lange');
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Edit comment error: $e');
+      }
+      rethrow;
     }
   }
 
   /// Delete comment
   Future<void> deleteComment(String commentId) async {
-    final response = await http.delete(
-      Uri.parse('$baseUrl/api/comments/$commentId'),
-    );
+    try {
+      final response = await http.delete(
+        Uri.parse('$baseUrl/api/comments/$commentId'),
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () => throw TimeoutException('Delete comment timeout'),
+      );
 
-    if (response.statusCode != 200) {
-      throw Exception('Failed to delete comment: ${response.statusCode}');
+      if (response.statusCode != 200) {
+        throw Exception('Failed to delete comment: ${response.statusCode}');
+      }
+    } on SocketException {
+      throw Exception('Keine Internetverbindung');
+    } on TimeoutException {
+      throw Exception('Anfrage dauert zu lange');
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Delete comment error: $e');
+      }
+      rethrow;
     }
   }
 
   /// Get article stats (likes, comments, views, shares)
   Future<Map<String, dynamic>> getArticleStats(String articleId) async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/api/articles/$articleId/stats'),
-    );
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/articles/$articleId/stats'),
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () => throw TimeoutException('Get stats timeout'),
+      );
 
-    if (response.statusCode == 200) {
-      return json.decode(response.body);
-    } else {
-      throw Exception('Failed to load stats: ${response.statusCode}');
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Failed to load stats: ${response.statusCode}');
+      }
+    } on SocketException {
+      throw Exception('Keine Internetverbindung');
+    } on TimeoutException {
+      throw Exception('Anfrage dauert zu lange');
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Get stats error: $e');
+      }
+      rethrow;
     }
   }
 
   /// Get user profile
   Future<Map<String, dynamic>> getUserProfile(String userId) async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/api/users/$userId/profile'),
-    );
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/users/$userId/profile'),
+      ).timeout(
+        const Duration(seconds: 15),
+        onTimeout: () => throw TimeoutException('Get profile timeout'),
+      );
 
-    if (response.statusCode == 200) {
-      return json.decode(response.body);
-    } else {
-      throw Exception('Failed to load profile: ${response.statusCode}');
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Failed to load profile: ${response.statusCode}');
+      }
+    } on SocketException {
+      throw Exception('Keine Internetverbindung');
+    } on TimeoutException {
+      throw Exception('Anfrage dauert zu lange');
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Get profile error: $e');
+      }
+      rethrow;
     }
   }
 

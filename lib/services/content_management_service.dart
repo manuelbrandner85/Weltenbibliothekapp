@@ -1,5 +1,6 @@
 import 'dart:convert';
-import '../services/storage_service.dart';
+import 'dart:async';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 import '../core/storage/unified_storage_service.dart';
@@ -37,7 +38,10 @@ class ContentManagementService {
           'Authorization': 'Bearer $username',
           'Content-Type': 'application/json',
         },
-      ).timeout(_timeout);
+      ).timeout(
+        _timeout,
+        onTimeout: () => throw TimeoutException('Get content timeout'),
+      );
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -55,6 +59,16 @@ class ContentManagementService {
         }
         return [];
       }
+    } on SocketException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Admin content: Keine Internetverbindung');
+      }
+      return [];
+    } on TimeoutException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Admin content: Timeout - $e');
+      }
+      return [];
     } catch (e) {
       if (kDebugMode) {
         debugPrint('❌ Content load error: $e');
@@ -81,9 +95,28 @@ class ContentManagementService {
           'Authorization': 'Bearer $username',
           'Content-Type': 'application/json',
         },
-      ).timeout(_timeout);
+      ).timeout(
+        _timeout,
+        onTimeout: () {
+          throw TimeoutException('Feature-Toggle Timeout (30s)');
+        },
+      );
+
+      if (kDebugMode && response.statusCode == 200) {
+        debugPrint('✅ Feature toggle successful');
+      }
 
       return response.statusCode == 200;
+    } on SocketException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Feature toggle: Keine Internetverbindung');
+      }
+      return false;
+    } on TimeoutException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Feature toggle: $e');
+      }
+      return false;
     } catch (e) {
       if (kDebugMode) {
         debugPrint('❌ Feature toggle error: $e');
@@ -110,9 +143,28 @@ class ContentManagementService {
           'Authorization': 'Bearer $username',
           'Content-Type': 'application/json',
         },
-      ).timeout(_timeout);
+      ).timeout(
+        _timeout,
+        onTimeout: () {
+          throw TimeoutException('Verify-Toggle Timeout (30s)');
+        },
+      );
+
+      if (kDebugMode && response.statusCode == 200) {
+        debugPrint('✅ Verify toggle successful');
+      }
 
       return response.statusCode == 200;
+    } on SocketException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Verify toggle: Keine Internetverbindung');
+      }
+      return false;
+    } on TimeoutException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Verify toggle: $e');
+      }
+      return false;
     } catch (e) {
       if (kDebugMode) {
         debugPrint('❌ Verify toggle error: $e');
@@ -139,9 +191,28 @@ class ContentManagementService {
           'Authorization': 'Bearer $username',
           'Content-Type': 'application/json',
         },
-      ).timeout(_timeout);
+      ).timeout(
+        _timeout,
+        onTimeout: () {
+          throw TimeoutException('Content-Delete Timeout (30s)');
+        },
+      );
+
+      if (kDebugMode && response.statusCode == 200) {
+        debugPrint('✅ Content deleted successfully');
+      }
 
       return response.statusCode == 200;
+    } on SocketException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Content delete: Keine Internetverbindung');
+      }
+      return false;
+    } on TimeoutException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Content delete: $e');
+      }
+      return false;
     } catch (e) {
       if (kDebugMode) {
         debugPrint('❌ Content delete error: $e');
@@ -186,7 +257,12 @@ class ContentManagementService {
           'content_body': body,
           'category': category,
         }),
-      ).timeout(_timeout);
+      ).timeout(
+        _timeout,
+        onTimeout: () {
+          throw TimeoutException('Content-Create Timeout (30s)');
+        },
+      );
 
       if (response.statusCode == 200) {
         if (kDebugMode) {
@@ -200,6 +276,16 @@ class ContentManagementService {
         }
         return false;
       }
+    } on SocketException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Content create: Keine Internetverbindung');
+      }
+      return false;
+    } on TimeoutException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Content create: $e');
+      }
+      return false;
     } catch (e) {
       if (kDebugMode) {
         debugPrint('❌ Content creation error: $e');
@@ -220,7 +306,12 @@ class ContentManagementService {
         debugPrint('📚 Loading public content: $world');
       }
 
-      final response = await http.get(url).timeout(_timeout);
+      final response = await http.get(url).timeout(
+        _timeout,
+        onTimeout: () {
+          throw TimeoutException('Public-Content Timeout (30s)');
+        },
+      );
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -237,6 +328,16 @@ class ContentManagementService {
         }
         return [];
       }
+    } on SocketException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Public content: Keine Internetverbindung');
+      }
+      return [];
+    } on TimeoutException catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Public content: $e');
+      }
+      return [];
     } catch (e) {
       if (kDebugMode) {
         debugPrint('❌ Public content load error: $e');

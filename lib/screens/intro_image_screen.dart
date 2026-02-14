@@ -38,13 +38,9 @@ class _IntroImageScreenState extends State<IntroImageScreen> with SingleTickerPr
     
     debugPrint('🎬 IntroImageScreen: Animation vorbereitet');
     
-    // Auto-Navigation nach 3 Sekunden statt 5 (SCHNELLER)
-    Future.delayed(const Duration(seconds: 3), () {
-      debugPrint('🎬 IntroImageScreen: 3 Sekunden vorbei, navigiere...');
-      if (mounted) {
-        _navigateToApp();
-      }
-    });
+    // ✅ SOFORT ZUM PORTAL - Kein Auto-Navigation Delay mehr
+    // Auto-Navigation wird entfernt - User navigiert durch Tippen
+    // Future.delayed wurde entfernt für direkteren Zugang
   }
   
   /// ✅ PRELOAD IMAGE - startet Animation nur wenn Bild geladen
@@ -118,7 +114,12 @@ class _IntroImageScreenState extends State<IntroImageScreen> with SingleTickerPr
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      body: Stack(
+      body: GestureDetector(
+        onTap: () {
+          debugPrint('🎬 IntroImageScreen: User tap detected, navigating immediately...');
+          _navigateToApp();
+        },
+        child: Stack(
         children: [
           // ✅ SMOOTH LOADING: Zeige nur wenn Bild geladen
           if (_imageLoaded)
@@ -221,6 +222,7 @@ class _IntroImageScreenState extends State<IntroImageScreen> with SingleTickerPr
             ),
           ),
         ],
+        ),
       ),
     );
   }

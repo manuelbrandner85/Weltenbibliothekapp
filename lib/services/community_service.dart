@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:async';  // ✅ TimeoutException
+import 'dart:io';  // ✅ SocketException
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 import '../models/community_post.dart';
@@ -73,70 +74,76 @@ class CommunityService {
       // Wait for all stats fetches to complete
       return Future.wait(posts);
       
+    } on SocketException catch (e) {
+      
+      if (kDebugMode) {
+      
+        debugPrint('❌ Network: Keine Internetverbindung');
+      
+      }
+      
+      return [];
+      
+    } on TimeoutException catch (e) {
+      
+      if (kDebugMode) {
+      
+        debugPrint('❌ Timeout: $e');
+      
+      }
+      
+      return [];
+      
+    } catch (e) {
+      
+      if (kDebugMode) {
+      
+        debugPrint('❌ Error fetching articles: $e $e');
+      
+      }
+      
+      return [];
+      
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('❌ Error fetching articles: $e');
+        debugPrint('❌ Error creating post: $e');
       }
-      // Return empty list on error to avoid UI crashes
-      return [];
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ Error fetching articles: $e');
-      }
-      // Return empty list on error to avoid UI crashes
-      return [];
+      throw Exception('Fehler beim Erstellen des Posts: $e');
     }
   }
   
-  /// Create new post (with optional media)
-  /// 
-  /// Returns post ID on success
-  Future<String> createPost({
+  /// Create a new post
+  Future<void> createPost({
     required String username,
     required String content,
     required List<String> tags,
     required WorldType worldType,
     String? authorAvatar,
-    String? mediaUrl,  // Media URL from R2 Storage
-    String? mediaType, // 'image' or 'video'
+    String? mediaUrl,
+    String? mediaType,
   }) async {
     try {
-      if (kDebugMode) {
-        debugPrint('📤 Creating post: "$content"');
-      }
-      
-      final body = {
-        'authorUsername': username,
-        'authorAvatar': authorAvatar ?? '👤',
-        'content': content,
-        'tags': tags,
-        'worldType': worldType.name,
-      };
-      
-      // Add media if provided
-      if (mediaUrl != null) {
-        body['mediaUrl'] = mediaUrl;
-        body['mediaType'] = mediaType ?? 'image';
-      }
-      
       final response = await http.post(
         Uri.parse('$_baseUrl/community/posts'),
         headers: {'Content-Type': 'application/json'},
-        body: json.encode(body),
+        body: json.encode({
+          'author': username,
+          'authorAvatar': authorAvatar,
+          'content': content,
+          'tags': tags,
+          'world': worldType.name,
+          'mediaUrl': mediaUrl,
+          'mediaType': mediaType,
+          'timestamp': DateTime.now().toIso8601String(),
+        }),
       ).timeout(_timeout);
       
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final data = json.decode(response.body);
-        final postId = data['id'] as String;
-        
-        if (kDebugMode) {
-          debugPrint('✅ Post created: $postId');
-        }
-        
-        return postId;
-        
-      } else {
+      if (response.statusCode != 200 && response.statusCode != 201) {
         throw Exception('Failed to create post: ${response.statusCode}');
+      }
+      
+      if (kDebugMode) {
+        debugPrint('✅ Post created successfully');
       }
       
     } catch (e) {
@@ -277,28 +284,41 @@ class CommunityService {
         throw Exception('Failed to load comments: ${response.statusCode}');
       }
       
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ Error fetching comments: $e');
-      }
-      throw Exception('Fehler beim Laden der Kommentare: $e');
-    }
-  }
-  
-  /// Health check (verify backend availability)
-  Future<bool> isBackendAvailable() async {
-    try {
-      final response = await http.get(
-        Uri.parse('$_baseUrl/api/health'),
-      ).timeout(const Duration(seconds: 5));
+    } on SocketException catch (e) {
       
-      return response.statusCode == 200;
+      if (kDebugMode) {
+      
+        debugPrint('❌ Network: Keine Internetverbindung');
+      
+      }
+      
+      return [];
+      
+    } on TimeoutException catch (e) {
+      
+      if (kDebugMode) {
+      
+        debugPrint('❌ Timeout: $e');
+      
+      }
+      
+      return [];
+      
+    } catch (e) {
+      
+      if (kDebugMode) {
+      
+        debugPrint('❌ Error fetching comments: $e $e');
+      
+      }
+      
+      return [];
       
     } catch (e) {
       if (kDebugMode) {
         debugPrint('⚠️ Backend health check failed: $e');
       }
-      return false;
+      return [];
     }
   }
 }

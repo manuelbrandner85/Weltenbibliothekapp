@@ -14,6 +14,7 @@ import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../models/chat_models.dart';
 import 'cloudflare_signaling_service.dart'; // ✅ CRITICAL: Signaling
+import 'simple_voice_service.dart'; // ✅ IMPORT VoiceParticipant & VoiceRole
 import 'dart:async';
 
 /// Voice Participant (Internal Model with RTCPeerConnection)

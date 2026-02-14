@@ -6,6 +6,7 @@ import '../../services/cloudflare_api_service.dart';
 import '../../services/websocket_chat_service.dart'; // 🌐 WEBSOCKET REAL-TIME (NEW)
 import '../../services/hybrid_chat_service.dart'; // 🔄 HYBRID WEBSOCKET+HTTP - STUB for now
 import '../../services/chat_notification_service.dart'; // 🔔 NOTIFICATIONS
+import '../../services/user_service.dart'; // 🆕 User Service für Auth
 import '../../widgets/mention_autocomplete.dart'; // @ MENTIONS
 import 'package:image_picker/image_picker.dart'; // 📷 Image Picker
 import '../../core/storage/unified_storage_service.dart'; // 👤 PROFIL
@@ -16,7 +17,7 @@ import '../../services/typing_indicator_service.dart'; // ⌨️ TYPING
 // import '../../services/voice_message_service_export.dart'; // 🎙️ VOICE MESSAGE (Disabled for Android)
 // import '../../widgets/voice_record_button.dart'; // 🎙️ VOICE RECORD BUTTON (Disabled for Android)
 import '../../services/webrtc_voice_service.dart'; // 🎤 WEBRTC VOICE
-import '../../widgets/voice_chat_banner.dart'; // 🎙️ Voice Chat Banner
+// REMOVED: import '../../widgets/voice_chat_banner.dart'; (unused)
 import '../../widgets/voice/voice_participant_header_bar.dart'; // 🎤 Voice Participant Header Bar
 import '../../widgets/offline_indicator.dart'; // 📡 OFFLINE INDICATOR (NEW Phase 3)
 // 👤 MATERIE PROFIL MODEL
@@ -81,7 +82,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
   
   late String _selectedRoom;
   String _username = 'User${DateTime.now().millisecondsSinceEpoch % 10000}';
-  String _userId = 'user_anonymous';
+  late String _userId; // 🔥 Real User ID from UserService (initialized in initState)
   String _avatar = '👤'; // 🆕 Avatar Emoji (default)
   String? _avatarEmoji; // 🆕 Avatar Emoji aus Profil
   String? _avatarUrl; // 🆕 Avatar URL aus Profil
@@ -177,8 +178,12 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
 
   @override
   @override
+  @override
   void initState() {
     super.initState();
+    
+    // 🔥 Initialize User ID from UserService
+    _userId = UserService.getCurrentUserId();
     
     // 🔧 FIX 18: Set initial room from dashboard navigation
     _selectedRoom = widget.initialRoom ?? 'politik';
@@ -960,17 +965,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
                         worldColor: Colors.red, // MATERIE Red
                       ),
                     ),
-                    // 🎙️ VOICE CHAT BANNER (Fixed height)
-                    SizedBox(
-                      height: 40, // 🔧 FIX: 80 → 40px (Voice Banner minimal!)
-                      child: VoiceChatBanner(
-                        roomId: _selectedRoom,
-                        roomName: _materieRooms[_selectedRoom]?['name'] ?? 'Unknown',
-                        userId: _userId,
-                        username: _username,
-                        color: Colors.red, // MATERIE Red
-                      ),
-                    ),
+                    // ✅ REMOVED: VoiceChatBanner (redundant - use VoiceParticipantHeaderBar instead)
                   // 🎤 TELEGRAM VOICE HEADER BAR (ONLY WHEN ACTIVE - like real Telegram)
                   if (_isInVoiceRoom)
                     VoiceParticipantHeaderBar(

@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'dart:convert'; // 🆕 JSON decoding
+import 'package:http/http.dart' as http; // 🆕 HTTP requests
+import '../config/api_config.dart'; // 🆕 API Configuration
 import '../services/intelligent_search_service.dart';
 import 'package:intl/intl.dart';
 
@@ -54,7 +57,11 @@ class _IntelligentSearchScreenState extends State<IntelligentSearchScreen> {
     if (query.length >= 2) {
       setState(() {
         _showHistory = false;
-        _suggestions = _searchService.getSuggestions(query, _getMockTitles());
+        // 🔥 Generate suggestions from existing search results (NO MOCK DATA)
+        _suggestions = _searchResults.map((a) => a['title'] as String).toList()
+          .where((title) => title.toLowerCase().contains(query.toLowerCase()))
+          .take(5)
+          .toList();
       });
     } else {
       setState(() {
@@ -74,22 +81,45 @@ class _IntelligentSearchScreenState extends State<IntelligentSearchScreen> {
 
     _searchFocus.unfocus();
 
-    // Mock-Daten (in echter App: API-Call oder lokale Datenbank)
-    final allArticles = _getMockArticles();
+    // 🔥 REAL BACKEND API CALL (NO MOCK DATA)
+    try {
+      final response = await http.get(
+        Uri.parse('${ApiConfig.getUrl(ApiConfig.contentSearch)}?q=$query${_selectedWorld != null ? '&world=$_selectedWorld' : ''}${_selectedCategory != null ? '&category=$_selectedCategory' : ''}'),
+        headers: ApiConfig.headers,
+      ).timeout(const Duration(seconds: 30));
 
-    final results = await _searchService.search(
-      query: query,
-      allArticles: allArticles,
-      world: _selectedWorld,
-      category: _selectedCategory,
-      fromDate: _fromDate,
-      toDate: _toDate,
-    );
-
-    setState(() {
-      _searchResults = results;
-      _isSearching = false;
-    });
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['success'] == true) {
+          setState(() {
+            _searchResults = List<Map<String, dynamic>>.from(data['results'] ?? []);
+            _isSearching = false;
+          });
+          
+          // Save to search history
+          await _searchService.saveSearchHistory(query);
+          await _loadSearchHistory();
+        } else {
+          throw Exception(data['message'] ?? 'Search failed');
+        }
+      } else {
+        throw Exception('Backend returned status ${response.statusCode}');
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _searchResults = [];
+          _isSearching = false;
+        });
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('🚫 Suche fehlgeschlagen: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -563,46 +593,5 @@ class _IntelligentSearchScreenState extends State<IntelligentSearchScreen> {
     return '';
   }
 
-  // Mock-Daten (in echter App durch API ersetzen)
-  List<Map<String, dynamic>> _getMockArticles() {
-    return [
-      {
-        'id': '1',
-        'title': 'Die Wahrheit über die Illuminati',
-        'content': 'Geheimbünde kontrollieren die Welt. Die Illuminati sind real und ihre Symbolik ist überall...',
-        'category': 'Geheimbünde',
-        'world': 'materie',
-        'publishedDate': '2025-01-15',
-        'tags': ['illuminati', 'elite', 'kontrolle'],
-        'views': 5000,
-        'likes': 250,
-      },
-      {
-        'id': '2',
-        'title': 'UFO-Sichtungen nehmen zu',
-        'content': 'Immer mehr Menschen berichten von UFO-Sichtungen. Was steckt dahinter...',
-        'category': 'UFOs',
-        'world': 'materie',
-        'publishedDate': '2025-01-14',
-        'tags': ['ufo', 'alien', 'sichtung'],
-        'views': 3000,
-        'likes': 150,
-      },
-      {
-        'id': '3',
-        'title': 'Chakra-Meditation für Anfänger',
-        'content': 'Lerne die 7 Chakren kennen und wie du sie durch Meditation aktivierst...',
-        'category': 'Meditation',
-        'world': 'energie',
-        'publishedDate': '2025-01-13',
-        'tags': ['chakra', 'meditation', 'energie'],
-        'views': 2000,
-        'likes': 100,
-      },
-    ];
-  }
 
-  List<String> _getMockTitles() {
-    return _getMockArticles().map((a) => a['title'] as String).toList();
-  }
 }

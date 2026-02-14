@@ -51,7 +51,7 @@ import '../../widgets/mention_autocomplete.dart'; // @ Mentions
 // import '../../widgets/voice_record_button.dart'; // 🎤 Voice Recording (Android disabled)
 import '../../services/webrtc_voice_service.dart'; // 🎤 WEBRTC VOICE
 import '../../services/typing_indicator_service.dart'; // ⌨️ Typing Indicator
-import '../../widgets/voice_chat_banner.dart'; // 🎙️ Voice Chat Banner
+// REMOVED: import '../../widgets/voice_chat_banner.dart'; (unused)
 import '../../widgets/offline_indicator.dart'; // 📡 OFFLINE INDICATOR (NEW Phase 3)
 // 📷 Image Picker
 
@@ -76,7 +76,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
   String _username = 'Gast';
   String _avatar = '👤';
   String? _avatarUrl; // 🖼️ Hochgeladenes Profilbild (PRIORITÄT!)
-  String _userId = 'user_gast'; // 🆕 User ID for advanced features
+  late String _userId; // 🔥 Real User ID from UserService (initialized in initState)
   
   List<Map<String, dynamic>> _messages = [];
   List<Map<String, dynamic>> _polls = []; // 🆕 Polls list
@@ -165,8 +165,12 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
 
   @override
   @override
+  @override
   void initState() {
     super.initState();
+    
+    // 🔥 Initialize User ID from UserService
+    _userId = UserService.getCurrentUserId();
     
     // 🔧 FIX 18: Set initial room from dashboard navigation
     _selectedRoom = widget.initialRoom ?? 'meditation';
@@ -1239,17 +1243,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
                       ),
                     ),
                   
-                  // 🎙️ VOICE CHAT BANNER (Kompakt für mehr Chat-Platz)
-                  SizedBox(
-                    height: 40, // 🔧 FIX: 80 → 40px (Voice Banner minimal!)
-                    child: VoiceChatBanner(
-                      roomId: _selectedRoom,
-                      roomName: _rooms[_selectedRoom]?['name'] ?? 'Unknown',
-                      userId: _userId,
-                      username: _username,
-                      color: const Color(0xFF9B51E0), // ENERGIE Purple
-                    ),
-                  ),
+                  // ✅ REMOVED: VoiceChatBanner (redundant - use VoiceParticipantHeaderBar instead)
                 
                   // 🎤 TELEGRAM VOICE HEADER BAR (ONLY WHEN ACTIVE - like real Telegram)
                   if (_isInVoiceRoom)

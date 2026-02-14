@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'energie/home_tab_v3.dart';
+import 'energie/home_tab_v5.dart';
 import 'energie/spirit_tab_modern.dart';
 import 'energie/energie_community_tab_modern.dart';
 import 'energie/energie_karte_tab_pro.dart';
@@ -82,7 +82,7 @@ class _EnergieWorldScreenState extends ConsumerState<EnergieWorldScreen>
 
     // 🔥 CRITICAL: Tabs mit Key erstellen, damit sie neu gebaut werden wenn Admin-Status sich ändert
     final tabs = [
-      EnergieHomeTabV3(key: ValueKey('home_${adminState.username}_${adminState.role}')),
+      EnergieHomeTabV5(key: ValueKey('home_${adminState.username}_${adminState.role}')),
       const SpiritTabModern(),
       const EnergieCommunityTabModern(),
       const EnergieKarteTabPro(),

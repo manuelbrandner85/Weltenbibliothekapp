@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../screens/materie/home_tab_v2.dart';
+import '../../../screens/materie/home_tab_v5.dart';
 import '../../../screens/materie/recherche_tab_mobile.dart';
 import '../../../screens/materie/community_tab_modern.dart';
 import '../../../screens/materie/materie_karte_tab_pro.dart';
@@ -64,7 +64,7 @@ class _MaterieWorldScreenState extends ConsumerState<MaterieWorldScreen>
   }
 
   final List<Widget> _tabs = [
-    const MaterieHomeTabV2(),
+    const MaterieHomeTabV5(),
     const MobileOptimierterRechercheTab(),
     const MaterieCommunityTabModern(),
     const MaterieKarteTabPro(),

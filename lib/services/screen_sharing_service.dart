@@ -6,7 +6,7 @@ library;
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
-import '../services/simple_voice_controller.dart';
+import '../../services/webrtc_voice_service.dart'; // ✅ UNIFIED WebRTC Service
 import '../services/cloudflare_signaling_service.dart';
 import '../services/error_reporting_service.dart';
 

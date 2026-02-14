@@ -14,6 +14,8 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../../services/world_admin_service.dart';
 import '../../../config/api_config.dart';
+import '../../../core/storage/unified_storage_service.dart';
+import '../../../screens/shared/modern_voice_chat_screen.dart';
 
 /// Active Call Model
 class ActiveCall {
@@ -511,14 +513,41 @@ class _ActiveCallsDashboardState extends ConsumerState<ActiveCallsDashboard> {
   }
 
   /// Join call as observer (admin)
-  void _joinAsObserver(ActiveCall call) {
-    // TODO: Implement observer join logic
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Joining ${call.roomName} as observer...'),
-        backgroundColor: Colors.blue,
-      ),
-    );
+  void _joinAsObserver(ActiveCall call) async {
+    try {
+      // Get admin username from storage
+      final adminUsername = await UnifiedStorageService.getString('username') ?? 'Admin';
+      
+      // Navigate to voice chat screen as observer
+      if (!mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ModernVoiceChatScreen(
+            roomId: call.roomId,
+            world: widget.world,
+            userName: '$adminUsername (Observer)',
+            isObserverMode: true, // Admin observer mode
+          ),
+        ),
+      );
+      
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('✅ Joined ${call.roomName} as observer'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ Failed to join call: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   /// End call (admin action)
@@ -541,15 +570,48 @@ class _ActiveCallsDashboardState extends ConsumerState<ActiveCallsDashboard> {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
-              // TODO: Implement end call logic
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Ending call in ${call.roomName}...'),
-                  backgroundColor: Colors.red,
-                ),
-              );
+              
+              try {
+                // Call backend API to end the voice room
+                final response = await http.post(
+                  Uri.parse('${ApiConfig.voiceApiUrl}/end-room'),
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ${ApiConfig.apiToken}',
+                  },
+                  body: jsonEncode({
+                    'room_id': call.roomId,
+                    'world': widget.world,
+                    'reason': 'Admin terminated',
+                  }),
+                ).timeout(const Duration(seconds: 10));
+                
+                if (!mounted) return;
+                
+                if (response.statusCode == 200) {
+                  // Reload calls list
+                  await _loadActiveCalls();
+                  
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('✅ Call in ${call.roomName} ended successfully'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                } else {
+                  throw Exception('API returned ${response.statusCode}');
+                }
+              } catch (e) {
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('❌ Failed to end call: $e'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,

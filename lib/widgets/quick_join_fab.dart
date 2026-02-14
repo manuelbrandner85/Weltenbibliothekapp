@@ -4,7 +4,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../services/simple_voice_controller.dart';
+import '../../services/webrtc_voice_service.dart'; // ✅ UNIFIED WebRTC Service
 
 class QuickJoinFAB extends StatefulWidget {
   final String currentRoomId;

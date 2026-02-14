@@ -11,7 +11,7 @@ import 'package:hive_flutter/hive_flutter.dart'; // 🗄️ HIVE LOCAL STORAGE
 // import 'firebase_options.dart';
 import 'screens/intro_image_screen.dart';
 import 'screens/portal_home_screen.dart'; // 🌀 Portal (NACH Tutorial)
-import 'screens/energie/dashboard_screen.dart';
+// import 'screens/energie/energie_world_screen.dart'; // Energie World Screen - DISABLED (missing file)
 import 'screens/energie/achievements_screen.dart';
 import 'screens/daily_challenges_screen.dart';  // 🎯 Daily Challenges
 import 'screens/leaderboard_screen.dart';  // 🏆 Leaderboard
@@ -19,7 +19,7 @@ import 'screens/enhanced_profile_screen.dart';  // 👤 Enhanced Profile
 import 'screens/cloudflare_notification_settings_screen.dart'; // CLOUDFLARE PUSH
 import 'screens/materie/search_history_screen.dart';
 import 'screens/shared/backend_health_monitor_screen.dart'; // 🏥 HEALTH MONITOR // 🆕 SEARCH HISTORY
-import 'screens/test/simple_voice_test_screen.dart'; // 🧪 SIMPLE VOICE TEST
+// REMOVED: Simple Voice Test Screen (deprecated)
 // KI-ANALYSE-TOOLS (für Recherche-Tab)
 import 'screens/materie/propaganda_detector_screen.dart';
 import 'screens/materie/image_forensics_screen.dart';
@@ -258,7 +258,7 @@ class _WeltenbibliothekAppState extends State<WeltenbibliothekApp> {
           home: const PortalHomeScreen(), // 🌀 Direkt zum Portal
           routes: {
             '/home': (context) => const IntroImageScreen(),
-            '/dashboard': (context) => const DashboardScreen(),
+            // '/dashboard': (context) => const EnergieWorldScreen(), // DISABLED (missing file)
             '/achievements': (context) => const AchievementsScreen(),
             '/daily_challenges': (context) => const DailyChallengesScreen(),  // 🎯 Daily Challenges
             '/leaderboard': (context) => const LeaderboardScreen(),  // 🏆 Leaderboard
@@ -266,7 +266,7 @@ class _WeltenbibliothekAppState extends State<WeltenbibliothekApp> {
             '/notifications': (context) => const CloudflareNotificationSettingsScreen(), // CLOUDFLARE
             '/search_history': (context) => const SearchHistoryScreen(), // 🆕 SEARCH HISTORY
             '/health': (context) => const BackendHealthMonitorScreen(), // 🏥 HEALTH MONITOR
-            '/simple_voice_test': (context) => const SimpleVoiceTestScreen(), // 🧪 SIMPLE VOICE TEST
+            // REMOVED: '/simple_voice_test' route (deprecated Simple Voice Test)
             // 🔐 ADMIN-DASHBOARDS (World-specific)
             '/admin/materie': (context) => const WorldAdminDashboard(world: 'materie'),
             '/admin/energie': (context) => const WorldAdminDashboard(world: 'energie'),
@@ -280,10 +280,4 @@ class _WeltenbibliothekAppState extends State<WeltenbibliothekApp> {
       },
     );
   }
-
-  // TODO: Review unused method: _checkOnboardingCompleted
-  // Future<bool> _checkOnboardingCompleted() async {
-    // final prefs = await SharedPreferences.getInstance();
-    // return prefs.getBool('onboarding_completed') ?? false;
-  // }
 }

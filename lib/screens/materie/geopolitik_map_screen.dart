@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/group_tools_service.dart';
+import '../../services/user_service.dart'; // 🆕 User Service für Auth
 
 /// 🎭 GEOPOLITIK-KARTIERUNG SCREEN
 class GeopolitikMapScreen extends StatefulWidget {
@@ -82,7 +83,7 @@ class _GeopolitikMapScreenState extends State<GeopolitikMapScreen> {
               try {
                 await _toolsService.createGeopoliticsEvent(
                   roomId: widget.roomId,
-                  userId: 'user_manuel',
+                  userId: UserService.getCurrentUserId(),
                   username: 'Manuel',
                   title: titleCtrl.text.trim(),
                   description: descCtrl.text.trim(),
