@@ -10,7 +10,7 @@ class ApiConfig {
   static const String baseUrl = 'https://weltenbibliothek-api-v3.brandy13062.workers.dev';
   
   // 🆕 BACKEND v3.2 URLs (WebRTC Signaling + Admin APIs)
-  // ⚠️ TODO: Nach Cloudflare Deployment diese URLs aktualisieren!
+  // ✅ LIVE: Backend v3.2 deployed on Cloudflare Workers
   static const String backendV32Url = 'https://weltenbibliothek-backend-v3-2.brandy13062.workers.dev';
   static const String webrtcSignalingUrl = 'wss://weltenbibliothek-backend-v3-2.brandy13062.workers.dev/voice/signaling';
   
