@@ -39,15 +39,10 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
-    }
-
-    // ✅ APK SIZE OPTIMIZATION: Split per ABI
-    splits {
-        abi {
-            isEnable = true
-            reset()
-            include("arm64-v8a", "armeabi-v7a", "x86_64")
-            isUniversalApk = true // Generate universal APK as well
+        
+        // 🔧 OPTIMIZATION: Only build for ARM64 (modern devices)
+        ndk {
+            abiFilters.addAll(listOf("arm64-v8a"))
         }
     }
 
