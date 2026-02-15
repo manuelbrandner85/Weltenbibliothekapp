@@ -6,6 +6,9 @@ library;
 
 import 'webrtc_voice_service.dart';
 
+/// Export WebRTCVoiceService for direct access
+export 'webrtc_voice_service.dart';
+
 /// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 /// 🔄 BACKWARD COMPATIBILITY WRAPPER
 /// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -48,10 +51,5 @@ class SimpleVoiceController {
   bool get isMuted => _service.isMuted;
   bool get isConnected => _service.state == VoiceConnectionState.connected;
   bool get isInCall => _service.state == VoiceConnectionState.connected;
-  List<VoiceParticipant> get participants => _service.participants.values.toList();
+  List<VoiceParticipant> get participants => _service.participants;
 }
-
-/// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-/// 📦 EXPORT
-/// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-export 'webrtc_voice_service.dart';

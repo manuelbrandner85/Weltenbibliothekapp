@@ -228,6 +228,17 @@ class UnifiedStorageService {
     }
   }
 
+  /// Save notification preference (String value)
+  Future<void> saveNotificationPreferenceString(String key, String value) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('notif_$key', value);
+      debugPrint('✅ Notification preference saved: $key = $value');
+    } catch (e) {
+      debugPrint('❌ Error saving notification preference: $e');
+    }
+  }
+
   /// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   /// 🗑️ CACHE MANAGEMENT
   /// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

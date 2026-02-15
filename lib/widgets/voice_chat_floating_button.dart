@@ -35,7 +35,25 @@ class _VoiceChatFloatingButtonState extends State<VoiceChatFloatingButton>
     
     _voiceService.stateStream.listen((state) {
       if (mounted) {
-        setState(() => _state = state);
+        // Convert VoiceConnectionState to CallConnectionState
+        CallConnectionState callState;
+        switch (state) {
+          case VoiceConnectionState.disconnected:
+            callState = CallConnectionState.idle;
+            break;
+          case VoiceConnectionState.connecting:
+            callState = CallConnectionState.connecting;
+            break;
+          case VoiceConnectionState.connected:
+            callState = CallConnectionState.connected;
+            break;
+          case VoiceConnectionState.error:
+            callState = CallConnectionState.error;
+            break;
+          default:
+            callState = CallConnectionState.idle;
+        }
+        setState(() => _state = callState);
       }
     });
     

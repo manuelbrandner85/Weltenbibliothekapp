@@ -68,8 +68,8 @@ class _EnhancedProfileScreenState extends State<EnhancedProfileScreen> with Sing
       
       // Check follow status
       if (!widget.isOwnProfile) {
-        final currentUserId = _storage.getCurrentUserId();
-        _isFollowing = await _api.isFollowing(currentUserId: currentUserId, targetUserId: widget.userId);
+        final currentUserId = await _storage.getCurrentUserId();
+        _isFollowing = await _api.isFollowing(currentUserId: currentUserId ?? '', targetUserId: widget.userId);
       }
       
     } catch (e) {
@@ -82,16 +82,16 @@ class _EnhancedProfileScreenState extends State<EnhancedProfileScreen> with Sing
   }
   
   Future<void> _toggleFollow() async {
-    final currentUserId = _storage.getCurrentUserId();
+    final currentUserId = await _storage.getCurrentUserId();
     
     setState(() => _isFollowing = !_isFollowing);
     
     try {
       if (_isFollowing) {
-        await _api.followUser(currentUserId: currentUserId, targetUserId: widget.userId);
+        await _api.followUser(currentUserId: currentUserId ?? '', targetUserId: widget.userId);
         _showSnackBar('✅ Du folgst jetzt diesem Nutzer', Colors.green);
       } else {
-        await _api.unfollowUser(currentUserId: currentUserId, targetUserId: widget.userId);
+        await _api.unfollowUser(currentUserId: currentUserId ?? '', targetUserId: widget.userId);
         _showSnackBar('❌ Du folgst diesem Nutzer nicht mehr', Colors.orange);
       }
     } catch (e) {

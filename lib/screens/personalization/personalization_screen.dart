@@ -46,10 +46,10 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> with Sing
     setState(() => _isLoading = true);
     
     try {
-      final userId = _storage.getCurrentUserId();
+      final userId = await _storage.getCurrentUserId();
       
       // Load recommendations
-      _recommendations = await _api.getRecommendations(userId: userId, limit: 20);
+      _recommendations = await _api.getRecommendations(userId: userId ?? '', limit: 20);
       
       // Load bookmarks
       _bookmarks = await _storage.getBookmarks();

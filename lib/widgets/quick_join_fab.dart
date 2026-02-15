@@ -62,11 +62,11 @@ class _QuickJoinFABState extends State<QuickJoinFAB> {
     setState(() => _isLoading = true);
     
     try {
-      await _voiceController.joinVoiceRoom(
-        _lastRoomId!,
-        _lastRoomName ?? 'Voice Chat',
-        widget.userId,
-        widget.username,
+      await _voiceController.joinRoom(
+        roomId: _lastRoomId!,
+        userId: widget.userId,
+        username: widget.username,
+        world: 'materie', // Default world
       );
       
       if (mounted) {

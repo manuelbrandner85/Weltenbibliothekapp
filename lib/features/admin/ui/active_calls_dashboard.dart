@@ -12,6 +12,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../config/api_config.dart';
 import '../../../core/storage/unified_storage_service.dart';
 import '../../../screens/shared/modern_voice_chat_screen.dart';
@@ -515,7 +516,9 @@ class _ActiveCallsDashboardState extends ConsumerState<ActiveCallsDashboard> {
   void _joinAsObserver(ActiveCall call) async {
     try {
       // Get admin username from storage
-      final adminUsername = await UnifiedStorageService.getString('username') ?? 'Admin';
+      final storage = UnifiedStorageService();
+      final prefs = await SharedPreferences.getInstance();
+      final adminUsername = prefs.getString('username') ?? 'Admin';
       
       // Navigate to voice chat screen as observer
       if (!mounted) return;

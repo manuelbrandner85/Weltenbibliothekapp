@@ -94,7 +94,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
           .where((e) => e.value)
           .map((e) => e.key)
           .toList();
-      await _storage.saveNotificationPreference('topics', subscribedTopics.join(','));
+      await _storage.saveNotificationPreferenceString('topics', subscribedTopics.join(','));
       
     } catch (e) {
       _showSnackBar('❌ Fehler beim Aktualisieren', Colors.red);
