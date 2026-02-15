@@ -4,7 +4,7 @@ import '../../services/storage_service.dart';
 import 'dart:ui';
 import '../../models/energie_profile.dart';
 import '../../core/storage/unified_storage_service.dart';
-import '../../services/cloudflare_api_service.dart';
+import '../../services/smart_articles_service.dart'; // 🧠 NEW: Smart Articles with auto-fallback
 import '../../services/user_stats_service.dart';
 import '../../services/user_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -203,7 +203,7 @@ class _EnergieHomeTabV4State extends State<EnergieHomeTabV4>
   double _scrollOffset = 0.0;
   
   // 🎨 SERVICES
-  final CloudflareApiService _api = CloudflareApiService();
+  final SmartArticlesService _articlesService = SmartArticlesService(); // 🧠 Smart with auto-fallback
   final UserStatsService _statsService = UserStatsService();
   
   @override
@@ -377,8 +377,8 @@ class _EnergieHomeTabV4State extends State<EnergieHomeTabV4>
       _spiritualLevel = (stats.totalSessions + stats.completedChallenges) ~/ 10; // Level up every 10 activities
       _dailyStreak = stats.currentStreak;
       
-      // 📰 LOAD FEATURED PRACTICES
-      final practices = await _api.getArticles(
+      // 📰 LOAD FEATURED PRACTICES (Smart with auto-fallback)
+      final practices = await _articlesService.getArticles(
         realm: 'energie',
         limit: 5,
       );

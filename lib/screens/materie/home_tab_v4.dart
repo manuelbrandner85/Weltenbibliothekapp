@@ -4,7 +4,7 @@ import '../../services/storage_service.dart';
 import 'dart:ui';
 import '../../models/materie_profile.dart';
 import '../../core/storage/unified_storage_service.dart';
-import '../../services/cloudflare_api_service.dart';
+import '../../services/smart_articles_service.dart'; // 🧠 NEW: Smart Articles with auto-fallback
 import '../../services/user_stats_service.dart';
 import '../../services/user_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -150,7 +150,7 @@ class _MaterieHomeTabV4State extends State<MaterieHomeTabV4>
   double _scrollOffset = 0.0;
   
   // 🎨 SERVICES
-  final CloudflareApiService _api = CloudflareApiService();
+  final SmartArticlesService _articlesService = SmartArticlesService(); // 🧠 Smart with auto-fallback
   final UserStatsService _statsService = UserStatsService();
   
   @override
@@ -263,8 +263,8 @@ class _MaterieHomeTabV4State extends State<MaterieHomeTabV4>
       _sharedFindings = stats.completedChallenges; // Reuse as shared count
       _dailyStreak = stats.currentStreak;
       
-      // 📰 LOAD FEATURED ARTICLES
-      final articles = await _api.getArticles(
+      // 📰 LOAD FEATURED ARTICLES (Smart with auto-fallback)
+      final articles = await _articlesService.getArticles(
         realm: 'materie',
         limit: 5,
       );
