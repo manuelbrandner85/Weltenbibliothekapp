@@ -5,7 +5,7 @@ library;
 
 import 'package:flutter/material.dart';
 import '../services/webrtc_voice_service.dart'; // ✅ UNIFIED WebRTC Service
-import '../screens/shared/telegram_voice_screen.dart';
+import '../screens/shared/modern_voice_chat_screen.dart';
 
 class VoiceHeaderButton extends StatefulWidget {
   final String roomId;
@@ -50,7 +50,14 @@ class _VoiceHeaderButtonState extends State<VoiceHeaderButton> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const TelegramVoiceScreen(),
+                    builder: (context) => ModernVoiceChatScreen(
+                      roomId: widget.roomId,
+                      roomName: widget.roomName,
+                      userId: widget.userId,
+                      username: widget.username,
+                      world: 'materie', // Default world
+                      accentColor: widget.color,
+                    ),
                   ),
                 );
               },

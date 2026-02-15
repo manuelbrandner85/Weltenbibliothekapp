@@ -4,7 +4,7 @@ library;
 
 import 'package:flutter/material.dart';
 import '../services/webrtc_voice_service.dart'; // ✅ UNIFIED WebRTC Service
-import '../screens/shared/telegram_voice_screen.dart';
+import '../screens/shared/modern_voice_chat_screen.dart';
 
 class VoiceMiniPlayer extends StatefulWidget {
   final WebRTCVoiceService voiceController;
@@ -63,7 +63,14 @@ class _VoiceMiniPlayerState extends State<VoiceMiniPlayer>
               // Open fullscreen voice chat
               Navigator.of(context).push(
                 MaterialPageRoute(
-                  builder: (context) => const TelegramVoiceScreen(),
+                  builder: (context) => ModernVoiceChatScreen(
+                    roomId: widget.voiceController.currentRoomId ?? '',
+                    roomName: 'Voice Chat', // Fallback name
+                    userId: 'current_user', // TODO: Get from auth
+                    username: 'User', // TODO: Get from auth
+                    world: 'materie', // Default world
+                    accentColor: const Color(0xFF6A5ACD),
+                  ),
                   settings: const RouteSettings(name: '/voice'),
                 ),
               );

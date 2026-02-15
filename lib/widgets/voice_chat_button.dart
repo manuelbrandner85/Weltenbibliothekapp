@@ -4,7 +4,7 @@ library;
 
 import 'package:flutter/material.dart';
 import '../services/webrtc_voice_service.dart'; // ✅ UNIFIED WebRTC Service
-import '../screens/shared/telegram_voice_screen.dart';
+import '../screens/shared/modern_voice_chat_screen.dart';
 
 class VoiceChatButton extends StatefulWidget {
   final String roomId;
@@ -107,7 +107,14 @@ class _VoiceChatButtonState extends State<VoiceChatButton> {
     if (isInThisRoom) {
       Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (context) => const TelegramVoiceScreen(),
+          builder: (context) => ModernVoiceChatScreen(
+            roomId: widget.roomId,
+            roomName: widget.roomName,
+            userId: widget.userId,
+            username: widget.username,
+            world: widget.world,
+            accentColor: widget.color,
+          ),
         ),
       );
       return;
@@ -172,7 +179,14 @@ class _VoiceChatButtonState extends State<VoiceChatButton> {
         // Open Voice Screen
         Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (context) => const TelegramVoiceScreen(),
+            builder: (context) => ModernVoiceChatScreen(
+              roomId: widget.roomId,
+              roomName: widget.roomName,
+              userId: widget.userId,
+              username: widget.username,
+              world: widget.world,
+              accentColor: widget.color,
+            ),
           ),
         );
       } else if (mounted) {
