@@ -4,11 +4,11 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../services/webrtc_voice_service.dart'; // ✅ UNIFIED WebRTC Service
+import '../services/webrtc_voice_service.dart'; // ✅ UNIFIED WebRTC Service
 import '../services/voice_feedback_service.dart';
 
 class VoiceKeyboardShortcuts extends StatefulWidget {
-  final SimpleVoiceController voiceController;
+  final WebRTCVoiceService voiceController;
   final Widget child;
   final Function(String emoji)? onEmojiShortcut;
   final VoidCallback? onHandRaiseShortcut;

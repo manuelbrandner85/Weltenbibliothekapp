@@ -24,7 +24,10 @@ class ModernVoiceChatScreen extends ConsumerStatefulWidget {
   final String roomName;
   final String userId;
   final String username;
+  final String world;  // ✅ ADD: world parameter
   final Color accentColor;
+  final bool isObserverMode;  // ✅ ADD: observer mode parameter
+  final String? userName;  // ✅ ADD: alternative userName parameter
 
   const ModernVoiceChatScreen({
     super.key,
@@ -32,7 +35,10 @@ class ModernVoiceChatScreen extends ConsumerStatefulWidget {
     required this.roomName,
     required this.userId,
     required this.username,
+    required this.world,  // ✅ ADD: world parameter
     this.accentColor = Colors.blue,
+    this.isObserverMode = false,  // ✅ ADD: observer mode parameter
+    this.userName,  // ✅ ADD: alternative userName parameter
   });
 
   @override

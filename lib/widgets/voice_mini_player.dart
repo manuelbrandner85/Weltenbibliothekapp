@@ -3,11 +3,11 @@
 library;
 
 import 'package:flutter/material.dart';
-import '../../services/webrtc_voice_service.dart'; // ✅ UNIFIED WebRTC Service
+import '../services/webrtc_voice_service.dart'; // ✅ UNIFIED WebRTC Service
 import '../screens/shared/telegram_voice_screen.dart';
 
 class VoiceMiniPlayer extends StatefulWidget {
-  final SimpleVoiceController voiceController;
+  final WebRTCVoiceService voiceController;
 
   const VoiceMiniPlayer({
     super.key,

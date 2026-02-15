@@ -11,7 +11,7 @@ library;
 
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import '../models/chat_models.dart';
-import 'webrtc_voice_service.dart'; // ✅ UNIFIED: VoiceParticipant & VoiceRole
+import 'simple_voice_service.dart'; // ✅ DIRECT IMPORT: VoiceParticipant & VoiceRole
 
 class WebRTCParticipant {
   final String userId;

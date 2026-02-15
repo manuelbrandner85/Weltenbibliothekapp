@@ -3,7 +3,7 @@
 library;
 
 import 'package:flutter/material.dart';
-import '../../services/webrtc_voice_service.dart'; // ✅ UNIFIED WebRTC Service
+import '../services/webrtc_voice_service.dart'; // ✅ UNIFIED WebRTC Service
 import '../screens/shared/telegram_voice_screen.dart';
 
 class VoiceChatButton extends StatefulWidget {
@@ -27,7 +27,7 @@ class VoiceChatButton extends StatefulWidget {
 }
 
 class _VoiceChatButtonState extends State<VoiceChatButton> {
-  final SimpleVoiceController _voiceController = SimpleVoiceController();
+  final WebRTCVoiceService _voiceController = WebRTCVoiceService();
   bool _isJoining = false;
 
   @override

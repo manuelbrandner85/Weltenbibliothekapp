@@ -525,6 +525,9 @@ class _ActiveCallsDashboardState extends ConsumerState<ActiveCallsDashboard> {
         MaterialPageRoute(
           builder: (context) => ModernVoiceChatScreen(
             roomId: call.roomId,
+            roomName: call.roomId,  // ✅ ADD: roomName
+            userId: 'admin_observer',  // ✅ ADD: userId
+            username: '$adminUsername (Observer)',  // ✅ ADD: username
             world: widget.world,
             userName: '$adminUsername (Observer)',
             isObserverMode: true, // Admin observer mode
