@@ -119,6 +119,7 @@ class WebRTCVoiceService with ChangeNotifier {
   String? _currentUserId;
   bool _isMuted = false;
   bool _isPushToTalk = false;
+  String? _lastErrorMessage;  // ✅ ADD: Track last error message
   
   // Stream controllers
   final _stateController = StreamController<VoiceConnectionState>.broadcast();
@@ -272,6 +273,7 @@ class WebRTCVoiceService with ChangeNotifier {
       );
       
       _setState(VoiceConnectionState.connected);
+      _clearError();  // ✅ Clear error on successful connection
       
       // 🆕 Start session tracking (use world parameter)
       await _sessionTracker.startSession(
@@ -293,6 +295,22 @@ class WebRTCVoiceService with ChangeNotifier {
       if (kDebugMode) {
         print('❌ WebRTC: Error joining room - $e');
       }
+      
+      // ✅ SET: Detailed error message for UI
+      if (e.toString().contains('Berechtigung') || e.toString().contains('permission')) {
+        _lastErrorMessage = 'Mikrofon-Berechtigung erforderlich. Bitte in Einstellungen aktivieren.';
+      } else if (e.toString().contains('aktiviert') || e.toString().contains('getUserMedia')) {
+        _lastErrorMessage = 'Mikrofon konnte nicht aktiviert werden. Bitte überprüfen Sie die Geräteeinstellungen.';
+      } else if (e.toString().contains('WebSocket') || e.toString().contains('connection')) {
+        _lastErrorMessage = 'Verbindung zum Voice-Server fehlgeschlagen. Bitte überprüfen Sie Ihre Internetverbindung.';
+      } else if (e.toString().contains('voll') || e.toString().contains('RoomFullException')) {
+        _lastErrorMessage = 'Voice-Raum ist voll. Bitte versuchen Sie es später erneut.';
+      } else if (e.toString().contains('timeout')) {
+        _lastErrorMessage = 'Verbindungs-Timeout. Bitte versuchen Sie es erneut.';
+      } else {
+        _lastErrorMessage = 'Voice Chat konnte nicht gestartet werden: ${e.toString()}';
+      }
+      
       ErrorReportingService().reportError(
         error: e,
         stackTrace: stack,
@@ -778,12 +796,20 @@ class WebRTCVoiceService with ChangeNotifier {
     }
   }
   
-  // ✅ PHASE 2: Get Error Message
+  // ✅ ENHANCED: Get Detailed Error Message
   String? getLastError() {
+    if (_state == VoiceConnectionState.error && _lastErrorMessage != null) {
+      return _lastErrorMessage;  // Return detailed error
+    }
     if (_state == VoiceConnectionState.error) {
-      return 'Voice Chat Verbindung fehlgeschlagen';
+      return 'Voice Chat Verbindung fehlgeschlagen. Bitte versuchen Sie es erneut.';
     }
     return null;
+  }
+  
+  // ✅ CLEAR: Clear error when connection is successful
+  void _clearError() {
+    _lastErrorMessage = null;
   }
 
   /// Dispose

@@ -115,13 +115,19 @@ class WebSocketChatService {
   /// Establish WebSocket connection
   Future<void> _establishConnection() async {
     try {
-      // WebSocket URL (from ApiConfig)
+      // ✅ Determine which token to use based on realm
+      final token = _realm == 'voice' 
+          ? ApiConfig.webrtcToken 
+          : ApiConfig.apiToken;
+      
+      // WebSocket URL (from ApiConfig) with authentication token
       final wsUrl = Uri.parse(
         '${ApiConfig.websocketUrl}/ws'
         '?room=$_currentRoom'
         '&realm=$_realm'
         '&user_id=$_userId'
         '&username=$_username'
+        '&token=$token'  // ✅ ADD: Authentication token as query parameter
       );
 
       if (kDebugMode) {
