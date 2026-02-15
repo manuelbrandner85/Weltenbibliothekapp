@@ -93,6 +93,10 @@ class WebRTCVoiceService with ChangeNotifier {
   }
 
   // WebSocket for signaling
+  // ⚠️ WICHTIG: WebSocketChatService ist für CHAT, nicht für WebRTC-Signaling konzipiert!
+  // TODO: Dedizierter WebRTC-Signaling-Server erforderlich (z.B. wss://.../voice/signaling)
+  // Aktuell werden Voice-Messages über Chat-WebSocket gesendet (Workaround)
+  // Voice-Chat funktioniert NICHT vollständig ohne echten WebRTC-Signaling-Server!
   final WebSocketChatService _signaling = WebSocketChatService();
   
   // Admin Action Service
@@ -589,6 +593,27 @@ class WebRTCVoiceService with ChangeNotifier {
         );
       };
       
+      // 🆕 Handle connection state changes for auto-reconnect
+      pc.onConnectionState = (RTCPeerConnectionState state) {
+        if (kDebugMode) {
+          print('🔌 WebRTC: Peer connection state changed to $state');
+        }
+        
+        // Auto-reconnect on failed/disconnected
+        if (state == RTCPeerConnectionState.RTCPeerConnectionStateFailed ||
+            state == RTCPeerConnectionState.RTCPeerConnectionStateDisconnected) {
+          if (kDebugMode) {
+            print('⚠️ WebRTC: Connection lost, attempting reconnect...');
+          }
+          // Trigger auto-reconnect after short delay
+          Future.delayed(const Duration(seconds: 2), () {
+            if (_currentRoomId != null && _state != VoiceConnectionState.connected) {
+              attemptReconnect();
+            }
+          });
+        }
+      };
+      
       // If initiator, create offer
       if (initiator) {
         final offer = await pc.createOffer();
@@ -709,7 +734,7 @@ class WebRTCVoiceService with ChangeNotifier {
   
   /// 🔧 Notify participants change
   void _notifyParticipantsChanged() {
-    _notifyParticipantsChanged();
+    _participantsController.add(_participants.values.toList());
     notifyListeners();
   }
   

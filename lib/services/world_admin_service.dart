@@ -148,7 +148,7 @@ class WorldAdminService {
       final response = await http.get(
         url,
         headers: {
-          'Authorization': 'Bearer $username', // ✅ NEW: Simple Bearer token
+          'Authorization': 'Bearer ${ApiConfig.adminToken}', // ✅ FIXED: Use admin token instead of username
           'Content-Type': 'application/json',
         },
       ).timeout(_timeout);
@@ -557,7 +557,29 @@ extension WorldAdminServiceV162 on WorldAdminService {
         body: jsonEncode({'reason': reason, 'durationHours': durationHours}),
       ).timeout(WorldAdminService._timeout);
       
-      return response.statusCode == 200;
+      // ✅ ENHANCED: Response validation with body parsing
+      if (response.statusCode == 200) {
+        try {
+          final data = jsonDecode(response.body) as Map<String, dynamic>;
+          final success = data['success'] as bool? ?? true;
+          if (kDebugMode) {
+            debugPrint(success ? '✅ Ban successful' : '⚠️ Ban failed: ${data['error'] ?? 'Unknown'}');
+          }
+          return success;
+        } catch (e) {
+          // Fallback: HTTP 200 without valid JSON = success
+          if (kDebugMode) {
+            debugPrint('✅ Ban successful (legacy response)');
+          }
+          return true;
+        }
+      } else {
+        if (kDebugMode) {
+          debugPrint('❌ Ban failed: HTTP ${response.statusCode}');
+          debugPrint('   Response: ${response.body}');
+        }
+        return false;
+      }
     } catch (e) {
       return false;
     }
