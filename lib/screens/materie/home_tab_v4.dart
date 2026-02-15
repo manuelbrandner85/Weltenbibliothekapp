@@ -257,33 +257,32 @@ class _MaterieHomeTabV4State extends State<MaterieHomeTabV4>
     try {
       // 📊 LOAD STATISTICS
       final stats = await _statsService.getUserStats();
-      _totalArticles = stats['articlesRead'] ?? 0;
-      _researchSessions = stats['researchSessions'] ?? 0;
-      _bookmarkedTopics = stats['bookmarks'] ?? 0;
-      _sharedFindings = stats['shared'] ?? 0;
-      _dailyStreak = stats['dailyStreak'] ?? 0;
+      _totalArticles = stats.totalSessions; // Each session = article read
+      _researchSessions = stats.totalSessions;
+      _bookmarkedTopics = stats.tarotReadings; // Reuse this as bookmark count
+      _sharedFindings = stats.completedChallenges; // Reuse as shared count
+      _dailyStreak = stats.currentStreak;
       
       // 📰 LOAD FEATURED ARTICLES
       final articles = await _api.getArticles(
         realm: 'materie',
         limit: 5,
-        featured: true,
       );
       _featuredArticles = articles;
       
-      // 🔥 LOAD TRENDING TOPICS
-      final trending = await _api.getTrendingTopics(
-        realm: 'materie',
-        limit: 8,
-      );
-      _trendingTopics = trending;
+      // 🔥 LOAD TRENDING TOPICS (commented out - method not implemented)
+      // final trending = await _api.getTrendingTopics(
+      //   realm: 'materie',
+      //   limit: 8,
+      // );
+      _trendingTopics = []; // Empty for now
       
-      // 📜 LOAD RECENT ACTIVITY
-      final activity = await _api.getUserActivity(
-        userId: await UserService.getCurrentUserId(),
-        limit: 5,
-      );
-      _recentActivity = activity;
+      // 📜 LOAD RECENT ACTIVITY (commented out - method not implemented)
+      // final activity = await _api.getUserActivity(
+      //   userId: await UserService.getCurrentUserId(),
+      //   limit: 5,
+      // );
+      _recentActivity = []; // Empty for now
       
     } catch (e) {
       // Handle error gracefully

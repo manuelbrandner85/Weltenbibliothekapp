@@ -20,6 +20,7 @@ class MaterieCommunityTabModern extends StatefulWidget {
 class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> with SingleTickerProviderStateMixin {
   bool _isLoading = false;
   String? _errorMessage; // ✅ FIX #7: Error state
+  String _selectedView = 'all'; // ✅ FIX #8: View state variable
   
   // 💬 TAB CONTROLLER für Posts vs Chat
   late TabController _tabController;
@@ -251,7 +252,7 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
           ),
           
           // Trending-Sektion
-          if (null == 'trending')
+          if (_selectedView == 'trending')
             SliverToBoxAdapter(
               child: _buildTrendingSection(),
             ),
@@ -325,9 +326,9 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
   }
 
   Widget _buildViewTab(String view, String label, Color color) {
-    final isSelected = null == view;
+    final isSelected = _selectedView == view;
     return GestureDetector(
-      onTap: () => setState(() => null = view),
+      onTap: () => setState(() => _selectedView = view),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),

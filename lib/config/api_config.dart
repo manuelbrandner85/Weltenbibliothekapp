@@ -30,10 +30,24 @@ class ApiConfig {
   
   // 🔗 FULL URLs (for services that need complete URLs)
   static String get pushApiUrl => '$baseUrl/api/push';
+  static String get v2ApiUrl => '$baseUrl/api/v2';
+  static String get voiceApiUrl => '$baseUrl/voice';
+  static String get pushRegisterUrl => '$baseUrl/api/push/register';
+  static String get pushSendUrl => '$baseUrl/api/push/send';
   static String get aiApiUrl => '$baseUrl/ai';
   static String get profileApiUrl => '$baseUrl/api/sync';
   static String get cloudSyncApiUrl => '$baseUrl/api/sync';
   static String get websocketUrl => baseUrl.replaceAll('https://', 'wss://');
+  
+  // 🔧 INLINE TOOLS URLs
+  static String get artefakteUrl => '$baseUrl/api/tools/artefakte';
+  static String get chakraReadingsUrl => '$baseUrl/api/tools/chakra-readings';
+  static String get connectionsUrl => '$baseUrl/api/tools/connections';
+  static String get heilfrequenzUrl => '$baseUrl/api/tools/heilfrequenz';
+  static String get newsTrackerUrl => '$baseUrl/api/tools/news-tracker';
+  static String get patenteUrl => '$baseUrl/api/tools/patente';
+  static String get traeumeUrl => '$baseUrl/api/tools/traeume';
+  static String get ufoSichtungenUrl => '$baseUrl/api/tools/ufo-sichtungen';
   
   // 🛠️ UTILITY METHODS
   

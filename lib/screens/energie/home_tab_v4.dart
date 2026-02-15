@@ -371,33 +371,32 @@ class _EnergieHomeTabV4State extends State<EnergieHomeTabV4>
     try {
       // 📊 LOAD STATISTICS
       final stats = await _statsService.getUserStats();
-      _meditationMinutes = stats['meditationMinutes'] ?? 0;
-      _practicesDone = stats['practicesDone'] ?? 0;
-      _chakraBalance = stats['chakraBalance'] ?? 0;
-      _spiritualLevel = stats['spiritualLevel'] ?? 0;
-      _dailyStreak = stats['dailyStreak'] ?? 0;
+      _meditationMinutes = stats.totalSessions * 15; // Estimate 15 min per session
+      _practicesDone = stats.totalSessions;
+      _chakraBalance = stats.completedChallenges * 10; // Estimate based on completed challenges
+      _spiritualLevel = (stats.totalSessions + stats.completedChallenges) ~/ 10; // Level up every 10 activities
+      _dailyStreak = stats.currentStreak;
       
       // 📰 LOAD FEATURED PRACTICES
       final practices = await _api.getArticles(
         realm: 'energie',
         limit: 5,
-        featured: true,
       );
       _featuredPractices = practices;
       
-      // 🔥 LOAD TRENDING TOPICS
-      final trending = await _api.getTrendingTopics(
-        realm: 'energie',
-        limit: 8,
-      );
-      _trendingTopics = trending;
+      // 🔥 LOAD TRENDING TOPICS (commented out - method not implemented)
+      // final trending = await _api.getTrendingTopics(
+      //   realm: 'energie',
+      //   limit: 8,
+      // );
+      _trendingTopics = []; // Empty for now
       
-      // 📜 LOAD RECENT ACTIVITY
-      final activity = await _api.getUserActivity(
-        userId: await UserService.getCurrentUserId(),
-        limit: 5,
-      );
-      _recentActivity = activity;
+      // 📜 LOAD RECENT ACTIVITY (commented out - method not implemented)
+      // final activity = await _api.getUserActivity(
+      //   userId: await UserService.getCurrentUserId(),
+      //   limit: 5,
+      // );
+      _recentActivity = []; // Empty for now
       
       // 🎨 LOAD CHAKRA STATUS
       _chakraStatus = await _loadChakraStatus();

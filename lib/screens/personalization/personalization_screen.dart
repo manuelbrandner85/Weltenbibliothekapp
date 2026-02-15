@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
-import '../services/cloudflare_api_service.dart';
-import '../core/storage/unified_storage_service.dart';
+import '../../services/cloudflare_api_service.dart';
+import '../../core/storage/unified_storage_service.dart';
 
 /// 🎯 Personalization & Recommendations Screen
 /// Features:
