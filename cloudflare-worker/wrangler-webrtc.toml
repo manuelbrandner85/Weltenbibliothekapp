@@ -1,0 +1,41 @@
+# 🎤 Weltenbibliothek - WebRTC Signaling Worker
+# Cloudflare Worker Configuration
+
+name = "weltenbibliothek-webrtc-signaling"
+main = "webrtc-signaling-worker.js"
+compatibility_date = "2024-01-01"
+
+# Worker-Typ: Service (mit WebSocket-Support)
+workers_dev = true
+
+# Routes (für Custom Domain - optional)
+# routes = [
+#   { pattern = "webrtc.weltenbibliothek.app/*", zone_name = "weltenbibliothek.app" }
+# ]
+
+# Limits
+account_id = ""  # Füge deine Cloudflare Account ID ein
+# zone_id = ""     # Nur für Custom Domain nötig
+
+# KV Namespaces (falls später benötigt für Ban/Mute Persistence)
+# [[kv_namespaces]]
+# binding = "VOICE_BANS"
+# id = ""
+
+# Durable Objects (alternative für persistent state - optional)
+# [[durable_objects.bindings]]
+# name = "VOICE_ROOMS"
+# class_name = "VoiceRoom"
+
+# Environment Variables
+[vars]
+MAX_PARTICIPANTS = "10"
+PRIMARY_TOKEN = "y-Xiv3kKeiybDm2CV0yLFu7TSd22co6NBw3udn5Y"
+ADMIN_TOKEN = "XCz3muf7asVj-lBgXXG3ZiY9wJ_TLelzJQZ9jutB"
+
+# Build configuration
+[build]
+command = ""
+
+# Compatibility flags
+compatibility_flags = []
