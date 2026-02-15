@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'invisible_auth_service.dart'; // ✅ Auth-Integration
 import '../core/storage/unified_storage_service.dart'; // ✅ Storage für Username
+import '../config/api_config.dart'; // 🆕 API Config for admin token
 
 /// World-Based Admin Service
 /// Verbindet mit weltenbibliothek-api-v2 für weltspezifische Admin-Funktionen
@@ -340,7 +341,9 @@ class WorldAdminService {
       final response = await http.delete(
         url,
         headers: {
-          'Authorization': 'Bearer $username',
+          'Authorization': 'Bearer ${ApiConfig.adminToken}', // 🆕 Use admin-specific token
+          'X-Role': 'root_admin',
+          'X-User-ID': username,
           'Content-Type': 'application/json',
         },
       ).timeout(_timeout);
@@ -546,6 +549,7 @@ extension WorldAdminServiceV162 on WorldAdminService {
       final response = await http.post(
         url,
         headers: {
+          'Authorization': 'Bearer ${ApiConfig.adminToken}', // 🆕 Use admin-specific token
           'X-Role': 'root_admin',
           'X-User-ID': adminUser,
           'Content-Type': 'application/json',
@@ -569,7 +573,12 @@ extension WorldAdminServiceV162 on WorldAdminService {
       
       final response = await http.post(
         url,
-        headers: {'X-Role': 'root_admin', 'X-User-ID': adminUser},
+        headers: {
+          'Authorization': 'Bearer ${ApiConfig.adminToken}', // 🆕 Use admin-specific token
+          'X-Role': 'root_admin',
+          'X-User-ID': adminUser,
+          'Content-Type': 'application/json',
+        },
       ).timeout(WorldAdminService._timeout);
       
       return response.statusCode == 200;
@@ -593,6 +602,7 @@ extension WorldAdminServiceV162 on WorldAdminService {
       final response = await http.post(
         url,
         headers: {
+          'Authorization': 'Bearer ${ApiConfig.adminToken}', // 🆕 Use admin-specific token
           'X-Role': 'root_admin',
           'X-User-ID': adminUser,
           'Content-Type': 'application/json',
@@ -619,6 +629,7 @@ extension WorldAdminServiceV162 on WorldAdminService {
       final response = await http.post(
         url,
         headers: {
+          'Authorization': 'Bearer ${ApiConfig.adminToken}', // 🆕 Use admin-specific token
           'X-Role': 'root_admin',
           'X-User-ID': adminUser,
           'Content-Type': 'application/json',

@@ -13,6 +13,10 @@ class ApiConfig {
   static const String apiToken = 'y-Xiv3kKeiybDm2CV0yLFu7TSd22co6NBw3udn5Y';
   static const String cloudflareApiToken = 'y-Xiv3kKeiybDm2CV0yLFu7TSd22co6NBw3udn5Y'; // Alias for compatibility
   
+  // 🆕 SECONDARY TOKEN für WebRTC & Admin Services
+  static const String webrtcToken = 'XCz3muf7asVj-lBgXXG3ZiY9wJ_TLelzJQZ9jutB';
+  static const String adminToken = 'XCz3muf7asVj-lBgXXG3ZiY9wJ_TLelzJQZ9jutB'; // Admin-specific token
+  
   // 📡 ENDPOINTS
   static const String recherche = '/recherche'; // ⚠️ Ohne /api Prefix!
   static const String contentSearch = '/api/content/search';
@@ -58,6 +62,18 @@ class ApiConfig {
   static Map<String, String> get headers => {
     'Content-Type': 'application/json',
     'Authorization': 'Bearer $apiToken',
+  };
+  
+  /// Get admin headers with admin-specific token
+  static Map<String, String> get adminHeaders => {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer $adminToken',
+  };
+  
+  /// Get WebRTC headers with WebRTC-specific token
+  static Map<String, String> get webrtcHeaders => {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer $webrtcToken',
   };
   
   /// Get headers without authentication (for public endpoints)
