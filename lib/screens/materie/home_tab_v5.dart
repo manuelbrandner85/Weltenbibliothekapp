@@ -3,7 +3,8 @@ import 'package:flutter/foundation.dart';
 import '../../services/storage_service.dart';
 import 'dart:ui';
 import '../../models/materie_profile.dart';
-import '../../services/smart_articles_service.dart'; // 🧠 FIXED: Smart Articles with auto-fallback
+import '../../services/smart_articles_service.dart';
+import '../../services/trending_topics_service.dart'; // 🧠 FIXED: Smart Articles with auto-fallback
 
 /// ═══════════════════════════════════════════════════════════════════════════
 /// MATERIE HOME DASHBOARD V5 - ULTRA PROFESSIONAL EDITION
@@ -61,6 +62,7 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
   
   // Services
   final SmartArticlesService _articlesService = SmartArticlesService(); // 🧠 Smart with auto-fallback
+  final TrendingTopicsService _trendingService = TrendingTopicsService(); // ✅ Real trending data
   
   // State
   MaterieProfile? _profile;
@@ -240,7 +242,10 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
       _sharedFindings = (_totalArticles * 0.2).round();
 
       _recentArticles = articles.take(5).toList();
-      _trendingTopics = articles.skip(5).take(6).toList();
+      
+      // ✅ LOAD REAL TRENDING TOPICS via TrendingTopicsService
+      _trendingTopics = await _trendingService.getTrendingTopics(realm: 'materie');
+      
       _filteredArticles = _recentArticles;
 
       // Update quick actions with new counts

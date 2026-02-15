@@ -18,6 +18,7 @@ import '../widgets/pwa_install_prompt.dart'; // 📱 PWA INSTALL PROMPT (NEW Pha
 import '../data/hidden_facts.dart';
 import '../data/achievement_data.dart';
 import '../widgets/mini_game.dart';
+import '../services/achievement_service.dart';
 
 /// CINEMA-QUALITY Portal mit Nebula-Effekt und Advanced Particle System
 class PortalHomeScreen extends StatefulWidget {
@@ -1883,9 +1884,14 @@ ${_goldenPortalUnlocked ? '• 👑 Goldenes Portal FREIGESCHALTET!' : ''}
     );
   }
   
-  // v5.40 - Achievement Unlock Handler
-  void _unlockAchievement(String achievementId) {
-    if (!_unlockedAchievements.contains(achievementId)) {
+  // v5.40 - Achievement Unlock Handler (FIXED: Persistent Storage)
+  void _unlockAchievement(String achievementId) async {
+    final achievementService = AchievementService();
+    
+    // ✅ PERSISTENT UNLOCK via AchievementService
+    final unlocked = await achievementService.incrementProgress(achievementId);
+    
+    if (unlocked && !_unlockedAchievements.contains(achievementId)) {
       setState(() {
         _unlockedAchievements.add(achievementId);
       });
