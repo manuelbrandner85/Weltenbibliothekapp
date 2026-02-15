@@ -1,5 +1,4 @@
 import '../models/spirit_extended_models.dart';
-import '../services/storage_service.dart';
 import '../models/energie_profile.dart';
 
 /// VORSCHLAG 4: ASTRO-TRANSIT-KALENDER SERVICE

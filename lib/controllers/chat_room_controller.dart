@@ -268,6 +268,26 @@ class ChatRoomController extends ChangeNotifier {
     _state = _state.clearError();
     notifyListeners();
   }
+
+  /// Clear all messages from the chat room
+  Future<void> clearMessages() async {
+    try {
+      // Clear messages on server
+      await _clearMessagesOnServer();
+      
+      // Clear local state
+      _state = _state.copyWith(
+        messages: [],
+        reactions: {},
+        typingUsers: [],
+      );
+      notifyListeners();
+    } catch (e) {
+      _state = _state.copyWith(error: 'Failed to clear messages: $e');
+      notifyListeners();
+      rethrow;
+    }
+  }
   
   void _startMessagePolling() {
     _messagePollingTimer = Timer.periodic(
@@ -317,6 +337,13 @@ class ChatRoomController extends ChangeNotifier {
   
   Future<void> _removeReactionFromServer(String messageId, String emoji) async {
     await Future.delayed(const Duration(milliseconds: 100));
+  }
+
+  /// Server call to clear all messages in the room
+  Future<void> _clearMessagesOnServer() async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    // TODO: Implement actual API call when backend endpoint is ready
+    // Example: await http.delete('${ApiConfig.baseUrl}/api/chat/$roomId/messages');
   }
   
   @override

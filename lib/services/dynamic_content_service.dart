@@ -2,6 +2,7 @@
 /// 
 /// Lädt und cached alle dynamischen Inhalte vom Backend
 /// Unterstützt Offline-Modus, Versionierung, Live-Updates
+library;
 
 import 'dart:convert';
 import 'dart:async';
@@ -531,7 +532,7 @@ class DynamicContentService {
       }
       
       return false;
-    } on SocketException catch (e) {
+    } on SocketException {
       if (kDebugMode) {
         debugPrint('❌ Network: Keine Internetverbindung');
       }
@@ -588,7 +589,7 @@ class DynamicContentService {
       }
       
       return false;
-    } on SocketException catch (e) {
+    } on SocketException {
       if (kDebugMode) {
         debugPrint('❌ Network: Keine Internetverbindung');
       }
@@ -641,7 +642,7 @@ class DynamicContentService {
       }
       
       return false;
-    } on SocketException catch (e) {
+    } on SocketException {
       if (kDebugMode) {
         debugPrint('❌ Network: Keine Internetverbindung');
       }
@@ -694,7 +695,7 @@ class DynamicContentService {
       }
       
       return false;
-    } on SocketException catch (e) {
+    } on SocketException {
       if (kDebugMode) {
         debugPrint('❌ Network: Keine Internetverbindung');
       }
@@ -747,7 +748,7 @@ class DynamicContentService {
       }
       
       return false;
-    } on SocketException catch (e) {
+    } on SocketException {
       if (kDebugMode) {
         debugPrint('❌ Network: Keine Internetverbindung');
       }
@@ -800,7 +801,7 @@ class DynamicContentService {
       }
       
       return false;
-    } on SocketException catch (e) {
+    } on SocketException {
       if (kDebugMode) {
         debugPrint('❌ Network: Keine Internetverbindung');
       }
@@ -883,7 +884,7 @@ class DynamicContentService {
         default:
           return false;
       }
-    } on SocketException catch (e) {
+    } on SocketException {
       if (kDebugMode) {
         debugPrint('❌ Network: Keine Internetverbindung');
       }

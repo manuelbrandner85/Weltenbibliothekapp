@@ -2,7 +2,6 @@ import '../models/spirit_extended_models.dart';
 import '../services/storage_service.dart';
 import '../models/spirit_dashboard.dart';
 import '../models/energie_profile.dart';
-import 'storage_service.dart';
 
 /// VORSCHLAG 7: WOCHENHOROSKOP GENERATOR
 /// Generiert personalisiertes Wochenhoroskop basierend auf:

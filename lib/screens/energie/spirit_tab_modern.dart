@@ -4,7 +4,6 @@ import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import '../../widgets/favorite_button.dart';
 import '../../models/favorite.dart';  // 🆕 For FavoriteType
 import '../../models/energie_profile.dart';
-import '../../services/storage_service.dart';
 import 'calculators/numerology_calculator_screen.dart';
 import 'calculators/archetype_calculator_screen.dart';
 import 'calculators/chakra_calculator_screen.dart';

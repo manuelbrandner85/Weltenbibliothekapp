@@ -12,7 +12,6 @@
 library;
 
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import '../core/logging/app_logger.dart';
 import '../core/exceptions/specialized_exceptions.dart';
 import '../core/exceptions/exception_guard.dart';

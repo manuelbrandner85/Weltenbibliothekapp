@@ -84,7 +84,7 @@ Future<T> guard<T>(
         
         return recoveredValue;
         
-      } catch (recoveryError, recoveryStackTrace) {
+      } catch (recoveryError) {
         // Error-Recovery ist fehlgeschlagen
         if (kDebugMode) {
           debugPrint('⚠️ [GUARD] Error recovery failed: $recoveryError');
@@ -98,7 +98,7 @@ Future<T> guard<T>(
     // AppException direkt weiterwerfen (bereits wrapped)
     if (e is AppException) {
       if (shouldRethrow) {
-        throw e;
+        rethrow;
       }
       return throw e;
     }
@@ -189,7 +189,7 @@ T guardSync<T>(
     
     if (e is AppException) {
       if (shouldRethrow) {
-        throw e;
+        rethrow;
       }
       return throw e;
     }

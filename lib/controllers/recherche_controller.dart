@@ -559,7 +559,10 @@ class RechercheController extends ChangeNotifier {
 
         final data = json.decode(response.body);
         if (data['success'] != true) {
-          throw BackendException('Backend returned error: ${data['message']}');
+          throw BackendException(
+            'Backend returned error: ${data['message']}',
+            statusCode: response.statusCode,
+          );
         }
 
         final results = data['results'] as List<dynamic>;

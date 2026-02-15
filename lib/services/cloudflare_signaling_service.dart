@@ -128,7 +128,7 @@ class CloudflareSignalingService {
           debugPrint('   Body: ${response.body}');
         }
       }
-    } on SocketException catch (e) {
+    } on SocketException {
       if (kDebugMode) {
         debugPrint('❌ [Cloudflare] Registration: Keine Internetverbindung');
       }
@@ -173,7 +173,7 @@ class CloudflareSignalingService {
       if (kDebugMode) {
         debugPrint('📤 [Cloudflare Signaling] Sent offer to $targetUserId');
       }
-    } on SocketException catch (e) {
+    } on SocketException {
       if (kDebugMode) {
         debugPrint('❌ [Cloudflare] Send offer: Keine Internetverbindung');
       }
@@ -217,7 +217,7 @@ class CloudflareSignalingService {
       if (kDebugMode) {
         debugPrint('📤 [Cloudflare Signaling] Sent answer to $targetUserId');
       }
-    } on SocketException catch (e) {
+    } on SocketException {
       if (kDebugMode) {
         debugPrint('❌ [Cloudflare] Send answer: Keine Internetverbindung');
       }
@@ -262,7 +262,7 @@ class CloudflareSignalingService {
       if (kDebugMode) {
         debugPrint('📤 [Cloudflare Signaling] Sent ICE candidate to $targetUserId');
       }
-    } on SocketException catch (e) {
+    } on SocketException {
       if (kDebugMode) {
         debugPrint('❌ [Cloudflare] Send ICE: Keine Internetverbindung');
       }
@@ -397,12 +397,12 @@ class CloudflareSignalingService {
           debugPrint('⚠️ [Cloudflare Poll] Response status: ${response.statusCode}');
         }
       }
-    } on SocketException catch (e) {
+    } on SocketException {
       // Silent fail for polling (expected when offline)
       if (kDebugMode) {
         debugPrint('⚠️ [Cloudflare Poll] Keine Internetverbindung (non-critical)');
       }
-    } on TimeoutException catch (e) {
+    } on TimeoutException {
       if (kDebugMode) {
         debugPrint('⚠️ [Cloudflare Poll] Timeout (non-critical)');
       }
@@ -452,7 +452,7 @@ class CloudflareSignalingService {
       if (kDebugMode) {
         debugPrint('👋 [Cloudflare Signaling] Left room and cleared participants');
       }
-    } on SocketException catch (e) {
+    } on SocketException {
       if (kDebugMode) {
         debugPrint('❌ [Cloudflare] Leave room: Keine Internetverbindung');
       }

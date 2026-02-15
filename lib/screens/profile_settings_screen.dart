@@ -4,7 +4,6 @@ import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart'; // 📸 Image Picker
 import '../models/materie_profile.dart';
 import '../models/energie_profile.dart';
-import '../core/storage/unified_storage_service.dart';
 import '../services/cloudflare_sync_service.dart'; // 🆕 SYNC SERVICE
 import '../services/avatar_upload_service.dart'; // 👤 AVATAR UPLOAD
 import '../services/haptic_service.dart';

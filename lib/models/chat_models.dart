@@ -403,7 +403,7 @@ class ChatMessage {
         'sender: $senderName, '
         'type: $type, '
         'status: $status, '
-        'content: ${content.length > 50 ? content.substring(0, 50) + '...' : content}, '
+        'content: ${content.length > 50 ? '${content.substring(0, 50)}...' : content}, '
         'timestamp: $timestamp, '
         'isEdited: $isEdited, '
         'isReply: $isReply, '

@@ -12,7 +12,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../../../services/world_admin_service.dart';
 import '../../../config/api_config.dart';
 import '../../../core/storage/unified_storage_service.dart';
 import '../../../screens/shared/modern_voice_chat_screen.dart';
@@ -594,8 +593,8 @@ class _ActiveCallsDashboardState extends ConsumerState<ActiveCallsDashboard> {
                 if (!mounted) return;
                 
                 if (response.statusCode == 200) {
-                  // Reload calls list
-                  await _loadActiveCalls();
+                  // Reload calls list via provider refresh
+                  ref.invalidate(activeCallsProvider(widget.world));
                   
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(

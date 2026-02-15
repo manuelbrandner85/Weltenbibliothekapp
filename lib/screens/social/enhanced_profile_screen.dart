@@ -15,10 +15,10 @@ class EnhancedProfileScreen extends StatefulWidget {
   final bool isOwnProfile;
   
   const EnhancedProfileScreen({
-    Key? key,
+    super.key,
     required this.userId,
     this.isOwnProfile = false,
-  }) : super(key: key);
+  });
 
   @override
   State<EnhancedProfileScreen> createState() => _EnhancedProfileScreenState();

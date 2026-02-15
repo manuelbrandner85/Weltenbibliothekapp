@@ -18,10 +18,10 @@ class ContentEditorScreen extends StatefulWidget {
   final String? initialContent;
   
   const ContentEditorScreen({
-    Key? key,
+    super.key,
     this.draftId,
     this.initialContent,
-  }) : super(key: key);
+  });
 
   @override
   State<ContentEditorScreen> createState() => _ContentEditorScreenState();
@@ -92,7 +92,7 @@ class _ContentEditorScreenState extends State<ContentEditorScreen> {
   
   Future<void> _loadDraft(String draftId) async {
     try {
-      final draft = await _autoSave.loadDraft(draftId);
+      final draft = await _autoSave.loadDraft(draftId, boxName: 'content_drafts');
       if (draft != null) {
         setState(() {
           _titleController.text = draft['title'] ?? '';
@@ -123,7 +123,7 @@ class _ContentEditorScreenState extends State<ContentEditorScreen> {
     try {
       final draftId = widget.draftId ?? 'draft_${DateTime.now().millisecondsSinceEpoch}';
       
-      await _autoSave.scheduleSave(
+      _autoSave.scheduleSave(
         key: draftId,
         data: {
           'title': _titleController.text,
@@ -198,7 +198,7 @@ class _ContentEditorScreenState extends State<ContentEditorScreen> {
       
       // Delete draft after successful publish
       if (widget.draftId != null) {
-        await _autoSave.deleteDraft(widget.draftId!);
+        await _autoSave.deleteDraft(widget.draftId!, boxName: 'content_drafts');
       }
       
       _showSnackBar('✅ Inhalt veröffentlicht', Colors.green);
@@ -309,7 +309,7 @@ class _ContentEditorScreenState extends State<ContentEditorScreen> {
               
               // Category selector
               DropdownButtonFormField<String>(
-                value: _selectedCategory,
+                initialValue: _selectedCategory,
                 decoration: const InputDecoration(
                   labelText: 'Kategorie',
                   border: OutlineInputBorder(),

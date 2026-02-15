@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
-import '../services/storage_service.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'invisible_auth_service.dart'; // ✅ Auth-Integration
@@ -169,7 +168,7 @@ class WorldAdminService {
         }
         return [];
       }
-    } on SocketException catch (e) {
+    } on SocketException {
       if (kDebugMode) {
         debugPrint('❌ Network: Keine Internetverbindung');
       }
@@ -234,7 +233,7 @@ class WorldAdminService {
         }
         return false;
       }
-    } on SocketException catch (e) {
+    } on SocketException {
       if (kDebugMode) {
         debugPrint('❌ Network: Keine Internetverbindung');
       }
@@ -295,7 +294,7 @@ class WorldAdminService {
         }
         return false;
       }
-    } on SocketException catch (e) {
+    } on SocketException {
       if (kDebugMode) {
         debugPrint('❌ Network: Keine Internetverbindung');
       }
@@ -362,7 +361,7 @@ class WorldAdminService {
         }
         return false;
       }
-    } on SocketException catch (e) {
+    } on SocketException {
       if (kDebugMode) {
         debugPrint('❌ Network: Keine Internetverbindung');
       }
@@ -416,7 +415,7 @@ class WorldAdminService {
         }
         return [];
       }
-    } on SocketException catch (e) {
+    } on SocketException {
       if (kDebugMode) {
         debugPrint('❌ Network: Keine Internetverbindung');
       }

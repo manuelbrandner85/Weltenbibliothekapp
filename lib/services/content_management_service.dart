@@ -59,7 +59,7 @@ class ContentManagementService {
         }
         return [];
       }
-    } on SocketException catch (e) {
+    } on SocketException {
       if (kDebugMode) {
         debugPrint('❌ Admin content: Keine Internetverbindung');
       }
@@ -107,7 +107,7 @@ class ContentManagementService {
       }
 
       return response.statusCode == 200;
-    } on SocketException catch (e) {
+    } on SocketException {
       if (kDebugMode) {
         debugPrint('❌ Feature toggle: Keine Internetverbindung');
       }
@@ -155,7 +155,7 @@ class ContentManagementService {
       }
 
       return response.statusCode == 200;
-    } on SocketException catch (e) {
+    } on SocketException {
       if (kDebugMode) {
         debugPrint('❌ Verify toggle: Keine Internetverbindung');
       }
@@ -203,7 +203,7 @@ class ContentManagementService {
       }
 
       return response.statusCode == 200;
-    } on SocketException catch (e) {
+    } on SocketException {
       if (kDebugMode) {
         debugPrint('❌ Content delete: Keine Internetverbindung');
       }
@@ -276,7 +276,7 @@ class ContentManagementService {
         }
         return false;
       }
-    } on SocketException catch (e) {
+    } on SocketException {
       if (kDebugMode) {
         debugPrint('❌ Content create: Keine Internetverbindung');
       }
@@ -328,7 +328,7 @@ class ContentManagementService {
         }
         return [];
       }
-    } on SocketException catch (e) {
+    } on SocketException {
       if (kDebugMode) {
         debugPrint('❌ Public content: Keine Internetverbindung');
       }

@@ -10,7 +10,6 @@
 library;
 
 import 'package:flutter_webrtc/flutter_webrtc.dart';
-import '../models/chat_models.dart';
 import 'simple_voice_service.dart'; // ✅ DIRECT IMPORT: VoiceParticipant & VoiceRole
 
 class WebRTCParticipant {

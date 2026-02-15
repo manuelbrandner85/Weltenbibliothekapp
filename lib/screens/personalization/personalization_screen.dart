@@ -11,7 +11,7 @@ import '../../core/storage/unified_storage_service.dart';
 /// - Custom reading lists
 /// - Interest-based suggestions
 class PersonalizationScreen extends StatefulWidget {
-  const PersonalizationScreen({Key? key}) : super(key: key);
+  const PersonalizationScreen({super.key});
 
   @override
   State<PersonalizationScreen> createState() => _PersonalizationScreenState();
@@ -512,7 +512,7 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> with Sing
               ),
             ),
           );
-        }).toList(),
+        }),
       ],
     );
   }

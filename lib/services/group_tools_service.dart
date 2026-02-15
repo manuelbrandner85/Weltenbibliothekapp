@@ -34,7 +34,7 @@ class GroupToolsService {
         return List<Map<String, dynamic>>.from(data['sessions'] ?? []);
       }
       return [];
-    } on SocketException catch (e) {
+    } on SocketException {
       if (kDebugMode) {
         debugPrint('❌ Network error: Keine Internetverbindung');
       }
@@ -82,7 +82,7 @@ class GroupToolsService {
         return data['session_id'];
       }
       return null;
-    } on SocketException catch (e) {
+    } on SocketException {
       if (kDebugMode) {
         debugPrint('❌ Network error: Keine Internetverbindung');
       }
@@ -120,7 +120,7 @@ class GroupToolsService {
         return List<Map<String, dynamic>>.from(data['entries'] ?? []);
       }
       return [];
-    } on SocketException catch (e) {
+    } on SocketException {
       if (kDebugMode) {
         debugPrint('❌ Network error: Keine Internetverbindung');
       }
@@ -172,7 +172,7 @@ class GroupToolsService {
         return data['entry_id'];
       }
       return null;
-    } on SocketException catch (e) {
+    } on SocketException {
       if (kDebugMode) {
         debugPrint('❌ Network error: Keine Internetverbindung');
       }
@@ -214,7 +214,7 @@ class GroupToolsService {
         return List<Map<String, dynamic>>.from(data['scans'] ?? []);
       }
       return [];
-    } on SocketException catch (e) {
+    } on SocketException {
       if (kDebugMode) {
         debugPrint('❌ Network error: Keine Internetverbindung');
       }
@@ -268,7 +268,7 @@ class GroupToolsService {
         return data['scan_id'];
       }
       return null;
-    } on SocketException catch (e) {
+    } on SocketException {
       if (kDebugMode) {
         debugPrint('❌ Network error: Keine Internetverbindung');
       }
@@ -310,7 +310,7 @@ class GroupToolsService {
         return List<Map<String, dynamic>>.from(data['crystals'] ?? []);
       }
       return [];
-    } on SocketException catch (e) {
+    } on SocketException {
       if (kDebugMode) {
         debugPrint('❌ Network error: Keine Internetverbindung');
       }
@@ -364,7 +364,7 @@ class GroupToolsService {
         return data['crystal_id'];
       }
       return null;
-    } on SocketException catch (e) {
+    } on SocketException {
       if (kDebugMode) {
         debugPrint('❌ Network error: Keine Internetverbindung');
       }
@@ -402,7 +402,7 @@ class GroupToolsService {
         return List<Map<String, dynamic>>.from(data['sessions'] ?? []);
       }
       return [];
-    } on SocketException catch (e) {
+    } on SocketException {
       if (kDebugMode) {
         debugPrint('❌ Network error: Keine Internetverbindung');
       }
@@ -450,7 +450,7 @@ class GroupToolsService {
         return data['session_id'];
       }
       return null;
-    } on SocketException catch (e) {
+    } on SocketException {
       if (kDebugMode) {
         debugPrint('❌ Network error: Keine Internetverbindung');
       }
@@ -488,7 +488,7 @@ class GroupToolsService {
         return List<Map<String, dynamic>>.from(data['dreams'] ?? []);
       }
       return [];
-    } on SocketException catch (e) {
+    } on SocketException {
       if (kDebugMode) {
         debugPrint('❌ Network error: Keine Internetverbindung');
       }
@@ -540,7 +540,7 @@ class GroupToolsService {
         return data['dream_id'];
       }
       return null;
-    } on SocketException catch (e) {
+    } on SocketException {
       if (kDebugMode) {
         debugPrint('❌ Network error: Keine Internetverbindung');
       }
@@ -588,7 +588,7 @@ class GroupToolsService {
         return List<Map<String, dynamic>>.from(data['sightings'] ?? []);
       }
       return [];
-    } on SocketException catch (e) {
+    } on SocketException {
       if (kDebugMode) {
         debugPrint('❌ Network error: Keine Internetverbindung');
       }
@@ -639,7 +639,7 @@ class GroupToolsService {
         return data['sighting_id'];
       }
       return null;
-    } on SocketException catch (e) {
+    } on SocketException {
       if (kDebugMode) {
         debugPrint('❌ Network error: Keine Internetverbindung');
       }
@@ -676,7 +676,7 @@ class GroupToolsService {
         return List<Map<String, dynamic>>.from(data['events'] ?? []);
       }
       return [];
-    } on SocketException catch (e) {
+    } on SocketException {
       if (kDebugMode) {
         debugPrint('❌ Network error: Keine Internetverbindung');
       }
@@ -729,7 +729,7 @@ class GroupToolsService {
         return data['event_id'];
       }
       return null;
-    } on SocketException catch (e) {
+    } on SocketException {
       if (kDebugMode) {
         debugPrint('❌ Network error: Keine Internetverbindung');
       }
@@ -766,7 +766,7 @@ class GroupToolsService {
         return List<Map<String, dynamic>>.from(data['events'] ?? []);
       }
       return [];
-    } on SocketException catch (e) {
+    } on SocketException {
       if (kDebugMode) {
         debugPrint('❌ Network error: Keine Internetverbindung');
       }
@@ -815,7 +815,7 @@ class GroupToolsService {
         return data['event_id'];
       }
       return null;
-    } on SocketException catch (e) {
+    } on SocketException {
       if (kDebugMode) {
         debugPrint('❌ Network error: Keine Internetverbindung');
       }
@@ -847,7 +847,7 @@ class GroupToolsService {
         return List<Map<String, dynamic>>.from(data['events'] ?? []);
       }
       return [];
-    } on SocketException catch (e) {
+    } on SocketException {
       if (kDebugMode) {
         debugPrint('❌ Network error: Keine Internetverbindung');
       }
@@ -879,7 +879,7 @@ class GroupToolsService {
         return List<Map<String, dynamic>>.from(data['connections'] ?? []);
       }
       return [];
-    } on SocketException catch (e) {
+    } on SocketException {
       if (kDebugMode) {
         debugPrint('❌ Network error: Keine Internetverbindung');
       }
@@ -926,7 +926,7 @@ class GroupToolsService {
         return data['connection_id'];
       }
       return null;
-    } on SocketException catch (e) {
+    } on SocketException {
       if (kDebugMode) {
         debugPrint('❌ Network error: Keine Internetverbindung');
       }
@@ -958,7 +958,7 @@ class GroupToolsService {
         return List<Map<String, dynamic>>.from(data['documents'] ?? []);
       }
       return [];
-    } on SocketException catch (e) {
+    } on SocketException {
       if (kDebugMode) {
         debugPrint('❌ Network error: Keine Internetverbindung');
       }
@@ -1007,7 +1007,7 @@ class GroupToolsService {
         return data['document_id'];
       }
       return null;
-    } on SocketException catch (e) {
+    } on SocketException {
       if (kDebugMode) {
         debugPrint('❌ Network error: Keine Internetverbindung');
       }
@@ -1039,7 +1039,7 @@ class GroupToolsService {
         return List<Map<String, dynamic>>.from(data['methods'] ?? []);
       }
       return [];
-    } on SocketException catch (e) {
+    } on SocketException {
       if (kDebugMode) {
         debugPrint('❌ Network error: Keine Internetverbindung');
       }
@@ -1088,7 +1088,7 @@ class GroupToolsService {
         return data['method_id'];
       }
       return null;
-    } on SocketException catch (e) {
+    } on SocketException {
       if (kDebugMode) {
         debugPrint('❌ Network error: Keine Internetverbindung');
       }

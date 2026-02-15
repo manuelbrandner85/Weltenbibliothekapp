@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../services/storage_service.dart';
-import 'package:weltenbibliothek/core/storage/unified_storage_service.dart';
 
 /// 📊 XP & LEVEL WIDGET
 /// Zeigt aktuelles Level, XP und Progress-Bar

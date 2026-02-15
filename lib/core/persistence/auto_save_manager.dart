@@ -203,6 +203,49 @@ class AutoSaveManager {
       debugPrint('🗑️ Cleared auto-save drafts with prefix: $prefix');
     }
   }
+
+  /// Load a draft by ID from the specified box
+  Future<Map<String, dynamic>?> loadDraft(String draftId, {String boxName = 'content_drafts'}) async {
+    try {
+      final box = await _storage.getBox(boxName);
+      final data = box.get(draftId);
+      
+      if (data == null) {
+        if (kDebugMode) {
+          debugPrint('💾 AutoSave: Draft not found - $boxName/$draftId');
+        }
+        return null;
+      }
+      
+      if (kDebugMode) {
+        debugPrint('💾 AutoSave: Loaded draft - $boxName/$draftId');
+      }
+      
+      return Map<String, dynamic>.from(data as Map);
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ AutoSave: Error loading draft - $e');
+      }
+      return null;
+    }
+  }
+
+  /// Delete a draft by ID from the specified box
+  Future<void> deleteDraft(String draftId, {String boxName = 'content_drafts'}) async {
+    try {
+      final box = await _storage.getBox(boxName);
+      await box.delete(draftId);
+      
+      if (kDebugMode) {
+        debugPrint('🗑️ AutoSave: Deleted draft - $boxName/$draftId');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ AutoSave: Error deleting draft - $e');
+      }
+      rethrow;
+    }
+  }
   
   /// Get statistics
   Map<String, dynamic> getStats() {

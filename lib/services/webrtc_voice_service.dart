@@ -8,7 +8,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:permission_handler/permission_handler.dart';
-import '../services/websocket_chat_service.dart';
+import '../services/webrtc_signaling_service.dart'; // ✅ FIXED: Dedicated WebRTC signaling
 import '../services/error_reporting_service.dart';
 import '../services/admin_action_service.dart';
 import '../services/voice_session_tracker.dart'; // 🆕 Session Tracking
@@ -93,11 +93,10 @@ class WebRTCVoiceService with ChangeNotifier {
   }
 
   // WebSocket for signaling
-  // ⚠️ WICHTIG: WebSocketChatService ist für CHAT, nicht für WebRTC-Signaling konzipiert!
-  // TODO: Dedizierter WebRTC-Signaling-Server erforderlich (z.B. wss://.../voice/signaling)
-  // Aktuell werden Voice-Messages über Chat-WebSocket gesendet (Workaround)
-  // Voice-Chat funktioniert NICHT vollständig ohne echten WebRTC-Signaling-Server!
-  final WebSocketChatService _signaling = WebSocketChatService();
+  // ✅ FIXED: Verwende dedizierten WebRTC Signaling Service (Backend v3.2)
+  // Der WebRTCSignalingService verbindet zu wss://.../voice/signaling
+  // und ist speziell für WebRTC SDP/ICE Austausch konzipiert
+  final WebRTCSignalingService _signaling = WebRTCSignalingService();
   
   // Admin Action Service
   final AdminActionService _adminService = AdminActionService();
@@ -264,17 +263,11 @@ class WebRTCVoiceService with ChangeNotifier {
       // Setup signaling
       _setupSignaling();
       
-      // Send join message via WebSocket
-      await _signaling.sendMessage(
-        room: roomId,
-        message: jsonEncode({
-          'type': 'voice_join',
-          'userId': userId,
-          'username': username,
-        }),
-        username: username,
-        realm: 'voice',
-      );
+      // ✅ FIXED: Connect to dedicated WebRTC signaling server
+      await _signaling.connect();
+      
+      // ✅ FIXED: Use proper WebRTC signaling API
+      _signaling.joinRoom(roomId, userId, username);
       
       _setState(VoiceConnectionState.connected);
       _clearError();  // ✅ Clear error on successful connection
@@ -329,16 +322,8 @@ class WebRTCVoiceService with ChangeNotifier {
   Future<void> leaveRoom() async {
     try {
       if (_currentRoomId != null && _currentUserId != null) {
-        // Send leave message
-        await _signaling.sendMessage(
-          room: _currentRoomId!,
-          message: jsonEncode({
-            'type': 'voice_leave',
-            'userId': _currentUserId!,
-          }),
-          username: 'user',
-          realm: 'voice',
-        );
+        // ✅ FIXED: Use proper WebRTC signaling API
+        _signaling.leaveRoom();
       }
       
       // Close all peer connections
@@ -409,16 +394,11 @@ class WebRTCVoiceService with ChangeNotifier {
       
       // Notify other participants
       if (_currentRoomId != null && _currentUserId != null) {
-        await _signaling.sendMessage(
-          room: _currentRoomId!,
-          message: jsonEncode({
-            'type': 'voice_mute',
-            'userId': _currentUserId!,
-            'muted': true,
-          }),
-          username: 'user',
-          realm: 'voice',
-        );
+        _signaling.sendMessage({
+          'type': 'voice_mute',
+          'userId': _currentUserId!,
+          'muted': true,
+        });
       }
       
       if (kDebugMode) {
@@ -437,16 +417,11 @@ class WebRTCVoiceService with ChangeNotifier {
       
       // Notify other participants
       if (_currentRoomId != null && _currentUserId != null) {
-        await _signaling.sendMessage(
-          room: _currentRoomId!,
-          message: jsonEncode({
-            'type': 'voice_mute',
-            'userId': _currentUserId!,
-            'muted': false,
-          }),
-          username: 'user',
-          realm: 'voice',
-        );
+        _signaling.sendMessage({
+          'type': 'voice_mute',
+          'userId': _currentUserId!,
+          'muted': false,
+        });
       }
       
       if (kDebugMode) {
@@ -580,17 +555,12 @@ class WebRTCVoiceService with ChangeNotifier {
       
       // Handle ICE candidate
       pc.onIceCandidate = (RTCIceCandidate candidate) {
-        _signaling.sendMessage(
-          room: _currentRoomId!,
-          message: jsonEncode({
-            'type': 'voice_ice_candidate',
-            'userId': _currentUserId!,
-            'targetUserId': userId,
-            'candidate': candidate.toMap(),
-          }),
-          username: 'user',
-          realm: 'voice',
-        );
+        _signaling.sendMessage({
+          'type': 'voice_ice_candidate',
+          'userId': _currentUserId!,
+          'targetUserId': userId,
+          'candidate': candidate.toMap(),
+        });
       };
       
       // 🆕 Handle connection state changes for auto-reconnect
@@ -619,17 +589,12 @@ class WebRTCVoiceService with ChangeNotifier {
         final offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
         
-        await _signaling.sendMessage(
-          room: _currentRoomId!,
-          message: jsonEncode({
-            'type': 'voice_offer',
-            'userId': _currentUserId!,
-            'targetUserId': userId,
-            'sdp': offer.toMap(),
-          }),
-          username: 'user',
-          realm: 'voice',
-        );
+        _signaling.sendMessage({
+          'type': 'voice_offer',
+          'userId': _currentUserId!,
+          'targetUserId': userId,
+          'sdp': offer.toMap(),
+        });
       }
       
     } catch (e, stack) {
@@ -664,17 +629,12 @@ class WebRTCVoiceService with ChangeNotifier {
     final answer = await _peerConnections[userId]!.createAnswer();
     await _peerConnections[userId]!.setLocalDescription(answer);
     
-    await _signaling.sendMessage(
-      room: _currentRoomId!,
-      message: jsonEncode({
-        'type': 'voice_answer',
-        'userId': _currentUserId!,
-        'targetUserId': userId,
-        'sdp': answer.toMap(),
-      }),
-      username: 'user',
-      realm: 'voice',
-    );
+    _signaling.sendMessage({
+      'type': 'voice_answer',
+      'userId': _currentUserId!,
+      'targetUserId': userId,
+      'sdp': answer.toMap(),
+    });
   }
 
   /// Handle answer
@@ -838,6 +798,7 @@ class WebRTCVoiceService with ChangeNotifier {
   }
 
   /// Dispose
+  @override
   Future<void> dispose() async {
     await leaveRoom();
     await _stateController.close();
@@ -921,16 +882,11 @@ class WebRTCVoiceService with ChangeNotifier {
       }
       
       // Send kick message via signaling
-      await _signaling.sendMessage(
-        room: _currentRoomId!,
-        message: jsonEncode({
-          'type': 'voice_kick',
-          'userId': userId,
-          'adminId': adminId,
-        }),
-        username: 'admin',
-        realm: 'voice',
-      );
+      _signaling.sendMessage({
+        'type': 'voice_kick',
+        'userId': userId,
+        'adminId': adminId,
+      });
       
       // Remove from participants
       _participants.remove(userId);
@@ -964,17 +920,12 @@ class WebRTCVoiceService with ChangeNotifier {
       }
       
       // Send admin mute message
-      await _signaling.sendMessage(
-        room: _currentRoomId!,
-        message: jsonEncode({
-          'type': 'voice_admin_mute',
-          'userId': userId,
-          'adminId': adminId,
-          'muted': true,
-        }),
-        username: 'admin',
-        realm: 'voice',
-      );
+      _signaling.sendMessage({
+        'type': 'voice_admin_mute',
+        'userId': userId,
+        'adminId': adminId,
+        'muted': true,
+      });
       
       // Update participant state
       if (_participants.containsKey(userId)) {

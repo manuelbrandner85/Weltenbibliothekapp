@@ -452,7 +452,7 @@ class _UserDetailScreenState extends State<UserDetailScreen> with SingleTickerPr
               const SizedBox(height: 16),
               // MUTE DURATION
               DropdownButtonFormField<int?>(
-                value: muteDuration,
+                initialValue: muteDuration,
                 dropdownColor: const Color(0xFF16213E),
                 style: const TextStyle(color: Colors.white),
                 decoration: const InputDecoration(

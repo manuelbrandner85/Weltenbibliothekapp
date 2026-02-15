@@ -5,7 +5,7 @@ library;
 import 'package:flutter/material.dart';
 import '../services/pinned_rooms_service.dart'; // 📌 Pinned Rooms
 import '../screens/shared/modern_voice_chat_screen.dart'; // ✅ UNIFIED Voice Chat Screen
-import '../services/webrtc_voice_service.dart'; // ✅ UNIFIED WebRTC Service
+// ✅ UNIFIED WebRTC Service
 import 'dart:math' as math;
 
 class VoiceChatBanner extends StatefulWidget {

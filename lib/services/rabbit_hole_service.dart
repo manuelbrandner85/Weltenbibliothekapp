@@ -1,6 +1,7 @@
 /// WELTENBIBLIOTHEK v5.13 – KANINCHENBAU-SERVICE
 /// 
 /// Backend-Integration für automatische Tiefenrecherche
+library;
 
 import 'dart:async';
 import 'dart:convert';

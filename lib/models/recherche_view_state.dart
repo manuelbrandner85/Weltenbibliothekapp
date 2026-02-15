@@ -558,7 +558,7 @@ class RechercheViewState {
     return 'RechercheViewState('
         'mode: $mode, '
         'isLoading: $isLoading, '
-        'progress: ${progressPercent}%, '
+        'progress: $progressPercent%, '
         'hasResult: $hasResult, '
         'hasError: $hasError, '
         'query: $query, '

@@ -15,9 +15,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/webrtc_call_provider.dart';
 import '../../models/webrtc_call_state.dart';
 import '../../widgets/voice/participant_grid_tile.dart';
-import '../../widgets/admin/warning_dialog.dart';
-import '../../widgets/admin/ban_user_dialog.dart';
-import '../../models/admin_action.dart';
 
 class ModernVoiceChatScreen extends ConsumerStatefulWidget {
   final String roomId;

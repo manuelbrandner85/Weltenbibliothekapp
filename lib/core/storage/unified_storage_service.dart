@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-import '../../services/storage_service.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../../models/materie_profile.dart';
 import '../../models/energie_profile.dart';
@@ -144,6 +143,33 @@ class UnifiedStorageService {
   /// Profil existiert?
   bool hasProfile(String world) {
     return getProfile(world) != null;
+  }
+
+  /// Generischer String-Wert abrufen (statisch für Kompatibilität)
+  static Future<String?> getString(String key) async {
+    try {
+      // Versuche aus settings Box zu lesen
+      final box = Hive.box('settings');
+      return box.get(key) as String?;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('⚠️ UnifiedStorage.getString($key): $e');
+      }
+      return null;
+    }
+  }
+
+  /// Generischen String-Wert speichern (statisch für Kompatibilität)
+  static Future<void> setString(String key, String value) async {
+    try {
+      final box = Hive.box('settings');
+      await box.put(key, value);
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('⚠️ UnifiedStorage.setString($key): $e');
+      }
+      rethrow;
+    }
   }
 
   /// Profil löschen (world-agnostic)

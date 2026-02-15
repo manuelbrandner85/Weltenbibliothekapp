@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../services/storage_service.dart';
 import 'dart:ui';
 import '../../models/energie_profile.dart';
-import '../../core/storage/unified_storage_service.dart';
 import '../../services/smart_articles_service.dart'; // 🧠 NEW: Smart Articles with auto-fallback
 import '../../services/user_stats_service.dart';
 import '../../services/user_service.dart';
@@ -63,8 +61,8 @@ class _EnergieHomeTabV4State extends State<EnergieHomeTabV4>
   final ScrollController _scrollController = ScrollController();
   EnergieProfile? _profile;
   String _userName = 'Suchender';
-  String _userAvatar = '';
-  String _currentChakra = 'Herzchakra'; // Current focus chakra
+  final String _userAvatar = '';
+  final String _currentChakra = 'Herzchakra'; // Current focus chakra
   
   // 📈 STATISTICS
   int _meditationMinutes = 0;
@@ -72,7 +70,7 @@ class _EnergieHomeTabV4State extends State<EnergieHomeTabV4>
   int _chakraBalance = 0;
   int _spiritualLevel = 0;
   int _dailyStreak = 0;
-  int _unreadInsights = 2; // 🔔 Spiritual insights
+  final int _unreadInsights = 2; // 🔔 Spiritual insights
   
   // 🌙 COSMIC DATA
   String _moonPhase = 'Zunehmender Mond';
@@ -318,8 +316,8 @@ class _EnergieHomeTabV4State extends State<EnergieHomeTabV4>
   
   Future<void> _loadUserProfile() async {
     try {
-      final userId = await UserService.getCurrentUserId();
-      final userName = await UserService.getCurrentUsername();
+      final userId = UserService.getCurrentUserId();
+      final userName = UserService.getCurrentUsername();
       
       if (mounted) {
         setState(() {

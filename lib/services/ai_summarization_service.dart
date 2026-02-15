@@ -169,7 +169,7 @@ class AiSummarizationService {
       return 'Zusammenfassung nicht verfügbar.';
     }
     
-    return filtered.join('. ') + '.';
+    return '${filtered.join('. ')}.';
   }
   
   /// FALLBACK: Simple bullet points (split by paragraphs)
@@ -179,7 +179,7 @@ class AiSummarizationService {
     final filtered = paragraphs
         .where((p) => p.trim().isNotEmpty && p.trim().length > 30)
         .take(maxPoints)
-        .map((p) => p.trim().substring(0, p.trim().length > 100 ? 100 : p.trim().length) + '...')
+        .map((p) => '${p.trim().substring(0, p.trim().length > 100 ? 100 : p.trim().length)}...')
         .toList();
     
     if (filtered.isEmpty) {

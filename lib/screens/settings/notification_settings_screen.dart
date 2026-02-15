@@ -10,7 +10,7 @@ import '../../core/storage/unified_storage_service.dart';
 /// - Notification history
 /// - Push notification testing
 class NotificationSettingsScreen extends StatefulWidget {
-  const NotificationSettingsScreen({Key? key}) : super(key: key);
+  const NotificationSettingsScreen({super.key});
 
   @override
   State<NotificationSettingsScreen> createState() => _NotificationSettingsScreenState();
@@ -22,7 +22,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
   
   bool _isLoading = true;
   bool _notificationsEnabled = true;
-  Map<String, bool> _topicSubscriptions = {};
+  final Map<String, bool> _topicSubscriptions = {};
   List<Map<String, dynamic>> _notificationHistory = [];
   
   @override
@@ -193,7 +193,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                 ),
               ),
             );
-          }).toList(),
+          }),
           
           const SizedBox(height: 24),
           
@@ -255,7 +255,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                   isThreeLine: true,
                 ),
               );
-            }).toList(),
+            }),
         ],
       ),
     );

@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../services/storage_service.dart';
 import 'dart:ui';
 import '../../models/materie_profile.dart';
-import '../../core/storage/unified_storage_service.dart';
 import '../../services/smart_articles_service.dart'; // 🧠 NEW: Smart Articles with auto-fallback
 import '../../services/user_stats_service.dart';
 import '../../services/user_service.dart';
@@ -59,7 +57,7 @@ class _MaterieHomeTabV4State extends State<MaterieHomeTabV4>
   final ScrollController _scrollController = ScrollController();
   MaterieProfile? _profile;
   String _userName = 'Forscher';
-  String _userAvatar = '';
+  final String _userAvatar = '';
   
   // 📈 STATISTICS
   int _totalArticles = 0;
@@ -67,7 +65,7 @@ class _MaterieHomeTabV4State extends State<MaterieHomeTabV4>
   int _bookmarkedTopics = 0;
   int _sharedFindings = 0;
   int _dailyStreak = 0;
-  int _unreadNotifications = 3; // 🔔 Real notification count
+  final int _unreadNotifications = 3; // 🔔 Real notification count
   
   // 📰 CONTENT
   List<Map<String, dynamic>> _featuredArticles = [];
@@ -238,8 +236,8 @@ class _MaterieHomeTabV4State extends State<MaterieHomeTabV4>
   
   Future<void> _loadUserProfile() async {
     try {
-      final userId = await UserService.getCurrentUserId();
-      final userName = await UserService.getCurrentUsername();
+      final userId = UserService.getCurrentUserId();
+      final userName = UserService.getCurrentUsername();
       
       if (mounted) {
         setState(() {

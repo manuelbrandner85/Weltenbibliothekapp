@@ -1,5 +1,6 @@
 /// 🎨 EMOJI REACTIONS SERVICE
 /// Handle emoji reactions on messages
+library;
 
 import 'dart:async';
 import 'dart:convert';

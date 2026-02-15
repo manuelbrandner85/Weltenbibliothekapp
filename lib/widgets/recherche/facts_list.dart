@@ -385,7 +385,7 @@ class _FactsListState extends State<FactsList> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Kein Fakt enthält "${_searchQuery}"',
+            'Kein Fakt enthält "$_searchQuery"',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 14,

@@ -131,7 +131,7 @@ class CallStateNotifier extends StateNotifier<CallState> {
       
       AppLogger.info('✅ [Provider] Call joined successfully');
       
-    } catch (e, stackTrace) {
+    } catch (e) {
       AppLogger.error('❌ [Provider] Failed to join call',
         error: e,
         context: {'roomId': roomId},
@@ -160,7 +160,7 @@ class CallStateNotifier extends StateNotifier<CallState> {
       
       AppLogger.info('✅ [Provider] Call left successfully');
       
-    } catch (e, stackTrace) {
+    } catch (e) {
       AppLogger.error('❌ [Provider] Failed to leave call',
         error: e,
       );
@@ -204,7 +204,7 @@ class CallStateNotifier extends StateNotifier<CallState> {
       
       AppLogger.info('✅ [Provider] Call reconnected successfully');
       
-    } catch (e, stackTrace) {
+    } catch (e) {
       AppLogger.error('❌ [Provider] Failed to reconnect call',
         error: e,
       );

@@ -178,7 +178,7 @@ class ImageUploadService {
         }
         return false;
       }
-    } on SocketException catch (e) {
+    } on SocketException {
       if (kDebugMode) {
         debugPrint('❌ Network: Keine Internetverbindung');
       }
@@ -193,6 +193,49 @@ class ImageUploadService {
         debugPrint('❌ Delete error: $e $e');
       }
       return false;
+    }
+  }
+
+  /// Pick image from device and upload to Cloudflare
+  /// Returns CDN URL on success, null if user cancels or error occurs
+  Future<String?> pickAndUploadImage({String? userId, String? profileType}) async {
+    try {
+      // Initialize image picker
+      final ImagePicker picker = ImagePicker();
+      
+      // Pick image from gallery
+      final XFile? pickedFile = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 2048,
+        maxHeight: 2048,
+        imageQuality: 85,
+      );
+      
+      if (pickedFile == null) {
+        if (kDebugMode) {
+          debugPrint('📷 Image picker: User cancelled');
+        }
+        return null;
+      }
+      
+      if (kDebugMode) {
+        debugPrint('📷 Image picked: ${pickedFile.name}');
+      }
+      
+      // Upload image
+      final imageUrl = await uploadProfileImage(
+        imageFile: pickedFile,
+        userId: userId ?? 'content_${DateTime.now().millisecondsSinceEpoch}',
+        profileType: profileType,
+      );
+      
+      return imageUrl;
+      
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Pick and upload error: $e');
+      }
+      return null;
     }
   }
 }

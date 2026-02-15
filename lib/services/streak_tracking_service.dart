@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart';
 import '../services/storage_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
-import '../core/storage/unified_storage_service.dart';
 
 /// Automatisches Streak-Tracking Service
 /// Trackt tägliche Logins und Tool-Nutzung

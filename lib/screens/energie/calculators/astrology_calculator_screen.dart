@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../services/spirit_calculations/astrology_engine.dart';
 import '../../../models/energie_profile.dart';
-import '../../../core/storage/unified_storage_service.dart';
 import '../../../services/storage_service.dart';
 import '../../../widgets/micro_interactions.dart';
 

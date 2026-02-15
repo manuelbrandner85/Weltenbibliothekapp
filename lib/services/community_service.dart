@@ -74,7 +74,7 @@ class CommunityService {
       // Wait for all stats fetches to complete
       return Future.wait(posts);
       
-    } on SocketException catch (e) {
+    } on SocketException {
       
       if (kDebugMode) {
       
@@ -284,7 +284,7 @@ class CommunityService {
         throw Exception('Failed to load comments: ${response.statusCode}');
       }
       
-    } on SocketException catch (e) {
+    } on SocketException {
       
       if (kDebugMode) {
       

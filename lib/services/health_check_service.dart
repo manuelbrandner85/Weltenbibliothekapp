@@ -1,6 +1,7 @@
 /// 🏥 WELTENBIBLIOTHEK - HEALTH CHECK SERVICE
 /// Real-time backend service monitoring for admin dashboard
 /// Features: API health, latency tracking, error rates, WebSocket status
+library;
 
 import 'dart:async';
 import 'package:flutter/foundation.dart';

@@ -425,12 +425,59 @@ export default {
             'Admin API (ban/mute/delete with validation)',
             'Voice Chat Management',
             'User Status Tracking',
+            'Error Reporting',
           ],
           timestamp: new Date().toISOString(),
           activeRooms: state.getAllRooms().length,
           activeBans: Array.from(state.bans.keys()).length,
           activeMutes: Array.from(state.mutes.keys()).length,
         }, 200, corsHeaders);
+      }
+
+      // ═════════════════════════════════════════════════════════════════
+      // 🐛 ERROR REPORTING
+      // ═════════════════════════════════════════════════════════════════
+      
+      // POST /api/errors/report - Report client-side errors
+      if (path === '/api/errors/report' && request.method === 'POST') {
+        try {
+          const body = await request.json();
+          const {
+            error,
+            stackTrace,
+            context,
+            timestamp,
+            userId,
+            deviceInfo,
+          } = body;
+
+          // Log error to console (Cloudflare Workers Logs)
+          console.error('📱 Client Error Report:', {
+            error,
+            context,
+            timestamp,
+            userId: userId || 'anonymous',
+            stackTrace: stackTrace?.substring(0, 200), // Limit stack trace length
+          });
+
+          // In production, you could also:
+          // - Store in KV for later analysis
+          // - Send to external monitoring service (Sentry, etc.)
+          // - Trigger alerts for critical errors
+
+          return jsonResponse({
+            success: true,
+            message: 'Error report received',
+            reportId: `error_${Date.now()}`,
+            timestamp: new Date().toISOString(),
+          }, 200, corsHeaders);
+        } catch (e) {
+          console.error('❌ Error processing error report:', e);
+          return jsonResponse({
+            success: false,
+            error: 'Failed to process error report',
+          }, 500, corsHeaders);
+        }
       }
 
       // Not found

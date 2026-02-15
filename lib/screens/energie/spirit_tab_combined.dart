@@ -1,6 +1,7 @@
 /// 🌟 SPIRIT-TAB - NUR TOOLS
 /// 
 /// Zeigt die 6 Spirit-Rechner (Numerologie, Archetypen, etc.)
+library;
 
 import 'package:flutter/material.dart';
 import '../../models/energie_profile.dart';

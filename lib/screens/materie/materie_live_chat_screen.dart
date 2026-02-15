@@ -9,7 +9,7 @@ import '../../services/chat_notification_service.dart'; // 🔔 NOTIFICATIONS
 import '../../services/user_service.dart'; // 🆕 User Service für Auth
 import '../../widgets/mention_autocomplete.dart'; // @ MENTIONS
 import 'package:image_picker/image_picker.dart'; // 📷 Image Picker
-import '../../core/storage/unified_storage_service.dart'; // 👤 PROFIL
+// 👤 PROFIL
 import '../../services/storage_service.dart'; // StorageService for profile access
 import 'package:flutter_riverpod/flutter_riverpod.dart'; // Riverpod
 // 🔥 BACKEND SYNC
@@ -36,11 +36,11 @@ import '../../widgets/pinned_message_banner.dart'; // 📌 Pinned Message Banner
 import '../shared/modern_voice_chat_screen.dart'; // 🎤 Modern Voice Chat Screen (Phase B)
 import '../../providers/webrtc_call_provider.dart'; // Riverpod provider
 // 🎤 Admin Dialogs & Notifications
-import '../../widgets/admin/kick_user_dialog.dart'; // 🚫 Kick User Dialog
+// 🚫 Kick User Dialog
 // 🔴 Ban User Dialog
 // ⚠️ Warning Dialog
 // 📢 Admin Notifications
-import '../../models/admin_action.dart'; // 📋 Admin Action Models
+// 📋 Admin Action Models
 import '../../services/admin_action_service.dart'; // 🔧 Admin Action Service
 // 🎤 Voice Player Widget
 import '../../widgets/android_voice_recorder.dart'; // 🎤 Android Voice Recorder (flutter_sound)
