@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../../services/storage_service.dart';
 import 'dart:ui';
 import '../../models/materie_profile.dart';
-import '../../services/cloudflare_api_service.dart';
+import '../../services/smart_articles_service.dart'; // 🧠 FIXED: Smart Articles with auto-fallback
 
 /// ═══════════════════════════════════════════════════════════════════════════
 /// MATERIE HOME DASHBOARD V5 - ULTRA PROFESSIONAL EDITION
@@ -60,7 +60,7 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
   late Animation<double> _shimmerAnimation;
   
   // Services
-  final CloudflareApiService _api = CloudflareApiService();
+  final SmartArticlesService _articlesService = SmartArticlesService(); // 🧠 Smart with auto-fallback
   
   // State
   MaterieProfile? _profile;
@@ -229,7 +229,7 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
     if (mounted) setState(() => _isLoading = true);
 
     try {
-      final articles = await _api.getArticles(
+      final articles = await _articlesService.getArticles(
         realm: 'materie',
         limit: 20,
       );
