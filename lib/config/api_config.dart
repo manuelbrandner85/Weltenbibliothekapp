@@ -9,6 +9,11 @@ class ApiConfig {
   // 🌐 BASE URL
   static const String baseUrl = 'https://weltenbibliothek-api-v3.brandy13062.workers.dev';
   
+  // 🆕 BACKEND v3.2 URLs (WebRTC Signaling + Admin APIs)
+  // ⚠️ TODO: Nach Cloudflare Deployment diese URLs aktualisieren!
+  static const String backendV32Url = 'https://weltenbibliothek-backend-v3-2.brandy13062.workers.dev';
+  static const String webrtcSignalingUrl = 'wss://weltenbibliothek-backend-v3-2.brandy13062.workers.dev/voice/signaling';
+  
   // 🔐 AUTHENTICATION
   static const String apiToken = 'y-Xiv3kKeiybDm2CV0yLFu7TSd22co6NBw3udn5Y';
   static const String cloudflareApiToken = 'y-Xiv3kKeiybDm2CV0yLFu7TSd22co6NBw3udn5Y'; // Alias for compatibility
@@ -68,6 +73,8 @@ class ApiConfig {
   static Map<String, String> get adminHeaders => {
     'Content-Type': 'application/json',
     'Authorization': 'Bearer $adminToken',
+    'X-Role': 'root_admin',
+    'X-User-ID': 'admin',
   };
   
   /// Get WebRTC headers with WebRTC-specific token
