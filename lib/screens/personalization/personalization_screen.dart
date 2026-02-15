@@ -49,7 +49,7 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> with Sing
       final userId = _storage.getCurrentUserId();
       
       // Load recommendations
-      _recommendations = await _api.getRecommendations(userId, limit: 20);
+      _recommendations = await _api.getRecommendations(userId: userId, limit: 20);
       
       // Load bookmarks
       _bookmarks = await _storage.getBookmarks();
@@ -148,8 +148,11 @@ class _PersonalizationScreenState extends State<PersonalizationScreen> with Sing
     );
     
     if (result != null && result.isNotEmpty) {
-      await _storage.createReadingList(result);
-      _showSnackBar('✅ Leseliste erstellt', Colors.green);
+      final currentUserId = await _storage.getCurrentUserId();
+      if (currentUserId != null) {
+        await _storage.createReadingList(currentUserId, [result]);
+        _showSnackBar('✅ Leseliste erstellt', Colors.green);
+      }
     }
   }
   

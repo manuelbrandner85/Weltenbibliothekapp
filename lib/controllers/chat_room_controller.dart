@@ -279,7 +279,7 @@ class ChatRoomController extends ChangeNotifier {
       _state = _state.copyWith(
         messages: [],
         reactions: {},
-        typingUsers: [],
+        typingUsers: <String>{}.toSet(),
       );
       notifyListeners();
     } catch (e) {

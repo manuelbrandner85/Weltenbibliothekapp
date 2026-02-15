@@ -210,4 +210,30 @@ class UnifiedStorageService {
       debugPrint('❌ Error clearing caches: $e');
     }
   }
+
+  /// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  /// 🔧 GENERIC HELPERS
+  /// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  /// Get string value from shared preferences
+  Future<String?> getString(String key) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getString(key);
+    } catch (e) {
+      debugPrint('❌ Error getting string: $e');
+      return null;
+    }
+  }
+
+  /// Set string value in shared preferences
+  Future<bool> setString(String key, String value) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return await prefs.setString(key, value);
+    } catch (e) {
+      debugPrint('❌ Error setting string: $e');
+      return false;
+    }
+  }
 }

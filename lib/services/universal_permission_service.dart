@@ -4,7 +4,7 @@
 /// Provides a unified API that works across all platforms.
 library;
 
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:html' as html show window, Navigator;
 

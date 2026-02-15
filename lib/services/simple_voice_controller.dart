@@ -1,22 +1,22 @@
 /// 🎙️ SIMPLE VOICE CONTROLLER - Backward Compatibility Wrapper
 /// 
 /// This is a compatibility layer for widgets still using SimpleVoiceController.
-/// All functionality is delegated to SimpleVoiceService.
+/// All functionality is delegated to WebRTCVoiceService.
 library;
 
-import 'simple_voice_service.dart';
+import 'webrtc_voice_service.dart';
 
 /// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 /// 🔄 BACKWARD COMPATIBILITY WRAPPER
 /// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 /// 
 /// Widgets können weiterhin SimpleVoiceController verwenden.
-/// Intern wird SimpleVoiceService genutzt.
+/// Intern wird WebRTCVoiceService genutzt.
 class SimpleVoiceController {
-  // Delegate to SimpleVoiceService singleton
-  static final SimpleVoiceService _service = SimpleVoiceService();
+  // Delegate to WebRTCVoiceService singleton
+  static final WebRTCVoiceService _service = WebRTCVoiceService();
 
-  // Expose all public methods from SimpleVoiceService
+  // Expose all public methods from WebRTCVoiceService
   Future<bool> joinRoom({
     required String roomId,
     required String userId,
@@ -33,25 +33,25 @@ class SimpleVoiceController {
 
   Future<void> leaveRoom() => _service.leaveRoom();
   Future<void> toggleMute() => _service.toggleMute();
-  Future<void> setMuted(bool muted) => _service.setMuted(muted);
+  Future<void> setMuted(bool muted) => _service.toggleMute();
+  
+  // Push-to-talk methods
+  Future<void> startPushToTalk() async {
+    await _service.toggleMute(); // Unmute
+  }
+  
+  Future<void> stopPushToTalk() async {
+    await _service.toggleMute(); // Mute
+  }
   
   // Expose getters
   bool get isMuted => _service.isMuted;
-  bool get isConnected => _service.isConnected;
-  List<VoiceParticipant> get participants => _service.participants;
+  bool get isConnected => _service.state == VoiceConnectionState.connected;
+  bool get isInCall => _service.state == VoiceConnectionState.connected;
+  List<VoiceParticipant> get participants => _service.participants.values.toList();
 }
 
 /// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 /// 📦 EXPORT
 /// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-/// 
-/// Widgets können jetzt beide Klassen verwenden:
-/// 
-/// ```dart
-/// // Option 1: Alte API (funktioniert weiterhin)
-/// final controller = SimpleVoiceController();
-/// 
-/// // Option 2: Neue API (empfohlen)
-/// final service = SimpleVoiceService();
-/// ```
-export 'simple_voice_service.dart';
+export 'webrtc_voice_service.dart';

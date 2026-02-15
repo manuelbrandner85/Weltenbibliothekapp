@@ -61,15 +61,15 @@ class _EnhancedProfileScreenState extends State<EnhancedProfileScreen> with Sing
       _stats = await _api.getUserStats(widget.userId);
       
       // Load activity feed
-      _activities = await _api.getUserActivity(widget.userId, limit: 20);
+      _activities = await _api.getUserActivity(userId: widget.userId, limit: 20);
       
       // Load collections
-      _collections = await _api.getUserCollections(widget.userId);
+      _collections = await _api.getUserCollections(userId: widget.userId);
       
       // Check follow status
       if (!widget.isOwnProfile) {
         final currentUserId = _storage.getCurrentUserId();
-        _isFollowing = await _api.isFollowing(currentUserId, widget.userId);
+        _isFollowing = await _api.isFollowing(currentUserId: currentUserId, targetUserId: widget.userId);
       }
       
     } catch (e) {
@@ -88,10 +88,10 @@ class _EnhancedProfileScreenState extends State<EnhancedProfileScreen> with Sing
     
     try {
       if (_isFollowing) {
-        await _api.followUser(currentUserId, widget.userId);
+        await _api.followUser(currentUserId: currentUserId, targetUserId: widget.userId);
         _showSnackBar('✅ Du folgst jetzt diesem Nutzer', Colors.green);
       } else {
-        await _api.unfollowUser(currentUserId, widget.userId);
+        await _api.unfollowUser(currentUserId: currentUserId, targetUserId: widget.userId);
         _showSnackBar('❌ Du folgst diesem Nutzer nicht mehr', Colors.orange);
       }
     } catch (e) {

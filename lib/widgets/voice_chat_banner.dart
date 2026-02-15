@@ -14,6 +14,7 @@ class VoiceChatBanner extends StatefulWidget {
   final String userId;
   final String username;
   final Color color;
+  final String world; // Added world parameter
 
   const VoiceChatBanner({
     super.key,
@@ -22,6 +23,7 @@ class VoiceChatBanner extends StatefulWidget {
     required this.userId,
     required this.username,
     required this.color,
+    this.world = 'materie', // Default to materie
   });
 
   @override
@@ -97,6 +99,7 @@ class _VoiceChatBannerState extends State<VoiceChatBanner> with SingleTickerProv
                 roomName: widget.roomName,
                 userId: widget.userId,
                 username: widget.username,
+                world: widget.world,
                 accentColor: widget.color,
               ),
             ),

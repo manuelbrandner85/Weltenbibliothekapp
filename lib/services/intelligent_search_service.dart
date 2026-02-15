@@ -278,6 +278,11 @@ class IntelligentSearchService {
     }
   }
 
+  /// Public method to save search history (alias for _addToHistory)
+  Future<void> saveSearchHistory(String query) async {
+    await _addToHistory(query);
+  }
+
   /// Such-Historie löschen
   Future<void> clearSearchHistory() async {
     final prefs = await SharedPreferences.getInstance();

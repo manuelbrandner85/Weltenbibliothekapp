@@ -12,6 +12,7 @@ class VoiceChatButton extends StatefulWidget {
   final String userId;
   final String username;
   final Color color;
+  final String world; // Added world parameter
 
   const VoiceChatButton({
     super.key,
@@ -20,6 +21,7 @@ class VoiceChatButton extends StatefulWidget {
     required this.userId,
     required this.username,
     this.color = const Color(0xFF34C759), // Default green
+    this.world = 'materie', // Default to materie
   });
 
   @override
@@ -159,11 +161,11 @@ class _VoiceChatButtonState extends State<VoiceChatButton> {
       }
 
       // STEP 2: Join room
-      final success = await _voiceController.joinVoiceRoom(
-        widget.roomId,
-        widget.roomName,
-        widget.userId,
-        widget.username,
+      final success = await _voiceController.joinRoom(
+        roomId: widget.roomId,
+        userId: widget.userId,
+        username: widget.username,
+        world: widget.world,
       );
 
       if (success && mounted) {

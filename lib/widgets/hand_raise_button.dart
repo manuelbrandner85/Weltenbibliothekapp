@@ -5,6 +5,7 @@ library;
 import 'package:flutter/material.dart';
 import '../services/webrtc_voice_service.dart'; // ✅ UNIFIED WebRTC Service
 import '../services/voice_feedback_service.dart';
+import '../services/simple_voice_controller.dart'; // ✅ Import SimpleVoiceController
 
 class HandRaiseButton extends StatefulWidget {
   final SimpleVoiceController voiceController;

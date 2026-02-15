@@ -36,13 +36,13 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
     
     try {
       // Load notification preferences
-      final prefs = _storage.getNotificationPreferences();
+      final prefs = await _storage.getNotificationPreferences();
       _notificationsEnabled = prefs['enabled'] ?? true;
       
       // Load topic subscriptions
       final topics = CloudflarePushService.availableTopics.keys.toList();
       for (var topic in topics) {
-        _topicSubscriptions[topic] = prefs['topics']?.contains(topic) ?? false;
+        _topicSubscriptions[topic] = (prefs['topics'] as List?)?.contains(topic) ?? false;
       }
       
       // Load notification history
@@ -94,7 +94,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
           .where((e) => e.value)
           .map((e) => e.key)
           .toList();
-      await _storage.saveNotificationPreference('topics', subscribedTopics);
+      await _storage.saveNotificationPreference('topics', subscribedTopics.join(','));
       
     } catch (e) {
       _showSnackBar('❌ Fehler beim Aktualisieren', Colors.red);
