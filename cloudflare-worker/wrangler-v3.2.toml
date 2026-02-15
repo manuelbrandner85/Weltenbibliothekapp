@@ -1,0 +1,20 @@
+# Weltenbibliothek Backend v3.2
+# Integriert: WebRTC Signaling + Admin APIs
+
+name = "weltenbibliothek-backend-v3-2"
+main = "backend-v3.2.js"
+compatibility_date = "2024-01-01"
+workers_dev = true
+
+# Account Settings (bitte ausfüllen)
+account_id = ""  # Deine Cloudflare Account ID
+
+# Environment Variables
+[vars]
+MAX_PARTICIPANTS = "10"
+PRIMARY_TOKEN = "y-Xiv3kKeiybDm2CV0yLFu7TSd22co6NBw3udn5Y"
+ADMIN_TOKEN = "XCz3muf7asVj-lBgXXG3ZiY9wJ_TLelzJQZ9jutB"
+
+# Build
+[build]
+command = ""
