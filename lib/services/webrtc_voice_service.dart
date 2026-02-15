@@ -4,7 +4,6 @@
 library;
 
 import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -139,6 +138,8 @@ class WebRTCVoiceService with ChangeNotifier {
   bool get isMuted => _isMuted;
   bool get isConnected => _state == VoiceConnectionState.connected;
   List<VoiceParticipant> get participants => _participants.values.toList();
+  String? get currentRoomId => _currentRoomId; // ✅ ADD: Public getter
+  MediaStream? get localStream => _localStream; // ✅ ADD: Public getter
   AdminActionService get adminService => _adminService;  // 🆕 Admin Service Access
   
   // 🔧 NEW: Additional getters for widgets
@@ -173,6 +174,37 @@ class WebRTCVoiceService with ChangeNotifier {
     },
     'video': false,
   };
+
+  /// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  /// 🎙️ INITIALIZE MICROPHONE (Public API)
+  /// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  /// 
+  /// Initialize microphone and get local audio stream.
+  /// This is a separate method that can be called before joinRoom.
+  /// Useful for checking microphone permissions and testing audio.
+  Future<bool> initMicrophone() async {
+    try {
+      // Request microphone permission
+      final permissionStatus = await Permission.microphone.request();
+      if (!permissionStatus.isGranted) {
+        debugPrint('❌ WebRTC: Microphone permission denied');
+        return false;
+      }
+
+      // Get user media
+      _localStream = await navigator.mediaDevices.getUserMedia(_mediaConstraints);
+      
+      if (_localStream != null) {
+        debugPrint('✅ WebRTC: Microphone initialized successfully');
+        return true;
+      }
+      
+      return false;
+    } catch (e) {
+      debugPrint('❌ WebRTC: initMicrophone failed - $e');
+      return false;
+    }
+  }
 
   /// Join voice room
   Future<bool> joinRoom({

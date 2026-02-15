@@ -1,4 +1,5 @@
 /// 🔧 SELF-HEALING & AUTO-RECOVERY SERVICE
+library;
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 

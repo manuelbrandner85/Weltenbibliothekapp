@@ -1667,5 +1667,182 @@ class CloudflareApiService {
       return null;
     }
   }
+
+  // ═══════════════════════════════════════════════════════════
+  // SOCIAL & PERSONALIZATION METHODS (NEW)
+  // ═══════════════════════════════════════════════════════════
+
+  /// Get personalized recommendations for user
+  Future<List<Map<String, dynamic>>> getRecommendations({
+    required String userId,
+    String? realm,
+    int limit = 10,
+  }) async {
+    try {
+      final params = <String, String>{
+        'user_id': userId,
+        'limit': limit.toString(),
+      };
+      if (realm != null) params['realm'] = realm;
+
+      final uri = Uri.parse('$baseUrl/api/recommendations').replace(queryParameters: params);
+      final response = await http.get(uri, headers: _headers).timeout(
+        const Duration(seconds: 15),
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        return data.cast<Map<String, dynamic>>();
+      }
+      
+      return [];
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Error getting recommendations: $e');
+      }
+      return [];
+    }
+  }
+
+  /// Get user activity history
+  Future<List<Map<String, dynamic>>> getUserActivity({
+    required String userId,
+    int limit = 20,
+  }) async {
+    try {
+      final params = <String, String>{
+        'user_id': userId,
+        'limit': limit.toString(),
+      };
+
+      final uri = Uri.parse('$baseUrl/api/users/$userId/activity').replace(queryParameters: params);
+      final response = await http.get(uri, headers: _headers).timeout(
+        const Duration(seconds: 10),
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        return data.cast<Map<String, dynamic>>();
+      }
+      
+      return [];
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Error getting user activity: $e');
+      }
+      return [];
+    }
+  }
+
+  /// Get user collections (reading lists, bookmarks, etc.)
+  Future<List<Map<String, dynamic>>> getUserCollections({
+    required String userId,
+  }) async {
+    try {
+      final uri = Uri.parse('$baseUrl/api/users/$userId/collections');
+      final response = await http.get(uri, headers: _headers).timeout(
+        const Duration(seconds: 10),
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        return data.cast<Map<String, dynamic>>();
+      }
+      
+      return [];
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Error getting user collections: $e');
+      }
+      return [];
+    }
+  }
+
+  /// Check if current user is following another user
+  Future<bool> isFollowing({
+    required String currentUserId,
+    required String targetUserId,
+  }) async {
+    try {
+      final uri = Uri.parse('$baseUrl/api/users/$currentUserId/following/$targetUserId');
+      final response = await http.get(uri, headers: _headers).timeout(
+        const Duration(seconds: 5),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return data['is_following'] ?? false;
+      }
+      
+      return false;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Error checking follow status: $e');
+      }
+      return false;
+    }
+  }
+
+  /// Follow a user
+  Future<bool> followUser({
+    required String currentUserId,
+    required String targetUserId,
+  }) async {
+    try {
+      final uri = Uri.parse('$baseUrl/api/users/$currentUserId/follow');
+      final response = await http.post(
+        uri,
+        headers: _headers,
+        body: json.encode({'target_user_id': targetUserId}),
+      ).timeout(
+        const Duration(seconds: 10),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        if (kDebugMode) {
+          debugPrint('✅ Successfully followed user: $targetUserId');
+        }
+        return true;
+      }
+      
+      return false;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Error following user: $e');
+      }
+      return false;
+    }
+  }
+
+  /// Unfollow a user
+  Future<bool> unfollowUser({
+    required String currentUserId,
+    required String targetUserId,
+  }) async {
+    try {
+      final uri = Uri.parse('$baseUrl/api/users/$currentUserId/unfollow');
+      final response = await http.post(
+        uri,
+        headers: _headers,
+        body: json.encode({'target_user_id': targetUserId}),
+      ).timeout(
+        const Duration(seconds: 10),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        if (kDebugMode) {
+          debugPrint('✅ Successfully unfollowed user: $targetUserId');
+        }
+        return true;
+      }
+      
+      return false;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Error unfollowing user: $e');
+      }
+      return false;
+    }
+  }
 }
 

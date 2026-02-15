@@ -1,0 +1,26 @@
+Performance Test Results - Sun Feb 15 12:52:44 UTC 2026
+===========================================
+
+Web Build Size:
+  Total: 47M
+  main.dart.js: 6.9M
+
+Assets:
+  Total Size: 13M
+  Image Count: 8
+
+Code Metrics:
+  Dart Files: 719
+  Total Lines: 288550
+  Services: 187
+  Screens: 163
+  Widgets: 223
+
+Dependencies: 56 packages
+
+
+Code Quality:
+  Errors: 152
+  Warnings: 450
+  Total Issues: 1910
+

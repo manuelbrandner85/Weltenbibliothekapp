@@ -1,12 +1,15 @@
 /// 💾 UNIFIED STORAGE SERVICE - Universal Storage API
 /// 
 /// Provides a unified interface for all storage operations.
-/// Works with Hive and SharedPreferences for local storage.
+/// Delegates to appropriate storage backends (Hive, SharedPreferences, Cloudflare).
 library;
 
 import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'storage_service.dart';
+import 'offline_storage_service.dart';
+import 'local_chat_storage_service.dart';
 
 /// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 /// 📦 UNIFIED STORAGE SERVICE
@@ -15,6 +18,10 @@ class UnifiedStorageService {
   static final UnifiedStorageService _instance = UnifiedStorageService._internal();
   factory UnifiedStorageService() => _instance;
   UnifiedStorageService._internal();
+
+  final StorageService _storageService = StorageService();
+  final OfflineStorageService _offlineStorage = OfflineStorageService();
+  final LocalChatStorageService _chatStorage = LocalChatStorageService();
 
   /// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   /// 👤 USER MANAGEMENT
@@ -38,49 +45,6 @@ class UnifiedStorageService {
       await prefs.setString('user_id', userId);
     } catch (e) {
       debugPrint('❌ Error saving user ID: $e');
-    }
-  }
-
-  /// Get username for world
-  String? getUsername(String world) {
-    try {
-      final box = Hive.box('user_data');
-      return box.get('username_$world') as String?;
-    } catch (e) {
-      debugPrint('❌ Error getting username: $e');
-      return null;
-    }
-  }
-
-  /// Get user role for world
-  String? getRole(String world) {
-    try {
-      final box = Hive.box('user_data');
-      return box.get('role_$world') as String?;
-    } catch (e) {
-      debugPrint('❌ Error getting role: $e');
-      return 'user'; // Default role
-    }
-  }
-
-  /// Get user profile for world
-  Map<String, dynamic>? getProfile(String world) {
-    try {
-      final box = Hive.box('user_data');
-      return box.get('profile_$world') as Map<String, dynamic>?;
-    } catch (e) {
-      debugPrint('❌ Error getting profile: $e');
-      return null;
-    }
-  }
-
-  /// Save user profile for world
-  Future<void> saveProfile(String world, Map<String, dynamic> profile) async {
-    try {
-      final box = Hive.box('user_data');
-      await box.put('profile_$world', profile);
-    } catch (e) {
-      debugPrint('❌ Error saving profile: $e');
     }
   }
 
