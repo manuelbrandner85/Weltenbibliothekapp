@@ -1823,6 +1823,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
           roomName: 'Materie Chat - $_selectedRoom',
           userId: _userId,
           username: _username,
+          world: 'materie',  // ✅ ADD: world parameter
           accentColor: Colors.red, // Materie red
           // ✅ NO participants prop - Riverpod provider handles it!
           // ✅ NO callbacks - Riverpod notifier handles everything!

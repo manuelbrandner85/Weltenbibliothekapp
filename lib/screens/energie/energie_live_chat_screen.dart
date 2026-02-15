@@ -1911,6 +1911,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
           roomName: _rooms[_selectedRoom]?['name'] ?? 'Voice Chat',
           userId: _userId,
           username: _username,
+          world: 'energie',  // ✅ ADD: world parameter
           accentColor: const Color(0xFF9B51E0), // Energie purple
           // ✅ NO participants prop - Riverpod provider handles it!
           // ✅ NO callbacks - Riverpod notifier handles everything!

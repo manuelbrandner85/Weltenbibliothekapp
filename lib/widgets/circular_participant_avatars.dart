@@ -5,6 +5,7 @@ library;
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import '../models/chat_models.dart';
+import '../services/webrtc_voice_service.dart';  // ✅ ADD: Import VoiceParticipant
 
 class CircularParticipantAvatars extends StatefulWidget {
   final List<VoiceParticipant> participants;

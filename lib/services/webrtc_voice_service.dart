@@ -73,7 +73,7 @@ class VoiceParticipant {
 }
 
 /// WebRTC Voice Chat Service
-class WebRTCVoiceService {
+class WebRTCVoiceService with ChangeNotifier {
   static final WebRTCVoiceService _instance = WebRTCVoiceService._internal();
   factory WebRTCVoiceService() => _instance;
   static WebRTCVoiceService get instance => _instance; // ✅ PHASE A: Static getter
@@ -136,6 +136,20 @@ class WebRTCVoiceService {
   bool get isConnected => _state == VoiceConnectionState.connected;
   List<VoiceParticipant> get participants => _participants.values.toList();
   AdminActionService get adminService => _adminService;  // 🆕 Admin Service Access
+  
+  // 🔧 NEW: Additional getters for widgets
+  bool get isInCall => _currentRoomId != null && isConnected;
+  int get participantCount => _participants.length;
+  String? get currentSpeakerId => _participants.entries
+      .firstWhere(
+        (e) => e.value.isSpeaking,
+        orElse: () => MapEntry('', VoiceParticipant(userId: '', username: '', isMuted: false, isSpeaking: false)),
+      )
+      .key
+      .isEmpty
+      ? null
+      : _participants.entries.firstWhere((e) => e.value.isSpeaking).key;
+  String? get currentUserId => _currentUserId;
   
   // WebRTC configuration
   final Map<String, dynamic> _configuration = {
@@ -328,7 +342,7 @@ class WebRTCVoiceService {
       
       // Clear participants
       _participants.clear();
-      _participantsController.add([]);
+      _notifyParticipantsChanged();
       
       _currentRoomId = null;
       _currentUserId = null;
@@ -478,7 +492,7 @@ class WebRTCVoiceService {
       userId: userId,
       username: username,
     );
-    _participantsController.add(participants);
+    _notifyParticipantsChanged();
     
     // Create peer connection
     await _createPeerConnection(userId, true);
@@ -494,7 +508,7 @@ class WebRTCVoiceService {
     
     // Remove participant
     _participants.remove(userId);
-    _participantsController.add(participants);
+    _notifyParticipantsChanged();
     
     // Close peer connection
     final pc = _peerConnections.remove(userId);
@@ -537,7 +551,7 @@ class WebRTCVoiceService {
             _participants[userId] = _participants[userId]!.copyWith(
               stream: event.streams[0],
             );
-            _participantsController.add(participants);
+            _notifyParticipantsChanged();
           }
         }
       };
@@ -660,7 +674,7 @@ class WebRTCVoiceService {
     
     if (_participants.containsKey(userId)) {
       _participants[userId] = _participants[userId]!.copyWith(isMuted: muted);
-      _participantsController.add(participants);
+      _notifyParticipantsChanged();
     }
   }
 
@@ -668,10 +682,17 @@ class WebRTCVoiceService {
   void _setState(VoiceConnectionState newState) {
     _state = newState;
     _stateController.add(_state);
+    notifyListeners(); // 🔧 Notify widgets listening to this service
     
     if (kDebugMode) {
       print('🎤 WebRTC: State changed to ${newState.toString()}');
     }
+  }
+  
+  /// 🔧 Notify participants change
+  void _notifyParticipantsChanged() {
+    _notifyParticipantsChanged();
+    notifyListeners();
   }
   
   // ✅ PHASE 2: Connection Health Check
@@ -729,11 +750,15 @@ class WebRTCVoiceService {
       // Wait a bit
       await Future.delayed(const Duration(milliseconds: 500));
       
+      // Determine world from roomId
+      final world = savedRoomId.contains('materie') ? 'materie' : 'energie';
+      
       // Attempt rejoin
       final success = await joinRoom(
         roomId: savedRoomId,
         userId: savedUserId,
         username: 'user',
+        world: world,  // 🔧 ADD: Derived world parameter
         pushToTalk: _isPushToTalk,
       );
       
@@ -812,12 +837,16 @@ class WebRTCVoiceService {
     // Leave current room
     await leaveRoom();
     
+    // Determine world from newRoomId
+    final world = newRoomId.contains('materie') ? 'materie' : 'energie';
+    
     // Join new room with current user info
     if (_currentUserId != null) {
       return await joinRoom(
         roomId: newRoomId,
         userId: _currentUserId!,
         username: 'user', // TODO: Get actual username
+        world: world,  // 🔧 ADD: Derived world parameter
         pushToTalk: _isPushToTalk,
       );
     }
@@ -854,7 +883,7 @@ class WebRTCVoiceService {
       
       // Remove from participants
       _participants.remove(userId);
-      _participantsController.add(participants);
+      _notifyParticipantsChanged();
       
       if (kDebugMode) {
         print('🚫 WebRTC: User $userId kicked by admin $adminId');
@@ -899,7 +928,7 @@ class WebRTCVoiceService {
       // Update participant state
       if (_participants.containsKey(userId)) {
         _participants[userId] = _participants[userId]!.copyWith(isMuted: true);
-        _participantsController.add(participants);
+        _notifyParticipantsChanged();
       }
       
       if (kDebugMode) {

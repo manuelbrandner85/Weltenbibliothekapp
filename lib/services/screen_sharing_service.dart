@@ -41,7 +41,7 @@ class ScreenSharingService extends ChangeNotifier {
   ScreenSharingService._internal();
 
   // Dependencies
-  final SimpleVoiceController _voiceController = SimpleVoiceController();
+  final WebRTCVoiceService _voiceController = WebRTCVoiceService();  // ✅ Use WebRTCVoiceService
   final CloudflareSignalingService _signaling = CloudflareSignalingService();
   
   // Screen Share State
