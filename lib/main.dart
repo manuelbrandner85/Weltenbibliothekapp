@@ -11,7 +11,7 @@ import 'package:hive_flutter/hive_flutter.dart'; // 🗄️ HIVE LOCAL STORAGE
 // import 'firebase_options.dart';
 import 'screens/intro_image_screen.dart';
 import 'screens/portal_home_screen.dart'; // 🌀 Portal (NACH Tutorial)
-// import 'screens/energie/energie_world_screen.dart'; // Energie World Screen - DISABLED (missing file)
+import 'screens/energie_world_screen.dart'; // ✅ FIXED: Correct path
 import 'screens/energie/achievements_screen.dart';
 import 'screens/daily_challenges_screen.dart';  // 🎯 Daily Challenges
 import 'screens/leaderboard_screen.dart';  // 🏆 Leaderboard
@@ -258,7 +258,7 @@ class _WeltenbibliothekAppState extends State<WeltenbibliothekApp> {
           home: const PortalHomeScreen(), // 🌀 Direkt zum Portal
           routes: {
             '/home': (context) => const IntroImageScreen(),
-            // '/dashboard': (context) => const EnergieWorldScreen(), // DISABLED (missing file)
+            '/dashboard': (context) => const EnergieWorldScreen(), // ✅ FIXED
             '/achievements': (context) => const AchievementsScreen(),
             '/daily_challenges': (context) => const DailyChallengesScreen(),  // 🎯 Daily Challenges
             '/leaderboard': (context) => const LeaderboardScreen(),  // 🏆 Leaderboard

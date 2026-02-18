@@ -41,7 +41,7 @@ class _EmergencyVoiceScreenState extends State<EmergencyVoiceScreen> {
       _logs.insert(0, '${DateTime.now().toIso8601String().substring(11, 19)} - $message');
       if (_logs.length > 20) _logs.removeLast();
     });
-    print(message);
+    debugPrint(message);
   }
 
   Future<void> _initMicrophone() async {
