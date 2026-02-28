@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import '../../models/knowledge_extended_models.dart';
+import '../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 
 /// ============================================
 /// MODERNE KNOWLEDGE CARD

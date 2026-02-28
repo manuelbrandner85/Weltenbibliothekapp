@@ -2,14 +2,23 @@
 /// Mondphasen, Chakra-Status und kosmische Einflüsse
 library;
 import 'package:flutter/material.dart';
+import '../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import 'package:flutter/foundation.dart';
+import '../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import '../../theme/app_theme.dart';
+import '../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import '../../widgets/premium_components.dart';
+import '../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import '../../services/moon_phase_service.dart';
+import '../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import '../../services/astrological_service.dart';
+import '../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import '../../services/planetary_hours_service.dart';
+import '../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import 'package:intl/intl.dart';
+import '../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import 'chakra_meditation_screen.dart';
+import '../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 
 class SpiritCosmicInsightsScreen extends StatefulWidget {
   const SpiritCosmicInsightsScreen({super.key});

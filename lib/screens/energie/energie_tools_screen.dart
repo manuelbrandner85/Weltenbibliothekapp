@@ -1,10 +1,17 @@
 import 'package:flutter/material.dart';
+import '../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import 'frequency_generator_screen.dart';
+import '../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import 'lunar_optimizer_screen.dart';
+import '../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import 'consciousness_tracker_screen.dart';
+import '../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import 'archetype_compass_screen.dart';
+import '../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import 'synchronicity_journal_screen.dart';
+import '../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import 'divination_suite_screen.dart';
+import '../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 
 class EnergieToolsScreen extends StatelessWidget {
   const EnergieToolsScreen({super.key});

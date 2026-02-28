@@ -13,12 +13,19 @@
 library;
 
 import 'package:flutter/material.dart';
+import '../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import '../controllers/chat_room_controller.dart';
+import '../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import '../models/chat_models.dart';
+import '../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import '../widgets/chat/chat_message_bubble.dart';
+import '../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import '../widgets/chat/chat_input_bar.dart';
+import '../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import '../widgets/chat/chat_typing_indicator.dart';
+import '../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import '../widgets/chat/chat_voice_room_panel.dart';
+import '../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import '../services/user_service.dart'; // 🆕 User Service für Auth
 
 class ChatRoomScreen extends StatefulWidget {

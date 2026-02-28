@@ -2,8 +2,11 @@
 /// Geführte Meditationen für jedes Chakra
 library;
 import 'package:flutter/material.dart';
+import '../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import 'package:flutter/foundation.dart';
+import '../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import '../../widgets/premium_components.dart';
+import '../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 
 class ChakraMeditationScreen extends StatefulWidget {
   final String chakraName;

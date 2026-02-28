@@ -3,6 +3,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import '../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 
 class MoonJournalScreen extends StatefulWidget {
   const MoonJournalScreen({super.key});

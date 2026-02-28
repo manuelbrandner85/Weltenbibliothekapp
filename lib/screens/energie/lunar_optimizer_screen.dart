@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import '../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import 'package:intl/intl.dart';
+import '../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import '../../models/lunar_phase.dart';
+import '../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import '../../services/haptic_service.dart';
+import '../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 
 /// 🌙 LUNAR CYCLE OPTIMIZER - Lebe nach dem Mond
 class LunarOptimizerScreen extends StatefulWidget {
