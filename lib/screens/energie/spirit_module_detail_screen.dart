@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 
 /// 🌟 SPIRIT MODULE DETAIL SCREEN
 /// Zeigt die Details eines einzelnen Moduls an

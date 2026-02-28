@@ -12,6 +12,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import '../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import '../../models/spirit_energy_field.dart';
 import '../../widgets/micro_interactions.dart';
 

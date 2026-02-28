@@ -7,6 +7,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import '../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import 'package:flutter/foundation.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';

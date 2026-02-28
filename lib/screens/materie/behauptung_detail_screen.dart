@@ -6,9 +6,7 @@ library;
 import 'package:flutter/material.dart';
 import '../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import '../../models/enhanced_research_models.dart';
-import '../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import '../../widgets/research_statistics_card.dart';
-import '../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 
 class BehauptungDetailScreen extends StatelessWidget {
   final DetaillierteBehauptung behauptung;

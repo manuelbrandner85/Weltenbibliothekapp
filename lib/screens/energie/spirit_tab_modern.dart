@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import '../../services/storage_service.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import '../../widgets/favorite_button.dart';

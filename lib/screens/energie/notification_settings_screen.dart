@@ -3,6 +3,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import '../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 
 class NotificationSettingsScreen extends StatefulWidget {
   const NotificationSettingsScreen({super.key});

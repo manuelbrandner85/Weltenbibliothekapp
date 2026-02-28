@@ -3,6 +3,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import '../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import 'dart:math' as math;
 import '../../models/spirit_tools_models.dart';
 import '../../services/achievement_service.dart';

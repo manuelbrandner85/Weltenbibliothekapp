@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import 'package:hive_flutter/hive_flutter.dart';
 import '../../models/synchronicity_entry.dart';
 

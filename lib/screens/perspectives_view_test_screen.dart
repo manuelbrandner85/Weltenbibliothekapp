@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import '../widgets/recherche/perspectives_view.dart';
 import '../models/recherche_view_state.dart';
 

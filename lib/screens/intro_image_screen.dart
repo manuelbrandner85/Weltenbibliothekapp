@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import 'package:shared_preferences/shared_preferences.dart';
 import 'portal_home_screen.dart'; // ORIGINAL CINEMA-QUALITY PORTAL
 import 'shared/onboarding_enhanced_screen.dart'; // ONBOARDING

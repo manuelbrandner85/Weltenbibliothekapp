@@ -4,6 +4,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import '../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import '../../models/energie_profile.dart';
 import '../../services/storage_service.dart';
 import '../../widgets/hover_glow_card.dart';

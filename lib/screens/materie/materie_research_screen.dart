@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import 'dart:async';
 import '../../services/backend_recherche_service.dart';
 import '../../services/favorites_service.dart';  // 🆕 Favorites Service

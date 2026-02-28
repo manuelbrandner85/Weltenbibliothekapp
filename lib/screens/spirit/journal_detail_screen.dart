@@ -3,6 +3,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import '../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import '../../models/spirit_extended_models.dart';
 import '../../services/spirit_journal_service.dart';
 

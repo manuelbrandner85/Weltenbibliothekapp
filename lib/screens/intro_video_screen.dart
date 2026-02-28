@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import 'package:flutter/foundation.dart';
 import 'package:video_player/video_player.dart';
 import 'portal_home_screen.dart';

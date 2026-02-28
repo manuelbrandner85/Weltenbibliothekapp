@@ -4,9 +4,7 @@ import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'dart:convert';
 import 'dart:async';
 import '../../services/group_tools_service.dart';
-import '../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import '../../services/user_service.dart';
-import '../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 
 /// 🧘 Meditation Timer Screen
 /// Gemeinsame Meditation-Sessions mit synchronisiertem Timer

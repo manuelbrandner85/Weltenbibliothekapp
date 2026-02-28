@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import 'propaganda_detector_screen.dart';
 import 'image_forensics_screen.dart';
 import 'power_network_mapper_screen.dart';

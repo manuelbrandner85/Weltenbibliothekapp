@@ -12,7 +12,6 @@
 import 'package:flutter/material.dart';
 import '../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import '../services/daily_challenges_service.dart';
-import '../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 
 class DailyChallengesScreen extends StatefulWidget {
   const DailyChallengesScreen({super.key});

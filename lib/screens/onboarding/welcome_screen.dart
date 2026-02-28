@@ -3,6 +3,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import '../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../config/enhanced_app_themes.dart';
 import '../../utils/responsive_helper.dart';

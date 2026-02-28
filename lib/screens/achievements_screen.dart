@@ -5,9 +5,7 @@ library;
 import 'package:flutter/material.dart';
 import '../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import '../services/achievement_service.dart';
-import '../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import '../services/haptic_service.dart';
-import '../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 
 class AchievementsScreen extends StatefulWidget {
   const AchievementsScreen({super.key});

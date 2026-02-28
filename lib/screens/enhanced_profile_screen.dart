@@ -12,6 +12,7 @@
 // =====================================================================
 
 import 'package:flutter/material.dart';
+import '../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import '../services/achievement_service.dart';
 import '../services/leaderboard_service.dart';
 import '../services/reward_service.dart';

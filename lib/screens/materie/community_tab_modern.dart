@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import '../../models/community_post.dart';
-import '../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import '../../services/community_service.dart'; // 🌐 ECHTE API
 import '../../widgets/create_post_dialog_v2.dart'; // ✅ POST-DIALOG
 import '../../widgets/loading_skeletons.dart'; // 💀 LOADING SKELETONS

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 
 class ChakraScannerTool extends StatefulWidget {
   const ChakraScannerTool({super.key});

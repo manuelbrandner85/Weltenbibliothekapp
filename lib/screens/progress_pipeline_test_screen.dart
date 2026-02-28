@@ -5,6 +5,7 @@ library;
 
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import '../models/recherche_view_state.dart';
 import '../widgets/recherche/progress_pipeline.dart';
 import '../widgets/recherche/mode_selector.dart';

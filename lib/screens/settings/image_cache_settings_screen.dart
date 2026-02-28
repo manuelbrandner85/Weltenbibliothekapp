@@ -4,6 +4,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import '../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import '../../services/image_cache_service.dart';
 
 class ImageCacheSettingsScreen extends StatefulWidget {
