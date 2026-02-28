@@ -12,6 +12,7 @@ library;
 import 'package:flutter/material.dart';
 import '../../models/admin_action.dart';
 import '../../services/admin_action_service.dart';
+import '../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0 - Ready for future analytics
 
 class AdminLogScreen extends StatefulWidget {
   final AdminActionService adminService;

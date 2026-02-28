@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import '../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../widgets/category_widgets.dart';
+import '../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import 'narrative_detail_screen.dart';
+import '../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 
 class NarrativeBrowserScreen extends StatefulWidget {
   const NarrativeBrowserScreen({super.key});

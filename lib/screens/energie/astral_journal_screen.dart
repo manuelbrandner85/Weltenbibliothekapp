@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import '../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'dart:convert';
 import '../../services/group_tools_service.dart';
+import '../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import '../../services/user_service.dart';
+import '../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 
 /// 🌙 Astrales Tagebuch Screen
 /// Außerkörperliche Erfahrungen dokumentieren & teilen

@@ -1,16 +1,29 @@
 import 'package:flutter/material.dart';
+import '../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import 'package:flutter/foundation.dart';
+import '../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import 'energie/home_tab_v5.dart';
+import '../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import 'energie/spirit_tab_modern.dart';
+import '../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import 'energie/energie_community_tab_modern.dart';
+import '../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import 'energie/energie_karte_tab_pro.dart';
+import '../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import 'shared/unified_knowledge_tab.dart';
+import '../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import 'shared/stats_dashboard_screen.dart';
+import '../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import 'shared/world_admin_dashboard.dart';
+import '../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import '../services/haptic_service.dart';
+import '../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import '../features/admin/state/admin_state.dart';
+import '../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import 'profile_settings_screen.dart';
+import '../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 
 /// 🌍 ENERGIE-WELT DASHBOARD (RIVERPOD VERSION)
 ///

@@ -4,6 +4,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import '../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import 'package:provider/provider.dart';
 import '../../services/health_check_service.dart';
 import '../../services/haptic_feedback_service.dart';

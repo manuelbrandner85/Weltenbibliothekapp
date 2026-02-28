@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import '../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import '../../models/archetype_quiz.dart';
+import '../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 
 class ArchetypeCompassScreen extends StatefulWidget {
   const ArchetypeCompassScreen({super.key});

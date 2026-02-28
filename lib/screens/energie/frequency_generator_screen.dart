@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
+import '../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import 'package:flutter/foundation.dart';
+import '../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import '../../models/frequency_preset.dart';
+import '../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import '../../services/frequency_player_service.dart';
+import '../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import '../../services/haptic_service.dart';
+import '../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import 'package:audioplayers/audioplayers.dart';
+import '../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 
 /// 🎵 FREQUENCY GENERATOR - Heilende Klänge & Frequenzen
 class FrequencyGeneratorScreen extends StatefulWidget {
