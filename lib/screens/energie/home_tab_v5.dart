@@ -3,8 +3,10 @@ import 'package:flutter/foundation.dart';
 import '../../services/storage_service.dart';
 import 'dart:ui';
 import '../../models/energie_profile.dart';
-import '../../services/smart_articles_service.dart';
-import '../../services/trending_topics_service.dart'; // 🧠 FIXED: Smart Articles with auto-fallback
+import '../../services/openclaw_dashboard_service.dart'; // 🚀 OpenClaw Dashboard
+import 'package:url_launcher/url_launcher.dart'; // 🔗 Für externe URL-Links
+import '../materie/recherche_tab_mobile.dart'; // 📰 Recherche Screen (shared)
+import 'energie_live_chat_screen.dart'; // 💬 Live Chat Screen
 
 /// ═══════════════════════════════════════════════════════════════════════════
 /// ENERGIE HOME DASHBOARD V5 - ULTRA PROFESSIONAL EDITION
@@ -61,8 +63,7 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
   late Animation<double> _shimmerAnimation;
   
   // Services
-  final SmartArticlesService _articlesService = SmartArticlesService(); // 🧠 Smart with auto-fallback
-  final TrendingTopicsService _trendingService = TrendingTopicsService(); // ✅ Real trending data
+  final OpenClawDashboardService _dashboardService = OpenClawDashboardService(); // 🚀 OpenClaw Dashboard
   
   // State
   EnergieProfile? _profile;
@@ -94,6 +95,8 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
     _setupQuickActions();
     _loadProfile();
     _loadDashboardData();
+    _checkAdminStatus(); // 👤 Admin-Check
+    _startLiveUpdates(); // 🔄 Live-Updates
     _setupSearch();
   }
 
@@ -215,6 +218,7 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
     _shimmerController.dispose();
     _searchTextController.dispose();
     _scrollController.dispose();
+    _dashboardService.stopLiveUpdates(); // 🔄 Stop Live-Updates
     super.dispose();
   }
 
@@ -227,24 +231,30 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
     }
   }
 
+  /// 🚀 OPENCLAW DASHBOARD - ECHTE DATEN
   Future<void> _loadDashboardData() async {
     if (mounted) setState(() => _isLoading = true);
 
     try {
-      final articles = await _articlesService.getArticles(
-        realm: 'energie',
-        limit: 20,
-      );
-
-      _totalArticles = articles.length;
-      _researchSessions = (_totalArticles * 1.5).round();
-      _bookmarkedTopics = (_totalArticles * 0.3).round();
-      _sharedFindings = (_totalArticles * 0.2).round();
-
-      _recentArticles = articles.take(5).toList();
+      // 📊 ECHTE Statistiken von OpenClaw/Cloudflare
+      final stats = await _dashboardService.getStatistics(realm: 'energie');
       
-      // ✅ LOAD REAL TRENDING TOPICS via TrendingTopicsService
-      _trendingTopics = await _trendingService.getTrendingTopics(realm: 'energie');
+      _totalArticles = stats['totalArticles'] ?? 0;
+      _researchSessions = stats['researchSessions'] ?? 0;
+      _bookmarkedTopics = stats['bookmarkedTopics'] ?? 0;
+      _sharedFindings = stats['sharedFindings'] ?? 0;
+
+      // 📄 ECHTE Artikel
+      _recentArticles = await _dashboardService.getRecentArticles(
+        realm: 'energie',
+        limit: 10,
+      );
+      
+      // 🔥 ECHTE Trending Topics
+      _trendingTopics = await _dashboardService.getTrendingTopics(
+        realm: 'energie',
+        limit: 10,
+      );
       
       _filteredArticles = _recentArticles;
 
@@ -256,6 +266,12 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
           _isLoading = false;
         });
       }
+      
+      if (kDebugMode) {
+        debugPrint('✅ Dashboard loaded via OpenClaw');
+        debugPrint('   Articles: $_totalArticles');
+        debugPrint('   Trending: ${_trendingTopics.length}');
+      }
     } catch (e) {
       if (kDebugMode) {
         debugPrint('❌ Dashboard load error: $e');
@@ -266,6 +282,41 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
         });
       }
     }
+  }
+  
+  /// 👤 Admin-Check bei Laden
+  Future<void> _checkAdminStatus() async {
+    try {
+      final userId = await StorageService().getUserId('energie');
+      if (userId != null) {
+        final isAdmin = await _dashboardService.isAdmin(userId, 'energie');
+        if (kDebugMode) {
+          debugPrint('👤 Admin Status: $isAdmin');
+        }
+        // Hier könnte Admin-Badge angezeigt oder zu Admin-Dashboard weitergeleitet werden
+      }
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ Admin check error: $e');
+    }
+  }
+  
+  /// 🔄 Live-Updates starten
+  void _startLiveUpdates() {
+    _dashboardService.startLiveUpdates(
+      realm: 'energie',
+      interval: const Duration(minutes: 5),
+    );
+    
+    // Stream abonnieren
+    _dashboardService.dashboardStream.listen((data) {
+      if (mounted) {
+        setState(() {
+          _trendingTopics = data['trending'] ?? [];
+          final stats = data['statistics'] ?? {};
+          _totalArticles = stats['totalArticles'] ?? _totalArticles;
+        });
+      }
+    });
   }
 
   @override
@@ -1357,41 +1408,41 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
 
     switch (label) {
       case 'Meditation':
-        // Navigate to Meditation Screen
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('🧘 Navigiere zu Meditation...'),
-            duration: Duration(seconds: 1),
+        // ✅ ECHTE NAVIGATION: Recherche Tab
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const MobileOptimierterRechercheTab(),
           ),
         );
         break;
 
       case 'Live Chat':
-        // Navigate to Chat Screen
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('💬 Navigiere zu Live Chat...'),
-            duration: Duration(seconds: 1),
+        // ✅ ECHTE NAVIGATION: Live Chat Screen
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const EnergieLiveChatScreen(),
           ),
         );
         break;
 
       case 'Erkunden':
-        // Navigate to Explore/Discovery Screen
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('🔍 Navigiere zu Erkunden...'),
-            duration: Duration(seconds: 1),
+        // ✅ ECHTE NAVIGATION: Recherche Tab mit Suche
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const MobileOptimierterRechercheTab(),
           ),
         );
         break;
 
       case 'Chakren':
-        // Navigate to Chakra Screen
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('🌈 Navigiere zu Chakren...'),
-            duration: Duration(seconds: 1),
+        // ✅ ECHTE NAVIGATION: Recherche Tab
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const MobileOptimierterRechercheTab(),
           ),
         );
         break;
@@ -1405,22 +1456,25 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
 
   void _handleArticleTap(Map<String, dynamic> article) {
     final title = article['title'] ?? 'Unbekannt';
+    final url = article['url'] as String?;
     
     if (kDebugMode) {
       debugPrint('📰 Article Tapped: $title');
     }
 
-    // Show article detail (for now show snackbar)
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('📖 Artikel öffnen: $title'),
-        duration: const Duration(seconds: 2),
-        action: SnackBarAction(
-          label: 'OK',
-          onPressed: () {},
+    // ✅ ECHTE NAVIGATION: Artikel in Browser öffnen oder Detail-Screen
+    if (url != null && url.isNotEmpty) {
+      // Option 1: URL im Browser öffnen
+      launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+    } else {
+      // Option 2: Recherche Tab mit Artikel öffnen
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const MobileOptimierterRechercheTab(),
         ),
-      ),
-    );
+      );
+    }
   }
 
   void _handleTrendingTopicTap(String topic) {
@@ -1428,14 +1482,15 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
       debugPrint('🔥 Trending Topic Tapped: $topic');
     }
 
-    // Search for topic - trigger search controller
+    // ✅ ECHTE NAVIGATION: Suche mit Trending Topic
     _searchTextController.text = topic;
     // Search will auto-trigger via listener in _setupSearch()
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('🔍 Suche nach: $topic'),
-        duration: const Duration(seconds: 1),
+    // Optional: Navigiere direkt zu Recherche Tab mit vorausgefüllter Suche
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const MobileOptimierterRechercheTab(),
       ),
     );
   }

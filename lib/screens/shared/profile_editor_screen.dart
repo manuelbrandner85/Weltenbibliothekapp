@@ -13,6 +13,7 @@ import '../../models/materie_profile.dart';
 import '../../models/energie_profile.dart';
 import '../../features/admin/state/admin_state.dart'; // 🆕 Admin State Provider
 import '../../core/persistence/auto_save_manager.dart'; // 🔄 Auto-Save System
+import '../../services/openclaw_comprehensive_service.dart'; // 🚀 OpenClaw v2.0
 
 /// Vollständiger Profil-Editor für Materie & Energie Welten
 /// Alle Felder bearbeitbar + neue Features (Avatar, Bio)

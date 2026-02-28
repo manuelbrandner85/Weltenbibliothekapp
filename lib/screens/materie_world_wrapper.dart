@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'materie_world_screen.dart';
 import '../services/achievement_service.dart';  // 🏆 Achievement System
+import '../services/storage_service.dart';  // 🔑 Storage for userId
+import '../services/openclaw_dashboard_service.dart';  // 🚀 OpenClaw Admin Check
+import 'shared/world_admin_dashboard.dart';  // 🛡️ Admin Dashboard
 
 /// Materie-Welt-Wrapper - SIMPLIFIED VERSION
 class MaterieWorldWrapper extends StatefulWidget {
@@ -15,22 +19,54 @@ class _MaterieWorldWrapperState extends State<MaterieWorldWrapper> {
   // UNUSED FIELD: MaterieProfile? _profile;
   bool _showOnboarding = false;
   bool _isLoading = true;
+  bool _isAdmin = false; // 👑 Admin Status
+  final OpenClawDashboardService _dashboardService = OpenClawDashboardService(); // 🚀
 
   @override
   void initState() {
     super.initState();
-    // BYPASS FIX: Direkt zur Welt ohne Profil-Check
-    Future.delayed(const Duration(milliseconds: 300), () {
+    // ✅ ADMIN-CHECK VOR WORLD-ANZEIGE
+    _checkAdminStatusAndLoad();
+    
+    // 🏆 Achievement Trigger: World Visit
+    _trackWorldVisit();
+  }
+  
+  /// 👑 Admin-Status prüfen
+  Future<void> _checkAdminStatusAndLoad() async {
+    try {
+      // User-ID holen
+      final userId = await StorageService().getUserId('materie');
+      
+      if (userId != null) {
+        // Admin-Check via OpenClaw Dashboard Service
+        _isAdmin = await _dashboardService.isAdmin(userId, 'materie');
+        
+        if (kDebugMode) {
+          debugPrint('👑 MATERIE ADMIN-CHECK: $_isAdmin (userId: $userId)');
+        }
+      }
+      
+      // Welt anzeigen (mit oder ohne Admin-Status)
       if (mounted) {
         setState(() {
           _isLoading = false;
           _showOnboarding = false; // DIREKT ZUR WELT!
         });
       }
-    });
-    
-    // 🏆 Achievement Trigger: World Visit
-    _trackWorldVisit();
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('⚠️ Admin-Check error: $e');
+      }
+      // Bei Fehler: Normal zur Welt
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _showOnboarding = false;
+          _isAdmin = false;
+        });
+      }
+    }
   }
   
   /// Track world visit for achievements
@@ -109,7 +145,16 @@ class _MaterieWorldWrapperState extends State<MaterieWorldWrapper> {
     //   );
     // }
 
-    // Main World State - IMMER ANZEIGEN
+    // Main World State - ADMIN DASHBOARD ODER NORMALER SCREEN
+    if (_isAdmin) {
+      // 🛡️ ADMIN: Zeige Admin-Dashboard
+      if (kDebugMode) {
+        debugPrint('👑 Navigiere zu ADMIN DASHBOARD (materie)');
+      }
+      return const WorldAdminDashboard(world: 'materie');
+    }
+    
+    // 👤 NORMAL USER: Zeige normalen World Screen
     return const MaterieWorldScreen();
   }
 }

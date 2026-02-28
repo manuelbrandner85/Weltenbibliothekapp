@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import '../../utils/map_clustering_helper.dart'; // 🗺️ MARKER-CLUSTERING
+import '../../services/openclaw_comprehensive_service.dart'; // 🚀 OpenClaw v2.0
 
 /// ENERGIE-Karte Tab - Spirituelle Kraftorte & Ley-Lines
 class EnergieKarteTabPro extends StatefulWidget {

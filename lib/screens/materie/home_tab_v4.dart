@@ -6,6 +6,7 @@ import '../../services/smart_articles_service.dart'; // 🧠 NEW: Smart Articles
 import '../../services/user_stats_service.dart';
 import '../../services/user_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../../services/openclaw_comprehensive_service.dart'; // 🚀 OpenClaw v2.0
 
 /// 🏠 MATERIE HOME DASHBOARD V4 - ULTRA PROFESSIONAL EDITION
 /// 

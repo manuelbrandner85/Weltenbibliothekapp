@@ -4,6 +4,7 @@ import 'dart:ui';
 import '../../models/materie_profile.dart';
 import '../../services/cloudflare_api_service.dart';
 import '../../services/user_stats_service.dart';
+import '../../services/openclaw_comprehensive_service.dart'; // 🚀 OpenClaw v2.0
 
 /// MATERIE HOME DASHBOARD V3 - ULTRA PROFESSIONAL EDITION
 /// 

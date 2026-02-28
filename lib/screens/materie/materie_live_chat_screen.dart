@@ -11,6 +11,7 @@ import '../../widgets/mention_autocomplete.dart'; // @ MENTIONS
 import 'package:image_picker/image_picker.dart'; // 📷 Image Picker
 // 👤 PROFIL
 import '../../services/storage_service.dart'; // StorageService for profile access
+import '../../services/openclaw_dashboard_service.dart'; // 🚀 OpenClaw Dashboard for Live Updates
 import 'package:flutter_riverpod/flutter_riverpod.dart'; // Riverpod
 // 🔥 BACKEND SYNC
 import '../../services/typing_indicator_service.dart'; // ⌨️ TYPING
@@ -72,6 +73,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
   final ScrollController _scrollController = ScrollController();
   final ChatNotificationService _notificationService = ChatNotificationService(); // 🔔 NEW
   final TypingIndicatorService _typingService = TypingIndicatorService(); // ⌨️ NEW
+  final OpenClawDashboardService _dashboardService = OpenClawDashboardService(); // 🚀 OpenClaw
   // UNUSED FIELD: final AudioRecordingService _audioService = AudioRecordingService(); // 🎙️ NEW
   // UNUSED FIELD: final ReadReceiptsService _readReceiptsService = ReadReceiptsService(); // ✅ NEW
   // UNUSED FIELD: final OnlineStatusService _onlineStatusService = OnlineStatusService(); // 🟢 NEW

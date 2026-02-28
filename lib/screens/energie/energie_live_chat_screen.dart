@@ -9,6 +9,7 @@ import '../../services/cloudflare_api_service.dart';
 import '../../services/offline_sync_service.dart'; // 📡 OFFLINE SYNC (NEW Phase 3)
 import '../../services/user_service.dart';
 import '../../services/storage_service.dart'; // StorageService for profile access
+import '../../services/openclaw_dashboard_service.dart'; // 🚀 OpenClaw Dashboard for Live Updates
 import 'package:flutter_riverpod/flutter_riverpod.dart'; // Riverpod
 import '../../services/profile_sync_service.dart'; // 🔥 BACKEND SYNC
 import '../../models/energie_profile.dart';
@@ -70,6 +71,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
   final UserService _userService = UserService();
   final ScrollController _scrollController = ScrollController();
   final TypingIndicatorService _typingService = TypingIndicatorService(); // ⌨️ NEW
+  final OpenClawDashboardService _dashboardService = OpenClawDashboardService(); // 🚀 OpenClaw
   
   late String _selectedRoom;
   String _username = 'Gast';

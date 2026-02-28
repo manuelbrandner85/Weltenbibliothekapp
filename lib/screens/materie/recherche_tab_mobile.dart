@@ -24,6 +24,7 @@ import '../../models/analyse_models.dart';
 import '../../services/backend_recherche_service.dart';
 import '../../services/analyse_service.dart';
 import '../../services/cloudflare_api_service.dart';
+import '../../services/openclaw_comprehensive_service.dart';
 import '../../widgets/visualisierung/visualisierungen.dart';
 import '../../widgets/media_grid_widget.dart';
 import 'materie_research_screen.dart'; // 🌐 RESEARCH SCREEN
@@ -45,6 +46,7 @@ class _MobileOptimierterRechercheTabState extends State<MobileOptimierterRecherc
   late final BackendRechercheService _rechercheService;
   late final AnalyseService _analyseService;
   final CloudflareApiService _cloudflareApi = CloudflareApiService();
+  final OpenClawComprehensiveService _openClawService = OpenClawComprehensiveService();
   
   // State
   final TextEditingController _suchController = TextEditingController();
@@ -230,20 +232,20 @@ class _MobileOptimierterRechercheTabState extends State<MobileOptimierterRecherc
     );
   }
   
-  /// Starte Recherche
+  /// Starte Recherche mit OpenClaw Comprehensive Service
   Future<void> _starteRecherche() async {
     final suchbegriff = _suchController.text.trim();
     if (suchbegriff.isEmpty) return;
     
     if (kDebugMode) {
-      debugPrint('🚀 [START] Recherche wird gestartet...');
+      debugPrint('🚀 [OpenClaw Comprehensive] Recherche wird gestartet...');
       debugPrint('   → Suchbegriff: $suchbegriff');
-      debugPrint('   → Worker-URL: https://weltenbibliothek-worker.brandy13062.workers.dev');
+      debugPrint('   → OpenClaw Gateway: http://72.62.154.95:50074/');
     }
     
     setState(() {
       _isSearching = true;
-      _showFallback = false; // Reset Fallback-Status
+      _showFallback = false;
       _currentStep = 1;
       _recherche = null;
       _analyse = null;
@@ -251,63 +253,55 @@ class _MobileOptimierterRechercheTabState extends State<MobileOptimierterRecherc
     });
     
     try {
-      // STEP 1A: Deep-Recherche mit neuem Backend Service
-      final searchResult = await _rechercheService.searchInternet(suchbegriff);
+      // 🚀 OPENCLAW COMPREHENSIVE RESEARCH
+      // Scrapt ALLE Medientypen automatisch: Bilder, Videos, Audio, PDFs
+      final openClawResult = await _openClawService.comprehensiveResearch(
+        query: suchbegriff,
+        includeImages: true,
+        includeVideos: true,
+        includeAudio: true,
+        includePdfs: true,
+      );
       
-      // STEP 1B: Parallel Cloudflare Community API durchsuchen
-      List<RechercheQuelle> cloudflareQuellen = [];
-      try {
-        if (kDebugMode) {
-          debugPrint('🌐 [CLOUDFLARE] Suche in Community API...');
-        }
-        final articles = await _cloudflareApi.search(
-          query: suchbegriff,
-          realm: 'materie',
-          limit: 10,
-        );
-        
-        if (kDebugMode) {
-          debugPrint('✅ [CLOUDFLARE] ${articles.length} Artikel gefunden');
-        }
-        
-        // Konvertiere Cloudflare-Artikel zu RechercheQuellen
-        cloudflareQuellen = articles.map((article) => RechercheQuelle(
-          id: 'cloudflare_${article['id']}',
-          titel: article['title'] as String,
-          url: 'https://weltenbibliothek-community-api.brandy13062.workers.dev/api/articles/${article['id']}',
-          typ: QuellenTyp.wissenschaft,  // Community-Artikel als wissenschaftliche Quelle
-          volltext: article['content'] as String,
-          zusammenfassung: (article['content'] as String).substring(0, (article['content'] as String).length > 200 ? 200 : (article['content'] as String).length),
-          status: QuellenStatus.success,
-          abgerufenAm: DateTime.parse(article['created_at'] as String),
-        )).toList();
-      } catch (e) {
-        if (kDebugMode) {
-          debugPrint('⚠️ [CLOUDFLARE] Fehler bei API-Suche: $e');
-        }
+      if (kDebugMode) {
+        debugPrint('✅ [OpenClaw] Ergebnis erhalten:');
+        debugPrint('   → Source: ${openClawResult['source']}');
+        debugPrint('   → Artikel: ${(openClawResult['articles'] as List).length}');
+        debugPrint('   → Bilder: ${(openClawResult['media']['images'] as List).length}');
+        debugPrint('   → Videos: ${(openClawResult['media']['videos'] as List).length}');
+        debugPrint('   → Audio: ${(openClawResult['media']['audio'] as List).length}');
+        debugPrint('   → PDFs: ${(openClawResult['media']['pdfs'] as List).length}');
       }
       
-      // Convert InternetSearchResult to RechercheErgebnis for compatibility
-      // Kombiniere Internet-Quellen + Cloudflare-Artikel
+      // Konvertiere OpenClaw-Artikel zu RechercheQuellen
+      final quellen = (openClawResult['articles'] as List).map((article) {
+        return RechercheQuelle(
+          id: 'openclaw_${article['url']?.hashCode ?? article['id']?.hashCode ?? DateTime.now().millisecondsSinceEpoch}',
+          titel: article['title'] ?? article['headline'] ?? 'Unbekannter Titel',
+          url: article['url'] ?? article['source'] ?? '',
+          typ: QuellenTyp.nachrichten,
+          volltext: article['content'] ?? article['text'] ?? article['snippet'] ?? '',
+          zusammenfassung: article['summary'] ?? article['snippet'] ?? '',
+          status: QuellenStatus.success,
+          abgerufenAm: DateTime.now(),
+        );
+      }).toList();
+      
+      // Konvertiere zu RechercheErgebnis
       final ergebnis = RechercheErgebnis(
-        suchbegriff: searchResult.query,
-        quellen: [
-          ...searchResult.sources.map((source) => RechercheQuelle(
-            id: 'internet_${source.url.hashCode}',
-            titel: source.title,
-            url: source.url,
-            typ: QuellenTyp.nachrichten,  // Internet-Quellen als Nachrichten klassifizieren
-            volltext: source.snippet,
-            zusammenfassung: source.snippet,
-            status: QuellenStatus.success,
-            abgerufenAm: source.timestamp,
-          )),
-          ...cloudflareQuellen,  // ✅ Cloudflare-Artikel hinzufügen
-        ],
-        startZeit: searchResult.timestamp,
-        endZeit: searchResult.timestamp,
+        suchbegriff: suchbegriff,
+        quellen: quellen,
+        startZeit: DateTime.now(),
+        endZeit: DateTime.now(),
         istAbgeschlossen: true,
-        media: searchResult.multimedia, // ✅ Backend multimedia with real sources!
+        media: {
+          'images': openClawResult['media']['images'],
+          'videos': openClawResult['media']['videos'],
+          'audio': openClawResult['media']['audio'],
+          'pdfs': openClawResult['media']['pdfs'],
+          'telegram': [], // Placeholder
+          '__openclaw_analysis__': openClawResult['analysis'],
+        },
       );
       
       if (kDebugMode) {

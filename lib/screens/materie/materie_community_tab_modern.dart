@@ -6,6 +6,7 @@ import '../../widgets/create_post_dialog_v2.dart'; // ✅ Post-Dialog
 import '../../widgets/post_actions_row.dart'; // ✅ POST ACTIONS
 import 'materie_live_chat_screen.dart'; // 💬 LIVE-CHAT INTEGRATION
 import '../../services/chat_notification_service.dart'; // 🔔 NOTIFICATION SERVICE
+import '../../services/openclaw_comprehensive_service.dart'; // 🚀 OpenClaw v2.0
 
 /// Moderner Materie-Community-Tab - Spiritueller Feed-Style
 class MaterieCommunityTabModern extends StatefulWidget {

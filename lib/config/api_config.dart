@@ -48,6 +48,15 @@ class ApiConfig {
   static String get cloudSyncApiUrl => '$baseUrl/api/sync';
   static String get websocketUrl => baseUrl.replaceAll('https://', 'wss://');
   
+  // 🦞 OPENCLAW AI GATEWAY (Hostinger VPS)
+  // ✅ AKTIV: OpenClaw läuft auf Hostinger VPS (Port 50074)
+  // URL: http://72.62.154.95:50074/
+  static const String openClawGatewayUrl = 'http://72.62.154.95:50074';
+  
+  // 🔑 OPENCLAW GATEWAY TOKEN
+  // ✅ KONFIGURIERT: Token von OpenClaw erhalten
+  static const String openClawGatewayToken = 'lHNu7aoMko3O3ptFgBA1POK71xTf8YHw';
+  
   // 🔧 INLINE TOOLS URLs
   static String get artefakteUrl => '$baseUrl/api/tools/artefakte';
   static String get chakraReadingsUrl => '$baseUrl/api/tools/chakra-readings';

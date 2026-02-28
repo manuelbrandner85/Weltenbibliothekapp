@@ -11,6 +11,7 @@ import '../../widgets/loading_skeletons.dart'; // 💀 LOADING SKELETONS
 // 💬 NEW: Comments Widget
 import 'energie_live_chat_screen.dart'; // 💬 LIVE-CHAT INTEGRATION
 import '../../services/chat_notification_service.dart'; // 🔔 NOTIFICATION SERVICE
+import '../../services/openclaw_comprehensive_service.dart'; // 🚀 OpenClaw v2.0
 
 /// Moderner Energie-Community-Tab - Spiritueller Feed-Style
 class EnergieCommunityTabModern extends StatefulWidget {
