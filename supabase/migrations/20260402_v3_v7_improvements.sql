@@ -11,6 +11,7 @@ DROP POLICY IF EXISTS "profiles_public_read" ON profiles;
 DROP POLICY IF EXISTS "profiles_public_select" ON profiles;
 DROP POLICY IF EXISTS "update own" ON profiles;
 DROP POLICY IF EXISTS "profiles_owner_update" ON profiles;
+DROP POLICY IF EXISTS "profiles_insert_own" ON profiles;
 
 CREATE POLICY "profiles_public_select" ON profiles
   FOR SELECT USING (true);
@@ -26,6 +27,8 @@ CREATE POLICY "profiles_insert_own" ON profiles
 -- ================================================================
 DROP POLICY IF EXISTS "public read" ON chat_messages;
 DROP POLICY IF EXISTS "chat_messages_select" ON chat_messages;
+DROP POLICY IF EXISTS "chat_messages_insert" ON chat_messages;
+DROP POLICY IF EXISTS "chat_messages_soft_delete" ON chat_messages;
 
 CREATE POLICY "chat_messages_select" ON chat_messages
   FOR SELECT USING (is_deleted = false);
