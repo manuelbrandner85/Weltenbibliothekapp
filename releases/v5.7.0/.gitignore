@@ -1,0 +1,5 @@
+# APK files too large for GitHub (>100MB)
+*.apk
+
+# Use GitHub Releases instead for APK distribution
+# See: https://github.com/manuelbrandner85/Weltenbibliothekapp/releases
