@@ -113,13 +113,63 @@ export default {
     // ── Chat Nachrichten ──────────────────────────────────────
     if (path === '/api/chat/messages') {
       const roomId = url.searchParams.get('room') || url.searchParams.get('room_id');
+      const limitParam = parseInt(url.searchParams.get('limit') || '50', 10);
       if (method === 'GET' && roomId) {
-        const supaPath = `/rest/v1/chat_messages?select=*&room_id=eq.${roomId}&is_deleted=eq.false&order=created_at.desc&limit=50`;
-        return proxyToSupabase(request, env, supaPath, 'GET');
+        const supaPath = `/rest/v1/chat_messages?select=*,profiles(username,display_name,avatar_url)&room_id=eq.${roomId}&is_deleted=eq.false&order=created_at.asc&limit=${limitParam}`;
+        const anonKey = env.SUPABASE_ANON_KEY || '';
+        const res = await fetch(`${SUPABASE_URL}${supaPath}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': anonKey,
+            'Authorization': `Bearer ${anonKey}`,
+            'Prefer': 'count=exact',
+          },
+        });
+        const messages = await res.json().catch(() => []);
+        const safeMessages = Array.isArray(messages) ? messages : [];
+        // Flutter erwartet {messages: [...], total: N, hasMore: bool}
+        return jsonResponse({
+          messages: safeMessages.map(m => ({
+            message_id: m.id,
+            id: m.id,
+            room_id: m.room_id,
+            user_id: m.user_id,
+            username: m.username || m.profiles?.username || 'Anonym',
+            avatar_url: m.avatar_url || m.profiles?.avatar_url || null,
+            message: m.message || m.content || '',
+            content: m.content || m.message || '',
+            message_type: m.message_type || 'text',
+            created_at: m.created_at,
+            is_deleted: m.is_deleted || false,
+            deleted: m.is_deleted || false,
+          })),
+          total: safeMessages.length,
+          hasMore: safeMessages.length >= limitParam,
+        });
       }
       if (method === 'POST') {
         const body = await request.json();
-        return proxyToSupabase(request, env, '/rest/v1/chat_messages', 'POST', body);
+        // Stelle sicher dass content UND message gesetzt sind
+        const insertBody = {
+          ...body,
+          content: body.content || body.message || '',
+          message: body.message || body.content || '',
+        };
+        const anonKey = env.SUPABASE_ANON_KEY || '';
+        const authHeader = request.headers.get('Authorization') || `Bearer ${anonKey}`;
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/chat_messages`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': anonKey,
+            'Authorization': authHeader,
+            'Prefer': 'return=representation',
+          },
+          body: JSON.stringify(insertBody),
+        });
+        const data = await res.json().catch(() => ({}));
+        return jsonResponse(data, res.status);
       }
     }
 

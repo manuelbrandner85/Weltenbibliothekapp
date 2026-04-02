@@ -14,6 +14,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../config/api_config.dart';
 import 'cloudflare_api_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class OpenClawDashboardService {
   static final OpenClawDashboardService _instance = OpenClawDashboardService._internal();
@@ -250,28 +251,74 @@ class OpenClawDashboardService {
 
   Future<Map<String, dynamic>> _getStatisticsFromCloudflare(String realm) async {
     try {
-      final articles = await _cloudflare.getArticles(realm: realm, limit: 100);
+      // Direkt aus Supabase: Artikel pro Kategorie zählen
+      final supabase = Supabase.instance.client;
       
+      // Alle Kategorien-Counts aus Supabase holen
+      final categories = realm == 'energie'
+          ? ['meditation', 'chakren', 'kristalle', 'energie', 'bewusstsein', 'astrologie']
+          : ['politik', 'geschichte', 'wirtschaft', 'wissenschaft', 'gesellschaft', 'technologie'];
+
+      final Map<String, int> categoryCounts = {};
+      int totalArticles = 0;
+
+      for (final cat in categories) {
+        try {
+          final result = await supabase
+              .from('articles')
+              .select('id')
+              .eq('world', realm)
+              .eq('category', cat)
+              .eq('is_published', true);
+          final count = (result as List).length;
+          categoryCounts[cat] = count;
+          totalArticles += count;
+        } catch (_) {
+          categoryCounts[cat] = 0;
+        }
+      }
+
+      // Chat-Nachrichten als "Sitzungen" zählen
+      int chatCount = 0;
+      try {
+        final chatResult = await supabase
+            .from('chat_messages')
+            .select('id')
+            .eq('is_deleted', false);
+        chatCount = (chatResult as List).length;
+      } catch (_) {}
+
       return {
-        'totalArticles': articles.length,
-        'researchSessions': articles.length ~/ 2,
-        'bookmarkedTopics': articles.length ~/ 3,
-        'sharedFindings': articles.length ~/ 4,
-        'activeUsers': (articles.length * 1.5).toInt(),
-        'newToday': articles.where((a) {
-          final created = DateTime.parse(a['created_at'] as String);
-          return created.difference(DateTime.now()).inHours.abs() < 24;
-        }).length,
-      };
-    } catch (e) {
-      return {
-        'totalArticles': 0,
-        'researchSessions': 0,
-        'bookmarkedTopics': 0,
-        'sharedFindings': 0,
+        'totalArticles': totalArticles,
+        'researchSessions': chatCount,
+        'bookmarkedTopics': categoryCounts.values.fold(0, (a, b) => a + b),
+        'sharedFindings': categoryCounts.values.where((v) => v > 0).length,
         'activeUsers': 0,
         'newToday': 0,
+        'categoryCounts': categoryCounts,
       };
+    } catch (e) {
+      // Fallback: Artikel via Cloudflare API
+      try {
+        final articles = await _cloudflare.getArticles(realm: realm, limit: 100);
+        return {
+          'totalArticles': articles.length,
+          'researchSessions': 0,
+          'bookmarkedTopics': 0,
+          'sharedFindings': 0,
+          'activeUsers': 0,
+          'newToday': 0,
+        };
+      } catch (_) {
+        return {
+          'totalArticles': 0,
+          'researchSessions': 0,
+          'bookmarkedTopics': 0,
+          'sharedFindings': 0,
+          'activeUsers': 0,
+          'newToday': 0,
+        };
+      }
     }
   }
 

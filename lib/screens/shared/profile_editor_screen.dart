@@ -406,17 +406,7 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
             debugPrint('⚠️ Admin-Status erfordert Backend-Verbindung');
           }
           
-          // ✅ Zeige Warnung wenn User ein Admin-Account ist
-          final username = profile.username.toLowerCase();
-          if ((username == 'weltenbibliothek' || username == 'weltenbibliothekedit') && mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('⚠️ Admin-Status erfordert Server-Verbindung'),
-                backgroundColor: Colors.orange,
-                duration: Duration(seconds: 4),
-              ),
-            );
-          }
+          // Kein Warning-Banner für normale User – nur stiller Fallback
         }
         
       } else {
@@ -494,17 +484,7 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
             debugPrint('⚠️ Admin-Status erfordert Backend-Verbindung');
           }
           
-          // ✅ Zeige Warnung wenn User ein Admin-Account ist
-          final username = profile.username.toLowerCase();
-          if ((username == 'weltenbibliothek' || username == 'weltenbibliothekedit') && mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('⚠️ Admin-Status erfordert Server-Verbindung'),
-                backgroundColor: Colors.orange,
-                duration: Duration(seconds: 4),
-              ),
-            );
-          }
+          // Kein Warning-Banner für normale User – nur stiller Fallback
         }
       }
       
