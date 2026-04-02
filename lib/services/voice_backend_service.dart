@@ -1,6 +1,7 @@
 /// 🌐 WELTENBIBLIOTHEK - VOICE BACKEND SERVICE
 /// Backend-First WebRTC Flow: Backend-Session vor WebRTC-Verbindung
 library;
+import '../config/api_config.dart';
 
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
@@ -11,7 +12,7 @@ import '../core/exceptions/specialized_exceptions.dart';
 
 /// Backend Service für Voice Chat (Backend-First Flow)
 class VoiceBackendService {
-  static const String _baseUrl = 'https://weltenbibliothek-api-v3.brandy13062.workers.dev'; // ✅ MIGRATED to v3.1
+  static const String _baseUrl = ApiConfig.workerUrl; // ✅ MIGRATED to v3.1
   static const String _apiToken = 'y-Xiv3kKeiybDm2CV0yLFu7TSd22co6NBw3udn5Y';
   
   /// Backend-Join: Session im Backend erstellen, Session-ID erhalten

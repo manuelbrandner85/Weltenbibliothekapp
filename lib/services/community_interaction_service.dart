@@ -1,3 +1,4 @@
+import '../config/api_config.dart';
 import 'dart:convert';
 import 'dart:async';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
@@ -8,7 +9,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 /// Handles Likes, Comments, Shares with Cloudflare D1 Backend + Local Cache
 class CommunityInteractionService {
   // Backend URLs
-  static const String _backendUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
+  static const String _backendUrl = ApiConfig.workerUrl;
   
   // Hive Boxes
   static const String _likesBox = 'user_likes';

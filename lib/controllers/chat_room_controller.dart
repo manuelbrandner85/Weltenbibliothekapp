@@ -1,12 +1,14 @@
-/// 💬 CHAT ROOM CONTROLLER (SIMPLIFIED)
+/// 💬 CHAT ROOM CONTROLLER
 /// 
-/// Simplified chat controller without external dependencies
+/// Supabase Realtime + Offline-First mit LocalChatStorageService
 library;
 
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../core/state/chat_room_state.dart';
 import '../models/chat_models.dart';
+import '../services/supabase_service.dart';         // 🟢 Supabase Backend
+import '../services/local_chat_storage_service.dart'; // 📦 Offline-Fallback
 
 class ChatRoomController extends ChangeNotifier {
   ChatRoomState _state = const ChatRoomState();
@@ -21,13 +23,45 @@ class ChatRoomController extends ChangeNotifier {
   
   ChatRoomState get state => _state;
   
+  // Realtime-Subscription
+  dynamic _realtimeChannel;
+
   Future<void> _initialize() async {
+    // 📦 Offline-Storage initialisieren
+    await LocalChatStorageService().initialize();
     try {
       await loadMessages();
-      _startMessagePolling();
+      _subscribeRealtime();
     } catch (e) {
       _state = _state.copyWith(error: 'Failed to initialize: $e');
       notifyListeners();
+    }
+  }
+
+  /// 🟢 Realtime-Subscription auf neue Chat-Nachrichten
+  void _subscribeRealtime() {
+    try {
+      _realtimeChannel = SupabaseChatService.instance.subscribeToRoom(
+        roomId,
+        onMessage: (data) {
+          final msg = ChatMessage.text(
+            id: data['id'] as String? ?? 'rt_${DateTime.now().millisecondsSinceEpoch}',
+            senderId: data['user_id'] as String? ?? 'unknown',
+            senderName: data['username'] as String? ?? 'Anonym',
+            content: data['message'] as String? ?? data['content'] as String? ?? '',
+            timestamp: data['created_at'] != null
+                ? DateTime.tryParse(data['created_at'] as String) ?? DateTime.now()
+                : DateTime.now(),
+          );
+          // Duplikat vermeiden
+          if (!_state.messages.any((m) => m.id == msg.id)) {
+            _state = _state.copyWith(messages: [..._state.messages, msg]);
+            notifyListeners();
+          }
+        },
+      );
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ [Chat] Realtime subscribe failed: $e');
     }
   }
   
@@ -303,24 +337,82 @@ class ChatRoomController extends ChangeNotifier {
   }
   
   Future<List<ChatMessage>> _fetchMessagesFromServer({DateTime? before}) async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    return List.generate(20, (index) {
-      return ChatMessage.text(
-        id: 'msg_${DateTime.now().millisecondsSinceEpoch}_$index',
-        senderId: index % 2 == 0 ? 'user1' : 'user2',
-        senderName: index % 2 == 0 ? 'Alice' : 'Bob',
-        content: 'Sample message $index',
-        timestamp: DateTime.now().subtract(Duration(minutes: 20 - index)),
-      );
-    });
+    // 🟢 Versuche Supabase
+    try {
+      final rows = await SupabaseChatService.instance.getMessages(roomId);
+      final msgs = rows.map((data) => ChatMessage.text(
+        id: data['id'] as String? ?? 'srv_${DateTime.now().millisecondsSinceEpoch}',
+        senderId: data['user_id'] as String? ?? 'unknown',
+        senderName: data['username'] as String? ?? 'Anonym',
+        content: data['message'] as String? ?? data['content'] as String? ?? '',
+        timestamp: data['created_at'] != null
+            ? DateTime.tryParse(data['created_at'] as String) ?? DateTime.now()
+            : DateTime.now(),
+      )).toList();
+
+      // 📦 Lokal cachen für Offline-Nutzung
+      final local = LocalChatStorageService();
+      for (final r in rows) {
+        await local.sendMessage(
+          roomId: roomId,
+          realm: 'materie',
+          userId: r['user_id'] as String? ?? 'unknown',
+          username: r['username'] as String? ?? 'Anonym',
+          message: r['message'] as String? ?? r['content'] as String? ?? '',
+          avatarUrl: r['avatar_url'] as String?,
+        );
+      }
+      return msgs;
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ [Chat] Supabase fetch failed, lade offline: $e');
+      // 📦 Offline-Fallback: lokale Nachrichten zurückgeben
+      try {
+        final localMsgs = await LocalChatStorageService().getMessages(roomId, 'materie');
+        return localMsgs.map((data) => ChatMessage.text(
+          id: data['id'] as String? ?? 'local_${DateTime.now().millisecondsSinceEpoch}',
+          senderId: data['userId'] as String? ?? 'unknown',
+          senderName: data['username'] as String? ?? 'Anonym',
+          content: data['message'] as String? ?? '',
+          timestamp: data['timestamp'] != null
+              ? DateTime.tryParse(data['timestamp'] as String) ?? DateTime.now()
+              : DateTime.now(),
+        )).toList();
+      } catch (_) {
+        return [];
+      }
+    }
   }
   
   Future<ChatMessage> _sendMessageToServer(ChatMessage message) async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    return message.copyWith(
-      id: 'msg_${DateTime.now().millisecondsSinceEpoch}',
-      status: MessageStatus.sent,
-    );
+    // 📦 Immer lokal speichern (Offline-First)
+    try {
+      await LocalChatStorageService().sendMessage(
+        roomId: roomId,
+        realm: 'materie',
+        userId: message.senderId,
+        username: message.senderName,
+        message: message.content,
+      );
+    } catch (_) {}
+
+    // 🟢 Supabase: Online senden
+    try {
+      final sent = await SupabaseChatService.instance.sendMessage(
+        roomId: roomId,
+        message: message.content,
+      );
+      return message.copyWith(
+        id: sent['id'] as String? ?? message.id,
+        status: MessageStatus.sent,
+      );
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ [Chat] Offline – Nachricht lokal gespeichert: $e');
+      // Offline: lokale ID bestätigen
+      return message.copyWith(
+        id: 'offline_${DateTime.now().millisecondsSinceEpoch}',
+        status: MessageStatus.sent,
+      );
+    }
   }
   
   Future<void> _editMessageOnServer(String messageId, String content) async {
@@ -350,6 +442,10 @@ class ChatRoomController extends ChangeNotifier {
   void dispose() {
     _typingTimer?.cancel();
     _messagePollingTimer?.cancel();
+    // 🔌 Realtime-Subscription beenden
+    try {
+      _realtimeChannel?.unsubscribe();
+    } catch (_) {}
     super.dispose();
   }
 }

@@ -2,6 +2,7 @@
 /// 
 /// Parallele API-Aufrufe für verschiedene Regionen/Sprachen
 library;
+import '../config/api_config.dart';
 
 import 'dart:async';
 import 'dart:convert';

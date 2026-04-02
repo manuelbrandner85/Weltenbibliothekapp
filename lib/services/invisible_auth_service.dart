@@ -8,6 +8,7 @@
 /// 4. Bei jedem Request: Sende AuthToken im Header
 /// 5. Backend validiert Token → Gibt UserID zurück
 library;
+import '../config/api_config.dart';
 
 import 'dart:convert';
 import 'dart:math';
@@ -26,7 +27,7 @@ class InvisibleAuthService {
   static const String _deviceIdKey = 'device_id';
   
   // Cloudflare Worker URL
-  static const String _backendUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
+  static const String _backendUrl = ApiConfig.workerUrl;
   
   // Singleton
   static final InvisibleAuthService _instance = InvisibleAuthService._internal();

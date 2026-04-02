@@ -242,15 +242,20 @@ class SupabaseCommunityService {
     final profile = await SupabaseProfileService.instance.getMyProfile();
     final username = profile?['username'] ?? user.email?.split('@').first ?? 'Anonym';
 
+    // Slug aus Titel generieren (Pflichtfeld in DB)
+    final slug = '${title.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '-').replaceAll(RegExp(r'^-+|-+$'), '')}-${DateTime.now().millisecondsSinceEpoch}';
+
     final response = await supabase.from('articles').insert({
       'user_id': user.id,
       'username': username,
       'title': title,
+      'slug': slug,
       'content': content,
       'world': world,
       'category': category,
       'tags': tags,
       'image_url': imageUrl,
+      'cover_image_url': imageUrl,  // Beide Spalten befüllen
       'is_published': true,
     }).select().single();
 
@@ -407,7 +412,8 @@ class SupabaseChatService {
       'user_id': user.id,
       'username': username,
       'avatar_url': avatarUrl,
-      'message': message,
+      'content': message,  // DB-Spalte heißt 'content' (NOT NULL)
+      'message': message,  // Extra-Spalte für Kompatibilität
     }).select().single();
 
     return response;

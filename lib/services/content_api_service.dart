@@ -3,6 +3,7 @@
 /// Enables admins to manage app content (tabs, tools, markers) dynamically
 /// without app rebuilds.
 library;
+import '../config/api_config.dart';
 
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -15,7 +16,7 @@ class ContentApiService {
   factory ContentApiService() => _instance;
   ContentApiService._internal();
 
-  static const String _baseUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
+  static const String _baseUrl = ApiConfig.workerUrl;
   
   /// Get current user's role for permission checks
   Future<String?> _getCurrentRole() async {

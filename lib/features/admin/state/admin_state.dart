@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:weltenbibliothek/config/api_config.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
@@ -212,7 +213,7 @@ class AdminStateNotifier extends StateNotifier<AdminState> {
       final username = _storage.getUsername(world);
       if (username != null && username.isNotEmpty) {
         final response = await http.get(
-          Uri.parse('https://weltenbibliothek-api-v2.brandy13062.workers.dev/api/profile/$world/$username'),
+          Uri.parse('${ApiConfig.workerUrl}/api/profile/$world/$username'),
           headers: {'Authorization': 'Bearer sync_token'},
         ).timeout(const Duration(seconds: 5));
         

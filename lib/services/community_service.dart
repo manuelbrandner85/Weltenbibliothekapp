@@ -1,3 +1,4 @@
+import '../config/api_config.dart';
 import 'dart:convert';
 import 'dart:async';  // ✅ TimeoutException
 import 'dart:io';  // ✅ SocketException
@@ -16,7 +17,7 @@ import 'cloudflare_api_service.dart';
 /// - No simulated delays or mock data
 class CommunityService {
   // 🔧 Cloudflare Worker URL (CONSOLIDATED TO MAIN API!)
-  static const String _baseUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
+  static const String _baseUrl = ApiConfig.workerUrl;
   static const Duration _timeout = Duration(seconds: 10);
   final CloudflareApiService _cloudflareApi = CloudflareApiService();
   

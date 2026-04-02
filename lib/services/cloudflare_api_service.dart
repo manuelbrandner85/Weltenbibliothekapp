@@ -21,19 +21,19 @@ class CloudflareApiService {
   
   // Community API (Articles, Users, Analytics)
   // Note: Separate Worker, will migrate when community-v2 available
-  static String get baseUrl => 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
+  static String get baseUrl => ApiConfig.workerUrl;
   
   // Main API (Chat + Knowledge + WebSocket) - Using Deployed WebSocket Worker
   // FIXED: Use actual deployed worker name
-  static String get mainApiUrl => 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
+  static String get mainApiUrl => ApiConfig.workerUrl;
   
   // Media Upload API (R2 Storage)
   // Note: Separate Worker, will migrate when media-v2 available
-  static String get mediaApiUrl => 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
+  static String get mediaApiUrl => ApiConfig.workerUrl;
   
   // Chat Features API (Reactions, Read Receipts, Polls)
   // Note: Separate Worker, will migrate when chat-features-v2 available
-  static String get chatFeaturesApiUrl => 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
+  static String get chatFeaturesApiUrl => ApiConfig.workerUrl;
   
   // Chat Reactions API (Redirect to Chat Features)
   static String get reactionsApiUrl => chatFeaturesApiUrl;

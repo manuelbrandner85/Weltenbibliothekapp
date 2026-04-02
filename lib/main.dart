@@ -41,12 +41,16 @@ import 'config/enhanced_app_themes.dart'; // 🎨 ENHANCED UI/UX THEMES
 import 'services/achievement_service.dart';  // 🏆 Achievement System
 import 'widgets/achievement_unlock_dialog.dart';  // 🏆 Achievement UI
 import 'utils/error_boundary.dart';  // 🛡️ Error Boundary
+import 'services/supabase_service.dart';  // 🟢 SUPABASE: Auth + Chat + Community
 // import 'widgets/offline_indicator.dart';  // 📡 OFFLINE INDICATOR (DISABLED - BUILD ISSUE)
 // import 'services/push_notification_service.dart'; // Firebase -> Cloudflare
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
+  // 🟢 SUPABASE - Muss als ERSTES initialisiert werden (vor allen anderen Services)
+  await initSupabase();
+
   // 🗄️ HIVE LOCAL STORAGE - Initialize
   await Hive.initFlutter();
   

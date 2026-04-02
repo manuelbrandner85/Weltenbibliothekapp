@@ -9,6 +9,7 @@
 // - User Stats Vergleich
 // =====================================================================
 
+import '../config/api_config.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'achievement_service.dart';
@@ -111,7 +112,7 @@ class LeaderboardService {
   LeaderboardService._internal();
 
   // 🌐 Backend API Configuration
-  static const String _baseUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
+  static const String _baseUrl = ApiConfig.workerUrl;
   static const Duration _timeout = Duration(seconds: 10);
 
   static const String _leaderboardKey = 'global_leaderboard';

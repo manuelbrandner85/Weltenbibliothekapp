@@ -1,3 +1,4 @@
+import '../config/api_config.dart';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -15,7 +16,7 @@ import 'real_source_enhancer.dart';  // 🔍 REAL SOURCE ENHANCER
 /// - Alternative Quellen Priorisierung
 class BackendRechercheService {
   // PRODUCTION: Nutze Backend-Proxy
-  static const String _backendUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
+  static const String _backendUrl = ApiConfig.workerUrl;
   
   // Alternative & unabhängige Quellen Domains
   static const Set<String> _alternativeSources = {

@@ -30,7 +30,7 @@ import '../config/api_config.dart'; // 🆕 API Config for admin token
 /// - Admin kann nur User in seiner Welt verwalten
 class WorldAdminService {
   // Cloudflare Worker URL (API v2 - World-Based Multi-Profile System)
-  static const String _baseUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
+  static const String _baseUrl = ApiConfig.workerUrl;
   static const Duration _timeout = Duration(seconds: 10);
   
   // ✅ AUTH SERVICE

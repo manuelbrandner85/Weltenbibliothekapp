@@ -4,6 +4,7 @@
 /// ✅ BACKEND: Connects to weltenbibliothek-community-api Worker
 /// ✅ REALTIME: Stream-based updates
 library;
+import '../config/api_config.dart';
 
 import 'dart:async';
 import 'package:flutter/foundation.dart';
@@ -19,7 +20,7 @@ class CommunityService {
   CommunityService._internal();
 
   // Backend URL
-  static const String _backendUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
+  static const String _backendUrl = ApiConfig.workerUrl;
   
   // Auth Service
   final InvisibleAuthService _authService = InvisibleAuthService();
