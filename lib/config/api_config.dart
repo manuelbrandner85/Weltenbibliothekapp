@@ -9,7 +9,7 @@
 ///
 /// VERWENDUNG (Build-Befehl):
 ///   flutter build apk \
-///     --dart-define=CLOUDFLARE_WORKER_URL=https://weltenbibliothek.brandy13062.workers.dev \
+///     --dart-define=CLOUDFLARE_WORKER_URL=https://weltenbibliothek-api.brandy13062.workers.dev \
 ///     --dart-define=SUPABASE_URL=https://adtviduaftdquvfjpojb.supabase.co \
 ///     --dart-define=SUPABASE_ANON_KEY=eyJ...
 library;
@@ -24,7 +24,7 @@ class ApiConfig {
   /// sind veraltet und wurden konsolidiert.
   static const String workerUrl = String.fromEnvironment(
     'CLOUDFLARE_WORKER_URL',
-    defaultValue: 'https://weltenbibliothek.brandy13062.workers.dev',
+    defaultValue: 'https://weltenbibliothek-api.brandy13062.workers.dev',
   );
 
   // Rückwärtskompatibilität – zeigen alle auf den einen Worker
