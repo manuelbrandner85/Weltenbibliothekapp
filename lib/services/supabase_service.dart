@@ -1,0 +1,579 @@
+/// 🟢 SUPABASE SERVICE – Zentrale Supabase-Integration
+///
+/// Verantwortlich für:
+/// - Auth (Login, Logout, Registrierung, Session)
+/// - Profile (User-Stammdaten)
+/// - Community (Artikel, Kommentare, Likes, Bookmarks)
+/// - Chat (Text-Nachrichten via Supabase Realtime)
+/// - Notifications
+///
+/// Initialisierung: Supabase.initialize() in main.dart aufrufen.
+/// Konfiguration: Über dart-define oder api_config.dart.
+library;
+
+import 'dart:async';
+import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../config/api_config.dart';
+
+// ──────────────────────────────────────────────────────────────
+// INITIALISIERUNG
+// ──────────────────────────────────────────────────────────────
+
+/// Supabase einmalig initialisieren – in main() aufrufen.
+Future<void> initSupabase() async {
+  await Supabase.initialize(
+    url: ApiConfig.supabaseUrl,
+    anonKey: ApiConfig.supabaseAnonKey,
+    debug: kDebugMode,
+  );
+  if (kDebugMode) {
+    debugPrint('✅ [Supabase] Initialisiert: ${ApiConfig.supabaseUrl}');
+  }
+}
+
+/// Schnellzugriff auf den Supabase-Client.
+SupabaseClient get supabase => Supabase.instance.client;
+
+// ──────────────────────────────────────────────────────────────
+// AUTH SERVICE
+// ──────────────────────────────────────────────────────────────
+
+class SupabaseAuthService {
+  static SupabaseAuthService? _instance;
+  static SupabaseAuthService get instance =>
+      _instance ??= SupabaseAuthService._();
+  SupabaseAuthService._();
+
+  /// Aktueller User (null = nicht eingeloggt)
+  User? get currentUser => supabase.auth.currentUser;
+
+  /// Aktuelle Session
+  Session? get currentSession => supabase.auth.currentSession;
+
+  /// Ist der User eingeloggt?
+  bool get isLoggedIn => currentUser != null;
+
+  /// Auth-Status-Stream
+  Stream<AuthState> get authStateChanges => supabase.auth.onAuthStateChange;
+
+  // ── REGISTRIERUNG ──────────────────────────────────────────
+
+  /// Neuen User registrieren (Email + Passwort).
+  /// username wird als user_metadata gespeichert → trigger erstellt profil.
+  Future<AuthResponse> signUp({
+    required String email,
+    required String password,
+    required String username,
+    String world = 'materie',
+  }) async {
+    if (kDebugMode) debugPrint('📝 [Auth] SignUp: $email');
+
+    final response = await supabase.auth.signUp(
+      email: email,
+      password: password,
+      data: {
+        'username': username,
+        'display_name': username,
+        'world': world,
+      },
+    );
+
+    if (kDebugMode && response.user != null) {
+      debugPrint('✅ [Auth] Registriert: ${response.user!.id}');
+    }
+    return response;
+  }
+
+  // ── LOGIN ──────────────────────────────────────────────────
+
+  /// Login mit Email + Passwort.
+  Future<AuthResponse> signIn({
+    required String email,
+    required String password,
+  }) async {
+    if (kDebugMode) debugPrint('🔐 [Auth] SignIn: $email');
+    return await supabase.auth.signInWithPassword(
+      email: email,
+      password: password,
+    );
+  }
+
+  // ── LOGOUT ────────────────────────────────────────────────
+
+  Future<void> signOut() async {
+    if (kDebugMode) debugPrint('🚪 [Auth] SignOut');
+    await supabase.auth.signOut();
+  }
+
+  // ── PASSWORT RESET ────────────────────────────────────────
+
+  Future<void> resetPassword(String email) async {
+    await supabase.auth.resetPasswordForEmail(email);
+  }
+
+  // ── SESSION REFRESH ───────────────────────────────────────
+
+  Future<void> refreshSession() async {
+    await supabase.auth.refreshSession();
+  }
+}
+
+// ──────────────────────────────────────────────────────────────
+// PROFILE SERVICE
+// ──────────────────────────────────────────────────────────────
+
+class SupabaseProfileService {
+  static SupabaseProfileService? _instance;
+  static SupabaseProfileService get instance =>
+      _instance ??= SupabaseProfileService._();
+  SupabaseProfileService._();
+
+  /// Eigenes Profil laden.
+  Future<Map<String, dynamic>?> getMyProfile() async {
+    final userId = supabase.auth.currentUser?.id;
+    if (userId == null) return null;
+
+    final response = await supabase
+        .from('profiles')
+        .select()
+        .eq('id', userId)
+        .maybeSingle();
+
+    return response;
+  }
+
+  /// Profil nach ID laden.
+  Future<Map<String, dynamic>?> getProfile(String userId) async {
+    return await supabase
+        .from('profiles')
+        .select()
+        .eq('id', userId)
+        .maybeSingle();
+  }
+
+  /// Eigenes Profil updaten.
+  Future<void> updateProfile({
+    String? username,
+    String? displayName,
+    String? bio,
+    String? avatarUrl,
+    String? world,
+  }) async {
+    final userId = supabase.auth.currentUser?.id;
+    if (userId == null) throw Exception('Nicht eingeloggt');
+
+    final updates = <String, dynamic>{
+      'updated_at': DateTime.now().toIso8601String(),
+    };
+    if (username != null) updates['username'] = username;
+    if (displayName != null) updates['display_name'] = displayName;
+    if (bio != null) updates['bio'] = bio;
+    if (avatarUrl != null) updates['avatar_url'] = avatarUrl;
+    if (world != null) updates['world'] = world;
+
+    await supabase.from('profiles').update(updates).eq('id', userId);
+    if (kDebugMode) debugPrint('✅ [Profile] Aktualisiert: $userId');
+  }
+
+  /// Avatar hochladen und URL in Profil speichern.
+  Future<String> uploadAvatar(List<int> bytes, String fileExtension) async {
+    final userId = supabase.auth.currentUser?.id;
+    if (userId == null) throw Exception('Nicht eingeloggt');
+
+    final fileName = '$userId/avatar.$fileExtension';
+    await supabase.storage.from('avatars').uploadBinary(
+          fileName,
+          Uint8List.fromList(bytes),
+          fileOptions: const FileOptions(upsert: true),
+        );
+
+    final url = supabase.storage.from('avatars').getPublicUrl(fileName);
+    await updateProfile(avatarUrl: url);
+    return url;
+  }
+}
+
+// ──────────────────────────────────────────────────────────────
+// COMMUNITY SERVICE (Artikel, Kommentare, Likes, Bookmarks)
+// ──────────────────────────────────────────────────────────────
+
+class SupabaseCommunityService {
+  static SupabaseCommunityService? _instance;
+  static SupabaseCommunityService get instance =>
+      _instance ??= SupabaseCommunityService._();
+  SupabaseCommunityService._();
+
+  // ── ARTIKEL ───────────────────────────────────────────────
+
+  /// Artikel laden (optional nach World und Kategorie filtern).
+  Future<List<Map<String, dynamic>>> getArticles({
+    String? world,
+    String? category,
+    int limit = 20,
+    int offset = 0,
+  }) async {
+    var query = supabase
+        .from('articles')
+        .select('*, profiles(username, avatar_url)')
+        .eq('is_published', true)
+        .order('created_at', ascending: false)
+        .range(offset, offset + limit - 1);
+
+    if (world != null) query = query.eq('world', world);
+    if (category != null) query = query.eq('category', category);
+
+    final response = await query;
+    return List<Map<String, dynamic>>.from(response);
+  }
+
+  /// Artikel erstellen.
+  Future<Map<String, dynamic>> createArticle({
+    required String title,
+    required String content,
+    required String world,
+    String? category,
+    List<String> tags = const [],
+    String? imageUrl,
+  }) async {
+    final user = supabase.auth.currentUser;
+    if (user == null) throw Exception('Nicht eingeloggt');
+
+    final profile = await SupabaseProfileService.instance.getMyProfile();
+    final username = profile?['username'] ?? user.email?.split('@').first ?? 'Anonym';
+
+    final response = await supabase.from('articles').insert({
+      'user_id': user.id,
+      'username': username,
+      'title': title,
+      'content': content,
+      'world': world,
+      'category': category,
+      'tags': tags,
+      'image_url': imageUrl,
+      'is_published': true,
+    }).select().single();
+
+    if (kDebugMode) debugPrint('✅ [Community] Artikel erstellt: ${response['id']}');
+    return response;
+  }
+
+  // ── LIKES ────────────────────────────────────────────────
+
+  Future<void> likeArticle(String articleId) async {
+    final userId = supabase.auth.currentUser?.id;
+    if (userId == null) throw Exception('Nicht eingeloggt');
+
+    await supabase.from('likes').insert({
+      'article_id': articleId,
+      'user_id': userId,
+    });
+  }
+
+  Future<void> unlikeArticle(String articleId) async {
+    final userId = supabase.auth.currentUser?.id;
+    if (userId == null) throw Exception('Nicht eingeloggt');
+
+    await supabase
+        .from('likes')
+        .delete()
+        .eq('article_id', articleId)
+        .eq('user_id', userId);
+  }
+
+  Future<bool> hasLiked(String articleId) async {
+    final userId = supabase.auth.currentUser?.id;
+    if (userId == null) return false;
+
+    final response = await supabase
+        .from('likes')
+        .select('id')
+        .eq('article_id', articleId)
+        .eq('user_id', userId)
+        .maybeSingle();
+    return response != null;
+  }
+
+  // ── BOOKMARKS ────────────────────────────────────────────
+
+  Future<void> bookmarkArticle(String articleId) async {
+    final userId = supabase.auth.currentUser?.id;
+    if (userId == null) throw Exception('Nicht eingeloggt');
+
+    await supabase.from('bookmarks').insert({
+      'article_id': articleId,
+      'user_id': userId,
+    });
+  }
+
+  Future<void> removeBookmark(String articleId) async {
+    final userId = supabase.auth.currentUser?.id;
+    if (userId == null) throw Exception('Nicht eingeloggt');
+
+    await supabase
+        .from('bookmarks')
+        .delete()
+        .eq('article_id', articleId)
+        .eq('user_id', userId);
+  }
+
+  Future<List<Map<String, dynamic>>> getMyBookmarks() async {
+    final userId = supabase.auth.currentUser?.id;
+    if (userId == null) return [];
+
+    final response = await supabase
+        .from('bookmarks')
+        .select('*, articles(*, profiles(username, avatar_url))')
+        .eq('user_id', userId)
+        .order('created_at', ascending: false);
+
+    return List<Map<String, dynamic>>.from(response);
+  }
+
+  // ── KOMMENTARE ────────────────────────────────────────────
+
+  Future<List<Map<String, dynamic>>> getComments(String articleId) async {
+    final response = await supabase
+        .from('comments')
+        .select('*, profiles(username, avatar_url)')
+        .eq('article_id', articleId)
+        .eq('is_deleted', false)
+        .order('created_at', ascending: true);
+
+    return List<Map<String, dynamic>>.from(response);
+  }
+
+  Future<Map<String, dynamic>> addComment({
+    required String articleId,
+    required String content,
+  }) async {
+    final user = supabase.auth.currentUser;
+    if (user == null) throw Exception('Nicht eingeloggt');
+
+    final profile = await SupabaseProfileService.instance.getMyProfile();
+    final username = profile?['username'] ?? 'Anonym';
+
+    final response = await supabase.from('comments').insert({
+      'article_id': articleId,
+      'user_id': user.id,
+      'username': username,
+      'content': content,
+    }).select().single();
+
+    return response;
+  }
+}
+
+// ──────────────────────────────────────────────────────────────
+// CHAT SERVICE (Echtzeit-Chat via Supabase Realtime)
+// ──────────────────────────────────────────────────────────────
+
+class SupabaseChatService {
+  static SupabaseChatService? _instance;
+  static SupabaseChatService get instance =>
+      _instance ??= SupabaseChatService._();
+  SupabaseChatService._();
+
+  RealtimeChannel? _activeChannel;
+
+  /// Nachrichten für einen Raum laden (letzte 50).
+  Future<List<Map<String, dynamic>>> getMessages(String roomId,
+      {int limit = 50}) async {
+    final response = await supabase
+        .from('chat_messages')
+        .select()
+        .eq('room_id', roomId)
+        .eq('is_deleted', false)
+        .order('created_at', ascending: false)
+        .limit(limit);
+
+    return List<Map<String, dynamic>>.from(response.reversed.toList());
+  }
+
+  /// Nachricht senden.
+  Future<Map<String, dynamic>> sendMessage({
+    required String roomId,
+    required String message,
+  }) async {
+    final user = supabase.auth.currentUser;
+    if (user == null) throw Exception('Nicht eingeloggt');
+
+    final profile = await SupabaseProfileService.instance.getMyProfile();
+    final username = profile?['username'] ?? 'Anonym';
+    final avatarUrl = profile?['avatar_url'];
+
+    final response = await supabase.from('chat_messages').insert({
+      'room_id': roomId,
+      'user_id': user.id,
+      'username': username,
+      'avatar_url': avatarUrl,
+      'message': message,
+    }).select().single();
+
+    return response;
+  }
+
+  /// Echtzeit-Subscription auf Chat-Nachrichten.
+  /// Ruft [onMessage] bei jeder neuen Nachricht auf.
+  RealtimeChannel subscribeToRoom(
+    String roomId, {
+    required void Function(Map<String, dynamic>) onMessage,
+  }) {
+    _activeChannel?.unsubscribe();
+
+    _activeChannel = supabase
+        .channel('chat_room_$roomId')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.insert,
+          schema: 'public',
+          table: 'chat_messages',
+          filter: PostgresChangeFilter(
+            type: FilterType.eq,
+            column: 'room_id',
+            value: roomId,
+          ),
+          callback: (payload) {
+            if (kDebugMode) {
+              debugPrint('💬 [Chat] Neue Nachricht in $roomId');
+            }
+            onMessage(Map<String, dynamic>.from(payload.newRecord));
+          },
+        )
+        .subscribe();
+
+    if (kDebugMode) debugPrint('🔌 [Chat] Subscribed: $roomId');
+    return _activeChannel!;
+  }
+
+  /// Subscription beenden.
+  Future<void> unsubscribe() async {
+    if (_activeChannel != null) {
+      await _activeChannel!.unsubscribe();
+      _activeChannel = null;
+      if (kDebugMode) debugPrint('🔌 [Chat] Unsubscribed');
+    }
+  }
+
+  /// Chat-Räume laden.
+  Future<List<Map<String, dynamic>>> getChatRooms({String? world}) async {
+    var query = supabase
+        .from('chat_rooms')
+        .select()
+        .eq('is_active', true)
+        .order('name');
+
+    if (world != null) query = query.eq('world', world);
+
+    final response = await query;
+    return List<Map<String, dynamic>>.from(response);
+  }
+}
+
+// ──────────────────────────────────────────────────────────────
+// NOTIFICATION SERVICE
+// ──────────────────────────────────────────────────────────────
+
+class SupabaseNotificationService {
+  static SupabaseNotificationService? _instance;
+  static SupabaseNotificationService get instance =>
+      _instance ??= SupabaseNotificationService._();
+  SupabaseNotificationService._();
+
+  Future<List<Map<String, dynamic>>> getNotifications({
+    bool unreadOnly = false,
+    int limit = 30,
+  }) async {
+    final userId = supabase.auth.currentUser?.id;
+    if (userId == null) return [];
+
+    var query = supabase
+        .from('notifications')
+        .select()
+        .eq('user_id', userId)
+        .order('created_at', ascending: false)
+        .limit(limit);
+
+    if (unreadOnly) query = query.eq('is_read', false);
+
+    final response = await query;
+    return List<Map<String, dynamic>>.from(response);
+  }
+
+  Future<void> markAsRead(String notificationId) async {
+    await supabase
+        .from('notifications')
+        .update({'is_read': true})
+        .eq('id', notificationId);
+  }
+
+  Future<void> markAllAsRead() async {
+    final userId = supabase.auth.currentUser?.id;
+    if (userId == null) return;
+
+    await supabase
+        .from('notifications')
+        .update({'is_read': true})
+        .eq('user_id', userId)
+        .eq('is_read', false);
+  }
+
+  /// Echtzeit-Subscription auf Notifications.
+  RealtimeChannel subscribeToNotifications({
+    required void Function(Map<String, dynamic>) onNotification,
+  }) {
+    final userId = supabase.auth.currentUser?.id;
+    if (userId == null) throw Exception('Nicht eingeloggt');
+
+    return supabase
+        .channel('notifications_$userId')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.insert,
+          schema: 'public',
+          table: 'notifications',
+          filter: PostgresChangeFilter(
+            type: FilterType.eq,
+            column: 'user_id',
+            value: userId,
+          ),
+          callback: (payload) =>
+              onNotification(Map<String, dynamic>.from(payload.newRecord)),
+        )
+        .subscribe();
+  }
+}
+
+// ──────────────────────────────────────────────────────────────
+// STORAGE SERVICE
+// ──────────────────────────────────────────────────────────────
+
+class SupabaseStorageService {
+  static SupabaseStorageService? _instance;
+  static SupabaseStorageService get instance =>
+      _instance ??= SupabaseStorageService._();
+  SupabaseStorageService._();
+
+  /// Bild in 'media' Bucket hochladen.
+  Future<String> uploadMediaImage(
+    List<int> bytes,
+    String fileName, {
+    String contentType = 'image/jpeg',
+  }) async {
+    final userId = supabase.auth.currentUser?.id;
+    if (userId == null) throw Exception('Nicht eingeloggt');
+
+    final path = '$userId/$fileName';
+    await supabase.storage.from('media').uploadBinary(
+          path,
+          Uint8List.fromList(bytes),
+          fileOptions: FileOptions(contentType: contentType, upsert: true),
+        );
+
+    return supabase.storage.from('media').getPublicUrl(path);
+  }
+
+  /// Avatar hochladen.
+  Future<String> uploadAvatar(List<int> bytes, String extension) async {
+    return await SupabaseProfileService.instance
+        .uploadAvatar(bytes, extension);
+  }
+}

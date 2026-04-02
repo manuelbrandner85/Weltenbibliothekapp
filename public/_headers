@@ -1,57 +1,56 @@
-# Security Headers for Weltenbibliothek
-# Applied to all routes
+# ============================================================
+# Weltenbibliothek – Security & Cache Headers (Cloudflare Pages)
+# ============================================================
 
 /*
-  # Content Security Policy - Prevents XSS attacks
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.gstatic.com https://www.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https: blob:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://weltenbibliothek-api.brandy13062.workers.dev https://*.firebaseapp.com https://*.firebaseio.com https://*.googleapis.com; media-src 'self' https: blob:; object-src 'none'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests
-  
+  # Content Security Policy
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https: blob:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://weltenbibliothek-api.brandy13062.workers.dev https://weltenbibliothek.pages.dev; media-src 'self' https: blob:; object-src 'none'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests
+
   # Prevent clickjacking
   X-Frame-Options: SAMEORIGIN
-  
+
   # Force HTTPS for 1 year
   Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
-  
+
   # Prevent MIME sniffing
   X-Content-Type-Options: nosniff
-  
+
   # Control referrer information
   Referrer-Policy: strict-origin-when-cross-origin
-  
-  # Browser XSS protection
-  X-XSS-Protection: 1; mode=block
-  
+
   # Restrict browser features
-  Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()
-  
+  Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=(), usb=()
+
   # Cross-origin policies
   Cross-Origin-Opener-Policy: same-origin-allow-popups
   Cross-Origin-Resource-Policy: same-origin
-  
-  # Keep existing CORS for API calls
-  Access-Control-Allow-Origin: *
 
-# Static assets - cache for 1 year
-/*.js
+# Service Worker – no cache
+/sw.js
+  Cache-Control: no-cache, no-store, must-revalidate
+  Service-Worker-Allowed: /
+
+# Manifest – no cache
+/manifest.json
+  Cache-Control: public, max-age=0, must-revalidate
+  Content-Type: application/manifest+json
+
+# Static JS/CSS – immutable long cache
+/_next/static/*
   Cache-Control: public, max-age=31536000, immutable
 
-/*.css
+# Icons – long cache
+/icons/*
   Cache-Control: public, max-age=31536000, immutable
 
+# Screenshots – long cache
+/screenshots/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Fonts
 /*.woff2
   Cache-Control: public, max-age=31536000, immutable
 
-/*.png
-  Cache-Control: public, max-age=31536000, immutable
-
-/*.jpg
-  Cache-Control: public, max-age=31536000, immutable
-
-/*.svg
-  Cache-Control: public, max-age=31536000, immutable
-
-# HTML - no cache
+# HTML – no cache
 /*.html
-  Cache-Control: public, max-age=0, must-revalidate
-
-/
   Cache-Control: public, max-age=0, must-revalidate

@@ -19,37 +19,19 @@ class CloudflareApiService {
   // 🌐 API URLs - Centralized via ApiConfig
   // Migration Status: ✅ V2 Complete
   
-  // Community API (Articles, Users, Analytics)
-  // Note: Separate Worker, will migrate when community-v2 available
-  static String get baseUrl => 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
-  
-  // Main API (Chat + Knowledge + WebSocket) - Using Deployed WebSocket Worker
-  // FIXED: Use actual deployed worker name
-  static String get mainApiUrl => 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
-  
-  // Media Upload API (R2 Storage)
-  // Note: Separate Worker, will migrate when media-v2 available
-  static String get mediaApiUrl => 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
-  
-  // Chat Features API (Reactions, Read Receipts, Polls)
-  // Note: Separate Worker, will migrate when chat-features-v2 available
-  static String get chatFeaturesApiUrl => 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
-  
-  // Chat Reactions API (Redirect to Chat Features)
-  static String get reactionsApiUrl => chatFeaturesApiUrl;
-  
-  // ⚠️ SECURITY: API Token from ApiConfig
-  // Set CLOUDFLARE_API_TOKEN environment variable before building
-  // For development: Use --dart-define=CLOUDFLARE_API_TOKEN=your_token_here
-  static String get apiToken {
-    // Try environment variable first
-    const envToken = String.fromEnvironment('CLOUDFLARE_API_TOKEN', defaultValue: '');
-    if (envToken.isNotEmpty) {
-      return envToken;
-    }
-    // Fallback to ApiConfig token
-    return ApiConfig.cloudflareApiToken;
-  }
+  // ✅ Alle URLs konsolidiert auf den einzigen produktiven Worker.
+  // Alte v2/v3/community-api Worker existieren nicht mehr.
+  static String get baseUrl => ApiConfig.workerUrl;
+  static String get mainApiUrl => ApiConfig.workerUrl;
+  static String get mediaApiUrl => ApiConfig.workerUrl;
+  static String get chatFeaturesApiUrl => ApiConfig.workerUrl;
+  static String get reactionsApiUrl => ApiConfig.workerUrl;
+
+  // ⚠️ SECURITY: Kein API-Token im Client-Code!
+  // Worker-Endpunkte ohne Auth sind öffentlich via RLS abgesichert.
+  // Authentifizierte Requests nutzen den Supabase JWT-Token.
+  // Für interne Worker-to-Worker-Calls: Wrangler Secrets verwenden.
+  static String get apiToken => ''; // Intentionally empty – no client-side tokens
   
   // Singleton Pattern
   static final CloudflareApiService _instance = CloudflareApiService._internal();
@@ -62,10 +44,8 @@ class CloudflareApiService {
       'Content-Type': 'application/json',
     };
     
-    // Add Authorization if token is available
-    if (apiToken.isNotEmpty) {
-      headers['Authorization'] = 'Bearer $apiToken';
-    }
+    // Kein statisches Token im Client – Auth läuft via Supabase JWT
+    // Authentifizierte Endpunkte erhalten den Token vom Caller
     
     return headers;
   }

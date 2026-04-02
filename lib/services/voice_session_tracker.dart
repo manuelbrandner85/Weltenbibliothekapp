@@ -17,7 +17,7 @@ import '../config/api_config.dart';
 /// Voice Session Tracker Service
 /// Tracks and stores voice chat sessions in backend D1 database
 class VoiceSessionTracker {
-  static const String _apiToken = 'y-Xiv3kKeiybDm2CV0yLFu7TSd22co6NBw3udn5Y';
+  
   static const Duration _timeout = Duration(seconds: 10);
   
   // Current session tracking
@@ -62,7 +62,7 @@ class VoiceSessionTracker {
       final response = await http.post(
         url,
         headers: {
-          'Authorization': 'Bearer $_apiToken',
+          
           'Content-Type': 'application/json',
         },
         body: json.encode({
@@ -124,7 +124,7 @@ class VoiceSessionTracker {
       final response = await http.post(
         url,
         headers: {
-          'Authorization': 'Bearer $_apiToken',
+          
           'Content-Type': 'application/json',
         },
         body: json.encode({
@@ -225,7 +225,7 @@ class VoiceSessionTracker {
       final response = await http.post(
         url,
         headers: {
-          'Authorization': 'Bearer $_apiToken',
+          
           'Content-Type': 'application/json',
         },
         body: json.encode({

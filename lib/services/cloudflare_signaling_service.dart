@@ -14,6 +14,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import '../config/api_config.dart';
 
 class CloudflareSignalingService {
   // Singleton
@@ -23,8 +24,9 @@ class CloudflareSignalingService {
 
   // Cloudflare Worker Configuration
   // ✅ PRODUCTION: Deployed and working!
-  static const String _workerBaseUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
-  static const String _apiToken = 'y-Xiv3kKeiybDm2CV0yLFu7TSd22co6NBw3udn5Y';
+  static String get _workerBaseUrl => ApiConfig.workerUrl;
+  // Token-Hinweis: kein hardcodierter Token – Requests laufen ohne Auth-Header
+  // oder mit Session-Token der User-Auth (via Supabase)
   
   // State
   String? _currentRoomId;
@@ -102,7 +104,7 @@ class CloudflareSignalingService {
         Uri.parse(endpoint),
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer $_apiToken',
+          
         },
         body: jsonEncode({
           'roomId': roomId,
@@ -153,7 +155,7 @@ class CloudflareSignalingService {
         Uri.parse(endpoint),
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer $_apiToken',
+          
         },
         body: jsonEncode({
           'roomId': _currentRoomId,
@@ -197,7 +199,7 @@ class CloudflareSignalingService {
         Uri.parse(endpoint),
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer $_apiToken',
+          
         },
         body: jsonEncode({
           'roomId': _currentRoomId,
@@ -241,7 +243,7 @@ class CloudflareSignalingService {
         Uri.parse(endpoint),
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer $_apiToken',
+          
         },
         body: jsonEncode({
           'roomId': _currentRoomId,
@@ -306,7 +308,7 @@ class CloudflareSignalingService {
       final response = await http.get(
         Uri.parse('$endpoint?roomId=$_currentRoomId&userId=$_currentUserId'),
         headers: {
-          'Authorization': 'Bearer $_apiToken',
+          
         },
       ).timeout(
         const Duration(seconds: 8),
@@ -428,7 +430,7 @@ class CloudflareSignalingService {
           Uri.parse(endpoint),
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': 'Bearer $_apiToken',
+            
           },
           body: jsonEncode({
             'roomId': _currentRoomId,

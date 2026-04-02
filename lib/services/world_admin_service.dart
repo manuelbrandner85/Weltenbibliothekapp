@@ -761,7 +761,7 @@ extension WorldAdminServiceV162 on WorldAdminService {
   static Future<List<Map<String, dynamic>>> getActiveVoiceCalls(String world) async {
     try {
       // Use API token from ApiConfig
-      const token = 'y-Xiv3kKeiybDm2CV0yLFu7TSd22co6NBw3udn5Y';
+      // Token nicht im Client hardcodieren – Requests laufen ohne Client-Auth-Token
       
       final url = Uri.parse('${WorldAdminService._baseUrl}/api/admin/voice-calls/$world');
       
@@ -772,7 +772,7 @@ extension WorldAdminServiceV162 on WorldAdminService {
       final response = await http.get(
         url,
         headers: {
-          'Authorization': 'Bearer $token',
+          // Auth via Server-Side Validation
           'Content-Type': 'application/json',
         },
       ).timeout(WorldAdminService._timeout);
@@ -834,7 +834,7 @@ extension WorldAdminServiceV162 on WorldAdminService {
     int limit = 50,
   }) async {
     try {
-      const token = 'y-Xiv3kKeiybDm2CV0yLFu7TSd22co6NBw3udn5Y';
+      // Token nicht im Client hardcodieren – Requests laufen ohne Client-Auth-Token
       
       final url = Uri.parse('${WorldAdminService._baseUrl}/api/admin/call-history/$world?limit=$limit');
       
@@ -845,7 +845,7 @@ extension WorldAdminServiceV162 on WorldAdminService {
       final response = await http.get(
         url,
         headers: {
-          'Authorization': 'Bearer $token',
+          // Auth via Server-Side Validation
           'Content-Type': 'application/json',
         },
       ).timeout(WorldAdminService._timeout);
@@ -907,7 +907,7 @@ extension WorldAdminServiceV162 on WorldAdminService {
   /// ```
   static Future<Map<String, dynamic>> getUserProfile(String userId) async {
     try {
-      const token = 'y-Xiv3kKeiybDm2CV0yLFu7TSd22co6NBw3udn5Y';
+      // Token nicht im Client hardcodieren – Requests laufen ohne Client-Auth-Token
       
       final url = Uri.parse('${WorldAdminService._baseUrl}/api/admin/user-profile/$userId');
       
@@ -918,7 +918,7 @@ extension WorldAdminServiceV162 on WorldAdminService {
       final response = await http.get(
         url,
         headers: {
-          'Authorization': 'Bearer $token',
+          // Auth via Server-Side Validation
           'Content-Type': 'application/json',
         },
       ).timeout(WorldAdminService._timeout);

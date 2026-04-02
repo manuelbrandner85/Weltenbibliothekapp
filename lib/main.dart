@@ -5,8 +5,9 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart' as provider; // ✅ Provider aliased
 import 'package:flutter_riverpod/flutter_riverpod.dart'; // 🆕 RIVERPOD für Admin-System
 import 'package:hive_flutter/hive_flutter.dart'; // 🗄️ HIVE LOCAL STORAGE
-// 💾 SHARED PREFERENCES
-// Firebase DEAKTIVIERT - Jetzt Cloudflare
+// 🟢 SUPABASE – Auth, DB, Realtime, Storage
+import 'services/supabase_service.dart';
+// Firebase DEAKTIVIERT - Jetzt Cloudflare + Supabase
 // import 'package:firebase_core/firebase_core.dart';
 // import 'firebase_options.dart';
 import 'screens/intro_image_screen.dart';
@@ -46,7 +47,11 @@ import 'utils/error_boundary.dart';  // 🛡️ Error Boundary
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
+  // 🟢 SUPABASE – Auth, DB, Realtime, Storage initialisieren
+  // Muss VOR allen anderen Services laufen (Auth-Status wird sofort gebraucht)
+  await initSupabase();
+
   // 🗄️ HIVE LOCAL STORAGE - Initialize
   await Hive.initFlutter();
   
