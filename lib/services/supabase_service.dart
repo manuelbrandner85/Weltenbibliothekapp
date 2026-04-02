@@ -216,14 +216,14 @@ class SupabaseCommunityService {
     var query = supabase
         .from('articles')
         .select('*, profiles(username, avatar_url)')
-        .eq('is_published', true)
-        .order('created_at', ascending: false)
-        .range(offset, offset + limit - 1);
+        .eq('is_published', true);
 
     if (world != null) query = query.eq('world', world);
     if (category != null) query = query.eq('category', category);
 
-    final response = await query;
+    final response = await query
+        .order('created_at', ascending: false)
+        .range(offset, offset + limit - 1);
     return List<Map<String, dynamic>>.from(response);
   }
 
@@ -428,7 +428,7 @@ class SupabaseChatService {
           schema: 'public',
           table: 'chat_messages',
           filter: PostgresChangeFilter(
-            type: FilterType.eq,
+            type: PostgresChangeFilterType.eq,
             column: 'room_id',
             value: roomId,
           ),
@@ -459,12 +459,11 @@ class SupabaseChatService {
     var query = supabase
         .from('chat_rooms')
         .select()
-        .eq('is_active', true)
-        .order('name');
+        .eq('is_active', true);
 
     if (world != null) query = query.eq('world', world);
 
-    final response = await query;
+    final response = await query.order('name');
     return List<Map<String, dynamic>>.from(response);
   }
 }
@@ -489,13 +488,13 @@ class SupabaseNotificationService {
     var query = supabase
         .from('notifications')
         .select()
-        .eq('user_id', userId)
-        .order('created_at', ascending: false)
-        .limit(limit);
+        .eq('user_id', userId);
 
     if (unreadOnly) query = query.eq('is_read', false);
 
-    final response = await query;
+    final response = await query
+        .order('created_at', ascending: false)
+        .limit(limit);
     return List<Map<String, dynamic>>.from(response);
   }
 
@@ -531,7 +530,7 @@ class SupabaseNotificationService {
           schema: 'public',
           table: 'notifications',
           filter: PostgresChangeFilter(
-            type: FilterType.eq,
+            type: PostgresChangeFilterType.eq,
             column: 'user_id',
             value: userId,
           ),

@@ -1,0 +1,400 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'dart:async';
+// import (disabled for Android).dart';
+
+/// 🎙️ TELEGRAM-STYLE VOICE RECORDER
+/// Complete Telegram voice message recording experience
+class TelegramVoiceRecorder extends StatefulWidget {
+  final Function(String audioPath, Duration duration)? onRecordComplete;
+  final Color accentColor;
+
+  const TelegramVoiceRecorder({
+    super.key,
+    this.onRecordComplete,
+    this.accentColor = Colors.blue,
+  });
+
+  @override
+  State<TelegramVoiceRecorder> createState() => _TelegramVoiceRecorderState();
+}
+
+class _TelegramVoiceRecorderState extends State<TelegramVoiceRecorder>
+    with TickerProviderStateMixin {
+  final AudioRecordingService _recorder = AudioRecordingService();
+  
+  bool _isRecording = false;
+  bool _isLocked = false;
+  Duration _recordingDuration = Duration.zero;
+  Timer? _durationTimer;
+  
+  // Slide-to-Cancel
+  double _slideOffset = 0.0;
+  bool _isCancelling = false;
+  static const double _cancelThreshold = -120.0;
+  
+  // Animations
+  late AnimationController _pulseController;
+  late AnimationController _slideController;
+  late Animation<double> _pulseAnimation;
+  
+  // Lock Button
+  double _lockButtonOffset = 0.0;
+  static const double _lockThreshold = -80.0;
+
+  @override
+  void initState() {
+    super.initState();
+    
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    )..repeat(reverse: true);
+    
+    _slideController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 200),
+    );
+    
+    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.2).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    _slideController.dispose();
+    _durationTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _startRecording() async {
+    try {
+      HapticFeedback.mediumImpact();
+      
+      final success = await _recorder.startRecording();
+      if (!success) return;
+      
+      setState(() {
+        _isRecording = true;
+        _recordingDuration = Duration.zero;
+        _slideOffset = 0.0;
+        _lockButtonOffset = 0.0;
+        _isCancelling = false;
+        _isLocked = false;
+      });
+      
+      _startDurationTimer();
+    } catch (e) {
+      debugPrint('❌ Recording start failed: $e');
+    }
+  }
+
+  void _startDurationTimer() {
+    _durationTimer?.cancel();
+    _durationTimer = Timer.periodic(const Duration(milliseconds: 100), (_) {
+      if (_isRecording && mounted) {
+        setState(() {
+          _recordingDuration += const Duration(milliseconds: 100);
+        });
+      }
+    });
+  }
+
+  Future<void> _stopRecording() async {
+    if (!_isRecording || _isCancelling) return;
+    
+    try {
+      HapticFeedback.lightImpact();
+      
+      final path = await _recorder.stopRecording();
+      
+      setState(() {
+        _isRecording = false;
+        _isLocked = false;
+      });
+      
+      _durationTimer?.cancel();
+      
+      if (path != null && widget.onRecordComplete != null) {
+        widget.onRecordComplete!(path, _recordingDuration);
+      }
+    } catch (e) {
+      debugPrint('❌ Recording stop failed: $e');
+    }
+  }
+
+  Future<void> _cancelRecording() async {
+    if (!_isRecording) return;
+    
+    try {
+      HapticFeedback.heavyImpact();
+      
+      await _recorder.cancelRecording();
+      
+      setState(() {
+        _isRecording = false;
+        _isCancelling = false;
+        _isLocked = false;
+      });
+      
+      _durationTimer?.cancel();
+    } catch (e) {
+      debugPrint('❌ Recording cancel failed: $e');
+    }
+  }
+
+  void _onHorizontalDragUpdate(DragUpdateDetails details) {
+    if (_isLocked || !_isRecording) return;
+    
+    setState(() {
+      _slideOffset = (details.globalPosition.dx - MediaQuery.of(context).size.width + 60)
+          .clamp(_cancelThreshold, 0.0);
+      
+      if (_slideOffset <= _cancelThreshold) {
+        _isCancelling = true;
+      }
+    });
+  }
+
+  void _onHorizontalDragEnd(DragEndDetails details) {
+    if (!_isRecording) return;
+    
+    if (_isCancelling || _slideOffset <= _cancelThreshold) {
+      _cancelRecording();
+    } else if (!_isLocked) {
+      _stopRecording();
+    }
+  }
+
+  void _onVerticalDragUpdate(DragUpdateDetails details) {
+    if (_isLocked || !_isRecording) return;
+    
+    setState(() {
+      _lockButtonOffset = details.globalPosition.dy.clamp(_lockThreshold, 0.0);
+      
+      if (_lockButtonOffset <= _lockThreshold) {
+        _isLocked = true;
+        HapticFeedback.mediumImpact();
+      }
+    });
+  }
+
+  String _formatDuration(Duration duration) {
+    final minutes = duration.inMinutes.remainder(60).toString().padLeft(1, '0');
+    final seconds = duration.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$minutes:$seconds';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_isRecording) {
+      // Normal mic button
+      return GestureDetector(
+        onLongPressStart: (_) => _startRecording(),
+        child: Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: widget.accentColor.withValues(alpha: 0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            Icons.mic,
+            color: widget.accentColor,
+            size: 24,
+          ),
+        ),
+      );
+    }
+    
+    // Recording UI
+    return Stack(
+      children: [
+        // Main Recording Bar
+        GestureDetector(
+          onHorizontalDragUpdate: _onHorizontalDragUpdate,
+          onHorizontalDragEnd: _onHorizontalDragEnd,
+          onVerticalDragUpdate: _onVerticalDragUpdate,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            width: double.infinity,
+            height: 48,
+            decoration: BoxDecoration(
+              color: _isCancelling 
+                  ? Colors.red.withValues(alpha: 0.2)
+                  : widget.accentColor.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: Stack(
+              children: [
+                // Slide-to-Cancel Indicator
+                if (!_isLocked)
+                  Positioned(
+                    left: 16,
+                    top: 0,
+                    bottom: 0,
+                    child: Opacity(
+                      opacity: 1.0 - (_slideOffset.abs() / _cancelThreshold),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.chevron_left,
+                            color: _isCancelling ? Colors.red : Colors.grey,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Slide to Cancel',
+                            style: TextStyle(
+                              color: _isCancelling ? Colors.red : Colors.grey,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                
+                // Duration + Waveform
+                Center(
+                  child: Transform.translate(
+                    offset: Offset(_slideOffset, 0),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Pulsing Dot
+                        ScaleTransition(
+                          scale: _pulseAnimation,
+                          child: Container(
+                            width: 10,
+                            height: 10,
+                            decoration: BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        
+                        // Duration
+                        Text(
+                          _formatDuration(_recordingDuration),
+                          style: TextStyle(
+                            color: widget.accentColor,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        
+                        const SizedBox(width: 12),
+                        
+                        // Waveform Animation
+                        _buildWaveform(),
+                      ],
+                    ),
+                  ),
+                ),
+                
+                // Mic Icon (right side)
+                if (!_isLocked)
+                  Positioned(
+                    right: 8,
+                    top: 8,
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: widget.accentColor,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.mic,
+                        color: Colors.white,
+                        size: 18,
+                      ),
+                    ),
+                  ),
+                
+                // Send Button (locked mode)
+                if (_isLocked)
+                  Positioned(
+                    right: 8,
+                    top: 8,
+                    child: GestureDetector(
+                      onTap: _stopRecording,
+                      child: Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: widget.accentColor,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.send,
+                          color: Colors.white,
+                          size: 18,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+        
+        // Lock Button Indicator (top)
+        if (!_isLocked && _lockButtonOffset < -20)
+          Positioned(
+            left: 0,
+            right: 0,
+            top: _lockButtonOffset.abs(),
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: widget.accentColor.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Icon(
+                  Icons.lock_outline,
+                  color: widget.accentColor,
+                  size: 20,
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildWaveform() {
+    return SizedBox(
+      width: 60,
+      height: 24,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: List.generate(5, (index) {
+          return AnimatedBuilder(
+            animation: _pulseController,
+            builder: (context, child) {
+              final delay = index * 0.2;
+              final value = (_pulseController.value + delay) % 1.0;
+              final height = 4 + (value * 16);
+              
+              return Container(
+                width: 3,
+                height: height,
+                decoration: BoxDecoration(
+                  color: widget.accentColor,
+                  borderRadius: BorderRadius.circular(1.5),
+                ),
+              );
+            },
+          );
+        }),
+      ),
+    );
+  }
+}

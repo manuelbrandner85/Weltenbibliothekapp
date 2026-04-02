@@ -1,0 +1,462 @@
+import 'package:flutter/material.dart';
+import '../../models/spirit_entry.dart';
+import '../../models/spirit_dashboard.dart';
+import '../../services/spirit_dashboard_service.dart';
+import '../../services/storage_service.dart';
+
+/// 🌟 OPTIMIERTER SPIRIT-TAB - Übersichtliche Struktur
+/// Kollabierbare Sections, bessere Organisation, zukunftssicher
+class SpiritTabOptimized extends StatefulWidget {
+  const SpiritTabOptimized({super.key});
+
+  @override
+  State<SpiritTabOptimized> createState() => _SpiritTabOptimizedState();
+}
+
+class _SpiritTabOptimizedState extends State<SpiritTabOptimized> {
+  final _dashboardService = SpiritDashboardService();
+  final _storage = StorageService();
+  
+  SpiritDashboard? _dashboard;
+  bool _isLoading = true;
+  
+  // Kollabierbare Section-States
+  bool _showPersonalSignature = true;
+  bool _showCycleAnalysis = true;
+  bool _showArchetypes = true;
+  bool _showAstrology = false;
+  bool _showSynchronicity = false;
+  bool _showJournal = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDashboard();
+  }
+
+  Future<void> _loadDashboard() async {
+    setState(() => _isLoading = true);
+    try {
+      final profile = await _storage.loadEnergieProfile();
+      final dashboard = _dashboardService.calculateDashboard(profile);
+      setState(() {
+        _dashboard = dashboard;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFF4A148C), Color(0xFF1A1A1A)],
+        ),
+      ),
+      child: CustomScrollView(
+        slivers: [
+          // HEADER
+          _buildHeader(),
+          
+          // LOADING STATE
+          if (_isLoading)
+            const SliverFillRemaining(
+              child: Center(child: CircularProgressIndicator(color: Color(0xFF9C27B0))),
+            )
+          else if (_dashboard == null)
+            _buildEmptyState()
+          else
+            // DASHBOARD SECTIONS
+            SliverList(
+              delegate: SliverChildListDelegate([
+                const SizedBox(height: 8),
+                
+                // SECTION 1: PERSÖNLICHE SIGNATUR (Immer sichtbar)
+                _buildSection(
+                  title: '✨ Persönliche Signatur',
+                  subtitle: 'Deine energetische Grundsignatur',
+                  isExpanded: _showPersonalSignature,
+                  onToggle: () => setState(() => _showPersonalSignature = !_showPersonalSignature),
+                  child: _buildPersonalSignatureCard(),
+                ),
+                
+                // SECTION 2: ZYKLUS & LEBENSPHASEN
+                _buildSection(
+                  title: '🌙 Zyklus & Lebensphasen',
+                  subtitle: 'Aktuelle Phase und Übergänge',
+                  isExpanded: _showCycleAnalysis,
+                  onToggle: () => setState(() => _showCycleAnalysis = !_showCycleAnalysis),
+                  child: _buildCycleAnalysisCard(),
+                ),
+                
+                // SECTION 3: ARCHETYPEN-MATRIX
+                _buildSection(
+                  title: '🎭 Archetypen-Matrix',
+                  subtitle: 'Aktive Archetypen & Rollen',
+                  isExpanded: _showArchetypes,
+                  onToggle: () => setState(() => _showArchetypes = !_showArchetypes),
+                  child: _buildArchetypesCard(),
+                ),
+                
+                // SECTION 4: ASTROLOGISCHE GRUNDMATRIX (Kollabiert)
+                _buildSection(
+                  title: '⭐ Astrologische Matrix',
+                  subtitle: 'Sonnenzeichen, Mondzeichen, Elemente',
+                  isExpanded: _showAstrology,
+                  onToggle: () => setState(() => _showAstrology = !_showAstrology),
+                  child: _buildAstrologyCard(),
+                  badge: 'NEU',
+                ),
+                
+                // SECTION 5: SYNCHRONIZITÄTS-TRACKER (Kollabiert)
+                _buildSection(
+                  title: '🔮 Synchronizitäts-Tracker',
+                  subtitle: 'Muster & Wiederkehrende Zeichen',
+                  isExpanded: _showSynchronicity,
+                  onToggle: () => setState(() => _showSynchronicity = !_showSynchronicity),
+                  child: _buildSynchronicityCard(),
+                  badge: 'BETA',
+                ),
+                
+                // SECTION 6: INNERES JOURNAL (Kollabiert)
+                _buildSection(
+                  title: '📖 Inneres Journal',
+                  subtitle: 'KI-gestützte Reflexionsfragen',
+                  isExpanded: _showJournal,
+                  onToggle: () => setState(() => _showJournal = !_showJournal),
+                  child: _buildJournalCard(),
+                ),
+                
+                const SizedBox(height: 100),
+              ]),
+            ),
+        ],
+      ),
+    );
+  }
+
+  // HEADER mit Quick-Stats
+  Widget _buildHeader() {
+    return SliverAppBar(
+      expandedHeight: 180,
+      floating: false,
+      pinned: true,
+      backgroundColor: const Color(0xFF4A148C),
+      flexibleSpace: FlexibleSpaceBar(
+        title: const Text(
+          'SPIRIT DASHBOARD',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            letterSpacing: 2.0,
+          ),
+        ),
+        background: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                const Color(0xFF4A148C),
+                const Color(0xFF9C27B0).withValues(alpha: 0.8),
+              ],
+            ),
+          ),
+          child: _dashboard != null
+              ? _buildQuickStats()
+              : null,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickStats() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 60, 16, 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          _buildStatBadge(
+            icon: Icons.account_circle,
+            label: 'Lebenszahl',
+            value: '${_dashboard!.lifePathNumber}',
+          ),
+          _buildStatBadge(
+            icon: Icons.calendar_today,
+            label: 'Jahr',
+            value: '${_dashboard!.personalYear}',
+          ),
+          _buildStatBadge(
+            icon: Icons.psychology,
+            label: 'Archetyp',
+            value: (_dashboard!.primaryArchetype['name'] as String).substring(0, 3),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatBadge({required IconData icon, required String label, required String value}) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.2),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: Colors.white, size: 20),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        Text(
+          label,
+          style: const TextStyle(
+            color: Colors.white70,
+            fontSize: 10,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // KOLLABIERBARE SECTION
+  Widget _buildSection({
+    required String title,
+    required String subtitle,
+    required bool isExpanded,
+    required VoidCallback onToggle,
+    required Widget child,
+    String? badge,
+  }) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFF2E2E2E),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFF9C27B0).withValues(alpha: 0.3),
+        ),
+      ),
+      child: Column(
+        children: [
+          // SECTION HEADER
+          InkWell(
+            onTap: onToggle,
+            borderRadius: BorderRadius.circular(16),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              title,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            if (badge != null) ...[
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF9C27B0),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  badge,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          subtitle,
+                          style: const TextStyle(
+                            color: Colors.white60,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    isExpanded ? Icons.expand_less : Icons.expand_more,
+                    color: const Color(0xFF9C27B0),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          
+          // SECTION CONTENT
+          if (isExpanded)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: child,
+            ),
+        ],
+      ),
+    );
+  }
+
+  // PLACEHOLDER CARDS (kompakt)
+  Widget _buildPersonalSignatureCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Color.lerp(const Color(0xFF9C27B0), Colors.white, 0.1)!,
+            const Color(0xFF2E2E2E),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildNumberBadge('Lebenszahl', _dashboard!.lifePathNumber),
+              _buildNumberBadge('Seelenzahl', _dashboard!.soulNumber),
+              _buildNumberBadge('Ausdruck', _dashboard!.expressionNumber),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Kernfrequenz: ${_dashboard!.coreFrequency.toStringAsFixed(1)}',
+            style: const TextStyle(color: Colors.white70, fontSize: 14),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNumberBadge(String label, int number) {
+    return Column(
+      children: [
+        Container(
+          width: 50,
+          height: 50,
+          decoration: BoxDecoration(
+            color: const Color(0xFF9C27B0).withValues(alpha: 0.3),
+            shape: BoxShape.circle,
+          ),
+          child: Center(
+            child: Text(
+              '$number',
+              style: const TextStyle(
+                color: Color(0xFF9C27B0),
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: const TextStyle(color: Colors.white60, fontSize: 10),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCycleAnalysisCard() {
+    return Text(
+      'Jahr ${_dashboard!.personalYear} · Monat ${_dashboard!.personalMonth} · Tag ${_dashboard!.personalDay}',
+      style: const TextStyle(color: Colors.white70, fontSize: 14),
+    );
+  }
+
+  Widget _buildArchetypesCard() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildArchetypeRow('Primär', _dashboard!.primaryArchetype['name'] as String),
+        _buildArchetypeRow('Sekundär', _dashboard!.secondaryArchetype['name'] as String),
+        _buildArchetypeRow('Schatten', _dashboard!.shadowArchetype['name'] as String),
+      ],
+    );
+  }
+
+  Widget _buildArchetypeRow(String label, String archetype) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 80,
+            child: Text(
+              label,
+              style: const TextStyle(color: Colors.white60, fontSize: 12),
+            ),
+          ),
+          Text(
+            archetype,
+            style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAstrologyCard() {
+    return const Text(
+      'Astrologische Matrix (coming soon)',
+      style: TextStyle(color: Colors.white60, fontSize: 14, fontStyle: FontStyle.italic),
+    );
+  }
+
+  Widget _buildSynchronicityCard() {
+    return const Text(
+      'Synchronizitäts-Tracker (coming soon)',
+      style: TextStyle(color: Colors.white60, fontSize: 14, fontStyle: FontStyle.italic),
+    );
+  }
+
+  Widget _buildJournalCard() {
+    return const Text(
+      'Inneres Journal (coming soon)',
+      style: TextStyle(color: Colors.white60, fontSize: 14, fontStyle: FontStyle.italic),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return const SliverFillRemaining(
+      child: Center(
+        child: Text(
+          'Kein Profil gefunden',
+          style: TextStyle(color: Colors.white60, fontSize: 16),
+        ),
+      ),
+    );
+  }
+}

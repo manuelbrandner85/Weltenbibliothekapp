@@ -1,0 +1,691 @@
+/// Deep Research Screen mit ECHTER Backend-Integration
+/// Version: 4.0.0 - Backend-Connected
+/// 
+/// Features:
+/// - Echte WebSearch-Integration
+/// - Echte Crawler-Integration  
+/// - Live-Progress Updates
+/// - Volltext-Anzeige
+/// - 6-Tab Analyse-System
+
+import 'package:flutter/material.dart';
+import 'dart:async';
+import '../../models/recherche_models.dart';
+import '../../models/analyse_models.dart';
+import '../../services/backend_recherche_service.dart';
+import '../../services/analyse_service.dart';
+
+class DeepResearchScreen extends StatefulWidget {
+  const DeepResearchScreen({super.key});
+
+  @override
+  State<DeepResearchScreen> createState() => _DeepResearchScreenState();
+}
+
+class _DeepResearchScreenState extends State<DeepResearchScreen>
+    with SingleTickerProviderStateMixin {
+  
+  // Services
+  late final BackendRechercheService _rechercheService;
+  late final AnalyseService _analyseService;
+  
+  // State
+  final TextEditingController _suchController = TextEditingController();
+  RechercheErgebnis? _recherche;
+  AnalyseErgebnis? _analyse;
+  
+  // UI State
+  bool _isSearching = false;
+  int _currentStep = 0; // 0: Start, 1: Recherche, 2: Analyse
+  late TabController _tabController;
+  
+  // Subscriptions
+  StreamSubscription? _rechercheSub;
+  StreamSubscription? _analyseSub;
+  
+  @override
+  void initState() {
+    super.initState();
+    
+    // Initialize services
+    _rechercheService = BackendRechercheService(
+      baseUrl: 'http://localhost:8080',  // TODO: Produktions-URL konfigurieren
+    );
+    _analyseService = AnalyseService();
+    
+    // Initialize TabController
+    _tabController = TabController(length: 6, vsync: this);
+  }
+  
+  @override
+  void dispose() {
+    _suchController.dispose();
+    _tabController.dispose();
+    _rechercheSub?.cancel();
+    _analyseSub?.cancel();
+    _rechercheService.dispose();
+    _analyseService.dispose();
+    super.dispose();
+  }
+  
+  /// Starte Recherche
+  Future<void> _starteRecherche() async {
+    final suchbegriff = _suchController.text.trim();
+    if (suchbegriff.isEmpty) return;
+    
+    setState(() {
+      _isSearching = true;
+      _currentStep = 1;
+      _recherche = null;
+      _analyse = null;
+    });
+    
+    try {
+      // STEP 1: Deep-Recherche
+      _rechercheSub = _rechercheService.ergebnisStream.listen((ergebnis) {
+        setState(() {
+          _recherche = ergebnis;
+        });
+      });
+      
+      final ergebnis = await _rechercheService.recherchieren(suchbegriff);
+      
+      setState(() {
+        _recherche = ergebnis;
+        _currentStep = 2;
+      });
+      
+      // STEP 2: Analyse
+      _analyseSub = _analyseService.analyseStream.listen((analyse) {
+        setState(() {
+          _analyse = analyse;
+        });
+      });
+      
+      final analyse = await _analyseService.analysieren(ergebnis);
+      
+      setState(() {
+        _analyse = analyse;
+        _isSearching = false;
+      });
+      
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Fehler: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        setState(() {
+          _isSearching = false;
+          _currentStep = 0;
+        });
+      }
+    }
+  }
+  
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF0A0A0A),
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Header mit Suchfeld
+            _buildHeader(),
+            
+            // Content
+            Expanded(
+              child: _buildContent(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  
+  /// ═══════════════════════════════════════════════════════════
+  /// HEADER
+  /// ═══════════════════════════════════════════════════════════
+  Widget _buildHeader() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFF1976D2).withValues(alpha: 0.3),
+            const Color(0xFF0D47A1).withValues(alpha: 0.2),
+          ],
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Titel
+          const Text(
+            'WELTENBIBLIOTHEK',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 2,
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Deep Research Engine',
+            style: TextStyle(
+              color: Colors.white70,
+              fontSize: 12,
+            ),
+          ),
+          
+          const SizedBox(height: 16),
+          
+          // Suchfeld
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _suchController,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    hintText: 'Suchbegriff eingeben...',
+                    hintStyle: const TextStyle(color: Colors.white54),
+                    prefixIcon: const Icon(Icons.search, color: Colors.white70),
+                    filled: true,
+                    fillColor: Colors.white.withValues(alpha: 0.1),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                  onSubmitted: (_) => _starteRecherche(),
+                ),
+              ),
+              const SizedBox(width: 12),
+              ElevatedButton(
+                onPressed: _isSearching ? null : _starteRecherche,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2196F3),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: _isSearching
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation(Colors.white),
+                        ),
+                      )
+                    : const Text(
+                        'RECHERCHE',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+              ),
+            ],
+          ),
+          
+          // Quick-Search Chips
+          const SizedBox(height: 12),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _buildQuickSearchChip('Ukraine Krieg'),
+                _buildQuickSearchChip('Pharmaindustrie'),
+                _buildQuickSearchChip('Klimawandel'),
+                _buildQuickSearchChip('Künstliche Intelligenz'),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildQuickSearchChip(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: ActionChip(
+        label: Text(text),
+        labelStyle: const TextStyle(color: Colors.white, fontSize: 12),
+        backgroundColor: Colors.white.withValues(alpha: 0.1),
+        onPressed: () {
+          _suchController.text = text;
+          _starteRecherche();
+        },
+      ),
+    );
+  }
+  
+  /// ═══════════════════════════════════════════════════════════
+  /// CONTENT
+  /// ═══════════════════════════════════════════════════════════
+  Widget _buildContent() {
+    if (_currentStep == 0) {
+      return _buildStartScreen();
+    }
+    
+    if (_currentStep == 1) {
+      return _buildRechercheProgress();
+    }
+    
+    if (_currentStep == 2 && _analyse != null) {
+      return _buildAnalyseResults();
+    }
+    
+    return const Center(
+      child: CircularProgressIndicator(),
+    );
+  }
+  
+  /// Start Screen
+  Widget _buildStartScreen() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.search,
+            size: 80,
+            color: Colors.white.withValues(alpha: 0.3),
+          ),
+          const SizedBox(height: 24),
+          const Text(
+            'Bereit für Deep Research',
+            style: TextStyle(
+              color: Colors.white70,
+              fontSize: 18,
+            ),
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'Gib einen Suchbegriff ein oder wähle ein Quick-Search-Thema',
+            style: TextStyle(
+              color: Colors.white54,
+              fontSize: 14,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+  
+  /// Recherche Progress
+  Widget _buildRechercheProgress() {
+    if (_recherche == null) {
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
+    }
+    
+    final progress = _recherche!.fortschritt;
+    final erfolgsRate = _recherche!.erfolgsRate;
+    
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Progress Header
+          const Text(
+            'STEP 1: DEEP RECHERCHE',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 16),
+          
+          // Progress Bar
+          LinearProgressIndicator(
+            value: progress,
+            backgroundColor: Colors.white.withValues(alpha: 0.1),
+            valueColor: const AlwaysStoppedAnimation(Color(0xFF4CAF50)),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '${(progress * 100).toInt()}% abgeschlossen',
+            style: const TextStyle(color: Colors.white70),
+          ),
+          
+          const SizedBox(height: 24),
+          
+          // Statistik
+          Row(
+            children: [
+              _buildStatCard(
+                'Quellen',
+                '${_recherche!.erfolgreicheQuellen}/${_recherche!.gesamtQuellen}',
+                Colors.blue,
+              ),
+              const SizedBox(width: 12),
+              _buildStatCard(
+                'Erfolg',
+                '${(erfolgsRate * 100).toInt()}%',
+                Colors.green,
+              ),
+              const SizedBox(width: 12),
+              _buildStatCard(
+                'Dauer',
+                '${_recherche!.dauer.inSeconds}s',
+                Colors.orange,
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 24),
+          
+          // Quellen-Liste
+          const Text(
+            'QUELLEN:',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 12),
+          
+          ..._recherche!.quellen.map((quelle) => _buildQuelleCard(quelle)),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildStatCard(String label, String value, Color color) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: color.withValues(alpha: 0.3),
+          ),
+        ),
+        child: Column(
+          children: [
+            Text(
+              value,
+              style: TextStyle(
+                color: color,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white70,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildQuelleCard(RechercheQuelle quelle) {
+    IconData statusIcon;
+    Color statusColor;
+    
+    switch (quelle.status) {
+      case QuellenStatus.success:
+        statusIcon = Icons.check_circle;
+        statusColor = Colors.green;
+        break;
+      case QuellenStatus.loading:
+        statusIcon = Icons.hourglass_empty;
+        statusColor = Colors.orange;
+        break;
+      case QuellenStatus.failed:
+        statusIcon = Icons.error;
+        statusColor = Colors.red;
+        break;
+      default:
+        statusIcon = Icons.pending;
+        statusColor = Colors.grey;
+    }
+    
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      color: Colors.white.withValues(alpha: 0.05),
+      child: ListTile(
+        leading: Icon(statusIcon, color: statusColor),
+        title: Text(
+          quelle.titel,
+          style: const TextStyle(color: Colors.white, fontSize: 14),
+        ),
+        subtitle: Text(
+          quelle.url,
+          style: const TextStyle(color: Colors.white54, fontSize: 12),
+          overflow: TextOverflow.ellipsis,
+        ),
+        trailing: Text(
+          quelle.typ.label,
+          style: const TextStyle(color: Colors.white70, fontSize: 11),
+        ),
+      ),
+    );
+  }
+  
+  /// Analyse Results
+  Widget _buildAnalyseResults() {
+    return Column(
+      children: [
+        // Tabs
+        TabBar(
+          controller: _tabController,
+          isScrollable: true,
+          indicatorColor: const Color(0xFF2196F3),
+          labelColor: Colors.white,
+          unselectedLabelColor: Colors.white54,
+          labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+          tabs: const [
+            Tab(text: 'ÜBERSICHT'),
+            Tab(text: 'MACHTANALYSE'),
+            Tab(text: 'NARRATIVE'),
+            Tab(text: 'TIMELINE'),
+            Tab(text: 'ALTERNATIVE'),
+            Tab(text: 'META'),
+          ],
+        ),
+        
+        // Tab Content
+        Expanded(
+          child: TabBarView(
+            controller: _tabController,
+            children: [
+              _buildUebersichtTab(),
+              _buildMachtanalyseTab(),
+              _buildNarrativeTab(),
+              _buildTimelineTab(),
+              _buildAlternativeTab(),
+              _buildMetaTab(),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+  
+  Widget _buildUebersichtTab() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionHeader('📊 HAUPTERKENNTNISSE'),
+          Text(
+            '• ${_analyse!.alleAkteure.length} Akteure identifiziert\n'
+            '• ${_analyse!.geldFluesse.length} Geldflüsse analysiert\n'
+            '• ${_analyse!.narrative.length} Narrative erkannt\n'
+            '• ${_analyse!.timeline.length} historische Ereignisse',
+            style: const TextStyle(color: Colors.white70),
+          ),
+          
+          if (_analyse!.istKiGeneriert) ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+              ),
+              child: Text(
+                _analyse!.disclaimer ?? 'KI-generierte Analyse',
+                style: const TextStyle(color: Colors.orange, fontSize: 12),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildMachtanalyseTab() {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        _buildSectionHeader('🏛️ HAUPTAKTEURE'),
+        ..._analyse!.alleAkteure.map((akteur) => Card(
+          color: Colors.white.withValues(alpha: 0.05),
+          child: ListTile(
+            title: Text(akteur.name, style: const TextStyle(color: Colors.white)),
+            subtitle: Text(akteur.beschreibung, style: const TextStyle(color: Colors.white70)),
+            trailing: Text(
+              'Macht: ${(akteur.machtindex * 100).toInt()}%',
+              style: const TextStyle(color: Color(0xFF4CAF50)),
+            ),
+          ),
+        )),
+      ],
+    );
+  }
+  
+  Widget _buildNarrativeTab() {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        _buildSectionHeader('📰 NARRATIVE'),
+        ..._analyse!.narrative.map((narrativ) => Card(
+          color: Colors.white.withValues(alpha: 0.05),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  narrativ.titel,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  narrativ.beschreibung,
+                  style: const TextStyle(color: Colors.white70),
+                ),
+              ],
+            ),
+          ),
+        )),
+      ],
+    );
+  }
+  
+  Widget _buildTimelineTab() {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        _buildSectionHeader('📅 TIMELINE'),
+        ..._analyse!.timeline.map((ereignis) => Card(
+          color: Colors.white.withValues(alpha: 0.05),
+          child: ListTile(
+            leading: const Icon(Icons.event, color: Color(0xFF2196F3)),
+            title: Text(ereignis.ereignis, style: const TextStyle(color: Colors.white)),
+            subtitle: Text(ereignis.beschreibung, style: const TextStyle(color: Colors.white70)),
+          ),
+        )),
+      ],
+    );
+  }
+  
+  Widget _buildAlternativeTab() {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        _buildSectionHeader('🔄 ALTERNATIVE SICHTWEISEN'),
+        ..._analyse!.alternativeSichtweisen.map((sichtweise) => Card(
+          color: Colors.white.withValues(alpha: 0.05),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  sichtweise.titel,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  sichtweise.these,
+                  style: const TextStyle(color: Colors.white70),
+                ),
+              ],
+            ),
+          ),
+        )),
+      ],
+    );
+  }
+  
+  Widget _buildMetaTab() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionHeader('🔍 META-KONTEXT'),
+          Text(
+            _analyse!.metaKontext,
+            style: const TextStyle(color: Colors.white70),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Text(
+        title,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+}

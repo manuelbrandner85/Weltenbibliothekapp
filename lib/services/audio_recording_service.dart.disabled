@@ -1,0 +1,191 @@
+import 'dart:async';
+import 'package:flutter/foundation.dart';
+// import 'package:record/record.dart';
+
+/// Audio Recording Service für Sprach-Nachrichten
+/// ✅ WEB-ONLY VOICE RECORDING AKTIVIERT
+/// Verwendet record package für Browser-basierte Aufnahme
+class AudioRecordingService {
+  // Singleton Pattern
+  static final AudioRecordingService _instance = AudioRecordingService._internal();
+  factory AudioRecordingService() => _instance;
+  AudioRecordingService._internal();
+  
+  final AudioRecorder _recorder = AudioRecorder();
+  bool _isRecording = false;
+  String? _currentRecordingPath;
+  DateTime? _recordingStartTime;
+  Timer? _durationTimer;
+  
+  // Stream for recording duration updates
+  final _durationController = StreamController<Duration>.broadcast();
+  Stream<Duration> get durationStream => _durationController.stream;
+  
+  // Getters
+  bool get isRecording => _isRecording;
+  String? get currentRecordingPath => _currentRecordingPath;
+  Duration get recordingDuration => _recordingStartTime != null 
+      ? DateTime.now().difference(_recordingStartTime!) 
+      : Duration.zero;
+  
+  /// Start recording
+  Future<bool> startRecording() async {
+    try {
+      if (kDebugMode) debugPrint('🎙️ [AudioRecording] Starting recording...');
+      
+      // Check permissions
+      if (!await hasPermission()) {
+        final granted = await requestPermission();
+        if (!granted) {
+          if (kDebugMode) debugPrint('❌ [AudioRecording] Microphone permission denied');
+          return false;
+        }
+      }
+      
+      // Configure recording for Web (WebM format)
+      const config = RecordConfig(
+        encoder: AudioEncoder.wav, // WAV works best on Web
+        bitRate: 128000,
+        sampleRate: 44100,
+      );
+      
+      // Start recording (path is optional for Web - stores in memory)
+      await _recorder.start(config, path: '');
+      
+      _isRecording = true;
+      _recordingStartTime = DateTime.now();
+      
+      // Start duration timer
+      _durationTimer?.cancel();
+      _durationTimer = Timer.periodic(const Duration(milliseconds: 100), (_) {
+        if (_recordingStartTime != null) {
+          _durationController.add(recordingDuration);
+        }
+      });
+      
+      if (kDebugMode) debugPrint('✅ [AudioRecording] Recording started');
+      return true;
+      
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ [AudioRecording] Start failed: $e');
+      return false;
+    }
+  }
+  
+  /// Stop recording and return audio file path/blob
+  Future<String?> stopRecording() async {
+    try {
+      if (!_isRecording) return null;
+      
+      if (kDebugMode) debugPrint('🛑 [AudioRecording] Stopping recording...');
+      
+      // Stop recording
+      final path = await _recorder.stop();
+      
+      _isRecording = false;
+      _recordingStartTime = null;
+      _durationTimer?.cancel();
+      _currentRecordingPath = path;
+      
+      if (kDebugMode) debugPrint('✅ [AudioRecording] Recording stopped: $path');
+      
+      return path;
+      
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ [AudioRecording] Stop failed: $e');
+      return null;
+    }
+  }
+  
+  /// Cancel recording
+  Future<void> cancelRecording() async {
+    try {
+      if (!_isRecording) return;
+      
+      if (kDebugMode) debugPrint('❌ [AudioRecording] Cancelling recording...');
+      
+      await _recorder.stop();
+      
+      _isRecording = false;
+      _recordingStartTime = null;
+      _durationTimer?.cancel();
+      _currentRecordingPath = null;
+      
+      if (kDebugMode) debugPrint('✅ [AudioRecording] Recording cancelled');
+      
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ [AudioRecording] Cancel failed: $e');
+    }
+  }
+  
+  /// Pause recording
+  Future<void> pauseRecording() async {
+    try {
+      if (!_isRecording) return;
+      
+      await _recorder.pause();
+      _durationTimer?.cancel();
+      
+      if (kDebugMode) debugPrint('⏸️ [AudioRecording] Recording paused');
+      
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ [AudioRecording] Pause failed: $e');
+    }
+  }
+  
+  /// Resume recording
+  Future<void> resumeRecording() async {
+    try {
+      if (!_isRecording) return;
+      
+      await _recorder.resume();
+      
+      // Restart timer
+      _durationTimer?.cancel();
+      _durationTimer = Timer.periodic(const Duration(milliseconds: 100), (_) {
+        if (_recordingStartTime != null) {
+          _durationController.add(recordingDuration);
+        }
+      });
+      
+      if (kDebugMode) debugPrint('▶️ [AudioRecording] Recording resumed');
+      
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ [AudioRecording] Resume failed: $e');
+    }
+  }
+  
+  /// Check if has microphone permission
+  Future<bool> hasPermission() async {
+    try {
+      return await _recorder.hasPermission();
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ [AudioRecording] Permission check failed: $e');
+      return false;
+    }
+  }
+  
+  /// Request microphone permission
+  Future<bool> requestPermission() async {
+    try {
+      if (kDebugMode) debugPrint('🎤 [AudioRecording] Requesting microphone permission...');
+      return await _recorder.hasPermission();
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ [AudioRecording] Permission request failed: $e');
+      return false;
+    }
+  }
+  
+  /// Dispose
+  Future<void> dispose() async {
+    try {
+      _durationTimer?.cancel();
+      await _recorder.dispose();
+      await _durationController.close();
+      
+      if (kDebugMode) debugPrint('🗑️ [AudioRecording] Service disposed');
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ [AudioRecording] Dispose failed: $e');
+    }
+  }
+}

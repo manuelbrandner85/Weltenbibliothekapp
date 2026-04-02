@@ -1,0 +1,2922 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
+import 'dart:async';
+import 'package:hive_flutter/hive_flutter.dart'; // 🗄️ HIVE für Profile
+import '../../services/cloudflare_api_service.dart';
+import '../../services/websocket_chat_service.dart'; // 🌐 WEBSOCKET REAL-TIME (NEW)
+import '../../services/hybrid_chat_service.dart'; // 🔄 HYBRID WEBSOCKET+HTTP - STUB for now
+import '../../services/chat_notification_service.dart'; // 🔔 NOTIFICATIONS
+import '../../services/user_service.dart'; // 🆕 User Service für Auth
+import '../../widgets/mention_autocomplete.dart'; // @ MENTIONS
+import 'package:image_picker/image_picker.dart'; // 📷 Image Picker
+// 👤 PROFIL
+import '../../services/storage_service.dart'; // StorageService for profile access
+import '../../services/openclaw_dashboard_service.dart'; // 🚀 OpenClaw Dashboard for Live Updates
+import 'package:flutter_riverpod/flutter_riverpod.dart'; // Riverpod
+// 🔥 BACKEND SYNC
+import '../../services/typing_indicator_service.dart'; // ⌨️ TYPING
+// import '../../services/voice_message_service_export.dart'; // 🎙️ VOICE MESSAGE (Disabled for Android)
+// import '../../widgets/voice_record_button.dart'; // 🎙️ VOICE RECORD BUTTON (Disabled for Android)
+import '../../services/webrtc_voice_service.dart'; // 🎤 WEBRTC VOICE
+// REMOVED: import '../../widgets/voice_chat_banner.dart'; (unused)
+import '../../widgets/voice/voice_participant_header_bar.dart'; // 🎤 Voice Participant Header Bar
+import '../../widgets/offline_indicator.dart'; // 📡 OFFLINE INDICATOR (NEW Phase 3)
+// 👤 MATERIE PROFIL MODEL
+import '../shared/profile_editor_screen.dart'; // ✅ Profile Editor
+import '../../services/moderation_service.dart'; // 🔧 ADMIN MODERATION
+import '../../services/admin_permissions.dart'; // 🔐 ADMIN SYSTEM
+import '../../widgets/error_display_widget.dart'; // 🎨 ERROR DISPLAY (NEW)
+// 💬 Enhanced Message Bubble  
+import '../../widgets/message_reactions_widget.dart'; // 😀 Message Reactions
+import '../../widgets/message_edit_widget.dart'; // ✏️ Message Edit
+// 🗑️ Message Delete
+import '../../widgets/message_search_widget.dart'; // 🔍 Message Search
+import '../../widgets/poll_widget.dart'; // 🗳️ Poll Widget
+import '../../widgets/pinned_message_banner.dart'; // 📌 Pinned Message Banner
+
+import '../shared/modern_voice_chat_screen.dart'; // 🎤 Modern Voice Chat Screen (Phase B)
+import '../../providers/webrtc_call_provider.dart'; // Riverpod provider
+// 🎤 Admin Dialogs & Notifications
+// 🚫 Kick User Dialog
+// 🔴 Ban User Dialog
+// ⚠️ Warning Dialog
+// 📢 Admin Notifications
+// 📋 Admin Action Models
+import '../../services/admin_action_service.dart'; // 🔧 Admin Action Service
+// 🎤 Voice Player Widget
+import '../../widgets/android_voice_recorder.dart'; // 🎤 Android Voice Recorder (flutter_sound)
+// import '../../widgets/telegram_voice_recorder.dart'; // 🎙️ Telegram Voice Recorder (Disabled for Android)
+// 🎵 Telegram Voice Player
+import '../../widgets/voice_message_player.dart' show ChatVoicePlayer; // 🎤 Chat Voice Player (New)
+import 'ufo_sightings_screen.dart'; // 🛸 UFO-Sichtungen
+import 'history_timeline_screen.dart'; // 🏛️ Geschichte-Zeitleiste
+import 'geopolitik_map_screen.dart'; // 🎭 Geopolitik-Kartierung
+import 'conspiracy_network_screen.dart'; // 👁️ Verbindungsnetz
+import 'research_archive_screen.dart'; // 🔬 Forschungs-Archiv
+import 'alternative_healing_screen.dart'; // 💚 Alternative Gesundheit
+
+/// MATERIE-WELT LIVE-CHAT - Cloudflare Edition
+class MaterieLiveChatScreen extends StatefulWidget {
+  final String? initialRoom;
+  
+  const MaterieLiveChatScreen({super.key, this.initialRoom});
+
+  @override
+  State<MaterieLiveChatScreen> createState() => _MaterieLiveChatScreenState();
+}
+
+class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
+  final TextEditingController _messageController = TextEditingController();
+  final CloudflareApiService _api = CloudflareApiService();
+  final WebSocketChatService _ws = WebSocketChatService(); // 🌐 NEW: WebSocket Service
+  late final HybridChatService _hybridChat; // 🔄 NEW: HYBRID SERVICE - STUB for now
+  final ScrollController _scrollController = ScrollController();
+  final ChatNotificationService _notificationService = ChatNotificationService(); // 🔔 NEW
+  final TypingIndicatorService _typingService = TypingIndicatorService(); // ⌨️ NEW
+  final OpenClawDashboardService _dashboardService = OpenClawDashboardService(); // 🚀 OpenClaw
+  // UNUSED FIELD: final AudioRecordingService _audioService = AudioRecordingService(); // 🎙️ NEW
+  // UNUSED FIELD: final ReadReceiptsService _readReceiptsService = ReadReceiptsService(); // ✅ NEW
+  // UNUSED FIELD: final OnlineStatusService _onlineStatusService = OnlineStatusService(); // 🟢 NEW
+  StreamSubscription? _messageSubscription; // 🎧 WebSocket Stream
+  StreamSubscription<Map<String, dynamic>>? _wsMessageSubscription; // 🌐 NEW: WebSocket Messages
+  StreamSubscription<String>? _wsTypingSubscription; // 🌐 NEW: Typing Indicators
+  StreamSubscription<List<String>>? _wsOnlineSubscription; // 🌐 NEW: Online Users
+  
+  late String _selectedRoom;
+  String _username = 'User${DateTime.now().millisecondsSinceEpoch % 10000}';
+  late String _userId; // 🔥 Real User ID from UserService (initialized in initState)
+  String _avatar = '👤'; // 🆕 Avatar Emoji (default)
+  String? _avatarEmoji; // 🆕 Avatar Emoji aus Profil
+  String? _avatarUrl; // 🆕 Avatar URL aus Profil
+  
+  List<Map<String, dynamic>> _messages = [];
+  List<Map<String, dynamic>> _polls = []; // 🗳️ POLLS
+  bool _isLoading = false;
+  String? _errorMessage; // 🎨 NEW: Error state
+  bool _profileDialogShown = false; // 🚨 Flag: Verhindert mehrfaches Popup
+  Timer? _refreshTimer;
+  
+  // 🆕 ENHANCED FEATURES
+  List<String> _mentionSuggestions = []; // @ Auto-Complete
+  bool _showMentionPicker = false;
+  
+  // 🎙️ VOICE RECORDING
+  // UNUSED FIELD: bool _isRecordingVoice = false;
+  // UNUSED FIELD: Duration _recordingDuration = Duration.zero;
+  // UNUSED FIELD: Timer? _recordingTimer;
+  final FocusNode _inputFocusNode = FocusNode(); // Input Focus
+  bool _isInputFocused = false; // 🔧 FIX 10: Explicit focus state
+  
+  // 🎤➤ DYNAMIC BUTTON STATE
+  bool _hasText = false; // true = Send Button, false = Voice Button
+  
+  // 🆕 FEATURE 1: WEBRTC VOICE ROOM
+  bool _isInVoiceRoom = false;
+  bool _isMuted = false;
+  List<Map<String, dynamic>> _voiceParticipants = [];
+  
+  // 🆕 ADMIN ACTION SERVICE
+  final AdminActionService _adminService = AdminActionService();
+  
+  // 🆕 FEATURE 2: TYPING INDICATORS
+  final Set<String> _typingUsers = {};
+  Timer? _typingTimer;
+  String? _currentTypingUser; // 🌐 NEW: Current typing user from WebSocket
+  final List<String> _onlineUsers = []; // 🌐 NEW: Online users list
+  
+  // 🆕 FEATURE 3: SWIPE TO REPLY
+  Map<String, dynamic>? _replyingTo;
+  
+  // 🆕 PHASE 2: MESSAGE EDIT/DELETE/SEARCH
+  String? _editingMessageId;
+  bool _showSearch = false;
+  
+  // 🆕 FEATURE 4: EMOJI REACTIONS
+  final Map<String, Map<String, List<String>>> _messageReactions = {}; // messageId -> emoji -> userIds
+
+  // 🔧 FIX 16: MATERIE Räume - API-kompatible IDs (Verschwörungstheorien-Themen)
+  final Map<String, Map<String, dynamic>> _materieRooms = {
+    'politik': {
+      'name': '🎭 Geopolitik & Weltordnung',
+      'description': 'Weltpolitik, geheime Agenden, Neue Weltordnung',
+      'color': Colors.red,
+      'icon': '🎭',
+      'tool': 'Weltpolitik-Kartierung',
+      'toolDescription': 'Gemeinsam politische Ereignisse & Verbindungen visualisieren',
+    },
+    'geschichte': {
+      'name': '🏛️ Alternative Geschichte',
+      'description': 'Verborgene Geschichte, antike Hochkulturen, Tartaria',
+      'color': Colors.amber,
+      'icon': '🏛️',
+      'tool': 'Zeitleiste (Shared)',
+      'toolDescription': 'Gemeinsame alternative Geschichts-Timeline erstellen',
+    },
+    'ufo': {
+      'name': '🛸 UFOs & Außerirdisches',
+      'description': 'Sichtungen, Kontakte, geheime Programme',
+      'color': Colors.green,
+      'icon': '🛸',
+      'tool': 'Sichtungskarte (Global)',
+      'toolDescription': 'UFO-Sichtungen weltweit gemeinsam dokumentieren',
+    },
+    'verschwoerungen': {
+      'name': '👁️ Verschwörungen & Wahrheit',
+      'description': 'Deep State, Geheimgesellschaften, Symbolik',
+      'color': Colors.purple,
+      'icon': '👁️',
+      'tool': 'Verbindungsnetz',
+      'toolDescription': 'Zusammenhänge zwischen Ereignissen & Personen visualisieren',
+    },
+    'wissenschaft': {
+      'name': '🔬 Unterdrückte Technologie',
+      'description': 'Freie Energie, Tesla, verbotene Erfindungen',
+      'color': Colors.blue,
+      'icon': '🔬',
+      'tool': 'Forschungs-Archiv (Shared)',
+      'toolDescription': 'Gemeinsame Sammlung unterdrückter Technologien',
+    },
+  };
+
+  @override
+  @override
+  @override
+  void initState() {
+    super.initState();
+    
+    // 🔥 Initialize User ID from UserService
+    _userId = UserService.getCurrentUserId();
+    
+    // 🔧 FIX 18: Set initial room from dashboard navigation
+    _selectedRoom = widget.initialRoom ?? 'politik';
+    
+    // 🔄 Initialize Hybrid Chat Service
+    _hybridChat = HybridChatService(); // STUB for now
+    
+    // 🎤 Initialize WebRTC Voice Service
+    _initializeWebRTC();
+    
+    // 👤 Username aus Profil laden
+    _loadUsernameFromProfile();
+    
+    // 🔔 Set username in notification service
+    _notificationService.setCurrentUsername(_username);
+    
+    // 📝 Listen to input changes for @ mentions
+    _messageController.addListener(_onInputChanged);
+    
+    // 🔧 FIX 10: Listen for input focus changes with explicit state
+    _inputFocusNode.addListener(() {
+      if (mounted) {
+        setState(() {
+        _isInputFocused = _inputFocusNode.hasFocus;
+        debugPrint('🎯 [MATERIE INPUT] focused: $_isInputFocused');
+      });
+      }
+    });
+    
+    // 🔄 AUTO-REFRESH: Profil-Updates alle 5 Sekunden laden (wie ENERGIE)
+    _refreshTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      _loadMessages(silent: true); // ✅ Silent refresh - kein Flickering
+      _loadPolls(silent: true); // ✅ Silent refresh - kein Flickering
+      _loadUsernameFromProfile(); // Profil-Sync für Avatar-Updates
+    });
+    
+    // 🎧 Listen to message stream (WebSocket or HTTP polling)
+    _messageSubscription = _hybridChat.messageStream.listen((message) {
+      if (!mounted) return;
+      
+      // ✅ NUR neue Nachrichten verarbeiten, NICHT history
+      // History wird durch _loadMessages() geladen (Timer alle 5s)
+      if (message['type'] == 'new_message' && message['message'] != null) {
+        final newMessage = message['message'] as Map<String, dynamic>;
+        
+        // Nur wenn Nachricht zum aktuellen Raum gehört
+        if (newMessage['room_id'] == _selectedRoom) {
+          if (mounted) {
+            setState(() {
+            // Füge neue Nachricht ans Ende hinzu (wenn nicht schon vorhanden)
+            final exists = _messages.any((msg) => msg['id'] == newMessage['id']);
+            if (!exists) {
+              _messages.add(newMessage);
+            }
+          });
+          }
+          
+          // Auto-scroll zu neuer Nachricht
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _scrollToBottom();
+          });
+        }
+      }
+    });
+    
+    // 🚀 Connect with credentials
+    _connectToChat();
+    _loadMessages();
+  }
+  
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // 🔄 Reload Avatar & Profil wenn zurück zum Chat navigiert wird
+    _loadUsernameFromProfile();
+  }
+  
+  // 🔄 Connect to chat with hybrid service
+  Future<void> _connectToChat() async {
+    await _hybridChat.connect(
+      roomId: _selectedRoom,
+      username: _username,
+      realm: 'materie',
+    );
+  }
+  Future<void> _loadUsernameFromProfile() async {
+    try {
+      final storage = StorageService();
+      
+      // 🆕 WICHTIG: Init aufrufen falls noch nicht geschehen
+      if (!Hive.isBoxOpen('materie_profile')) {
+        await storage.init();
+        if (kDebugMode) {
+          debugPrint('✅ UnifiedStorageService initialisiert');
+        }
+      }
+      
+      final profile = storage.getMaterieProfile();
+      
+      if (profile != null && profile.username.isNotEmpty) {
+        if (mounted) {
+          setState(() {
+          _username = profile.username;
+          _userId = 'user_${profile.username.toLowerCase()}';
+          _avatar = profile.avatarEmoji ?? '👤'; // ✅ Avatar aus Profil laden!
+          _avatarEmoji = profile.avatarEmoji; // 🆕 Load avatar emoji
+          _avatarUrl = profile.avatarUrl; // 🆕 Load avatar URL
+        });
+        }
+        _notificationService.setCurrentUsername(_username);
+        if (kDebugMode) {
+          debugPrint('✅ Username aus Materie-Profil geladen: $_username');
+        }
+      } else {
+        // 🆕 KEIN PROFIL: Zeige Username-Dialog (nur einmal)
+        if (kDebugMode) {
+          debugPrint('⚠️ Kein Materie-Profil gefunden, zeige Username-Dialog');
+        }
+        // Warte kurz, dann zeige Dialog
+        if (!_profileDialogShown) {
+          _profileDialogShown = true; // ✅ Setze Flag sofort
+          Future.delayed(const Duration(milliseconds: 500), () {
+            if (mounted) {
+              _showUsernameDialog();
+            }
+          });
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Fehler beim Laden des Profils: $e');
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _messageController.removeListener(_onInputChanged);
+    _messageController.dispose();
+    _scrollController.dispose();
+    _inputFocusNode.dispose();
+    _refreshTimer?.cancel();
+    _messageSubscription?.cancel(); // 🎧 Cancel WebSocket stream
+    _hybridChat.disconnect(); // 🔌 Disconnect WebSocket
+    _typingService.dispose(); // ⌨️ Dispose typing service
+    super.dispose();
+  }
+  
+  // 🛠️ TOOL NAVIGATION
+  void _navigateToTool() {
+    Widget? screen;
+    
+    switch (_selectedRoom) {
+      case 'politik':
+        screen = GeopolitikMapScreen(roomId: _selectedRoom);
+        break;
+      case 'geschichte':
+        screen = HistoryTimelineScreen(roomId: _selectedRoom);
+        break;
+      case 'ufos':
+        screen = UfoSightingsScreen(roomId: _selectedRoom);
+        break;
+      case 'verschwoerungen':
+        screen = ConspiracyNetworkScreen(roomId: _selectedRoom);
+        break;
+      case 'technologie':
+        screen = ResearchArchiveScreen(roomId: _selectedRoom);
+        break;
+      case 'gesundheit':
+        screen = AlternativeHealingScreen(roomId: _selectedRoom);
+        break;
+    }
+    
+    if (screen != null && mounted) {
+      Navigator.of(context).push(MaterialPageRoute(builder: (ctx) => screen!));
+    }
+  }
+
+  Future<void> _loadMessages({bool silent = false}) async {
+    if (!silent) {
+      setState(() {
+      _isLoading = true;
+      _errorMessage = null; // Clear previous error
+    });
+    }
+    
+    try {
+      // 🔧 Lade echte Chat-Nachrichten von Cloudflare API
+      final messages = await _api.getChatMessages(
+        _selectedRoom,
+        realm: 'materie',
+        limit: 50,
+      ).timeout(const Duration(seconds: 15));
+      
+      // 🔧 DEBUG: Log message count
+      if (kDebugMode) {
+        debugPrint('✅ MATERIE Chat geladen: ${messages.length} Nachrichten von Cloudflare');
+        if (messages.isNotEmpty) {
+          debugPrint('🔍 Erste Nachricht keys: ${messages.first.keys.toList()}');
+          debugPrint('🔍 Erste Nachricht id: ${messages.first['id']}');
+          debugPrint('🔍 Erste Nachricht message: ${messages.first['message']}');
+        } else {
+          debugPrint('⚠️ Keine Nachrichten geladen für Raum: $_selectedRoom');
+        }
+      }
+      
+      if (mounted) {
+        setState(() {
+        // Reverse messages if they come in descending order (newest first)
+        // We want chronological order: oldest first, newest last
+        _messages = messages.reversed.toList();
+        _isLoading = false;
+        _errorMessage = null;
+      });
+      }
+      
+      // Auto-scroll zum Ende
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollToBottom();
+      });
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ MATERIE Chat Load Error: $e');
+        debugPrint('❌ Error type: ${e.runtimeType}');
+      }
+      
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = e.toString(); // Store error for ErrorDisplayWidget
+        });
+      }
+    }
+  }
+  
+  // 🗳️ LOAD POLLS
+  Future<void> _loadPolls({bool silent = false}) async {
+    try {
+      final polls = await _api.getPolls(_selectedRoom);
+      if (mounted) {
+        _polls = polls; // ← Update direkt
+        
+        // ✅ setState NUR wenn NICHT silent
+        if (!silent) {
+          if (mounted) setState(() {});
+        }
+      }
+    } catch (e) {
+      if (!silent && kDebugMode) debugPrint('❌ Load polls error: $e');
+    }
+  }
+
+  Future<void> _sendMessage() async {
+    final text = _messageController.text.trim();
+    if (text.isEmpty) return;
+    
+    // 🚨 USERNAME-CHECK: Verhindere Senden ohne Profil
+    if (_username.isEmpty) {
+      if (mounted && !_profileDialogShown) {
+        _profileDialogShown = true; // ✅ Setze Flag sofort
+        _showUsernameDialog();
+      }
+      return;
+    }
+
+    try {
+      // Sende Nachricht
+      await _api.sendChatMessage(
+        roomId: _selectedRoom,
+        realm: 'materie',
+        userId: _userId,
+        username: _username,
+        message: text,
+        avatarEmoji: _avatarEmoji, // 🆕 Send avatar emoji
+        avatarUrl: _avatarUrl, // 🆕 Send avatar URL
+      );
+      
+      _messageController.clear();
+      
+      // ✅ WICHTIG: Warte kurz, dann lade Nachrichten neu
+      await Future.delayed(const Duration(milliseconds: 500));
+      await _loadMessages();
+      
+      if (kDebugMode) {
+        debugPrint('✅ Nachricht gesendet und Chat aktualisiert');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Fehler beim Senden: $e');
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Fehler beim Senden: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+  
+  /// 🎤 VOICE MESSAGE SEND
+  Future<void> _sendVoiceMessage(String audioUrl, Duration duration) async {
+    try {
+      // Send voice message with media_type
+      await _api.sendChatMessage(
+        roomId: _selectedRoom,
+        realm: 'materie',
+        userId: _userId,
+        username: _username,
+        message: '🎤 Sprachnachricht (${duration.inSeconds}s)',
+        avatarEmoji: _avatarEmoji,
+        avatarUrl: _avatarUrl,
+        mediaType: 'voice',
+        mediaUrl: audioUrl,
+      );
+      
+      // Reload messages after short delay
+      await Future.delayed(const Duration(milliseconds: 500));
+      await _loadMessages();
+      
+      if (kDebugMode) {
+        debugPrint('✅ Sprachnachricht gesendet: $audioUrl, Duration: ${duration.inSeconds}s');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Fehler beim Senden der Sprachnachricht: $e');
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Fehler beim Senden: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+  
+  /// 🎤 OPEN ANDROID VOICE RECORDER
+  Future<void> _openVoiceRecorder() async {
+    if (kDebugMode) {
+      debugPrint('🎤 Opening Android Voice Recorder...');
+    }
+    
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => AndroidVoiceRecorder(
+        onRecordingComplete: (String audioPath, Duration duration) async {
+          // Upload to Cloudflare R2 and get URL
+          try {
+            if (kDebugMode) {
+              debugPrint('🎤 Uploading voice message: $audioPath');
+            }
+
+            // Show uploading indicator
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Row(
+                    children: [
+                      SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      ),
+                      SizedBox(width: 12),
+                      Text('🎤 Sprachnachricht wird hochgeladen...'),
+                    ],
+                  ),
+                  backgroundColor: Color(0xFF2196F3),
+                  duration: Duration(seconds: 30),
+                ),
+              );
+            }
+
+            // Upload to Cloudflare
+            final audioUrl = await _api.uploadVoiceMessage(
+              filePath: audioPath,
+              userId: _userId,
+              roomId: _selectedRoom,
+              realm: 'materie',
+            );
+
+            if (kDebugMode) {
+              debugPrint('✅ Voice uploaded: $audioUrl');
+            }
+
+            // Close upload indicator
+            if (mounted) {
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            }
+            
+            // Send voice message
+            await _sendVoiceMessage(audioUrl, duration);
+            
+            if (mounted) {
+              Navigator.pop(context);
+            }
+          } catch (e) {
+            if (kDebugMode) {
+              debugPrint('❌ Voice upload error: $e');
+            }
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('❌ Upload fehlgeschlagen: $e'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          }
+        },
+        onCancel: () {
+          if (mounted) {
+            Navigator.pop(context);
+          }
+        },
+      ),
+    );
+  }
+  
+  /// 📷 IMAGE UPLOAD
+  Future<void> _pickAndUploadImage() async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1920,
+        maxHeight: 1080,
+        imageQuality: 85,
+      );
+      
+      if (image == null) return;
+      
+      // Read file bytes for preview
+      final bytes = await image.readAsBytes();
+      
+      // 🖼️ SHOW IMAGE PREVIEW DIALOG
+      if (mounted) {
+        final shouldUpload = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            backgroundColor: const Color(0xFF121212),
+            title: const Text(
+              'Bild senden?',
+              style: TextStyle(color: Colors.white),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.memory(
+                    bytes,
+                    fit: BoxFit.contain,
+                    height: 300,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Größe: ${(bytes.length / 1024).toStringAsFixed(1)} KB',
+                  style: TextStyle(color: Colors.grey[400], fontSize: 12),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: Text(
+                  'Abbrechen',
+                  style: TextStyle(color: Colors.grey[400]),
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                ),
+                child: const Text('Senden'),
+              ),
+            ],
+          ),
+        );
+        
+        if (shouldUpload != true) return;
+      }
+      
+      // Show uploading indicator
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                ),
+                SizedBox(width: 12),
+                Text('📤 Bild wird hochgeladen...'),
+              ],
+            ),
+            duration: Duration(seconds: 30),
+          ),
+        );
+      }
+      
+      // Upload to Cloudflare R2
+      final result = await _api.uploadFile(
+        fileBytes: bytes,
+        fileName: image.name,
+        contentType: 'image/jpeg',
+        type: 'image',
+        userId: _userId,
+      );
+      
+      if (result['success'] == true && result['url'] != null) {
+        // Send message with image URL
+        await _api.sendChatMessage(
+          roomId: _selectedRoom,
+          realm: 'materie',
+          userId: _userId,
+          username: _username,
+          message: '📷 Bild', // Text for image message
+          avatarEmoji: _avatar,
+          mediaType: 'image',
+          mediaUrl: result['url'],
+        );
+        
+        // Reload messages
+        await _loadMessages(silent: true);
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('✅ Bild hochgeladen!'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ Image upload error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Upload fehlgeschlagen: ${e.toString().substring(0, 50)}...'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+  }
+
+  // 🆕 @ MENTION AUTO-COMPLETE
+  void _onInputChanged() {
+    final text = _messageController.text;
+    final cursorPos = _messageController.selection.baseOffset;
+    
+    // 🎤➤ UPDATE BUTTON STATE: Voice/Send
+    if (mounted) {
+      setState(() {
+      _hasText = text.trim().isNotEmpty;
+    });
+    }
+    
+    // 🆕 SEND TYPING INDICATOR
+    if (text.trim().isNotEmpty) {
+      _sendTypingIndicator();
+    }
+    
+    // Check if user is typing @mention
+    if (cursorPos > 0 && text.length >= cursorPos) {
+      final beforeCursor = text.substring(0, cursorPos);
+      final words = beforeCursor.split(' ');
+      final lastWord = words.isNotEmpty ? words.last : '';
+      
+      if (lastWord.startsWith('@') && lastWord.length > 1) {
+        // Show mention suggestions
+        final query = lastWord.substring(1).toLowerCase();
+        final allUsers = _messages
+            .map((m) => m['username'] as String?)
+            .where((u) => u != null && u != _username)
+            .toSet()
+            .toList();
+        
+        if (mounted) {
+          setState(() {
+          _mentionSuggestions = allUsers
+              .where((u) => u!.toLowerCase().contains(query))
+              .take(5)
+              .cast<String>()
+              .toList();
+          _showMentionPicker = _mentionSuggestions.isNotEmpty;
+        });
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+          _showMentionPicker = false;
+          _mentionSuggestions = [];
+        });
+        }
+      }
+    }
+  }
+  
+  // 🆕 SELECT MENTION
+  void _selectMention(String username) {
+    final text = _messageController.text;
+    final cursorPos = _messageController.selection.baseOffset;
+    final beforeCursor = text.substring(0, cursorPos);
+    final afterCursor = text.substring(cursorPos);
+    
+    final words = beforeCursor.split(' ');
+    if (words.isNotEmpty) {
+      words[words.length - 1] = '@$username ';
+      final newText = words.join(' ') + afterCursor;
+      _messageController.text = newText;
+      _messageController.selection = TextSelection.fromPosition(
+        TextPosition(offset: words.join(' ').length),
+      );
+    }
+    
+    if (mounted) {
+      setState(() {
+      _showMentionPicker = false;
+      _mentionSuggestions = [];
+    });
+    }
+  }
+  
+  // 🆕 ADD REACTION (Ready for Cloudflare API)
+  // TODO: Review unused method: _addReaction
+  // Future<void> _addReaction(String messageId, String emoji) async {
+    // debugPrint('🎨 Add reaction: $emoji to message $messageId');
+     //     // ✅ Bereit für Cloudflare API-Erweiterung
+    // Endpoint: POST /chat/messages/:messageId/reactions
+    // Body: { "emoji": "👍", "username": "currentUser" }
+     //     // if (mounted) {
+      // ScaffoldMessenger.of(context).showSnackBar(
+        // SnackBar(
+          // content: Row(
+            // children: [
+              // Text('$emoji '),
+              // const Text('Reaktion gespeichert!'),
+            // ],
+          // ),
+          // duration: const Duration(seconds: 1),
+          // backgroundColor: Colors.green,
+        // ),
+      // );
+    // }
+     //     // TODO Backend: Cloudflare Worker erweitern
+    // await _api.addReaction(messageId, emoji, _username);
+  // }
+  
+  // 🆕 REMOVE REACTION (Ready for Cloudflare API)
+  // TODO: Review unused method: _removeReaction
+  // Future<void> _removeReaction(String messageId, String emoji) async {
+    // debugPrint('❌ Remove reaction: $emoji from message $messageId');
+     //     // ✅ Bereit für Cloudflare API-Erweiterung
+    // Endpoint: DELETE /chat/messages/:messageId/reactions/:emoji
+    // Query: ?username=currentUser
+     //     // if (mounted) {
+      // ScaffoldMessenger.of(context).showSnackBar(
+        // SnackBar(
+          // content: Text('$emoji Reaktion entfernt'),
+          // duration: const Duration(seconds: 1),
+        // ),
+      // );
+    // }
+     //     // TODO Backend: Cloudflare Worker erweitern
+    // await _api.removeReaction(messageId, emoji, _username);
+  // }
+
+  void _scrollToBottom() {
+    if (_scrollController.hasClients) {
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (_scrollController.hasClients) {
+          _scrollController.animateTo(
+            _scrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      resizeToAvoidBottomInset: true, // 📱 Mobile: Keyboard doesn't cover input
+      backgroundColor: const Color(0xFF0A0A0A),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF121212),
+        title: const Text('💬 MATERIE LIVE-CHAT'),
+        actions: [
+          // 🎤 VOICE CHAT JOIN BUTTON (Telegram-Style: Only when NOT in voice chat)
+          if (!_isInVoiceRoom)
+            IconButton(
+              icon: const Icon(Icons.group, color: Colors.white),
+              onPressed: _joinVoiceChatAndOpen,
+              tooltip: 'Voice Chat beitreten',
+            ),
+          // 🔍 SEARCH BUTTON
+          IconButton(
+            icon: Icon(
+              _showSearch ? Icons.close : Icons.search,
+              color: _showSearch ? Colors.red : Colors.white,
+            ),
+            onPressed: _toggleSearch,
+            tooltip: 'Suchen',
+          ),
+        ],
+      ),
+      body: SafeArea(
+        child: Stack(
+          children: [
+            // Main content
+            Builder(
+              builder: (context) {
+            // 🔧 FIX 10: Hide headers using explicit focus state
+            final keyboardVisible = MediaQuery.of(context).viewInsets.bottom > 0;
+            final hideHeaders = keyboardVisible || _isInputFocused; // Use explicit boolean!
+            
+            debugPrint('🎯 [MATERIE BUILD] keyboard: $keyboardVisible, focused: $_isInputFocused, hide: $hideHeaders');
+            
+            // 🔧 FIX 11: GestureDetector um tap-outside zu detecten
+            return GestureDetector(
+              onTap: () {
+                // Tap outside input → Headers wieder anzeigen
+                if (_isInputFocused) {
+                  debugPrint('👆 [TAP OUTSIDE] Unfocus input → Headers wieder anzeigen');
+                  FocusScope.of(context).unfocus(); // Unfocus TextField
+                  if (mounted) {
+                    setState(() {
+                    _isInputFocused = false;
+                  });
+                  }
+                }
+              },
+              child: Column(
+                children: [
+                  // 🔍 SEARCH MODE
+                  if (_showSearch)
+                    Expanded(
+                      child: MessageSearchWidget(
+                        messages: _messages,
+                        onSelectMessage: _jumpToMessage,
+                        onClose: _toggleSearch,
+                      ),
+                    )
+                  else ...[
+                  // 🔧 HIDE WHEN INPUT FOCUSED OR KEYBOARD OPEN
+                  if (!hideHeaders) ...[
+                    // 📌 PINNED MESSAGE BANNER (Fixed height)
+                    SizedBox(
+                      height: 44, // 🔧 Reduziert für mehr Chat-Platz
+                      child: PinnedMessageBanner(
+                        room: _selectedRoom,
+                        onRefresh: () {
+                          _loadMessages();
+                        },
+                        onTap: () {
+                          // TODO: Scroll to message
+                        },
+                        worldColor: Colors.red, // MATERIE Red
+                      ),
+                    ),
+                    // ✅ REMOVED: VoiceChatBanner (redundant - use VoiceParticipantHeaderBar instead)
+                  // 🎤 TELEGRAM VOICE HEADER BAR (ONLY WHEN ACTIVE - like real Telegram)
+                  if (_isInVoiceRoom)
+                    VoiceParticipantHeaderBar(
+                      participants: _voiceParticipants,
+                      accentColor: Colors.red,
+                      onTap: _openTelegramVoiceScreen,
+                    ),
+                  // ⌨️ TYPING INDICATORS
+                  if (_typingUsers.isNotEmpty) _buildTypingIndicators(),
+                  _buildRoomSelector(),
+                ], // End keyboard-hidden headers
+          Expanded(child: _buildMessageList()),
+          // 🗳️ ACTIVE POLLS
+          if (_polls.isNotEmpty)
+            Container(
+              height: 180,
+              color: const Color(0xFF1A1A2E).withValues(alpha: 0.5),
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.all(12),
+                itemCount: _polls.length,
+                itemBuilder: (context, index) {
+                  final poll = _polls[index];
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 12),
+                    child: SizedBox(
+                      width: MediaQuery.of(context).size.width * 0.8, // 📱 Mobile: 80% screen width
+                      child: PollWidget(
+                        poll: poll,
+                        currentUserId: _userId,
+                        currentUsername: _username,
+                        worldColor: Colors.red, // MATERIE Red
+                        onVote: (pollId, optionIndex) async {
+                          await _api.voteOnPoll(
+                            pollId: pollId,
+                            userId: _userId,
+                            username: _username,
+                            optionIndex: optionIndex,
+                          );
+                          _loadPolls();
+                        },
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ], // END else (search mode)
+          if (!_showSearch) // Hide input when searching
+          _buildMessageInput(),
+        ], // End Column children
+      ), // End Column
+      ); // End GestureDetector
+    }, // End Builder builder
+            ), // End Builder
+            
+            // 📡 OFFLINE INDICATOR (NEW Phase 3)
+            const Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: OfflineIndicator(),
+            ),
+          ],
+        ), // End Stack
+      ), // End SafeArea
+    );
+  }
+
+  // 🛠️ TOOL-WIDGET FÜR DEN AKTUELLEN RAUM
+  // TODO: Review unused method: _getToolForRoom
+  // Widget? _getToolForRoom() {
+    // switch (_selectedRoom) {
+      // case 'politik':
+        // return DebattenKarte(roomId: 'politik');
+      // case 'geschichte':
+        // return ZeitleisteTool(roomId: 'geschichte');
+      // case 'ufos':
+        // return SichtungsKarteTool(roomId: 'ufos');
+      // case 'verschwoerungen':
+        // return RechercheTool(roomId: 'verschwoerungen');
+      // case 'wissenschaft':
+        // return ExperimentTool(roomId: 'wissenschaft');
+      // default:
+        // return null;
+    // }
+  // }
+
+  // 🏷️ TOOL-NAME
+  // TODO: Review unused method: _getToolName
+  // String _getToolName() {
+    // switch (_selectedRoom) {
+      // case 'politik':
+        // return '🎯 DEBATTENKARTE';
+      // case 'geschichte':
+        // return '📅 ZEITLEISTE';
+      // case 'ufos':
+        // return '🗺️ SICHTUNGS-KARTE';
+      // case 'verschwoerungen':
+        // return '🔍 RECHERCHE-BOARD';
+      // case 'wissenschaft':
+        // return '🧪 EXPERIMENT-LOG';
+      // default:
+        // return 'WERKZEUG';
+    // }
+  // }
+
+  // 🎨 TOOL-ICON
+  // TODO: Review unused method: _getToolIcon
+  // IconData _getToolIcon() {
+    // switch (_selectedRoom) {
+      // case 'politik':
+        // return Icons.forum;
+      // case 'geschichte':
+        // return Icons.timeline;
+      // case 'ufos':
+        // return Icons.map;
+      // case 'verschwoerungen':
+        // return Icons.account_tree;
+      // case 'wissenschaft':
+        // return Icons.science;
+      // default:
+        // return Icons.build;
+    // }
+  // }
+
+  // 🌈 TOOL-COLOR
+  // TODO: Review unused method: _getToolColor
+  // Color _getToolColor() {
+    // switch (_selectedRoom) {
+      // case 'politik':
+        // return Colors.blue;
+      // case 'geschichte':
+        // return Colors.amber;
+      // case 'ufos':
+        // return Colors.green;
+      // case 'verschwoerungen':
+        // return Colors.purple;
+      // case 'wissenschaft':
+        // return Colors.cyan;
+      // default:
+        // return Colors.grey;
+    // }
+  // }
+
+  /// 🆕 MODERN TABBED ROOM SELECTOR (Telegram-Style)
+  Widget _buildRoomSelector() {
+    return Container(
+      height: 32, // 🔧 FIX: 42 → 32px (Room Selector kompakt!)
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1A1A),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.2),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        children: _materieRooms.entries.map((entry) {
+          final isSelected = _selectedRoom == entry.key;
+          final roomData = entry.value;
+          
+          return GestureDetector(
+            onTap: () async {
+              if (entry.key != _selectedRoom) {
+                if (mounted) {
+                  setState(() {
+                  _selectedRoom = entry.key;
+                  _messages.clear();
+                  _isLoading = true;
+                });
+                }
+                
+                // 🔧 CRITICAL FIX: Switch WebRTC Voice Room + HybridChat
+                await _voiceService.switchRoom(_selectedRoom); // ← WebRTC cleanup
+                await _hybridChat.switchRoom(_selectedRoom);
+                await _loadMessages();
+              }
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6), // 🔧 FIX 6: Mehr spacing
+              decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(
+                    color: isSelected 
+                        ? (roomData['color'] as Color) 
+                        : Colors.transparent,
+                    width: 3,
+                  ),
+                ),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // 🔧 FIX 14: Icon nur einmal anzeigen
+                  Text(
+                    roomData['icon'] ?? '💬',
+                    style: TextStyle(
+                      fontSize: isSelected ? 22 : 20, // Größer für bessere Sichtbarkeit
+                    ),
+                  ),
+                  const SizedBox(height: 4), // Mehr Abstand
+                  // 🔧 FIX 14: Label OHNE Icon, größer & lesbarer
+                  Text(
+                    (roomData['name'] as String)
+                        .replaceAll('🌍 ', '')
+                        .replaceAll('🧪 ', '')
+                        .replaceAll('🔬 ', '')
+                        .replaceAll('⚛️ ', '')
+                        .replaceAll('🏗️ ', '')
+                        .split('&')[0] // Vor & schneiden
+                        .trim(),
+                    style: TextStyle(
+                      color: isSelected ? Colors.white : Colors.grey[400],
+                      fontSize: 11, // Größer für Lesbarkeit
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
+                ],
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildMessageList() {
+    // 🎨 ERROR STATE (NEW)
+    if (_errorMessage != null && _messages.isEmpty) {
+      return ErrorDisplayWidget(
+        error: _errorMessage!,
+        onRetry: _loadMessages,
+      );
+    }
+    
+    // 🎨 LOADING STATE (NEW)
+    if (_isLoading && _messages.isEmpty) {
+      return const LoadingStateWidget(
+        message: 'Lade Nachrichten...',
+      );
+    }
+
+    // 🎨 EMPTY STATE (NEW)
+    if (_messages.isEmpty) {
+      return const EmptyStateWidget(
+        title: 'Noch keine Nachrichten',
+        message: 'Sei der Erste, der etwas schreibt!',
+        icon: Icons.chat_bubble_outline,
+      );
+    }
+
+    return ListView.builder(
+      controller: _scrollController,
+      padding: const EdgeInsets.all(16),
+      reverse: false, // Normal order: Alte Nachrichten oben, neue unten
+      itemCount: _messages.length,
+      cacheExtent: 500, // 🚀 PERFORMANCE: Pre-render 500px ahead
+      addAutomaticKeepAlives: false, // 🚀 PHASE B: Don't keep off-screen (Memory optimization)
+      addRepaintBoundaries: true, // 🚀 PHASE B: Isolate repaints per item
+      itemBuilder: (context, index) {
+        // Direct index: messages are already in chronological order
+        final message = _messages[index];
+        
+        // 🆕 USE SWIPEABLE MESSAGE WITH REACTIONS
+        // 🚀 PHASE B: RepaintBoundary + ValueKey for performance
+        return RepaintBoundary(
+          key: ValueKey(message['message_id']),
+          child: _buildSwipeableMessage(message),
+        );
+      },
+    );
+  }
+
+  Widget _buildMessageInput() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1A1A),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.2),
+            blurRadius: 4,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // 🆕 REPLY PREVIEW
+          _buildReplyPreview(),
+          // 🆕 MENTION AUTO-COMPLETE
+          if (_showMentionPicker)
+            MentionAutoComplete(
+              suggestions: _mentionSuggestions,
+              onSelectUser: _selectMention,
+              accentColor: const Color(0xFF2196F3),
+            ),
+          
+          // MESSAGE INPUT ROW
+          Row(
+            children: [
+              // 📷 IMAGE UPLOAD BUTTON
+              IconButton(
+                icon: const Icon(Icons.image, color: Colors.red),
+                onPressed: _pickAndUploadImage,
+                tooltip: 'Bild hochladen',
+              ),
+              
+              // ➤ SEND BUTTON
+              IconButton(
+                icon: Icon(
+                  _hasText ? Icons.send : Icons.mic_none,
+                  color: _hasText ? Colors.red : Colors.grey,
+                ),
+                onPressed: _hasText ? _sendMessage : _openVoiceRecorder,
+                tooltip: _hasText ? 'Nachricht senden' : 'Sprachnachricht aufnehmen',
+                ),
+              
+              // 👤 AVATAR BUTTON (Klickbar zum Ändern - wie ENERGIE)
+              GestureDetector(
+                onTap: () {}, // TODO: Avatar-Picker implementieren
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Colors.red, Color(0xFFE53935)],
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.3),
+                      width: 2,
+                    ),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(18),
+                    child: _avatarUrl != null && _avatarUrl!.isNotEmpty
+                        ? Image.network(
+                            _avatarUrl!,
+                            width: 36,
+                            height: 36,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Center(
+                                child: Text(
+                                  _avatar.isEmpty ? '👤' : _avatar,
+                                  style: const TextStyle(fontSize: 20),
+                                ),
+                              );
+                            },
+                          )
+                        : Center(
+                            child: Text(
+                              _avatar.isEmpty ? '👤' : _avatar,
+                              style: const TextStyle(fontSize: 20),
+                            ),
+                          ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TextField(
+                  controller: _messageController,
+                  focusNode: _inputFocusNode,
+                  // 🔧 FIX 11: DIREKTER onTap Handler um Headers SOFORT zu verstecken!
+                  onTap: () {
+                    debugPrint('🎯 [DIREKTER TAP] Input angeklickt!');
+                    if (!_isInputFocused) {
+                      if (mounted) {
+                        setState(() {
+                        _isInputFocused = true;
+                        debugPrint('🔥 [DIREKTER TAP] _isInputFocused = true');
+                      });
+                      }
+                    }
+                  },
+                  style: const TextStyle(color: Colors.white),
+                  maxLines: null,
+                  textInputAction: TextInputAction.send,
+                  onSubmitted: (_) => _sendMessage(), // ⌨️ Enter key sends message
+                  decoration: InputDecoration(
+                    hintText: 'Nachricht schreiben... (@mention)',
+                    hintStyle: TextStyle(color: Colors.grey[600]),
+                    filled: true,
+                    fillColor: const Color(0xFF2A2A2A),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(24),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 12,
+                    ),
+                    prefixIcon: Icon(
+                      Icons.alternate_email,
+                      color: Colors.grey[600],
+                      size: 20,
+                    ),
+                  ),
+                ),
+              ),
+              // 📌 OLD SEND BUTTON REMOVED (replaced by dynamic Voice/Send)
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // EDIT/DELETE FUNCTIONS
+  // ═══════════════════════════════════════════════════════════
+
+  // OLD VERSION - REPLACED BY PHASE 2
+  /*
+  void _showMessageOptions(BuildContext context, Map<String, dynamic> message) {
+    // 🔧 ROBUSTER USERID-CHECK: Support mehrere Formate
+    final messageUserId = message['userId'] ?? message['user_id'] ?? '';
+    final isOwnMessage = messageUserId == _userId || 
+                         messageUserId.toLowerCase() == _userId.toLowerCase() ||
+                         messageUserId == 'user_${_username.toLowerCase()}' ||
+                         message['username'] == _username; // Fallback: username-check
+    
+    if (kDebugMode) {
+      debugPrint('🔍 Message Options Check:');
+      debugPrint('   messageUserId: $messageUserId');
+      debugPrint('   current _userId: $_userId');
+      debugPrint('   current _username: $_username');
+      debugPrint('   isOwnMessage: $isOwnMessage');
+    }
+    
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF1A1A1A),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header
+            Container(
+              padding: const EdgeInsets.all(16),
+              child: const Text(
+                'Nachricht-Optionen',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            const Divider(color: Colors.grey),
+            // Edit (nur eigene Nachrichten)
+            if (isOwnMessage)
+              ListTile(
+                leading: const Icon(Icons.edit, color: Colors.blue),
+                title: const Text('Bearbeiten', style: TextStyle(color: Colors.white)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _editMessage(message);
+                },
+              ),
+            // Delete (nur eigene Nachrichten)
+            if (isOwnMessage)
+              ListTile(
+                leading: const Icon(Icons.delete, color: Colors.red),
+                title: const Text('Löschen', style: TextStyle(color: Colors.white)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _deleteMessage(message);
+                },
+              ),
+            // Reply (alle Nachrichten)
+            ListTile(
+              leading: const Icon(Icons.reply, color: Colors.green),
+              title: const Text('Antworten', style: TextStyle(color: Colors.white)),
+              onTap: () {
+                Navigator.pop(ctx);
+                _replyToMessage(message);
+              },
+            ),
+            // Cancel
+            ListTile(
+              leading: const Icon(Icons.close, color: Colors.grey),
+              title: const Text('Abbrechen', style: TextStyle(color: Colors.grey)),
+              onTap: () => Navigator.pop(ctx),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // 🎨 AVATAR PICKER - Wie in ENERGIE
+  Future<void> _showAvatarPicker() async {
+    final avatars = ['👤', '🤓', '🧙', '🔮', '📚', '🎭', '🎨', '⚡', '🔥', '💀', '👁️', '🌙', '⭐', '💎', '🗿'];
+    
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: const Color(0xFF1A1A1A),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                '🎭 Wähle deinen Avatar',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 24),
+              GridView.builder(
+                shrinkWrap: true,
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 5,
+                  mainAxisSpacing: 16,
+                  crossAxisSpacing: 16,
+                ),
+                itemCount: avatars.length,
+                itemBuilder: (context, index) {
+                  final avatar = avatars[index];
+                  return GestureDetector(
+                    onTap: () => Navigator.pop(context, avatar),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Colors.red, Color(0xFFE53935)],
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: _avatar == avatar 
+                              ? Colors.white 
+                              : Colors.white.withValues(alpha: 0.3),
+                          width: 2,
+                        ),
+                      ),
+                      child: Center(
+                        child: Text(
+                          avatar,
+                          style: const TextStyle(fontSize: 32),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 16),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Abbrechen', style: TextStyle(color: Colors.white70)),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+    
+    if (selected != null) {
+      if (mounted) setState(() {
+        _avatar = selected;
+        _avatarEmoji = selected; // Update auch avatarEmoji
+      });
+      
+      // 💾 Speichere in Profil
+      final storage = StorageService();
+      final profile = storage.getMaterieProfile();
+      if (profile != null) {
+        final updated = MaterieProfile(
+          username: profile.username,
+          name: profile.name,
+          bio: profile.bio,
+          avatarEmoji: selected, // ✅ Avatar-Emoji speichern
+          avatarUrl: profile.avatarUrl, // Behalte URL
+          userId: profile.userId, // 🔥 FIX: Behalte userId
+          role: profile.role, // 🔥 FIX: Behalte role
+        );
+        
+        // 🔥 FIX: Backend-Sync durchführen um role zu bewahren
+        final syncService = ProfileSyncService();
+        final syncedProfile = await syncService.saveMaterieProfileAndGetUpdated(updated);
+        
+        if (syncedProfile != null) {
+          await storage.saveMaterieProfile(syncedProfile);
+          if (kDebugMode) {
+            debugPrint('✅ Avatar-Emoji gespeichert mit Backend-Sync');
+            debugPrint('   Role: ${syncedProfile.role}');
+          }
+        } else {
+          // Fallback: Lokales Profil speichern
+          await storage.saveMaterieProfile(updated);
+        }
+      }
+    }
+  }
+
+
+  */ // END OLD VERSION
+
+  void _showUsernameDialog() {
+    // ✅ NEU: Profil-Popup statt Username-Dialog
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 28),
+            SizedBox(width: 12),
+            Text('Profil benötigt'),
+          ],
+        ),
+        content: const Text(
+          'Um den Chat nutzen zu können, musst du zuerst ein Profil erstellen.\n\n'
+          'Erstelle dein Profil in der Materie-Welt.',
+          style: TextStyle(fontSize: 16),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Abbrechen'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              // ✅ FIXED: Direkt zum ProfileEditorScreen navigieren
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ProfileEditorScreen(world: 'materie'),
+                ),
+              );
+            },
+            icon: const Icon(Icons.person_add),
+            label: const Text('Profil erstellen'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF1E88E5), // Materie blue
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // TODO: Review unused method: _formatTimestamp
+  // String _formatTimestamp(dynamic timestamp) {
+    // if (timestamp == null) return '';
+     //     // final dt = DateTime.fromMillisecondsSinceEpoch(timestamp as int);
+    // final now = DateTime.now();
+    // final diff = now.difference(dt);
+     //     // if (diff.inMinutes < 1) return 'Gerade eben';
+    // if (diff.inHours < 1) return '${diff.inMinutes}m';
+    // if (diff.inDays < 1) return '${diff.inHours}h';
+    // return '${dt.day}.${dt.month}. ${dt.hour}:${dt.minute.toString().padLeft(2, '0')}';
+  // }
+  
+  // ═══════════════════════════════════════════════════════════
+  // 🆕 NEUE FEATURES - WEBRTC, TYPING, REACTIONS, SWIPE
+  // ═══════════════════════════════════════════════════════════
+  
+  // 🎤 WEBRTC VOICE METHODS
+  final WebRTCVoiceService _voiceService = WebRTCVoiceService();
+  
+  Future<void> _initializeWebRTC() async {
+    await _voiceService.initialize();
+    
+    // Listen to participants
+    _voiceService.participantsStream.listen((participants) {
+      if (!mounted) return;
+      if (mounted) {
+        setState(() {
+        _voiceParticipants = participants.map((p) => {
+          'userId': p.userId,
+          'username': p.username,
+          'avatarEmoji': p.avatarEmoji,
+          'isSpeaking': p.isSpeaking,
+          'isMuted': p.isMuted,
+        }).toList();
+      });
+      }
+    });
+  }
+  
+  Future<void> _toggleVoiceRoom() async {
+    if (_isInVoiceRoom) {
+      await _voiceService.leaveVoiceRoom();
+      if (mounted) {
+        setState(() {
+        _isInVoiceRoom = false;
+        _voiceParticipants = [];
+      });
+      }
+      _showSnackBar('🔇 Voice Room verlassen', Colors.grey);
+    } else {
+      // ✅ PHASE 2: Enhanced Error Handling
+      try {
+        final success = await _voiceService.joinVoiceRoom(
+          roomId: _selectedRoom,
+          userId: _userId,
+          username: _username,
+          world: 'materie',  // 🆕 World parameter
+        );
+        
+        if (success) {
+          if (mounted) {
+            setState(() {
+            _isInVoiceRoom = true;
+          });
+          }
+          _showSnackBar('🎤 Voice Room beigetreten', Colors.red);
+        } else {
+          // Check for specific error
+          final error = _voiceService.getLastError();
+          _showSnackBar(
+            error ?? '❌ Fehler beim Beitreten',
+            Colors.red,
+          );
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('❌ Voice Room Join Error: $e');
+        }
+        
+        // Show user-friendly error message
+        String errorMessage = '❌ Voice Chat Fehler';
+        
+        if (e.toString().contains('Berechtigung')) {
+          errorMessage = '🎤 Mikrofon-Berechtigung erforderlich';
+        } else if (e.toString().contains('aktiviert')) {
+          errorMessage = '🎤 Mikrofon konnte nicht aktiviert werden';
+        }
+        
+        _showSnackBar(errorMessage, Colors.red);
+      }
+    }
+  }
+  
+  Future<void> _toggleMute() async {
+    await _voiceService.toggleMute();
+    if (mounted) {
+      setState(() {
+      _isMuted = !_isMuted;
+    });
+    }
+    _showSnackBar(
+      _isMuted ? '🔇 Stummgeschaltet' : '🎤 Mikrofon aktiv',
+      Colors.red,
+    );
+  }
+  
+  // 🎤 JOIN VOICE CHAT AND OPEN SCREEN (NEW)
+  Future<void> _joinVoiceChatAndOpen() async {
+    if (kDebugMode) {
+      debugPrint('🎤 [JOIN] Joining voice chat and opening screen...');
+    }
+    
+    // First join the voice room
+    try {
+      final success = await _voiceService.joinVoiceRoom(
+        roomId: _selectedRoom,
+        userId: _userId,
+        username: _username,
+        world: 'materie',  // 🆕 World parameter
+      );
+      
+      if (success) {
+        if (mounted) {
+          setState(() {
+          _isInVoiceRoom = true;
+        });
+        }
+        
+        // Wait a moment for state to update
+        await Future.delayed(const Duration(milliseconds: 300));
+        
+        // Then open the Telegram Voice Screen
+        if (mounted) {
+          _openTelegramVoiceScreen();
+        }
+      } else {
+        final error = _voiceService.getLastError();
+        _showSnackBar(
+          error ?? '❌ Fehler beim Beitreten',
+          Colors.red,
+        );
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Voice Join Error: $e');
+      }
+      
+      String errorMessage = '❌ Voice Chat Fehler';
+      
+      if (e.toString().contains('Berechtigung')) {
+        errorMessage = '🎤 Mikrofon-Berechtigung erforderlich';
+      } else if (e.toString().contains('aktiviert')) {
+        errorMessage = '🎤 Mikrofon konnte nicht aktiviert werden';
+      }
+      
+      _showSnackBar(errorMessage, Colors.red);
+    }
+  }
+  
+  // 🎤 OPEN MODERN VOICE CHAT SCREEN (Phase B - Grid Layout)
+  void _openTelegramVoiceScreen() {
+    if (kDebugMode) {
+      debugPrint('🎤 [MODERN MATERIE] Opening Modern Voice Chat Screen (2×5 Grid)...');
+    }
+    
+    // 🔑 Get Admin Status from Backend Role
+    final storage = StorageService();
+    final profile = storage.getMaterieProfile();
+    final backendRole = profile?.role;  // 'root_admin', 'admin', or 'user'
+    final adminLevel = AdminPermissions.getAdminLevelFromBackendRole(backendRole);
+    final isAdmin = adminLevel != AdminLevel.user;
+    final isRootAdmin = adminLevel == AdminLevel.rootAdmin;
+    
+    if (kDebugMode) {
+      debugPrint('🔑 [ADMIN CHECK MATERIE]');
+      debugPrint('   userId: $_userId');
+      debugPrint('   backendRole: $backendRole');
+      debugPrint('   adminLevel: $adminLevel');
+      debugPrint('   isAdmin: $isAdmin');
+      debugPrint('   isRootAdmin: $isRootAdmin');
+    }
+    
+    // ✅ Phase A: Set admin status in Riverpod provider
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final notifier = ProviderScope.containerOf(context).read(webrtcCallProvider.notifier);
+      notifier.setAdminStatus(isAdmin, isRootAdmin);
+    });
+    
+    // ✅ Phase B: Navigate to Modern Grid UI
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ModernVoiceChatScreen(
+          roomId: _selectedRoom,
+          roomName: 'Materie Chat - $_selectedRoom',
+          userId: _userId,
+          username: _username,
+          world: 'materie',  // ✅ ADD: world parameter
+          accentColor: Colors.red, // Materie red
+          // ✅ NO participants prop - Riverpod provider handles it!
+          // ✅ NO callbacks - Riverpod notifier handles everything!
+        ),
+      ),
+    );
+  }
+
+  
+  // 🎤 VOICE ROOM BAR
+  Widget _buildVoiceRoomBar() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Colors.red.withValues(alpha: 0.2),
+            Colors.orange.withValues(alpha: 0.2),
+          ],
+        ),
+        border: Border(
+          bottom: BorderSide(
+            color: Colors.red.withValues(alpha: 0.3),
+            width: 1,
+          ),
+        ),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.headset_mic, color: Colors.white, size: 20),
+          const SizedBox(width: 8),
+          Text(
+            '${_voiceParticipants.length}/10 im Voice Room',
+            style: const TextStyle(color: Colors.white, fontSize: 14),
+          ),
+          const Spacer(),
+          // Participants Avatars
+          ..._voiceParticipants.take(5).map((p) {
+            return Padding(
+              padding: const EdgeInsets.only(left: 4),
+              child: Stack(
+                children: [
+                  CircleAvatar(
+                    radius: 16,
+                    backgroundColor: p['isSpeaking'] == true 
+                        ? Colors.greenAccent 
+                        : Colors.grey[700],
+                    child: Text(
+                      p['avatarEmoji']?.toString() ?? '👤',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                  ),
+                  if (p['isSpeaking'] == true)
+                    Positioned.fill(
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: const AlwaysStoppedAnimation<Color>(
+                          Colors.greenAccent,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            );
+          }),
+          if (_voiceParticipants.length > 5)
+            Padding(
+              padding: const EdgeInsets.only(left: 4),
+              child: CircleAvatar(
+                radius: 16,
+                backgroundColor: Colors.grey[700],
+                child: Text(
+                  '+${_voiceParticipants.length - 5}',
+                  style: const TextStyle(fontSize: 10, color: Colors.white),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+  
+  // ⌨️ TYPING INDICATORS
+  Widget _buildTypingIndicators() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      color: Colors.grey[900],
+      child: Row(
+        children: [
+          // Animated Dots
+          SizedBox(
+            width: 30,
+            height: 20,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: List.generate(3, (index) {
+                return TweenAnimationBuilder(
+                  tween: Tween<double>(begin: 0.0, end: 1.0),
+                  duration: const Duration(milliseconds: 600),
+                  curve: Curves.easeInOut,
+                  builder: (context, double value, child) {
+                    final delay = index * 0.2;
+                    final animValue = ((value + delay) % 1.0);
+                    final opacity = (0.3 + (0.7 * (1 - (animValue - 0.5).abs() * 2)))
+                        .clamp(0.3, 1.0);
+                    
+                    return Container(
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.withValues(alpha: opacity),
+                        shape: BoxShape.circle,
+                      ),
+                    );
+                  },
+                );
+              }),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              _typingUsers.length == 1
+                  ? '${_typingUsers.first} tippt...'
+                  : _typingUsers.length == 2
+                      ? '${_typingUsers.elementAt(0)} und ${_typingUsers.elementAt(1)} tippen...'
+                      : '${_typingUsers.length} Personen tippen...',
+              style: TextStyle(
+                color: Colors.grey[500],
+                fontSize: 13,
+                fontStyle: FontStyle.italic,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  void _sendTypingIndicator() {
+    _typingTimer?.cancel();
+    
+    // Send typing status to server
+    _hybridChat.sendTypingIndicator(true);
+    
+    // Stop after 3 seconds
+    _typingTimer = Timer(const Duration(seconds: 3), () {
+      _hybridChat.sendTypingIndicator(false);
+    });
+  }
+  
+  // 😀 EMOJI REACTIONS
+  // 😀 EMOJI REACTIONS
+  void _showReactionPicker(Map<String, dynamic> msg) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => ReactionPickerSheet(
+        onSelectEmoji: (emoji) => _addReaction(msg, emoji),
+      ),
+    );
+  }
+  
+  void _addReaction(Map<String, dynamic> msg, String emoji) {
+    if (mounted) {
+      setState(() {
+      // Initialize reactions map if not exists
+      if (msg['reactions'] == null) {
+        msg['reactions'] = <String, dynamic>{};
+      }
+      
+      final reactions = msg['reactions'] as Map<String, dynamic>;
+      
+      // Initialize emoji list if not exists
+      if (reactions[emoji] == null) {
+        reactions[emoji] = <String>[];
+      }
+      
+      final userList = reactions[emoji] as List<dynamic>;
+      
+      // Toggle reaction
+      if (userList.contains(_username)) {
+        userList.remove(_username);
+        if (userList.isEmpty) {
+          reactions.remove(emoji);
+        }
+      } else {
+        userList.add(_username);
+      }
+    });
+    }
+  }
+  
+  // ✏️ MESSAGE EDIT
+  void _startEditingMessage(Map<String, dynamic> msg) {
+    final messageId = msg['id']?.toString() ?? msg['timestamp']?.toString() ?? '';
+    if (mounted) {
+      setState(() {
+      _editingMessageId = messageId;
+    });
+    }
+  }
+  
+  void _saveEditedMessage(Map<String, dynamic> msg, String newContent) {
+    if (mounted) {
+      setState(() {
+      msg['message'] = newContent;
+      msg['edited'] = true;
+      msg['editedAt'] = DateTime.now().toIso8601String();
+      _editingMessageId = null;
+    });
+    }
+    
+    if (kDebugMode) {
+      debugPrint('✏️ Materie: Message edited');
+    }
+  }
+  
+  void _cancelEditingMessage() {
+    if (mounted) {
+      setState(() {
+      _editingMessageId = null;
+    });
+    }
+  }
+  
+  // 🗑️ MESSAGE DELETE
+  // 🔍 MESSAGE SEARCH
+  void _toggleSearch() {
+    if (mounted) {
+      setState(() {
+      _showSearch = !_showSearch;
+    });
+    }
+  }
+  
+  void _jumpToMessage(Map<String, dynamic> msg) {
+    final index = _messages.indexOf(msg);
+    if (index == -1) return;
+    
+    final scrollPosition = index * 80.0;
+    _scrollController.animateTo(
+      scrollPosition,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
+  
+  // 🛠️ MESSAGE OPTIONS
+  void _showMessageOptions(BuildContext context, Map<String, dynamic> msg) async {
+    final isOwnMessage = msg['username'] == _username;
+    
+    // ✅ SECURE: Check admin status from Backend Role (EXACT Dashboard Match!)
+    final storage = StorageService();
+    final profile = storage.getMaterieProfile();
+    final backendRole = profile?.role;  // 'root_admin', 'admin', or 'user'
+    
+    final adminLevel = AdminPermissions.getAdminLevelFromBackendRole(backendRole);
+    final isAdmin = adminLevel != AdminLevel.user;
+    final adminBadge = AdminPermissions.getAdminBadgeFromBackendRole(backendRole);
+    
+    // Admin-Rechte basierend auf Backend-Rolle
+    final canDeleteAny = isAdmin;  // root_admin oder admin
+    final canBan = isAdmin;        // root_admin oder admin
+    
+    await showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF1A1A2E),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 20),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            if (isOwnMessage) ...[
+              ListTile(
+                leading: const Icon(Icons.edit, color: Colors.red),
+                title: const Text('Bearbeiten', style: TextStyle(color: Colors.white)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _startEditingMessage(msg);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.delete, color: Colors.red),
+                title: const Text('Löschen', style: TextStyle(color: Colors.white)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _deleteMessage(msg);
+                },
+              ),
+            ],
+            ListTile(
+              leading: const Icon(Icons.reply, color: Colors.red),
+              title: const Text('Antworten', style: TextStyle(color: Colors.white)),
+              onTap: () {
+                Navigator.pop(context);
+                _replyToMessage(msg);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.add_reaction, color: Colors.red),
+              title: const Text('Reaktion', style: TextStyle(color: Colors.white)),
+              onTap: () {
+                Navigator.pop(context);
+                _showReactionPicker(msg);
+              },
+            ),
+            
+            // 🔧 ADMIN MODERATION OPTIONS (Secure check via AdminPermissions)
+            if (isAdmin) ...[
+              const Divider(color: Colors.orange),
+              
+              // ADMIN: Delete any message (if has permission)
+              if (canDeleteAny && !isOwnMessage)
+                ListTile(
+                  leading: const Icon(Icons.delete_forever, color: Colors.red),
+                  title: Text('Nachricht löschen $adminBadge', style: const TextStyle(color: Colors.red)),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _deleteMessage(msg);  // Backend checks admin status
+                  },
+                ),
+              
+              // ADMIN: Flag Content
+              if (!isOwnMessage)
+                ListTile(
+                  leading: const Icon(Icons.flag, color: Colors.orange),
+                  title: const Text('Inhalt melden', style: TextStyle(color: Colors.orange)),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showFlagDialog(msg);
+                  },
+                ),
+              
+              // ADMIN: Ban/Mute User
+              if (canBan && !isOwnMessage)
+                ListTile(
+                  leading: const Icon(Icons.volume_off, color: Colors.orange),
+                  title: Text('User sperren $adminBadge', style: const TextStyle(color: Colors.orange)),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showMuteDialog(msg, canBan);
+                  },
+                ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildMessageWithReactions(Map<String, dynamic> msg) {
+    final messageId = msg['id']?.toString() ?? msg['timestamp']?.toString() ?? '';
+    final isEditing = _editingMessageId == messageId;
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (isEditing)
+          Padding(
+            padding: const EdgeInsets.only(left: 60, right: 16, bottom: 8),
+            child: MessageEditWidget(
+              message: msg,
+              onSave: (newContent) => _saveEditedMessage(msg, newContent),
+              onCancel: _cancelEditingMessage,
+            ),
+          )
+        else
+          GestureDetector(
+            onLongPress: () => _showMessageOptions(context, msg),
+            onDoubleTap: () => _addReaction(msg, '❤️'),
+            child: _buildEnhancedMessageBubble(msg),
+          ),
+        
+        if (!isEditing)
+          Padding(
+            padding: const EdgeInsets.only(left: 60, top: 4),
+            child: MessageReactionsWidget(
+              message: msg,
+              onReact: (emoji) => _addReaction(msg, emoji),
+              currentUsername: _username,
+            ),
+          ),
+      ],
+    );
+  }
+  
+  // 💬 SWIPE TO REPLY
+  void _replyToMessage(Map<String, dynamic> msg) {
+    if (mounted) {
+      setState(() {
+      _replyingTo = msg;
+    });
+    }
+    _inputFocusNode.requestFocus();
+  }
+  
+  /// 🆕 SHOW MESSAGE ACTIONS (Long-Press on own messages)
+  void _showMessageActions(Map<String, dynamic> msg) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF1A1A2E),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[600],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 8),
+            ListTile(
+              leading: const Icon(Icons.edit, color: Colors.blue),
+              title: const Text('Bearbeiten', style: TextStyle(color: Colors.white)),
+              onTap: () {
+                Navigator.pop(context);
+                _editMessage(msg);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete, color: Colors.red),
+              title: const Text('Löschen', style: TextStyle(color: Colors.white)),
+              onTap: () {
+                Navigator.pop(context);
+                _deleteMessage(msg);
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+  
+  /// 🆕 EDIT MESSAGE
+  Future<void> _editMessage(Map<String, dynamic> msg) async {
+    final controller = TextEditingController(text: msg['message']?.toString() ?? '');
+    final newText = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A2E),
+        title: const Text('Nachricht bearbeiten', style: TextStyle(color: Colors.white)),
+        content: TextField(
+          controller: controller,
+          style: const TextStyle(color: Colors.white),
+          maxLines: 3,
+          autofocus: true,
+          decoration: InputDecoration(
+            hintText: 'Nachricht eingeben...',
+            hintStyle: TextStyle(color: Colors.grey[600]),
+            border: const OutlineInputBorder(),
+            focusedBorder: const OutlineInputBorder(
+              borderSide: BorderSide(color: Colors.red, width: 2),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Abbrechen', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(context, controller.text),
+            child: const Text('Speichern'),
+          ),
+        ],
+      ),
+    );
+    
+    if (newText != null && newText.trim().isNotEmpty && newText != msg['message']) {
+      try {
+        await _api.editChatMessage(
+          messageId: msg['message_id'] ?? msg['id'],
+          roomId: _selectedRoom,
+          realm: 'materie',
+          newMessage: newText.trim(),
+          userId: _userId,
+          username: _username,
+        );
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('✅ Nachricht bearbeitet'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
+            ),
+          );
+          await _loadMessages(silent: true);
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('❌ Fehler: $e'),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+      }
+    }
+  }
+  
+  /// 🆕 DELETE MESSAGE
+  Future<void> _deleteMessage(Map<String, dynamic> msg) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A2E),
+        title: const Text('Nachricht löschen?', style: TextStyle(color: Colors.white)),
+        content: const Text(
+          'Diese Aktion kann nicht rückgängig gemacht werden.',
+          style: TextStyle(color: Colors.grey),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Abbrechen', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Löschen'),
+          ),
+        ],
+      ),
+    );
+    
+    if (confirm == true) {
+      try {
+        await _api.deleteChatMessage(
+          messageId: msg['message_id'] ?? msg['id'],
+          roomId: _selectedRoom,
+          realm: 'materie',
+          userId: _userId,
+          username: _username,
+        );
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('✅ Nachricht gelöscht'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
+            ),
+          );
+          await _loadMessages(silent: true);
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('❌ Fehler: $e'),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+      }
+    }
+  }
+  
+  Widget _buildReplyPreview() {
+    if (_replyingTo == null) return const SizedBox.shrink();
+    
+    return Container(
+      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.only(bottom: 8, left: 16, right: 16),
+      decoration: BoxDecoration(
+        color: Colors.grey[850],
+        borderRadius: BorderRadius.circular(12),
+        border: const Border(
+          left: BorderSide(
+            color: Colors.red,
+            width: 3,
+          ),
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Antwort an ${_replyingTo!['username']}',
+                  style: const TextStyle(
+                    color: Colors.red,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  _replyingTo!['message']?.toString() ?? '',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.grey[400],
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.close, color: Colors.grey),
+            onPressed: () {
+              if (mounted) {
+                setState(() {
+                _replyingTo = null;
+              });
+              }
+            },
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildSwipeableMessage(Map<String, dynamic> msg) {
+    return TweenAnimationBuilder<double>(
+      duration: const Duration(milliseconds: 300),
+      tween: Tween(begin: 0.0, end: 1.0),
+      curve: Curves.easeOutCubic,
+      builder: (context, value, child) {
+        return Transform.translate(
+          offset: Offset(0, 20 * (1 - value)),
+          child: Opacity(
+            opacity: value,
+            child: child,
+          ),
+        );
+      },
+      child: Dismissible(
+        key: Key(msg['id']?.toString() ?? msg['timestamp']?.toString() ?? '${DateTime.now().millisecondsSinceEpoch}'),
+        direction: DismissDirection.endToStart,
+        confirmDismiss: (direction) async {
+          _replyToMessage(msg);
+          return false;
+        },
+        background: Container(
+          alignment: Alignment.centerRight,
+          padding: const EdgeInsets.only(right: 20),
+          color: Colors.transparent,
+          child: const Icon(
+            Icons.reply,
+            color: Colors.grey,
+            size: 28,
+          ),
+        ),
+        child: _buildMessageWithReactions(msg),
+      ),
+    );
+  }
+  
+  // 🆕 ENHANCED MESSAGE BUBBLE (Modern Design)
+  Widget _buildEnhancedMessageBubble(Map<String, dynamic> msg) {
+    final isOwn = msg['userId'] == _userId;
+    
+    return Padding(
+      padding: EdgeInsets.only(
+        left: isOwn ? 60 : 12,
+        right: isOwn ? 12 : 60,
+        bottom: 8,
+      ),
+      child: Row(
+        mainAxisAlignment: isOwn ? MainAxisAlignment.end : MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          // Avatar (nur bei anderen)
+          if (!isOwn) ...[
+            CircleAvatar(
+              radius: 18,
+              backgroundColor: Colors.red.withValues(alpha: 0.2),
+              child: Text(
+                msg['avatarEmoji']?.toString() ?? '👤',
+                style: const TextStyle(fontSize: 16),
+              ),
+            ),
+            const SizedBox(width: 8),
+          ],
+          
+          // Bubble mit Tail
+          Flexible(
+            child: InkWell(
+              onLongPress: isOwn ? () => _showMessageActions(msg) : null,
+              borderRadius: BorderRadius.circular(16),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                color: isOwn ? Colors.red : Colors.grey[800],
+                borderRadius: BorderRadius.only(
+                  topLeft: const Radius.circular(16),
+                  topRight: const Radius.circular(16),
+                  bottomLeft: isOwn ? const Radius.circular(16) : const Radius.circular(4),
+                  bottomRight: isOwn ? const Radius.circular(4) : const Radius.circular(16),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.2),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Username (nur bei anderen)
+                  if (!isOwn)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Text(
+                        msg['username']?.toString() ?? 'Unbekannt',
+                        style: const TextStyle(
+                          color: Colors.redAccent,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  
+                  // 🎤 VOICE MESSAGE or 📷 IMAGE or 💬 TEXT
+                  if (msg['mediaType'] == 'voice' || (msg['message']?.toString().startsWith('🎤 Sprachnachricht') == true && msg['mediaUrl'] != null))
+                    // 🎵 VOICE MESSAGE PLAYER
+                    ChatVoicePlayer(
+                      audioUrl: msg['mediaUrl'] ?? '',
+                      duration: Duration(seconds: int.tryParse(
+                        msg['message']?.toString()
+                          .replaceAll('🎤 Sprachnachricht (', '')
+                          .replaceAll('s)', '')
+                          .replaceAll(')', '') ?? '0'
+                      ) ?? 0),
+                      accentColor: const Color(0xFF2196F3),
+                    )
+                  else if (msg['mediaType'] == 'image' && msg['mediaUrl'] != null)
+                    // Image Message
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.network(
+                        msg['mediaUrl'],
+                        width: 200,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            width: 200,
+                            height: 150,
+                            color: Colors.grey[700],
+                            child: const Icon(Icons.broken_image, size: 48),
+                          );
+                        },
+                      ),
+                    )
+                  else
+                    // Regular Text Message
+                    Text(
+                      msg['message']?.toString() ?? '',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                      ),
+                    ),
+                  
+                  const SizedBox(height: 4),
+                  
+                  // Timestamp & Status
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _formatTime(msg['timestamp']),
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.6),
+                          fontSize: 11,
+                        ),
+                      ),
+                      if (isOwn) ...[
+                        const SizedBox(width: 4),
+                        Icon(
+                          Icons.done_all,
+                          size: 14,
+                          color: msg['read'] == true 
+                              ? Colors.blue 
+                              : Colors.white.withValues(alpha: 0.6),
+                        ),
+                      ],
+                    ],
+                  ),
+                ],
+              ),
+            ), // Container
+            ), // InkWell
+          ), // Flexible
+        ],
+      ),
+    );
+  }
+  
+  String _formatTime(dynamic timestamp) {
+    try {
+      if (timestamp == null) return '';
+      
+      DateTime dt;
+      if (timestamp is int) {
+        dt = DateTime.fromMillisecondsSinceEpoch(timestamp);
+      } else if (timestamp is String) {
+        dt = DateTime.parse(timestamp);
+      } else {
+        return '';
+      }
+      
+      final now = DateTime.now();
+      final diff = now.difference(dt);
+      
+      if (diff.inMinutes < 1) return 'Jetzt';
+      if (diff.inHours < 1) return '${diff.inMinutes}m';
+      if (diff.inDays < 1) return '${diff.inHours}h';
+      return '${dt.day}.${dt.month}. ${dt.hour}:${dt.minute.toString().padLeft(2, '0')}';
+    } catch (e) {
+      return '';
+    }
+  }
+  
+  void _showSnackBar(String message, Color color) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: color,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+  
+  // 🔧 ADMIN MODERATION METHODS
+  
+  /// 🚩 FLAG DIALOG: Report content for moderation
+  void _showFlagDialog(Map<String, dynamic> msg) {
+    final reasonController = TextEditingController();
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A2E),
+        title: const Text('Inhalt melden', style: TextStyle(color: Colors.orange)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Nachricht: "${msg['message'] ?? ''}"',
+              style: const TextStyle(color: Colors.white70, fontSize: 12),
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: reasonController,
+              style: const TextStyle(color: Colors.white),
+              decoration: const InputDecoration(
+                hintText: 'Grund der Meldung (optional)',
+                hintStyle: TextStyle(color: Colors.white38),
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 3,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Abbrechen', style: TextStyle(color: Colors.white70)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              
+              try {
+                final moderation = ModerationService();
+                await moderation.flagContent(
+                  world: 'materie',
+                  contentType: 'comment',
+                  contentId: msg['id']?.toString() ?? '',
+                  reason: reasonController.text.trim(),
+                  adminToken: _username,
+                );
+                
+                if (mounted) {
+                  _showSnackBar('✅ Inhalt wurde gemeldet', Colors.green);
+                }
+              } catch (e) {
+                if (mounted) {
+                  _showSnackBar('❌ Fehler beim Melden: $e', Colors.red);
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+            child: const Text('Melden'),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  /// 🗑️ ADMIN DELETE: Root admin can delete any message
+  void _adminDeleteMessage(Map<String, dynamic> msg) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A2E),
+        title: const Text('Nachricht löschen (Admin)', style: TextStyle(color: Colors.red)),
+        content: Text(
+          'Nachricht von ${msg['username']}: "${msg['message'] ?? ''}"',
+          style: const TextStyle(color: Colors.white),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Abbrechen', style: TextStyle(color: Colors.white70)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Löschen'),
+          ),
+        ],
+      ),
+    );
+    
+    if (confirmed == true) {
+      try {
+        // TODO: Implement admin delete via API
+        // For now, just flag it as deleted
+        final moderation = ModerationService();
+        await moderation.flagContent(
+          world: 'materie',
+          contentType: 'comment',
+          contentId: msg['id']?.toString() ?? '',
+          reason: 'Deleted by admin',
+          adminToken: _username,
+        );
+        
+        if (mounted) {
+          _showSnackBar('✅ Nachricht wurde gelöscht', Colors.green);
+        }
+      } catch (e) {
+        if (mounted) {
+          _showSnackBar('❌ Fehler beim Löschen: $e', Colors.red);
+        }
+      }
+    }
+  }
+  
+  /// 🔇 MUTE DIALOG: Temporarily or permanently mute user
+  void _showMuteDialog(Map<String, dynamic> msg, bool isRootAdmin) {
+    final reasonController = TextEditingController();
+    String muteType = '24h'; // Default: 24h
+    
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          backgroundColor: const Color(0xFF1A1A2E),
+          title: const Text('User sperren', style: TextStyle(color: Colors.orange)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'User: ${msg['username']}',
+                style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              
+              // Mute Type Selector
+              const Text('Sperrdauer:', style: TextStyle(color: Colors.white)),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: RadioListTile<String>(
+                      title: const Text('24 Stunden', style: TextStyle(color: Colors.white, fontSize: 14)),
+                      value: '24h',
+                      groupValue: muteType,
+                      onChanged: (value) {
+                        if (mounted) {
+                          setState(() {
+                          muteType = value!;
+                        });
+                        }
+                      },
+                      activeColor: Colors.orange,
+                    ),
+                  ),
+                  if (isRootAdmin)
+                    Expanded(
+                      child: RadioListTile<String>(
+                        title: const Text('Permanent', style: TextStyle(color: Colors.white, fontSize: 14)),
+                        value: 'permanent',
+                        groupValue: muteType,
+                        onChanged: (value) {
+                          if (mounted) {
+                            setState(() {
+                            muteType = value!;
+                          });
+                          }
+                        },
+                        activeColor: Colors.red,
+                      ),
+                    ),
+                ],
+              ),
+              
+              const SizedBox(height: 16),
+              TextField(
+                controller: reasonController,
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(
+                  hintText: 'Grund (optional)',
+                  hintStyle: TextStyle(color: Colors.white38),
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 2,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Abbrechen', style: TextStyle(color: Colors.white70)),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.pop(context);
+                
+                try {
+                  final targetUserId = 'materie_${msg['username']}'; // Construct user_id
+                  final moderation = ModerationService();
+                  
+                  await moderation.muteUser(
+                    world: 'materie',
+                    userId: targetUserId,
+                    username: msg['username'] ?? '',
+                    muteType: muteType,
+                    reason: reasonController.text.trim(),
+                    adminToken: _username,
+                  );
+                  
+                  if (mounted) {
+                    final durationText = muteType == '24h' ? '24 Stunden' : 'permanent';
+                    _showSnackBar('✅ User ${msg['username']} für $durationText gesperrt', Colors.green);
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    _showSnackBar('❌ Fehler beim Sperren: $e', Colors.red);
+                  }
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: muteType == 'permanent' ? Colors.red : Colors.orange,
+              ),
+              child: const Text('Sperren'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+

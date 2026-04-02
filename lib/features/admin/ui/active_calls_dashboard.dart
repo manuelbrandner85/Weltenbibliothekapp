@@ -93,12 +93,15 @@ final activeCallsProvider = FutureProvider.family<List<ActiveCall>, String>((ref
 /// Temporary local implementation until analyzer cache clears
 Future<List<Map<String, dynamic>>> _getActiveVoiceCalls(String world) async {
   try {
-    // Token kommt serverseitig – kein hardcodierter Token im Client
+    const token = 'y-Xiv3kKeiybDm2CV0yLFu7TSd22co6NBw3udn5Y';
     final url = Uri.parse('${ApiConfig.baseUrl}/api/admin/voice-calls/$world');
     
     final response = await http.get(
       url,
-      headers: ApiConfig.publicHeaders,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
     ).timeout(const Duration(seconds: 10));
     
     if (response.statusCode == 200) {

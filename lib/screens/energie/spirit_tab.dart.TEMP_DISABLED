@@ -1,0 +1,1648 @@
+import 'package:flutter/material.dart';
+import 'dart:math' as math;
+import '../../models/spirit_entry.dart';
+import '../../models/spirit_dashboard.dart';
+import '../../models/energie_profile.dart';
+import '../../widgets/sacred_geometry.dart';
+import '../../widgets/spirit_extended_widgets.dart';
+import '../../widgets/spirit_tool_cards.dart';
+import '../../utils/date_helpers.dart';
+import '../../widgets/toast_helper.dart';
+import '../../services/spirit_dashboard_service.dart';
+import '../../services/storage_service.dart';
+import '../../services/astrology_service.dart';
+import '../../services/synchronicity_service.dart';
+import '../../services/inner_journal_service.dart';
+import 'spirit_features_test_screen.dart';
+
+/// Spirit-Tab für ENERGIE-Welt
+class SpiritTab extends StatefulWidget {
+  const SpiritTab({super.key});
+
+  @override
+  State<SpiritTab> createState() => _SpiritTabState();
+}
+
+class _SpiritTabState extends State<SpiritTab> {
+  final _dashboardService = SpiritDashboardService();
+  final _storage = StorageService();
+  final _astrologyService = AstrologyService();
+  final _synchronicityService = SynchronicityService();
+  final _journalService = InnerJournalService();
+  final _extendedWidgets = SpiritExtendedWidgets();
+  final _toolCards = SpiritToolCards();
+  
+  SpiritDashboard? _dashboard;
+  EnergieProfile? _profile;
+  bool _isLoading = true;
+  List<SynchronicityEvent> _syncEvents = [];
+  List<InnerJournalEntry> _journalEntries = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDashboard();
+  }
+
+  Future<void> _loadDashboard() async {
+    setState(() => _isLoading = true);
+    
+    try {
+      final profile = await _storage.loadEnergieProfile();
+      if (profile == null) {
+        setState(() => _isLoading = false);
+        return;
+      }
+      
+      final dashboard = await _dashboardService.calculateDashboard(profile);
+      
+      // Load Synchronicity & Journal Data
+      final syncEvents = SynchronicityService.getDemoEvents();
+      final journalEntries = InnerJournalService.getDemoEntries();
+      
+      setState(() {
+        _profile = profile;
+        _dashboard = dashboard;
+        _syncEvents = syncEvents;
+        _journalEntries = journalEntries;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  // Realistische Demo Spirit-Einträge mit echten Zeitstempeln
+  final List<SpiritEntry> _entries = [
+    SpiritEntry(
+      id: '1',
+      title: 'Erwachen des inneren Lichts',
+      content: 'Während der morgendlichen Meditation habe ich ein intensives Licht wahrgenommen. Es fühlte sich an wie eine Verbindung zur höheren Quelle. Pure Energie strömte durch meinen Körper.',
+      type: SpiritType.journal,
+      tags: ['Meditation', 'Licht', 'Erwachen'],
+      createdAt: DateHelpers.getRealisticDemoTime(2), // Vor 2 Stunden
+      mood: 'Erleuchtet',
+      rating: 5,
+    ),
+    SpiritEntry(
+      id: '2',
+      title: 'Synchronizität: 11:11 Portal',
+      content: 'Heute mehrfach 11:11 auf der Uhr gesehen. Auch die Hausnummer 1111 ist mir begegnet. Das Universum sendet mir Zeichen - ich bin auf dem richtigen Weg.',
+      type: SpiritType.synchronicity,
+      tags: ['Synchronizität', '11:11', 'Portal'],
+      createdAt: DateHelpers.getRealisticDemoTime(5), // Vor 5 Stunden
+      rating: 5,
+    ),
+    SpiritEntry(
+      id: '3',
+      title: 'Chakra-Reinigung: Herzchakra',
+      content: 'Intensive Arbeit mit dem Herzchakra. Alte emotionale Blockaden lösen sich auf. Tiefe Gefühle von Liebe und Mitgefühl durchfluten mich.',
+      type: SpiritType.journal,
+      tags: ['Chakra', 'Herzchakra', 'Heilung'],
+      createdAt: DateHelpers.getRealisticDemoDate(1), // Gestern
+      mood: 'Liebevoll',
+      rating: 4,
+    ),
+    SpiritEntry(
+      id: '4',
+      title: 'Archetyp: Der Magier manifestiert',
+      content: 'Der Magier-Archetyp zeigt sich stark in meinem Leben. Ich erkenne meine Kraft zur Manifestation. Was ich denke und fühle, wird Realität.',
+      type: SpiritType.archetype,
+      tags: ['Archetypen', 'Magier', 'Manifestation'],
+      createdAt: DateHelpers.getRealisticDemoDate(2), // Vor 2 Tagen
+      rating: 5,
+    ),
+    SpiritEntry(
+      id: '5',
+      title: 'Traum: Flug durch die Sternengalaxie',
+      content: 'Klarer Traum, in dem ich durch eine Galaxie voller leuchtender Sterne flog. Begegnung mit einem Lichtwesen, das mir eine wichtige Botschaft übermittelte.',
+      type: SpiritType.dream,
+      tags: ['Traum', 'Sterne', 'Lichtwesen'],
+      createdAt: DateHelpers.getRealisticDemoDate(3), // Vor 3 Tagen
+      mood: 'Fasziniert',
+      rating: 5,
+    ),
+    SpiritEntry(
+      id: '6',
+      title: 'Symbol: Blume des Lebens erschienen',
+      content: 'Beim Spaziergang sah ich in den Wolken deutlich die Blume des Lebens. Heilige Geometrie manifestiert sich in der Natur.',
+      type: SpiritType.symbol,
+      tags: ['Symbol', 'Heilige Geometrie', 'Natur'],
+      createdAt: DateHelpers.getRealisticDemoDate(5), // Vor 5 Tagen
+      rating: 4,
+    ),
+    SpiritEntry(
+      id: '7',
+      title: 'Vollmond-Ritual: Loslassen',
+      content: 'Kraftvolles Vollmond-Ritual durchgeführt. Alte Muster und Ängste dem Universum übergeben. Tiefe Transformation spürbar.',
+      type: SpiritType.journal,
+      tags: ['Ritual', 'Vollmond', 'Loslassen'],
+      createdAt: DateHelpers.getRealisticDemoDate(7), // Vor 7 Tagen
+      mood: 'Befreit',
+      rating: 5,
+    ),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(color: Color(0xFF9C27B0)),
+      );
+    }
+
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Color(0xFF4A148C),
+            Color(0xFF1A1A1A),
+          ],
+        ),
+      ),
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          _buildHeader(),
+          const SizedBox(height: 24),
+          
+          // 🎮 GAMIFICATION HEADER (VORSCHLAG 8)
+          if (_profile != null)
+            _extendedWidgets.buildGamificationHeader(context),
+          const SizedBox(height: 16),
+          
+          // 🏃 TÄGLICHE PRAXIS CARD (VORSCHLAG 1)
+          if (_profile != null && _dashboard != null)
+            _extendedWidgets.buildDailyPracticesCard(
+              context: context,
+              profile: _profile!,
+              dashboard: _dashboard!,
+            ),
+          const SizedBox(height: 16),
+          
+          // 📅 WOCHENHOROSKOP CARD (VORSCHLAG 7)
+          if (_profile != null && _dashboard != null)
+            _extendedWidgets.buildWeeklyHoroscopeCard(
+              context: context,
+              profile: _profile!,
+              dashboard: _dashboard!,
+            ),
+          const SizedBox(height: 16),
+          
+          // ✨ SYNCHRONIZITÄTS-TRACKER (VORSCHLAG 2)
+          _extendedWidgets.buildSynchronicityTrackerCard(context),
+          const SizedBox(height: 16),
+          
+          // 🌌 ASTRO-TRANSIT-KALENDER (VORSCHLAG 4)
+          if (_profile != null)
+            _extendedWidgets.buildAstroTransitCalendar(
+              context: context,
+              profile: _profile!,
+            ),
+          const SizedBox(height: 16),
+          
+          // 📝 JOURNAL & PARTNER ACTIONS (VORSCHLAG 5 & 6)
+          _extendedWidgets.buildJournalAndPartnerCard(context),
+          const SizedBox(height: 16),
+          
+          // 🔮 PERSÖNLICHE SIGNATUR CARD
+          if (_dashboard != null) _buildPersonalSignatureCard(),
+          const SizedBox(height: 16),
+          
+          // 📅 ZYKLUS & LEBENSPHASEN CARD
+          if (_dashboard != null) _buildCycleAnalysisCard(),
+          const SizedBox(height: 16),
+          
+          // 🎭 ARCHETYPEN-MATRIX CARD
+          if (_dashboard != null) _buildArchetypeMatrixCard(),
+          const SizedBox(height: 16),
+          
+          // ⭐ ASTROLOGISCHE GRUNDMATRIX CARD
+          if (_dashboard != null) _buildAstrologyCard(),
+          const SizedBox(height: 16),
+          
+          // 🔮 SYNCHRONIZITÄTS-TRACKER CARD
+          if (_syncEvents.isNotEmpty) _buildSynchronicityCard(),
+          const SizedBox(height: 16),
+          
+          // 📝 INNERES JOURNAL CARD
+          if (_dashboard != null) _buildInnerJournalCard(),
+          const SizedBox(height: 40),
+          
+          // ═══════════════════════════════════════════════════════════
+          // 🆕 15 NEUE SPIRIT-TOOLS (v43)
+          // ═══════════════════════════════════════════════════════════
+          
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFFD32F2F), Color(0xFFF44336)],
+              ),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFEF5350)),
+            ),
+            child: Column(
+              children: [
+                Icon(Icons.auto_awesome, color: Colors.amber, size: 48),
+                SizedBox(height: 12),
+                Text(
+                  '✨ 15 NEUE SPIRIT-TOOLS',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'Die ultimative spirituelle Werkzeugsammlung',
+                  style: TextStyle(color: Colors.white70, fontSize: 14),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+          
+          // 1. Mondphasen-Tracker
+          _toolCards.buildMoonPhaseTrackerCard(context),
+          const SizedBox(height: 16),
+          
+          // 2. Tarot-Tagesziehung
+          _toolCards.buildTarotDailyDrawCard(context),
+          const SizedBox(height: 16),
+          
+          // 3. DNA-Aktivierung Tracker
+          _toolCards.buildDnaActivationTrackerCard(context),
+          const SizedBox(height: 16),
+          
+          // 4. Frequenz-Generator
+          _toolCards.buildFrequencyGeneratorCard(context),
+          const SizedBox(height: 16),
+          
+          // 5. Akasha-Chronik Journal
+          _toolCards.buildAkashaChronicleCard(context),
+          const SizedBox(height: 16),
+          
+          // 6. Kristall-Datenbank
+          _toolCards.buildCrystalDatabaseCard(context),
+          const SizedBox(height: 16),
+          
+          // 7. Mantra-Bibliothek
+          _toolCards.buildMantraLibraryCard(context),
+          const SizedBox(height: 16),
+          
+          // 8. Aura-Farben Reader
+          _toolCards.buildAuraColorReaderCard(context),
+          const SizedBox(height: 16),
+          
+          // 9. Meditation-Timer
+          _toolCards.buildMeditationTimerCard(context),
+          const SizedBox(height: 16),
+          
+          // 10. Heilige Geometrie Generator
+          _toolCards.buildSacredGeometryCard(context),
+          const SizedBox(height: 16),
+          
+          // 11. Erdung-Übungen
+          _toolCards.buildGroundingExercisesCard(context),
+          const SizedBox(height: 16),
+          
+          // 12. Transformation-Tracker
+          _toolCards.buildTransformationTrackerCard(context),
+          const SizedBox(height: 16),
+          
+          // 13. Lichtsprache Decoder
+          _toolCards.buildLightLanguageDecoderCard(context),
+          const SizedBox(height: 16),
+          
+          // 14. Yoga Asana Guide
+          _toolCards.buildYogaAsanaGuideCard(context),
+          const SizedBox(height: 16),
+          
+          // 15. Göttinnen & Götter Orakel
+          _toolCards.buildDeityOracleCard(context),
+          const SizedBox(height: 40),
+          
+          // ═══════════════════════════════════════════════════════════
+          // BESTEHENDE FEATURES (NICHT ERSETZT!)
+          // ═══════════════════════════════════════════════════════════
+          
+          // SPIRIT EINTRÄGE (Original)
+          ..._entries.map((entry) => Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: _buildSpiritCard(entry),
+          )),
+          
+          // 🔧 DEBUG: TEST-BUTTON FÜR NEUE FEATURES
+          const SizedBox(height: 40),
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF1976D2), Color(0xFF0D47A1)],
+              ),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFF2196F3)),
+            ),
+            child: Column(
+              children: [
+                const Icon(Icons.bug_report, color: Color(0xFF64B5F6), size: 48),
+                const SizedBox(height: 12),
+                const Text(
+                  '🔧 FEATURE-TEST',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Teste alle 6 neuen Spirit-Features\nauf einem separaten Screen',
+                  style: TextStyle(color: Colors.white70, fontSize: 14),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const SpiritFeaturesTestScreen(),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.launch),
+                  label: const Text('Test-Screen öffnen'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2196F3),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 40),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Spirit-Explorer',
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Dein inneres Journal & spirituelle Reflexion',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.white70,
+            ),
+          ),
+          const SizedBox(height: 16),
+          
+          // Schnellzugriff-Karten
+          Row(
+            children: [
+              Expanded(
+                child: _buildQuickActionCard(
+                  icon: Icons.book,
+                  title: 'Journal',
+                  color: const Color(0xFF9C27B0),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildQuickActionCard(
+                  icon: Icons.psychology,
+                  title: 'Archetyp',
+                  color: const Color(0xFFAB47BC),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _buildQuickActionCard(
+                  icon: Icons.auto_awesome,
+                  title: 'Synchron.',
+                  color: const Color(0xFFBA68C8),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildQuickActionCard(
+                  icon: Icons.mood,
+                  title: 'Mood',
+                  color: const Color(0xFFCE93D8),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickActionCard({
+    required IconData icon,
+    required String title,
+    required Color color,
+  }) {
+    return Card(
+      color: color.withValues(alpha: 0.3),
+      child: InkWell(
+        onTap: () {
+          // TODO: Neuer Eintrag vom jeweiligen Typ
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              Icon(icon, color: color, size: 32),
+              const SizedBox(height: 8),
+              Text(
+                title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSpiritCard(SpiritEntry entry) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      color: const Color(0xFF1E1E1E),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: const Color(0xFF9C27B0).withValues(alpha: 0.2),
+          width: 1,
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Typ-Label mit Icon
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    _getTypeColor(entry.type).withValues(alpha: 0.3),
+                    _getTypeColor(entry.type).withValues(alpha: 0.1),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(
+                  color: _getTypeColor(entry.type).withValues(alpha: 0.4),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    _getTypeIcon(entry.type),
+                    color: _getTypeColor(entry.type),
+                    size: 18,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    _getTypeLabel(entry.type),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: _getTypeColor(entry.type),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            
+            // Titel
+            Text(
+              entry.title,
+              style: const TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 8),
+            
+            // Content mit SACRED GEOMETRY
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Sacred Geometry Widget - PREMIUM
+                SacredGeometryWidget(
+                  type: _getSacredGeometryType(entry.type),
+                  size: 70,
+                  primaryColor: _getTypeColor(entry.type),
+                  secondaryColor: const Color(0xFFFFD700), // Gold
+                  animate: true,
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        entry.content,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Colors.white70,
+                          height: 1.5,
+                        ),
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 8),
+                      // Energie-Level Visualisierung
+                      Row(
+                        children: List.generate(5, (index) {
+                          final isActive = index < (entry.rating ?? 3);
+                          return Container(
+                            width: 20,
+                            height: 4,
+                            margin: const EdgeInsets.only(right: 4),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(2),
+                              gradient: isActive
+                                  ? LinearGradient(
+                                      colors: [
+                                        _getTypeColor(entry.type),
+                                        _getTypeColor(entry.type).withValues(alpha: 0.6),
+                                      ],
+                                    )
+                                  : null,
+                              color: isActive ? null : Colors.white.withValues(alpha: 0.1),
+                              boxShadow: isActive
+                                  ? [
+                                      BoxShadow(
+                                        color: _getTypeColor(entry.type).withValues(alpha: 0.6),
+                                        blurRadius: 4,
+                                      ),
+                                    ]
+                                  : null,
+                            ),
+                          );
+                        }),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            
+            // Tags
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: entry.tags.map((tag) {
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF9C27B0).withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    tag,
+                    style: const TextStyle(fontSize: 11, color: Colors.white70),
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 12),
+            
+            // Erforschen Button (wie im Bild)
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  ToastHelper.showSuccess(context, '${entry.title} wird geöffnet...');
+                  // TODO: Entry-Details öffnen (Navigation)
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF9C27B0).withValues(alpha: 0.3),
+                  foregroundColor: const Color(0xFF9C27B0),
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    side: BorderSide(
+                      color: const Color(0xFF9C27B0).withValues(alpha: 0.5),
+                    ),
+                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.explore, size: 18),
+                    SizedBox(width: 8),
+                    Text(
+                      'Erforschen',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            
+            // Footer mit Mood & Datum
+            Row(
+              children: [
+                if (entry.mood != null) ...[
+                  const Icon(Icons.favorite, size: 14, color: Colors.pinkAccent),
+                  const SizedBox(width: 4),
+                  Text(
+                    entry.mood!,
+                    style: const TextStyle(color: Colors.pinkAccent, fontSize: 11),
+                  ),
+                ],
+                const Spacer(),
+                Text(
+                  _formatDate(entry.createdAt),
+                  style: const TextStyle(color: Colors.grey, fontSize: 11),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  
+  String _getTypeLabel(SpiritType type) {
+    switch (type) {
+      case SpiritType.journal:
+        return 'INNERES JOURNAL';
+      case SpiritType.symbol:
+        return 'SYMBOL-ENTDECKER';
+      case SpiritType.synchronicity:
+        return 'SYNCHRONIZITÄT';
+      case SpiritType.mood:
+        return 'MOOD-TRACKER';
+      case SpiritType.archetype:
+        return 'ARCHETYP';
+      case SpiritType.dream:
+        return 'TRAUM-LOG';
+    }
+  }
+  
+
+  String _getSacredGeometryType(SpiritType type) {
+    switch (type) {
+      case SpiritType.journal:
+      case SpiritType.symbol:
+        return 'flower'; // Flower of Life
+      case SpiritType.synchronicity:
+        return 'yantra'; // Sri Yantra
+      case SpiritType.archetype:
+        return 'chakra'; // Chakra Wheel
+      case SpiritType.mood:
+      case SpiritType.dream:
+        return 'spiral'; // Golden Ratio Spiral
+    }
+  }
+
+  IconData _getTypeIcon(SpiritType type) {
+    switch (type) {
+      case SpiritType.journal:
+        return Icons.book;
+      case SpiritType.symbol:
+        return Icons.category;
+      case SpiritType.synchronicity:
+        return Icons.auto_awesome;
+      case SpiritType.mood:
+        return Icons.mood;
+      case SpiritType.archetype:
+        return Icons.psychology;
+      case SpiritType.dream:
+        return Icons.nights_stay;
+    }
+  }
+
+  Color _getTypeColor(SpiritType type) {
+    switch (type) {
+      case SpiritType.journal:
+        return const Color(0xFF9C27B0);
+      case SpiritType.symbol:
+        return const Color(0xFFAB47BC);
+      case SpiritType.synchronicity:
+        return const Color(0xFFBA68C8);
+      case SpiritType.mood:
+        return const Color(0xFFCE93D8);
+      case SpiritType.archetype:
+        return const Color(0xFFE1BEE7);
+      case SpiritType.dream:
+        return const Color(0xFF7B1FA2);
+    }
+  }
+
+  String _formatDate(DateTime date) {
+    return DateHelpers.getRealisticTimestamp(date);
+  }
+
+  // 🔮 PERSÖNLICHE SIGNATUR CARD
+  Widget _buildPersonalSignatureCard() {
+    final dashboard = _dashboard!;
+    
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            dashboard.frequencyColor.withValues(alpha: 0.3),
+            dashboard.frequencyColor.withValues(alpha: 0.1),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: dashboard.frequencyColor.withValues(alpha: 0.5),
+          width: 2,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.fingerprint, color: dashboard.frequencyColor, size: 28),
+              const SizedBox(width: 12),
+              const Text(
+                'DEINE PERSÖNLICHE SIGNATUR',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          
+          // Frequenz Visualisierung
+          Center(
+            child: Column(
+              children: [
+                Text(
+                  dashboard.coreFrequency.toStringAsFixed(1),
+                  style: TextStyle(
+                    color: dashboard.frequencyColor,
+                    fontSize: 64,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const Text(
+                  'KERNFREQUENZ',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 12,
+                    letterSpacing: 2,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          const SizedBox(height: 24),
+          
+          // Numerologie Übersicht
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildNumberBadge('Lebenszahl', dashboard.lifePathNumber),
+              _buildNumberBadge('Seele', dashboard.soulNumber),
+              _buildNumberBadge('Ausdruck', dashboard.expressionNumber),
+              _buildNumberBadge('Name', dashboard.nameVibration),
+            ],
+          ),
+          
+          const SizedBox(height: 16),
+          
+          Text(
+            dashboard.personalSignature,
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 13,
+              height: 1.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNumberBadge(String label, int number) {
+    return Column(
+      children: [
+        Container(
+          width: 50,
+          height: 50,
+          decoration: BoxDecoration(
+            color: const Color(0xFF9C27B0).withValues(alpha: 0.3),
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: const Color(0xFF9C27B0),
+              width: 2,
+            ),
+          ),
+          child: Center(
+            child: Text(
+              '$number',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: const TextStyle(
+            color: Colors.white60,
+            fontSize: 10,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // 📅 ZYKLUS & LEBENSPHASEN CARD
+  Widget _buildCycleAnalysisCard() {
+    final dashboard = _dashboard!;
+    
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [
+            Color(0xFF00BCD4),
+            Color(0xFF006064),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: const [
+              Icon(Icons.calendar_today, color: Colors.white, size: 24),
+              SizedBox(width: 12),
+              Text(
+                'DEIN AKTUELLER ZYKLUS',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          
+          // Zyklus-Übersicht
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildCycleBadge('Jahr', dashboard.personalYear, Colors.cyan),
+              _buildCycleBadge('Monat', dashboard.personalMonth, Colors.teal),
+              _buildCycleBadge('Tag', dashboard.personalDay, Colors.lightBlue),
+            ],
+          ),
+          
+          const SizedBox(height: 20),
+          
+          // 9-Jahres-Zyklus
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '9-JAHRES-ZYKLUS',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Position ${dashboard.nineYearCycle['position']}/9 · ${dashboard.nineYearCycle['phase']}',
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  dashboard.nineYearCycle['description'],
+                  style: const TextStyle(
+                    color: Colors.white60,
+                    fontSize: 12,
+                  ),
+                ),
+                if (dashboard.isTransitionYear)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.orange),
+                      ),
+                      child: const Text(
+                        '⚠️ TRANSFORMATIONSJAHR',
+                        style: TextStyle(
+                          color: Colors.orange,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCycleBadge(String label, int number, Color color) {
+    return Column(
+      children: [
+        Container(
+          width: 60,
+          height: 60,
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.3),
+            shape: BoxShape.circle,
+            border: Border.all(color: color, width: 3),
+          ),
+          child: Center(
+            child: Text(
+              '$number',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          label,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // 🎭 ARCHETYPEN-MATRIX CARD
+  Widget _buildArchetypeMatrixCard() {
+    final dashboard = _dashboard!;
+    
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [
+            Color(0xFF7B1FA2),
+            Color(0xFF4A148C),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: const [
+              Icon(Icons.masks, color: Colors.white, size: 24),
+              SizedBox(width: 12),
+              Text(
+                'DEINE ARCHETYPEN',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          
+          _buildArchetypeRow(
+            'PRIMÄR',
+            dashboard.primaryArchetype,
+            const Color(0xFFFFD700),
+          ),
+          const SizedBox(height: 12),
+          _buildArchetypeRow(
+            'SEKUNDÄR',
+            dashboard.secondaryArchetype,
+            const Color(0xFFBA68C8),
+          ),
+          const SizedBox(height: 12),
+          _buildArchetypeRow(
+            'SCHATTEN',
+            dashboard.shadowArchetype,
+            const Color(0xFF616161),
+          ),
+          const SizedBox(height: 12),
+          _buildArchetypeRow(
+            'AKTIVIERT',
+            dashboard.activationArchetype,
+            const Color(0xFF00BCD4),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildArchetypeRow(String role, Map<String, dynamic> archetype, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            archetype['icon'] as IconData,
+            color: color,
+            size: 28,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  role,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  archetype['name'] as String,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  (archetype['keywords'] as List).take(2).join(' · '),
+                  style: const TextStyle(
+                    color: Colors.white60,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  // ⭐ ASTROLOGISCHE GRUNDMATRIX CARD
+  Widget _buildAstrologyCard() {
+    final dashboard = _dashboard!;
+    final profile = _storage.getEnergieProfile();
+    if (profile == null) return const SizedBox.shrink();
+    
+    final sunSign = _astrologyService.getSunSign(profile.birthDate);
+    final moonSign = _astrologyService.getMoonSign(profile.birthDate);
+    final ascendant = _astrologyService.getAscendant(profile.birthDate, profile.birthTime);
+    final elements = _astrologyService.getElementDistribution(profile.birthDate, profile.birthTime);
+    
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Color(sunSign['color'] as int).withValues(alpha: 0.3),
+            const Color(0xFF1A1A1A),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(sunSign['icon'] as IconData, color: Color(sunSign['color'] as int), size: 24),
+              const SizedBox(width: 12),
+              const Text(
+                'DEINE ASTROLOGISCHE MATRIX',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          
+          // Sonnenzeichen
+          _buildZodiacRow('☀️ SONNE', sunSign),
+          const SizedBox(height: 12),
+          
+          // Mondzeichen
+          _buildZodiacRow('🌙 MOND', moonSign),
+          
+          // Aszendent (optional)
+          if (ascendant != null) ...[
+            const SizedBox(height: 12),
+            _buildZodiacRow('🌅 ASZENDENT', ascendant),
+          ],
+          
+          const SizedBox(height: 20),
+          
+          // Elementeverteilung
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'ELEMENTEVERTEILUNG',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ...elements.entries.map((e) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    children: [
+                      Text(
+                        _getElementIcon(e.key),
+                        style: const TextStyle(fontSize: 16),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Stack(
+                          children: [
+                            Container(
+                              height: 8,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                            ),
+                            FractionallySizedBox(
+                              widthFactor: e.value / 3,
+                              child: Container(
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  color: _getElementColor(e.key),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '${e.value}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                )),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildZodiacRow(String label, Map<String, dynamic> sign) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Color(sign['color'] as int).withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Color(sign['color'] as int).withValues(alpha: 0.5),
+        ),
+      ),
+      child: Row(
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              color: Color(sign['color'] as int),
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            sign['symbol'] as String,
+            style: const TextStyle(fontSize: 24),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  sign['name'] as String,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '${sign['element']} · ${sign['keywords']}',
+                  style: const TextStyle(
+                    color: Colors.white60,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _getElementIcon(String element) {
+    switch (element) {
+      case 'Feuer': return '🔥';
+      case 'Wasser': return '💧';
+      case 'Luft': return '🌬️';
+      case 'Erde': return '🌍';
+      default: return '✨';
+    }
+  }
+
+  Color _getElementColor(String element) {
+    switch (element) {
+      case 'Feuer': return const Color(0xFFFF5252);
+      case 'Wasser': return const Color(0xFF00BCD4);
+      case 'Luft': return const Color(0xFF2196F3);
+      case 'Erde': return const Color(0xFF4CAF50);
+      default: return Colors.white;
+    }
+  }
+
+  // 🔮 SYNCHRONIZITÄTS-TRACKER CARD
+  Widget _buildSynchronicityCard() {
+    final recurringNumbers = _synchronicityService.detectRecurringNumbers(_syncEvents);
+    final masterNumbers = _synchronicityService.detectMasterNumbers(_syncEvents);
+    
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [
+            Color(0xFFFFD700),
+            Color(0xFFFF9800),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: const [
+              Icon(Icons.stars, color: Colors.white, size: 24),
+              SizedBox(width: 12),
+              Text(
+                'SYNCHRONIZITÄTS-TRACKER',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          
+          // Meisterzahlen
+          if (masterNumbers.isNotEmpty) ...[
+            const Text(
+              'MEISTERZAHLEN',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.5,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: masterNumbers.map((num) => Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.white),
+                ),
+                child: Text(
+                  '$num',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              )).toList(),
+            ),
+            const SizedBox(height: 16),
+          ],
+          
+          // Letzte Events
+          const Text(
+            'NEUESTE EREIGNISSE',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.5,
+            ),
+          ),
+          const SizedBox(height: 8),
+          ..._syncEvents.take(3).map((event) => Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  event.description,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    ...List.generate(event.resonanceStrength, (i) => const Icon(
+                      Icons.star,
+                      color: Colors.white,
+                      size: 12,
+                    )),
+                    const SizedBox(width: 8),
+                    Text(
+                      DateHelpers.getRealisticTimestamp(event.timestamp),
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          )),
+        ],
+      ),
+    );
+  }
+
+  // 📝 INNERES JOURNAL CARD
+  Widget _buildInnerJournalCard() {
+    final dashboard = _dashboard!;
+    final questions = _journalService.generateContextualQuestions(
+      dashboard.personalYear,
+      dashboard.personalMonth,
+      dashboard.primaryArchetype['name'] as String,
+      dashboard.isTransitionYear,
+      _astrologyService.getDominantElement(dashboard.birthDate, null),
+    );
+    
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [
+            Color(0xFF4A148C),
+            Color(0xFF311B92),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: const [
+              Icon(Icons.auto_stories, color: Colors.white, size: 24),
+              SizedBox(width: 12),
+              Text(
+                'INNERES JOURNAL',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          
+          // Themen-Fokus
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFBA68C8).withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFBA68C8)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.wb_twilight, color: Color(0xFFBA68C8), size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _journalService.getThemeFocus(dashboard.personalYear, dashboard.personalMonth),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          
+          // Kontextuelle Fragen
+          const Text(
+            'REFLEXIONSFRAGEN FÜR DICH',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.5,
+            ),
+          ),
+          const SizedBox(height: 12),
+          ...questions.take(3).map((q) => Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.3),
+              ),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.question_answer, color: Color(0xFFBA68C8), size: 20),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    q,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      height: 1.5,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          )),
+        ],
+      ),
+    );
+  }
+}
+
+/// Mandala Symbol Painter für spirituelle Visualisierung
+class MandalaSymbolPainter extends CustomPainter {
+  final Color color;
+
+  MandalaSymbolPainter(this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2;
+    
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5
+      ..color = color.withValues(alpha: 0.3);
+
+    // Äußerer Kreis
+    canvas.drawCircle(center, radius * 0.9, paint);
+    
+    // Innere Kreise (konzentrisch)
+    for (int i = 1; i <= 3; i++) {
+      canvas.drawCircle(center, radius * (0.9 - i * 0.2), paint);
+    }
+    
+    // Blütenblätter (8-teilig)
+    for (int i = 0; i < 8; i++) {
+      final angle = (i * math.pi / 4);
+      final x = center.dx + math.cos(angle) * radius * 0.7;
+      final y = center.dy + math.sin(angle) * radius * 0.7;
+      
+      canvas.drawCircle(Offset(x, y), radius * 0.15, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(MandalaSymbolPainter oldDelegate) => color != oldDelegate.color;
+}

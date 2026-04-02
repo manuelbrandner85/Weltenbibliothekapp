@@ -1,0 +1,281 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
+// import (disabled for Android)_export.dart';
+
+/// VOICE RECORDING WIDGET
+/// 
+/// Features:
+/// - Hold-to-Record: Halten zum Aufnehmen
+/// - Duration Timer: Live-Dauer-Anzeige
+/// - Waveform Animation: Visuelles Feedback
+/// - Upload: Automatischer Cloudflare R2 Upload
+/// - AAC-LC Encoding: 128 kbps, 44.1 kHz
+/// 
+/// Usage:
+/// ```dart
+/// VoiceRecordButton(
+///   onRecordComplete: (audioUrl) {
+///     // Send audio message with audioUrl
+///   },
+/// )
+/// ```
+
+class VoiceRecordButton extends StatefulWidget {
+  final Function(String audioUrl, Duration duration)? onRecordComplete;
+  final Color color;
+
+  const VoiceRecordButton({
+    super.key,
+    this.onRecordComplete,
+    this.color = Colors.red,
+  });
+
+  @override
+  State<VoiceRecordButton> createState() => _VoiceRecordButtonState();
+}
+
+class _VoiceRecordButtonState extends State<VoiceRecordButton>
+    with TickerProviderStateMixin {
+  final VoiceMessageService _voiceService = VoiceMessageService();
+  bool _isRecording = false;
+  Duration _recordingDuration = Duration.zero;
+  late AnimationController _pulseController;
+  late AnimationController _waveformController;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    )..repeat(reverse: true);
+
+    _waveformController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    _waveformController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _startRecording() async {
+    try {
+      // ✅ BERECHTIGUNG STANDARD AN: Keine Prüfung nötig!
+      // RECORD_AUDIO ist im AndroidManifest.xml → immer erlaubt
+
+      // Start recording
+      await _voiceService.startRecording();
+
+      setState(() {
+        _isRecording = true;
+        _recordingDuration = Duration.zero;
+      });
+
+      // Start duration timer
+      _startDurationTimer();
+
+      if (kDebugMode) {
+        debugPrint('Voice Record: Started recording');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Voice Record: Error starting - $e');
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Aufnahme fehlgeschlagen: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _startDurationTimer() {
+    Future.doWhile(() async {
+      if (!_isRecording) return false;
+
+      await Future.delayed(const Duration(milliseconds: 100));
+
+      if (mounted) {
+        setState(() {
+          _recordingDuration += const Duration(milliseconds: 100);
+        });
+      }
+
+      return _isRecording;
+    });
+  }
+
+  Future<void> _stopRecording() async {
+    try {
+      // Stop recording
+      final audioPath = await _voiceService.stopRecording();
+
+      setState(() {
+        _isRecording = false;
+      });
+
+      if (audioPath != null && audioPath.isNotEmpty) {
+        // Show uploading indicator
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Sprachnachricht wird hochgeladen...'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+
+        // Upload to Cloudflare R2 (duration wird automatisch berechnet)
+        final audioUrl = await _voiceService.uploadVoiceMessage(audioPath);
+
+        if (kDebugMode) {
+          debugPrint('Voice Record: Uploaded to $audioUrl');
+        }
+
+        // Callback with audio URL and duration (if audioUrl is not null)
+        if (audioUrl != null) {
+          widget.onRecordComplete?.call(audioUrl, _recordingDuration);
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Sprachnachricht gesendet (${_recordingDuration.inSeconds}s)',
+                ),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
+        } else {
+          throw Exception('Upload fehlgeschlagen: Keine URL zurückgegeben');
+        }
+      }
+    } catch (e) {
+      setState(() {
+        _isRecording = false;
+      });
+
+      if (kDebugMode) {
+        debugPrint('Voice Record: Error stopping - $e');
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Fehler beim Hochladen: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  String _formatDuration(Duration duration) {
+    final minutes = duration.inMinutes.remainder(60).toString().padLeft(1, '0');
+    final seconds = duration.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$minutes:$seconds';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: 'Sprachnachricht aufnehmen',
+      hint: 'Gedrückt halten zum Aufnehmen',
+      button: true,
+      enabled: !_isRecording,
+      child: GestureDetector(
+        onLongPressStart: (_) => _startRecording(),
+        onLongPressEnd: (_) => _stopRecording(),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          width: _isRecording ? 120 : 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: _isRecording
+                ? widget.color.withValues(alpha: 0.2)
+                : widget.color.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: widget.color,
+              width: 2,
+            ),
+          ),
+          child: _isRecording ? _buildRecordingUI() : _buildIdleUI(),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildIdleUI() {
+    return Icon(
+      Icons.mic,
+      color: widget.color,
+      size: 20,
+    );
+  }
+
+  Widget _buildRecordingUI() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        // Pulsing Red Dot
+        FadeTransition(
+          opacity: _pulseController,
+          child: Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(
+              color: widget.color,
+              shape: BoxShape.circle,
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        // Duration Timer
+        Text(
+          _formatDuration(_recordingDuration),
+          style: TextStyle(
+            color: widget.color,
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
+          ),
+        ),
+        const SizedBox(width: 8),
+        // Waveform Animation
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: List.generate(
+            3,
+            (index) => AnimatedBuilder(
+              animation: _waveformController,
+              builder: (context, child) {
+                final delay = index * 0.3;
+                final value = (_waveformController.value + delay) % 1.0;
+                final height = 4 + (value * 10);
+
+                return Container(
+                  width: 2,
+                  height: height,
+                  margin: const EdgeInsets.symmetric(horizontal: 1),
+                  decoration: BoxDecoration(
+                    color: widget.color,
+                    borderRadius: BorderRadius.circular(1),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}

@@ -1,0 +1,156 @@
+/// 🗺️ MAP CLUSTERING HELPER
+/// Wiederverwendbare Marker-Clustering Funktionalität für flutter_map
+/// 
+/// Features:
+/// - Automatisches Clustering bei vielen Markern
+/// - Zoom-responsive Cluster-Größen
+/// - Custom Cluster-Styling
+/// - Performance-optimiert
+library;
+
+import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:flutter_map_marker_cluster/flutter_map_marker_cluster.dart';
+import 'package:latlong2/latlong.dart';
+
+class MapClusteringHelper {
+  /// Erstellt einen MarkerClusterLayerWidget mit Standard-Styling
+  static MarkerClusterLayerWidget createClusterLayer({
+    required List<Marker> markers,
+    Color? clusterColor,
+    Color? textColor,
+    int maxClusterRadius = 80,
+    bool showPopup = true,
+  }) {
+    return MarkerClusterLayerWidget(
+      options: MarkerClusterLayerOptions(
+        maxClusterRadius: maxClusterRadius,
+        size: const Size(40, 40),
+        alignment: Alignment.center,
+        padding: const EdgeInsets.all(50),
+        maxZoom: 15,
+        markers: markers,
+        
+        // Cluster-Builder: Zeigt Anzahl der Marker
+        builder: (context, markers) {
+          return Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              color: clusterColor ?? Colors.blue.withOpacity(0.8),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.3),
+                  blurRadius: 8,
+                  spreadRadius: 1,
+                ),
+              ],
+            ),
+            child: Center(
+              child: Text(
+                markers.length.toString(),
+                style: TextStyle(
+                  color: textColor ?? Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+            ),
+          );
+        },
+        
+        // Popup beim Tap auf Cluster (optional)
+        onClusterTap: showPopup ? (cluster) {
+          // Könnte hier einen Dialog öffnen mit Liste der Marker
+          debugPrint('Cluster tapped: ${cluster.markers.length} markers');
+        } : null,
+      ),
+    );
+  }
+  
+  /// Erstellt Marker mit einheitlichem Styling
+  static Marker createMarker({
+    required LatLng point,
+    required String id,
+    required Widget child,
+    double width = 40,
+    double height = 40,
+    Alignment? alignment,
+    VoidCallback? onTap,
+  }) {
+    return Marker(
+      point: point,
+      width: width,
+      height: height,
+      alignment: alignment ?? Alignment.center,
+      child: GestureDetector(
+        onTap: onTap,
+        child: child,
+      ),
+    );
+  }
+  
+  /// Standard-Marker-Icon mit Farbe und Icon
+  static Widget createMarkerIcon({
+    required IconData icon,
+    Color color = Colors.blue,
+    double size = 40,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: color,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.3),
+            blurRadius: 4,
+            spreadRadius: 1,
+          ),
+        ],
+      ),
+      child: Icon(
+        icon,
+        color: Colors.white,
+        size: size * 0.6,
+      ),
+    );
+  }
+  
+  /// Berechnet optimalen MaxClusterRadius basierend auf Marker-Anzahl
+  static int calculateOptimalClusterRadius(int markerCount) {
+    if (markerCount < 10) return 0; // Kein Clustering
+    if (markerCount < 50) return 60;
+    if (markerCount < 100) return 80;
+    if (markerCount < 500) return 100;
+    return 120; // Sehr viele Marker
+  }
+  
+  /// Gruppiert Marker nach Typ für verschiedene Cluster-Farben
+  static Map<String, List<Marker>> groupMarkersByType(
+    List<Marker> markers,
+    String Function(Marker) typeExtractor,
+  ) {
+    final Map<String, List<Marker>> grouped = {};
+    
+    for (final marker in markers) {
+      final type = typeExtractor(marker);
+      grouped.putIfAbsent(type, () => []).add(marker);
+    }
+    
+    return grouped;
+  }
+  
+  /// Standard-Farben für verschiedene Marker-Typen
+  static const Map<String, Color> typeColors = {
+    'energie': Color(0xFF9C27B0),      // Lila
+    'materie': Color(0xFF2196F3),      // Blau
+    'wichtig': Color(0xFFFF5722),      // Rot
+    'neutral': Color(0xFF9E9E9E),      // Grau
+    'positiv': Color(0xFF4CAF50),      // Grün
+    'warning': Color(0xFFFF9800),      // Orange
+  };
+  
+  /// Holt Farbe basierend auf Typ
+  static Color getColorForType(String type) {
+    return typeColors[type.toLowerCase()] ?? typeColors['neutral']!;
+  }
+}

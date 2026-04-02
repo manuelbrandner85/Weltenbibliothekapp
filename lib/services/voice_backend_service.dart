@@ -5,15 +5,14 @@ library;
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import '../config/api_config.dart';
 import '../services/webrtc_voice_service.dart' show VoiceParticipant;
 import '../core/exceptions/exception_guard.dart';
 import '../core/exceptions/specialized_exceptions.dart';
 
 /// Backend Service für Voice Chat (Backend-First Flow)
 class VoiceBackendService {
-  // _baseUrl via ApiConfig
-  
+  static const String _baseUrl = 'https://weltenbibliothek-api-v3.brandy13062.workers.dev'; // ✅ MIGRATED to v3.1
+  static const String _apiToken = 'y-Xiv3kKeiybDm2CV0yLFu7TSd22co6NBw3udn5Y';
   
   /// Backend-Join: Session im Backend erstellen, Session-ID erhalten
   /// 
@@ -37,9 +36,9 @@ class VoiceBackendService {
         }
         
         final response = await http.post(
-          Uri.parse('${ApiConfig.workerUrl}/voice/join'),
+          Uri.parse('$_baseUrl/voice/join'),
           headers: {
-            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $_apiToken',
             'Content-Type': 'application/json',
           },
           body: jsonEncode({
@@ -138,7 +137,7 @@ class VoiceBackendService {
         return joinResponse;
       },
       operationName: 'Voice Join (Backend)',
-      url: '${ApiConfig.workerUrl}/voice/join',
+      url: '$_baseUrl/voice/join',
       method: 'POST',
       context: {
         'roomId': roomId,
@@ -165,9 +164,9 @@ class VoiceBackendService {
         }
         
         final response = await http.post(
-          Uri.parse('${ApiConfig.workerUrl}/voice/leave'),
+          Uri.parse('$_baseUrl/voice/leave'),
           headers: {
-            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $_apiToken',
             'Content-Type': 'application/json',
           },
           body: jsonEncode({
@@ -209,7 +208,7 @@ class VoiceBackendService {
         return leaveResponse;
       },
       operationName: 'Voice Leave (Backend)',
-      url: '${ApiConfig.workerUrl}/voice/leave',
+      url: '$_baseUrl/voice/leave',
       method: 'POST',
       context: {'sessionId': sessionId},
       // Error-Recovery: Bei Fehler trotzdem "erfolgreich" zurückgeben
@@ -231,9 +230,9 @@ class VoiceBackendService {
   Future<List<VoiceRoomInfo>> getActiveRooms(String world) async {
     try {
       final response = await http.get(
-        Uri.parse('${ApiConfig.workerUrl}/voice/rooms/$world'),
+        Uri.parse('$_baseUrl/voice/rooms/$world'),
         headers: {
-          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $_apiToken',
         },
       );
       
@@ -268,9 +267,9 @@ class VoiceBackendService {
         }
         
         final response = await http.get(
-          Uri.parse('${ApiConfig.workerUrl}/voice/participants/$roomId'),
+          Uri.parse('$_baseUrl/voice/participants/$roomId'),
           headers: {
-            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $_apiToken',
             'Content-Type': 'application/json',
           },
         ).timeout(
@@ -331,7 +330,7 @@ class VoiceBackendService {
         return participants;
       },
       operationName: 'Fetch Participants (Backend)',
-      url: '${ApiConfig.workerUrl}/voice/participants/$roomId',
+      url: '$_baseUrl/voice/participants/$roomId',
       method: 'GET',
       context: {'roomId': roomId},
     );

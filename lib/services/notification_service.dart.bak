@@ -1,0 +1,315 @@
+/// Web Push Notifications Service
+/// Browser-based notification system
+library;
+
+import 'dart:async';
+import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+// Conditional import for web
+import 'dart:html' as html show Notification, NotificationPermission;
+
+/// Notification Type
+enum NotificationType {
+  achievementUnlock,
+  streakReminder,
+  dailyPractice,
+  syncComplete,
+}
+
+/// Notification Service (Web-only)
+class NotificationService {
+  static final NotificationService _instance = NotificationService._internal();
+  factory NotificationService() => _instance;
+  NotificationService._internal();
+
+  /// Notification permission status
+  bool _permissionGranted = false;
+  bool get permissionGranted => _permissionGranted;
+
+  /// Notification enabled setting
+  bool _notificationsEnabled = false;
+  bool get notificationsEnabled => _notificationsEnabled;
+
+  /// Pending notifications (for when permission is granted)
+  final List<Map<String, dynamic>> _pendingNotifications = [];
+
+  // ============================================
+  // INITIALIZATION
+  // ============================================
+
+  /// Initialize notification service
+  Future<void> init() async {
+    try {
+      // Check if notifications are supported (web only)
+      if (kIsWeb && html.Notification.supported) {
+        // Load saved settings
+        await _loadSettings();
+        
+        // Check current permission
+        await _checkPermission();
+        
+        if (kDebugMode) {
+          debugPrint('🔔 NotificationService initialized');
+          debugPrint('   Permission granted: $_permissionGranted');
+          debugPrint('   Notifications enabled: $_notificationsEnabled');
+        }
+      } else {
+        if (kDebugMode) {
+          debugPrint('⚠️ Notifications not supported on this platform');
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('⚠️ NotificationService init error: $e');
+      }
+    }
+  }
+
+  /// Load notification settings
+  Future<void> _loadSettings() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _notificationsEnabled = prefs.getBool('notifications_enabled') ?? false;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('⚠️ Failed to load notification settings: $e');
+      }
+    }
+  }
+
+  /// Save notification settings
+  Future<void> _saveSettings() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('notifications_enabled', _notificationsEnabled);
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('⚠️ Failed to save notification settings: $e');
+      }
+    }
+  }
+
+  /// Check notification permission
+  Future<void> _checkPermission() async {
+    if (!kIsWeb || !html.Notification.supported) {
+      return;
+    }
+
+    try {
+      final permission = html.Notification.permission;
+      _permissionGranted = (permission == 'granted');
+      
+      if (kDebugMode) {
+        debugPrint('🔔 Notification permission: $permission');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('⚠️ Failed to check permission: $e');
+      }
+    }
+  }
+
+  // ============================================
+  // PERMISSION MANAGEMENT
+  // ============================================
+
+  /// Request notification permission
+  Future<bool> requestPermission() async {
+    if (!kIsWeb || !html.Notification.supported) {
+      return false;
+    }
+
+    try {
+      final permission = await html.Notification.requestPermission();
+      _permissionGranted = (permission == 'granted');
+      
+      if (_permissionGranted) {
+        // Process pending notifications
+        await _processPendingNotifications();
+      }
+      
+      if (kDebugMode) {
+        debugPrint('🔔 Permission request result: $permission');
+      }
+      
+      return _permissionGranted;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('⚠️ Permission request failed: $e');
+      }
+      return false;
+    }
+  }
+
+  /// Enable notifications
+  Future<bool> enableNotifications() async {
+    if (!_permissionGranted) {
+      final granted = await requestPermission();
+      if (!granted) {
+        return false;
+      }
+    }
+
+    _notificationsEnabled = true;
+    await _saveSettings();
+    
+    if (kDebugMode) {
+      debugPrint('✅ Notifications enabled');
+    }
+    
+    return true;
+  }
+
+  /// Disable notifications
+  Future<void> disableNotifications() async {
+    _notificationsEnabled = false;
+    await _saveSettings();
+    
+    if (kDebugMode) {
+      debugPrint('🔕 Notifications disabled');
+    }
+  }
+
+  // ============================================
+  // NOTIFICATION SENDING
+  // ============================================
+
+  /// Show notification
+  Future<void> showNotification({
+    required String title,
+    required String body,
+    String? icon,
+    NotificationType? type,
+    Map<String, dynamic>? data,
+  }) async {
+    if (!kIsWeb || !html.Notification.supported) {
+      if (kDebugMode) {
+        debugPrint('⚠️ Notifications not supported');
+      }
+      return;
+    }
+
+    // Check if enabled
+    if (!_notificationsEnabled) {
+      if (kDebugMode) {
+        debugPrint('🔕 Notifications disabled by user');
+      }
+      return;
+    }
+
+    // Check permission
+    if (!_permissionGranted) {
+      // Add to pending queue
+      _pendingNotifications.add({
+        'title': title,
+        'body': body,
+        'icon': icon,
+        'type': type,
+        'data': data,
+      });
+      
+      if (kDebugMode) {
+        debugPrint('📦 Notification queued (permission not granted)');
+      }
+      return;
+    }
+
+    try {
+      // Create notification
+      final notification = html.Notification(
+        title,
+        body: body,
+        icon: icon ?? '/icons/Icon-192.png',
+      );
+
+      // Auto-close after 5 seconds
+      Timer(const Duration(seconds: 5), () {
+        notification.close();
+      });
+
+      if (kDebugMode) {
+        debugPrint('🔔 Notification shown: $title');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('⚠️ Failed to show notification: $e');
+      }
+    }
+  }
+
+  /// Process pending notifications
+  Future<void> _processPendingNotifications() async {
+    if (_pendingNotifications.isEmpty) {
+      return;
+    }
+
+    if (kDebugMode) {
+      debugPrint('📤 Processing ${_pendingNotifications.length} pending notifications');
+    }
+
+    for (final notification in List.from(_pendingNotifications)) {
+      await showNotification(
+        title: notification['title'],
+        body: notification['body'],
+        icon: notification['icon'],
+        type: notification['type'],
+        data: notification['data'],
+      );
+    }
+
+    _pendingNotifications.clear();
+  }
+
+  // ============================================
+  // SPECIFIC NOTIFICATIONS
+  // ============================================
+
+  /// Achievement unlock notification
+  Future<void> notifyAchievementUnlock(String achievementTitle, String icon) async {
+    await showNotification(
+      title: '🏆 Achievement Freigeschaltet!',
+      body: achievementTitle,
+      icon: '/icons/Icon-192.png',
+      type: NotificationType.achievementUnlock,
+    );
+  }
+
+  /// Streak reminder notification
+  Future<void> notifyStreakReminder(int currentStreak) async {
+    await showNotification(
+      title: '🔥 Dein Streak ist in Gefahr!',
+      body: 'Du hast aktuell einen $currentStreak-Tage-Streak. Komm heute noch einmal vorbei!',
+      icon: '/icons/Icon-192.png',
+      type: NotificationType.streakReminder,
+    );
+  }
+
+  /// Daily practice reminder
+  Future<void> notifyDailyPractice() async {
+    await showNotification(
+      title: '🧘 Zeit für deine tägliche Praxis',
+      body: 'Nimm dir heute Zeit für Meditation oder Journaling.',
+      icon: '/icons/Icon-192.png',
+      type: NotificationType.dailyPractice,
+    );
+  }
+
+  /// Cloud sync complete notification
+  Future<void> notifySyncComplete(int itemsCount) async {
+    await showNotification(
+      title: '☁️ Cloud-Sync abgeschlossen',
+      body: '$itemsCount Einträge wurden erfolgreich gesichert.',
+      icon: '/icons/Icon-192.png',
+      type: NotificationType.syncComplete,
+    );
+  }
+
+  /// Schedule daily reminder (simplified - no actual scheduling)
+  Future<void> scheduleDailyReminder(int hour, int minute) async {
+    if (kDebugMode) {
+      debugPrint('📅 Daily reminder scheduled for $hour:${minute.toString().padLeft(2, '0')}');
+      debugPrint('   (Note: Actual scheduling requires service worker)');
+    }
+  }
+}

@@ -1,0 +1,1531 @@
+import 'package:flutter/material.dart';
+import '../models/spirit_extended_models.dart';
+import '../models/spirit_dashboard.dart';
+import '../models/energie_profile.dart';
+import '../services/storage_service.dart';
+import '../services/daily_practices_service.dart';
+import '../services/weekly_horoscope_service.dart';
+import '../services/astro_transit_service.dart';
+import '../services/compatibility_service.dart';
+
+/// SPIRIT TAB - ERWEITERTE WIDGETS
+/// Sammlung aller neuen UI-Komponenten f\u00fcr den Spirit-Tab
+
+class SpiritExtendedWidgets {
+  final StorageService _storage = StorageService();
+  final DailyPracticesService _practicesService = DailyPracticesService();
+  final WeeklyHoroscopeService _horoscopeService = WeeklyHoroscopeService();
+  final AstroTransitService _transitService = AstroTransitService();
+  final CompatibilityService _compatibilityService = CompatibilityService();
+
+  /// VORSCHLAG 1: T\u00c4GLICHE PRAXIS CARD
+  Widget buildDailyPracticesCard({
+    required BuildContext context,
+    required EnergieProfile profile,
+    required SpiritDashboard dashboard,
+  }) {
+    return FutureBuilder<List<DailySpiritPractice>>(
+      future: _practicesService.generateDailyPractices(
+        profile: profile,
+        dashboard: dashboard,
+      ),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const SizedBox.shrink();
+        }
+
+        final practices = snapshot.data!;
+        final completedCount = practices.where((p) => p.completed).length;
+
+        return Container(
+          margin: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF6A1B9A), Color(0xFF4A148C)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: const Color(0xFF9C27B0).withOpacity(0.5),
+              width: 2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF9C27B0).withOpacity(0.3),
+                blurRadius: 30,
+                spreadRadius: 5,
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // HEADER
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF9C27B0).withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.self_improvement,
+                      color: Color(0xFFCE93D8),
+                      size: 28,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'T\u00c4GLICHE PRAXIS',
+                          style: TextStyle(
+                            color: Color(0xFFCE93D8),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.5,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '$completedCount von ${practices.length} abgeschlossen',
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // PROGRESS RING
+                  Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      SizedBox(
+                        width: 50,
+                        height: 50,
+                        child: CircularProgressIndicator(
+                          value: completedCount / practices.length,
+                          strokeWidth: 4,
+                          backgroundColor: Colors.white12,
+                          valueColor: const AlwaysStoppedAnimation(Color(0xFFFFD700)),
+                        ),
+                      ),
+                      Text(
+                        '$completedCount',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              // \u00dcBUNGEN LISTE
+              ...practices.take(3).map((practice) => _buildPracticeItem(
+                context,
+                practice,
+              )),
+              // ALLE ANZEIGEN BUTTON
+              if (practices.length > 3)
+                Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: TextButton.icon(
+                    onPressed: () {
+                      // TODO: Navigate to full practices screen
+                    },
+                    icon: const Icon(Icons.arrow_forward, color: Color(0xFFCE93D8)),
+                    label: const Text(
+                      'Alle \u00dcbungen anzeigen',
+                      style: TextStyle(color: Color(0xFFCE93D8)),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildPracticeItem(BuildContext context, DailySpiritPractice practice) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E1E1E),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: practice.completed 
+              ? const Color(0xFFFFD700).withOpacity(0.3)
+              : Colors.white12,
+        ),
+      ),
+      child: Row(
+        children: [
+          // CHECKBOX
+          GestureDetector(
+            onTap: () async {
+              if (!practice.completed) {
+                await _practicesService.completePractice(practice.id);
+                // Trigger rebuild
+                (context as Element).markNeedsBuild();
+              }
+            },
+            child: Container(
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(
+                color: practice.completed 
+                    ? const Color(0xFFFFD700)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(
+                  color: practice.completed 
+                      ? const Color(0xFFFFD700)
+                      : Colors.white30,
+                  width: 2,
+                ),
+              ),
+              child: practice.completed
+                  ? const Icon(Icons.check, color: Colors.black, size: 16)
+                  : null,
+            ),
+          ),
+          const SizedBox(width: 12),
+          // CONTENT
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  practice.title,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    decoration: practice.completed 
+                        ? TextDecoration.lineThrough
+                        : null,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Icon(
+                      _getPracticeIcon(practice.category),
+                      color: const Color(0xFF9C27B0),
+                      size: 14,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${practice.durationMinutes} Min',
+                      style: const TextStyle(
+                        color: Colors.white54,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          // INFO BUTTON
+          IconButton(
+            icon: const Icon(Icons.info_outline, color: Color(0xFFCE93D8)),
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) => _buildPracticeDetailDialog(context, practice),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  IconData _getPracticeIcon(String category) {
+    switch (category) {
+      case 'meditation': return Icons.self_improvement;
+      case 'breathing': return Icons.air;
+      case 'chakra': return Icons.spa;
+      case 'journal': return Icons.edit_note;
+      default: return Icons.star;
+    }
+  }
+
+  Widget _buildPracticeDetailDialog(BuildContext context, DailySpiritPractice practice) {
+    return Dialog(
+      backgroundColor: const Color(0xFF1E1E1E),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFF9C27B0).withOpacity(0.3)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              practice.title,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              practice.description,
+              style: const TextStyle(
+                color: Colors.white70,
+                fontSize: 14,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      _getPracticeIcon(practice.category),
+                      color: const Color(0xFF9C27B0),
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '${practice.durationMinutes} Minuten',
+                      style: const TextStyle(
+                        color: Color(0xFFCE93D8),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF9C27B0),
+                    foregroundColor: Colors.white,
+                  ),
+                  child: const Text('Schlie\u00dfen'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// VORSCHLAG 7: WOCHENHOROSKOP CARD
+  Widget buildWeeklyHoroscopeCard({
+    required BuildContext context,
+    required EnergieProfile profile,
+    required SpiritDashboard dashboard,
+  }) {
+    return FutureBuilder<WeeklyHoroscope>(
+      future: _horoscopeService.generateWeeklyHoroscope(
+        profile: profile,
+        dashboard: dashboard,
+      ),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const SizedBox.shrink();
+        }
+
+        final horoscope = snapshot.data!;
+
+        return Container(
+          margin: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF4A148C), Color(0xFF1A1A1A)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: const Color(0xFF9C27B0).withOpacity(0.5),
+              width: 2,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // HEADER
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF9C27B0).withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.calendar_today,
+                      color: Color(0xFFCE93D8),
+                      size: 28,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  const Expanded(
+                    child: Text(
+                      'DEINE WOCHE',
+                      style: TextStyle(
+                        color: Color(0xFFCE93D8),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              // OVERALL THEME
+              Text(
+                horoscope.overallTheme,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 20),
+              // CATEGORIES
+              ...horoscope.categories.entries.map((entry) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(
+                      width: 100,
+                      child: Text(
+                        '',
+                        style: TextStyle(
+                          color: Color(0xFFCE93D8),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: Text(
+                        entry.value,
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              )),
+              const SizedBox(height: 16),
+              // SPECIAL ADVICE
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFD700).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: const Color(0xFFFFD700).withOpacity(0.3),
+                  ),
+                ),
+                child: Text(
+                  horoscope.specialAdvice,
+                  style: const TextStyle(
+                    color: Color(0xFFFFD700),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// VORSCHLAG 8: GAMIFICATION HEADER
+  Widget buildGamificationHeader(BuildContext context) {
+    final progress = _storage.getSpiritProgress();
+
+    return Container(
+      margin: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFFFD700), Color(0xFFFFA000)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFFFD700).withOpacity(0.3),
+            blurRadius: 20,
+            spreadRadius: 2,
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // LEVEL BADGE
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              border: Border.all(color: const Color(0xFFFFD700), width: 3),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  '${progress.currentLevel}',
+                  style: const TextStyle(
+                    color: Color(0xFFFFA000),
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const Text(
+                  'LVL',
+                  style: TextStyle(
+                    color: Color(0xFFFFA000),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 16),
+          // PROGRESS INFO
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  progress.levelName,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    const Icon(Icons.bolt, color: Colors.white, size: 16),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${progress.totalPoints} Punkte',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    const Icon(Icons.local_fire_department, color: Colors.white, size: 16),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${progress.currentStreak} Tage Streak',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                // PROGRESS BAR
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: LinearProgressIndicator(
+                    value: progress.totalPoints % 100 / 100,
+                    backgroundColor: Colors.white30,
+                    valueColor: const AlwaysStoppedAnimation(Colors.white),
+                    minHeight: 6,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${progress.pointsToNextLevel} Punkte bis Level ${progress.currentLevel + 1}',
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 10,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// VORSCHLAG 2: SYNCHRONIZITÄTS-TRACKER MIT PATTERN-ERKENNUNG
+  Widget buildSynchronicityTrackerCard(BuildContext context) {
+    final synchronicities = _storage.getSynchronicities(lastDays: 7);
+    final patterns = _storage.getSynchronicityNumberPatterns();
+    
+    // Top 3 wiederkehrende Zahlen
+    final topPatterns = patterns.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    final top3 = topPatterns.take(3).toList();
+
+    return Container(
+      margin: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF1A237E), Color(0xFF0D47A1)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: const Color(0xFF448AFF).withOpacity(0.5),
+          width: 2,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // HEADER
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF448AFF).withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.auto_awesome,
+                  color: Color(0xFF448AFF),
+                  size: 28,
+                ),
+              ),
+              const SizedBox(width: 16),
+              const Expanded(
+                child: Text(
+                  'SYNCHRONIZITÄTS-TRACKER',
+                  style: TextStyle(
+                    color: Color(0xFF448AFF),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+              ),
+              // ADD BUTTON
+              IconButton(
+                icon: const Icon(Icons.add_circle, color: Color(0xFF448AFF)),
+                onPressed: () => _showAddSynchronicityDialog(context),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          // PATTERN-ERKENNUNG
+          if (top3.isNotEmpty) ...[
+            const Text(
+              'WIEDERKEHRENDE ZAHLEN',
+              style: TextStyle(
+                color: Color(0xFF448AFF),
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 1.2,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: top3.map((entry) => Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFD700).withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: const Color(0xFFFFD700).withOpacity(0.5),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '${entry.key}',
+                      style: const TextStyle(
+                        color: Color(0xFFFFD700),
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFD700),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        '${entry.value}x',
+                        style: const TextStyle(
+                          color: Colors.black,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              )).toList(),
+            ),
+            const SizedBox(height: 20),
+          ],
+          // LETZTE SYNCHRONIZITÄTEN
+          const Text(
+            'LETZTE 7 TAGE',
+            style: TextStyle(
+              color: Color(0xFF448AFF),
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 1.2,
+            ),
+          ),
+          const SizedBox(height: 12),
+          if (synchronicities.isEmpty)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(20),
+                child: Text(
+                  'Noch keine Synchronizitäten erfasst.\nTippe auf + um zu starten!',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white54,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            )
+          else
+            ...synchronicities.take(3).map((sync) => Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1E1E1E),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFF448AFF).withOpacity(0.3)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      ...List.generate(
+                        sync.significance,
+                        (_) => const Icon(Icons.star, color: Color(0xFFFFD700), size: 16),
+                      ),
+                      const Spacer(),
+                      Text(
+                        _formatDate(sync.timestamp),
+                        style: const TextStyle(
+                          color: Colors.white54,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    sync.event,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  if (sync.meaning.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      sync.meaning,
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            )),
+        ],
+      ),
+    );
+  }
+
+  void _showAddSynchronicityDialog(BuildContext context) {
+    final eventController = TextEditingController();
+    final meaningController = TextEditingController();
+    final numbersController = TextEditingController();
+    int significance = 3;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => Dialog(
+          backgroundColor: const Color(0xFF1E1E1E),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: const Color(0xFF448AFF).withOpacity(0.3)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'NEUE SYNCHRONIZITÄT',
+                  style: TextStyle(
+                    color: Color(0xFF448AFF),
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                // EVENT
+                TextField(
+                  controller: eventController,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: const InputDecoration(
+                    labelText: 'Ereignis',
+                    labelStyle: TextStyle(color: Color(0xFF448AFF)),
+                    hintText: 'z.B. 11:11 auf Uhr gesehen',
+                    hintStyle: TextStyle(color: Colors.white30),
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFF448AFF)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFF448AFF), width: 2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // MEANING
+                TextField(
+                  controller: meaningController,
+                  maxLines: 3,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: const InputDecoration(
+                    labelText: 'Bedeutung',
+                    labelStyle: TextStyle(color: Color(0xFF448AFF)),
+                    hintText: 'Was bedeutet das für dich?',
+                    hintStyle: TextStyle(color: Colors.white30),
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFF448AFF)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFF448AFF), width: 2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // NUMBERS
+                TextField(
+                  controller: numbersController,
+                  style: const TextStyle(color: Colors.white),
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Zahlen (mit Komma trennen)',
+                    labelStyle: TextStyle(color: Color(0xFF448AFF)),
+                    hintText: 'z.B. 11, 11, 1, 1',
+                    hintStyle: TextStyle(color: Colors.white30),
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFF448AFF)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFF448AFF), width: 2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // SIGNIFICANCE
+                const Text(
+                  'Bedeutsamkeit',
+                  style: TextStyle(
+                    color: Color(0xFF448AFF),
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: List.generate(5, (index) {
+                    final starIndex = index + 1;
+                    return GestureDetector(
+                      onTap: () => setState(() => significance = starIndex),
+                      child: Icon(
+                        starIndex <= significance ? Icons.star : Icons.star_border,
+                        color: const Color(0xFFFFD700),
+                        size: 32,
+                      ),
+                    );
+                  }),
+                ),
+                const SizedBox(height: 24),
+                // BUTTONS
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text(
+                        'Abbrechen',
+                        style: TextStyle(color: Colors.white54),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    ElevatedButton(
+                      onPressed: () async {
+                        if (eventController.text.isEmpty) return;
+
+                        // Parse numbers
+                        final numbers = numbersController.text
+                            .split(',')
+                            .map((s) => int.tryParse(s.trim()))
+                            .where((n) => n != null)
+                            .cast<int>()
+                            .toList();
+
+                        final entry = SynchronicityEntry(
+                          id: DateTime.now().millisecondsSinceEpoch.toString(),
+                          timestamp: DateTime.now(),
+                          event: eventController.text,
+                          meaning: meaningController.text,
+                          tags: ['Synchronizität'],
+                          numbers: numbers,
+                          significance: significance,
+                        );
+
+                        await _storage.saveSynchronicity(entry);
+                        await _storage.addPoints(15, 'synchronicity');
+                        
+                        if (context.mounted) {
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('✨ Synchronizität erfasst! +15 Punkte'),
+                              backgroundColor: Color(0xFF448AFF),
+                            ),
+                          );
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF448AFF),
+                        foregroundColor: Colors.white,
+                      ),
+                      child: const Text('Speichern'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// VORSCHLAG 4: ASTRO-TRANSIT-KALENDER (30 TAGE)
+  Widget buildAstroTransitCalendar({
+    required BuildContext context,
+    required EnergieProfile profile,
+  }) {
+    return FutureBuilder<List<AstroTransitEvent>>(
+      future: _transitService.generateNext30Days(profile: profile),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const SizedBox.shrink();
+        }
+
+        final events = snapshot.data!;
+        if (events.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        return Container(
+          margin: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF1A1A2E), Color(0xFF16213E)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: const Color(0xFF0F3460).withOpacity(0.5),
+              width: 2,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // HEADER
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE94560).withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.calendar_month,
+                      color: Color(0xFFE94560),
+                      size: 28,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  const Expanded(
+                    child: Text(
+                      'KOSMISCHE EINFLÜSSE',
+                      style: TextStyle(
+                        color: Color(0xFFE94560),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'Nächste 30 Tage',
+                style: TextStyle(
+                  color: Colors.white54,
+                  fontSize: 12,
+                ),
+              ),
+              const SizedBox(height: 20),
+              // EVENTS
+              ...events.take(5).map((event) => Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1E1E1E),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Color(_transitService.getInfluenceColor(event.influence))
+                        .withOpacity(0.3),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          _transitService.getEventIcon(event.eventType),
+                          style: const TextStyle(fontSize: 24),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                event.title,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                _formatDate(event.date),
+                                style: const TextStyle(
+                                  color: Colors.white54,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Color(_transitService.getInfluenceColor(event.influence))
+                                .withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            event.influence == 'positive' ? 'GÜNSTIG' :
+                            event.influence == 'challenging' ? 'HERAUSFORDERND' :
+                            'NEUTRAL',
+                            style: TextStyle(
+                              color: Color(_transitService.getInfluenceColor(event.influence)),
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      event.description,
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 12,
+                        height: 1.4,
+                      ),
+                    ),
+                    if (event.recommendations.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: event.recommendations.take(2).map((rec) => Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE94560).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: const Color(0xFFE94560).withOpacity(0.3),
+                            ),
+                          ),
+                          child: Text(
+                            rec,
+                            style: const TextStyle(
+                              color: Color(0xFFE94560),
+                              fontSize: 10,
+                            ),
+                          ),
+                        )).toList(),
+                      ),
+                    ],
+                  ],
+                ),
+              )),
+              // ALLE ANZEIGEN
+              if (events.length > 5)
+                TextButton.icon(
+                  onPressed: () {
+                    // TODO: Navigate to full calendar
+                  },
+                  icon: const Icon(Icons.arrow_forward, color: Color(0xFFE94560)),
+                  label: const Text(
+                    'Alle ${events.length} Events anzeigen',
+                    style: TextStyle(color: Color(0xFFE94560)),
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /// VORSCHLAG 5 & 6: KOMBINIERTES JOURNAL & PARTNER CARD
+  Widget buildJournalAndPartnerCard(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF6A1B9A), Color(0xFF4A148C)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: const Color(0xFF9C27B0).withOpacity(0.5),
+          width: 2,
+        ),
+      ),
+      child: Column(
+        children: [
+          // JOURNAL BUTTON
+          _buildActionButton(
+            context: context,
+            icon: Icons.edit_note,
+            title: 'SPIRIT-JOURNAL',
+            subtitle: 'Träume, Erkenntnisse erfassen',
+            color: const Color(0xFF9C27B0),
+            onTap: () => _showJournalDialog(context),
+          ),
+          const SizedBox(height: 12),
+          // PARTNER BUTTON
+          _buildActionButton(
+            context: context,
+            icon: Icons.favorite,
+            title: 'PARTNER-KOMPATIBILITÄT',
+            subtitle: 'Beziehungs-Analyse',
+            color: const Color(0xFFE91E63),
+            onTap: () => _showPartnerDialog(context),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButton({
+    required BuildContext context,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1E1E1E),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withOpacity(0.3)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: color, size: 24),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      color: Colors.white54,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.arrow_forward_ios, color: color, size: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showJournalDialog(BuildContext context) {
+    final contentController = TextEditingController();
+    String category = 'meditation';
+    String mood = 'peace';
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => Dialog(
+          backgroundColor: const Color(0xFF1E1E1E),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'SPIRIT-JOURNAL EINTRAG',
+                  style: TextStyle(
+                    color: Color(0xFF9C27B0),
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                // CATEGORY
+                DropdownButtonFormField<String>(
+                  value: category,
+                  dropdownColor: const Color(0xFF1E1E1E),
+                  style: const TextStyle(color: Colors.white),
+                  decoration: const InputDecoration(
+                    labelText: 'Kategorie',
+                    labelStyle: TextStyle(color: Color(0xFF9C27B0)),
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFF9C27B0)),
+                    ),
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: 'dream', child: Text('🌙 Traum')),
+                    DropdownMenuItem(value: 'meditation', child: Text('🧘 Meditation')),
+                    DropdownMenuItem(value: 'synchronicity', child: Text('✨ Synchronizität')),
+                    DropdownMenuItem(value: 'insight', child: Text('💡 Erkenntnis')),
+                  ],
+                  onChanged: (value) => setState(() => category = value!),
+                ),
+                const SizedBox(height: 16),
+                // MOOD
+                DropdownButtonFormField<String>(
+                  value: mood,
+                  dropdownColor: const Color(0xFF1E1E1E),
+                  style: const TextStyle(color: Colors.white),
+                  decoration: const InputDecoration(
+                    labelText: 'Stimmung',
+                    labelStyle: TextStyle(color: Color(0xFF9C27B0)),
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFF9C27B0)),
+                    ),
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: 'joy', child: Text('😊 Freude')),
+                    DropdownMenuItem(value: 'peace', child: Text('☮️ Frieden')),
+                    DropdownMenuItem(value: 'love', child: Text('❤️ Liebe')),
+                    DropdownMenuItem(value: 'sadness', child: Text('😢 Trauer')),
+                    DropdownMenuItem(value: 'fear', child: Text('😨 Angst')),
+                    DropdownMenuItem(value: 'anger', child: Text('😠 Wut')),
+                    DropdownMenuItem(value: 'neutral', child: Text('😐 Neutral')),
+                  ],
+                  onChanged: (value) => setState(() => mood = value!),
+                ),
+                const SizedBox(height: 16),
+                // CONTENT
+                TextField(
+                  controller: contentController,
+                  maxLines: 5,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: const InputDecoration(
+                    labelText: 'Deine Gedanken',
+                    labelStyle: TextStyle(color: Color(0xFF9C27B0)),
+                    hintText: 'Was möchtest du festhalten?',
+                    hintStyle: TextStyle(color: Colors.white30),
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFF9C27B0)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFF9C27B0), width: 2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                // BUTTONS
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Abbrechen', style: TextStyle(color: Colors.white54)),
+                    ),
+                    const SizedBox(width: 16),
+                    ElevatedButton(
+                      onPressed: () async {
+                        if (contentController.text.isEmpty) return;
+
+                        final entry = SpiritJournalEntry(
+                          id: DateTime.now().millisecondsSinceEpoch.toString(),
+                          timestamp: DateTime.now(),
+                          category: category,
+                          content: contentController.text,
+                          mood: mood,
+                          tags: [category],
+                        );
+
+                        await _storage.saveJournalEntry(entry);
+                        await _storage.addPoints(5, 'journal');
+
+                        if (context.mounted) {
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('📝 Journal-Eintrag gespeichert! +5 Punkte'),
+                              backgroundColor: Color(0xFF9C27B0),
+                            ),
+                          );
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF9C27B0),
+                        foregroundColor: Colors.white,
+                      ),
+                      child: const Text('Speichern'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showPartnerDialog(BuildContext context) {
+    final nameController = TextEditingController();
+    DateTime selectedDate = DateTime.now().subtract(const Duration(days: 10000));
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => Dialog(
+          backgroundColor: const Color(0xFF1E1E1E),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'PARTNER HINZUFÜGEN',
+                  style: TextStyle(
+                    color: Color(0xFFE91E63),
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                // NAME
+                TextField(
+                  controller: nameController,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: const InputDecoration(
+                    labelText: 'Name',
+                    labelStyle: TextStyle(color: Color(0xFFE91E63)),
+                    hintText: 'Name des Partners',
+                    hintStyle: TextStyle(color: Colors.white30),
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFFE91E63)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFFE91E63), width: 2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // BIRTHDATE
+                GestureDetector(
+                  onTap: () async {
+                    final date = await showDatePicker(
+                      context: context,
+                      initialDate: selectedDate,
+                      firstDate: DateTime(1900),
+                      lastDate: DateTime.now(),
+                      builder: (context, child) => Theme(
+                        data: ThemeData.dark().copyWith(
+                          colorScheme: const ColorScheme.dark(
+                            primary: Color(0xFFE91E63),
+                          ),
+                        ),
+                        child: child!,
+                      ),
+                    );
+                    if (date != null) {
+                      setState(() => selectedDate = date);
+                    }
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: const Color(0xFFE91E63)),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Geburtsdatum: ${_formatDate(selectedDate)}',
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                        const Icon(Icons.calendar_today, color: Color(0xFFE91E63)),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                // BUTTONS
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Abbrechen', style: TextStyle(color: Colors.white54)),
+                    ),
+                    const SizedBox(width: 16),
+                    ElevatedButton(
+                      onPressed: () async {
+                        if (nameController.text.isEmpty) return;
+
+                        final partner = await _compatibilityService.createPartnerProfile(
+                          name: nameController.text,
+                          birthDate: selectedDate,
+                        );
+
+                        if (context.mounted) {
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('💕 Partner "${partner.name}" hinzugefügt!'),
+                              backgroundColor: const Color(0xFFE91E63),
+                            ),
+                          );
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFE91E63),
+                        foregroundColor: Colors.white,
+                      ),
+                      child: const Text('Hinzufügen'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    final months = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun',
+                    'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
+    return '${date.day}. ${months[date.month - 1]} ${date.year}';
+  }
+}

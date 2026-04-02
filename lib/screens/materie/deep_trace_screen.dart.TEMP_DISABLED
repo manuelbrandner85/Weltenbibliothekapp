@@ -1,0 +1,242 @@
+import 'package:flutter/material.dart';
+import '../../services/cloudflare/deep_trace_service.dart';
+
+class DeepTraceScreen extends StatefulWidget {
+  const DeepTraceScreen({super.key});
+
+  @override
+  State<DeepTraceScreen> createState() => _DeepTraceScreenState();
+}
+
+class _DeepTraceScreenState extends State<DeepTraceScreen> {
+  final _claimController = TextEditingController();
+  final _service = DeepTraceCloudflareService();
+  Map<String, dynamic>? _traceResults;
+  bool _isTracing = false;
+  String? _error;
+
+  void _traceClaim() async {
+    if (_claimController.text.trim().isEmpty) return;
+    
+    setState(() {
+      _isTracing = true;
+      _error = null;
+    });
+    
+    try {
+      final result = await _service.analyzeClaimWithAI(_claimController.text);
+      setState(() {
+        _traceResults = result;
+        _isTracing = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = 'Fehler bei der Analyse: $e';
+        _isTracing = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF0A0A0A),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(colors: [Color(0xFF0D47A1), Color(0xFF1A1A1A), Color(0xFF000000)]),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white), onPressed: () => Navigator.pop(context)),
+                    const Expanded(child: Text('DEEP TRACE', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 2))),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: TextField(
+                  controller: _claimController,
+                  maxLines: 3,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    hintText: 'Behauptung eingeben...',
+                    hintStyle: const TextStyle(color: Colors.white38),
+                    filled: true,
+                    fillColor: Colors.white.withValues(alpha: 0.1),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: ElevatedButton.icon(
+                  onPressed: _isTracing ? null : _traceClaim,
+                  icon: _isTracing ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.search),
+                  label: Text(_isTracing ? 'Verfolge Quelle...' : 'Quelle verfolgen'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2196F3),
+                    minimumSize: const Size(double.infinity, 50),
+                  ),
+                ),
+              ),
+              if (_error != null)
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.red),
+                    ),
+                    child: Text(_error!, style: const TextStyle(color: Colors.white)),
+                  ),
+                ),
+              if (_traceResults != null)
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildResultSection('Behauptung', _traceResults!['claim'] ?? ''),
+                        const SizedBox(height: 16),
+                        _buildResultSection('Verification Score', '${((_traceResults!['verification_score'] ?? 0) * 100).toStringAsFixed(0)}%'),
+                        const SizedBox(height: 16),
+                        if (_traceResults!['sources'] != null)
+                          ..._buildSourcesList(_traceResults!['sources']),
+                        if (_traceResults!['timeline'] != null)
+                          ..._buildTimelineList(_traceResults!['timeline']),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildResultSection(String title, String content) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white24),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: const TextStyle(color: Color(0xFF2196F3), fontWeight: FontWeight.bold, fontSize: 16)),
+          const SizedBox(height: 8),
+          Text(content, style: const TextStyle(color: Colors.white)),
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _buildSourcesList(List<dynamic> sources) {
+    return [
+      const Text('Quellen:', style: TextStyle(color: Color(0xFF2196F3), fontWeight: FontWeight.bold, fontSize: 18)),
+      const SizedBox(height: 8),
+      ...sources.map((source) => Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.green.withValues(alpha: 0.2),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.green),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(source['title'] ?? '', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            if (source['date'] != null) Text(source['date'], style: const TextStyle(color: Colors.white70, fontSize: 12)),
+            if (source['credibility'] != null) Text('Glaubwürdigkeit: ${(source['credibility'] * 100).toStringAsFixed(0)}%', style: const TextStyle(color: Colors.greenAccent)),
+          ],
+        ),
+      )),
+    ];
+  }
+
+  List<Widget> _buildTimelineList(List<dynamic> timeline) {
+    return [
+      const SizedBox(height: 16),
+      const Text('Zeitstrahl:', style: TextStyle(color: Color(0xFF2196F3), fontWeight: FontWeight.bold, fontSize: 18)),
+      const SizedBox(height: 8),
+      ...timeline.map((event) => Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.blue.withValues(alpha: 0.2),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.blue),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(event['date'] ?? '', style: const TextStyle(color: Colors.blueAccent, fontSize: 12)),
+            Text(event['event'] ?? '', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            if (event['source'] != null) Text(event['source'], style: const TextStyle(color: Colors.white70)),
+          ],
+        ),
+      )),
+    ];
+  }
+
+  Widget _buildTraceNode(Map<String, dynamic> result, bool isLast) {
+    final verified = result['verified'];
+    
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: verified == null ? Colors.white.withValues(alpha: 0.1) : verified ? Colors.green.withValues(alpha: 0.2) : Colors.red.withValues(alpha: 0.2),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: verified == null ? Colors.white24 : verified ? Colors.green : Colors.red),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2196F3).withValues(alpha: 0.3),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Text('${result['level']}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(result['source'], style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                  ),
+                  if (verified != null)
+                    Icon(verified ? Icons.check_circle : Icons.cancel, color: verified ? Colors.green : Colors.red, size: 20),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(result['text'], style: const TextStyle(color: Colors.white70, fontSize: 14)),
+            ],
+          ),
+        ),
+        if (!isLast)
+          Container(
+            margin: const EdgeInsets.symmetric(vertical: 8),
+            width: 2,
+            height: 30,
+            color: const Color(0xFF2196F3).withValues(alpha: 0.5),
+          ),
+      ],
+    );
+  }
+}

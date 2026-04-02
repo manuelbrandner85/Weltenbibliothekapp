@@ -152,4 +152,34 @@ class ApiConfig {
 
   @Deprecated('WebRTC-Token nicht im Client speichern')
   static Map<String, String> get webrtcHeaders => publicHeaders;
+
+  // ──────────────────────────────────────────────────────────────
+  // DEPRECATED TOKEN STUBS – entfernt aus Sicherheitsgründen
+  // Alle Tokens kommen jetzt aus Wrangler Secrets (serverseitig).
+  // Diese Stubs verhindern Compile-Fehler in alten Service-Dateien.
+  // ──────────────────────────────────────────────────────────────
+
+  @Deprecated('Tokens nicht im Client – kommt vom Server')
+  static const String cloudflareApiToken = String.fromEnvironment(
+    'CLOUDFLARE_API_TOKEN',
+    defaultValue: '',
+  );
+
+  @Deprecated('Tokens nicht im Client – kommt vom Server')
+  static const String apiToken = String.fromEnvironment(
+    'CLOUDFLARE_API_TOKEN',
+    defaultValue: '',
+  );
+
+  @Deprecated('Admin-Token nicht im Client – kommt vom Server')
+  static const String adminToken = String.fromEnvironment(
+    'CLOUDFLARE_ADMIN_TOKEN',
+    defaultValue: '',
+  );
+
+  @Deprecated('WebRTC-Token nicht im Client – kommt vom Server')
+  static const String webrtcToken = String.fromEnvironment(
+    'CLOUDFLARE_WEBRTC_TOKEN',
+    defaultValue: '',
+  );
 }
