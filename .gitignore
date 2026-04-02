@@ -1,7 +1,6 @@
 # Large files and build artifacts
 downloads/
 cloudflare/node_modules/
-*.apk
 *.aab
 
 # Flutter/Dart build outputs
