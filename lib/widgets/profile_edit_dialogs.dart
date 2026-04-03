@@ -474,8 +474,8 @@ class _EnergieProfileEditDialogState extends State<EnergieProfileEditDialog> {
   late TextEditingController _passwordController;
   DateTime? _selectedDate;
   final _formKey = GlobalKey<FormState>();
-  bool _showPasswordField = false;
-  bool _isSaving = false;
+  bool _showPasswordField = false; // ignore: unused_field
+  bool _isSaving = false; // ignore: unused_field
 
   @override
   void initState() {

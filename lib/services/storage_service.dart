@@ -53,8 +53,8 @@ class StorageService {
   static const String _tarotSpreadsBox = 'tarot_spreads';
   
   // 🆕 POST CREATION V2 BOXEN (v44.2.2)
-  static const String _postDraftsBox = 'post_drafts';
-  static const String _scheduledPostsBox = 'scheduled_posts';
+  static const String _postDraftsBox = 'post_drafts'; // ignore: unused_field
+  static const String _scheduledPostsBox = 'scheduled_posts'; // ignore: unused_field
   
   // Singleton Pattern
   static final StorageService _instance = StorageService._internal();

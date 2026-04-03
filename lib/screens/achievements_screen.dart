@@ -3,7 +3,7 @@
 library;
 
 import 'package:flutter/material.dart';
-import '../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
+ // OpenClaw v2.0
 import '../services/achievement_service.dart';
 import '../services/haptic_service.dart';
 
@@ -19,7 +19,7 @@ class _AchievementsScreenState extends State<AchievementsScreen>
   final _achievementService = AchievementService();
   late TabController _tabController;
   
-  AchievementCategory _selectedCategory = AchievementCategory.researcher;
+  AchievementCategory _selectedCategory = AchievementCategory.researcher; // ignore: unused_field
   
   @override
   void initState() {

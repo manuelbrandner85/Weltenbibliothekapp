@@ -1,3 +1,4 @@
+import '../config/api_config.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
@@ -7,7 +8,7 @@ import '../models/recherche_extended_models.dart';
 /// Worker-URL: https://weltenbibliothek-api-v2.brandy13062.workers.dev
 /// Features: 16 Analyse-Module inkl. Machtanalyse, Netzwerk, Timeline, Narrativ-Vergleich, Meta-System
 class RechercheService {
-  static const String _workerUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev/recherche';
+  static const String _workerUrl = '${ApiConfig.workerUrl}/recherche';
   
   /// Führt eine Recherche durch
   Future<RechercheResult> recherchieren({

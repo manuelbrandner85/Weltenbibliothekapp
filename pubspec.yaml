@@ -16,10 +16,10 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 5.6.0+56
+version: 5.27.0+20260403
 
 environment:
-  sdk: ^3.9.2
+  sdk: '>=3.5.0 <4.0.0'
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -33,11 +33,17 @@ dependencies:
   flutter_localizations:
     sdk: flutter
 
+  # ──────────────────────────────────────────────────────────
+  # SUPABASE (Auth, Database, Realtime, Storage)
+  # Zielarchitektur v2.0: Supabase für alle User-Daten
+  # ──────────────────────────────────────────────────────────
+  supabase_flutter: ^2.8.0    # Auth + DB + Realtime + Storage
+
   # UI & State Management
   cupertino_icons: ^1.0.8
   provider: 6.1.5+1          # Legacy state management (kept for backward compatibility)
-  flutter_riverpod: ^2.6.1   # 🆕 NEW: Riverpod für Admin-System
-  freezed_annotation: ^2.4.4  # ✅ PHASE A: Freezed annotations
+  flutter_riverpod: ^2.6.1   # Riverpod für Admin-System
+  freezed_annotation: ^2.4.4  # Freezed annotations
   
   # Local Storage
   shared_preferences: 2.5.3
@@ -96,7 +102,7 @@ dependencies:
   image_picker: ^1.0.0              # Bilder/Videos aufnehmen
   file_picker: ^8.0.0               # 📁 File Upload Support
   # record: ^5.0.0                    # ❌ DEAKTIVIERT für Android Build (record_linux Kompatibilitätsproblem)
-  flutter_sound: ^9.2.13            # ✅ Audio Recording für Android/iOS/Web
+  flutter_sound: 9.28.0             # ✅ Audio Recording – pinned to last Dart-3.5-compatible version
   audioplayers: ^6.1.0              # Audio playback für Voice Messages
   just_audio: ^0.9.36               # 🆕 Low-latency audio für Frequenzgenerator
   flutter_tts: ^4.0.0               # Text-to-Speech
@@ -104,7 +110,7 @@ dependencies:
   web_socket_channel: ^3.0.3
   
   # 🔍 Epstein Files Research Tool
-  webview_flutter: 4.13.0           # WebView für Justice.gov Integration
+  webview_flutter: 4.10.0           # WebView – pinned for Dart 3.5 / Flutter 3.24 compatibility
   html: ^0.15.4                     # HTML Parsing für PDF-Link-Extraktion
   syncfusion_flutter_pdf: ^28.1.36  # PDF Text Extraction
   translator: ^1.0.0                # Kostenlose Übersetzung (Google Translate API ohne Key)

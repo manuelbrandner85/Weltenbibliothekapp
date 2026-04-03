@@ -1,9 +1,11 @@
 /// 📹 VOICE ROOM RECORDING SERVICE
-/// Record entire voice chat sessions
+/// Record entire voice chat sessions using flutter_sound
 library;
 
 import 'package:flutter/foundation.dart';
 import 'dart:async';
+import 'package:path_provider/path_provider.dart';
+import 'package:flutter_sound/flutter_sound.dart';
 
 enum RecordingState {
   idle,
@@ -25,6 +27,8 @@ class VoiceRoomRecordingService {
   Duration _recordedDuration = Duration.zero;
   Timer? _durationTimer;
 
+  FlutterSoundRecorder? _recorder;
+
   final _stateController = StreamController<RecordingState>.broadcast();
   final _durationController = StreamController<Duration>.broadcast();
 
@@ -36,35 +40,40 @@ class VoiceRoomRecordingService {
   String? get recordingPath => _recordingPath;
   bool get isRecording => _state == RecordingState.recording;
 
+  Future<void> _initRecorder() async {
+    if (_recorder != null) return;
+    _recorder = FlutterSoundRecorder();
+    await _recorder!.openRecorder();
+  }
+
   /// 🔴 Start Recording
   Future<bool> startRecording(String roomId) async {
     try {
       if (_state != RecordingState.idle) {
-        if (kDebugMode) {
-          debugPrint('⚠️ [Recording] Already recording or stopped');
-        }
+        if (kDebugMode) debugPrint('⚠️ [Recording] Already recording or stopped');
         return false;
       }
 
-      if (kDebugMode) {
-        debugPrint('🔴 [Recording] Starting for room: $roomId');
-      }
+      if (kDebugMode) debugPrint('🔴 [Recording] Starting for room: $roomId');
+
+      await _initRecorder();
+
+      // Get temporary directory for recording
+      final dir = kIsWeb
+          ? null
+          : await getTemporaryDirectory();
+      final filename = 'voice_recording_${roomId}_${DateTime.now().millisecondsSinceEpoch}.aac';
+      _recordingPath = dir != null ? '${dir.path}/$filename' : filename;
+
+      // Start recording
+      await _recorder!.startRecorder(
+        toFile: kIsWeb ? null : _recordingPath,
+        codec: Codec.aacADTS,
+      );
 
       _state = RecordingState.recording;
       _startTime = DateTime.now();
       _recordedDuration = Duration.zero;
-
-      // TODO: Implement actual audio recording
-      // 1. Get all audio streams from participants
-      // 2. Mix them together
-      // 3. Save to file (mp3/wav/m4a)
-      //
-      // Libraries to consider:
-      // - flutter_sound
-      // - record
-      // - audio_session
-
-      _recordingPath = '/storage/emulated/0/Download/voice_recording_${DateTime.now().millisecondsSinceEpoch}.m4a';
 
       // Start duration tracking
       _durationTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -73,16 +82,10 @@ class VoiceRoomRecordingService {
       });
 
       _stateController.add(_state);
-
-      if (kDebugMode) {
-        debugPrint('✅ [Recording] Started successfully');
-      }
-
+      if (kDebugMode) debugPrint('✅ [Recording] Started: $_recordingPath');
       return true;
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ [Recording] Failed to start: $e');
-      }
+      if (kDebugMode) debugPrint('❌ [Recording] Failed to start: $e');
       return false;
     }
   }
@@ -91,21 +94,15 @@ class VoiceRoomRecordingService {
   Future<void> pauseRecording() async {
     try {
       if (_state != RecordingState.recording) return;
-
-      if (kDebugMode) {
-        debugPrint('⏸️ [Recording] Paused');
-      }
+      if (kDebugMode) debugPrint('⏸️ [Recording] Paused');
 
       _state = RecordingState.paused;
       _durationTimer?.cancel();
 
-      // TODO: Pause actual recording
-
+      await _recorder?.pauseRecorder();
       _stateController.add(_state);
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ [Recording] Failed to pause: $e');
-      }
+      if (kDebugMode) debugPrint('❌ [Recording] Failed to pause: $e');
     }
   }
 
@@ -113,12 +110,11 @@ class VoiceRoomRecordingService {
   Future<void> resumeRecording() async {
     try {
       if (_state != RecordingState.paused) return;
-
-      if (kDebugMode) {
-        debugPrint('▶️ [Recording] Resumed');
-      }
+      if (kDebugMode) debugPrint('▶️ [Recording] Resumed');
 
       _state = RecordingState.recording;
+
+      await _recorder?.resumeRecorder();
 
       // Resume duration tracking
       _durationTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -126,13 +122,9 @@ class VoiceRoomRecordingService {
         _durationController.add(_recordedDuration);
       });
 
-      // TODO: Resume actual recording
-
       _stateController.add(_state);
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ [Recording] Failed to resume: $e');
-      }
+      if (kDebugMode) debugPrint('❌ [Recording] Failed to resume: $e');
     }
   }
 
@@ -143,18 +135,14 @@ class VoiceRoomRecordingService {
         return null;
       }
 
-      if (kDebugMode) {
-        debugPrint('⏹️ [Recording] Stopping...');
-      }
+      if (kDebugMode) debugPrint('⏹️ [Recording] Stopping...');
 
       _durationTimer?.cancel();
       _state = RecordingState.stopped;
 
-      // TODO: Finalize recording file
+      final path = await _recorder?.stopRecorder() ?? _recordingPath;
 
       _stateController.add(_state);
-
-      final path = _recordingPath;
 
       // Reset state
       _recordingPath = null;
@@ -162,15 +150,14 @@ class VoiceRoomRecordingService {
       _recordedDuration = Duration.zero;
       _state = RecordingState.idle;
 
-      if (kDebugMode) {
-        debugPrint('✅ [Recording] Stopped. File: $path');
-      }
+      // Close recorder for cleanup
+      await _recorder?.closeRecorder();
+      _recorder = null;
 
+      if (kDebugMode) debugPrint('✅ [Recording] Stopped. File: $path');
       return path;
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ [Recording] Failed to stop: $e');
-      }
+      if (kDebugMode) debugPrint('❌ [Recording] Failed to stop: $e');
       return null;
     }
   }
@@ -188,6 +175,8 @@ class VoiceRoomRecordingService {
   /// 🗑️ Dispose
   void dispose() {
     _durationTimer?.cancel();
+    _recorder?.closeRecorder();
+    _recorder = null;
     _stateController.close();
     _durationController.close();
   }

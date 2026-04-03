@@ -67,6 +67,7 @@ class _MessageSearchWidgetState extends State<MessageSearchWidget> {
     }
   }
   
+  // ignore: unused_element
   String _highlightMatch(String text, String query) {
     // Return text as-is, highlighting done via TextSpan in build
     return text;

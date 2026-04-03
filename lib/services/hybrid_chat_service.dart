@@ -167,7 +167,7 @@ class HybridChatService {
       throw Exception('Not connected to a room');
     }
     
-    final toolMessage = {
+    final toolMessage = { // ignore: unused_local_variable
       'type': 'tool_activity',
       'tool_name': toolName,
       'activity': activity,

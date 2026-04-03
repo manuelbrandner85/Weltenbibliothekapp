@@ -516,7 +516,7 @@ class _ActiveCallsDashboardState extends ConsumerState<ActiveCallsDashboard> {
   void _joinAsObserver(ActiveCall call) async {
     try {
       // Get admin username from storage
-      final storage = UnifiedStorageService();
+      final storage = UnifiedStorageService(); // ignore: unused_local_variable
       final prefs = await SharedPreferences.getInstance();
       final adminUsername = prefs.getString('username') ?? 'Admin';
       

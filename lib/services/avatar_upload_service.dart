@@ -8,6 +8,7 @@
 /// - Local caching
 /// - Avatar management
 library;
+import '../config/api_config.dart';
 
 import 'dart:io';
 import 'dart:convert';
@@ -20,7 +21,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 
 class AvatarUploadService {
   static const String _avatarKeyPrefix = 'user_avatar_';
-  static const String _backendUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
+  static const String _backendUrl = ApiConfig.workerUrl;
   
   final ImagePicker _picker = ImagePicker();
   

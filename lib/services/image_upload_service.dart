@@ -1,3 +1,4 @@
+import '../config/api_config.dart';
 import 'dart:convert';
 import 'dart:async';  // ✅ TimeoutException
 import 'dart:io';  // ✅ SocketException
@@ -10,7 +11,7 @@ import 'package:image_picker/image_picker.dart';
 class ImageUploadService {
   // Cloudflare Worker Endpoint für Image Upload
   static const String uploadEndpoint = 
-      'https://weltenbibliothek-api-v2.brandy13062.workers.dev/api/media/upload';
+      '${ApiConfig.workerUrl}/api/media/upload';
   
   // Singleton Pattern
   static final ImageUploadService _instance = ImageUploadService._internal();

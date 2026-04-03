@@ -1,3 +1,4 @@
+import '../config/api_config.dart';
 import 'dart:convert';
 import 'dart:async';
 import 'package:http/http.dart' as http;
@@ -8,7 +9,7 @@ import 'storage_service.dart';
 
 /// Cloudflare Sync Service für Profile & Chat-History
 class CloudflareSyncService {
-  static const String baseUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
+  static const String baseUrl = ApiConfig.workerUrl;
   
   final Map<String, String> _headers = {
     'Content-Type': 'application/json',

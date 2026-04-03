@@ -59,17 +59,17 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
   
   // State
   bool _isPosting = false;
-  bool _isUploadingMedia = false;
+  bool _isUploadingMedia = false; // ignore: unused_field
   bool _showPreview = false;
   bool _showEmojiPicker = false;
   bool _showHashtagSuggestions = false;
   bool _showMentionSuggestions = false;
   
   // Media
-  XFile? _selectedMedia;
+  XFile? _selectedMedia; // ignore: unused_field
   String? _mediaType;
   String? _uploadedMediaUrl;
-  String? _selectedFilter = 'Original';
+  String? _selectedFilter = 'Original'; // ignore: unused_field
   
   // 🎬 PHASE 2: Video/GIF/Multi-Image
   XFile? _selectedVideo;
@@ -231,6 +231,7 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
   // MEDIA HANDLING
   // ═══════════════════════════════════════════════════════════════════════════
   
+  // ignore: unused_element
   Future<void> _pickMedia(String mediaType) async {
     try {
       setState(() => _isUploadingMedia = true);
@@ -314,6 +315,7 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
     }
   }
   
+  // ignore: unused_element
   void _removeMedia() {
     setState(() {
       _selectedMedia = null;
@@ -450,7 +452,7 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
     List<String> mentions,
   ) async {
     // Create extended post with all features
-    final extendedPost = CommunityPostExtended(
+    final extendedPost = CommunityPostExtended( // ignore: unused_local_variable
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       authorUsername: user.username,
       authorAvatar: user.avatar,

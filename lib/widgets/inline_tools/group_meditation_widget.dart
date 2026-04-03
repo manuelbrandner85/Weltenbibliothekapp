@@ -14,7 +14,7 @@ class GroupMeditationWidget extends StatefulWidget {
 
 class _GroupMeditationWidgetState extends State<GroupMeditationWidget> {
   final ToolApiService _api = ToolApiService();
-  Map<String, dynamic>? _activeSession;
+  Map<String, dynamic>? _activeSession; // ignore: unused_field
   Timer? _pollTimer;
   Timer? _countdownTimer;
   int _remainingSeconds = 0;

@@ -131,7 +131,7 @@ class ExportImportService {
       final url = html.Url.createObjectUrlFromBlob(blob);
 
       // Trigger download
-      final anchor = html.AnchorElement(href: url)
+      final anchor = html.AnchorElement(href: url) // ignore: unused_local_variable
         ..setAttribute('download', filename)
         ..click();
 

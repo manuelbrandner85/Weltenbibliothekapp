@@ -582,7 +582,7 @@ class RechercheController extends ChangeNotifier {
         return sources;
       },
       operationName: 'RechercheController.gatherSources',
-      url: 'https://weltenbibliothek-api-v3.brandy13062.workers.dev/api/recherche',
+      url: '${ApiConfig.workerUrl}/api/recherche',
       method: 'GET',
       context: {'query': query, 'mode': mode.name},
     );

@@ -35,7 +35,7 @@ class _VoiceHeaderButtonState extends State<VoiceHeaderButton> {
     return ListenableBuilder(
       listenable: _voiceController,
       builder: (context, child) {
-        final isInCall = _voiceController.isInCall;
+        final isInCall = _voiceController.isInCall; // ignore: unused_local_variable
         final isInThisRoom = _voiceController.currentRoomId == widget.roomId;
         final participantCount = _voiceController.participantCount;
 

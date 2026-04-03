@@ -143,78 +143,78 @@ class _UserMuteDialogState extends State<UserMuteDialog> {
             ),
             const SizedBox(height: 8),
             
-            // 24h Option
-            RadioListTile<String>(
-              value: '24h',
+            // 24h + Permanent Option
+            RadioGroup<String>(
               groupValue: _muteType,
               onChanged: (value) {
-                setState(() {
-                  _muteType = value!;
-                });
+                if (value != null) {
+                  setState(() {
+                    _muteType = value;
+                  });
+                }
               },
-              title: const Text(
-                '24 Stunden',
-                style: TextStyle(color: Colors.white),
-              ),
-              subtitle: Text(
-                'Temporäre Sperre (für Normal-Admins)',
-                style: TextStyle(
-                  color: Colors.grey[400],
-                  fontSize: 12,
-                ),
-              ),
-              activeColor: Colors.orange,
-              tileColor: _muteType == '24h' 
-                  ? Colors.orange.withValues(alpha: 0.1)
-                  : null,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            const SizedBox(height: 8),
-            
-            // Permanent Option (nur Root-Admin)
-            RadioListTile<String>(
-              value: 'permanent',
-              groupValue: _muteType,
-              onChanged: widget.isRootAdmin 
-                  ? (value) {
-                      setState(() {
-                        _muteType = value!;
-                      });
-                    }
-                  : null,
-              title: Row(
+              child: Column(
                 children: [
-                  const Text(
-                    'Permanent',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                  if (!widget.isRootAdmin) ...[
-                    const SizedBox(width: 8),
-                    const Icon(
-                      Icons.lock,
-                      color: Colors.grey,
-                      size: 16,
+                  RadioListTile<String>(
+                    value: '24h',
+                    title: const Text(
+                      '24 Stunden',
+                      style: TextStyle(color: Colors.white),
                     ),
-                  ],
+                    subtitle: Text(
+                      'Temporäre Sperre (für Normal-Admins)',
+                      style: TextStyle(
+                        color: Colors.grey[400],
+                        fontSize: 12,
+                      ),
+                    ),
+                    activeColor: Colors.orange,
+                    tileColor: _muteType == '24h'
+                        ? Colors.orange.withValues(alpha: 0.1)
+                        : null,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  // Permanent Option (nur Root-Admin)
+                  RadioListTile<String>(
+                    value: 'permanent',
+                    toggleable: widget.isRootAdmin,
+                    title: Row(
+                      children: [
+                        const Text(
+                          'Permanent',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                        if (!widget.isRootAdmin) ...[
+                          const SizedBox(width: 8),
+                          const Icon(
+                            Icons.lock,
+                            color: Colors.grey,
+                            size: 16,
+                          ),
+                        ],
+                      ],
+                    ),
+                    subtitle: Text(
+                      widget.isRootAdmin
+                          ? 'Dauerhafte Sperre (nur Root-Admin)'
+                          : 'Nur für Root-Admins verfügbar',
+                      style: TextStyle(
+                        color: Colors.grey[400],
+                        fontSize: 12,
+                      ),
+                    ),
+                    activeColor: Colors.red,
+                    tileColor: _muteType == 'permanent'
+                        ? Colors.red.withValues(alpha: 0.1)
+                        : null,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
                 ],
-              ),
-              subtitle: Text(
-                widget.isRootAdmin
-                    ? 'Dauerhafte Sperre (nur Root-Admin)'
-                    : 'Nur für Root-Admins verfügbar',
-                style: TextStyle(
-                  color: Colors.grey[400],
-                  fontSize: 12,
-                ),
-              ),
-              activeColor: Colors.red,
-              tileColor: _muteType == 'permanent'
-                  ? Colors.red.withValues(alpha: 0.1)
-                  : null,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
               ),
             ),
             const SizedBox(height: 16),

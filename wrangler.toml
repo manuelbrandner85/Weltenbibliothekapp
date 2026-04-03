@@ -1,3 +1,64 @@
-name = "weltenbibliothek"
-pages_build_output_dir = "build/web"
-compatibility_date = "2024-01-01"
+# ============================================================
+# Weltenbibliothek – Wrangler Configuration
+# Cloudflare Workers / Pages Deployment
+# ============================================================
+#
+# SECURITY NOTE:
+#   - CLOUDFLARE_API_TOKEN must NEVER appear here.
+#     Set it as CLOUDFLARE_API_TOKEN env var in your shell
+#     or as a secret in your CI/CD pipeline.
+#   - SUPABASE_SERVICE_ROLE_KEY must NEVER appear here.
+#     Inject it via Cloudflare Dashboard > Workers > Settings > Variables
+#     (as encrypted secret, not plain text var).
+#   - The NEXT_PUBLIC_SUPABASE_ANON_KEY below is intentionally
+#     public (Supabase anon keys are designed for frontend use
+#     and are protected via Row Level Security policies).
+# ============================================================
+
+name            = "weltenbibliothek"
+account_id      = "3472f5994537c3a30c5caeaff4de21fb"
+compatibility_date  = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+main            = ".open-next/worker.js"
+
+# ---- Assets ----
+[assets]
+directory = ".open-next/assets"
+binding   = "ASSETS"
+
+# ---- Production Environment Variables ----
+# Only NEXT_PUBLIC_* values here – all public by design.
+# Secrets (SERVICE_ROLE_KEY etc.) must be added via:
+#   npx wrangler secret put <NAME>
+#   or Cloudflare Dashboard > Workers & Pages > Settings > Variables
+[vars]
+NEXT_PUBLIC_APP_NAME        = "Weltenbibliothek"
+NEXT_PUBLIC_APP_URL         = "https://weltenbibliothek.brandy13062.workers.dev"
+NEXT_PUBLIC_SUPABASE_URL    = "https://adtviduaftdquvfjpojb.supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkdHZpZHVhZnRkcXV2Zmpwb2piIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxMzY3OTcsImV4cCI6MjA5MDcxMjc5N30.LPtmnjukb6o2CA16RDjoStqYb_1bipNULD4tgOfuD98"
+CLOUDFLARE_WORKER_URL       = "https://weltenbibliothek-api.brandy13062.workers.dev"
+
+# ---- Preview Environment ----
+[env.preview]
+name = "weltenbibliothek-preview"
+
+[env.preview.vars]
+NEXT_PUBLIC_APP_NAME        = "Weltenbibliothek (Preview)"
+NEXT_PUBLIC_APP_URL         = "https://weltenbibliothek-preview.pages.dev"
+NEXT_PUBLIC_SUPABASE_URL    = "https://adtviduaftdquvfjpojb.supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkdHZpZHVhZnRkcXV2Zmpwb2piIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxMzY3OTcsImV4cCI6MjA5MDcxMjc5N30.LPtmnjukb6o2CA16RDjoStqYb_1bipNULD4tgOfuD98"
+
+# ============================================================
+# Deploy Commands:
+#   npm run cf:build    →  npx opennextjs-cloudflare
+#   npm run cf:deploy   →  npx wrangler deploy
+#   npm run cf:preview  →  npx wrangler dev
+#
+# Required Cloudflare Token Scopes:
+#   Workers Scripts: Edit
+#   Workers Routes:  Edit
+#   Account Settings: Read
+#
+# Secrets to set via `npx wrangler secret put <NAME>`:
+#   SUPABASE_SERVICE_ROLE_KEY   (never committed to git)
+# ============================================================

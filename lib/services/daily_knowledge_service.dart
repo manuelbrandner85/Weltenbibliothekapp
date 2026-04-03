@@ -1,3 +1,4 @@
+import '../config/api_config.dart';
 import 'dart:convert';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:http/http.dart' as http;
@@ -8,7 +9,7 @@ import 'achievement_service.dart';  // 🏆 Achievement System
 /// Manages daily featured narratives and user engagement streaks
 class DailyKnowledgeService {
   // Backend URL
-  static const String _backendUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
+  static const String _backendUrl = ApiConfig.workerUrl;
   
   // SharedPreferences Keys
   static const String _lastVisitKey = 'daily_knowledge_last_visit';

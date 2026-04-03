@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
+ // OpenClaw v2.0
 import '../../models/live_feed_entry.dart';
 import '../../services/live_feed_service.dart';
 import 'dart:async';
@@ -326,8 +326,6 @@ class _EnergieLiveFeedTabState extends State<EnergieLiveFeedTab> {
     );
   }
 
-  // TODO: Review unused method: _getTiefeLevelColor
-  // Color _getTiefeLevelColor(int level) {
     // switch (level) {
       // case 1:
       // case 2:

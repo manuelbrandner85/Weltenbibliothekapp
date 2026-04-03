@@ -11,6 +11,8 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../models/chat_models.dart';
 
 class ChatMessageBubble extends StatelessWidget {
@@ -486,6 +488,31 @@ class ChatMessageBubble extends StatelessWidget {
   }
   
   Widget _buildStatusIcon(BuildContext context) {
+    // read_by hat Priorität über status field
+    final isReadByOthers = message.readBy.isNotEmpty;
+    final readCount = message.readBy.length;
+
+    if (isReadByOthers) {
+      // ✅ Gelesen: blaue Doppelcheck + Anzahl Leser
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.done_all, size: 14, color: Colors.lightBlueAccent),
+          if (readCount > 1) ...[ 
+            const SizedBox(width: 2),
+            Text(
+              '$readCount',
+              style: const TextStyle(
+                fontSize: 10,
+                color: Colors.lightBlueAccent,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ],
+      );
+    }
+
     IconData icon;
     Color color;
     
@@ -542,7 +569,7 @@ class ChatMessageBubble extends StatelessWidget {
         children: reactions!.entries.map((entry) {
           final emoji = entry.key;
           final users = entry.value;
-          final currentUserId = 'current_user'; // TODO: Get from auth
+          final currentUserId = Supabase.instance.client.auth.currentUser?.id ?? '';
           final hasReacted = users.contains(currentUserId);
           
           return GestureDetector(
@@ -632,7 +659,10 @@ class ChatMessageBubble extends StatelessWidget {
                 title: const Text('Copy'),
                 onTap: () {
                   Navigator.pop(context);
-                  // TODO: Copy to clipboard
+                  Clipboard.setData(ClipboardData(text: message.content));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Kopiert'), duration: Duration(seconds: 1)),
+                  );
                 },
               ),
             
@@ -663,8 +693,7 @@ class ChatMessageBubble extends StatelessWidget {
   }
   
   void _showReactionPicker(BuildContext context) {
-    // TODO: Show emoji picker
-    final emojis = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
+    final emojis = ['👍', '❤️', '😂', '😮', '😢', '🙏', '🔥', '😎', '🤔', '💯'];
     
     showModalBottomSheet(
       context: context,

@@ -12,7 +12,7 @@
 // =====================================================================
 
 import 'package:flutter/material.dart';
-import '../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
+ // OpenClaw v2.0
 import '../services/achievement_service.dart';
 import '../services/leaderboard_service.dart';
 import '../services/reward_service.dart';
@@ -30,7 +30,7 @@ class EnhancedProfileScreen extends StatefulWidget {
 
 class _EnhancedProfileScreenState extends State<EnhancedProfileScreen> {
   final _achievementService = AchievementService();
-  final _leaderboardService = LeaderboardService();
+  final _leaderboardService = LeaderboardService(); // ignore: unused_field
   final _rewardService = RewardService();
   final _dailyService = DailyKnowledgeService();
 

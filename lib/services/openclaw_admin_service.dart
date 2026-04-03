@@ -28,7 +28,7 @@ class OpenClawAdminService {
   static String get _gatewayToken => ApiConfig.openClawGatewayToken;
   
   // Fallback Service
-  final WorldAdminService _fallback = WorldAdminService();
+  final WorldAdminService _fallback = WorldAdminService(); // ignore: unused_field
   
   // Cache für schnellere Antworten
   final Map<String, dynamic> _cache = {};

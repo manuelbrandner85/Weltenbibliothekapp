@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
+ // OpenClaw v2.0
 import '../../models/knowledge_extended_models.dart';
 import '../../services/unified_knowledge_service.dart';
 // ⚡ PERFORMANCE HELPER
@@ -319,12 +319,12 @@ class AdvancedSearchDelegate extends SearchDelegate<KnowledgeEntry?> {
         width: 40,
         height: 40,
         decoration: BoxDecoration(
-          color: _getCategoryColor(entry.category ?? '').withValues(alpha: 0.2),
+          color: _getCategoryColor(entry.category).withValues(alpha: 0.2),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Icon(
-          _getCategoryIcon(entry.category ?? ''),
-          color: _getCategoryColor(entry.category ?? ''),
+          _getCategoryIcon(entry.category),
+          color: _getCategoryColor(entry.category),
           size: 20,
         ),
       ),
@@ -363,15 +363,15 @@ class AdvancedSearchDelegate extends SearchDelegate<KnowledgeEntry?> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: _getCategoryColor(entry.category ?? '').withValues(alpha: 0.2),
+                  color: _getCategoryColor(entry.category).withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
-                  _getCategoryLabel(entry.category ?? ''),
+                  _getCategoryLabel(entry.category),
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
-                    color: _getCategoryColor(entry.category ?? ''),
+                    color: _getCategoryColor(entry.category),
                   ),
                 ),
               ),

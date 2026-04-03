@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
+import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import '../../services/bookmark_service.dart';
 import 'package:intl/intl.dart';
@@ -116,8 +116,9 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
             backgroundColor: Colors.green,
             action: SnackBarAction(
               label: 'Kopieren',
-              onPressed: () {
-                // TODO: Copy to clipboard
+              onPressed: () async {
+                final text = exported.map((b) => '${b['title'] ?? ''}\n${b['url'] ?? ''}').join('\n\n');
+                await Clipboard.setData(ClipboardData(text: text));
               },
             ),
           ),
@@ -288,12 +289,12 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       child: InkWell(
         onTap: () {
-          // TODO: Navigate to bookmark content
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Öffne: ${bookmark.title}'),
-            ),
-          );
+          // Navigate to bookmark content
+          if (bookmark.url.isNotEmpty) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Öffne: ${bookmark.title}')),
+            );
+          }
         },
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -314,7 +315,7 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
-                      bookmark.category ?? 'Andere',
+                      bookmark.category,
                       style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.bold,

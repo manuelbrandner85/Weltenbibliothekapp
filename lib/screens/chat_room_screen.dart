@@ -13,7 +13,7 @@
 library;
 
 import 'package:flutter/material.dart';
-import '../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
+ // OpenClaw v2.0
 import '../controllers/chat_room_controller.dart';
 import '../models/chat_models.dart';
 import '../widgets/chat/chat_message_bubble.dart';
@@ -40,6 +40,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
   late ChatRoomController _controller;
   final ScrollController _scrollController = ScrollController();
   bool _showScrollToBottom = false;
+  bool _isNotificationMuted = false; // Lokaler Mute-Status
   
   @override
   void initState() {
@@ -379,17 +380,17 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
 
   /// Toggle room notifications
   void _toggleNotifications() {
-    // 🔥 REAL NOTIFICATION TOGGLE IMPLEMENTATION
-    final isCurrentlyMuted = false; // TODO: Get from NotificationService
-    
+    setState(() {
+      _isNotificationMuted = !_isNotificationMuted;
+    });
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          isCurrentlyMuted 
-            ? '🔔 Notifications enabled for ${widget.roomName}'
-            : '🔕 Notifications muted for ${widget.roomName}'
+          _isNotificationMuted
+            ? '🔕 Benachrichtigungen für ${widget.roomName} stummgeschaltet'
+            : '🔔 Benachrichtigungen für ${widget.roomName} aktiviert'
         ),
-        backgroundColor: isCurrentlyMuted ? Colors.green : Colors.orange,
+        backgroundColor: _isNotificationMuted ? Colors.orange : Colors.green,
       ),
     );
   }

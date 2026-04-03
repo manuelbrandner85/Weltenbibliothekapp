@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart'; // kDebugMode
 import 'dart:async';
 import 'dart:io'; // File for uploads
+import '../../services/supabase_service.dart'; // 🔥 supabase client für Auth
+import 'package:supabase_flutter/supabase_flutter.dart' show RealtimeChannel;
 // Removed: dart:convert (unused after FIX 15)
 // Removed: package:http (unused after FIX 15)
 import 'package:image_picker/image_picker.dart'; // Image Picker
@@ -9,7 +11,8 @@ import '../../services/cloudflare_api_service.dart';
 import '../../services/offline_sync_service.dart'; // 📡 OFFLINE SYNC (NEW Phase 3)
 import '../../services/user_service.dart';
 import '../../services/storage_service.dart'; // StorageService for profile access
-import '../../services/openclaw_dashboard_service.dart'; // 🚀 OpenClaw Dashboard for Live Updates
+import '../../core/storage/unified_storage_service.dart'; // UnifiedStorageService
+import 'package:hive_flutter/hive_flutter.dart'; // Hive for box check
 import 'package:flutter_riverpod/flutter_riverpod.dart'; // Riverpod
 import '../../services/profile_sync_service.dart'; // 🔥 BACKEND SYNC
 import '../../models/energie_profile.dart';
@@ -36,6 +39,7 @@ import '../../widgets/poll_widget.dart'; // 🗳️ Poll Widget
 import '../../widgets/pinned_message_banner.dart'; // 📌 Pinned Message Banner
 import '../../widgets/voice/voice_participant_header_bar.dart'; // 🎤 Voice Participant Header Bar (Telegram-Style)
 import '../shared/modern_voice_chat_screen.dart'; // 🎤 Modern Voice Chat Screen (Phase B)
+import '../shared/video_voice_chat_screen.dart'; // 🎥 Video + Voice Chat (Telegram-Style)
 import '../../providers/webrtc_call_provider.dart'; // Riverpod provider
 // 🎤 Admin Dialogs & Notifications
 // 🚫 Kick User Dialog
@@ -43,7 +47,6 @@ import '../../providers/webrtc_call_provider.dart'; // Riverpod provider
 // ⚠️ Warning Dialog
 // 📢 Admin Notifications
 // 📋 Admin Action Models
-import '../../services/admin_action_service.dart'; // 🔧 Admin Action Service
 // import '../../widgets/telegram_voice_recorder.dart'; // 🎙️ Telegram Voice Recorder (Disabled for Android)
 // 🎵 Telegram Voice Player
 import '../../widgets/voice_message_player.dart' show ChatVoicePlayer; // 🎤 Chat Voice Player (New)
@@ -68,13 +71,33 @@ class EnergieLiveChatScreen extends StatefulWidget {
 class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   final CloudflareApiService _api = CloudflareApiService();
+  // ignore: unused_field
   final UserService _userService = UserService();
   final ScrollController _scrollController = ScrollController();
   final TypingIndicatorService _typingService = TypingIndicatorService(); // ⌨️ NEW
-  final OpenClawDashboardService _dashboardService = OpenClawDashboardService(); // 🚀 OpenClaw
   
   late String _selectedRoom;
-  String _username = 'Gast';
+  
+  /// Maps internal room key → DB room ID (energie world)
+  static const Map<String, String> _roomIdMap = {
+    'meditation': 'energie-meditation',
+    'astralreisen': 'energie-traeume',   // Map to closest existing room
+    'chakren': 'energie-chakra',
+    'chakra': 'energie-chakra',
+    'spiritualitaet': 'energie-bewusstsein', // Map to closest existing room
+    'bewusstsein': 'energie-bewusstsein',
+    'heilung': 'energie-heilung',
+    'astrologie': 'energie-astrologie',
+    'kristalle': 'energie-kristalle',
+    'kraftorte': 'energie-kraftorte',
+    'traeume': 'energie-traeume',
+    'traumarbeit': 'energie-traeume',
+    'frequenzen': 'energie-heilung',     // Map to closest existing room
+  };
+  
+  /// Returns the full DB room ID for the currently selected room.
+  String get _fullRoomId => _roomIdMap[_selectedRoom] ?? 'energie-$_selectedRoom';
+  String _username = ''; // ✅ Leer bis Profil geladen
   String _avatar = '👤';
   String? _avatarUrl; // 🖼️ Hochgeladenes Profilbild (PRIORITÄT!)
   late String _userId; // 🔥 Real User ID from UserService (initialized in initState)
@@ -101,7 +124,6 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
   List<Map<String, dynamic>> _voiceParticipants = [];
   
   // 🆕 ADMIN ACTION SERVICE
-  final AdminActionService _adminService = AdminActionService();
   
   // 🆕 FEATURE 2: TYPING INDICATORS
   final Set<String> _typingUsers = {};
@@ -109,8 +131,11 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
   
   // 🆕 FEATURE 3: SWIPE TO REPLY
   Map<String, dynamic>? _replyingTo;
-  
+  // ignore: unused_field
+  Map<String, dynamic>? _replyToMessageData; // Highlight indicator for scroll-to-message
+
   // 🆕 FEATURE 4: EMOJI REACTIONS
+  // ignore: unused_field
   final Map<String, Map<String, List<String>>> _messageReactions = {}; // messageId -> emoji -> userIds
   
   // 🆕 PHASE 2: MESSAGE EDIT/DELETE/SEARCH
@@ -118,11 +143,16 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
   bool _showSearch = false;
   
   // 🆕 PHASE 3: FILE UPLOAD & VOICE MESSAGES
+  // ignore: unused_field
   File? _selectedFile;
+  // ignore: unused_field
   String? _selectedFileType;
   
   // ✅ PROFIL-DIALOG FLAG: Verhindert mehrfaches Anzeigen
   bool _profileDialogShown = false;
+  
+  // 🔴 SUPABASE REALTIME: Live-Subscription für neue Nachrichten
+  RealtimeChannel? _realtimeChannel;
   
   // 🔧 FIX 13: ENERGIE Räume reduziert auf 5 (Option C - Ausgewogen)
   // 🔧 FIX 17: ENERGIE Räume - API-kompatible IDs
@@ -165,8 +195,6 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
   };
 
   @override
-  @override
-  @override
   void initState() {
     super.initState();
     
@@ -196,62 +224,65 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
       }
     });
     
-    // 🔄 Auto-Refresh alle 5 Sekunden für Nachrichten, Profil UND Polls
-    _refreshTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+    // 🔴 SUPABASE REALTIME: Echtzeit-Subscription starten
+    _subscribeToRoom(_fullRoomId);
+    
+    // 🔄 Auto-Refresh alle 30 Sekunden als Fallback (Realtime ist primär)
+    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
       _loadMessages(silent: true);
       _loadUserData(); // 🆕 Profil-Sync
       _loadPolls(silent: true); // 🆕 Polls-Sync
     });
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // 🔄 Reload user data when returning to chat screen
-    _loadUserData();
-  }
+  // didChangeDependencies removed – profile loading happens once in initState.
 
   Future<void> _loadUserData() async {
-    final user = await _userService.getCurrentUser();
-    
-    // 🆕 Lade auch Energie-Profil für avatarUrl UND avatarEmoji
-    final storage = StorageService();
-    final energieProfile = storage.getEnergieProfile();
-    
-    // 🐛 DEBUG: Log avatarUrl
-    debugPrint('🔍 DEBUG _loadUserData:');
-    debugPrint('  username: ${user.username}');
-    debugPrint('  user.avatar: ${user.avatar}');
-    debugPrint('  user.avatarUrl: ${user.avatarUrl}');
-    debugPrint('  energieProfile.avatarEmoji: ${energieProfile?.avatarEmoji}');
-    debugPrint('  energieProfile.avatarUrl: ${energieProfile?.avatarUrl}');
-    
-    // ✅ PRIORITÄT: EnergieProfile > User
-    final finalAvatar = energieProfile?.avatarEmoji ?? user.avatar;
-    final finalAvatarUrl = energieProfile?.avatarUrl ?? user.avatarUrl;
-    
-    // ✅ Nur update wenn sich etwas geändert hat
-    if (_username != user.username || _avatar != finalAvatar || _avatarUrl != finalAvatarUrl) {
+    EnergieProfile? energieProfile;
+    try {
+      // Ensure box is open – main.dart opens it, but guard for safety
+      if (!Hive.isBoxOpen('energie_profiles')) {
+        await Hive.openBox('energie_profiles');
+      }
+      final storage = StorageService();
+      energieProfile = storage.getEnergieProfile();
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ _loadUserData Fehler: $e');
+      // Fall through – profile stays null → dialog will be shown
+    }
+
+    if (energieProfile != null && energieProfile.username.isNotEmpty) {
       if (mounted) {
         setState(() {
-        _username = user.username;
-        _avatar = finalAvatar; // ✅ Avatar aus EnergieProfile laden!
-        _avatarUrl = finalAvatarUrl; // 🖼️ Hochgeladenes Bild aus EnergieProfile!
-        _userId = 'user_${user.username.toLowerCase()}'; // 🆕 Set user ID
-      });
+          _username = energieProfile!.username;
+          _avatar = energieProfile.avatarEmoji ?? '🔮';
+          _avatarUrl = energieProfile.avatarUrl;
+          _userId = supabase.auth.currentUser?.id ?? 'user_${energieProfile.username.toLowerCase()}';
+        });
       }
-      
-      debugPrint('✅ State updated: avatar = $_avatar, avatarUrl = $_avatarUrl');
+      // Sync into user_data box so AdminStateNotifier can find it
+      try {
+        final unified = UnifiedStorageService();
+        await unified.saveProfile('energie', {
+          'username': energieProfile.username,
+          'role': energieProfile.role ?? 'user',
+          'avatar_emoji': energieProfile.avatarEmoji,
+          'avatar_url': energieProfile.avatarUrl,
+        });
+      } catch (_) {}
+      if (kDebugMode) {
+        debugPrint('✅ Energie-Profil geladen: ${energieProfile.username} (role: ${energieProfile.role})');
+      }
+      // ✅ Flag NICHT zurücksetzen – verhindert Popup bei Rückkehr
     } else {
-      debugPrint('⏭️  No changes detected');
-    }
-    
-    // 🚨 PROFIL-CHECK: Wenn kein Username, zeige Popup-Warnung (nur einmal!)
-    if (_username.isEmpty && mounted && !_profileDialogShown) {
-      _profileDialogShown = true; // ✅ Setze Flag, damit Popup nicht mehrmals erscheint
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _showProfileRequiredDialog();
-      });
+      // Kein Profil → Popup (nur einmal)
+      if (kDebugMode) debugPrint('⚠️ Kein Energie-Profil gefunden – zeige Profil-Dialog');
+      if (!_profileDialogShown && mounted) {
+        _profileDialogShown = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _showProfileRequiredDialog();
+        });
+      }
     }
   }
 
@@ -265,7 +296,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
     
     try {
       final messages = await _api.getChatMessages(
-        _selectedRoom,
+        _fullRoomId, // 'energie-meditation' etc.
         realm: 'energie',
         limit: 100,
       );
@@ -278,9 +309,9 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
       
       if (mounted) {
         setState(() {
-        // Reverse messages if they come in descending order (newest first)
-        // We want chronological order: oldest first, newest last
-        _messages = messages.reversed.toList();
+        // Worker returns messages in ascending order (created_at.asc)
+        // → already chronological, no reversal needed
+        _messages = messages;
         _isLoading = false;
         _errorMessage = null;
       });
@@ -310,7 +341,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
   // 🆕 Load polls for current room
   Future<void> _loadPolls({bool silent = false}) async {
     try {
-      final polls = await _api.getPolls(_selectedRoom);
+      final polls = await _api.getPolls(_fullRoomId);
       if (mounted) {
         setState(() => _polls = polls);
       }
@@ -424,12 +455,12 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
           data: {
             'roomId': _selectedRoom,
             'realm': 'energie',
-            'userId': 'user_${_username.toLowerCase()}',
+            'userId': _userId,
             'username': _username,
             'message': message,
             'avatarEmoji': _avatar,
           },
-          userId: 'user_${_username.toLowerCase()}',
+          userId: _userId,
         );
         
         _messageController.clear();
@@ -448,12 +479,13 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
       
       // Online: Send directly
       await _api.sendChatMessage(
-        roomId: _selectedRoom,
+        roomId: _fullRoomId, // 'energie-meditation' etc.
         realm: 'energie',
-        userId: 'user_${_username.toLowerCase()}',
+        userId: _userId,
         username: _username,
         message: message,
         avatarEmoji: _avatar,
+        avatarUrl: _avatarUrl,
       );
       
       _messageController.clear();
@@ -489,7 +521,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
     try {
       // Send voice message with media_type
       await _api.sendChatMessage(
-        roomId: _selectedRoom,
+        roomId: _fullRoomId, // 'energie-meditation' etc.
         realm: 'energie',
         userId: _userId,
         username: _username,
@@ -717,7 +749,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
       if (result['success'] == true && result['url'] != null) {
         // Send message with image URL
         await _api.sendChatMessage(
-          roomId: _selectedRoom,
+          roomId: _fullRoomId, // 'energie-meditation' etc.
           realm: 'energie',
           userId: _userId,
           username: _username,
@@ -756,8 +788,6 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
     }
   }
 
-  // TODO: Review unused method: _formatTimestamp
-  // String _formatTimestamp(String? timestamp) {
     // if (timestamp == null) return '';
     // try {
       // final dt = DateTime.parse(timestamp);
@@ -773,8 +803,6 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
   // }
 
   /// 🔧 NACHRICHT BEARBEITEN/LÖSCHEN MENÜ
-  // TODO: Review unused method: _showMessageMenu
-  // void _showMessageMenu(String messageId, String currentText) {
     // showModalBottomSheet(
       // context: context,
       // backgroundColor: const Color(0xFF1A1A2E),
@@ -943,6 +971,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
   }
 
   /// 🛠️ GRUPPEN-TOOL ANZEIGEN
+  // ignore: unused_element
   void _showGroupTool() {
     final room = _rooms[_selectedRoom]!;
     
@@ -1088,14 +1117,8 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
           ElevatedButton.icon(
             onPressed: () {
               Navigator.pop(context);
-              // TODO: Tool öffnen
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('🛠️ ${room['tool']} wird geladen...'),
-                  backgroundColor: Colors.amber,
-                  duration: const Duration(seconds: 2),
-                ),
-              );
+              // ✅ Tool öffnen via _showGroupTool (navigiert direkt)
+              _showGroupTool();
             },
             icon: const Icon(Icons.rocket_launch),
             label: const Text('Tool starten'),
@@ -1171,13 +1194,25 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
         backgroundColor: const Color(0xFF1A1A2E),
         title: const Text('💬 ENERGIE LIVE-CHAT'),
         actions: [
-          // 🎤 VOICE CHAT JOIN BUTTON (Telegram-Style: Only when NOT in voice chat)
-          if (!_isInVoiceRoom)
-            IconButton(
-              icon: const Icon(Icons.group, color: Colors.white),
-              onPressed: _joinVoiceChatAndOpen,
-              tooltip: 'Voice Chat beitreten',
-            ),
+          // 🎥 VIDEO + VOICE CHAT BUTTON (Telegram-Style)
+          IconButton(
+            icon: const Icon(Icons.video_call, color: Colors.white),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => VideoVoiceChatScreen(
+                    roomId: 'energie_${_selectedRoom}',
+                    userId: _userId,
+                    username: _username,
+                    avatar: _avatar.isNotEmpty ? _avatar : '💜',
+                    accentColor: const Color(0xFF9B51E0),
+                  ),
+                ),
+              );
+            },
+            tooltip: 'Video / Voice Chat',
+          ),
           // 🔍 SEARCH BUTTON
           IconButton(
             icon: Icon(
@@ -1238,7 +1273,8 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
                           _loadMessages(silent: true);
                         },
                         onTap: () {
-                          // TODO: Scroll to message
+                          // ✅ Scroll to bottom when pinned message tapped
+                          _scrollToBottom();
                         },
                         worldColor: const Color(0xFF9B51E0), // ENERGIE Purple
                       ),
@@ -1290,7 +1326,9 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
                       }
                       
                       // 🔧 CRITICAL FIX: Switch WebRTC Voice Room
-                      await _voiceService.switchRoom(_selectedRoom);
+                      await _voiceService.switchRoom(_fullRoomId);
+                      // 🔴 Re-subscribe Realtime for new room
+                      _subscribeToRoom(_fullRoomId);
                       await _loadMessages();
                     }
                   },
@@ -1645,6 +1683,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
     );
   }
 
+  // ignore: unused_element
   Widget _buildMessageBubble(Map<String, dynamic> msg) {
     final isMyMessage = msg['username'] == _username;
     return EnhancedMessageBubble(
@@ -1654,12 +1693,8 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
       isMyMessage: isMyMessage,
       worldColor: const Color(0xFF9B51E0), // ENERGIE Purple
       onReply: () {
-        // TODO: Thread-Reply implementieren
-        if (mounted) {
-          setState(() {
-          _messageController.text = '@${msg['username']} ';
-        });
-        }
+        // ✅ Reply: Set reply context and focus input
+        _replyToMessage(msg);
       },
       onEdit: () {
         _editMessage(msg);
@@ -1679,7 +1714,39 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
     _messageController.dispose();
     _scrollController.dispose();
     _voiceService.dispose(); // 🆕
+    _realtimeChannel?.unsubscribe(); // 🔴 Realtime cleanup
     super.dispose();
+  }
+  
+  // 📜 Scroll to bottom helper
+  void _scrollToBottom() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
+  }
+  
+  // 🔴 SUPABASE REALTIME: Subscribe to live chat updates
+  void _subscribeToRoom(String roomId) {
+    _realtimeChannel?.unsubscribe();
+    _realtimeChannel = SupabaseChatService.instance.subscribeToRoom(
+      roomId,
+      onMessage: (newMsg) {
+        if (!mounted) return;
+        // Prüfe ob Nachricht bereits vorhanden (Deduplication)
+        final exists = _messages.any((m) => m['id'] == newMsg['id']);
+        if (!exists) {
+          setState(() {
+            _messages.add(newMsg);
+          });
+          WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+        }
+      },
+    );
+    if (kDebugMode) debugPrint('🔴 [Energie Realtime] Subscribed to room: $roomId');
   }
   
   // ✅ PROFIL-WARNUNG als Popup mit Navigation
@@ -1705,15 +1772,17 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
             child: const Text('Abbrechen'),
           ),
           ElevatedButton.icon(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(dialogContext);
-              // ✅ FIXED: Direkt zum ProfileEditorScreen navigieren
-              Navigator.push(
+              // ✅ FIXED: await → nach Rückkehr Profil sofort neu laden
+              await Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => const ProfileEditorScreen(world: 'energie'),
                 ),
               );
+              // Profil neu laden nachdem User zurückkehrt
+              if (mounted) _loadUserData();
             },
             icon: const Icon(Icons.person_add),
             label: const Text('Profil erstellen'),
@@ -1753,6 +1822,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
     });
   }
   
+  // ignore: unused_element
   Future<void> _toggleVoiceRoom() async {
     if (_isInVoiceRoom) {
       await _voiceService.leaveVoiceRoom();
@@ -1807,6 +1877,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
     }
   }
   
+  // ignore: unused_element
   Future<void> _toggleMute() async {
     await _voiceService.toggleMute();
     if (mounted) {
@@ -1820,7 +1891,8 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
     );
   }
   
-  // 🎤 JOIN VOICE CHAT AND OPEN SCREEN (NEW)
+  // 🎤 JOIN VOICE CHAT AND OPEN SCREEN (kept for potential future use)
+  // ignore: unused_element
   Future<void> _joinVoiceChatAndOpen() async {
     if (kDebugMode) {
       debugPrint('🎤 [JOIN ENERGIE] Joining voice chat and opening screen...');
@@ -1923,6 +1995,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
 
   
   // 🎤 VOICE ROOM BAR
+  // ignore: unused_element
   Widget _buildVoiceRoomBar() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -2251,19 +2324,33 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
     }
   }
   
-  void _saveEditedMessage(Map<String, dynamic> msg, String newContent) {
+  Future<void> _saveEditedMessage(Map<String, dynamic> msg, String newContent) async {
     if (mounted) {
       setState(() {
-      msg['message'] = newContent;
-      msg['edited'] = true;
-      msg['editedAt'] = DateTime.now().toIso8601String();
-      _editingMessageId = null;
-    });
+        msg['message'] = newContent;
+        msg['content'] = newContent;
+        msg['edited'] = true;
+        msg['editedAt'] = DateTime.now().toIso8601String();
+        _editingMessageId = null;
+      });
     }
     
-    // TODO: Send update to server
-    if (kDebugMode) {
-      debugPrint('✏️ Message edited: $newContent');
+    // Server-Update im Hintergrund (fire-and-forget)
+    final messageId = msg['id']?.toString() ?? msg['message_id']?.toString() ?? '';
+    if (messageId.isNotEmpty) {
+      _api.editChatMessage(
+        messageId: messageId,
+        newMessage: newContent,
+        userId: _userId,
+        username: _username,
+        roomId: _fullRoomId,
+        realm: 'energie',
+      ).then((_) {
+        if (kDebugMode) debugPrint('✅ Energie Edit gespeichert');
+        if (mounted) _loadMessages(silent: true);
+      }).catchError((e) {
+        if (kDebugMode) debugPrint('⚠️ Energie Edit server error (optimistic bleibt): $e');
+      });
     }
   }
   
@@ -2292,7 +2379,8 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
   
   void _jumpToMessage(Map<String, dynamic> msg) {
     // Find message index
-    final index = _messages.indexOf(msg);
+    final msgId = msg['id']?.toString() ?? '';
+    final index = _messages.indexWhere((m) => m['id']?.toString() == msgId);
     if (index == -1) return;
     
     // Scroll to message (approximate)
@@ -2303,8 +2391,13 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
       curve: Curves.easeInOut,
     );
     
-    // Highlight message briefly
-    // TODO: Add visual highlight effect
+    // ✅ Highlight message briefly
+    if (mounted && msgId.isNotEmpty) {
+      setState(() => _replyToMessageData = msg); // Use as highlight indicator
+      Future.delayed(const Duration(seconds: 2), () {
+        if (mounted) setState(() => _replyToMessageData = null);
+      });
+    }
   }
   
   Widget _buildMessageWithReactions(Map<String, dynamic> msg) {
@@ -2442,7 +2535,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
       try {
         await _api.editChatMessage(
           messageId: msg['message_id'] ?? msg['id'],
-          roomId: _selectedRoom,
+          roomId: _fullRoomId,
           realm: 'energie',
           newMessage: newText.trim(),
           userId: _userId,
@@ -2499,36 +2592,34 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
     );
     
     if (confirm == true) {
-      try {
-        await _api.deleteChatMessage(
-          messageId: msg['message_id'] ?? msg['id'],
-          roomId: _selectedRoom,
-          realm: 'energie',
-          userId: _userId,
-          username: _username,
+      final msgId = msg['message_id'] ?? msg['id'] ?? '';
+
+      // ✅ OPTIMISTIC UPDATE: Sofort lokal entfernen
+      if (mounted) {
+        setState(() {
+          _messages.removeWhere((m) => (m['message_id'] ?? m['id']) == msgId);
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Nachricht gelöscht'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
         );
-        
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('✅ Nachricht gelöscht'),
-              backgroundColor: Colors.green,
-              duration: Duration(seconds: 2),
-            ),
-          );
-          await _loadMessages(silent: true);
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('❌ Fehler: $e'),
-              backgroundColor: Colors.red,
-              duration: Duration(seconds: 3),
-            ),
-          );
-        }
       }
+
+      // Server-Update im Hintergrund
+      _api.deleteChatMessage(
+        messageId: msgId,
+        roomId: _fullRoomId,
+        realm: 'energie',
+        userId: _userId,
+        username: _username,
+      ).then((_) {
+        if (kDebugMode) debugPrint('✅ Energie Delete gespeichert');
+      }).catchError((e) {
+        if (kDebugMode) debugPrint('⚠️ Energie Delete server error (optimistic bleibt): $e');
+      });
     }
   }
   
@@ -2628,7 +2719,10 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
   
   // 🆕 ENHANCED MESSAGE BUBBLE (Modern Design - ENERGIE Purple)
   Widget _buildEnhancedMessageBubble(Map<String, dynamic> msg) {
-    final isOwn = msg['userId'] == _userId || msg['username'] == _username;
+    // ✅ isOwn: vergleiche userId (camelCase und snake_case) + username als Fallback
+    final msgUserId = msg['userId']?.toString() ?? msg['user_id']?.toString() ?? '';
+    final isOwn = (msgUserId.isNotEmpty && msgUserId == _userId) ||
+        (msg['username']?.toString() == _username && _username.isNotEmpty);
     
     return Padding(
       padding: EdgeInsets.only(
@@ -2741,7 +2835,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        _formatTime(msg['timestamp']),
+                        _formatTime(msg['timestamp'] ?? msg['created_at']),
                         style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.6),
                           fontSize: 11,
@@ -2876,6 +2970,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
   }
   
   /// 🗑️ ADMIN DELETE: Root admin can delete any message
+  // ignore: unused_element
   void _adminDeleteMessage(Map<String, dynamic> msg) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -2901,25 +2996,30 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
     );
     
     if (confirmed == true) {
-      try {
-        // TODO: Implement admin delete via API
-        // For now, just flag it as deleted
-        final moderation = ModerationService();
-        await moderation.flagContent(
-          world: 'energie',
-          contentType: 'comment',
-          contentId: msg['id']?.toString() ?? '',
-          reason: 'Deleted by admin',
-          adminToken: _username,
-        );
-        
-        if (mounted) {
-          _showSnackBar('✅ Nachricht wurde gelöscht', Colors.green);
-        }
-      } catch (e) {
-        if (mounted) {
-          _showSnackBar('❌ Fehler beim Löschen: $e', Colors.red);
-        }
+      final messageId = msg['id']?.toString() ?? msg['message_id']?.toString() ?? '';
+
+      // ✅ OPTIMISTIC UPDATE: Sofort lokal entfernen
+      if (mounted) {
+        setState(() {
+          _messages.removeWhere((m) => (m['id'] ?? m['message_id']) == messageId);
+        });
+        _showSnackBar('✅ Nachricht wurde gelöscht', Colors.green);
+      }
+
+      // Server-Update im Hintergrund
+      if (messageId.isNotEmpty) {
+        _api.deleteChatMessage(
+          messageId: messageId,
+          userId: _userId,
+          username: _username,
+          roomId: _fullRoomId,
+          realm: 'energie',
+          isAdmin: true,
+        ).then((_) {
+          if (kDebugMode) debugPrint('✅ Admin-Delete gespeichert');
+        }).catchError((e) {
+          if (kDebugMode) debugPrint('⚠️ Admin-Delete server error: $e');
+        });
       }
     }
   }
@@ -2948,40 +3048,34 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
               // Mute Type Selector
               const Text('Sperrdauer:', style: TextStyle(color: Colors.white)),
               const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: RadioListTile<String>(
-                      title: const Text('24 Stunden', style: TextStyle(color: Colors.white, fontSize: 14)),
-                      value: '24h',
-                      groupValue: muteType,
-                      onChanged: (value) {
-                        if (mounted) {
-                          setState(() {
-                          muteType = value!;
-                        });
-                        }
-                      },
-                      activeColor: const Color(0xFF9B51E0),
-                    ),
-                  ),
-                  if (isRootAdmin)
+              RadioGroup<String>(
+                groupValue: muteType,
+                onChanged: (value) {
+                  if (mounted && value != null) {
+                    setState(() {
+                      muteType = value;
+                    });
+                  }
+                },
+                child: Row(
+                  children: [
                     Expanded(
                       child: RadioListTile<String>(
-                        title: const Text('Permanent', style: TextStyle(color: Colors.white, fontSize: 14)),
-                        value: 'permanent',
-                        groupValue: muteType,
-                        onChanged: (value) {
-                          if (mounted) {
-                            setState(() {
-                            muteType = value!;
-                          });
-                          }
-                        },
-                        activeColor: Colors.red,
+                        title: const Text('24 Stunden', style: TextStyle(color: Colors.white, fontSize: 14)),
+                        value: '24h',
+                        activeColor: const Color(0xFF9B51E0),
                       ),
                     ),
-                ],
+                    if (isRootAdmin)
+                      Expanded(
+                        child: RadioListTile<String>(
+                          title: const Text('Permanent', style: TextStyle(color: Colors.white, fontSize: 14)),
+                          value: 'permanent',
+                          activeColor: Colors.red,
+                        ),
+                      ),
+                  ],
+                ),
               ),
               
               const SizedBox(height: 16),

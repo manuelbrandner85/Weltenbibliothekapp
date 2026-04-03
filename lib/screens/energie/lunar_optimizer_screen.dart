@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
+ // OpenClaw v2.0
 import 'package:intl/intl.dart';
 import '../../models/lunar_phase.dart';
 import '../../services/haptic_service.dart';

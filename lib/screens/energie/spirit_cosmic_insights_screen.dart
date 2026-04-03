@@ -2,7 +2,7 @@
 /// Mondphasen, Chakra-Status und kosmische Einflüsse
 library;
 import 'package:flutter/material.dart';
-import '../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
+ // OpenClaw v2.0
 import 'package:flutter/foundation.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/premium_components.dart';

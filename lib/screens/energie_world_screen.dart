@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
+ // OpenClaw v2.0
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'energie/home_tab_v5.dart';
@@ -136,11 +136,13 @@ class _EnergieWorldScreenState extends ConsumerState<EnergieWorldScreen>
                           child: Text(
                             'ENERGIE',
                             style: TextStyle(
-                              fontSize: 24,
+                              fontSize: 20,
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
-                              letterSpacing: 4,
+                              letterSpacing: 2,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.clip,
                           ),
                         ),
 
@@ -350,8 +352,17 @@ class _EnergieWorldScreenState extends ConsumerState<EnergieWorldScreen>
                     setState(() => _currentIndex = index);
                   },
                   backgroundColor: Colors.transparent,
-                  selectedItemColor: const Color(0xFFAB47BC),
-                  unselectedItemColor: Colors.white54,
+                  selectedItemColor: const Color(0xFFCE93D8),
+                  unselectedItemColor: Colors.white70,
+                  selectedLabelStyle: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.3,
+                  ),
+                  unselectedLabelStyle: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                  ),
                   type: BottomNavigationBarType.fixed,
                   elevation: 0,
                   items: const [

@@ -13,6 +13,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'user_auth_service.dart';
+import 'user_service.dart';
 
 // =====================================================================
 // CONTENT STATUS
@@ -175,8 +177,9 @@ class UserContentService {
   UserContentService._internal();
 
   static const String _narrativesKey = 'user_narratives';
-  static const String _currentUserId = 'user_manuel';
-  static const String _currentUserName = 'Manuel';
+  // User-Daten werden dynamisch aus UserAuthService geladen
+  String _currentUserId = 'user_anonymous';
+  String _currentUserName = 'Anonym';
 
   SharedPreferences? _prefs;
   List<UserNarrative> _narratives = [];
@@ -200,6 +203,9 @@ class UserContentService {
   Future<void> init() async {
     try {
       _prefs = await SharedPreferences.getInstance();
+      // Echten User laden statt Hardcode
+      _currentUserId = UserService.getCurrentUserId();
+      _currentUserName = await UserAuthService.getUsername() ?? 'Anonym';
       await _loadNarratives();
       
       if (kDebugMode) {

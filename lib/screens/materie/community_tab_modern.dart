@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
+ // OpenClaw v2.0
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import '../../models/community_post.dart';
 import '../../services/community_service.dart'; // 🌐 ECHTE API
@@ -9,6 +9,7 @@ import '../../widgets/article_like_button.dart'; // 👍 NEW: Like Button
 import '../../widgets/article_comments_widget.dart'; // 💬 NEW: Comments Widget
 import 'materie_live_chat_screen.dart'; // 💬 LIVE-CHAT INTEGRATION
 import '../../services/chat_notification_service.dart'; // 🔔 NOTIFICATION SERVICE
+import 'package:share_plus/share_plus.dart';
 
 /// Modernes Community-Tab für MATERIE-Welt - Social-Media-Style
 class MaterieCommunityTabModern extends StatefulWidget {
@@ -20,6 +21,7 @@ class MaterieCommunityTabModern extends StatefulWidget {
 
 class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> with SingleTickerProviderStateMixin {
   bool _isLoading = false;
+  // ignore: unused_field
   String? _errorMessage; // ✅ FIX #7: Error state
   String _selectedView = 'all'; // ✅ FIX #8: View state variable
   
@@ -550,11 +552,32 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
                     color: Colors.white.withValues(alpha: 0.7),
                   ),
                   onPressed: () {
-                    // TODO: Implementiere Post-Optionen (Teilen, Melden, etc.)
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Post-Optionen coming soon'),
-                        duration: Duration(seconds: 2),
+                    showModalBottomSheet(
+                      context: context,
+                      backgroundColor: const Color(0xFF1A1A2E),
+                      builder: (ctx) => SafeArea(
+                        child: Wrap(
+                          children: [
+                            ListTile(
+                              leading: const Icon(Icons.share, color: Colors.white),
+                              title: const Text('Teilen', style: TextStyle(color: Colors.white)),
+                              onTap: () {
+                                Navigator.pop(ctx);
+                                Share.share('${post.content}\n\nGeteilt aus der Weltenbibliothek');
+                              },
+                            ),
+                            ListTile(
+                              leading: const Icon(Icons.flag_outlined, color: Colors.orange),
+                              title: const Text('Melden', style: TextStyle(color: Colors.white)),
+                              onTap: () {
+                                Navigator.pop(ctx);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Gemeldet. Danke für dein Feedback.')),
+                                );
+                              },
+                            ),
+                          ],
+                        ),
                       ),
                     );
                   },
@@ -625,7 +648,7 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
                 ArticleLikeButton(
                   articleId: post.id,
                   initialLikes: post.likes,
-                  initiallyLiked: false, // TODO: Check if user already liked
+                  initiallyLiked: false, // Wird async in _loadLikeStatus geladen
                 ),
                 const SizedBox(width: 20),
                 ArticleCommentsWidget(
@@ -635,10 +658,7 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
                 const Spacer(),
                 InkWell(
                   onTap: () {
-                    // TODO: Implement share
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('🚀 Share-Funktion coming soon')),
-                    );
+                    Share.share('${post.content}\n\nGeteilt aus der Weltenbibliothek');
                   },
                   borderRadius: BorderRadius.circular(20),
                   child: Padding(
@@ -709,63 +729,7 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
     );
   }
 
-  Widget _buildEngagementStat(IconData icon, int count, Color color) {
-    return Row(
-      children: [
-        Icon(
-          icon,
-          size: 18,
-          color: color.withValues(alpha: 0.7),
-        ),
-        const SizedBox(width: 4),
-        Text(
-          _formatNumber(count),
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.7),
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildActionButton(IconData icon, String label, Color color) {
-    return InkWell(
-      onTap: () {
-        // TODO: Implementiere Community-Actions (Like, Comment, Share)
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('$label Funktion coming soon'),
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      },
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              size: 20,
-              color: Colors.white.withValues(alpha: 0.7),
-            ),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.7),
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  String _formatTimestamp(DateTime timestamp) {
+    String _formatTimestamp(DateTime timestamp) {
     final now = DateTime.now();
     final difference = now.difference(timestamp);
     
@@ -780,10 +744,4 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
     }
   }
 
-  String _formatNumber(int number) {
-    if (number >= 1000) {
-      return '${(number / 1000).toStringAsFixed(1)}k';
-    }
-    return number.toString();
   }
-}

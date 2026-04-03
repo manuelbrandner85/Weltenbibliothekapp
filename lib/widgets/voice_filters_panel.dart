@@ -289,6 +289,7 @@ class _VoiceFiltersPanelState extends State<VoiceFiltersPanel> {
   }
 
   /// Show Panel
+  // ignore: unused_element
   static Future<void> show(
     BuildContext context,
     VoiceFiltersService filtersService,

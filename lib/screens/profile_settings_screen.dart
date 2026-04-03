@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
+ // OpenClaw v2.0
 import '../services/storage_service.dart';
 import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart'; // 📸 Image Picker
@@ -7,6 +7,7 @@ import '../models/materie_profile.dart';
 import '../models/energie_profile.dart';
 import '../services/cloudflare_sync_service.dart'; // 🆕 SYNC SERVICE
 import '../services/avatar_upload_service.dart'; // 👤 AVATAR UPLOAD
+import '../services/supabase_service.dart'; // 🔥 Supabase Auth
 import '../services/haptic_service.dart';
 import '../services/haptic_feedback_service.dart'; // 📳 NEW: Haptic Feedback
 import '../widgets/theme_toggle_widget.dart';
@@ -343,10 +344,18 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                         : await avatarService.pickImageFromCamera();
                     
                     if (file != null && mounted) {
-                      // TODO: Upload to server with user ID
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Avatar hochgeladen! 📸')),
-                      );
+                      // ✅ Upload avatar to server
+                      final userId = supabase.auth.currentUser?.id 
+                          ?? _materieProfile?.userId 
+                          ?? _energieProfile?.userId 
+                          ?? 'anonymous';
+                      final avatarService = AvatarUploadService();
+                      final url = await avatarService.uploadAvatar(file, userId);
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(url != null ? '✅ Avatar hochgeladen!' : '⚠️ Upload fehlgeschlagen – lokal gespeichert')),
+                        );
+                      }
                     }
                   }
                 },
@@ -485,10 +494,18 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                         : await avatarService.pickImageFromCamera();
                     
                     if (file != null && mounted) {
-                      // TODO: Upload to server with user ID
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Avatar hochgeladen! 📸')),
-                      );
+                      // ✅ Upload avatar to server (Energie section)
+                      final userId = supabase.auth.currentUser?.id 
+                          ?? _energieProfile?.userId 
+                          ?? _materieProfile?.userId 
+                          ?? 'anonymous';
+                      final avatarSvc = AvatarUploadService();
+                      final url = await avatarSvc.uploadAvatar(file, userId);
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(url != null ? '✅ Avatar hochgeladen!' : '⚠️ Upload fehlgeschlagen')),
+                        );
+                      }
                     }
                   }
                 },
@@ -839,6 +856,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
   }
   
   /// 🏥 Backend Health Monitor Card
+  // ignore: unused_element
   Widget _buildHealthMonitorCard() {
     return Container(
       padding: const EdgeInsets.all(20),

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
+ // OpenClaw v2.0
 import 'dart:math' as math;
 import 'dart:ui';
 import 'dart:async';
@@ -52,10 +52,11 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> with TickerProvider
   // Tutorial overlay (v5.37 - Improvement 5.5)
   bool _showTutorial = false;
   
-  // Gyroscope 3D Parallax (v5.37 - Improvement 5.4)
+  // Gyroscope 3D Parallax (deaktiviert - sensors_plus Kompatibilität)
+  // Kann reaktiviert werden, wenn gyroscopeEventStream() verfügbar ist
   StreamSubscription<GyroscopeEvent>? _gyroscopeSubscription;
-  final double _gyroX = 0.0;
-  final double _gyroY = 0.0;
+  double _gyroX = 0.0;
+  double _gyroY = 0.0;
   
   // Portal Color Scheme (v5.39 - Dynamic Colors)
   Color _portalColor1 = const Color(0xFF2196F3); // Blau
@@ -159,8 +160,6 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> with TickerProvider
   }
   
   /// Original initState - nur für Rückwärtskompatibilität
-  // TODO: Review unused method: _originalInitState
-  // void _originalInitState() {
      //     // Start gyroscope listener (v5.37 - Improvement 5.4)
     // _gyroscopeSubscription = gyroscopeEventStream().listen((GyroscopeEvent event) {
       // if (mounted) {
@@ -911,9 +910,9 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> with TickerProvider
                           'WELTENBIBLIOTHEK',
                           style: TextStyle(
                             fontSize: context.responsive(mobile: 16, tablet: 16 * 1.2, desktop: 16 * 1.4),
-                            fontWeight: FontWeight.w100,
+                            fontWeight: FontWeight.w600, // Gut sichtbar
                             color: Colors.white,
-                            letterSpacing: context.responsive(mobile: 4.0, tablet: 8.0, desktop: 12.0,
+                            letterSpacing: context.responsive(mobile: 3.0, tablet: 6.0, desktop: 10.0,
                             ),
                             shadows: [
                               Shadow(color: _portalColor1, blurRadius: 20),
@@ -1153,10 +1152,10 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> with TickerProvider
                     child: Text(
                       'Wähle deine Welt',
                       style: TextStyle(
-                        fontSize: context.responsive(mobile: 10, tablet: 10 * 1.2, desktop: 10 * 1.4),
-                        color: Colors.white.withValues(alpha: 0.3),
+                        fontSize: context.responsive(mobile: 11, tablet: 11 * 1.2, desktop: 11 * 1.4),
+                        color: Colors.white.withValues(alpha: 0.85),
                         letterSpacing: context.responsive(mobile: 2.0, tablet: 4.0, desktop: 4.0),
-                        fontWeight: FontWeight.w200,
+                        fontWeight: FontWeight.w400,
                       ),
                     ),
                   ),
@@ -1292,9 +1291,9 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> with TickerProvider
                               subtitle,
                               style: TextStyle(
                                 fontSize: context.responsive(mobile: 9, tablet: 9 * 1.2, desktop: 9 * 1.4),
-                                color: Colors.white.withValues(alpha: 0.75),
+                                color: Colors.white.withValues(alpha: 0.85),
                                 letterSpacing: 1.0,
-                                fontWeight: FontWeight.w300,
+                                fontWeight: FontWeight.w400,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -1336,6 +1335,8 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> with TickerProvider
     
     // Kurze Verzögerung für Haptic-Sync
     await Future.delayed(const Duration(milliseconds: 100));
+    
+    if (!mounted) return;
     
     // 📳 HAPTIC: Heavy Impact beim Warp-Start (v5.40)
     HapticService.heavyImpact();
@@ -1901,7 +1902,7 @@ ${_goldenPortalUnlocked ? '• 👑 Goldenes Portal FREIGESCHALTET!' : ''}
       SoundService.playAchievementSound();
       
       final achievement = AchievementData.getAchievement(achievementId);
-      if (achievement != null) {
+      if (achievement != null && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(

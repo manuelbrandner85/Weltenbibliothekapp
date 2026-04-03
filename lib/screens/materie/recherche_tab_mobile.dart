@@ -12,6 +12,8 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:async';
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../utils/performance_helper.dart';  // ⚡ PERFORMANCE HELPER
 import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -43,9 +45,9 @@ class _MobileOptimierterRechercheTabState extends State<MobileOptimierterRecherc
     with SingleTickerProviderStateMixin {
   
   // Services
-  late final BackendRechercheService _rechercheService;
+  late final BackendRechercheService _rechercheService; // ignore: unused_field
   late final AnalyseService _analyseService;
-  final CloudflareApiService _cloudflareApi = CloudflareApiService();
+  final CloudflareApiService _cloudflareApi = CloudflareApiService(); // ignore: unused_field
   final OpenClawComprehensiveService _openClawService = OpenClawComprehensiveService();
   
   // State
@@ -55,7 +57,7 @@ class _MobileOptimierterRechercheTabState extends State<MobileOptimierterRecherc
   Map<String, dynamic>? _media; // MULTI-MEDIA: Videos, PDFs, Bilder, Audios
   
   // UI State
-  bool _isSearching = false;
+  bool _isSearching = false; // ignore: unused_field
   bool _showFallback = false; // Fallback-UI bei leeren Ergebnissen
   int _currentStep = 0; // 0: Start, 1: Recherche, 2: Analyse
   late TabController _tabController;
@@ -67,36 +69,103 @@ class _MobileOptimierterRechercheTabState extends State<MobileOptimierterRecherc
   
   // Multimedia-Controller
   final Map<String, VideoPlayerController> _videoControllers = {};
-  
+
+  // Notizen-State
+  List<Map<String, dynamic>> _notizen = [];
+  final TextEditingController _notizenController = TextEditingController();
+  bool _notizenLoading = false;
+  static const String _notizenStorageKey = 'recherche_notizen';
+
   @override
   void initState() {
     super.initState();
-    
+
     // Initialize services
     _rechercheService = BackendRechercheService();
     _analyseService = AnalyseService();
-    
+
     // Initialize TabController (11 Tabs: +MULTIMEDIA +EPSTEIN FILES +QUELLEN +NOTIZEN)
     _tabController = TabController(length: 11, vsync: this);
+
+    // Notizen laden
+    _ladeNotizen();
   }
   
   @override
   void dispose() {
     _suchController.dispose();
+    _notizenController.dispose();
     _tabController.dispose();
     _rechercheSub?.cancel();
     _analyseSub?.cancel();
     _debounceTimer?.cancel();  // ⚡ CANCEL DEBOUNCE TIMER
     // Backend Service has no dispose method
     _analyseService.dispose();
-    
+
     // Video-Controller freigeben
     for (var controller in _videoControllers.values) {
       controller.dispose();
     }
     _videoControllers.clear();
-    
+
     super.dispose();
+  }
+
+  // ─── NOTIZEN METHODEN ────────────────────────────────────────────────────────
+
+  /// Notizen aus SharedPreferences laden
+  Future<void> _ladeNotizen() async {
+    setState(() => _notizenLoading = true);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_notizenStorageKey);
+      if (raw != null) {
+        final decoded = jsonDecode(raw) as List<dynamic>;
+        setState(() {
+          _notizen = decoded.cast<Map<String, dynamic>>();
+        });
+      }
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ Notizen laden fehlgeschlagen: $e');
+    } finally {
+      setState(() => _notizenLoading = false);
+    }
+  }
+
+  /// Notizen in SharedPreferences speichern
+  Future<void> _speichereNotizen() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_notizenStorageKey, jsonEncode(_notizen));
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ Notizen speichern fehlgeschlagen: $e');
+    }
+  }
+
+  /// Neue Notiz hinzufügen
+  Future<void> _neueNotizHinzufuegen(String text) async {
+    if (text.trim().isEmpty) return;
+    final notiz = {
+      'id': DateTime.now().millisecondsSinceEpoch.toString(),
+      'text': text.trim(),
+      'erstellt': DateTime.now().toIso8601String(),
+      'thema': _suchController.text.trim().isNotEmpty
+          ? _suchController.text.trim()
+          : null,
+    };
+    setState(() {
+      _notizen.insert(0, notiz);
+    });
+    _notizenController.clear();
+    await _speichereNotizen();
+  }
+
+  /// Notiz löschen
+  Future<void> _notizLoeschen(String id) async {
+    setState(() {
+      _notizen.removeWhere((n) => n['id'] == id);
+    });
+    await _speichereNotizen();
   }
   
   /// Konvertiere Worker-Analyse zu Flutter AnalyseErgebnis
@@ -144,19 +213,8 @@ class _MobileOptimierterRechercheTabState extends State<MobileOptimierterRecherc
       }
     }
     
-    // CRITICAL: Falls Worker LEERE Daten liefert, füge TEST-DATEN hinzu!
     if (narrative.isEmpty && kDebugMode) {
-      debugPrint('⚠️ [DEBUG] Worker lieferte LEERE Narrative - füge TEST-DATEN hinzu');
-      narrative = [
-        Narrativ(
-          id: 'test_narrativ_1',
-          titel: 'Test-Narrativ: Mainstream-Sichtweise',
-          beschreibung: 'Dies ist ein TEST-Narrativ, weil der Worker keine echten Daten lieferte. Das zeigt, dass die UI grundsätzlich funktioniert!',
-          typ: NarrativTyp.mainstream,
-          hauptpunkte: ['Punkt 1', 'Punkt 2', 'Punkt 3'],
-          verbreitung: 0.7,
-        ),
-      ];
+      debugPrint('⚠️ [DEBUG] Worker lieferte keine Narrative für "$suchbegriff"');
     }
     
     // Timeline konvertieren (KORREKTE MODEL-STRUKTUR: HistorischerKontext)
@@ -193,22 +251,8 @@ class _MobileOptimierterRechercheTabState extends State<MobileOptimierterRecherc
       }
     }
     
-    // CRITICAL: Falls Worker LEERE Daten liefert, füge TEST-DATEN hinzu!
     if (alternativeSichtweisen.isEmpty && kDebugMode) {
-      debugPrint('⚠️ [DEBUG] Worker lieferte LEERE Alternative Sichtweisen - füge TEST-DATEN hinzu');
-      alternativeSichtweisen = [
-        AlternativeSichtweise(
-          id: 'test_sichtweise_1',
-          titel: 'Test: Alternative Interpretation',
-          these: 'Dies ist eine TEST-These für den Suchbegriff "$suchbegriff"',
-          beschreibung: 'Diese alternative Sichtweise wurde automatisch generiert, weil der Worker keine echten Daten lieferte. Sie dient zum Testen der UI!',
-          argumente: [
-            'Argument 1: UI funktioniert',
-            'Argument 2: Daten werden angezeigt',
-            'Argument 3: Tabs sind sichtbar',
-          ],
-        ),
-      ];
+      debugPrint('⚠️ [DEBUG] Worker lieferte keine alternativen Sichtweisen für "$suchbegriff"');
     }
     
     if (kDebugMode) {
@@ -658,6 +702,7 @@ class _MobileOptimierterRechercheTabState extends State<MobileOptimierterRecherc
     );
   }
   
+  // ignore: unused_element
   Widget _buildQuickSearchChip(String text) {
     return Padding(
       padding: const EdgeInsets.only(right: 8),
@@ -1413,7 +1458,7 @@ class _MobileOptimierterRechercheTabState extends State<MobileOptimierterRecherc
     if (kDebugMode) {
       debugPrint('🖼️ [UI] _buildAnalyseResults aufgerufen');
       debugPrint('   - Analyse vorhanden: ${_analyse != null}');
-      debugPrint('   - TabController: ${_tabController != null}');
+      debugPrint('   - TabController: initialized');
       debugPrint('   - istKiGeneriert: ${_analyse?.istKiGeneriert}');
     }
     
@@ -1723,6 +1768,7 @@ class _MobileOptimierterRechercheTabState extends State<MobileOptimierterRecherc
     );
   }
   
+  // ignore: unused_element
   Widget _buildTimelineTab() {
     return Column(
       children: [
@@ -2401,56 +2447,209 @@ class _MobileOptimierterRechercheTabState extends State<MobileOptimierterRecherc
   Widget _buildNotizenTab() {
     return Container(
       color: const Color(0xFF0A0A0A),
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.note_add,
-              size: 80,
-              color: Colors.cyan.withValues(alpha: 0.5),
+      child: Column(
+        children: [
+          // Eingabe-Bereich
+          Container(
+            margin: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1A1A2E),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.cyan.withValues(alpha: 0.3)),
             ),
-            const SizedBox(height: 24),
-            const Text(
-              '📝 Notizen-Funktion',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 40),
-              child: Text(
-                'Speichere deine Recherche-Erkenntnisse und Notizen lokal auf deinem Gerät.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.grey[400],
-                  fontSize: 14,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.note_add, color: Colors.cyan, size: 20),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Neue Notiz',
+                      style: TextStyle(
+                        color: Colors.cyan.withValues(alpha: 0.9),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                    if (_suchController.text.isNotEmpty) ...[
+                      const Spacer(),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: Colors.cyan.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          'Thema: ${_suchController.text.trim()}',
+                          style: const TextStyle(color: Colors.cyan, fontSize: 11),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
-              ),
-            ),
-            const SizedBox(height: 32),
-            ElevatedButton.icon(
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Notizen-Feature wird in Kürze verfügbar sein!'),
-                    duration: Duration(seconds: 2),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: _notizenController,
+                  style: const TextStyle(color: Colors.white, fontSize: 14),
+                  maxLines: 3,
+                  decoration: InputDecoration(
+                    hintText: 'Erkenntnisse, Verbindungen, Fragen notieren...',
+                    hintStyle: TextStyle(color: Colors.grey[600], fontSize: 13),
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.zero,
                   ),
-                );
-              },
-              icon: const Icon(Icons.add),
-              label: const Text('Neue Notiz erstellen'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.cyan,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              ),
+                ),
+                const SizedBox(height: 10),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: ElevatedButton.icon(
+                    onPressed: () => _neueNotizHinzufuegen(_notizenController.text),
+                    icon: const Icon(Icons.save, size: 16),
+                    label: const Text('Speichern'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.cyan,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      textStyle: const TextStyle(fontSize: 13),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+
+          // Notizen-Liste
+          Expanded(
+            child: _notizenLoading
+                ? const Center(
+                    child: CircularProgressIndicator(color: Colors.cyan),
+                  )
+                : _notizen.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.notes_outlined,
+                              size: 64,
+                              color: Colors.grey[700],
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Noch keine Notizen',
+                              style: TextStyle(
+                                color: Colors.grey[500],
+                                fontSize: 16,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Starte eine Recherche und halte deine Erkenntnisse fest',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Colors.grey[700],
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        itemCount: _notizen.length,
+                        itemBuilder: (context, index) {
+                          final notiz = _notizen[index];
+                          final erstellt = DateTime.tryParse(
+                                notiz['erstellt']?.toString() ?? '',
+                              ) ??
+                              DateTime.now();
+                          return Dismissible(
+                            key: Key(notiz['id'].toString()),
+                            direction: DismissDirection.endToStart,
+                            onDismissed: (_) => _notizLoeschen(notiz['id'].toString()),
+                            background: Container(
+                              alignment: Alignment.centerRight,
+                              padding: const EdgeInsets.only(right: 20),
+                              decoration: BoxDecoration(
+                                color: Colors.red.withValues(alpha: 0.7),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(Icons.delete, color: Colors.white),
+                            ),
+                            child: Container(
+                              margin: const EdgeInsets.only(bottom: 10),
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF16213E),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: Colors.cyan.withValues(alpha: 0.15),
+                                ),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (notiz['thema'] != null) ...[
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 8, vertical: 3),
+                                      decoration: BoxDecoration(
+                                        color: Colors.cyan.withValues(alpha: 0.12),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        notiz['thema'].toString(),
+                                        style: const TextStyle(
+                                            color: Colors.cyan, fontSize: 11),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                  ],
+                                  Text(
+                                    notiz['text'].toString(),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 14,
+                                      height: 1.4,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    children: [
+                                      Icon(Icons.access_time,
+                                          size: 12, color: Colors.grey[600]),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        '${erstellt.day}.${erstellt.month}.${erstellt.year} '
+                                        '${erstellt.hour.toString().padLeft(2, '0')}:${erstellt.minute.toString().padLeft(2, '0')}',
+                                        style: TextStyle(
+                                          color: Colors.grey[600],
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                      const Spacer(),
+                                      GestureDetector(
+                                        onTap: () => _notizLoeschen(notiz['id'].toString()),
+                                        child: Icon(
+                                          Icons.delete_outline,
+                                          size: 16,
+                                          color: Colors.red.withValues(alpha: 0.6),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+          ),
+        ],
       ),
     );
   }
