@@ -66,8 +66,8 @@ dependencies:
   # Video Player (für Intro-Video)
   video_player: ^2.8.2  # Web-kompatibel
   
-  # Internationalization (für deutsches Datum)
-  intl: 0.20.2
+  # Internationalization – version managed by flutter_localizations SDK (do not pin manually)
+  intl: any
   
   # OpenStreetMap Integration (Web-kompatibel)
   flutter_map: ^7.0.2
