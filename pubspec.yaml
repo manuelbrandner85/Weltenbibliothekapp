@@ -40,7 +40,7 @@ dependencies:
   supabase_flutter: ^2.8.0    # Auth + DB + Realtime + Storage
 
   # UI & State Management
-  cupertino_icons: ^1.0.8
+  # cupertino_icons entfernt – kein CupertinoIcons-Import gefunden
   provider: 6.1.5+1          # Legacy state management (kept for backward compatibility)
   flutter_riverpod: ^2.6.1   # Riverpod für Admin-System
   freezed_annotation: ^2.4.4  # Freezed annotations
@@ -89,7 +89,7 @@ dependencies:
   connectivity_plus: ^6.1.2  # Offline-Mode Detection
   # record: ^5.1.2            # ❌ DEAKTIVIERT für Android Build (record_linux Kompatibilitätsproblem)
   flutter_cache_manager: ^3.3.0  # 🆕 Offline Cache Management
-  pdfx: ^2.6.0              # 🆕 PDF Reader Integration
+  # pdfx entfernt – kein PdfView/PdfController-Import gefunden
   shimmer: ^3.0.0           # 🆕 Loading Skeleton Effects
   flutter_webrtc: ^1.3.0    # 🆕 WebRTC Voice Streaming (max 10 users) - Updated for Dart 3.9.2
   
@@ -111,7 +111,7 @@ dependencies:
   
   # 🔍 Epstein Files Research Tool
   webview_flutter: 4.10.0           # WebView – pinned for Dart 3.5 / Flutter 3.24 compatibility
-  html: ^0.15.4                     # HTML Parsing für PDF-Link-Extraktion
+  # html entfernt – kein package:html Import gefunden
   syncfusion_flutter_pdf: ^28.1.36  # PDF Text Extraction
   translator: ^1.0.0                # Kostenlose Übersetzung (Google Translate API ohne Key)
 
