@@ -500,10 +500,10 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
                       // Greeting
                       Text(
                         greeting,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 16,
-                          color: Colors.white.withValues(alpha: 0.7),
-                          fontWeight: FontWeight.w400,
+                          color: Colors.white70,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -543,9 +543,11 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
             // Subtitle
             Text(
               'Willkommen in der Welt der ENERGIE',
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 14,
-                color: Colors.white.withValues(alpha: 0.6),
+                color: Colors.white70,
+                fontWeight: FontWeight.w400,
+                letterSpacing: 0.3,
               ),
             ),
             
@@ -868,16 +870,30 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black54,
+                              blurRadius: 4,
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         label,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.white.withValues(alpha: 0.7),
-                          fontWeight: FontWeight.w500,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black87,
+                              blurRadius: 6,
+                            ),
+                          ],
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
@@ -968,9 +984,17 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
                   label,
                   style: const TextStyle(
                     fontSize: 13,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
                     color: Colors.white,
+                    shadows: [
+                      Shadow(
+                        color: Colors.black54,
+                        blurRadius: 4,
+                      ),
+                    ],
                   ),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
                 ),
               ],
             ),
