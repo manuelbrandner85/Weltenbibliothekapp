@@ -42,6 +42,7 @@ import 'services/achievement_service.dart';  // 🏆 Achievement System
 import 'widgets/achievement_unlock_dialog.dart';  // 🏆 Achievement UI
 import 'utils/error_boundary.dart';  // 🛡️ Error Boundary
 import 'services/supabase_service.dart';  // 🟢 SUPABASE: Auth + Chat + Community
+import 'services/profile_restore_service.dart'; // 🔄 PROFIL-WIEDERHERSTELLUNG
 // import 'widgets/offline_indicator.dart';  // 📡 OFFLINE INDICATOR (DISABLED - BUILD ISSUE)
 // import 'services/push_notification_service.dart'; // Firebase -> Cloudflare
 
@@ -160,6 +161,18 @@ void main() async {
     // App cannot start without critical services
     rethrow;
   }
+
+  // 🔄 PROFIL-WIEDERHERSTELLUNG - Im Hintergrund (nicht blockierend)
+  // Stellt Profil aus Cloud wieder her falls Hive nach Neuinstallation leer ist
+  ProfileRestoreService().checkAndRestoreProfiles().then((result) {
+    if (result.anyRestored) {
+      debugPrint('✅ Profile wiederhergestellt: ${result.toString()}');
+    } else if (!result.anyProfilePresent) {
+      debugPrint('ℹ️ Kein Profil vorhanden – normaler Onboarding-Flow');
+    }
+  }).catchError((e) {
+    debugPrint('⚠️ Profile-Restore Fehler (ignoriert): $e');
+  });
   
   // ═══════════════════════════════════════════════════════════
   // APP STARTEN (NICHT BLOCKIEREND)

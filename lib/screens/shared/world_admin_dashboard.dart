@@ -1,1118 +1,1322 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
- // OpenClaw v2.0
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../services/world_admin_service.dart';
-import '../../services/content_management_service.dart'; // ✅ PHASE 3: CONTENT MANAGEMENT
+import '../../services/cloudflare_api_service.dart';
+import '../../services/health_check_service.dart';
 import '../../features/admin/state/admin_state.dart';
-import '../../features/admin/ui/moderation_dashboard_screen.dart';
-import '../../features/admin/ui/user_management_screen.dart'; // ✅ PHASE 2: USER MANAGEMENT
-import '../admin/health_dashboard_screen.dart'; // 🏥 HEALTH DASHBOARD (NEW Phase 3)
-import '../admin/user_moderation_screen_v16_list.dart'; // 🔧 V16.2 ADMIN APIs (MIT USER-LISTE!)
-import '../../core/storage/unified_storage_service.dart'; // ✅ FALLBACK: Storage Service
 
-/// 🛡️ WORLD ADMIN DASHBOARD (RIVERPOD VERSION)
-/// 
-/// Vollständig migriert zu Riverpod State Management:
-/// ✅ Admin-Status kommt von adminStateProvider
-/// ✅ Kein separater Backend-Check mehr
-/// ✅ Automatische Updates bei Profil-Änderungen
-/// ✅ Type-safe Admin-Berechtigungen
-/// 
-/// USAGE:
-/// ```dart
-/// Navigator.push(
-///   context,
-///   MaterialPageRoute(
-///     builder: (_) => WorldAdminDashboard(world: 'materie'),
-///   ),
-/// );
-/// ```
-
+// ─────────────────────────────────────────────────────────────────────────────
+// EINSTIEGSPUNKT – API unverändert, alle bestehenden Aufrufe bleiben gültig
+// ─────────────────────────────────────────────────────────────────────────────
 class WorldAdminDashboard extends ConsumerStatefulWidget {
-  final String world;  // 'materie' oder 'energie'
-  
-  const WorldAdminDashboard({
-    super.key,
-    required this.world,
-  });
+  final String world;
+  const WorldAdminDashboard({super.key, required this.world});
 
   @override
-  ConsumerState<WorldAdminDashboard> createState() => _WorldAdminDashboardState();
+  ConsumerState<WorldAdminDashboard> createState() =>
+      _WorldAdminDashboardState();
 }
 
-class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard> 
+class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  
-  // Data State
-  bool _isLoading = true;
-  List<WorldUser> _users = [];
-  List<AuditLogEntry> _auditLog = [];
-  
+
+  Color get _primary =>
+      widget.world == 'materie' ? const Color(0xFF1565C0) : const Color(0xFF6A1B9A);
+  Color get _accent =>
+      widget.world == 'materie' ? const Color(0xFF42A5F5) : const Color(0xFFCE93D8);
+
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 7, vsync: this); // ✅ PHASE 3 + V16.2: 7 Tabs (User Mgmt, Users, Content, Audit-Log, Moderation, Health, V16.2 Moderation)
-    
-    // 🔥 FIX: AdminStateNotifier.load() ist async – kurz warten damit State geladen ist
+    _tabController = TabController(length: 4, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _waitForAdminStateAndLoad();
+      if (mounted) _waitForState();
     });
   }
 
-  /// Wartet bis AdminStateNotifier geladen hat (max 3s), dann Dashboard laden
-  Future<void> _waitForAdminStateAndLoad() async {
-    // Versuche bis zu 6x mit 500ms Pause den State zu lesen
+  Future<void> _waitForState() async {
     for (int i = 0; i < 6; i++) {
-      final admin = ref.read(adminStateProvider(widget.world));
-      if (admin.username != null && admin.username!.isNotEmpty) {
-        // State ist bereit
-        if (mounted) _loadDashboardData();
-        return;
-      }
-      // State noch nicht geladen – kurz warten
-      await Future.delayed(const Duration(milliseconds: 500));
+      final a = ref.read(adminStateProvider(widget.world));
+      if (a.username != null && a.username!.isNotEmpty) return;
+      await Future.delayed(const Duration(milliseconds: 400));
     }
-    // Nach Timeout trotzdem laden (zeigt Fehlermeldung)
-    if (mounted) _loadDashboardData();
   }
-  
+
   @override
   void dispose() {
     _tabController.dispose();
     super.dispose();
   }
-  
-  /// Load Dashboard Data
-  Future<void> _loadDashboardData() async {
-    setState(() => _isLoading = true);
-    
-    try {
-      // 🔥 SIMPLIFIED: State wurde bereits VOR Navigation frisch geladen
-      // Kein Delay nötig - State ist garantiert aktuell
-      final admin = ref.read(adminStateProvider(widget.world));
-      
-      if (kDebugMode) {
-        debugPrint('🔍 DASHBOARD ADMIN-CHECK (FRISCHER STATE):');
-        debugPrint('   World: ${widget.world}');
-        debugPrint('   Username: ${admin.username}');
-        debugPrint('   isAdmin: ${admin.isAdmin}');
-        debugPrint('   isRootAdmin: ${admin.isRootAdmin}');
-        debugPrint('   backendVerified: ${admin.backendVerified}');
-      }
-      
-      // Validierung: Profil vorhanden?
-      if (admin.username == null || admin.username!.isEmpty) {
-        if (kDebugMode) {
-          debugPrint('❌ DASHBOARD: Kein Username gefunden!');
-        }
-        
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('❌ Kein Profil gefunden. Bitte erstelle zuerst ein Profil.'),
-              backgroundColor: Colors.red,
-              duration: Duration(seconds: 3),
-            ),
-          );
-          Navigator.pop(context);
-        }
-        return;
-      }
-      
-      // Validierung: Admin-Rechte vorhanden?
-      if (!admin.isAdmin) {
-        if (kDebugMode) {
-          debugPrint('❌ DASHBOARD: User "${admin.username}" ist kein Admin!');
-        }
-        
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('❌ Kein Admin-Zugriff. Diese Seite ist nur für Admins.'),
-              backgroundColor: Colors.red,
-              duration: Duration(seconds: 3),
-            ),
-          );
-          Navigator.pop(context);
-        }
-        return;
-      }
-      
-      if (kDebugMode) {
-        debugPrint('✅ DASHBOARD: Admin-Check erfolgreich! User: ${admin.username}');
-      }
-      
-      // Daten laden
-      await Future.wait([
-        _loadUsers(),
-        _loadAuditLog(),
-      ]);
-      
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ Fehler beim Laden der Dashboard-Daten: $e');
-      }
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ Fehler: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
-  }
-  
-  /// Load Users List
-  Future<void> _loadUsers() async {
-    try {
-      // 🚀 PRODUCTION: Echte API verwenden
-      final admin = ref.read(adminStateProvider(widget.world));
-      final users = await WorldAdminService.getUsersByWorld(
-        widget.world,
-        role: admin.isRootAdmin ? 'root_admin' : 'admin',
-      );
-      
-      if (mounted) {
-        setState(() {
-          _users = users;
-        });
-      }
-      
-      if (kDebugMode) {
-        debugPrint('✅ Loaded ${users.length} users from backend');
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ Fehler beim Laden der User: $e');
-      }
-    }
-  }
-  
-  /// Load Audit Log
-  Future<void> _loadAuditLog() async {
-    try {
-      final logs = await WorldAdminService.getAuditLog(widget.world, limit: 100);
-      if (mounted) {
-        setState(() {
-          _auditLog = logs;
-        });
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ Fehler beim Laden des Audit-Logs: $e');
-      }
-    }
-  }
-  
-  /// Promote User to Admin
-  Future<void> _promoteUser(WorldUser user) async {
-    // 🔥 RIVERPOD: Admin-Status prüfen
-    final admin = ref.read(adminStateProvider(widget.world));
-    
-    if (!admin.isRootAdmin) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('⚠️ Nur Root-Admins können User befördern.'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
-    
-    if (user.isRootAdmin) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('⚠️ Root-Admins können nicht befördert werden.'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
-    
-    // Bestätigung
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('User zu Admin befördern?'),
-        content: Text('Möchtest du ${user.username} zu Admin befördern?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Abbrechen'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Befördern'),
-          ),
-        ],
-      ),
-    );
-    
-    if (confirm != true) return;
-    
-    // Promote
-    if (kDebugMode) {
-      debugPrint('🔥 PROMOTE DEBUG:');
-      debugPrint('   World: ${widget.world}');
-      debugPrint('   UserId: ${user.userId}');
-      debugPrint('   Admin Role: ${admin.role}');
-      debugPrint('   Admin Username: ${admin.username}');
-      debugPrint('   Admin isRootAdmin: ${admin.isRootAdmin}');
-    }
-    
-    // 🔥 FIX: Fallback auf "root_admin" wenn role NULL
-    final effectiveRole = admin.role ?? (admin.isRootAdmin ? 'root_admin' : 'admin');
-    
-    final success = await WorldAdminService.promoteUser(widget.world, user.userId, role: effectiveRole);
-    
-    if (mounted) {
-      if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('✅ ${user.username} wurde zu Admin befördert'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        
-        // 🔥 CRITICAL: Wenn beförderter User der aktuell eingeloggte ist, Admin-State aktualisieren!
-        if (user.username == admin.username) {
-          if (kDebugMode) {
-            debugPrint('🔄 Aktualisiere Admin-State für beförderten User: ${user.username}');
-          }
-          
-          // Trigger Admin-State Reload
-          await ref.read(adminStateProvider(widget.world).notifier).refreshAdminStatus();
-        }
-        
-        await _loadUsers(); // Refresh User-Liste
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('❌ Beförderung fehlgeschlagen'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-  
-  /// Demote Admin to User
-  Future<void> _demoteUser(WorldUser user) async {
-    // 🔥 RIVERPOD: Admin-Status prüfen
-    final admin = ref.read(adminStateProvider(widget.world));
-    
-    if (!admin.isRootAdmin) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('⚠️ Nur Root-Admins können Admins degradieren.'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
-    
-    if (user.isRootAdmin) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('⚠️ Root-Admins können nicht degradiert werden.'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
-    
-    // Verhindere Selbst-Degradierung
-    if (user.username == admin.username) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('⚠️ Du kannst dich nicht selbst degradieren.'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
-    
-    // Bestätigung
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Admin-Rechte entfernen?'),
-        content: Text('Möchtest du ${user.username} zum normalen User machen?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Abbrechen'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
-            child: const Text('Degradieren'),
-          ),
-        ],
-      ),
-    );
-    
-    if (confirm != true) return;
-    
-    // Demote
-    if (kDebugMode) {
-      debugPrint('🔥 DEMOTE DEBUG:');
-      debugPrint('   World: ${widget.world}');
-      debugPrint('   UserId: ${user.userId}');
-      debugPrint('   Admin Role: ${admin.role}');
-      debugPrint('   Admin Username: ${admin.username}');
-      debugPrint('   Admin isRootAdmin: ${admin.isRootAdmin}');
-    }
-    
-    // 🔥 FIX: Fallback auf "root_admin" wenn role NULL
-    final effectiveRole = admin.role ?? (admin.isRootAdmin ? 'root_admin' : 'admin');
-    
-    final success = await WorldAdminService.demoteUser(widget.world, user.userId, role: effectiveRole);
-    
-    if (mounted) {
-      if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('✅ ${user.username} wurde zu User degradiert'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        
-        // 🔥 CRITICAL: Wenn degradierter User der aktuell eingeloggte ist, Admin-State aktualisieren!
-        if (user.username == admin.username) {
-          if (kDebugMode) {
-            debugPrint('🔄 Aktualisiere Admin-State für degradierten User: ${user.username}');
-          }
-          
-          // Trigger Admin-State Reload
-          await ref.read(adminStateProvider(widget.world).notifier).refreshAdminStatus();
-        }
-        
-        await _loadUsers(); // Refresh User-Liste
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('❌ Degradierung fehlgeschlagen'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-  
-  /// Delete User
-  Future<void> _deleteUser(WorldUser user) async {
-    // 🔥 RIVERPOD: Admin-Status prüfen
-    final admin = ref.read(adminStateProvider(widget.world));
-    
-    if (!admin.isRootAdmin) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('⚠️ Nur Root-Admins können User löschen.'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
-    
-    // Verhindere Selbst-Löschung
-    if (user.username == admin.username) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('⚠️ Du kannst dich nicht selbst löschen.'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
-    
-    // Bestätigung (kritische Aktion!)
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('⚠️ User löschen?'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Möchtest du ${user.username} wirklich löschen?'),
-            const SizedBox(height: 8),
-            const Text(
-              '⚠️ Diese Aktion kann nicht rückgängig gemacht werden!',
-              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Abbrechen'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Löschen'),
-          ),
-        ],
-      ),
-    );
-    
-    if (confirm != true) return;
-    
-    // Delete
-    if (kDebugMode) {
-      debugPrint('🔥 DELETE DEBUG:');
-      debugPrint('   World: ${widget.world}');
-      debugPrint('   UserId: ${user.userId}');
-      debugPrint('   Admin Role: ${admin.role}');
-      debugPrint('   Admin Username: ${admin.username}');
-      debugPrint('   Admin isRootAdmin: ${admin.isRootAdmin}');
-    }
-    
-    // 🔥 FIX: Fallback auf "root_admin" wenn role NULL
-    final effectiveRole = admin.role ?? (admin.isRootAdmin ? 'root_admin' : 'admin');
-    
-    final success = await WorldAdminService.deleteUser(widget.world, user.userId, role: effectiveRole);
-    
-    if (mounted) {
-      if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('✅ ${user.username} wurde gelöscht'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        await _loadUsers(); // Refresh
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('❌ Löschung fehlgeschlagen'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-  
+
   @override
   Widget build(BuildContext context) {
-    // 🔥 RIVERPOD: Admin-Status aus State lesen (watch = auto-rebuild bei State-Änderung)
     final admin = ref.watch(adminStateProvider(widget.world));
-    
-    // Noch laden: State noch nicht initialisiert (username == null)
-    if (admin.username == null && _isLoading) {
-      return Scaffold(
-        appBar: AppBar(
-          title: Text('${widget.world.toUpperCase()}-Admin'),
-        ),
-        body: const Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(height: 16),
-              Text('Admin-Status wird geladen...'),
-            ],
-          ),
-        ),
-      );
-    }
 
-    // Admin-Check: Wenn nicht Admin, zeige Fehlermeldung
-    if (!admin.isAdmin) {
-      return Scaffold(
-        appBar: AppBar(
-          title: Text('${widget.world.toUpperCase()}-Admin'),
-        ),
-        body: const Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.lock, size: 64, color: Colors.red),
-              SizedBox(height: 16),
-              Text(
-                'Kein Admin-Zugriff',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              ),
-              SizedBox(height: 8),
-              Text('Diese Seite ist nur für Admins zugänglich.'),
-            ],
-          ),
-        ),
-      );
-    }
-    
-    // Dashboard UI
+    if (admin.username == null) return _loadingScaffold();
+    if (!admin.isAdmin) return _accessDeniedScaffold();
+
     return Scaffold(
+      backgroundColor: const Color(0xFF0A0A0F),
       appBar: AppBar(
-        title: Row(
-          children: [
-            const Icon(Icons.admin_panel_settings, color: Colors.amber),
-            const SizedBox(width: 8),
-            Text('${widget.world.toUpperCase()}-Admin Dashboard'),
-          ],
-        ),
-        actions: [
-          // Root-Admin Badge
-          if (admin.isRootAdmin)
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Chip(
-                avatar: const Icon(Icons.shield, size: 16, color: Colors.amber),
-                label: const Text('ROOT', style: TextStyle(fontSize: 12)),
-                backgroundColor: Colors.amber.withValues(alpha: 0.2),
-              ),
+        backgroundColor: const Color(0xFF0D0D1A),
+        elevation: 0,
+        title: Row(children: [
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: _primary.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(8),
             ),
-          
-          // Refresh Button
+            child: Icon(Icons.admin_panel_settings, color: _accent, size: 22),
+          ),
+          const SizedBox(width: 10),
+          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('${widget.world.toUpperCase()} Admin',
+                style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white)),
+            Text(admin.username ?? '',
+                style: TextStyle(fontSize: 11, color: _accent)),
+          ]),
+        ]),
+        actions: [
+          if (admin.isRootAdmin)
+            Container(
+              margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                    colors: [Colors.amber.shade700, Colors.orange.shade600]),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Row(children: [
+                Icon(Icons.shield, size: 12, color: Colors.white),
+                SizedBox(width: 4),
+                Text('ROOT',
+                    style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white)),
+              ]),
+            ),
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(Icons.refresh, color: Colors.white70),
             onPressed: () {
-              // 🔥 RIVERPOD: Admin-Status refresh triggern
               ref.read(adminStateProvider(widget.world).notifier).refresh();
-              _loadDashboardData();
+              setState(() {});
             },
-            tooltip: 'Aktualisieren',
           ),
         ],
         bottom: TabBar(
           controller: _tabController,
+          indicatorColor: _accent,
+          indicatorWeight: 3,
+          labelColor: _accent,
+          unselectedLabelColor: Colors.white38,
+          labelStyle:
+              const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
           tabs: const [
-            Tab(icon: Icon(Icons.manage_accounts), text: 'User Mgmt'), // ✅ PHASE 2: User Management (Detail View)
-            Tab(icon: Icon(Icons.people), text: 'Users'), // ✅ PHASE 1: Quick Actions (Promote/Demote/Delete)
-            Tab(icon: Icon(Icons.article), text: 'Content'), // ✅ PHASE 3: Content Management
-            Tab(icon: Icon(Icons.history), text: 'Audit-Log'),
-            Tab(icon: Icon(Icons.shield), text: 'Moderation'),
-            Tab(icon: Icon(Icons.health_and_safety), text: 'Health'), // 🏥 NEW: Health Dashboard
-            Tab(icon: Icon(Icons.gavel), text: 'V16.2 Mod'), // 🔧 NEW: V16.2 Professional Admin APIs
+            Tab(icon: Icon(Icons.dashboard, size: 20), text: 'Übersicht'),
+            Tab(icon: Icon(Icons.people, size: 20), text: 'Nutzer'),
+            Tab(icon: Icon(Icons.chat_bubble, size: 20), text: 'Chat'),
+            Tab(icon: Icon(Icons.monitor_heart, size: 20), text: 'System'),
           ],
         ),
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : TabBarView(
-              controller: _tabController,
-              children: [
-                _buildUserManagementTab(admin), // ✅ PHASE 2: Detail View
-                _buildUsersTab(admin), // ✅ PHASE 1: Quick Actions
-                _buildContentManagementTab(admin), // ✅ PHASE 3: Content Management
-                _buildAuditLogTab(),
-                _buildModerationTab(admin),
-                const HealthDashboardScreen(), // 🏥 NEW: Health Dashboard
-                UserModerationScreenV16List(world: widget.world), // 🔧 NEW: V16.2 Professional Admin APIs (MIT USER-LISTE!)
-              ],
-            ),
-    );
-  }
-  
-  /// Users Tab
-  Widget _buildUsersTab(AdminState admin) {
-    if (_users.isEmpty) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.people_outline, size: 64, color: Colors.grey),
-            SizedBox(height: 16),
-            Text('Keine User gefunden'),
-          ],
-        ),
-      );
-    }
-    
-    return ListView.builder(
-      itemCount: _users.length,
-      itemBuilder: (context, index) {
-        final user = _users[index];
-        final isCurrentUser = user.username == admin.username;
-        
-        return Card(
-          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          child: ListTile(
-            // Icon basierend auf Role
-            leading: user.role != 'user'
-                ? const Icon(Icons.shield, color: Colors.amber)
-                : const Icon(Icons.person),
-            
-            // Username + Badge für aktuellen User
-            title: Row(
-              children: [
-                Text(user.username),
-                if (isCurrentUser) ...[
-                  const SizedBox(width: 8),
-                  const Chip(
-                    label: Text('DU', style: TextStyle(fontSize: 10)),
-                    padding: EdgeInsets.symmetric(horizontal: 4),
-                    visualDensity: VisualDensity.compact,
-                  ),
-                ],
-              ],
-            ),
-            
-            // Role
-            subtitle: Text(user.role),
-            
-            // 🎯 QUICK-ACTION BUTTONS (NUR Root-Admin, nicht bei sich selbst!)
-            trailing: admin.isRootAdmin && !isCurrentUser
-                ? Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // ⬆️ PROMOTE Button (nur für normale User)
-                      if (user.role == 'user')
-                        IconButton(
-                          icon: const Icon(Icons.arrow_upward, color: Colors.green),
-                          tooltip: 'Zum Admin machen',
-                          onPressed: () => _promoteUser(user),
-                          style: IconButton.styleFrom(
-                            backgroundColor: Colors.green.withValues(alpha: 0.1),
-                          ),
-                        ),
-                      
-                      // ⬇️ DEMOTE Button (nur für Admins, nicht Root-Admins)
-                      if (user.role == 'admin' && !user.isRootAdmin)
-                        IconButton(
-                          icon: const Icon(Icons.arrow_downward, color: Colors.orange),
-                          tooltip: 'Admin entfernen',
-                          onPressed: () => _demoteUser(user),
-                          style: IconButton.styleFrom(
-                            backgroundColor: Colors.orange.withValues(alpha: 0.1),
-                          ),
-                        ),
-                      
-                      // 🗑️ DELETE Button (für alle außer Root-Admins)
-                      if (!user.isRootAdmin)
-                        IconButton(
-                          icon: const Icon(Icons.delete, color: Colors.red),
-                          tooltip: 'User löschen',
-                          onPressed: () => _deleteUser(user),
-                          style: IconButton.styleFrom(
-                            backgroundColor: Colors.red.withValues(alpha: 0.1),
-                          ),
-                        ),
-                    ],
-                  )
-                : null,
-          ),
-        );
-      },
-    );
-  }
-  
-  /// Audit Log Tab
-  Widget _buildAuditLogTab() {
-    if (_auditLog.isEmpty) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.history, size: 64, color: Colors.grey),
-            SizedBox(height: 16),
-            Text('Keine Audit-Log-Einträge'),
-          ],
-        ),
-      );
-    }
-    
-    return ListView.builder(
-      itemCount: _auditLog.length,
-      itemBuilder: (context, index) {
-        final log = _auditLog[index];
-        
-        return Card(
-          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          child: ListTile(
-            leading: _getAuditIcon(log.action),
-            title: Text(log.action),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Admin: ${log.adminUsername}'),
-                Text('Target: ${log.targetUsername}'),
-                Text(_formatTimestamp(log.timestamp)),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-  
-  /// Get Icon for Audit Action
-  Icon _getAuditIcon(String action) {
-    switch (action.toLowerCase()) {
-      case 'promote':
-        return const Icon(Icons.arrow_upward, color: Colors.green);
-      case 'demote':
-        return const Icon(Icons.arrow_downward, color: Colors.orange);
-      case 'delete':
-        return const Icon(Icons.delete, color: Colors.red);
-      case 'login':
-        return const Icon(Icons.login, color: Colors.blue);
-      case 'logout':
-        return const Icon(Icons.logout, color: Colors.grey);
-      default:
-        return const Icon(Icons.info, color: Colors.blue);
-    }
-  }
-  
-  /// Format Timestamp
-  String _formatTimestamp(String timestamp) {
-    try {
-      final dt = DateTime.parse(timestamp);
-      return '${dt.day}.${dt.month}.${dt.year} ${dt.hour}:${dt.minute}';
-    } catch (e) {
-      return timestamp;
-    }
-  }
-  
-  /// ✅ PHASE 2: User Management Tab
-  Widget _buildUserManagementTab(AdminState admin) {
-    // ⚠️ CRITICAL FIX: IMMER aus Storage laden!
-    // admin.username kann null oder empty sein, auch wenn isAdmin true ist
-    final storage = UnifiedStorageService();
-    final username = storage.getUsername(widget.world);
-    final finalToken = username ?? '';
-    
-    // 🔍 DEBUG: Token-Check
-    if (kDebugMode) {
-      debugPrint('🔐 USER MANAGEMENT TAB:');
-      debugPrint('   admin.username: ${admin.username}');
-      debugPrint('   storage.username: $username');
-      debugPrint('   finalToken: $finalToken');
-      debugPrint('   isAdmin: ${admin.isAdmin}');
-      debugPrint('   isRootAdmin: ${admin.isRootAdmin}');
-    }
-    
-    return UserManagementScreen(
-      world: widget.world,
-      adminToken: finalToken,
-      isRootAdmin: admin.isRootAdmin,
-    );
-  }
-  
-  /// 🛡️ Moderation Tab
-  Widget _buildContentManagementTab(AdminState admin) {
-    if (kDebugMode) {
-      debugPrint('🛡️ Content Management Tab');
-      debugPrint('   admin.username: ${admin.username}');
-      debugPrint('   admin.isAdmin: ${admin.isAdmin}');
-      debugPrint('   admin.isRootAdmin: ${admin.isRootAdmin}');
-    }
-    
-    // ⚠️ CRITICAL FIX: IMMER aus Storage laden!
-    final storage = UnifiedStorageService();
-    final username = storage.getUsername(widget.world);
-    final finalToken = username ?? '';
-    
-    if (kDebugMode) {
-      debugPrint('   storage.username: $username');
-      debugPrint('   finalToken: $finalToken');
-    }
-    
-    return _ContentManagementTabContent(
-      world: widget.world,
-      adminToken: finalToken,
-      isRootAdmin: admin.isRootAdmin,
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          _OverviewTab(world: widget.world, admin: admin, accent: _accent),
+          _UsersTab(world: widget.world, admin: admin, accent: _accent),
+          _ChatModerationTab(world: widget.world, admin: admin, accent: _accent),
+          _SystemTab(accent: _accent),
+        ],
+      ),
     );
   }
 
-  Widget _buildModerationTab(AdminState admin) {
-    // ⚠️ CRITICAL FIX: IMMER aus Storage laden!
-    final storage = UnifiedStorageService();
-    final username = storage.getUsername(widget.world);
-    final adminToken = username ?? '';
-    
-    return ModerationDashboardScreen(
-      world: widget.world,
-      adminToken: adminToken,
-      isRootAdmin: admin.isRootAdmin,
-    );
-  }
+  Widget _loadingScaffold() => Scaffold(
+        backgroundColor: const Color(0xFF0A0A0F),
+        body: Center(
+          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+            CircularProgressIndicator(color: _accent),
+            const SizedBox(height: 16),
+            const Text('Lade Admin-Dashboard…',
+                style: TextStyle(color: Colors.white70)),
+          ]),
+        ),
+      );
+
+  Widget _accessDeniedScaffold() => Scaffold(
+        backgroundColor: const Color(0xFF0A0A0F),
+        appBar: AppBar(
+            backgroundColor: const Color(0xFF0D0D1A),
+            title: const Text('Admin-Dashboard')),
+        body: const Center(
+          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+            Icon(Icons.lock, size: 72, color: Colors.red),
+            SizedBox(height: 16),
+            Text('Kein Zugriff',
+                style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white)),
+            SizedBox(height: 8),
+            Text('Nur für Admins zugänglich.',
+                style: TextStyle(color: Colors.white54)),
+          ]),
+        ),
+      );
 }
 
-// ========================================
-// CONTENT MANAGEMENT TAB CONTENT
-// ========================================
-class _ContentManagementTabContent extends StatefulWidget {
+// ═════════════════════════════════════════════════════════════════════════════
+// TAB 1 – ÜBERSICHT  (Live-Statistiken + letzte Aktivitäten)
+// ═════════════════════════════════════════════════════════════════════════════
+class _OverviewTab extends StatefulWidget {
   final String world;
-  final String adminToken;
-  final bool isRootAdmin;
-
-  const _ContentManagementTabContent({
-    required this.world,
-    required this.adminToken,
-    required this.isRootAdmin,
-  });
-
+  final AdminState admin;
+  final Color accent;
+  const _OverviewTab(
+      {required this.world, required this.admin, required this.accent});
   @override
-  State<_ContentManagementTabContent> createState() => _ContentManagementTabContentState();
+  State<_OverviewTab> createState() => _OverviewTabState();
 }
 
-class _ContentManagementTabContentState extends State<_ContentManagementTabContent> {
-  List<Map<String, dynamic>> _content = [];
-  bool _isLoading = true;
-  String _filterStatus = 'all';
-  String? _error;
+class _OverviewTabState extends State<_OverviewTab> {
+  Map<String, dynamic> _stats = {};
+  List<AuditLogEntry> _activity = [];
+  bool _loading = true;
+  Timer? _timer;
 
   @override
   void initState() {
     super.initState();
-    _loadContent();
+    _load();
+    _timer = Timer.periodic(const Duration(seconds: 30), (_) => _load());
   }
 
-  Future<void> _loadContent() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
 
+  Future<void> _load() async {
+    if (!mounted) return;
     try {
-      final content = await ContentManagementService.getContent(
-        widget.world,
-        status: _filterStatus == 'all' ? null : _filterStatus,
+      // Analytics über Extension-Methode
+      final stats = await WorldAdminServiceV162.getAnalytics(
+        realm: widget.world,
+        days: 7,
+        adminUserId: widget.admin.username,
       );
-
+      final logs = await WorldAdminService.getAuditLog(
+        widget.world,
+        limit: 10,
+        role: widget.admin.isRootAdmin ? 'root_admin' : 'admin',
+      );
       if (mounted) {
         setState(() {
-          _content = content;
-          _isLoading = false;
+          _stats = stats;
+          _activity = logs;
+          _loading = false;
         });
       }
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          _error = 'Fehler beim Laden: $e';
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
-  Future<void> _toggleFeature(Map<String, dynamic> item) async {
-    final success = await ContentManagementService.toggleFeature(
-      widget.world,
-      item['content_id'],
-    );
-
-    if (success && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            item['is_featured'] == 1
-                ? '✅ Nicht mehr hervorgehoben'
-                : '✅ Hervorgehoben',
-          ),
-          backgroundColor: Colors.green,
-        ),
-      );
-      await _loadContent();
-    }
-  }
-
-  Future<void> _toggleVerify(Map<String, dynamic> item) async {
-    final success = await ContentManagementService.toggleVerify(
-      widget.world,
-      item['content_id'],
-    );
-
-    if (success && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            item['is_verified'] == 1
-                ? '✅ Verifizierung entfernt'
-                : '✅ Verifiziert',
-          ),
-          backgroundColor: Colors.green,
-        ),
-      );
-      await _loadContent();
-    }
-  }
-
-  Future<void> _deleteContent(Map<String, dynamic> item) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Content löschen?'),
-        content: Text(
-          'Möchtest du "${item['title']}" wirklich löschen?\n\n'
-          '⚠️ Diese Aktion kann nicht rückgängig gemacht werden!',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Abbrechen'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Löschen'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm != true) return;
-
-    final success = await ContentManagementService.deleteContent(
-      widget.world,
-      item['content_id'],
-    );
-
-    if (success && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('✅ Content gelöscht'),
-          backgroundColor: Colors.green,
-        ),
-      );
-      await _loadContent();
+      if (mounted) setState(() => _loading = false);
+      if (kDebugMode) debugPrint('❌ Overview load: $e');
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        // Filter Chips
-        Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Row(
-            children: [
-              const Text('Filter: ', style: TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(width: 8),
-              FilterChip(
-                label: const Text('Alle'),
-                selected: _filterStatus == 'all',
-                onSelected: (selected) {
-                  if (selected) {
-                    setState(() => _filterStatus = 'all');
-                    _loadContent();
-                  }
-                },
-              ),
-              const SizedBox(width: 8),
-              FilterChip(
-                label: const Text('⭐ Featured'),
-                selected: _filterStatus == 'featured',
-                onSelected: (selected) {
-                  if (selected) {
-                    setState(() => _filterStatus = 'featured');
-                    _loadContent();
-                  }
-                },
-              ),
-              const SizedBox(width: 8),
-              FilterChip(
-                label: const Text('✅ Verifiziert'),
-                selected: _filterStatus == 'verified',
-                onSelected: (selected) {
-                  if (selected) {
-                    setState(() => _filterStatus = 'verified');
-                    _loadContent();
-                  }
-                },
-              ),
-            ],
-          ),
-        ),
+    if (_loading) {
+      return Center(child: CircularProgressIndicator(color: widget.accent));
+    }
 
-        // Content List
-        Expanded(
-          child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : _error != null
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.error, size: 48, color: Colors.red),
-                          const SizedBox(height: 16),
-                          Text(_error!),
-                          const SizedBox(height: 16),
-                          ElevatedButton(
-                            onPressed: _loadContent,
-                            child: const Text('Erneut versuchen'),
-                          ),
-                        ],
-                      ),
-                    )
-                  : _content.isEmpty
-                      ? const Center(child: Text('Noch kein Content vorhanden'))
-                      : RefreshIndicator(
-                          onRefresh: _loadContent,
-                          child: ListView.builder(
-                            itemCount: _content.length,
-                            itemBuilder: (context, index) {
-                              final item = _content[index];
-                              final isFeatured = item['is_featured'] == 1;
-                              final isVerified = item['is_verified'] == 1;
+    final totalUsers   = _stats['totalUsers']   ?? _stats['total_users']   ?? 0;
+    final totalMsgs    = _stats['totalMessages'] ?? _stats['total_messages'] ?? 0;
+    final newUsers     = _stats['newUsers']      ?? _stats['new_users']      ?? 0;
+    final interactions = _stats['interactions']  ?? 0;
 
-                              return Card(
-                                margin: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 8,
-                                ),
-                                child: ListTile(
-                                  leading: Icon(
-                                    Icons.article,
-                                    color: isFeatured ? Colors.amber : Colors.grey,
-                                  ),
-                                  title: Row(
-                                    children: [
-                                      Expanded(child: Text(item['title'] ?? '')),
-                                      if (isFeatured)
-                                        const Icon(Icons.star, size: 16, color: Colors.amber),
-                                      if (isVerified)
-                                        const Icon(Icons.verified, size: 16, color: Colors.blue),
-                                    ],
-                                  ),
-                                  subtitle: Text(
-                                    'Von ${item['author_username']} • ${item['view_count']} Views',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  trailing: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      IconButton(
-                                        icon: Icon(
-                                          isFeatured ? Icons.star : Icons.star_border,
-                                          color: Colors.amber,
-                                        ),
-                                        tooltip: isFeatured ? 'Nicht mehr hervorheben' : 'Hervorheben',
-                                        onPressed: () => _toggleFeature(item),
-                                      ),
-                                      IconButton(
-                                        icon: Icon(
-                                          isVerified ? Icons.verified : Icons.verified_outlined,
-                                          color: Colors.blue,
-                                        ),
-                                        tooltip: isVerified ? 'Verifizierung entfernen' : 'Verifizieren',
-                                        onPressed: () => _toggleVerify(item),
-                                      ),
-                                      IconButton(
-                                        icon: const Icon(Icons.delete, color: Colors.red),
-                                        tooltip: 'Löschen',
-                                        onPressed: () => _deleteContent(item),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-        ),
-      ],
+    return RefreshIndicator(
+      onRefresh: _load,
+      color: widget.accent,
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          _SectionLabel('Live-Übersicht · ${widget.world.toUpperCase()}',
+              Icons.bar_chart, widget.accent),
+          const SizedBox(height: 12),
+
+          // ── 2×2 Statistik-Karten ────────────────────────────────────
+          Row(children: [
+            Expanded(
+                child: _StatCard(
+                    icon: Icons.people,
+                    label: 'Nutzer gesamt',
+                    value: '$totalUsers',
+                    color: const Color(0xFF1E88E5))),
+            const SizedBox(width: 12),
+            Expanded(
+                child: _StatCard(
+                    icon: Icons.person_add,
+                    label: 'Neu (7 Tage)',
+                    value: '$newUsers',
+                    color: const Color(0xFF43A047))),
+          ]),
+          const SizedBox(height: 12),
+          Row(children: [
+            Expanded(
+                child: _StatCard(
+                    icon: Icons.chat,
+                    label: 'Nachrichten',
+                    value: '$totalMsgs',
+                    color: const Color(0xFF8E24AA))),
+            const SizedBox(width: 12),
+            Expanded(
+                child: _StatCard(
+                    icon: Icons.touch_app,
+                    label: 'Interaktionen',
+                    value: '$interactions',
+                    color: const Color(0xFFE53935))),
+          ]),
+
+          const SizedBox(height: 24),
+          _SectionLabel('Letzte Aktionen', Icons.history, widget.accent),
+          const SizedBox(height: 8),
+
+          if (_activity.isEmpty)
+            const _EmptyHint('Noch keine Aktivitäten aufgezeichnet.')
+          else
+            ..._activity.map((e) => _ActivityTile(entry: e)),
+        ],
+      ),
     );
   }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// TAB 2 – NUTZER  (Suche · Filter · Ban/Unban · Rolle)
+// ═════════════════════════════════════════════════════════════════════════════
+class _UsersTab extends StatefulWidget {
+  final String world;
+  final AdminState admin;
+  final Color accent;
+  const _UsersTab(
+      {required this.world, required this.admin, required this.accent});
+  @override
+  State<_UsersTab> createState() => _UsersTabState();
+}
+
+class _UsersTabState extends State<_UsersTab> {
+  List<WorldUser> _all = [];
+  List<WorldUser> _filtered = [];
+  bool _loading = true;
+  String _search = '';
+  String _roleFilter = 'all';
+  final _searchCtrl = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    setState(() => _loading = true);
+    try {
+      final users = await WorldAdminService.getUsersByWorld(
+        widget.world,
+        role: widget.admin.isRootAdmin ? 'root_admin' : 'admin',
+      );
+      if (mounted) {
+        setState(() {
+          _all = users;
+          _applyFilter();
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  void _applyFilter() {
+    var list = _all;
+    if (_roleFilter != 'all') {
+      list = list.where((u) => u.role == _roleFilter).toList();
+    }
+    if (_search.isNotEmpty) {
+      final q = _search.toLowerCase();
+      list = list
+          .where((u) =>
+              u.username.toLowerCase().contains(q) ||
+              (u.displayName ?? '').toLowerCase().contains(q))
+          .toList();
+    }
+    _filtered = list;
+  }
+
+  void _snack(String msg) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(msg), duration: const Duration(seconds: 2)));
+  }
+
+  Future<void> _ban(WorldUser u) async {
+    final ok = await WorldAdminServiceV162.banUser(
+        userId: u.userId,
+        reason: 'Admin-Aktion',
+        adminUserId: widget.admin.username);
+    _snack(ok ? '🚫 ${u.username} gesperrt' : '❌ Fehler beim Sperren');
+    if (ok) _load();
+  }
+
+  Future<void> _unban(WorldUser u) async {
+    final ok = await WorldAdminServiceV162.unbanUser(
+        userId: u.userId, adminUserId: widget.admin.username ?? 'admin');
+    _snack(ok ? '✅ ${u.username} entsperrt' : '❌ Fehler');
+    if (ok) _load();
+  }
+
+  Future<void> _promote(WorldUser u) async {
+    final ok = await WorldAdminService.promoteUser(
+        widget.world, u.userId,
+        role: widget.admin.isRootAdmin ? 'root_admin' : 'admin');
+    _snack(ok ? '⬆️ ${u.username} zum Admin befördert' : '❌ Fehler');
+    if (ok) _load();
+  }
+
+  Future<void> _demote(WorldUser u) async {
+    final ok = await WorldAdminService.demoteUser(
+        widget.world, u.userId,
+        role: widget.admin.isRootAdmin ? 'root_admin' : 'admin');
+    _snack(ok ? '⬇️ ${u.username} degradiert' : '❌ Fehler');
+    if (ok) _load();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(children: [
+      // ── Suchleiste + Rolle-Filter ─────────────────────────────────
+      Container(
+        color: const Color(0xFF0D0D1A),
+        padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+        child: Column(children: [
+          TextField(
+            controller: _searchCtrl,
+            style: const TextStyle(color: Colors.white),
+            decoration: InputDecoration(
+              hintText: 'Nutzer suchen…',
+              hintStyle: const TextStyle(color: Colors.white38),
+              prefixIcon: const Icon(Icons.search, color: Colors.white38),
+              suffixIcon: _search.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear, color: Colors.white38),
+                      onPressed: () => setState(() {
+                            _search = '';
+                            _searchCtrl.clear();
+                            _applyFilter();
+                          }))
+                  : null,
+              filled: true,
+              fillColor: Colors.white10,
+              border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none),
+              contentPadding: const EdgeInsets.symmetric(vertical: 0),
+            ),
+            onChanged: (v) => setState(() {
+              _search = v;
+              _applyFilter();
+            }),
+          ),
+          const SizedBox(height: 8),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: ['all', 'user', 'admin', 'root_admin'].map((r) {
+                final labels = {
+                  'all': 'Alle',
+                  'user': 'User',
+                  'admin': 'Admin',
+                  'root_admin': 'Root'
+                };
+                final sel = _roleFilter == r;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: FilterChip(
+                    label: Text(labels[r]!,
+                        style: TextStyle(
+                            color: sel ? Colors.black : Colors.white70,
+                            fontSize: 12)),
+                    selected: sel,
+                    selectedColor: widget.accent,
+                    backgroundColor: Colors.white10,
+                    onSelected: (_) => setState(() {
+                      _roleFilter = r;
+                      _applyFilter();
+                    }),
+                    checkmarkColor: Colors.black,
+                    side: BorderSide.none,
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        ]),
+      ),
+
+      // ── Nutzerliste ───────────────────────────────────────────────
+      Expanded(
+        child: _loading
+            ? Center(child: CircularProgressIndicator(color: widget.accent))
+            : RefreshIndicator(
+                onRefresh: _load,
+                color: widget.accent,
+                child: _filtered.isEmpty
+                    ? const _EmptyHint('Keine Nutzer gefunden.')
+                    : ListView.builder(
+                        itemCount: _filtered.length,
+                        itemBuilder: (ctx, i) {
+                          final u = _filtered[i];
+                          return _UserTile(
+                            user: u,
+                            isRootAdmin: widget.admin.isRootAdmin,
+                            accent: widget.accent,
+                            onBan: () => _ban(u),
+                            onUnban: () => _unban(u),
+                            onPromote: () => _promote(u),
+                            onDemote: () => _demote(u),
+                          );
+                        },
+                      ),
+              ),
+      ),
+    ]);
+  }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// TAB 3 – CHAT-MODERATION  (Live-Nachrichten · Löschen · Sender sperren)
+// ═════════════════════════════════════════════════════════════════════════════
+class _ChatModerationTab extends StatefulWidget {
+  final String world;
+  final AdminState admin;
+  final Color accent;
+  const _ChatModerationTab(
+      {required this.world, required this.admin, required this.accent});
+  @override
+  State<_ChatModerationTab> createState() => _ChatModerationTabState();
+}
+
+class _ChatModerationTabState extends State<_ChatModerationTab> {
+  late List<String> _rooms;
+  late String _selectedRoom;
+  List<Map<String, dynamic>> _messages = [];
+  bool _loadingMsgs = false;
+  final _api = CloudflareApiService();
+  Timer? _pollTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _rooms = widget.world == 'materie'
+        ? [
+            'materie-politik',
+            'materie-geschichte',
+            'materie-ufo',
+            'materie-verschwoerung',
+            'materie-wissenschaft',
+            'materie-tech',
+            'materie-gesundheit',
+            'materie-medien',
+            'materie-finanzen',
+          ]
+        : [
+            'energie-meditation',
+            'energie-chakra',
+            'energie-bewusstsein',
+            'energie-heilung',
+            'energie-kristalle',
+            'energie-astrologie',
+            'energie-traumdeutung',
+          ];
+    _selectedRoom = _rooms.first;
+    _loadMessages();
+    _pollTimer =
+        Timer.periodic(const Duration(seconds: 20), (_) => _loadMessages());
+  }
+
+  @override
+  void dispose() {
+    _pollTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _loadMessages() async {
+    if (!mounted) return;
+    setState(() => _loadingMsgs = true);
+    try {
+      final msgs = await _api.getChatMessages(_selectedRoom, limit: 50);
+      if (mounted) setState(() => _messages = msgs);
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ Chat laden: $e');
+    } finally {
+      if (mounted) setState(() => _loadingMsgs = false);
+    }
+  }
+
+  void _snack(String msg) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(msg), duration: const Duration(seconds: 2)));
+  }
+
+  Future<void> _deleteMsg(Map<String, dynamic> msg) async {
+    final id = (msg['id'] ?? msg['message_id'] ?? '').toString();
+    final username = (msg['username'] ?? '').toString();
+    if (id.isEmpty) { _snack('❌ Keine Nachrichten-ID'); return; }
+    try {
+      await _api.deleteChatMessage(
+        messageId: id,
+        roomId: _selectedRoom,
+        userId: (msg['user_id'] ?? msg['userId'] ?? '').toString(),
+        username: widget.admin.username ?? 'Weltenbibliothek',
+        isAdmin: true,
+      );
+      _snack('🗑️ Nachricht von $username gelöscht');
+      _loadMessages();
+    } catch (e) {
+      _snack('❌ Löschen fehlgeschlagen');
+    }
+  }
+
+  Future<void> _banSender(Map<String, dynamic> msg) async {
+    final userId = (msg['user_id'] ?? msg['userId'] ?? '').toString();
+    final username = (msg['username'] ?? '').toString();
+    if (userId.isEmpty || userId.startsWith('user_')) {
+      _snack('⚠️ Kein gültiger Account – Ban nicht möglich');
+      return;
+    }
+    final ok = await WorldAdminServiceV162.banUser(
+        userId: userId,
+        reason: 'Chat-Moderation',
+        adminUserId: widget.admin.username);
+    _snack(ok ? '🚫 $username gesperrt' : '❌ Fehler beim Sperren');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(children: [
+      // ── Raum-Auswahl ─────────────────────────────────────────────
+      Container(
+        color: const Color(0xFF0D0D1A),
+        height: 48,
+        child: ListView.builder(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+          itemCount: _rooms.length,
+          itemBuilder: (ctx, i) {
+            final r = _rooms[i];
+            final label = r.split('-').last;
+            final cap = label[0].toUpperCase() + label.substring(1);
+            final sel = r == _selectedRoom;
+            return GestureDetector(
+              onTap: () {
+                setState(() => _selectedRoom = r);
+                _loadMessages();
+              },
+              child: Container(
+                margin: const EdgeInsets.only(right: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                decoration: BoxDecoration(
+                  color: sel
+                      ? widget.accent.withValues(alpha: 0.2)
+                      : Colors.white10,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                      color: sel ? widget.accent : Colors.transparent,
+                      width: 1.5),
+                ),
+                alignment: Alignment.center,
+                child: Text(cap,
+                    style: TextStyle(
+                        color: sel ? widget.accent : Colors.white54,
+                        fontSize: 12,
+                        fontWeight:
+                            sel ? FontWeight.bold : FontWeight.normal)),
+              ),
+            );
+          },
+        ),
+      ),
+
+      // ── Nachrichten ───────────────────────────────────────────────
+      Expanded(
+        child: _loadingMsgs && _messages.isEmpty
+            ? Center(child: CircularProgressIndicator(color: widget.accent))
+            : RefreshIndicator(
+                onRefresh: _loadMessages,
+                color: widget.accent,
+                child: _messages.isEmpty
+                    ? const _EmptyHint('Keine Nachrichten in diesem Raum.')
+                    : ListView.builder(
+                        reverse: true,
+                        itemCount: _messages.length,
+                        itemBuilder: (ctx, i) {
+                          final msg =
+                              _messages[_messages.length - 1 - i];
+                          return _ChatMsgTile(
+                            msg: msg,
+                            accent: widget.accent,
+                            onDelete: () => _deleteMsg(msg),
+                            onBan: () => _banSender(msg),
+                          );
+                        },
+                      ),
+              ),
+      ),
+    ]);
+  }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// TAB 4 – SYSTEM / HEALTH
+// ═════════════════════════════════════════════════════════════════════════════
+class _SystemTab extends StatefulWidget {
+  final Color accent;
+  const _SystemTab({required this.accent});
+  @override
+  State<_SystemTab> createState() => _SystemTabState();
+}
+
+class _SystemTabState extends State<_SystemTab> {
+  final _health = HealthCheckService();
+  Timer? _uiTimer;
+  bool _ready = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _init();
+    _uiTimer = Timer.periodic(
+        const Duration(seconds: 2), (_) { if (mounted) setState(() {}); });
+  }
+
+  Future<void> _init() async {
+    await _health.initialize();
+    _health.startMonitoring(interval: const Duration(seconds: 30));
+    if (mounted) setState(() => _ready = true);
+  }
+
+  @override
+  void dispose() {
+    _health.stopMonitoring();
+    _uiTimer?.cancel();
+    super.dispose();
+  }
+
+  Color _latencyColor(double ms) {
+    if (ms < 300) return Colors.green;
+    if (ms < 800) return Colors.orange;
+    return Colors.red;
+  }
+
+  Color _statusColor(HealthStatus s) {
+    switch (s) {
+      case HealthStatus.healthy:   return Colors.green;
+      case HealthStatus.degraded:  return Colors.orange;
+      case HealthStatus.unhealthy: return Colors.red;
+      case HealthStatus.unknown:   return Colors.grey;
+    }
+  }
+
+  double _calcUptime() {
+    final svcs = _health.serviceHealth;
+    if (svcs.isEmpty) return 100;
+    final healthy =
+        svcs.values.where((s) => s.status == HealthStatus.healthy).length;
+    return (healthy / svcs.length) * 100;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_ready) {
+      return Center(child: CircularProgressIndicator(color: widget.accent));
+    }
+
+    final svcs = _health.serviceHealth;
+    final anyUnhealthy =
+        svcs.values.any((s) => s.status == HealthStatus.unhealthy);
+    final allOk = svcs.values.every((s) => s.status == HealthStatus.healthy);
+
+    final overallColor =
+        anyUnhealthy ? Colors.red : allOk ? Colors.green : Colors.orange;
+    final overallLabel = anyUnhealthy
+        ? 'Probleme erkannt'
+        : allOk
+            ? 'Alle Systeme OK'
+            : 'Eingeschränkt';
+    final overallIcon = anyUnhealthy
+        ? Icons.error_outline
+        : allOk
+            ? Icons.check_circle_outline
+            : Icons.warning_amber_outlined;
+
+    final uptime = _calcUptime();
+    final errRate = _health.errorRate;
+    final avgLatency = _health.averageLatency;
+
+    return RefreshIndicator(
+      onRefresh: () => _health.checkAllServices(),
+      color: widget.accent,
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          _SectionLabel('System-Status', Icons.monitor_heart, widget.accent),
+          const SizedBox(height: 12),
+
+          // ── Gesamt-Status ─────────────────────────────────────────
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: overallColor.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: overallColor.withValues(alpha: 0.4)),
+            ),
+            child: Row(children: [
+              Icon(overallIcon, color: overallColor, size: 36),
+              const SizedBox(width: 16),
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(overallLabel,
+                    style: TextStyle(
+                        color: overallColor,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold)),
+                Text('${svcs.length} Dienste überwacht',
+                    style: const TextStyle(
+                        color: Colors.white54, fontSize: 12)),
+              ]),
+            ]),
+          ),
+
+          const SizedBox(height: 20),
+
+          // ── Metriken ──────────────────────────────────────────────
+          _SectionLabel('Metriken', Icons.speed, widget.accent),
+          const SizedBox(height: 8),
+          Row(children: [
+            Expanded(
+                child: _MetricCard(
+                    label: 'Ø Latenz',
+                    value: '${avgLatency.round()} ms',
+                    color: _latencyColor(avgLatency))),
+            const SizedBox(width: 12),
+            Expanded(
+                child: _MetricCard(
+                    label: 'Fehlerrate',
+                    value: '${(errRate).toStringAsFixed(1)} %',
+                    color: errRate > 10 ? Colors.red : Colors.green)),
+            const SizedBox(width: 12),
+            Expanded(
+                child: _MetricCard(
+                    label: 'Uptime',
+                    value: '${uptime.toStringAsFixed(0)} %',
+                    color: uptime > 95 ? Colors.green : Colors.orange)),
+          ]),
+
+          const SizedBox(height: 20),
+
+          // ── Einzelne Dienste ──────────────────────────────────────
+          _SectionLabel('Dienste', Icons.dns, widget.accent),
+          const SizedBox(height: 8),
+          ...svcs.entries.map((e) => _ServiceRow(
+                name: e.key,
+                health: e.value,
+                statusColor: _statusColor(e.value.status),
+              )),
+
+          const SizedBox(height: 20),
+
+          // ── Refresh-Button ────────────────────────────────────────
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => _health.checkAllServices(),
+              icon: Icon(Icons.refresh, color: widget.accent),
+              label: Text('Jetzt prüfen',
+                  style: TextStyle(color: widget.accent)),
+              style: OutlinedButton.styleFrom(
+                  side: BorderSide(color: widget.accent),
+                  padding: const EdgeInsets.symmetric(vertical: 14)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// GEMEINSAME WIDGETS
+// ═════════════════════════════════════════════════════════════════════════════
+
+class _SectionLabel extends StatelessWidget {
+  final String text;
+  final IconData icon;
+  final Color accent;
+  const _SectionLabel(this.text, this.icon, this.accent);
+
+  @override
+  Widget build(BuildContext context) => Row(children: [
+        Icon(icon, color: accent, size: 16),
+        const SizedBox(width: 8),
+        Text(text,
+            style: TextStyle(
+                color: accent,
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+                letterSpacing: 0.5)),
+      ]);
+}
+
+class _EmptyHint extends StatelessWidget {
+  final String text;
+  const _EmptyHint(this.text);
+  @override
+  Widget build(BuildContext context) => Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Text(text,
+              style: const TextStyle(color: Colors.white38, fontSize: 14),
+              textAlign: TextAlign.center),
+        ),
+      );
+}
+
+// ── Statistik-Karte ───────────────────────────────────────────────────────
+class _StatCard extends StatelessWidget {
+  final IconData icon;
+  final String label, value;
+  final Color color;
+  const _StatCard(
+      {required this.icon,
+      required this.label,
+      required this.value,
+      required this.color});
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
+        ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Icon(icon, color: color, size: 24),
+          const SizedBox(height: 10),
+          Text(value,
+              style: TextStyle(
+                  color: color, fontSize: 28, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 4),
+          Text(label,
+              style: const TextStyle(color: Colors.white54, fontSize: 12)),
+        ]),
+      );
+}
+
+// ── Aktivitäts-Eintrag ────────────────────────────────────────────────────
+class _ActivityTile extends StatelessWidget {
+  final AuditLogEntry entry;
+  const _ActivityTile({required this.entry});
+
+  static const _icons = {
+    'edit_message':   (Icons.edit,           Color(0xFF1E88E5)),
+    'delete_message': (Icons.delete,          Color(0xFFE53935)),
+    'promote':        (Icons.arrow_upward,    Color(0xFF43A047)),
+    'demote':         (Icons.arrow_downward,  Color(0xFFFB8C00)),
+    'ban':            (Icons.block,           Color(0xFFE53935)),
+    'unban':          (Icons.check_circle,    Color(0xFF00ACC1)),
+  };
+
+  static const _labels = {
+    'edit_message':   'Nachricht bearbeitet',
+    'delete_message': 'Nachricht gelöscht',
+    'promote':        'Zum Admin befördert',
+    'demote':         'Degradiert',
+    'ban':            'Nutzer gesperrt',
+    'unban':          'Sperre aufgehoben',
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final key = entry.action.toLowerCase();
+    final iconData = _icons[key]?.$1 ?? Icons.info_outline;
+    final color    = _icons[key]?.$2 ?? Colors.grey;
+    final label    = _labels[key] ?? entry.action;
+    final ts       = _fmt(entry.timestamp);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.07),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
+      ),
+      child: Row(children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.15), shape: BoxShape.circle),
+          child: Icon(iconData, color: color, size: 16),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(label,
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13)),
+            Text('${entry.adminUsername} → ${entry.targetUsername}',
+                style: const TextStyle(color: Colors.white54, fontSize: 11)),
+          ]),
+        ),
+        Text(ts, style: const TextStyle(color: Colors.white38, fontSize: 10)),
+      ]),
+    );
+  }
+
+  String _fmt(String ts) {
+    try {
+      final dt = DateTime.parse(ts).toLocal();
+      return '${dt.day.toString().padLeft(2, '0')}.${dt.month.toString().padLeft(2, '0')} '
+          '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+    } catch (_) {
+      return ts;
+    }
+  }
+}
+
+// ── Nutzer-Kachel ─────────────────────────────────────────────────────────
+class _UserTile extends StatelessWidget {
+  final WorldUser user;
+  final bool isRootAdmin;
+  final Color accent;
+  final VoidCallback onBan, onUnban, onPromote, onDemote;
+  const _UserTile({
+    required this.user,
+    required this.isRootAdmin,
+    required this.accent,
+    required this.onBan,
+    required this.onUnban,
+    required this.onPromote,
+    required this.onDemote,
+  });
+
+  Color get _roleColor => switch (user.role) {
+        'root_admin' => Colors.amber,
+        'admin'      => Colors.blue,
+        _            => Colors.white38,
+      };
+
+  String get _roleLabel => switch (user.role) {
+        'root_admin' => 'ROOT',
+        'admin'      => 'Admin',
+        _            => 'User',
+      };
+
+  @override
+  Widget build(BuildContext context) => Container(
+        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+        decoration: BoxDecoration(
+          color: const Color(0xFF12121E),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.white10),
+        ),
+        child: ExpansionTile(
+          tilePadding:
+              const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+          leading: CircleAvatar(
+            backgroundColor: _roleColor.withValues(alpha: 0.15),
+            child: Text(
+              user.avatarEmoji?.isNotEmpty == true
+                  ? user.avatarEmoji!
+                  : user.username[0].toUpperCase(),
+              style: const TextStyle(fontSize: 18),
+            ),
+          ),
+          title: Text(user.displayName ?? user.username,
+              style: const TextStyle(
+                  color: Colors.white, fontWeight: FontWeight.w600)),
+          subtitle: Text('@${user.username}',
+              style: const TextStyle(color: Colors.white54, fontSize: 11)),
+          trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: _roleColor.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(_roleLabel,
+                  style: TextStyle(
+                      color: _roleColor,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold)),
+            ),
+            const SizedBox(width: 6),
+            const Icon(Icons.expand_more, color: Colors.white38, size: 18),
+          ]),
+          children: [
+            Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              child: Column(children: [
+                _InfoRow(Icons.access_time, 'Erstellt: ${_fmtDate(user.createdAt)}'),
+                const SizedBox(height: 4),
+                _InfoRow(Icons.fingerprint,
+                    'ID: ${user.userId.isEmpty ? "–" : user.userId}'),
+                const SizedBox(height: 10),
+                Wrap(spacing: 8, runSpacing: 8, children: [
+                  if (isRootAdmin && !user.isAdmin)
+                    _ActionBtn(
+                        Icons.arrow_upward, 'Zum Admin', Colors.green, onPromote),
+                  if (isRootAdmin && user.isAdmin && !user.isRootAdmin)
+                    _ActionBtn(
+                        Icons.arrow_downward, 'Degradieren', Colors.orange, onDemote),
+                  _ActionBtn(Icons.block, 'Sperren', Colors.red, onBan),
+                  _ActionBtn(Icons.check_circle_outline, 'Entsperren',
+                      Colors.teal, onUnban),
+                ]),
+              ]),
+            ),
+          ],
+        ),
+      );
+
+  String _fmtDate(String ts) {
+    try {
+      final dt = DateTime.parse(ts).toLocal();
+      return '${dt.day.toString().padLeft(2, '0')}.${dt.month.toString().padLeft(2, '0')}.${dt.year}';
+    } catch (_) {
+      return '–';
+    }
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  final IconData icon;
+  final String text;
+  const _InfoRow(this.icon, this.text);
+  @override
+  Widget build(BuildContext context) => Row(children: [
+        Icon(icon, size: 12, color: Colors.white38),
+        const SizedBox(width: 6),
+        Expanded(
+            child: Text(text,
+                style: const TextStyle(color: Colors.white38, fontSize: 11),
+                overflow: TextOverflow.ellipsis)),
+      ]);
+}
+
+// ── Aktions-Button ────────────────────────────────────────────────────────
+class _ActionBtn extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+  const _ActionBtn(this.icon, this.label, this.color, this.onTap);
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: color.withValues(alpha: 0.4)),
+          ),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            Icon(icon, color: color, size: 14),
+            const SizedBox(width: 5),
+            Text(label,
+                style: TextStyle(
+                    color: color,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600)),
+          ]),
+        ),
+      );
+}
+
+// ── Chat-Nachrichten-Kachel ───────────────────────────────────────────────
+class _ChatMsgTile extends StatelessWidget {
+  final Map<String, dynamic> msg;
+  final Color accent;
+  final VoidCallback onDelete, onBan;
+  const _ChatMsgTile(
+      {required this.msg,
+      required this.accent,
+      required this.onDelete,
+      required this.onBan});
+
+  @override
+  Widget build(BuildContext context) {
+    final username = (msg['username'] ?? 'Anonym').toString();
+    final content  = (msg['content'] ?? msg['message'] ?? '').toString();
+    final ts       = _fmt(msg['created_at'] ?? msg['timestamp'] ?? '');
+    final emoji    = (msg['avatarEmoji'] ?? msg['avatar_emoji'] ?? '👤').toString();
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: const Color(0xFF12121E),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(emoji, style: const TextStyle(fontSize: 24)),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              Text(username,
+                  style: TextStyle(
+                      color: accent,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13)),
+              const Spacer(),
+              Text(ts,
+                  style: const TextStyle(
+                      color: Colors.white38, fontSize: 10)),
+            ]),
+            const SizedBox(height: 4),
+            Text(content,
+                style: const TextStyle(color: Colors.white70, fontSize: 13),
+                maxLines: 5,
+                overflow: TextOverflow.ellipsis),
+          ]),
+        ),
+        Column(children: [
+          IconButton(
+            icon: const Icon(Icons.delete_outline,
+                color: Colors.redAccent, size: 20),
+            tooltip: 'Löschen',
+            onPressed: onDelete,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+          ),
+          const SizedBox(height: 4),
+          IconButton(
+            icon: const Icon(Icons.block, color: Colors.orange, size: 20),
+            tooltip: 'Sender sperren',
+            onPressed: onBan,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+          ),
+        ]),
+      ]),
+    );
+  }
+
+  String _fmt(String ts) {
+    try {
+      final dt = DateTime.parse(ts).toLocal();
+      return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+    } catch (_) {
+      return '';
+    }
+  }
+}
+
+// ── System: Dienst-Zeile ──────────────────────────────────────────────────
+class _ServiceRow extends StatelessWidget {
+  final String name;
+  final ServiceHealth health;
+  final Color statusColor;
+  const _ServiceRow(
+      {required this.name,
+      required this.health,
+      required this.statusColor});
+
+  @override
+  Widget build(BuildContext context) => Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: const Color(0xFF12121E),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.white10),
+        ),
+        child: Row(children: [
+          Container(
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(
+                color: statusColor, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+              child: Text(name,
+                  style: const TextStyle(
+                      color: Colors.white70, fontSize: 13))),
+          Text('${health.latencyMs} ms',
+              style: const TextStyle(
+                  color: Colors.white38, fontSize: 11)),
+          const SizedBox(width: 8),
+          Text(health.statusText,
+              style: TextStyle(
+                  color: statusColor,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold)),
+        ]),
+      );
+}
+
+// ── Metrik-Karte ──────────────────────────────────────────────────────────
+class _MetricCard extends StatelessWidget {
+  final String label, value;
+  final Color color;
+  const _MetricCard(
+      {required this.label, required this.value, required this.color});
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
+        ),
+        child: Column(children: [
+          Text(value,
+              style: TextStyle(
+                  color: color,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold)),
+          const SizedBox(height: 4),
+          Text(label,
+              style: const TextStyle(
+                  color: Colors.white38, fontSize: 10),
+              textAlign: TextAlign.center),
+        ]),
+      );
 }

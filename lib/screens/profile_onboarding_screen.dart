@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import '../models/materie_profile.dart';
 import '../models/energie_profile.dart';
 import '../services/profile_sync_service.dart'; // 🔥 BACKEND SYNC
+import '../services/profile_restore_service.dart'; // 🔄 PROFIL-RESTORE REGISTRIERUNG
 
 /// Profil-Onboarding-Screen - Zeigt beim ersten App-Start ODER zum Bearbeiten
 class ProfileOnboardingScreen extends StatefulWidget {
@@ -614,6 +615,8 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
         
         if (syncedProfile != null) {
           await _storage.saveMaterieProfile(syncedProfile);
+          // 🔄 Für spätere Neuinstallation registrieren
+          await ProfileRestoreService().registerProfileForRestore('materie', syncedProfile.username);
           if (kDebugMode) {
             debugPrint('✅ Materie-Profil gespeichert mit Backend-Sync: ${syncedProfile.username}');
             debugPrint('   User ID: ${syncedProfile.userId}');
@@ -622,6 +625,8 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
         } else {
           // Fallback: Lokales Profil speichern
           await _storage.saveMaterieProfile(profile);
+          // 🔄 Auch bei Offline-Save registrieren
+          await ProfileRestoreService().registerProfileForRestore('materie', profile.username);
           if (kDebugMode) {
             debugPrint('⚠️ Materie-Profil lokal gespeichert (Backend-Sync fehlgeschlagen)');
           }
@@ -645,6 +650,8 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
         
         if (syncedProfile != null) {
           await _storage.saveEnergieProfile(syncedProfile);
+          // 🔄 Für spätere Neuinstallation registrieren
+          await ProfileRestoreService().registerProfileForRestore('energie', syncedProfile.username);
           if (kDebugMode) {
             debugPrint('✅ Energie-Profil gespeichert mit Backend-Sync: ${syncedProfile.fullName}');
             debugPrint('   User ID: ${syncedProfile.userId}');
@@ -653,6 +660,8 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
         } else {
           // Fallback: Lokales Profil speichern
           await _storage.saveEnergieProfile(profile);
+          // 🔄 Auch bei Offline-Save registrieren
+          await ProfileRestoreService().registerProfileForRestore('energie', profile.username);
           if (kDebugMode) {
             debugPrint('⚠️ Energie-Profil lokal gespeichert (Backend-Sync fehlgeschlagen)');
           }
