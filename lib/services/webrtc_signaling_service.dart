@@ -1,246 +1,164 @@
-/// 🎤 DEDICATED WEBRTC SIGNALING SERVICE
-/// 
-/// Cloudflare Worker Backend v3.2 Integration
-/// Dedizierter WebSocket-Kanal für WebRTC Signaling
-/// 
-/// Features:
-/// - WebSocket-basierte WebRTC Signaling
-/// - Auto-Reconnect
-/// - Heartbeat System
-/// - Room Management
+/// 🎤 WEBRTC SIGNALING SERVICE – Supabase Realtime Broadcast
+///
+/// Entscheidung: Supabase Realtime statt Cloudflare Worker WebSocket
+/// Begründung:
+///   - Cloudflare Workers unterstützen kein persistentes WebSocket-Server-Protokoll
+///     für WebRTC Signaling (kein Durable Objects in diesem Plan)
+///   - Supabase Realtime Broadcast ist kostenlos, stabil und bereits im Projekt aktiv
+///   - Kein zusätzlicher Infrastrukturaufwand
+///
+/// Architektur:
+///   - Channel: 'voice_signal:{roomId}'
+///   - Events: 'offer', 'answer', 'ice-candidate', 'join', 'leave', 'mute'
+///   - Presence: Teilnehmerliste live über Supabase Presence
 library;
 
 import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
-import '../config/api_config.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../services/supabase_service.dart';
 
 class WebRTCSignalingService {
   static final WebRTCSignalingService _instance = WebRTCSignalingService._internal();
   factory WebRTCSignalingService() => _instance;
   WebRTCSignalingService._internal();
 
-  // ═══════════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════
   // STATE
-  // ═══════════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════
 
-  WebSocketChannel? _channel;
+  RealtimeChannel? _signalingChannel;
   bool _isConnected = false;
   String? _currentRoomId;
   String? _currentUserId;
+  String? _currentUsername;
 
-  // Reconnect
-  int _reconnectAttempts = 0;
-  static const int _maxReconnectAttempts = 10;
-  static const List<int> _reconnectDelays = [1, 2, 4, 8, 16]; // seconds
-  Timer? _reconnectTimer;
-  Timer? _heartbeatTimer;
-
-  // Stream Controllers
   final StreamController<Map<String, dynamic>> _messageController =
       StreamController<Map<String, dynamic>>.broadcast();
-
-  // ═══════════════════════════════════════════════════════════════════════
-  // GETTERS
-  // ═══════════════════════════════════════════════════════════════════════
 
   bool get isConnected => _isConnected;
   String? get currentRoomId => _currentRoomId;
   Stream<Map<String, dynamic>> get messageStream => _messageController.stream;
 
-  // ═══════════════════════════════════════════════════════════════════════
-  // CONNECTION
-  // ═══════════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════
+  // CONNECT – via Supabase Realtime Broadcast
+  // ═══════════════════════════════════════════════════════════
 
   Future<void> connect() async {
-    if (_isConnected) {
-      if (kDebugMode) print('✅ WebRTC Signaling already connected');
-      return;
-    }
-
-    try {
-      if (kDebugMode) {
-        print('🔌 Connecting to WebRTC Signaling...');
-        print('📍 URL: ${ApiConfig.webrtcSignalingUrl}');
-      }
-
-      _channel = WebSocketChannel.connect(
-        Uri.parse(ApiConfig.webrtcSignalingUrl),
-      );
-
-      // Listen to messages
-      _channel!.stream.listen(
-        _handleMessage,
-        onError: _handleError,
-        onDone: _handleDisconnect,
-        cancelOnError: false,
-      );
-
-      _isConnected = true;
-      _reconnectAttempts = 0;
-
-      if (kDebugMode) print('✅ WebRTC Signaling connected');
-
-      // Start heartbeat
-      _startHeartbeat();
-    } catch (e) {
-      if (kDebugMode) print('❌ Failed to connect to WebRTC Signaling: $e');
-      _scheduleReconnect();
-    }
+    // Supabase Realtime ist immer "verbunden" wenn Supabase initialisiert ist
+    _isConnected = true;
+    if (kDebugMode) print('✅ WebRTC Signaling: Supabase Realtime bereit');
   }
 
   void disconnect() {
-    if (kDebugMode) print('🔌 Disconnecting WebRTC Signaling...');
-
-    _heartbeatTimer?.cancel();
-    _reconnectTimer?.cancel();
-    _channel?.sink.close();
+    _signalingChannel?.unsubscribe();
+    _signalingChannel = null;
     _isConnected = false;
     _currentRoomId = null;
     _currentUserId = null;
-
-    if (kDebugMode) print('✅ WebRTC Signaling disconnected');
+    if (kDebugMode) print('🔌 WebRTC Signaling: getrennt');
   }
 
-  // ═══════════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════
   // ROOM MANAGEMENT
-  // ═══════════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════
 
   void joinRoom(String roomId, String userId, String username) {
     _currentRoomId = roomId;
     _currentUserId = userId;
+    _currentUsername = username;
 
-    sendMessage({
-      'type': 'join',
-      'roomId': roomId,
-      'userId': userId,
-      'username': username,
-    });
+    // Alten Kanal schließen
+    _signalingChannel?.unsubscribe();
 
-    if (kDebugMode) {
-      print('🎤 Joining WebRTC room: $roomId as $userId ($username)');
-    }
+    // Neuen Broadcast-Kanal für diesen Raum öffnen
+    _signalingChannel = supabase
+        .channel('voice_signal:$roomId')
+        .onBroadcast(
+          event: 'signal',
+          callback: (payload) {
+            final data = Map<String, dynamic>.from(payload);
+            // Nur fremde Nachrichten verarbeiten
+            if (data['senderId'] != userId) {
+              if (kDebugMode) print('📥 Signal erhalten: ${data['type']} von ${data['senderId']}');
+              _messageController.add(data);
+            }
+          },
+        )
+        .subscribe((status, [error]) {
+          if (status == RealtimeSubscribeStatus.subscribed) {
+            _isConnected = true;
+            if (kDebugMode) print('✅ Voice Signaling Kanal aktiv: $roomId');
+            // Join-Event senden
+            _broadcastSignal({'type': 'join', 'username': username});
+          } else if (status == RealtimeSubscribeStatus.channelError) {
+            _isConnected = false;
+            if (kDebugMode) print('❌ Voice Signaling Fehler: $error');
+          }
+        });
+
+    if (kDebugMode) print('🎤 Voice Signaling: Raum $roomId beigetreten als $username');
   }
 
   void leaveRoom() {
     if (_currentRoomId == null) return;
-
-    sendMessage({
-      'type': 'leave',
-    });
-
-    if (kDebugMode) print('🚪 Leaving WebRTC room: $_currentRoomId');
-
+    _broadcastSignal({'type': 'leave'});
+    _signalingChannel?.unsubscribe();
+    _signalingChannel = null;
     _currentRoomId = null;
     _currentUserId = null;
+    if (kDebugMode) print('🚪 Voice Signaling: Raum verlassen');
   }
 
-  // ═══════════════════════════════════════════════════════════════════════
-  // MESSAGE HANDLING
-  // ═══════════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════
+  // SENDEN
+  // ═══════════════════════════════════════════════════════════
 
   void sendMessage(Map<String, dynamic> message) {
-    if (!_isConnected || _channel == null) {
-      if (kDebugMode) print('⚠️ Cannot send message: not connected');
-      return;
-    }
+    _broadcastSignal(message);
+  }
 
+  Future<void> _broadcastSignal(Map<String, dynamic> payload) async {
+    if (_signalingChannel == null) return;
     try {
-      final jsonMessage = jsonEncode(message);
-      _channel!.sink.add(jsonMessage);
-
-      if (kDebugMode && message['type'] != 'pong') {
-        print('📤 Sent: ${message['type']}');
-      }
+      await _signalingChannel!.sendBroadcastMessage(
+        event: 'signal',
+        payload: {
+          ...payload,
+          'senderId': _currentUserId ?? 'unknown',
+          'senderName': _currentUsername ?? 'Anonym',
+          'roomId': _currentRoomId,
+          'timestamp': DateTime.now().toIso8601String(),
+        },
+      );
     } catch (e) {
-      if (kDebugMode) print('❌ Failed to send message: $e');
+      if (kDebugMode) print('❌ Broadcast Fehler: $e');
     }
   }
 
-  void _handleMessage(dynamic message) {
-    try {
-      final data = jsonDecode(message as String) as Map<String, dynamic>;
-      final type = data['type'] as String?;
+  // ═══════════════════════════════════════════════════════════
+  // SDP / ICE HELPERS (für WebRTCVoiceService)
+  // ═══════════════════════════════════════════════════════════
 
-      if (kDebugMode && type != 'ping') {
-        print('📥 Received: $type');
-      }
-
-      // Handle ping/pong
-      if (type == 'ping') {
-        sendMessage({'type': 'pong'});
-        return;
-      }
-
-      // Broadcast to listeners
-      _messageController.add(data);
-    } catch (e) {
-      if (kDebugMode) print('❌ Error handling message: $e');
-    }
+  void sendOffer(String targetUserId, Map<String, dynamic> sdp) {
+    _broadcastSignal({'type': 'offer', 'targetId': targetUserId, 'sdp': sdp});
   }
 
-  void _handleError(error) {
-    if (kDebugMode) print('❌ WebRTC Signaling error: $error');
-    _isConnected = false;
-    _scheduleReconnect();
+  void sendAnswer(String targetUserId, Map<String, dynamic> sdp) {
+    _broadcastSignal({'type': 'answer', 'targetId': targetUserId, 'sdp': sdp});
   }
 
-  void _handleDisconnect() {
-    if (kDebugMode) print('🔌 WebRTC Signaling disconnected');
-    _isConnected = false;
-    _scheduleReconnect();
+  void sendIceCandidate(String targetUserId, Map<String, dynamic> candidate) {
+    _broadcastSignal({'type': 'ice-candidate', 'targetId': targetUserId, 'candidate': candidate});
   }
 
-  // ═══════════════════════════════════════════════════════════════════════
-  // RECONNECT
-  // ═══════════════════════════════════════════════════════════════════════
-
-  void _scheduleReconnect() {
-    if (_reconnectAttempts >= _maxReconnectAttempts) {
-      if (kDebugMode) {
-        print('❌ Max reconnect attempts reached. Giving up.');
-      }
-      return;
-    }
-
-    _reconnectTimer?.cancel();
-
-    final delayIndex = _reconnectAttempts < _reconnectDelays.length
-        ? _reconnectAttempts
-        : _reconnectDelays.length - 1;
-    final delay = Duration(seconds: _reconnectDelays[delayIndex]);
-
-    if (kDebugMode) {
-      print('🔄 Scheduling reconnect in ${delay.inSeconds}s (attempt ${_reconnectAttempts + 1}/$_maxReconnectAttempts)');
-    }
-
-    _reconnectTimer = Timer(delay, () async {
-      _reconnectAttempts++;
-      await connect();
-
-      // Re-join room if we were in one
-      if (_isConnected && _currentRoomId != null && _currentUserId != null) {
-        if (kDebugMode) print('🔄 Re-joining room: $_currentRoomId');
-        joinRoom(_currentRoomId!, _currentUserId!, 'User'); // TODO: Store username
-      }
-    });
+  void sendMuteState(bool isMuted) {
+    _broadcastSignal({'type': 'mute', 'isMuted': isMuted});
   }
 
-  // ═══════════════════════════════════════════════════════════════════════
-  // HEARTBEAT
-  // ═══════════════════════════════════════════════════════════════════════
-
-  void _startHeartbeat() {
-    _heartbeatTimer?.cancel();
-
-    // Server sends ping every 15s, we just respond with pong
-    // No need to send our own pings
-  }
-
-  // ═══════════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════
   // CLEANUP
-  // ═══════════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════
 
   void dispose() {
     disconnect();

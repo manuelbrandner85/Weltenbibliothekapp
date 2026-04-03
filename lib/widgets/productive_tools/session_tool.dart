@@ -15,7 +15,7 @@ class SessionTool extends StatefulWidget {
 
 class _SessionToolState extends State<SessionTool> {
   // UNUSED FIELD: static const String _baseUrl = 'https://weltenbibliothek-community-api.brandy13062.workers.dev';
-  final CloudflareApiService _api = CloudflareApiService();
+  final CloudflareApiService _api = CloudflareApiService(); // ignore: unused_field
   final ChatToolsService _toolsService = ChatToolsService();  // ✅ Tools Service
 
   List<Session> _sessions = [];
@@ -160,8 +160,6 @@ class _SessionToolState extends State<SessionTool> {
     setState(() => _isMeditating = false);
   }
 
-  // TODO: Review unused method: _submitSession
-  // Future<void> _submitSession() async {
     // if (_nameController.text.trim().isEmpty) {
       // _showToast('Bitte Session-Name eingeben', Colors.orange);
       // return;
@@ -203,8 +201,6 @@ class _SessionToolState extends State<SessionTool> {
     // }
   // }
 
-  // TODO: Review unused method: _clearForm
-  // void _clearForm() {
     // _nameController.clear();
     // setState(() {
       // _selectedDuration = 10;

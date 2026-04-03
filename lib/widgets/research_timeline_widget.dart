@@ -27,6 +27,7 @@ class _ResearchTimelineWidgetState extends State<ResearchTimelineWidget> {
   // 🆕 v8.0 Enhanced Features
   double _zoomLevel = 1.0;  // Zoom: 0.5x - 2.0x
   String _categoryFilter = 'all';  // Filter by category
+  // ignore: unused_field
   final bool _showExportMenu = false;  // Export menu toggle
 
   @override

@@ -171,36 +171,34 @@ class _UserDetailScreenState extends State<UserDetailScreen> with SingleTickerPr
               ),
               const SizedBox(height: 16),
               // SUSPENSION TYPE
-              Row(
-                children: [
-                  Expanded(
-                    child: RadioListTile<String>(
-                      title: const Text('24 Stunden', style: TextStyle(color: Colors.white)),
-                      value: 'temporary',
-                      groupValue: suspensionType,
-                      onChanged: (value) {
-                        setState(() {
-                          suspensionType = value!;
-                        });
-                      },
-                      activeColor: Colors.orange,
-                    ),
-                  ),
-                  if (widget.isRootAdmin)
+              RadioGroup<String>(
+                groupValue: suspensionType,
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() {
+                      suspensionType = value;
+                    });
+                  }
+                },
+                child: Row(
+                  children: [
                     Expanded(
                       child: RadioListTile<String>(
-                        title: const Text('Permanent', style: TextStyle(color: Colors.white)),
-                        value: 'permanent',
-                        groupValue: suspensionType,
-                        onChanged: (value) {
-                          setState(() {
-                            suspensionType = value!;
-                          });
-                        },
-                        activeColor: Colors.red,
+                        title: const Text('24 Stunden', style: TextStyle(color: Colors.white)),
+                        value: 'temporary',
+                        activeColor: Colors.orange,
                       ),
                     ),
-                ],
+                    if (widget.isRootAdmin)
+                      Expanded(
+                        child: RadioListTile<String>(
+                          title: const Text('Permanent', style: TextStyle(color: Colors.white)),
+                          value: 'permanent',
+                          activeColor: Colors.red,
+                        ),
+                      ),
+                  ],
+                ),
               ),
               const SizedBox(height: 16),
               // REASON INPUT
@@ -615,12 +613,14 @@ class _UserDetailScreenState extends State<UserDetailScreen> with SingleTickerPr
         }
       }
     } else if (confirmed == true) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('❌ Grund ist erforderlich'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('❌ Grund ist erforderlich'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
 
     reasonController.dispose();
@@ -709,12 +709,14 @@ class _UserDetailScreenState extends State<UserDetailScreen> with SingleTickerPr
         }
       }
     } else if (confirmed == true) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('❌ Grund ist erforderlich'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('❌ Grund ist erforderlich'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
 
     reasonController.dispose();

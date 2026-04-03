@@ -132,7 +132,7 @@ class Achievement {
 /// Stats & Achievements Service
 class StatsService {
   static const String _statsKey = 'user_stats';
-  static const String _achievementsKey = 'achievements';
+  static const String _achievementsKey = 'achievements'; // ignore: unused_field
   late SharedPreferences _prefs;
   UserStats? _stats;
   List<Achievement>? _achievements;

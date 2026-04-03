@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
+ // OpenClaw v2.0
 
 class PowerNetworkMapperScreen extends StatefulWidget {
   const PowerNetworkMapperScreen({super.key});
@@ -12,7 +12,9 @@ class _PowerNetworkMapperScreenState extends State<PowerNetworkMapperScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _pulseController;
   String? _selectedNodeId;
+  // ignore: unused_field
   final Offset _panOffset = Offset.zero;
+  // ignore: unused_field
   final double _scale = 0.6;  // Start weiter rausgezoomt
   String _searchQuery = '';
   String _selectedCategory = 'Alle';

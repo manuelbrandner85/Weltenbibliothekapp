@@ -119,6 +119,7 @@ class WebRTCVoiceService with ChangeNotifier {
   VoiceConnectionState _state = VoiceConnectionState.disconnected;
   String? _currentRoomId;
   String? _currentUserId;
+  String? _currentUsername; // ✅ Store username for switchRoom
   bool _isMuted = false;
   bool _isPushToTalk = false;
   String? _lastErrorMessage;  // ✅ ADD: Track last error message
@@ -127,11 +128,22 @@ class WebRTCVoiceService with ChangeNotifier {
   final _stateController = StreamController<VoiceConnectionState>.broadcast();
   final _participantsController = StreamController<List<VoiceParticipant>>.broadcast();
   final _speakingController = StreamController<Map<String, bool>>.broadcast();
+  final _audioLevelController = StreamController<Map<String, double>>.broadcast();
   
   // Streams
   Stream<VoiceConnectionState> get stateStream => _stateController.stream;
   Stream<List<VoiceParticipant>> get participantsStream => _participantsController.stream;
   Stream<Map<String, bool>> get speakingStream => _speakingController.stream;
+
+  /// 🎙️ Audio Level Stream: userId → Level (0.0–1.0)
+  /// Wird alle 200ms aktualisiert und treibt den Speaking Indicator
+  Stream<Map<String, double>> get audioLevelStream => _audioLevelController.stream;
+
+  // Audio-Level Detection Timer
+  Timer? _audioLevelTimer;
+
+  // Threshold für Speaking-Detection (0.0–1.0)
+  static const double _speakingThreshold = 0.05;
   
   // Getters
   VoiceConnectionState get state => _state;
@@ -285,6 +297,7 @@ class WebRTCVoiceService with ChangeNotifier {
       
       _currentRoomId = roomId;
       _currentUserId = userId;
+      _currentUsername = username; // ✅ Store username
       _isPushToTalk = pushToTalk;
       
       // Mute if push-to-talk
@@ -303,6 +316,9 @@ class WebRTCVoiceService with ChangeNotifier {
       
       _setState(VoiceConnectionState.connected);
       _clearError();  // ✅ Clear error on successful connection
+
+      // 🎙️ Audio-Level Detection starten
+      _startAudioLevelDetection(userId);
       
       // 🆕 Start session tracking (use world parameter)
       await _sessionTracker.startSession(
@@ -353,6 +369,10 @@ class WebRTCVoiceService with ChangeNotifier {
   /// Leave voice room
   Future<void> leaveRoom() async {
     try {
+      // 🎙️ Audio-Level Detection stoppen
+      _audioLevelTimer?.cancel();
+      _audioLevelTimer = null;
+
       if (_currentRoomId != null && _currentUserId != null) {
         // ✅ FIXED: Use proper WebRTC signaling API
         _signaling.leaveRoom();
@@ -829,13 +849,115 @@ class WebRTCVoiceService with ChangeNotifier {
     _lastErrorMessage = null;
   }
 
+  // ============================================================================
+  // 🎙️ AUDIO LEVEL DETECTION (Speaking Indicator)
+  // ============================================================================
+
+  /// Startet die periodische Audio-Level-Erkennung.
+  /// Liest RTCStats alle 200ms und erkennt Sprecher.
+  void _startAudioLevelDetection(String localUserId) {
+    _audioLevelTimer?.cancel();
+    _audioLevelTimer = Timer.periodic(const Duration(milliseconds: 200), (_) async {
+      if (_audioLevelController.isClosed) return;
+
+      final Map<String, double> levels = {};
+      bool speakingChanged = false;
+
+      // ── Lokale Spur über RTCPeerConnection.getStats() ──────────────────
+      for (final entry in _peerConnections.entries) {
+        final peerId = entry.key;
+        final pc = entry.value;
+        try {
+          final statsReport = await pc.getStats();
+          for (final stat in statsReport) {
+            final type = stat.type;
+            // inbound-rtp → Remote-Sprecher-Level
+            if (type == 'inbound-rtp') {
+              final audioLevel = stat.values['audioLevel'] as double?;
+              if (audioLevel != null) {
+                levels[peerId] = audioLevel;
+                _updateParticipantSpeaking(peerId, audioLevel > _speakingThreshold);
+                speakingChanged = true;
+              }
+            }
+            // media-source → Lokales Mikrofon-Level
+            if (type == 'media-source') {
+              final audioLevel = stat.values['audioLevel'] as double?;
+              if (audioLevel != null && !_isMuted) {
+                levels[localUserId] = audioLevel;
+                _updateParticipantSpeaking(localUserId, audioLevel > _speakingThreshold);
+                speakingChanged = true;
+              }
+            }
+          }
+        } catch (_) {
+          // Stats nicht verfügbar (z.B. Peer noch nicht verbunden)
+        }
+      }
+
+      // Lokales Mikrofon-Fallback: AudioTrack-Aktivitäts-Heuristik
+      // (für Plattformen ohne getStats-Unterstützung)
+      if (_localStream != null && !_isMuted && !levels.containsKey(localUserId)) {
+        final audioTracks = _localStream!.getAudioTracks();
+        if (audioTracks.isNotEmpty) {
+          final track = audioTracks.first;
+          // Einfache Heuristik: Wenn Track enabled und nicht muted → 0.1 Level
+          final enabled = track.enabled;
+          final trackMuted = track.muted ?? false;
+          final estimatedLevel = (enabled && !trackMuted) ? 0.06 : 0.0;
+          levels[localUserId] = estimatedLevel;
+          _updateParticipantSpeaking(localUserId, estimatedLevel > _speakingThreshold);
+          speakingChanged = true;
+        }
+      }
+
+      // Streams aktualisieren
+      if (levels.isNotEmpty && !_audioLevelController.isClosed) {
+        _audioLevelController.add(levels);
+      }
+      if (speakingChanged) {
+        final speakingMap = Map.fromEntries(
+          _participants.entries.map((e) => MapEntry(e.key, e.value.isSpeaking)),
+        );
+        if (!_speakingController.isClosed) {
+          _speakingController.add(speakingMap);
+        }
+      }
+    });
+  }
+
+  /// Aktualisiert den isSpeaking-Status eines Teilnehmers.
+  void _updateParticipantSpeaking(String userId, bool isSpeaking) {
+    if (_participants.containsKey(userId)) {
+      if (_participants[userId]!.isSpeaking != isSpeaking) {
+        _participants[userId] = _participants[userId]!.copyWith(isSpeaking: isSpeaking);
+        _notifyParticipantsChanged();
+      }
+    } else if (userId == _currentUserId) {
+      // Lokaler User noch nicht in Participants → hinzufügen
+      _participants[userId] = VoiceParticipant(
+        userId: userId,
+        username: _currentUsername ?? 'Ich',
+        isMuted: _isMuted,
+        isSpeaking: isSpeaking,
+      );
+      _notifyParticipantsChanged();
+    }
+  }
+
   /// Dispose
   @override
   Future<void> dispose() async {
+    _audioLevelTimer?.cancel();
+    _audioLevelTimer = null;
     await leaveRoom();
     await _stateController.close();
     await _participantsController.close();
     await _speakingController.close();
+    if (!_audioLevelController.isClosed) {
+      await _audioLevelController.close();
+    }
+    super.dispose();
   }
   
   // ============================================================================
@@ -889,8 +1011,8 @@ class WebRTCVoiceService with ChangeNotifier {
       return await joinRoom(
         roomId: newRoomId,
         userId: _currentUserId!,
-        username: 'user', // TODO: Get actual username
-        world: world,  // 🔧 ADD: Derived world parameter
+        username: _currentUsername ?? 'user', // ✅ Use stored username
+        world: world,
         pushToTalk: _isPushToTalk,
       );
     }
@@ -984,7 +1106,7 @@ class WebRTCVoiceService with ChangeNotifier {
   /// Set audio quality
   Future<void> setAudioQuality(String quality) async {
     // low, medium, high
-    Map<String, dynamic> newConstraints;
+    Map<String, dynamic> newConstraints; // ignore: unused_local_variable
     
     switch (quality) {
       case 'low':

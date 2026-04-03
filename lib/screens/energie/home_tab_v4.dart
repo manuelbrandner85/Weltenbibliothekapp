@@ -6,7 +6,6 @@ import '../../services/smart_articles_service.dart'; // 🧠 NEW: Smart Articles
 import '../../services/user_stats_service.dart';
 import '../../services/user_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import '../../services/openclaw_comprehensive_service.dart'; // 🚀 OpenClaw v2.0
 
 /// 🌟 ENERGIE HOME DASHBOARD V4 - ULTRA PROFESSIONAL EDITION
 /// 
@@ -60,9 +59,12 @@ class _EnergieHomeTabV4State extends State<EnergieHomeTabV4>
   
   // 📊 STATE
   final ScrollController _scrollController = ScrollController();
+  // ignore: unused_field
   EnergieProfile? _profile;
   String _userName = 'Suchender';
+  // ignore: unused_field
   final String _userAvatar = '';
+  // ignore: unused_field
   final String _currentChakra = 'Herzchakra'; // Current focus chakra
   
   // 📈 STATISTICS
@@ -197,7 +199,9 @@ class _EnergieHomeTabV4State extends State<EnergieHomeTabV4>
   ];
   
   // 🔄 LOADING STATE
+  // ignore: unused_field
   bool _isLoading = true;
+  // ignore: unused_field
   bool _isRefreshing = false;
   double _scrollOffset = 0.0;
   
@@ -317,7 +321,7 @@ class _EnergieHomeTabV4State extends State<EnergieHomeTabV4>
   
   Future<void> _loadUserProfile() async {
     try {
-      final userId = UserService.getCurrentUserId();
+      final userId = UserService.getCurrentUserId(); // ignore: unused_local_variable
       final userName = UserService.getCurrentUsername();
       
       if (mounted) {

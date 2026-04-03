@@ -11,6 +11,8 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:file_picker/file_picker.dart';
 import '../../models/chat_models.dart';
 import '../voice_message_recorder.dart';
 
@@ -117,24 +119,46 @@ class _ChatInputBarState extends State<ChatInputBar> {
     _focusNode.requestFocus();
   }
   
-  void _handleImagePicker() {
-    // TODO: Implement image picker
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Image picker coming soon!'),
-        duration: Duration(seconds: 2),
-      ),
-    );
+  Future<void> _handleImagePicker() async {
+    try {
+      final picker = ImagePicker();
+      final image = await picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 85,
+        maxWidth: 1920,
+        maxHeight: 1920,
+      );
+      if (image != null && mounted) {
+        widget.onSendMessage('[Bild: ${image.name}]');
+        // TODO: Upload image to Supabase Storage and send URL
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Bild-Fehler: $e'), duration: const Duration(seconds: 2)),
+        );
+      }
+    }
   }
   
-  void _handleFilePicker() {
-    // TODO: Implement file picker
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('File picker coming soon!'),
-        duration: Duration(seconds: 2),
-      ),
-    );
+  Future<void> _handleFilePicker() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.any,
+        allowMultiple: false,
+      );
+      if (result != null && result.files.isNotEmpty && mounted) {
+        final file = result.files.first;
+        widget.onSendMessage('[Datei: ${file.name}]');
+        // TODO: Upload file to Supabase Storage and send URL
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Datei-Fehler: $e'), duration: const Duration(seconds: 2)),
+        );
+      }
+    }
   }
   
   void _handleVoiceRecording() {

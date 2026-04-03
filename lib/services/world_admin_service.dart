@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'invisible_auth_service.dart'; // ✅ Auth-Integration
 import '../core/storage/unified_storage_service.dart'; // ✅ Storage für Username
 import '../config/api_config.dart'; // 🆕 API Config for admin token
+import 'supabase_service.dart'; // 🔥 Supabase Direct Access
 
 /// World-Based Admin Service
 /// Verbindet mit weltenbibliothek-api-v2 für weltspezifische Admin-Funktionen
@@ -30,7 +31,7 @@ import '../config/api_config.dart'; // 🆕 API Config for admin token
 /// - Admin kann nur User in seiner Welt verwalten
 class WorldAdminService {
   // Cloudflare Worker URL (API v2 - World-Based Multi-Profile System)
-  static const String _baseUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
+  static const String _baseUrl = ApiConfig.workerUrl;
   static const Duration _timeout = Duration(seconds: 10);
   
   // ✅ AUTH SERVICE
@@ -126,64 +127,93 @@ class WorldAdminService {
   /// 
   /// Returns: List<WorldUser>
   static Future<List<WorldUser>> getUsersByWorld(String world, {String? role}) async {
+    if (kDebugMode) {
+      debugPrint('📋 Fetching users for world: $world');
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    // 1️⃣ PRIMARY: Supabase direct query (both world and world_preference)
+    //    Falls keine World-spezifischen User: Alle User anzeigen (Admin-Kontext)
+    // ─────────────────────────────────────────────────────────────────────
+    try {
+      // Erst versuchen mit World-Filter
+      var result = await supabase
+          .from('profiles')
+          .select('id,username,display_name,role,is_banned,avatar_url,created_at,world,world_preference')
+          .or('world.eq.$world,world_preference.eq.$world')
+          .order('created_at', ascending: false)
+          .limit(200);
+
+      var rawList = (result as List<dynamic>);
+
+      // ✅ FALLBACK: Wenn keine World-spezifischen User → alle User laden
+      // Das passiert wenn Nutzer noch kein world_preference gesetzt haben
+      if (rawList.isEmpty) {
+        if (kDebugMode) {
+          debugPrint('⚠️ Keine $world-User gefunden – lade alle Profile');
+        }
+        result = await supabase
+            .from('profiles')
+            .select('id,username,display_name,role,is_banned,avatar_url,created_at,world,world_preference')
+            .order('created_at', ascending: false)
+            .limit(200);
+        rawList = result as List<dynamic>;
+      }
+
+      final users = rawList
+          .map((u) => Map<String, dynamic>.from(u as Map))
+          .map((u) => WorldUser(
+                profileId: u['id'] as String? ?? '',
+                userId: u['id'] as String? ?? '',
+                username: u['username'] as String? ?? 'Unbekannt',
+                displayName: u['display_name'] as String?,
+                role: u['role'] as String? ?? 'user',
+                avatarUrl: u['avatar_url'] as String?,
+                avatarEmoji: null,
+                createdAt: u['created_at'] as String? ?? '',
+              ))
+          .toList();
+
+      if (kDebugMode) {
+        debugPrint('✅ Supabase users: ${users.length} for world=$world');
+      }
+      return users;
+    } catch (supaErr) {
+      if (kDebugMode) {
+        debugPrint('⚠️ Supabase users failed: $supaErr – trying worker...');
+      }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    // 2️⃣ FALLBACK: Cloudflare Worker
+    // ─────────────────────────────────────────────────────────────────────
     try {
       final url = Uri.parse('$_baseUrl/api/admin/users/$world');
-      
-      // ✅ FIX: Get username from storage (same as UserManagementService)
-      final storage = UnifiedStorageService();
-      final username = storage.getUsername(world);
-      
-      if (username == null || username.isEmpty) {
-        if (kDebugMode) {
-          debugPrint('❌ No username found for world: $world');
-        }
-        return [];
-      }
-      
-      if (kDebugMode) {
-        debugPrint('📋 Fetching users for world: $world (admin: $username)');
-      }
-      
       final response = await http.get(
         url,
         headers: {
-          'Authorization': 'Bearer ${ApiConfig.adminToken}', // ✅ FIXED: Use admin token instead of username
+          'Authorization': 'Bearer ${ApiConfig.adminToken}',
           'Content-Type': 'application/json',
         },
       ).timeout(_timeout);
-      
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
         final users = (data['users'] as List<dynamic>?) ?? [];
-        
         if (kDebugMode) {
-          debugPrint('✅ Fetched ${users.length} users');
+          debugPrint('✅ Worker users: ${users.length}');
         }
-        
         return users.map((u) => WorldUser.fromJson(u as Map<String, dynamic>)).toList();
-      } else {
-        if (kDebugMode) {
-          debugPrint('⚠️  Failed to fetch users: ${response.statusCode}');
-          debugPrint('   Response: ${response.body}');
-        }
-        return [];
       }
     } on SocketException {
-      if (kDebugMode) {
-        debugPrint('❌ Network: Keine Internetverbindung');
-      }
-      return [];
+      if (kDebugMode) debugPrint('❌ Network: Keine Internetverbindung');
     } on TimeoutException catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ Timeout: $e');
-      }
-      return [];
+      if (kDebugMode) debugPrint('❌ Timeout: $e');
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ Error fetching users: $e $e');
-      }
-      return [];
+      if (kDebugMode) debugPrint('❌ Error fetching users: $e');
     }
+
+    return [];
   }
 
   // ════════════════════════════════════════════════════════════
@@ -388,49 +418,95 @@ class WorldAdminService {
   /// 
   /// Returns: List<AuditLogEntry>
   static Future<List<AuditLogEntry>> getAuditLog(String world, {int limit = 50, String? role}) async {
+    // ─────────────────────────────────────────────────────────────────────
+    // 1️⃣ PRIMARY: Worker API
+    // ─────────────────────────────────────────────────────────────────────
     try {
       final url = Uri.parse('$_baseUrl/api/admin/audit/$world?limit=$limit');
-      
-      if (kDebugMode) {
-        debugPrint('📜 Fetching audit log for: $world (role: $role)');
-      }
-      
+      if (kDebugMode) debugPrint('📜 Fetching audit log for: $world (role: $role)');
+
       final response = await http.get(
         url,
-        headers: _auth.authHeaders(world: world, role: role), // ✅ Auth-Header
+        headers: _auth.authHeaders(world: world, role: role),
       ).timeout(_timeout);
-      
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
         final logs = (data['logs'] as List<dynamic>?) ?? [];
-        
-        if (kDebugMode) {
-          debugPrint('✅ Fetched ${logs.length} audit log entries');
+        if (logs.isNotEmpty) {
+          if (kDebugMode) debugPrint('✅ Fetched ${logs.length} audit log entries');
+          return logs.map((l) => AuditLogEntry.fromJson(l as Map<String, dynamic>)).toList();
         }
-        
-        return logs.map((l) => AuditLogEntry.fromJson(l as Map<String, dynamic>)).toList();
-      } else {
-        if (kDebugMode) {
-          debugPrint('⚠️  Failed to fetch audit log: ${response.statusCode}');
-        }
-        return [];
       }
     } on SocketException {
-      if (kDebugMode) {
-        debugPrint('❌ Network: Keine Internetverbindung');
-      }
-      return [];
-    } on TimeoutException catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ Timeout: $e');
-      }
-      return [];
+      if (kDebugMode) debugPrint('❌ Audit log: Keine Internetverbindung');
+    } on TimeoutException {
+      if (kDebugMode) debugPrint('❌ Audit log: Timeout');
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ Error fetching audit log: $e $e');
-      }
-      return [];
+      if (kDebugMode) debugPrint('⚠️ Audit log worker error: $e');
     }
+
+    // ─────────────────────────────────────────────────────────────────────
+    // 2️⃣ FALLBACK: Supabase – Chat-Nachrichten als Aktivitäts-Log
+    //    Zeigt letzte Nachrichten als "Aktivitäten" wenn kein echtes Audit-Log
+    // ─────────────────────────────────────────────────────────────────────
+    try {
+      if (kDebugMode) debugPrint('📜 Fallback: Lade Chat-Aktivitäten als Audit-Log');
+
+      // Lade editierte/gelöschte Nachrichten als Audit-Einträge
+      final editedResult = await supabase
+          .from('chat_messages')
+          .select('id,room_id,user_id,username,message,edited_at,deleted_at,is_deleted,created_at')
+          .like('room_id', '$world-%')
+          .not('edited_at', 'is', null)
+          .order('edited_at', ascending: false)
+          .limit(limit ~/ 2);
+
+      final deletedResult = await supabase
+          .from('chat_messages')
+          .select('id,room_id,user_id,username,message,edited_at,deleted_at,is_deleted,created_at')
+          .like('room_id', '$world-%')
+          .eq('is_deleted', true)
+          .order('deleted_at', ascending: false)
+          .limit(limit ~/ 2);
+
+      final entries = <AuditLogEntry>[];
+
+      for (final m in (editedResult as List<dynamic>)) {
+        final msg = Map<String, dynamic>.from(m as Map);
+        entries.add(AuditLogEntry(
+          logId: msg['id'] as String? ?? '',
+          adminUsername: msg['username'] as String? ?? 'Unbekannt',
+          action: 'edit_message',
+          targetUsername: msg['username'] as String? ?? '',
+          oldRole: null,
+          newRole: null,
+          timestamp: msg['edited_at'] as String? ?? msg['created_at'] as String? ?? '',
+        ));
+      }
+
+      for (final m in (deletedResult as List<dynamic>)) {
+        final msg = Map<String, dynamic>.from(m as Map);
+        entries.add(AuditLogEntry(
+          logId: msg['id'] as String? ?? '',
+          adminUsername: msg['username'] as String? ?? 'Unbekannt',
+          action: 'delete_message',
+          targetUsername: msg['username'] as String? ?? '',
+          oldRole: null,
+          newRole: null,
+          timestamp: msg['deleted_at'] as String? ?? msg['created_at'] as String? ?? '',
+        ));
+      }
+
+      // Nach Zeit sortieren (neueste zuerst)
+      entries.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+      if (kDebugMode) debugPrint('✅ Fallback Audit: ${entries.length} Aktivitäten');
+      return entries.take(limit).toList();
+    } catch (supaErr) {
+      if (kDebugMode) debugPrint('⚠️ Supabase audit fallback error: $supaErr');
+    }
+
+    return [];
   }
   
 }

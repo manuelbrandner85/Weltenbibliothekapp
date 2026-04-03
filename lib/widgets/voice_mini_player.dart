@@ -3,6 +3,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/webrtc_voice_service.dart'; // ✅ UNIFIED WebRTC Service
 import '../screens/shared/modern_voice_chat_screen.dart';
 
@@ -66,8 +67,10 @@ class _VoiceMiniPlayerState extends State<VoiceMiniPlayer>
                   builder: (context) => ModernVoiceChatScreen(
                     roomId: widget.voiceController.currentRoomId ?? '',
                     roomName: 'Voice Chat', // Fallback name
-                    userId: 'current_user', // TODO: Get from auth
-                    username: 'User', // TODO: Get from auth
+                    userId: Supabase.instance.client.auth.currentUser?.id ?? 'anon',
+                    username: Supabase.instance.client.auth.currentUser?.userMetadata?['username'] as String?
+                        ?? Supabase.instance.client.auth.currentUser?.email?.split('@').first
+                        ?? 'Anonym',
                     world: 'materie', // Default world
                     accentColor: const Color(0xFF6A5ACD),
                   ),

@@ -3,6 +3,7 @@
 /// Lädt und cached alle dynamischen Inhalte vom Backend
 /// Unterstützt Offline-Modus, Versionierung, Live-Updates
 library;
+import '../config/api_config.dart';
 
 import 'dart:convert';
 import 'dart:async';
@@ -19,7 +20,7 @@ class DynamicContentService {
   factory DynamicContentService() => _instance;
   DynamicContentService._internal();
 
-  static const String _baseUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
+  static const String _baseUrl = ApiConfig.workerUrl;
   
   // Cache
   final Map<String, DynamicScreen> _screenCache = {};

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
+ // OpenClaw v2.0
 import '../../services/group_tools_service.dart';
 import '../../services/user_service.dart'; // 🆕 User Service für Auth
 
@@ -85,7 +85,7 @@ class _GeopolitikMapScreenState extends State<GeopolitikMapScreen> {
                 await _toolsService.createGeopoliticsEvent(
                   roomId: widget.roomId,
                   userId: UserService.getCurrentUserId(),
-                  username: 'Manuel',
+                  username: UserService.getCurrentUserId() != 'user_anonymous' ? UserService.getCurrentUserId() : 'Anonym',
                   title: titleCtrl.text.trim(),
                   description: descCtrl.text.trim(),
                 );

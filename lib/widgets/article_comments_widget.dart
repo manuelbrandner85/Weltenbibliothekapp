@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/cloudflare_api_service.dart';
 
 /// Article Comments Widget - Zeigt und verwaltet Kommentare
@@ -67,9 +68,11 @@ class _ArticleCommentsWidgetState extends State<ArticleCommentsWidget> {
     
     setState(() => _isSubmitting = true);
     
-    // TODO: Get from actual user session
-    final username = 'User_${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}';
-    final userId = 'user_${DateTime.now().millisecondsSinceEpoch}';
+    final currentUser = Supabase.instance.client.auth.currentUser;
+    final userId = currentUser?.id ?? 'anon_${DateTime.now().millisecondsSinceEpoch}';
+    final username = currentUser?.userMetadata?['username'] as String?
+        ?? currentUser?.email?.split('@').first
+        ?? 'Anonym';
     
     try {
       await _api.addComment(

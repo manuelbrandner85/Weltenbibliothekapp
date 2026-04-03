@@ -1,14 +1,16 @@
+import '../config/api_config.dart';
 import 'dart:convert';
 import 'dart:async';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:http/http.dart' as http;
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Community Interaction Service
 /// Handles Likes, Comments, Shares with Cloudflare D1 Backend + Local Cache
 class CommunityInteractionService {
   // Backend URLs
-  static const String _backendUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
+  static const String _backendUrl = ApiConfig.workerUrl;
   
   // Hive Boxes
   static const String _likesBox = 'user_likes';
@@ -86,7 +88,7 @@ class CommunityInteractionService {
     }
   }
   
-  /// Check if user has liked a post
+  /// Check if user has liked a post (sync, from local cache)
   bool isLiked({
     required String postId,
     required String userId,
@@ -95,18 +97,102 @@ class CommunityInteractionService {
     final likeKey = '${userId}_$postId';
     return box.get(likeKey, defaultValue: false);
   }
-  
-  /// Get like count for a post (with cache)
-  Future<int> getLikeCount(String postId) async {
-    final cacheBox = Hive.box(_likeCacheBox);
+
+  /// Check if user has liked a post (async, from Supabase with cache fallback)
+  Future<bool> fetchIsLiked({
+    required String postId,
+    required String userId,
+  }) async {
+    if (userId.isEmpty || postId.isEmpty) return false;
     
-    // Check cache first
-    final cached = cacheBox.get(postId);
-    if (cached != null) {
-      return cached as int;
+    final box = Hive.box(_likesBox);
+    final likeKey = '${userId}_$postId';
+    
+    try {
+      final supabase = Supabase.instance.client;
+      final result = await supabase
+          .from('likes')
+          .select('id')
+          .eq('article_id', postId)
+          .eq('user_id', userId)
+          .limit(1)
+          .timeout(const Duration(seconds: 5));
+      
+      final liked = (result as List).isNotEmpty;
+      // Update local cache
+      await box.put(likeKey, liked);
+      return liked;
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ fetchIsLiked fallback to cache: $e');
+      // Fallback: Hive-Cache
+      return box.get(likeKey, defaultValue: false);
     }
+  }
+
+  /// Toggle like via Supabase directly (with optimistic UI support)
+  Future<bool> toggleLikeSupabase({
+    required String postId,
+    required String userId,
+  }) async {
+    if (userId.isEmpty || postId.isEmpty) return false;
     
-    // Fetch from backend
+    final box = Hive.box(_likesBox);
+    final likeKey = '${userId}_$postId';
+    final currentlyLiked = box.get(likeKey, defaultValue: false) as bool;
+    
+    // Optimistic update
+    await box.put(likeKey, !currentlyLiked);
+    
+    try {
+      final supabase = Supabase.instance.client;
+      if (currentlyLiked) {
+        // Unlike: delete from likes
+        await supabase
+            .from('likes')
+            .delete()
+            .eq('article_id', postId)
+            .eq('user_id', userId);
+      } else {
+        // Like: insert into likes
+        await supabase.from('likes').insert({
+          'article_id': postId,
+          'user_id': userId,
+        });
+      }
+      return !currentlyLiked;
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ toggleLikeSupabase error: $e');
+      // Rollback optimistic update
+      await box.put(likeKey, currentlyLiked);
+      return currentlyLiked;
+    }
+  }
+  
+  /// Get like count for a post (Supabase preferred, then cache)
+  Future<int> getLikeCount(String postId) async {
+    if (postId.isEmpty) return 0;
+    final cacheBox = Hive.box(_likeCacheBox);
+
+    // Try Supabase first (real data)
+    try {
+      final supabase = Supabase.instance.client;
+      final result = await supabase
+          .from('likes')
+          .select('id')
+          .eq('article_id', postId)
+          .timeout(const Duration(seconds: 5));
+      final count = (result as List).length;
+      await cacheBox.put(postId, count);
+      return count;
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ getLikeCount Supabase failed, trying cache: $e');
+    }
+
+    // Check cache as fallback
+    final cached = cacheBox.get(postId);
+    if (cached != null) return cached as int;
+
+    // Last resort: Cloudflare D1 backend
     try {
       final response = await http.get(
         Uri.parse('$_backendUrl/api/community/likes/$postId'),
@@ -114,14 +200,11 @@ class CommunityInteractionService {
         const Duration(seconds: 5),
         onTimeout: () => throw TimeoutException('Get like count timeout'),
       );
-      
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final count = data['count'] ?? 0;
-        
-        // Cache result
         await cacheBox.put(postId, count);
-        
         return count;
       }
     } catch (e) {
@@ -129,7 +212,7 @@ class CommunityInteractionService {
         debugPrint('⚠️ Failed to fetch like count: $e');
       }
     }
-    
+
     return 0;
   }
   

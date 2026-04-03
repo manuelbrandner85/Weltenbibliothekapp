@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import '../../../models/energie_profile.dart';
 import '../../../services/storage_service.dart';
 import '../../../services/spirit_calculations/chakra_engine.dart';
@@ -19,7 +18,9 @@ class _ChakraCalculatorScreenState extends State<ChakraCalculatorScreen> with Si
   bool _isLoading = true;
 
   Map<int, int> _chakraScores = {};
+  // ignore: unused_field
   Map<String, dynamic>? _dominantChakra;  // ⚠️ UNUSED - For future UI enhancement
+  // ignore: unused_field
   Map<String, dynamic>? _blockedChakra;   // ⚠️ UNUSED - For future UI enhancement
   int _overallBalance = 0;
   List<String> _recommendations = [];

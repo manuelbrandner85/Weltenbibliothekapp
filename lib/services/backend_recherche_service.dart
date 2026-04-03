@@ -1,3 +1,4 @@
+import '../config/api_config.dart';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -15,7 +16,7 @@ import 'real_source_enhancer.dart';  // 🔍 REAL SOURCE ENHANCER
 /// - Alternative Quellen Priorisierung
 class BackendRechercheService {
   // PRODUCTION: Nutze Backend-Proxy
-  static const String _backendUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
+  static const String _backendUrl = ApiConfig.workerUrl;
   
   // Alternative & unabhängige Quellen Domains
   static const Set<String> _alternativeSources = {
@@ -119,9 +120,11 @@ class BackendRechercheService {
     Map<String, dynamic> data, 
     String query
   ) async {
+    // KI-Zusammenfassung (von Workers AI Llama 3.1)
     final summary = data['summary'] as String? ?? 'Keine Zusammenfassung verfügbar.';
-    final sourcesData = data['sources'] as List<dynamic>? ?? [];
-    var multimedia = data['multimedia'] as Map<String, dynamic>?;  // Backend multimedia
+    // Unterstütze sowohl 'sources' (alt) als auch 'results' (neu: Wikipedia+DDG+DB)
+    final sourcesData = data['results'] as List<dynamic>? ?? data['sources'] as List<dynamic>? ?? [];
+    var multimedia = data['multimedia'] as Map<String, dynamic>?;
     
     // 🔍 ENHANCE WITH REAL SOURCES
     final enhancedMultimedia = await _enhanceWithRealSources(query, multimedia);

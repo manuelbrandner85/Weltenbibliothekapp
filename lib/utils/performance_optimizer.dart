@@ -26,10 +26,10 @@ class PerformanceOptimizer {
   // CONST CONSTRUCTOR HELPERS
   // ═══════════════════════════════════════════════════════════
   
-  /// Creates a const SizedBox for spacing
-  static const Widget spacing(double height) => SizedBox(height: height);
+  /// Creates a SizedBox for spacing
+  static Widget spacing(double height) => SizedBox(height: height);
   
-  /// Creates a const Divider
+  /// Creates a Divider
   static const Widget divider = Divider(height: 1);
   
   // ═══════════════════════════════════════════════════════════

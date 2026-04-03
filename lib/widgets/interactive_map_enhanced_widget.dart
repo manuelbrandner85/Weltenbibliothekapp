@@ -401,6 +401,7 @@ class _InteractiveMapEnhancedWidgetState extends State<InteractiveMapEnhancedWid
   }
 
   // 🆕 Heatmap Circles
+  // ignore: unused_element
   List<CircleMarker> _buildHeatmapCircles() {
     final filteredNarratives = _getFilteredNarratives();
     

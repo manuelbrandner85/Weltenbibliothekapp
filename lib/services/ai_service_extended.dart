@@ -1,10 +1,11 @@
+import '../config/api_config.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 /// Extended AI Service für Weltenbibliothek V2.4
 /// 17 neue KI-Features von Cloudflare AI
 class AIServiceExtended {
-  static const String _baseUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
+  static const String _baseUrl = ApiConfig.workerUrl;
   static const Duration _timeout = Duration(seconds: 45);
 
   // ==========================================

@@ -1,19 +1,8 @@
-/// 🌐 API CONFIGURATION
+/// 🌐 API CONFIGURATION (Core Constants)
 /// 
-/// Central configuration for all API endpoints
+/// Delegates to the main ApiConfig in lib/config/api_config.dart
+/// This file exists for modules using the core/ import path.
 library;
 
-class ApiConfig {
-  // Private constructor
-  ApiConfig._();
-
-  /// Cloudflare Worker Base URL
-  static const String baseUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
-  
-  /// API Timeout
-  static const Duration timeout = Duration(seconds: 30);
-  
-  /// Retry configuration
-  static const int maxRetries = 3;
-  static const Duration retryDelay = Duration(seconds: 2);
-}
+// Re-export the main ApiConfig so both import paths work
+export 'package:weltenbibliothek/config/api_config.dart';

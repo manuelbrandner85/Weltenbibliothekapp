@@ -2,6 +2,7 @@
 // WELTENBIBLIOTHEK v9.0 - FEATURE 15: AUTO-TAGGING & SMART FILTERS
 // AI-powered content analysis and automatic tag generation
 
+import '../config/api_config.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -13,7 +14,7 @@ class AutoTaggingService {
   factory AutoTaggingService() => _instance;
   AutoTaggingService._internal();
 
-  static const String _backendUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
+  static const String _backendUrl = ApiConfig.workerUrl;
 
   // Pre-defined tag categories for Weltenbibliothek
   static const Map<String, List<String>> _tagCategories = {

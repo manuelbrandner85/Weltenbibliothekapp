@@ -156,23 +156,25 @@ class _UserProfileSettingsDialogState extends State<UserProfileSettingsDialog> {
   }
   
   Widget _buildDepthSelector() {
-    return Column(
-      children: ResearchDepth.values.map((depth) {
-        final isSelected = _selectedDepth == depth.label.toLowerCase();
-        return RadioListTile<String>(
-          title: Text(depth.label),
-          subtitle: Text(depth.description),
-          value: depth.label.toLowerCase(),
-          groupValue: _selectedDepth,
-          onChanged: (value) {
-            if (value != null) {
-              setState(() => _selectedDepth = value);
-            }
-          },
-          selected: isSelected,
-          activeColor: Colors.blue[700],
-        );
-      }).toList(),
+    return RadioGroup<String>(
+      groupValue: _selectedDepth,
+      onChanged: (value) {
+        if (value != null) {
+          setState(() => _selectedDepth = value);
+        }
+      },
+      child: Column(
+        children: ResearchDepth.values.map((depth) {
+          final isSelected = _selectedDepth == depth.label.toLowerCase();
+          return RadioListTile<String>(
+            title: Text(depth.label),
+            subtitle: Text(depth.description),
+            value: depth.label.toLowerCase(),
+            selected: isSelected,
+            activeColor: Colors.blue[700],
+          );
+        }).toList(),
+      ),
     );
   }
   
@@ -204,23 +206,25 @@ class _UserProfileSettingsDialogState extends State<UserProfileSettingsDialog> {
   }
   
   Widget _buildViewSelector() {
-    return Column(
-      children: ViewPreference.values.map((view) {
-        final isSelected = _selectedView == view.label.toLowerCase();
-        return RadioListTile<String>(
-          title: Text(view.label),
-          subtitle: Text(view.description),
-          value: view.label.toLowerCase(),
-          groupValue: _selectedView,
-          onChanged: (value) {
-            if (value != null) {
-              setState(() => _selectedView = value);
-            }
-          },
-          selected: isSelected,
-          activeColor: Colors.blue[700],
-        );
-      }).toList(),
+    return RadioGroup<String>(
+      groupValue: _selectedView,
+      onChanged: (value) {
+        if (value != null) {
+          setState(() => _selectedView = value);
+        }
+      },
+      child: Column(
+        children: ViewPreference.values.map((view) {
+          final isSelected = _selectedView == view.label.toLowerCase();
+          return RadioListTile<String>(
+            title: Text(view.label),
+            subtitle: Text(view.description),
+            value: view.label.toLowerCase(),
+            selected: isSelected,
+            activeColor: Colors.blue[700],
+          );
+        }).toList(),
+      ),
     );
   }
   

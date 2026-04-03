@@ -1,22 +1,102 @@
-# Large files and build artifacts
-downloads/
-cloudflare/node_modules/
-*.aab
+# ============================================================
+# WELTENBIBLIOTHEK .gitignore
+# Bereinigt: 2026-04-02
+# ============================================================
 
-# Flutter/Dart build outputs
+# ────────────────────────────────────────────────────────────
+# 🔐 SECRETS & ENVIRONMENT – NIEMALS ins Repo!
+# ────────────────────────────────────────────────────────────
+.env
+.env.*
+.env.local
+.env.production
+.env.staging
+*.pem
+*.key
+secrets/
+credentials/
+
+# ────────────────────────────────────────────────────────────
+# Flutter/Dart Build-Outputs
+# ────────────────────────────────────────────────────────────
 build/
 .dart_tool/
 .flutter-plugins
 .flutter-plugins-dependencies
+*.g.dart
+*.freezed.dart
 
-# IDE
+# ────────────────────────────────────────────────────────────
+# Node / Cloudflare Worker Builds
+# ────────────────────────────────────────────────────────────
+node_modules/
+cloudflare/node_modules/
+.wrangler/
+dist/
+.cache/
+
+# ────────────────────────────────────────────────────────────
+# Logs – gehören nicht ins Repo
+# ────────────────────────────────────────────────────────────
+*.log
+server*.log
+web_build.log
+performance_test_results.txt
+
+# ────────────────────────────────────────────────────────────
+# Binary & Build-Artefakte
+# ────────────────────────────────────────────────────────────
+*.aab
+*.apk
+*.ipa
+*.tar.gz
+*.zip
+*.tar.bz2
+releases/
+downloads/
+
+# ────────────────────────────────────────────────────────────
+# IDE & OS
+# ────────────────────────────────────────────────────────────
 .idea/
 .vscode/
 *.swp
 *.swo
 *~
-
-# OS
 .DS_Store
 Thumbs.db
+
+# ────────────────────────────────────────────────────────────
+# Temporäre/Deaktivierte Dart-Dateien
+# (können ins Repo, aber .backup-Varianten raus)
+# ────────────────────────────────────────────────────────────
+*.backup
+*.disabled
+*.TEMP_DISABLED
+*.web_only
+
+# ────────────────────────────────────────────────────────────
+# Assets / Spezifisches
+# ────────────────────────────────────────────────────────────
 assets/videos/backup_before_compression/
+
+# Build & Deploy Logs
+*.log
+apk_build*.log
+build*.log
+deploy*.log
+flutter_*.log
+server*.log
+
+# Binary archives / Source dumps
+*.tar.gz
+*.tar.bz2
+FULL_SOURCE_CODE.txt
+SOURCE_CODE_COMPLETE.txt
+SOURCE_CODE_README.md
+
+# Secrets
+.env
+.env.local
+.env.production
+.env.staging

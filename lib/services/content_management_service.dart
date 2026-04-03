@@ -1,12 +1,14 @@
+import '../config/api_config.dart';
 import 'dart:convert';
 import 'dart:async';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 import '../core/storage/unified_storage_service.dart';
+import 'supabase_service.dart'; // Supabase Fallback
 
 class ContentManagementService {
-  static const String _baseUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
+  static const String _baseUrl = ApiConfig.workerUrl;
   static const Duration _timeout = Duration(seconds: 30);
 
   /// Get all content for a world
@@ -15,66 +17,91 @@ class ContentManagementService {
     String? status,
     int limit = 50,
   }) async {
+    // ─────────────────────────────────────────────────────────────────────
+    // 1️⃣ PRIMARY: Worker API
+    // ─────────────────────────────────────────────────────────────────────
     try {
       final storage = UnifiedStorageService();
       final username = storage.getUsername(world);
 
-      if (username == null || username.isEmpty) {
-        if (kDebugMode) {
-          debugPrint('❌ No username found for world: $world');
+      if (username != null && username.isNotEmpty) {
+        final url = Uri.parse('$_baseUrl/api/admin/content/$world?limit=$limit${status != null ? '&status=$status' : ''}');
+        if (kDebugMode) debugPrint('📝 Loading content via Worker: $world (status: $status)');
+
+        final response = await http.get(
+          url,
+          headers: {'Authorization': 'Bearer $username', 'Content-Type': 'application/json'},
+        ).timeout(_timeout, onTimeout: () => throw TimeoutException('Get content timeout'));
+
+        if (response.statusCode == 200) {
+          final data = json.decode(response.body);
+          final List<dynamic> content = data['content'] ?? [];
+          if (content.isNotEmpty) {
+            if (kDebugMode) debugPrint('✅ Worker content: ${content.length} items');
+            return content.cast<Map<String, dynamic>>();
+          }
         }
-        return [];
-      }
-
-      final url = Uri.parse('$_baseUrl/api/admin/content/$world?limit=$limit${status != null ? '&status=$status' : ''}');
-
-      if (kDebugMode) {
-        debugPrint('📝 Loading content: $world (status: $status)');
-      }
-
-      final response = await http.get(
-        url,
-        headers: {
-          'Authorization': 'Bearer $username',
-          'Content-Type': 'application/json',
-        },
-      ).timeout(
-        _timeout,
-        onTimeout: () => throw TimeoutException('Get content timeout'),
-      );
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        final List<dynamic> content = data['content'] ?? [];
-
-        if (kDebugMode) {
-          debugPrint('✅ Content loaded: ${content.length} items');
-        }
-
-        return content.cast<Map<String, dynamic>>();
-      } else {
-        if (kDebugMode) {
-          debugPrint('⚠️  Content load failed: ${response.statusCode}');
-          debugPrint('   Response: ${response.body}');
-        }
-        return [];
       }
     } on SocketException {
-      if (kDebugMode) {
-        debugPrint('❌ Admin content: Keine Internetverbindung');
-      }
-      return [];
+      if (kDebugMode) debugPrint('❌ Admin content: Keine Internetverbindung');
     } on TimeoutException catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ Admin content: Timeout - $e');
-      }
-      return [];
+      if (kDebugMode) debugPrint('❌ Admin content: Timeout - $e');
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ Content load error: $e');
-      }
-      return [];
+      if (kDebugMode) debugPrint('⚠️ Worker content failed: $e');
     }
+
+    // ─────────────────────────────────────────────────────────────────────
+    // 2️⃣ FALLBACK: Supabase articles Tabelle
+    //    Schema: id, title, slug, content, world, category, is_published,
+    //            published_at, created_at, username, user_id
+    // ─────────────────────────────────────────────────────────────────────
+    try {
+      if (kDebugMode) debugPrint('📝 Fallback: Lade articles aus Supabase für $world');
+
+      var query = supabase
+          .from('articles')
+          .select('id,title,slug,content,world,category,is_published,published_at,created_at,username,user_id,like_count,view_count')
+          .eq('world', world)
+          .order('created_at', ascending: false)
+          .limit(limit);
+
+      if (status == 'featured') {
+        // Für featured: neueste publishe Artikel
+        query = supabase
+            .from('articles')
+            .select('id,title,slug,content,world,category,is_published,published_at,created_at,username,user_id,like_count,view_count')
+            .eq('world', world)
+            .eq('is_published', true)
+            .order('like_count', ascending: false)
+            .limit(limit);
+      }
+
+      final result = await query;
+      final articles = (result as List<dynamic>)
+          .map((a) => Map<String, dynamic>.from(a as Map))
+          .map((a) => {
+                'content_id': a['id'],
+                'id': a['id'],
+                'title': a['title'] ?? 'Kein Titel',
+                'body': a['content'] ?? '',
+                'world': a['world'] ?? world,
+                'category': a['category'] ?? 'allgemein',
+                'author': a['username'] ?? 'Unbekannt',
+                'is_featured': (a['like_count'] ?? 0) > 5 ? 1 : 0,
+                'is_verified': a['is_published'] == true ? 1 : 0,
+                'created_at': a['created_at'] ?? '',
+                'view_count': a['view_count'] ?? 0,
+                'like_count': a['like_count'] ?? 0,
+              })
+          .toList();
+
+      if (kDebugMode) debugPrint('✅ Supabase articles: ${articles.length} items für $world');
+      return articles;
+    } catch (supaErr) {
+      if (kDebugMode) debugPrint('⚠️ Supabase articles fallback error: $supaErr');
+    }
+
+    return [];
   }
 
   /// Toggle featured status

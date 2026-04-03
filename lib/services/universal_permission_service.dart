@@ -6,7 +6,7 @@ library;
 
 import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import 'package:permission_handler/permission_handler.dart';
-import 'dart:html' as html show window, Navigator;
+import 'dart:html' as html show window;
 
 /// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 /// 🔐 UNIVERSAL PERMISSION SERVICE

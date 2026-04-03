@@ -39,7 +39,7 @@ class _Graph3DEnhancedWidgetState extends State<Graph3DEnhancedWidget>
   
   // 🆕 FEATURE: Node Selection
   String? _selectedNodeId;
-  Offset? _selectedNodePosition;
+  Offset? _selectedNodePosition; // ignore: unused_field
   
   // Filter Panel State
   bool _showFilterPanel = false;

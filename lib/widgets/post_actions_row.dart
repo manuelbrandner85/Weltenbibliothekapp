@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode, debugPrint;
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 import '../models/community_post.dart';
 import '../services/community_service.dart';
@@ -26,7 +27,7 @@ class PostActionsRow extends StatefulWidget {
 }
 
 class _PostActionsRowState extends State<PostActionsRow> {
-  final CommunityService _communityService = CommunityService();
+  final CommunityService _communityService = CommunityService(); // ignore: unused_field
   final CloudflareApiService _cloudflareApi = CloudflareApiService();
   int _localLikes = 0;
   int _localComments = 0;
@@ -44,9 +45,11 @@ class _PostActionsRowState extends State<PostActionsRow> {
   }
   
   Future<void> _likePost() async {
-    // TODO: Get from actual user session
-    final username = 'User_${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}';
-    final userId = 'user_${DateTime.now().millisecondsSinceEpoch}';
+    final currentUser = Supabase.instance.client.auth.currentUser;
+    final userId = currentUser?.id ?? 'anon_${DateTime.now().millisecondsSinceEpoch}';
+    final username = currentUser?.userMetadata?['username'] as String?
+        ?? currentUser?.email?.split('@').first
+        ?? 'Anonym';
     
     try {
       if (_isLiked) {

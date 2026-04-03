@@ -1,3 +1,4 @@
+import '../config/api_config.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -8,7 +9,7 @@ import 'dart:io';
 /// Verbindung zu Cloudflare Worker API für alle 18 Tools
 /// (Migrated to community-api as fallback)
 class GroupToolsService {
-  static const String _baseUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev/api/tools';
+  static const String _baseUrl = '${ApiConfig.workerUrl}/api/tools';
 
   // ========================================
   // 🔮 ENERGIE-WELT TOOLS

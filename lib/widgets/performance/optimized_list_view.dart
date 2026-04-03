@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../utils/performance_optimizer.dart';
+import '../../utils/performance_optimizer.dart';
 
 /// 🚀 Optimized List Widget
 /// High-performance list with automatic optimizations

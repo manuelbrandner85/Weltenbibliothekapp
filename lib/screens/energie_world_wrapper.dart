@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import '../../services/openclaw_dashboard_service.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'energie_world_screen.dart';
 import '../services/achievement_service.dart';  // 🏆 Achievement System
 import '../services/storage_service.dart';  // 🔑 Storage for userId
-import '../services/openclaw_dashboard_service.dart';  // 🚀 OpenClaw Admin Check
 import 'shared/world_admin_dashboard.dart';  // 🛡️ Admin Dashboard
 
 /// Energie-Welt-Wrapper - SIMPLIFIED VERSION
@@ -17,7 +17,7 @@ class EnergieWorldWrapper extends StatefulWidget {
 class _EnergieWorldWrapperState extends State<EnergieWorldWrapper> {
   // UNUSED FIELD: final _storage = StorageService();
   // UNUSED FIELD: EnergieProfile? _profile;
-  bool _showOnboarding = false;
+  bool _showOnboarding = false; // ignore: unused_field
   bool _isLoading = true;
   bool _isAdmin = false; // 👑 Admin Status
   final OpenClawDashboardService _dashboardService = OpenClawDashboardService(); // 🚀

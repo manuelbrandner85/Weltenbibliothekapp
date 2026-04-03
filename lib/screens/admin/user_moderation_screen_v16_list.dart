@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
+ // OpenClaw v2.0
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../services/world_admin_service.dart';
@@ -655,7 +655,7 @@ class _UserModerationScreenV16ListState extends ConsumerState<UserModerationScre
                 _buildInfoRow('User-ID:', user.userId),
                 _buildInfoRow('Display Name:', user.displayName ?? user.username),
                 _buildInfoRow('Rolle:', user.role),
-                _buildInfoRow('Erstellt:', user.createdAt.split('T')[0] ?? 'N/A'),
+                _buildInfoRow('Erstellt:', user.createdAt.split('T')[0]),
                 
                 const Divider(height: 24),
                 

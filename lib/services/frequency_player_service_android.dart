@@ -261,16 +261,19 @@ class FrequencyPlayerServiceAndroid {
 
 /// Custom audio source for just_audio
 /// Provides programmatically generated audio data
+        // ignore: experimental_member_use
 class MyCustomSource extends StreamAudioSource {
   final Uint8List _audioData;
   
   MyCustomSource(this._audioData);
   
   @override
+        // ignore: experimental_member_use
   Future<StreamAudioResponse> request([int? start, int? end]) async {
     start ??= 0;
     end ??= _audioData.length;
     
+        // ignore: experimental_member_use
     return StreamAudioResponse(
       sourceLength: _audioData.length,
       contentLength: end - start,

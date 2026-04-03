@@ -3,7 +3,7 @@
 library;
 
 import 'package:flutter/material.dart';
-import '../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
+ // OpenClaw v2.0
 import 'dart:math' as math;
 import '../../models/spirit_tools_models.dart';
 import '../../services/achievement_service.dart';
@@ -23,7 +23,7 @@ class _DreamJournalScreenState extends State<DreamJournalScreen> {
   final _titleController = TextEditingController();
   final _contentController = TextEditingController();
   
-  List<DreamEntry> _dreams = [];
+  List<DreamEntry> _dreams = []; // ignore: unused_field
   DreamCategory _selectedCategory = DreamCategory.mundane;
   bool _isLucid = false;
   int _clarity = 3;
@@ -202,7 +202,7 @@ class RuneOracleScreen extends StatefulWidget {
 }
 
 class _RuneOracleScreenState extends State<RuneOracleScreen> {
-  final _achievement = AchievementService();
+  final _achievement = AchievementService(); // ignore: unused_field
   final _questionController = TextEditingController();
   
   List<DrawnRune>? _drawnRunes;

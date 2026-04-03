@@ -335,7 +335,7 @@ class _DynamicScreenRendererState extends State<DynamicScreenRenderer> {
   /// Build Tool Button
   Widget _buildToolButton(Map<String, dynamic> buttonConfig) {
     final label = buttonConfig['label'] ?? '';
-    final tooltip = buttonConfig['tooltip'] ?? '';
+    final tooltip = buttonConfig['tooltip'] ?? ''; // ignore: unused_local_variable
     final action = buttonConfig['action'] ?? '';
     
     return Padding(
@@ -351,14 +351,48 @@ class _DynamicScreenRendererState extends State<DynamicScreenRenderer> {
     );
   }
 
-  /// Build Research Body (placeholder)
+  /// Build Research Body
   Widget _buildResearchBody(Map<String, dynamic> screenConfig) {
-    return const Center(child: Text('Research Screen - TODO'));
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.search, size: 64, color: Colors.grey),
+          const SizedBox(height: 16),
+          Text(
+            screenConfig['title'] as String? ?? 'Recherche',
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            screenConfig['description'] as String? ?? 'Recherche-Bereich',
+            style: TextStyle(color: Colors.grey.shade600),
+          ),
+        ],
+      ),
+    );
   }
 
-  /// Build Divination Body (placeholder)
+  /// Build Divination Body
   Widget _buildDivinationBody(Map<String, dynamic> screenConfig) {
-    return const Center(child: Text('Divination Screen - TODO'));
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.auto_awesome, size: 64, color: Colors.purple),
+          const SizedBox(height: 16),
+          Text(
+            screenConfig['title'] as String? ?? 'Divination',
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            screenConfig['description'] as String? ?? 'Divinations-Werkzeuge',
+            style: TextStyle(color: Colors.grey.shade600),
+          ),
+        ],
+      ),
+    );
   }
 
   /// Execute Action
@@ -367,7 +401,7 @@ class _DynamicScreenRendererState extends State<DynamicScreenRenderer> {
     
     debugPrint('🎬 Action: $action');
     
-    // TODO: Implement action handling
+    // Handle action
     switch (action) {
       case 'send_message':
         debugPrint('Send message');

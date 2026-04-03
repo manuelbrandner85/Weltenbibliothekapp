@@ -226,7 +226,7 @@ class _ChatVoiceRoomPanelState extends State<ChatVoiceRoomPanel>
   
   Widget _buildParticipantAvatar(Map<String, dynamic> participant) {
     final userName = participant['name'] as String? ?? 'Unknown';
-    final userId = participant['id'] as String? ?? '';
+    final userId = participant['id'] as String? ?? ''; // ignore: unused_local_variable
     final isMuted = participant['is_muted'] as bool? ?? false;
     final isSpeaking = participant['is_speaking'] as bool? ?? false;
     final avatarUrl = participant['avatar_url'] as String?;
