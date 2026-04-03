@@ -5,7 +5,6 @@ import '../../utils/map_clustering_helper.dart'; // 🗺️ MARKER-CLUSTERING
 import '../../models/materie_location_detail.dart'; // ✅ MODEL
 import '../../models/location_category.dart'; // ✅ ENUM
 import '../../data/materie_locations.dart'; // ✅ DATA
-import '../../services/openclaw_comprehensive_service.dart'; // 🚀 OpenClaw v2.0
 
 class MaterieKarteTabPro extends StatefulWidget {
   const MaterieKarteTabPro({super.key});

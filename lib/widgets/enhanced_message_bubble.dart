@@ -530,7 +530,7 @@ class _EnhancedMessageBubbleState extends State<EnhancedMessageBubble> {
       );
     } else if (mediaType == 'file') {
       // 📁 FILE ATTACHMENT
-      final fileUrl = mediaUrl;
+      final fileUrl = mediaUrl; // ignore: unused_local_variable
       final filename = widget.message['filename'] as String? ?? 'Datei';
       final fileSize = widget.message['file_size'] as int? ?? 0;
       

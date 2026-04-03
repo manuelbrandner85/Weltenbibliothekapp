@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import '../../../models/energie_profile.dart';
 import '../../../services/storage_service.dart';
@@ -45,12 +44,12 @@ class _SpiritUniversalToolScreenState extends State<SpiritUniversalToolScreen> {
     // 🎯 AUTO-CREATE DEMO PROFILE if none exists
     if (profile == null) {
       profile = EnergieProfile(
-        username: 'Manuel',
-        firstName: 'Manuel',
-        lastName: 'Brandner',
-        birthDate: DateTime(1985, 6, 15), // Demo birth date
-        birthPlace: 'Wien, Österreich',
-        birthTime: '14:30',
+        username: 'Gast',
+        firstName: 'Gast',
+        lastName: '',
+        birthDate: DateTime(2000, 1, 1),
+        birthPlace: '',
+        birthTime: '00:00',
       );
       
       // Save demo profile

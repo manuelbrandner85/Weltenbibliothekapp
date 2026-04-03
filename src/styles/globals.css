@@ -1,0 +1,318 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================
+   WELTENBIBLIOTHEK - Global Styles
+   Dark Theme | Materie (Blau) | Energie (Lila)
+   ============================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+/* === BASE === */
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    scroll-behavior: smooth;
+    /* PWA: prevent overscroll */
+    overscroll-behavior: none;
+  }
+
+  body {
+    background-color: #0A0A0A;
+    color: #FFFFFF;
+    min-height: 100vh;
+    min-height: 100dvh; /* Dynamic viewport for mobile */
+    overflow-x: hidden;
+  }
+
+  /* Safe area for notched devices */
+  #__next,
+  main {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #1A1A1A;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #3A3A3A;
+    border-radius: 2px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #4A4A4A;
+  }
+
+  /* Remove tap highlight on mobile */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Focus styles */
+  :focus-visible {
+    outline: 2px solid #2196F3;
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+}
+
+/* === COMPONENTS === */
+@layer components {
+
+  /* --- Glassmorphism Card --- */
+  .glass-card {
+    @apply bg-surface/60 backdrop-blur-md border border-white/10 rounded-md;
+  }
+
+  .glass-card-hover {
+    @apply glass-card transition-all duration-300 hover:bg-surface/80 hover:border-white/20 hover:shadow-card-hover;
+  }
+
+  /* --- Weltenbibliothek Button Styles --- */
+  .btn-materie {
+    @apply bg-materie hover:bg-materie-dark text-white font-semibold px-6 py-3 rounded-full
+           transition-all duration-200 active:scale-95 shadow-materie-sm hover:shadow-materie;
+  }
+
+  .btn-energie {
+    @apply bg-energie hover:bg-energie-dark text-white font-semibold px-6 py-3 rounded-full
+           transition-all duration-200 active:scale-95 shadow-energie-sm hover:shadow-energie;
+  }
+
+  .btn-ghost {
+    @apply bg-transparent hover:bg-white/10 text-white/80 hover:text-white font-medium px-4 py-2 rounded-lg
+           transition-all duration-200 active:scale-95;
+  }
+
+  .btn-outline {
+    @apply border border-white/20 hover:border-white/40 text-white/80 hover:text-white
+           font-medium px-4 py-2 rounded-lg transition-all duration-200 active:scale-95;
+  }
+
+  /* --- Input Styles --- */
+  .input-dark {
+    @apply w-full bg-surface border border-white/10 rounded-lg px-4 py-3 text-white
+           placeholder-text-hint focus:outline-none focus:border-materie/60 focus:ring-1 focus:ring-materie/40
+           transition-all duration-200;
+  }
+
+  /* --- Category Badge --- */
+  .category-badge {
+    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  /* --- World Tag --- */
+  .world-tag-materie {
+    @apply text-xs font-bold tracking-wider text-materie-light bg-materie/20 px-2 py-0.5 rounded;
+  }
+  .world-tag-energie {
+    @apply text-xs font-bold tracking-wider text-energie-light bg-energie/20 px-2 py-0.5 rounded;
+  }
+
+  /* --- Navigation Tab Bar --- */
+  .tab-bar {
+    @apply fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around
+           bg-surface/95 backdrop-blur-md border-t border-white/10
+           pb-safe; /* Safe area bottom */
+  }
+
+  .tab-item {
+    @apply flex flex-col items-center gap-0.5 py-2 px-3 min-w-[60px]
+           text-text-secondary transition-colors duration-200;
+  }
+
+  .tab-item.active {
+    @apply text-white;
+  }
+
+  /* --- Header --- */
+  .app-header {
+    @apply sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b border-white/10;
+  }
+
+  /* --- Page Container --- */
+  .page-container {
+    @apply min-h-screen bg-background pb-20; /* pb-20 for tab bar */
+  }
+
+  /* --- Section Divider --- */
+  .section-divider {
+    @apply border-t border-white/10 my-4;
+  }
+
+  /* --- Gradient Text --- */
+  .gradient-text-materie {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-materie-light to-materie;
+  }
+
+  .gradient-text-energie {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-energie-light to-energie;
+  }
+
+  /* --- Skeleton Loading --- */
+  .skeleton {
+    @apply bg-surface-light animate-pulse rounded;
+  }
+
+  /* --- PWA Install Banner --- */
+  .pwa-banner {
+    @apply fixed bottom-20 left-4 right-4 z-50 glass-card p-4 shadow-card-hover
+           animate-slide-up;
+  }
+}
+
+/* === UTILITIES === */
+@layer utilities {
+  /* Safe area padding */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  /* Mobile full height */
+  .h-screen-mobile {
+    height: 100dvh;
+  }
+
+  /* Prevent text selection on UI elements */
+  .no-select {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* Touch action for swipe */
+  .touch-pan-y {
+    touch-action: pan-y;
+  }
+  .touch-pan-x {
+    touch-action: pan-x;
+  }
+
+  /* Materie gradient backgrounds */
+  .bg-materie-world {
+    background: linear-gradient(to bottom, #0D47A1, #1A1A1A, #000000);
+  }
+
+  .bg-energie-world {
+    background: linear-gradient(to bottom, #4A148C, #1A1A1A, #000000);
+  }
+
+  /* Portal animation background */
+  .bg-portal {
+    background: radial-gradient(ellipse at center, #1a237e 0%, #0a0a0a 70%);
+  }
+
+  /* Glow effects */
+  .glow-materie {
+    box-shadow: 0 0 20px rgba(33, 150, 243, 0.4);
+  }
+
+  .glow-energie {
+    box-shadow: 0 0 20px rgba(156, 39, 176, 0.4);
+  }
+
+  /* Gradient borders */
+  .border-gradient-materie {
+    border-image: linear-gradient(135deg, #0D47A1, #2196F3) 1;
+  }
+
+  /* Text overflow */
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
+
+/* === PORTAL ANIMATIONS === */
+/* These are too complex for Tailwind keyframes */
+
+@keyframes rotate-slow {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes counter-rotate {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(-360deg); }
+}
+
+@keyframes pulse-ring {
+  0%   { transform: scale(0.8); opacity: 1; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
+@keyframes particle-rise {
+  0%   { transform: translateY(0) scale(1); opacity: 1; }
+  100% { transform: translateY(-120px) scale(0); opacity: 0; }
+}
+
+@keyframes nebula-drift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25%       { transform: translate(10px, -15px) scale(1.05); }
+  50%       { transform: translate(-5px, 10px) scale(0.97); }
+  75%       { transform: translate(15px, 5px) scale(1.03); }
+}
+
+.animate-rotate-slow     { animation: rotate-slow 10s linear infinite; }
+.animate-counter-rotate  { animation: counter-rotate 14s linear infinite; }
+.animate-pulse-ring      { animation: pulse-ring 2s cubic-bezier(0.2, 0.8, 0.2, 1) infinite; }
+.animate-nebula-drift    { animation: nebula-drift 8s ease-in-out infinite; }
+.animate-particle-rise   { animation: particle-rise 3s ease-out forwards; }
+
+/* === PWA SPECIFICS === */
+/* Standalone mode detection */
+@media all and (display-mode: standalone) {
+  body {
+    background-color: #0A0A0A;
+  }
+
+  /* Hide browser chrome elements in standalone mode */
+  .hide-in-app {
+    display: none !important;
+  }
+}
+
+/* === RESPONSIVE BREAKPOINTS === */
+/* Mobile-first approach */
+@media (max-width: 640px) {
+  .mobile-full-width {
+    width: 100%;
+    border-radius: 0;
+  }
+}
+
+/* Ensure proper viewport on iOS */
+@supports (-webkit-touch-callout: none) {
+  .h-screen {
+    height: -webkit-fill-available;
+  }
+}

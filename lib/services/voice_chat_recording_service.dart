@@ -26,7 +26,7 @@ class VoiceChatRecordingService {
   
   // Consent tracking
   final Map<String, bool> _participantConsent = {};
-  String? _moderatorId;
+  String? _moderatorId; // ignore: unused_field
 
   RecordingState get state => _state;
   bool get isRecording => _state == RecordingState.recording;

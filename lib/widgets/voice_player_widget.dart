@@ -22,7 +22,7 @@ class VoicePlayerWidget extends StatefulWidget {
 class _VoicePlayerWidgetState extends State<VoicePlayerWidget> {
   final AudioPlayer _player = AudioPlayer();
   bool _isPlaying = false;
-  bool _isLoading = false;
+  bool _isLoading = false; // ignore: unused_field
   Duration _position = Duration.zero;
   Duration _duration = Duration.zero;
 

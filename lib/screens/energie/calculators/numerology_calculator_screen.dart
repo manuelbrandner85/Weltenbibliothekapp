@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import '../../../services/spirit_calculations/numerology_engine.dart';
 import '../../../models/energie_profile.dart';
 import '../../../services/storage_service.dart';
@@ -46,7 +45,6 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
   List<String>? _harmonicAspects;
   List<String>? _challengingAspects;
 
-  @override
   // 🚀 PERSONAL YEAR JOURNEY MAP (v44.1.0)
   Map<String, dynamic>? _currentYearJourney;
   List<Map<String, dynamic>> _journalEntries = [];
@@ -1357,8 +1355,6 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
     );
   }
 
-  // TODO: Review unused method: _getMasterNumberMeaning
-  // String _getMasterNumberMeaning(int number) {
     // switch (number) {
       // case 11:
         // return 'Der Erleuchtete - Intuition, Inspiration, spirituelle Einsicht';

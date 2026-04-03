@@ -7,7 +7,7 @@
 library;
 
 import 'package:flutter/material.dart';
-import '../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
+ // OpenClaw v2.0
 import 'package:flutter/foundation.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
@@ -31,7 +31,7 @@ class _EpsteinFilesSimpleScreenState extends State<EpsteinFilesSimpleScreen> wit
   // (Code bleibt für potenzielle zukünftige Nutzung)
   bool _showPdfViewer = false;
   String? _currentPdfUrl;
-  Uint8List? _currentPdfBytes;
+  Uint8List? _currentPdfBytes; // ignore: unused_field
   String? _extractedText;
   String? _translatedText;
   bool _isTranslating = false;
@@ -148,6 +148,7 @@ class _EpsteinFilesSimpleScreenState extends State<EpsteinFilesSimpleScreen> wit
   
 
   
+  // ignore: unused_element
   Future<void> _openPdfInApp(String pdfUrl) async {
     if (_isLoadingPdf) {
       if (kDebugMode) {

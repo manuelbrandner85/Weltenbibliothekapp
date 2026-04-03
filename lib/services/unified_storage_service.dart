@@ -19,9 +19,9 @@ class UnifiedStorageService {
   factory UnifiedStorageService() => _instance;
   UnifiedStorageService._internal();
 
-  final StorageService _storageService = StorageService();
-  final OfflineStorageService _offlineStorage = OfflineStorageService();
-  final LocalChatStorageService _chatStorage = LocalChatStorageService();
+  final StorageService _storageService = StorageService(); // ignore: unused_field
+  final OfflineStorageService _offlineStorage = OfflineStorageService(); // ignore: unused_field
+  final LocalChatStorageService _chatStorage = LocalChatStorageService(); // ignore: unused_field
 
   /// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   /// 👤 USER MANAGEMENT

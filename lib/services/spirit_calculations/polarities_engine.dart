@@ -1013,8 +1013,6 @@ class PolaritiesEngine {
     return _reduceToSingleDigit(personalYear + currentMonth);
   }
 
-  // TODO: Review unused method: _calculatePersonalDay
-  // static int _calculatePersonalDay(DateTime birthdate, DateTime currentDate) {
     // final personalMonth = _calculatePersonalMonth(birthdate, currentDate);
     // final currentDay = currentDate.day;
     // return _reduceToSingleDigit(personalMonth + currentDay);
@@ -1029,8 +1027,6 @@ class PolaritiesEngine {
     return sum;
   }
 
-  // TODO: Review unused method: _calculateLatinGematria
-  // static int _calculateLatinGematria(String text) {
     // Standard lateinische Gematria
     // int sum = 0;
     // for (var char in text.split('')) {

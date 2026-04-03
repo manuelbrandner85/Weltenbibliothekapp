@@ -6,7 +6,6 @@ import '../../widgets/create_post_dialog_v2.dart'; // ✅ Post-Dialog
 import '../../widgets/post_actions_row.dart'; // ✅ POST ACTIONS
 import 'materie_live_chat_screen.dart'; // 💬 LIVE-CHAT INTEGRATION
 import '../../services/chat_notification_service.dart'; // 🔔 NOTIFICATION SERVICE
-import '../../services/openclaw_comprehensive_service.dart'; // 🚀 OpenClaw v2.0
 
 /// Moderner Materie-Community-Tab - Spiritueller Feed-Style
 class MaterieCommunityTabModern extends StatefulWidget {
@@ -833,8 +832,6 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
     );
   }
 
-  // TODO: Review unused method: _buildEngagementStat
-  // Widget _buildEngagementStat(IconData icon, int count, Color color) {
     // return Row(
       // children: [
         // Icon(
@@ -855,8 +852,6 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
     // );
   // }
 
-  // TODO: Review unused method: _buildActionButton
-  // Widget _buildActionButton(IconData icon, String label, Color color) {
     // return InkWell(
       // onTap: () {
         // TODO: Implementiere Community-Actions (Like, Comment, Share)
@@ -906,8 +901,6 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
     }
   }
 
-  // TODO: Review unused method: _formatNumber
-  // String _formatNumber(int number) {
     // if (number >= 1000) {
       // return '${(number / 1000).toStringAsFixed(1)}k';
     // }

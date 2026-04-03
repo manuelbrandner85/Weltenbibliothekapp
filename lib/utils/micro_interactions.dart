@@ -342,7 +342,7 @@ class _AnimatedCheckboxState extends State<_AnimatedCheckbox>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
-  late Animation<double> _checkAnimation;
+  late Animation<double> _checkAnimation; // ignore: unused_field
 
   @override
   void initState() {

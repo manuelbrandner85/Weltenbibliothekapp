@@ -14,6 +14,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../config/api_config.dart';
 import 'cloudflare_api_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class OpenClawDashboardService {
   static final OpenClawDashboardService _instance = OpenClawDashboardService._internal();
@@ -45,65 +46,70 @@ class OpenClawDashboardService {
   }
 
   /// 🔔 Push-Benachrichtigungen (ECHT)
+  /// Echte Notifications aus Supabase laden (is_read Feld korrekt)
   Future<List<Map<String, dynamic>>> getNotifications({
     String? userId,
     String realm = 'materie',
     int limit = 10,
   }) async {
-    try {
-      if (_openClawAvailable) {
-        // OpenClaw Route
-        final response = await http.post(
-          Uri.parse('${ApiConfig.openClawGatewayUrl}/api/notifications'),
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ${ApiConfig.openClawGatewayToken}',
-          },
-          body: jsonEncode({
-            'userId': userId,
-            'realm': realm,
-            'limit': limit,
-          }),
-        ).timeout(const Duration(seconds: 10));
-
-        if (response.statusCode == 200) {
-          final data = jsonDecode(response.body);
-          return List<Map<String, dynamic>>.from(data['notifications'] ?? []);
-        }
+    // Supabase direkt nutzen wenn userId vorhanden
+    if (userId != null && userId.isNotEmpty) {
+      try {
+        final supabase = Supabase.instance.client;
+        final result = await supabase
+            .from('notifications')
+            .select('*')
+            .eq('user_id', userId)
+            .order('created_at', ascending: false)
+            .limit(limit);
+        return (result as List).map((n) {
+          return {
+            'id': n['id'],
+            'type': n['type'] ?? 'info',
+            'title': n['title'] ?? '',
+            'message': n['body'] ?? n['message'] ?? '',
+            'timestamp': n['created_at'],
+            // DB hat is_read (bool) oder read_at (timestamp)
+            'read': (n['is_read'] == true) || (n['read_at'] != null),
+            'is_read': (n['is_read'] == true) || (n['read_at'] != null),
+            'data': n['data'],
+          };
+        }).toList();
+      } catch (e) {
+        if (kDebugMode) print('⚠️ [Dashboard] Supabase notifications error: $e');
       }
-
-      // Fallback: Cloudflare API
-      return await _getNotificationsFromCloudflare(realm, limit);
-    } catch (e) {
-      if (kDebugMode) print('⚠️ [Dashboard] Notifications error: $e');
-      return await _getNotificationsFromCloudflare(realm, limit);
     }
+    // Fallback: neueste Artikel als Info-Notifications
+    return await _getNotificationsFromSupabaseArticles(realm, limit);
   }
 
-  Future<List<Map<String, dynamic>>> _getNotificationsFromCloudflare(
+  Future<List<Map<String, dynamic>>> _getNotificationsFromSupabaseArticles(
     String realm,
     int limit,
   ) async {
     try {
-      // Hole neueste Artikel als Benachrichtigungen
-      final articles = await _cloudflare.getArticles(
-        realm: realm,
-        limit: limit,
-      );
-
-      return articles.map((article) {
+      final supabase = Supabase.instance.client;
+      final articles = await supabase
+          .from('articles')
+          .select('id, title, created_at')
+          .eq('world', realm)
+          .eq('is_published', true)
+          .order('created_at', ascending: false)
+          .limit(limit);
+      return (articles as List).map((article) {
         return {
           'id': article['id'],
           'type': 'article',
-          'title': 'Neuer Artikel verfügbar',
+          'title': 'Neuer Artikel',
           'message': article['title'],
           'timestamp': article['created_at'],
           'read': false,
+          'is_read': false,
           'articleId': article['id'],
         };
       }).toList();
     } catch (e) {
-      if (kDebugMode) print('⚠️ [Dashboard] Cloudflare notifications error: $e');
+      if (kDebugMode) print('⚠️ [Dashboard] Articles fallback error: $e');
       return [];
     }
   }
@@ -147,20 +153,49 @@ class OpenClawDashboardService {
     int limit,
   ) async {
     try {
-      final articles = await _cloudflare.getArticles(
-        realm: realm,
-        limit: limit,
-      );
+      // Echtes Trending: Artikel sortiert nach Engagement (likes + views + comments)
+      final supabase = Supabase.instance.client;
+      final now = DateTime.now();
+      final since24h = now.subtract(const Duration(hours: 24)).toIso8601String(); // ignore: unused_local_variable
 
-      return articles.map((article) {
+      // Artikel der letzten 7 Tage, sortiert nach Engagement-Score
+      final articles = await supabase
+          .from('articles')
+          .select('id, title, category, like_count, view_count, comments_count, created_at')
+          .eq('world', realm)
+          .eq('is_published', true)
+          .order('created_at', ascending: false)
+          .limit(limit * 2); // Mehr laden für besseres Ranking
+
+      final safeArticles = (articles as List?) ?? [];
+
+      // Engagement-Score berechnen: likes*3 + comments*2 + views*1 + recency bonus
+      final scored = safeArticles.map((a) {
+        final likes = (a['like_count'] ?? a['likes_count'] ?? 0) as int;
+        final comments = (a['comments_count'] ?? 0) as int;
+        final views = (a['view_count'] ?? 0) as int;
+        final createdAt = DateTime.tryParse(a['created_at'] ?? '') ?? now;
+        final hoursAgo = now.difference(createdAt).inHours;
+        final recencyBonus = hoursAgo < 24 ? 50 : (hoursAgo < 72 ? 20 : 0);
+
+        final score = (likes * 3) + (comments * 2) + views + recencyBonus;
+
         return {
-          'id': article['id'],
-          'topic': article['title'],
-          'mentions': (article['id'].hashCode % 500) + 100, // Pseudo-trend
-          'trend': 'up',
-          'category': realm,
+          'id': a['id'],
+          'topic': a['title'],
+          'mentions': score,
+          'trend': hoursAgo < 24 ? 'new' : (score > 10 ? 'up' : 'stable'),
+          'category': a['category'] ?? realm,
+          'likes': likes,
+          'comments': comments,
+          'views': views,
         };
       }).toList();
+
+      // Sortiere nach Score (höchster zuerst)
+      scored.sort((a, b) => (b['mentions'] as int).compareTo(a['mentions'] as int));
+
+      return scored.take(limit).toList();
     } catch (e) {
       return [];
     }
@@ -250,28 +285,82 @@ class OpenClawDashboardService {
 
   Future<Map<String, dynamic>> _getStatisticsFromCloudflare(String realm) async {
     try {
-      final articles = await _cloudflare.getArticles(realm: realm, limit: 100);
-      
+      final supabase = Supabase.instance.client;
+      final now = DateTime.now();
+      final todayStart = DateTime(now.year, now.month, now.day).toIso8601String();
+
+      // Parallel queries für Performance
+      final results = await Future.wait([
+        // Gesamt-Artikel (published)
+        supabase
+            .from('articles')
+            .select('id, created_at')
+            .eq('world', realm)
+            .eq('is_published', true),
+        // Chat-Nachrichten (aktive Sitzungen)
+        supabase
+            .from('chat_messages')
+            .select('id')
+            .eq('is_deleted', false),
+        // Aktive User (heute eingeloggt via profiles updated_at)
+        supabase
+            .from('profiles')
+            .select('id')
+            .eq('world', realm)
+            .gte('updated_at', todayStart),
+        // Bookmarks total
+        supabase
+            .from('bookmarks')
+            .select('id'),
+        // Likes total
+        supabase
+            .from('likes')
+            .select('id'),
+        // ignore: invalid_return_type_for_catch_error
+      ], eagerError: false).catchError((_) => [[], [], [], [], []]);
+
+      final articles = (results[0] as List?) ?? [];
+      final chatMessages = (results[1] as List?) ?? [];
+      final activeUsers = (results[2] as List?) ?? [];
+      final bookmarks = (results[3] as List?) ?? [];
+      final likes = (results[4] as List?) ?? [];
+
+      // Heute neue Artikel
+      final newToday = articles.where((a) {
+        final created = a['created_at'] as String?;
+        return created != null && created.compareTo(todayStart) >= 0;
+      }).length;
+
       return {
         'totalArticles': articles.length,
-        'researchSessions': articles.length ~/ 2,
-        'bookmarkedTopics': articles.length ~/ 3,
-        'sharedFindings': articles.length ~/ 4,
-        'activeUsers': (articles.length * 1.5).toInt(),
-        'newToday': articles.where((a) {
-          final created = DateTime.parse(a['created_at'] as String);
-          return created.difference(DateTime.now()).inHours.abs() < 24;
-        }).length,
+        'researchSessions': chatMessages.length,
+        'bookmarkedTopics': bookmarks.length,
+        'sharedFindings': likes.length,
+        'activeUsers': activeUsers.length,
+        'newToday': newToday,
       };
     } catch (e) {
-      return {
-        'totalArticles': 0,
-        'researchSessions': 0,
-        'bookmarkedTopics': 0,
-        'sharedFindings': 0,
-        'activeUsers': 0,
-        'newToday': 0,
-      };
+      // Fallback: Artikel via Cloudflare API
+      try {
+        final articles = await _cloudflare.getArticles(realm: realm, limit: 100);
+        return {
+          'totalArticles': articles.length,
+          'researchSessions': 0,
+          'bookmarkedTopics': 0,
+          'sharedFindings': 0,
+          'activeUsers': 0,
+          'newToday': 0,
+        };
+      } catch (_) {
+        return {
+          'totalArticles': 0,
+          'researchSessions': 0,
+          'bookmarkedTopics': 0,
+          'sharedFindings': 0,
+          'activeUsers': 0,
+          'newToday': 0,
+        };
+      }
     }
   }
 

@@ -1,10 +1,16 @@
 import 'package:flutter/foundation.dart';
 import 'dart:html' as html;
+import 'dart:typed_data';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// 🔔 WEB PUSH NOTIFICATION SERVICE
 /// Browser-Benachrichtigungen für neue Chat-Messages und Tool-Aktivitäten
 class WebPushNotificationService {
-  static const String _vapidPublicKey = 'YOUR_VAPID_PUBLIC_KEY_HERE'; // TODO: Generate VAPID keys
+  // VAPID public key – set via dart-define: --dart-define=VAPID_PUBLIC_KEY=...
+  static const String _vapidPublicKey = String.fromEnvironment(
+    'VAPID_PUBLIC_KEY',
+    defaultValue: 'BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U',
+  );
   
   html.ServiceWorkerRegistration? _swRegistration;
   html.PushSubscription? _pushSubscription;
@@ -94,27 +100,75 @@ class WebPushNotificationService {
     }
   }
   
-  /// Subscription an Backend senden
+  /// Subscription an Supabase Backend senden
   Future<void> _sendSubscriptionToBackend(html.PushSubscription subscription) async {
     try {
-      // Extrahiere Subscription-Daten
-      final endpoint = subscription.endpoint;
-      debugPrint('📤 Push: Sende Subscription an Backend: $endpoint');
-      
-      // TODO: Implement Backend Subscription
-      // await http.post(
-      //   Uri.parse(ApiConfig.pushApiUrl + '/subscribe'),
-      //   body: jsonEncode({
-      //     'endpoint': endpoint,
-      //     'keys': {
-      //       'p256dh': subscription.getKey('p256dh'),
-      //       'auth': subscription.getKey('auth'),
-      //     },
-      //   }),
-      // );
-      
+      final supabaseClient = Supabase.instance.client;
+      final userId = supabaseClient.auth.currentUser?.id;
+      if (userId == null) {
+        debugPrint('⚠️ Push: Kein eingeloggter User – Subscription nicht gespeichert');
+        return;
+      }
+
+      final endpoint = subscription.endpoint ?? '';
+      if (endpoint.isEmpty) {
+        debugPrint('⚠️ Push: Kein Endpoint vorhanden');
+        return;
+      }
+
+      // p256dh und auth über getKey() extrahieren
+      String p256dh = '';
+      String authKey = '';
+      try {
+        // getKey() returns an ArrayBuffer; wir lesen es als ByteBuffer
+        final p256dhBuffer = subscription.getKey('p256dh');
+        final authBuffer   = subscription.getKey('auth');
+        if (p256dhBuffer != null) {
+          p256dh  = _arrayBufferToBase64(p256dhBuffer);
+        }
+        if (authBuffer != null) {
+          authKey = _arrayBufferToBase64(authBuffer);
+        }
+      } catch (_) {}
+
+      debugPrint('📤 Push: Speichere Subscription in Supabase: $endpoint');
+
+      await supabaseClient.from('push_subscriptions').upsert({
+        'user_id':    userId,
+        'endpoint':   endpoint,
+        'p256dh':     p256dh,
+        'auth_key':   authKey,
+        'platform':   'web',
+        'is_active':  true,
+        'updated_at': DateTime.now().toIso8601String(),
+      }, onConflict: 'user_id, endpoint');
+
+      debugPrint('✅ Push: Subscription in Supabase gespeichert');
     } catch (e) {
       debugPrint('❌ Push: Backend-Registrierung fehlgeschlagen: $e');
+    }
+  }
+
+  /// Push-Subscription aus Supabase entfernen (beim Logout)
+  Future<void> unsubscribe() async {
+    try {
+      if (_pushSubscription != null) {
+        await _pushSubscription!.unsubscribe();
+        _pushSubscription = null;
+      }
+
+      final supabaseClient = Supabase.instance.client;
+      final userId = supabaseClient.auth.currentUser?.id;
+      if (userId != null) {
+        await supabaseClient
+            .from('push_subscriptions')
+            .update({'is_active': false})
+            .eq('user_id', userId)
+            .eq('platform', 'web');
+        debugPrint('✅ Push: Subscription deaktiviert');
+      }
+    } catch (e) {
+      debugPrint('❌ Push: Unsubscribe fehlgeschlagen: $e');
     }
   }
   
@@ -210,5 +264,34 @@ class WebPushNotificationService {
     }
     
     return Uri.parse(base64).data!.contentAsBytes();
+  }
+
+  /// ByteBuffer → Base64url String (für VAPID-Keys)
+  String _arrayBufferToBase64(dynamic buffer) {
+    try {
+      // dart:html ArrayBuffer → Uint8List via dart:typed_data
+      final byteBuffer = buffer as ByteBuffer;
+      final bytes = Uint8List.view(byteBuffer);
+      var base64Str = _bytesToBase64(bytes);
+      // Base64 → Base64url
+      return base64Str.replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '');
+    } catch (_) {
+      return '';
+    }
+  }
+
+  String _bytesToBase64(Uint8List bytes) {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+    final buf = StringBuffer();
+    for (var i = 0; i < bytes.length; i += 3) {
+      final b0 = bytes[i];
+      final b1 = i + 1 < bytes.length ? bytes[i + 1] : 0;
+      final b2 = i + 2 < bytes.length ? bytes[i + 2] : 0;
+      buf.write(chars[(b0 >> 2) & 0x3F]);
+      buf.write(chars[((b0 << 4) | (b1 >> 4)) & 0x3F]);
+      buf.write(i + 1 < bytes.length ? chars[((b1 << 2) | (b2 >> 6)) & 0x3F] : '=');
+      buf.write(i + 2 < bytes.length ? chars[b2 & 0x3F] : '=');
+    }
+    return buf.toString();
   }
 }

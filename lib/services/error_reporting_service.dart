@@ -2,6 +2,7 @@
 /// Centralized error tracking and reporting
 /// Features: Error logging, crash reports, user feedback, analytics
 library;
+import '../config/api_config.dart';
 
 import 'dart:async';
 import 'dart:convert';
@@ -19,7 +20,7 @@ class ErrorReportingService {
   static const int maxErrorHistory = 100;
   
   // Error reporting endpoint (Cloudflare Worker)
-  String get _errorEndpoint => 'https://weltenbibliothek-api-v2.brandy13062.workers.dev/errors/report';
+  String get _errorEndpoint => '${ApiConfig.workerUrl}/errors/report';
   
   bool _isInitialized = false;
 

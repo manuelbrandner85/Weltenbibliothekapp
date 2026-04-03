@@ -122,11 +122,13 @@ class _MaterieWorldScreenState extends ConsumerState<MaterieWorldScreen>
                           child: Text(
                             'MATERIE',
                             style: TextStyle(
-                              fontSize: 24,
+                              fontSize: 20,
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
-                              letterSpacing: 4,
+                              letterSpacing: 2,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.clip,
                           ),
                         ),
 
@@ -309,8 +311,17 @@ class _MaterieWorldScreenState extends ConsumerState<MaterieWorldScreen>
                     setState(() => _currentIndex = index);
                   },
                   backgroundColor: Colors.transparent,
-                  selectedItemColor: const Color(0xFF2196F3),
-                  unselectedItemColor: Colors.white54,
+                  selectedItemColor: const Color(0xFF42A5F5),
+                  unselectedItemColor: Colors.white70,
+                  selectedLabelStyle: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.3,
+                  ),
+                  unselectedLabelStyle: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                  ),
                   type: BottomNavigationBarType.fixed,
                   elevation: 0,
                   items: const [

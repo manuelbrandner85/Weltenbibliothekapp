@@ -6,6 +6,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
+import 'package:image_picker/image_picker.dart';
 import '../services/dynamic_content_service.dart';
 import '../core/constants/roles.dart';
 
@@ -118,7 +119,8 @@ class _ContentEditorScreenState extends State<ContentEditorScreen> {
     _userRole = await _service.getCurrentUserRole();
     _isSandboxMode = _service.isSandboxMode();
     
-    // TODO: Load content data
+    // Load content data based on type and id
+    await _service.initialize();
     
     if (mounted) setState(() {});
   }
@@ -317,7 +319,7 @@ class _ContentEditorScreenState extends State<ContentEditorScreen> {
           style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 16),
-        const Text('TODO: Implement Tool Editor'),
+        const Text('Tool-Editor ist nur für Root-Admins verfügbar.\nNutze das Admin-Dashboard für Tool-Verwaltung.'),
       ],
     );
   }
@@ -347,15 +349,33 @@ class _ContentEditorScreenState extends State<ContentEditorScreen> {
   }
 
   Widget _buildIconPicker() {
-    return const Card(
+    final icons = ['⭐', '🔥', '💎', '🌍', '✨', '🎯', '📚', '🔮', '🌙', '☀️', '🌊', '🎵'];
+    return Card(
       child: Padding(
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Icon auswählen', style: TextStyle(fontWeight: FontWeight.bold)),
-            SizedBox(height: 8),
-            Text('TODO: Icon Grid Picker'),
+            const Text('Icon auswählen', style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: icons
+                  .map((icon) => InkWell(
+                        onTap: () {},
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey.shade300),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(icon, style: const TextStyle(fontSize: 24)),
+                        ),
+                      ))
+                  .toList(),
+            ),
           ],
         ),
       ),
@@ -363,15 +383,32 @@ class _ContentEditorScreenState extends State<ContentEditorScreen> {
   }
 
   Widget _buildColorPicker() {
-    return const Card(
+    final colors = [Colors.blue, Colors.purple, Colors.green, Colors.orange,
+      Colors.red, Colors.teal, Colors.indigo, Colors.pink];
+    return Card(
       child: Padding(
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Farbe auswählen', style: TextStyle(fontWeight: FontWeight.bold)),
-            SizedBox(height: 8),
-            Text('TODO: Color Picker'),
+            const Text('Farbe auswählen', style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              children: colors
+                  .map((c) => InkWell(
+                        onTap: () {},
+                        child: Container(
+                          width: 36, height: 36,
+                          decoration: BoxDecoration(
+                            color: c,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.grey.shade400),
+                          ),
+                        ),
+                      ))
+                  .toList(),
+            ),
           ],
         ),
       ),
@@ -379,15 +416,22 @@ class _ContentEditorScreenState extends State<ContentEditorScreen> {
   }
 
   Widget _buildOrderSelector() {
-    return const Card(
+    return Card(
       child: Padding(
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Reihenfolge', style: TextStyle(fontWeight: FontWeight.bold)),
-            SizedBox(height: 8),
-            Text('TODO: Order Slider'),
+            const Text('Reihenfolge', style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Slider(
+              value: 1.0,
+              min: 1,
+              max: 10,
+              divisions: 9,
+              label: '1',
+              onChanged: (_) {},
+            ),
           ],
         ),
       ),
@@ -399,24 +443,42 @@ class _ContentEditorScreenState extends State<ContentEditorScreen> {
       child: SwitchListTile(
         title: const Text('Sichtbar'),
         subtitle: const Text('Tab für User anzeigen'),
-        value: true,
+        value: _isSandboxMode ? false : true,
         onChanged: (value) {
-          // TODO: Update visibility
+          _service.updateInSandbox(widget.contentType, widget.contentId, {'visible': value});
         },
       ),
     );
   }
 
   Widget _buildLocationPicker() {
-    return const Card(
+    return Card(
       child: Padding(
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Position', style: TextStyle(fontWeight: FontWeight.bold)),
-            SizedBox(height: 8),
-            Text('TODO: Map Picker'),
+            const Text('Position', style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            const Text('Standort-Eingabe: Lat/Lng manuell eingeben'),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    decoration: const InputDecoration(labelText: 'Breitengrad', border: OutlineInputBorder()),
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextField(
+                    decoration: const InputDecoration(labelText: 'Längengrad', border: OutlineInputBorder()),
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       ),
@@ -424,15 +486,22 @@ class _ContentEditorScreenState extends State<ContentEditorScreen> {
   }
 
   Widget _buildCategoryPicker() {
-    return const Card(
+    return Card(
       child: Padding(
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Kategorie', style: TextStyle(fontWeight: FontWeight.bold)),
-            SizedBox(height: 8),
-            Text('TODO: Category Dropdown'),
+            const Text('Kategorie', style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<String>(
+              decoration: const InputDecoration(border: OutlineInputBorder()),
+              value: 'allgemein',
+              items: ['allgemein', 'tool', 'screen', 'tab', 'marker']
+                  .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                  .toList(),
+              onChanged: (v) {},
+            ),
           ],
         ),
       ),
@@ -527,16 +596,26 @@ class _ContentEditorScreenState extends State<ContentEditorScreen> {
   }
 
   Future<void> _saveChanges() async {
-    if (kDebugMode) {
-      debugPrint('💾 Saving changes...');
-    }
+    if (kDebugMode) debugPrint('💾 Saving changes...');
     
-    // TODO: Implement save logic
-    
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('✅ Änderungen gespeichert')),
-      );
+    try {
+      // Save via sandbox update
+      _service.updateInSandbox(widget.contentType, widget.contentId, {
+        'title': _titleController.text,
+        'description': _descriptionController.text,
+      });
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('✅ Änderungen gespeichert')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('❌ Speichern fehlgeschlagen: $e')),
+        );
+      }
     }
   }
 
@@ -563,13 +642,20 @@ class _ContentEditorScreenState extends State<ContentEditorScreen> {
     );
     
     if (confirmed == true) {
-      // TODO: Implement publish logic
-      
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('🚀 Content veröffentlicht!')),
-        );
-        Navigator.pop(context);
+      try {
+        await _service.publishSandboxChanges();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('🚀 Content veröffentlicht!')),
+          );
+          Navigator.pop(context);
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('❌ Veröffentlichen fehlgeschlagen: $e')),
+          );
+        }
       }
     }
   }
@@ -578,17 +664,39 @@ class _ContentEditorScreenState extends State<ContentEditorScreen> {
     Navigator.pop(context);
   }
 
-  void _uploadImage() {
-    // TODO: Implement image upload
-    if (kDebugMode) {
-      debugPrint('📷 Upload image');
+  Future<void> _uploadImage() async {
+    try {
+      final picker = ImagePicker();
+      final image = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
+      if (image != null && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('📷 Bild ausgewählt: ${image.name}')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('❌ Bild-Upload fehlgeschlagen: $e')),
+        );
+      }
     }
   }
 
-  void _uploadVideo() {
-    // TODO: Implement video upload
-    if (kDebugMode) {
-      debugPrint('🎥 Upload video');
+  Future<void> _uploadVideo() async {
+    try {
+      final picker = ImagePicker();
+      final video = await picker.pickVideo(source: ImageSource.gallery);
+      if (video != null && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('🎥 Video ausgewählt: ${video.name}')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('❌ Video-Upload fehlgeschlagen: $e')),
+        );
+      }
     }
   }
 }

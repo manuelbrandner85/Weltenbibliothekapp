@@ -183,7 +183,8 @@ class EnhancedAppThemes {
         ),
       ),
       
-      // Input Decoration
+      // Input Decoration (Light)
+      // BUG-FIX v5.27.0: errorBorder + disabledBorder hinzugefügt, kein gelber Unterstrich
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: lightSurface,
@@ -199,6 +200,21 @@ class EnhancedAppThemes {
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: lightPrimary, width: 2),
         ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: lightError, width: 1),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: lightError, width: 2),
+        ),
+        disabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFBDBDBD), width: 1),
+        ),
+        hintStyle: const TextStyle(color: Color(0xFF9E9E9E)),
+        labelStyle: const TextStyle(color: Color(0xFF757575)),
+        floatingLabelStyle: const TextStyle(color: lightPrimary),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       ),
       
@@ -317,7 +333,8 @@ class EnhancedAppThemes {
         ),
       ),
       
-      // Input Decoration
+      // Input Decoration (Dark)
+      // BUG-FIX v5.27.0: errorBorder + disabledBorder hinzugefügt, kein gelber Unterstrich
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: darkSurface,
@@ -333,6 +350,21 @@ class EnhancedAppThemes {
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: darkPrimary, width: 2),
         ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFEF9A9A), width: 1),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFEF9A9A), width: 2),
+        ),
+        disabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFF303030), width: 1),
+        ),
+        hintStyle: const TextStyle(color: Color(0xFF757575)),
+        labelStyle: const TextStyle(color: Color(0xFF9E9E9E)),
+        floatingLabelStyle: TextStyle(color: darkPrimary),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       ),
       

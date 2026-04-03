@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
-import '../services/storage_service.dart';
 import 'package:flutter/foundation.dart';
 import '../services/cloudflare_api_service.dart';
-import '../services/haptic_feedback_service.dart'; // 📳 HAPTIC FEEDBACK
+import '../services/haptic_feedback_service.dart';
+import '../services/community_interaction_service.dart';
+import '../services/user_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Like Button Widget mit Animation
 class ArticleLikeButton extends StatefulWidget {
@@ -22,20 +24,24 @@ class ArticleLikeButton extends StatefulWidget {
 }
 
 class _ArticleLikeButtonState extends State<ArticleLikeButton> with SingleTickerProviderStateMixin {
-  final CloudflareApiService _api = CloudflareApiService();
-  final StorageService _storage = StorageService();
+  final CloudflareApiService _api = CloudflareApiService(); // ignore: unused_field
+  final CommunityInteractionService _interactionService = CommunityInteractionService();
   
   late bool _isLiked;
   late int _likeCount;
   bool _isLoading = false;
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
+  late String _realUserId;
   
   @override
   void initState() {
     super.initState();
     _isLiked = widget.initiallyLiked;
     _likeCount = widget.initialLikes;
+    // Echte User-ID: Supabase Auth > UserService
+    _realUserId = Supabase.instance.client.auth.currentUser?.id 
+        ?? UserService.getCurrentUserId();
     
     // Animation setup
     _animationController = AnimationController(
@@ -46,6 +52,17 @@ class _ArticleLikeButtonState extends State<ArticleLikeButton> with SingleTicker
     _scaleAnimation = Tween<double>(begin: 1.0, end: 1.3).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
     );
+    
+    // Lade echten Like-Status aus Supabase
+    _loadLikeStatus();
+  }
+  
+  Future<void> _loadLikeStatus() async {
+    final liked = await _interactionService.fetchIsLiked(
+      postId: widget.articleId,
+      userId: _realUserId,
+    );
+    if (mounted) setState(() => _isLiked = liked);
   }
   
   @override
@@ -59,49 +76,26 @@ class _ArticleLikeButtonState extends State<ArticleLikeButton> with SingleTicker
     
     setState(() => _isLoading = true);
     
-    // Get user info from storage
-    final username = 'user_${DateTime.now().millisecondsSinceEpoch}'; // TODO: Get from actual user session
-    final userId = 'user_${DateTime.now().millisecondsSinceEpoch}';
-    
     try {
       if (_isLiked) {
-        // 📳 Haptic Feedback - Unlike
         await HapticFeedbackService().medium();
-        
-        // Unlike
-        await _api.unlikeArticle(
-          articleId: widget.articleId,
-          userId: userId,
-        );
-        
-        if (mounted) {
-          setState(() {
-            _isLiked = false;
-            _likeCount = _likeCount > 0 ? _likeCount - 1 : 0;
-          });
-        }
       } else {
-        // 📳 Haptic Feedback - Like (Success Pattern)
         await HapticFeedbackService().success();
+        _animationController.forward().then((_) => _animationController.reverse());
+      }
+      
+      // Toggle via Supabase (mit Optimistic UI)
+      final newState = await _interactionService.toggleLikeSupabase(
+        postId: widget.articleId,
+        userId: _realUserId,
+      );
         
-        // Like
-        await _api.likeArticle(
-          articleId: widget.articleId,
-          userId: userId,
-          username: username,
-        );
-        
-        // Play animation
-        _animationController.forward().then((_) {
-          _animationController.reverse();
+      if (mounted) {
+        setState(() {
+          _isLiked = newState;
+          _likeCount += newState ? 1 : -1;
+          if (_likeCount < 0) _likeCount = 0;
         });
-        
-        if (mounted) {
-          setState(() {
-            _isLiked = true;
-            _likeCount++;
-          });
-        }
       }
     } catch (e) {
       // 📳 Haptic Feedback - Error

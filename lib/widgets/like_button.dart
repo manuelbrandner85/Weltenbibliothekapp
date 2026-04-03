@@ -65,17 +65,26 @@ class _LikeButtonState extends State<LikeButton>
   }
 
   Future<void> _loadLikeStatus() async {
-    final isLiked = _interactionService.isLiked(
+    // Show cached value immediately (optimistic)
+    final cachedLiked = _interactionService.isLiked(
       postId: widget.postId,
       userId: widget.userId,
     );
+    if (mounted) setState(() => _isLiked = cachedLiked);
 
-    final count = await _interactionService.getLikeCount(widget.postId);
+    // Then fetch from Supabase (real state)
+    final [isLiked, count] = await Future.wait([
+      _interactionService.fetchIsLiked(
+        postId: widget.postId,
+        userId: widget.userId,
+      ),
+      _interactionService.getLikeCount(widget.postId),
+    ]);
 
     if (mounted) {
       setState(() {
-        _isLiked = isLiked;
-        _likeCount = count;
+        _isLiked = isLiked as bool;
+        _likeCount = count as int;
       });
     }
   }
@@ -104,8 +113,8 @@ class _LikeButtonState extends State<LikeButton>
       _animationController.reverse();
     });
 
-    // Backend sync
-    final success = await _interactionService.toggleLike(
+    // Backend sync via Supabase (with Cloudflare fallback)
+    final success = await _interactionService.toggleLikeSupabase(
       postId: widget.postId,
       userId: widget.userId,
     );

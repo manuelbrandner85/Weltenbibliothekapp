@@ -41,7 +41,9 @@ class ScreenSharingService extends ChangeNotifier {
   ScreenSharingService._internal();
 
   // Dependencies
+  // ignore: unused_field
   final WebRTCVoiceService _voiceController = WebRTCVoiceService();  // ✅ Use WebRTCVoiceService
+  // ignore: unused_field
   final CloudflareSignalingService _signaling = CloudflareSignalingService();
   
   // Screen Share State
@@ -233,7 +235,7 @@ class ScreenSharingService extends ChangeNotifier {
     if (_localScreenStream == null) return;
     
     try {
-      final videoTrack = _localScreenStream!.getVideoTracks().first;
+      final videoTrack = _localScreenStream!.getVideoTracks().first; // ignore: unused_local_variable
       
       // Access internal participants from VoiceController
       // Note: This requires VoiceController to expose participants map

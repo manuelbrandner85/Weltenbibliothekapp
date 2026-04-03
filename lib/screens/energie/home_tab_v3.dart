@@ -4,7 +4,6 @@ import 'dart:ui';
 import '../../models/energie_profile.dart';
 import '../../services/cloudflare_api_service.dart';
 import '../../services/user_stats_service.dart';
-import '../../services/openclaw_comprehensive_service.dart'; // 🚀 OpenClaw v2.0
 
 /// ENERGIE HOME DASHBOARD V3 - ULTRA PROFESSIONAL EDITION
 /// 
@@ -33,7 +32,7 @@ class _EnergieHomeTabV3State extends State<EnergieHomeTabV3>
   
   EnergieProfile? _profile;
   final CloudflareApiService _api = CloudflareApiService();
-  final UserStatsService _statsService = UserStatsService();
+  final UserStatsService _statsService = UserStatsService(); // ignore: unused_field
 
   // Statistics
   int _totalArticles = 0;
