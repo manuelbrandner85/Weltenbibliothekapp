@@ -1,1576 +1,1174 @@
-import 'package:flutter/material.dart';
-import '../../services/openclaw_dashboard_service.dart';
-import 'package:flutter/foundation.dart';
-import '../../services/storage_service.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'dart:ui';
 import 'dart:async';
-import '../../models/materie_profile.dart';
-import 'package:url_launcher/url_launcher.dart'; // 🔗 Für externe URL-Links
-import 'recherche_tab_mobile.dart'; // 📰 Recherche Screen
-import 'materie_live_chat_screen.dart'; // 💬 Live Chat Screen
+import 'dart:math' as math;
+import 'package:flutter/material.dart';
 
-/// ═══════════════════════════════════════════════════════════════════════════
-/// MATERIE HOME DASHBOARD V5 - ULTRA PROFESSIONAL EDITION
-/// ═══════════════════════════════════════════════════════════════════════════
-/// 
-/// 🎯 PERFORMANCE FEATURES:
-/// ────────────────────────────────────────────────────────────────────────────
-/// ✅ RepaintBoundary für unabhängige Rendering-Bereiche
-/// ✅ Const Widgets wo möglich für Memory-Optimierung
-/// ✅ Lazy Loading mit SliverList für große Listen
-/// ✅ Cached Network Images für schnellere Bildanzeige
-/// ✅ Optimierte Animation Controllers
-/// ✅ Debounced Search für weniger API-Calls
-/// 
-/// 🎨 DESIGN FEATURES:
-/// ────────────────────────────────────────────────────────────────────────────
-/// ✨ Advanced Glassmorphism mit Backdrop Blur
-/// ✨ Fluid Animations (Hero, Fade, Scale, Slide)
-/// ✨ Shimmer Loading Effects
-/// ✨ Gradient Overlays & Dynamic Colors
-/// ✨ Micro-interactions (Hover, Press, Long-press)
-/// ✨ Pull-to-Refresh mit Custom Indicator
-/// 
-/// 📱 UX FEATURES:
-/// ────────────────────────────────────────────────────────────────────────────
-/// 🔍 Live Search mit Auto-Complete
-/// 🔔 Notification Badge System
-/// ⭐ Quick Actions Shortcuts
-/// 📊 Real-time Statistics Dashboard
-/// 🎯 Personalized Content Recommendations
-/// 💾 Offline Support mit Local Cache
-/// 
-/// Design inspired by: Apple iOS 17, Material You 3, Notion, Linear
-/// ═══════════════════════════════════════════════════════════════════════════
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../services/openclaw_dashboard_service.dart';
+import '../../services/storage_service.dart';
+import '../../models/materie_profile.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'recherche_tab_mobile.dart';
+import 'materie_live_chat_screen.dart';
+import '../shared/bookmarks_screen.dart';
+import '../shared/stats_dashboard_screen.dart';
+
+// ═══════════════════════════════════════════════════════════════════════════
+// MATERIE HOME DASHBOARD V7 – REDESIGN 2026
+// "Cosmos Explorer" · Deep-Blue · Glassmorphism · Parallax · Live-Data
+// ═══════════════════════════════════════════════════════════════════════════
 
 class MaterieHomeTabV5 extends StatefulWidget {
   const MaterieHomeTabV5({super.key});
-
   @override
   State<MaterieHomeTabV5> createState() => _MaterieHomeTabV5State();
 }
 
 class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
     with TickerProviderStateMixin {
-  // Animation Controllers
-  late AnimationController _backgroundController;
-  late AnimationController _cardController;
-  late AnimationController _searchController;
-  late AnimationController _shimmerController;
-  
-  // Animations
-  late Animation<double> _cardAnimation;
-  late Animation<double> _searchAnimation;
-  late Animation<double> _shimmerAnimation;
-  
-  // Services
-  final OpenClawDashboardService _dashboardService = OpenClawDashboardService(); // 🚀 OpenClaw Dashboard
-  
-  // State
+
+  // ── Animations ─────────────────────────────────────────────────────────
+  late AnimationController _pulseCtrl;
+  late AnimationController _entryCtrl;
+  late AnimationController _particleCtrl;
+  late Animation<double> _entryAnim;
+
+  // ── Services ───────────────────────────────────────────────────────────
+  final _dash = OpenClawDashboardService();
+
+  // ── State ──────────────────────────────────────────────────────────────
   MaterieProfile? _profile;
-  bool _isLoading = true;
-  bool _isSearching = false;
-  String _searchQuery = '';
-  
-  // Statistics
-  int _totalArticles = 0;
-  int _researchSessions = 0;
-  int _bookmarkedTopics = 0;
-  int _sharedFindings = 0;
-  int _notificationCount = 0; // Wird aus Backend geladen
+  bool _loading = true;
+  int _articles = 0, _sessions = 0, _bookmarks = 0, _shares = 0;
+  List<Map<String, dynamic>> _latestArticles = [];
+  List<Map<String, dynamic>> _trending = [];
+  int _notifs = 0;
+  final _scrollCtrl = ScrollController();
+  double _scrollOffset = 0;
+  Timer? _liveTimer;
+  RealtimeChannel? _channel;
 
-  // Content
-  List<Map<String, dynamic>> _recentArticles = [];
-  List<Map<String, dynamic>> _trendingTopics = [];
-  List<Map<String, dynamic>> _quickActions = [];
-  List<Map<String, dynamic>> _filteredArticles = [];
-
-  // Controllers
-  final TextEditingController _searchTextController = TextEditingController();
-  final ScrollController _scrollController = ScrollController();
-
-  // 🔴 Supabase Realtime
-  RealtimeChannel? _dashboardChannel;
-  Timer? _fallbackTimer;
+  // ── Design Colors ──────────────────────────────────────────────────────
+  static const _bg      = Color(0xFF04080F);
+  static const _card    = Color(0xFF0A1020);
+  static const _cardB   = Color(0xFF0D1528);
+  static const _blue    = Color(0xFF2979FF);
+  static const _blueL   = Color(0xFF82B1FF);
+  static const _blueD   = Color(0xFF1A237E);
+  static const _cyan    = Color(0xFF00E5FF);
+  static const _green   = Color(0xFF00E676);
+  static const _amber   = Color(0xFFFFAB00);
+  static const _red     = Color(0xFFFF1744);
+  static const _purple  = Color(0xFF7C4DFF);
 
   @override
   void initState() {
     super.initState();
-    _setupAnimations();
-    _setupQuickActions();
-    _loadProfile();
-    _loadDashboardData();
-    _checkAdminStatus(); // 👤 Admin-Check
-    _startLiveUpdates(); // 🔄 Live-Updates
-    _setupSearch();
-  }
-
-  void _setupAnimations() {
-    // Background gradient animation (slower, more subtle)
-    _backgroundController = AnimationController(
-      duration: const Duration(seconds: 20),
-      vsync: this,
-    )..repeat(reverse: true);
-
-    // Card entrance animation
-    _cardController = AnimationController(
-      duration: const Duration(milliseconds: 1200),
-      vsync: this,
-    );
-
-    _cardAnimation = CurvedAnimation(
-      parent: _cardController,
-      curve: Curves.easeOutCubic,
-    );
-
-    // Search bar animation
-    _searchController = AnimationController(
-      duration: const Duration(milliseconds: 300),
-      vsync: this,
-    );
-
-    _searchAnimation = CurvedAnimation(
-      parent: _searchController,
-      curve: Curves.easeInOut,
-    );
-
-    // Shimmer animation for loading states
-    _shimmerController = AnimationController(
-      duration: const Duration(milliseconds: 1500),
-      vsync: this,
-    )..repeat();
-
-    _shimmerAnimation = CurvedAnimation(
-      parent: _shimmerController,
-      curve: Curves.linear,
-    );
-
-    _cardController.forward();
-  }
-
-  void _setupQuickActions() {
-    _quickActions = [
-      {
-        'icon': Icons.article_outlined,
-        'label': 'Artikel',
-        'color': const Color(0xFFFF6B6B),
-        'gradient': const LinearGradient(
-          colors: [Color(0xFFFF6B6B), Color(0xFFFF8E53)],
-        ),
-        'count': 0,
-      },
-      {
-        'icon': Icons.chat_bubble_outline,
-        'label': 'Live Chat',
-        'color': const Color(0xFF4ECDC4),
-        'gradient': const LinearGradient(
-          colors: [Color(0xFF4ECDC4), Color(0xFF44A08D)],
-        ),
-        'count': _notificationCount,
-      },
-      {
-        'icon': Icons.explore_outlined,
-        'label': 'Erkunden',
-        'color': const Color(0xFF9B59B6),
-        'gradient': const LinearGradient(
-          colors: [Color(0xFF9B59B6), Color(0xFF8E44AD)],
-        ),
-        'count': 0,
-      },
-      {
-        'icon': Icons.bookmark_outline,
-        'label': 'Gespeichert',
-        'color': const Color(0xFFF39C12),
-        'gradient': const LinearGradient(
-          colors: [Color(0xFFF39C12), Color(0xFFE67E22)],
-        ),
-        'count': _bookmarkedTopics,
-      },
-    ];
-  }
-
-  void _setupSearch() {
-    _searchTextController.addListener(() {
-      if (_searchTextController.text.isEmpty) {
-        setState(() {
-          _searchQuery = '';
-          _filteredArticles = _recentArticles;
-          _isSearching = false;
-        });
-        _searchController.reverse();
-      } else {
-        setState(() {
-          _searchQuery = _searchTextController.text;
-          _isSearching = true;
-          _filteredArticles = _recentArticles
-              .where((article) =>
-                  article['title']
-                      .toString()
-                      .toLowerCase()
-                      .contains(_searchQuery.toLowerCase()))
-              .toList();
-        });
-        _searchController.forward();
-      }
+    _pulseCtrl = AnimationController(vsync: this,
+        duration: const Duration(seconds: 2))..repeat(reverse: true);
+    _entryCtrl = AnimationController(vsync: this,
+        duration: const Duration(milliseconds: 1000));
+    _particleCtrl = AnimationController(vsync: this,
+        duration: const Duration(seconds: 8))..repeat();
+    _entryAnim = CurvedAnimation(parent: _entryCtrl, curve: Curves.easeOutCubic);
+    _entryCtrl.forward();
+    _scrollCtrl.addListener(() {
+      setState(() => _scrollOffset = _scrollCtrl.offset);
     });
+    _loadAll();
+    _startLive();
   }
 
   @override
   void dispose() {
-    _backgroundController.dispose();
-    _cardController.dispose();
-    _searchController.dispose();
-    _shimmerController.dispose();
-    _searchTextController.dispose();
-    _scrollController.dispose();
-    _dashboardService.stopLiveUpdates(); // 🔄 Stop Legacy-Service
-    // 🔴 Realtime cleanup
-    _dashboardChannel?.unsubscribe();
-    _fallbackTimer?.cancel();
+    _pulseCtrl.dispose();
+    _entryCtrl.dispose();
+    _particleCtrl.dispose();
+    _scrollCtrl.dispose();
+    _liveTimer?.cancel();
+    _channel?.unsubscribe();
     super.dispose();
   }
 
+  // ── Data ───────────────────────────────────────────────────────────────
+  Future<void> _loadAll() async {
+    if (mounted) setState(() => _loading = true);
+    await Future.wait([_loadProfile(), _loadStats(), _loadContent()]);
+    if (mounted) setState(() => _loading = false);
+  }
+
   Future<void> _loadProfile() async {
-    final profile = StorageService().getMaterieProfile();
-    if (mounted) {
-      setState(() {
-        _profile = profile;
-      });
-    }
+    _profile = StorageService().getMaterieProfile();
   }
 
-  /// 🚀 OPENCLAW DASHBOARD - ECHTE DATEN
-  Future<void> _loadDashboardData() async {
-    if (mounted) setState(() => _isLoading = true);
-
+  Future<void> _loadStats() async {
     try {
-      // 📊 ECHTE Statistiken von OpenClaw/Cloudflare
-      final stats = await _dashboardService.getStatistics(realm: 'materie');
-
-      _totalArticles = stats['totalArticles'] ?? 0;
-      _researchSessions = stats['researchSessions'] ?? 0;
-      _bookmarkedTopics = stats['bookmarkedTopics'] ?? 0;
-      _sharedFindings = stats['sharedFindings'] ?? 0;
-
-      // 📄 ECHTE Artikel
-      _recentArticles = await _dashboardService.getRecentArticles(
-        realm: 'materie',
-        limit: 10,
-      );
-
-      // 🔥 ECHTE Trending Topics
-      _trendingTopics = await _dashboardService.getTrendingTopics(
-        realm: 'materie',
-        limit: 10,
-      );
-
-      // 🔔 ECHTE Benachrichtigungen – userId: Supabase Auth > StorageService Fallback
-      final supabaseUserId = Supabase.instance.client.auth.currentUser?.id;
-      final storageUserId = await StorageService().getUserId('materie');
-      final userId = supabaseUserId ?? storageUserId;
-      final notifications = await _dashboardService.getNotifications(
-        userId: userId,
-        realm: 'materie',
-        limit: 50,
-      );
-      _notificationCount = notifications
-          .where((n) => n['is_read'] == false || n['read'] == false)
-          .length;
-
-      _filteredArticles = _recentArticles;
-
-      // Update quick actions with new counts
-      _setupQuickActions();
-
+      final s = await _dash.getStatistics(realm: 'materie');
       if (mounted) {
         setState(() {
-          _isLoading = false;
+          _articles  = s['totalArticles']    ?? s['total_articles']    ?? 0;
+          _sessions  = s['researchSessions'] ?? s['research_sessions'] ?? 0;
+          _bookmarks = s['bookmarkedTopics'] ?? s['bookmarked_topics'] ?? 0;
+          _shares    = s['sharedFindings']   ?? s['shared_findings']   ?? 0;
         });
       }
+    } catch (_) {}
+  }
 
-      if (kDebugMode) {
-        debugPrint('✅ Dashboard loaded via OpenClaw');
-        debugPrint('   Articles: $_totalArticles');
-        debugPrint('   Trending: ${_trendingTopics.length}');
-        debugPrint('   Notifications: $_notificationCount');
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ Dashboard load error: $e');
-      }
+  Future<void> _loadContent() async {
+    try {
+      _latestArticles = await _dash.getRecentArticles(realm: 'materie', limit: 6);
+      _trending       = await _dash.getTrendingTopics(realm: 'materie', limit: 8);
+      final uid  = Supabase.instance.client.auth.currentUser?.id ??
+                   await StorageService().getUserId('materie');
+      final notifs = await _dash.getNotifications(userId: uid, realm: 'materie', limit: 50);
       if (mounted) {
         setState(() {
-          _isLoading = false;
+          _notifs = notifs.where((n) => n['is_read'] == false || n['read'] == false).length;
         });
       }
-    }
+    } catch (_) {}
   }
-  
-  /// 👤 Admin-Check bei Laden
-  Future<void> _checkAdminStatus() async {
-    try {
-      final userId = await StorageService().getUserId('materie');
-      if (userId != null) {
-        final isAdmin = await _dashboardService.isAdmin(userId, 'materie');
-        if (kDebugMode) {
-          debugPrint('👤 Admin Status: $isAdmin');
-        }
-        // Hier könnte Admin-Badge angezeigt oder zu Admin-Dashboard weitergeleitet werden
-      }
-    } catch (e) {
-      if (kDebugMode) debugPrint('⚠️ Admin check error: $e');
-    }
-  }
-  
-  /// 🔄 Live-Updates starten (Supabase Realtime + 30-Min-Fallback)
-  void _startLiveUpdates() {
-    final supabase = Supabase.instance.client;
 
-    // ── Supabase Realtime Channel ──────────────────────────────────────────
-    _dashboardChannel = supabase.channel('materie_dashboard')
+  void _startLive() {
+    _channel = Supabase.instance.client
+        .channel('materie_home_v7')
       ..onPostgresChanges(
         event: PostgresChangeEvent.all,
-        schema: 'public',
-        table: 'articles',
-        filter: PostgresChangeFilter(
-          type: PostgresChangeFilterType.eq,
-          column: 'realm',
-          value: 'materie',
-        ),
-        callback: (_) {
-          if (mounted) _loadDashboardData();
-        },
+        schema: 'public', table: 'articles',
+        callback: (_) { if (mounted) _loadContent(); },
       )
-      ..onPostgresChanges(
-        event: PostgresChangeEvent.all,
-        schema: 'public',
-        table: 'notifications',
-        callback: (payload) {
-          if (mounted) _refreshNotificationCount();
-        },
-      );
-    _dashboardChannel!.subscribe();
-
-    // ── 30-Minuten Fallback-Timer ──────────────────────────────────────────
-    _fallbackTimer = Timer.periodic(const Duration(minutes: 30), (_) {
-      if (mounted) _loadDashboardData();
-    });
+      ..subscribe();
+    _liveTimer = Timer.periodic(const Duration(minutes: 5),
+        (_) { if (mounted) _loadAll(); });
   }
 
-  /// 🔔 Nur den Notification-Count aktualisieren
-  Future<void> _refreshNotificationCount() async {
-    try {
-      final supabase = Supabase.instance.client;
-      final user = supabase.auth.currentUser;
-      if (user == null) return;
+  // ── Navigation ─────────────────────────────────────────────────────────
+  void _go(Widget screen) => Navigator.push(
+      context, MaterialPageRoute(builder: (_) => screen));
 
-      final data = await supabase
-          .from('notifications')
-          .select('is_read')
-          .eq('user_id', user.id)
-          .eq('is_read', false);
-
-      if (mounted) {
-        setState(() {
-          _notificationCount = (data as List).length;
-          _setupQuickActions();
-        });
-      }
-    } catch (e) {
-      if (kDebugMode) debugPrint('⚠️ Notification refresh error: $e');
+  void _goArticle(Map<String, dynamic> a) {
+    final url = a['url'] as String?;
+    if (url != null && url.isNotEmpty) {
+      launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+    } else {
+      _go(const MobileOptimierterRechercheTab());
     }
   }
 
+  String get _greeting {
+    final h = DateTime.now().hour;
+    if (h < 5)  return 'Gute Nacht';
+    if (h < 12) return 'Guten Morgen';
+    if (h < 17) return 'Guten Tag';
+    if (h < 21) return 'Guten Abend';
+    return 'Gute Nacht';
+  }
+
+  // ══════════════════════════════════════════════════════════════════════
+  // BUILD
+  // ══════════════════════════════════════════════════════════════════════
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        children: [
-          // Animated gradient background
-          RepaintBoundary(
-            child: _buildAnimatedBackground(),
+      backgroundColor: _bg,
+      body: RefreshIndicator(
+        onRefresh: _loadAll,
+        color: _blue,
+        backgroundColor: _cardB,
+        displacement: 60,
+        child: CustomScrollView(
+          controller: _scrollCtrl,
+          physics: const BouncingScrollPhysics(
+              parent: AlwaysScrollableScrollPhysics()),
+          slivers: [
+            _buildHeroHeader(),
+            _buildLiveStatBanner(),
+            _buildActionGrid(),
+            _buildSectionTitle('🔥 Trending', subtitle: 'Heiß diskutiert'),
+            _buildTrendingChips(),
+            _buildSectionTitle('📰 Neueste Artikel', subtitle: 'Frisch aus der Welt'),
+            _buildArticleCards(),
+            _buildExploreSection(),
+            const SliverPadding(padding: EdgeInsets.only(bottom: 120)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── HERO HEADER (Parallax) ─────────────────────────────────────────────
+  Widget _buildHeroHeader() {
+    return SliverToBoxAdapter(
+      child: FadeTransition(
+        opacity: _entryAnim,
+        child: SizedBox(
+          height: 220,
+          child: Stack(
+            children: [
+              // Animated background
+              AnimatedBuilder(
+                animation: _particleCtrl,
+                builder: (_, __) => CustomPaint(
+                  painter: _CosmosBackgroundPainter(
+                    progress: _particleCtrl.value,
+                    scrollOffset: _scrollOffset,
+                    color: _blue,
+                  ),
+                  child: const SizedBox.expand(),
+                ),
+              ),
+              // Gradient overlay
+              Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Colors.transparent, _bg],
+                    stops: [0.5, 1.0],
+                  ),
+                ),
+              ),
+              // Content
+              SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Top row: avatar + greeting + notifications
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          _buildAvatarOrb(),
+                          const SizedBox(width: 14),
+                          Expanded(child: _buildGreetingText()),
+                          _buildNotifBell(),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      // Search bar
+                      _buildInlineSearch(),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
-          
-          // Main content
-          SafeArea(
-            child: RefreshIndicator(
-              onRefresh: _loadDashboardData,
-              color: const Color(0xFFE74C3C),
-              backgroundColor: Colors.white,
-              child: CustomScrollView(
-                controller: _scrollController,
-                physics: const BouncingScrollPhysics(),
-                slivers: [
-                  // Floating Header with Search
-                  _buildFloatingHeader(),
-                  
-                  // Stats Cards with Hero Animation
-                  SliverPadding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    sliver: _buildStatsGrid(),
-                  ),
-                  
-                  // Quick Actions with Badges
-                  SliverPadding(
-                    padding: const EdgeInsets.all(20),
-                    sliver: _buildQuickActions(),
-                  ),
-                  
-                  // Recent Articles Section with Search Filter
-                  _buildSectionHeader(
-                    _isSearching ? 'Suchergebnisse' : 'Neueste Artikel',
-                    Icons.article,
-                  ),
-                  
-                  SliverPadding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    sliver: _buildRecentArticles(),
-                  ),
-                  
-                  // Trending Topics Section
-                  if (!_isSearching) ...[
-                    _buildSectionHeader('Trending Topics', Icons.trending_up),
-                    
-                    SliverPadding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      sliver: _buildTrendingTopics(),
-                    ),
-                  ],
-                  
-                  // Bottom spacing
-                  const SliverPadding(
-                    padding: EdgeInsets.only(bottom: 100),
-                  ),
-                ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAvatarOrb() {
+    return AnimatedBuilder(
+      animation: _pulseCtrl,
+      builder: (_, __) => GestureDetector(
+        onTap: () => _go(const StatsDashboardScreen(world: 'materie')),
+        child: Container(
+          width: 54, height: 54,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: RadialGradient(
+              colors: [
+                _blue.withValues(alpha: 0.35 + _pulseCtrl.value * 0.15),
+                _blueD.withValues(alpha: 0.1),
+              ],
+            ),
+            border: Border.all(
+                color: _blue.withValues(alpha: 0.5 + _pulseCtrl.value * 0.25),
+                width: 1.5),
+            boxShadow: [
+              BoxShadow(
+                color: _blue.withValues(alpha: 0.2 + _pulseCtrl.value * 0.2),
+                blurRadius: 16,
+                spreadRadius: 2,
+              ),
+            ],
+          ),
+          child: Center(
+            child: Text(
+              _profile?.avatarEmoji ?? '🌍',
+              style: const TextStyle(fontSize: 24),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGreetingText() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(_greeting,
+            style: const TextStyle(
+                color: Colors.white54, fontSize: 12, fontWeight: FontWeight.w500)),
+        const SizedBox(height: 2),
+        Row(children: [
+          Flexible(
+            child: Text(
+              _profile?.username ?? 'Explorer',
+              style: const TextStyle(
+                  color: Colors.white, fontSize: 20,
+                  fontWeight: FontWeight.bold, letterSpacing: -0.3),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          if (_profile?.isAdmin() == true) ...[
+            const SizedBox(width: 8),
+            _AdminBadge(isRoot: _profile!.isRootAdmin()),
+          ],
+        ]),
+        const SizedBox(height: 3),
+        // Live dot + status
+        Row(children: [
+          AnimatedBuilder(
+            animation: _pulseCtrl,
+            builder: (_, __) => Container(
+              width: 6, height: 6,
+              decoration: BoxDecoration(
+                color: _green.withValues(alpha: 0.6 + _pulseCtrl.value * 0.4),
+                shape: BoxShape.circle,
+                boxShadow: [BoxShadow(color: _green.withValues(alpha: 0.5), blurRadius: 4)],
               ),
             ),
           ),
+          const SizedBox(width: 6),
+          const Text('Welt der MATERIE',
+              style: TextStyle(color: Colors.white38, fontSize: 11)),
+        ]),
+      ],
+    );
+  }
+
+  Widget _buildNotifBell() {
+    return GestureDetector(
+      onTap: () => _go(const StatsDashboardScreen(world: 'materie')),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            width: 44, height: 44,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.07),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+            ),
+            child: Icon(
+              _notifs > 0 ? Icons.notifications : Icons.notifications_outlined,
+              color: _notifs > 0 ? _amber : Colors.white60,
+              size: 22,
+            ),
+          ),
+          if (_notifs > 0)
+            Positioned(
+              right: -4, top: -4,
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: const BoxDecoration(color: _red, shape: BoxShape.circle),
+                constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+                child: Text(
+                  _notifs > 9 ? '9+' : '$_notifs',
+                  style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.white),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
         ],
       ),
     );
   }
 
-  Widget _buildAnimatedBackground() {
-    return AnimatedBuilder(
-      animation: _backgroundController,
-      builder: (context, child) {
-        return Container(
+  Widget _buildInlineSearch() {
+    return GestureDetector(
+      onTap: () => _go(const MobileOptimierterRechercheTab()),
+      child: Container(
+        height: 46,
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.06),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+          boxShadow: [
+            BoxShadow(color: _blue.withValues(alpha: 0.08), blurRadius: 12),
+          ],
+        ),
+        child: Row(children: [
+          Icon(Icons.search_rounded, color: _blueL.withValues(alpha: 0.7), size: 20),
+          const SizedBox(width: 10),
+          const Expanded(
+            child: Text('Artikel, Themen, Fakten suchen…',
+                style: TextStyle(color: Colors.white30, fontSize: 14)),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: _blue.withValues(alpha: 0.18),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: _blue.withValues(alpha: 0.35)),
+            ),
+            child: const Text('KI-Suche',
+                style: TextStyle(color: _blueL, fontSize: 10, fontWeight: FontWeight.w700)),
+          ),
+        ]),
+      ),
+    );
+  }
+
+  // ── LIVE STAT BANNER ───────────────────────────────────────────────────
+  Widget _buildLiveStatBanner() {
+    final stats = [
+      _StatDef(icon: Icons.article_outlined, label: 'Artikel', value: _articles, color: _blue),
+      _StatDef(icon: Icons.timeline,          label: 'Sessions', value: _sessions,  color: _cyan),
+      _StatDef(icon: Icons.bookmark_outline,  label: 'Gespeich.', value: _bookmarks, color: _amber),
+      _StatDef(icon: Icons.share_outlined,    label: 'Geteilt',  value: _shares,    color: _green),
+    ];
+
+    return SliverToBoxAdapter(
+      child: SlideTransition(
+        position: Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero)
+            .animate(_entryAnim),
+        child: FadeTransition(
+          opacity: _entryAnim,
+          child: Container(
+            margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            decoration: BoxDecoration(
+              color: _cardB,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+            ),
+            child: Row(
+              children: stats.asMap().entries.map((e) {
+                final i = e.key;
+                final s = e.value;
+                return Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      if (s.label == 'Gespeich.') {
+                        _go(const BookmarksScreen());
+                      } else {
+                        _go(const StatsDashboardScreen(world: 'materie'));
+                      }
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      decoration: i < stats.length - 1
+                          ? BoxDecoration(
+                              border: Border(
+                                right: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
+                              ),
+                            )
+                          : null,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(s.icon, color: s.color, size: 18),
+                          const SizedBox(height: 5),
+                          _loading
+                              ? _Shimmer(w: 26, h: 16, r: 4)
+                              : Text('${s.value}',
+                                  style: TextStyle(
+                                      color: s.color, fontSize: 16,
+                                      fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 1),
+                          Text(s.label,
+                              style: const TextStyle(
+                                  color: Colors.white38, fontSize: 9,
+                                  fontWeight: FontWeight.w500),
+                              maxLines: 1, overflow: TextOverflow.ellipsis),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── ACTION GRID (2×2 tiles) ─────────────────────────────────────────────
+  Widget _buildActionGrid() {
+    final tiles = [
+      _TileDef(
+        icon: Icons.auto_stories_rounded,
+        label: 'Recherche',
+        sub: 'Artikel & Fakten',
+        gradient: [const Color(0xFF0D47A1), const Color(0xFF1565C0), const Color(0xFF2979FF)],
+        badge: 0,
+        onTap: () => _go(const MobileOptimierterRechercheTab()),
+      ),
+      _TileDef(
+        icon: Icons.forum_rounded,
+        label: 'Live Chat',
+        sub: 'Jetzt diskutieren',
+        gradient: [const Color(0xFF006064), const Color(0xFF00838F), const Color(0xFF00E5FF)],
+        badge: _notifs,
+        onTap: () => _go(const MaterieLiveChatScreen()),
+      ),
+      _TileDef(
+        icon: Icons.explore_rounded,
+        label: 'Erkunden',
+        sub: 'Themen & Karte',
+        gradient: [const Color(0xFF4A148C), const Color(0xFF6A1B9A), const Color(0xFF9C27B0)],
+        badge: 0,
+        onTap: () => _go(const MobileOptimierterRechercheTab()),
+      ),
+      _TileDef(
+        icon: Icons.collections_bookmark_rounded,
+        label: 'Gespeichert',
+        sub: 'Deine Sammlung',
+        gradient: [const Color(0xFFE65100), const Color(0xFFF57C00), const Color(0xFFFFAB00)],
+        badge: _bookmarks > 0 ? _bookmarks : 0,
+        onTap: () => _go(const BookmarksScreen()),
+      ),
+    ];
+
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+        child: SlideTransition(
+          position: Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero)
+              .animate(_entryAnim),
+          child: FadeTransition(
+            opacity: _entryAnim,
+            child: Column(children: [
+              Row(children: [
+                _buildActionTile(tiles[0]),
+                const SizedBox(width: 10),
+                _buildActionTile(tiles[1]),
+              ]),
+              const SizedBox(height: 10),
+              Row(children: [
+                _buildActionTile(tiles[2]),
+                const SizedBox(width: 10),
+                _buildActionTile(tiles[3]),
+              ]),
+            ]),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionTile(_TileDef t) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: t.onTap,
+        child: Container(
+          height: 108,
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                Color.lerp(
-                  const Color(0xFF1a1a2e),
-                  const Color(0xFF16213e),
-                  _backgroundController.value,
-                )!,
-                Color.lerp(
-                  const Color(0xFF0f3460),
-                  const Color(0xFF1a1a2e),
-                  _backgroundController.value,
-                )!,
-              ],
+              colors: t.gradient,
             ),
+            borderRadius: BorderRadius.circular(22),
+            boxShadow: [
+              BoxShadow(
+                  color: t.gradient.last.withValues(alpha: 0.3),
+                  blurRadius: 20, offset: const Offset(0, 8)),
+            ],
           ),
-        );
-      },
-    );
-  }
-
-  Widget _buildFloatingHeader() {
-    final greeting = _getGreeting();
-    final username = _profile?.username ?? 'Explorer';
-    
-    return SliverToBoxAdapter(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Greeting & Username Row
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(22),
+            child: Stack(
               children: [
-                Expanded(
+                // Decorative background circles
+                Positioned(
+                  right: -16, bottom: -16,
+                  child: Container(
+                    width: 72, height: 72,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withValues(alpha: 0.07),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  right: -4, top: -20,
+                  child: Container(
+                    width: 40, height: 40,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withValues(alpha: 0.04),
+                    ),
+                  ),
+                ),
+                // Content
+                Padding(
+                  padding: const EdgeInsets.all(14),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Greeting
-                      Text(
-                        greeting,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          color: Colors.white70,
-                          fontWeight: FontWeight.w500,
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(10),
                         ),
+                        child: Icon(t.icon, color: Colors.white, size: 20),
                       ),
-                      const SizedBox(height: 4),
-                      
-                      // Username with badge
-                      Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              username,
-                              style: const TextStyle(
-                                fontSize: 32,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          if (_profile != null && _profile!.isAdmin()) ...[
-                            const SizedBox(width: 12),
-                            _buildAdminBadge(),
-                          ],
-                        ],
-                      ),
+                      const Spacer(),
+                      Text(t.label,
+                          style: const TextStyle(
+                              color: Colors.white, fontSize: 13,
+                              fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 1),
+                      Text(t.sub,
+                          style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.7),
+                              fontSize: 10)),
                     ],
                   ),
                 ),
-                
-                // Notification Badge
-                if (_notificationCount > 0)
-                  _buildNotificationBadge(),
+                // Badge
+                if (t.badge > 0)
+                  Positioned(
+                    right: 10, top: 10,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        t.badge > 9 ? '9+' : '${t.badge}',
+                        style: TextStyle(
+                            fontSize: 9, fontWeight: FontWeight.bold,
+                            color: t.gradient.last),
+                      ),
+                    ),
+                  ),
               ],
             ),
-            
-            const SizedBox(height: 8),
-            
-            // Subtitle
-            Text(
-              'Willkommen in der Welt der MATERIE',
-              style: const TextStyle(
-                fontSize: 14,
-                color: Colors.white70,
-                fontWeight: FontWeight.w400,
-                letterSpacing: 0.3,
-              ),
-            ),
-            
-            const SizedBox(height: 24),
-            
-            // Search Bar
-            _buildSearchBar(),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNotificationBadge() {
-    return RepaintBoundary(
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: LinearGradient(
-            colors: [
-              Colors.white.withValues(alpha: 0.15),
-              Colors.white.withValues(alpha: 0.05),
-            ],
-          ),
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.2),
-            width: 1,
-          ),
-        ),
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            const Icon(
-              Icons.notifications_outlined,
-              color: Colors.white,
-              size: 24,
-            ),
-            if (_notificationCount > 0)
-              Positioned(
-                right: -4,
-                top: -4,
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      colors: [Color(0xFFE74C3C), Color(0xFFC0392B)],
-                    ),
-                  ),
-                  constraints: const BoxConstraints(
-                    minWidth: 18,
-                    minHeight: 18,
-                  ),
-                  child: Text(
-                    _notificationCount > 9 ? '9+' : _notificationCount.toString(),
-                    style: const TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSearchBar() {
-    return RepaintBoundary(
-      child: AnimatedBuilder(
-        animation: _searchAnimation,
-        builder: (context, child) {
-          return Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Colors.white.withValues(alpha: 0.15),
-                  Colors.white.withValues(alpha: 0.05),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: _isSearching
-                    ? const Color(0xFFE74C3C).withValues(alpha: 0.5)
-                    : Colors.white.withValues(alpha: 0.2),
-                width: 1.5,
-              ),
-              boxShadow: _isSearching
-                  ? [
-                      BoxShadow(
-                        color: const Color(0xFFE74C3C).withValues(alpha: 0.2),
-                        blurRadius: 20,
-                        offset: const Offset(0, 8),
-                      ),
-                    ]
-                  : [],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                child: TextField(
-                  controller: _searchTextController,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                  ),
-                  decoration: InputDecoration(
-                    hintText: 'Suche nach Artikeln, Themen...',
-                    hintStyle: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.5),
-                      fontSize: 15,
-                    ),
-                    prefixIcon: Icon(
-                      _isSearching ? Icons.search : Icons.search,
-                      color: _isSearching
-                          ? const Color(0xFFE74C3C)
-                          : Colors.white.withValues(alpha: 0.7),
-                    ),
-                    suffixIcon: _searchTextController.text.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(
-                              Icons.clear,
-                              color: Colors.white,
-                            ),
-                            onPressed: () {
-                              _searchTextController.clear();
-                            },
-                          )
-                        : null,
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 16,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildAdminBadge() {
-    return RepaintBoundary(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFFE74C3C), Color(0xFFC0392B)],
-          ),
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFFE74C3C).withValues(alpha: 0.3),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              '🛡️',
-              style: TextStyle(fontSize: 14),
-            ),
-            const SizedBox(width: 4),
-            Text(
-              _profile!.isRootAdmin() ? 'ROOT' : 'ADMIN',
-              style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-                letterSpacing: 0.5,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatsGrid() {
-    final stats = [
-      {
-        'label': 'Artikel',
-        'value': _totalArticles,
-        'icon': Icons.article,
-        'color': const Color(0xFFE74C3C)
-      },
-      {
-        'label': 'Sessions',
-        'value': _researchSessions,
-        'icon': Icons.timeline,
-        'color': const Color(0xFF3498DB)
-      },
-      {
-        'label': 'Bookmarks',
-        'value': _bookmarkedTopics,
-        'icon': Icons.bookmark,
-        'color': const Color(0xFFF39C12)
-      },
-      {
-        'label': 'Shares',
-        'value': _sharedFindings,
-        'icon': Icons.share,
-        'color': const Color(0xFF27AE60)
-      },
-    ];
-
-    return SliverGrid(
-      delegate: SliverChildBuilderDelegate(
-        (context, index) {
-          final stat = stats[index];
-          return RepaintBoundary(
-            child: FadeTransition(
-              opacity: _cardAnimation,
-              child: SlideTransition(
-                position: Tween<Offset>(
-                  begin: const Offset(0, 0.3),
-                  end: Offset.zero,
-                ).animate(CurvedAnimation(
-                  parent: _cardController,
-                  curve: Interval(
-                    index * 0.1,
-                    1.0,
-                    curve: Curves.easeOutCubic,
-                  ),
-                )),
-                child: _buildStatCard(
-                  label: stat['label'] as String,
-                  value: stat['value'] as int,
-                  icon: stat['icon'] as IconData,
-                  color: stat['color'] as Color,
-                ),
-              ),
-            ),
-          );
-        },
-        childCount: stats.length,
-      ),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        mainAxisSpacing: 15,
-        crossAxisSpacing: 15,
-        childAspectRatio: 1.5,
-      ),
-    );
-  }
-
-  Widget _buildStatCard({
-    required String label,
-    required int value,
-    required IconData icon,
-    required Color color,
-  }) {
-    return Hero(
-      tag: 'stat_$label',
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Colors.white.withValues(alpha: 0.15),
-              Colors.white.withValues(alpha: 0.05),
-            ],
-          ),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.2),
-            width: 1.5,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // Icon
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      icon,
-                      color: color,
-                      size: 24,
-                    ),
-                  ),
-                  
-                  // Value and Label
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        value.toString(),
-                        style: const TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          shadows: [
-                            Shadow(
-                              color: Colors.black54,
-                              blurRadius: 4,
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        label,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                          shadows: [
-                            Shadow(
-                              color: Colors.black87,
-                              blurRadius: 6,
-                            ),
-                          ],
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildQuickActions() {
+  // ── SECTION TITLE ──────────────────────────────────────────────────────
+  Widget _buildSectionTitle(String title, {String subtitle = ''}) {
     return SliverToBoxAdapter(
-      child: RepaintBoundary(
-        child: SizedBox(
-          height: 120,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            itemCount: _quickActions.length,
-            itemBuilder: (context, index) {
-              final action = _quickActions[index];
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 28, 20, 12),
+        child: Row(children: [
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(title,
+                  style: const TextStyle(
+                      color: Colors.white, fontSize: 17,
+                      fontWeight: FontWeight.bold)),
+              if (subtitle.isNotEmpty)
+                Text(subtitle,
+                    style: const TextStyle(color: Colors.white38, fontSize: 12)),
+            ]),
+          ),
+          GestureDetector(
+            onTap: () => _go(const MobileOptimierterRechercheTab()),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: _blue.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: _blue.withValues(alpha: 0.3)),
+              ),
+              child: const Text('Alle →',
+                  style: TextStyle(color: _blueL, fontSize: 11,
+                      fontWeight: FontWeight.w600)),
+            ),
+          ),
+        ]),
+      ),
+    );
+  }
+
+  // ── TRENDING CHIPS ─────────────────────────────────────────────────────
+  Widget _buildTrendingChips() {
+    final topics = _trending.isNotEmpty
+        ? _trending.map((t) => t['topic'] ?? t['title'] ?? '').whereType<String>().toList()
+        : ['UFO', 'Geopolitik', 'Technologie', 'Medien', 'Wissenschaft', 'Geschichte', 'Deep State'];
+
+    final chipColors = [_blue, _cyan, _red, _amber, _green, _purple, _blueL];
+
+    return SliverToBoxAdapter(
+      child: SizedBox(
+        height: 44,
+        child: ListView.builder(
+          scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          itemCount: _loading ? 6 : topics.length,
+          itemBuilder: (ctx, i) {
+            if (_loading) {
               return Padding(
-                padding: EdgeInsets.only(
-                  right: index < _quickActions.length - 1 ? 15 : 0,
-                ),
-                child: FadeTransition(
-                  opacity: _cardAnimation,
-                  child: _buildQuickActionCard(
-                    icon: action['icon'] as IconData,
-                    label: action['label'] as String,
-                    gradient: action['gradient'] as LinearGradient,
-                    count: action['count'] as int,
-                  ),
-                ),
+                padding: const EdgeInsets.only(right: 10),
+                child: _Shimmer(w: 85, h: 36, r: 20),
               );
-            },
+            }
+            final topic = topics[i];
+            final c = chipColors[i % chipColors.length];
+            return GestureDetector(
+              onTap: () => _go(const MobileOptimierterRechercheTab()),
+              child: Container(
+                margin: const EdgeInsets.only(right: 10),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                decoration: BoxDecoration(
+                  color: c.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(color: c.withValues(alpha: 0.3)),
+                ),
+                child: Text(topic,
+                    style: TextStyle(color: c, fontSize: 13,
+                        fontWeight: FontWeight.w600)),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  // ── ARTICLE CARDS ──────────────────────────────────────────────────────
+  Widget _buildArticleCards() {
+    if (_loading) {
+      return SliverToBoxAdapter(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Column(
+            children: List.generate(3, (_) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _Shimmer(w: double.infinity, h: 88, r: 16),
+            )),
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildQuickActionCard({
-    required IconData icon,
-    required String label,
-    required LinearGradient gradient,
-    required int count,
-  }) {
-    return InkWell(
-      onTap: () {
-        // ✅ ECHTE NAVIGATION via Handler
-        _handleQuickActionTap(label);
-      },
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        width: 110,
-        decoration: BoxDecoration(
-          gradient: gradient,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: gradient.colors.first.withValues(alpha: 0.3),
-              blurRadius: 12,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Stack(
-          children: [
-            // Main content
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  icon,
-                  size: 36,
-                  color: Colors.white,
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  label,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                    shadows: [
-                      Shadow(
-                        color: Colors.black54,
-                        blurRadius: 4,
-                      ),
-                    ],
-                  ),
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                ),
-              ],
-            ),
-            
-            // Badge
-            if (count > 0)
-              Positioned(
-                right: 8,
-                top: 8,
-                child: Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.2),
-                        blurRadius: 4,
-                      ),
-                    ],
-                  ),
-                  constraints: const BoxConstraints(
-                    minWidth: 20,
-                    minHeight: 20,
-                  ),
-                  child: Text(
-                    count > 9 ? '9+' : count.toString(),
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      color: gradient.colors.first,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSectionHeader(String title, IconData icon) {
-    return SliverPadding(
-      padding: const EdgeInsets.fromLTRB(20, 30, 20, 15),
-      sliver: SliverToBoxAdapter(
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              color: Colors.white,
-              size: 24,
-            ),
-            const SizedBox(width: 12),
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-            if (_isSearching && _filteredArticles.isNotEmpty) ...[
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE74C3C).withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  '${_filteredArticles.length} Ergebnisse',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFFE74C3C),
-                  ),
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRecentArticles() {
-    if (_isLoading) {
-      return SliverToBoxAdapter(
-        child: _buildLoadingShimmer(),
       );
     }
 
-    final articles = _isSearching ? _filteredArticles : _recentArticles;
-
-    if (articles.isEmpty) {
+    if (_latestArticles.isEmpty) {
       return SliverToBoxAdapter(
-        child: _buildEmptyState(
-          _isSearching
-              ? 'Keine Artikel für "$_searchQuery" gefunden'
-              : 'Keine Artikel gefunden',
+        child: GestureDetector(
+          onTap: () => _go(const MobileOptimierterRechercheTab()),
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.all(28),
+            decoration: BoxDecoration(
+              color: _card,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: _blue.withValues(alpha: 0.15)),
+            ),
+            child: Column(children: [
+              Icon(Icons.article_outlined, color: _blueL.withValues(alpha: 0.4), size: 44),
+              const SizedBox(height: 14),
+              const Text('Artikel entdecken',
+                  style: TextStyle(color: Colors.white70, fontWeight: FontWeight.w600, fontSize: 15)),
+              const SizedBox(height: 6),
+              const Text('Zur Recherche →',
+                  style: TextStyle(color: _blueL, fontSize: 13, fontWeight: FontWeight.w500)),
+            ]),
+          ),
         ),
       );
     }
 
     return SliverList(
       delegate: SliverChildBuilderDelegate(
-        (context, index) {
-          final article = articles[index];
-          return RepaintBoundary(
-            child: Padding(
-              padding: EdgeInsets.only(
-                bottom: index < articles.length - 1 ? 15 : 0,
+        (ctx, i) {
+          if (i >= _latestArticles.length) return null;
+          final a = _latestArticles[i];
+          // First article is featured (larger)
+          if (i == 0) {
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+              child: _FeaturedArticleCard(
+                article: a,
+                onTap: () => _goArticle(a),
+                accent: _blue,
               ),
-              child: FadeTransition(
-                opacity: _cardAnimation,
-                child: _buildArticleCard(article, index),
-              ),
-            ),
+            );
+          }
+          return Padding(
+            padding: EdgeInsets.fromLTRB(16, 0, 16,
+                i == _latestArticles.length - 1 ? 0 : 10),
+            child: _ArticleCard(article: a, onTap: () => _goArticle(a), accent: _blue),
           );
         },
-        childCount: articles.length,
+        childCount: _latestArticles.length,
       ),
     );
   }
 
-  Widget _buildArticleCard(Map<String, dynamic> article, int index) {
-    final title = article['title'] ?? 'Unbekannt';
-    final category = article['category'] ?? 'Allgemein';
-    final imageUrl = article['image_url'];
-
-    return Hero(
-      tag: 'article_$index',
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () {
-            // ✅ ECHTE NAVIGATION via Handler
-            _handleArticleTap(article);
-          },
-          borderRadius: BorderRadius.circular(20),
+  // ── EXPLORE SECTION ────────────────────────────────────────────────────
+  Widget _buildExploreSection() {
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
+        child: GestureDetector(
+          onTap: () => _go(const StatsDashboardScreen(world: 'materie')),
           child: Container(
-            height: 140,
+            padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Colors.white.withValues(alpha: 0.15),
-                  Colors.white.withValues(alpha: 0.05),
+                  _blueD.withValues(alpha: 0.8),
+                  _blue.withValues(alpha: 0.4),
                 ],
               ),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.2),
-                width: 1.5,
-              ),
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(20),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                child: Row(
-                  children: [
-                    // Image
-                    if (imageUrl != null)
-                      Container(
-                        width: 120,
-                        decoration: BoxDecoration(
-                          image: DecorationImage(
-                            image: NetworkImage(imageUrl),
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      )
-                    else
-                      Container(
-                        width: 120,
-                        decoration: const BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              Color(0xFFE74C3C),
-                              Color(0xFFC0392B),
-                            ],
-                          ),
-                        ),
-                        child: const Icon(
-                          Icons.article,
-                          size: 48,
-                          color: Colors.white,
-                        ),
-                      ),
-                    
-                    // Content
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            // Category badge
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFE74C3C).withValues(alpha: 0.2),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                category.toUpperCase(),
-                                style: const TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFFE74C3C),
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                            ),
-                            
-                            const SizedBox(height: 12),
-                            
-                            // Title
-                            Text(
-                              title,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                                height: 1.3,
-                              ),
-                            ),
-                            
-                            const Spacer(),
-                            
-                            // Read more
-                            const Row(
-                              children: [
-                                Text(
-                                  'Weiterlesen',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Color(0xFFE74C3C),
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                SizedBox(width: 4),
-                                Icon(
-                                  Icons.arrow_forward,
-                                  size: 14,
-                                  color: Color(0xFFE74C3C),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTrendingTopics() {
-    if (_isLoading) {
-      return SliverToBoxAdapter(
-        child: _buildLoadingShimmer(),
-      );
-    }
-
-    if (_trendingTopics.isEmpty) {
-      return SliverToBoxAdapter(
-        child: _buildEmptyState('Keine Trending Topics'),
-      );
-    }
-
-    return SliverGrid(
-      delegate: SliverChildBuilderDelegate(
-        (context, index) {
-          final topic = _trendingTopics[index];
-          return RepaintBoundary(
-            child: FadeTransition(
-              opacity: _cardAnimation,
-              child: _buildTrendingCard(topic, index),
-            ),
-          );
-        },
-        childCount: _trendingTopics.length,
-      ),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        mainAxisSpacing: 15,
-        crossAxisSpacing: 15,
-        childAspectRatio: 1.0,
-      ),
-    );
-  }
-
-  Widget _buildTrendingCard(Map<String, dynamic> topic, int index) {
-    final title = topic['title'] ?? 'Unbekannt';
-    final colors = _getTrendingColors(index);
-
-    return Hero(
-      tag: 'trending_$index',
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () {
-            if (kDebugMode) {
-              debugPrint('Trending topic tapped: $title');
-            }
-            // Navigate to topic detail or search
-            _handleTrendingTopicTap(title);
-          },
-          borderRadius: BorderRadius.circular(20),
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: colors,
-              ),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: _blue.withValues(alpha: 0.3)),
               boxShadow: [
-                BoxShadow(
-                  color: colors.first.withValues(alpha: 0.3),
-                  blurRadius: 12,
-                  offset: const Offset(0, 6),
-                ),
+                BoxShadow(color: _blue.withValues(alpha: 0.15), blurRadius: 24, offset: const Offset(0, 8)),
               ],
             ),
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Trend indicator
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.trending_up,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        '#${index + 1}',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                  
-                  const Spacer(),
-                  
-                  // Title
-                  Text(
-                    title,
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                      height: 1.3,
-                    ),
-                  ),
-                ],
+            child: Row(children: [
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  const Text('Statistiken & Analyse',
+                      style: TextStyle(color: Colors.white, fontSize: 15,
+                          fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 4),
+                  Text('Deine persönlichen Insights',
+                      style: TextStyle(color: Colors.white.withValues(alpha: 0.65), fontSize: 12)),
+                ]),
               ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLoadingShimmer() {
-    return RepaintBoundary(
-      child: AnimatedBuilder(
-        animation: _shimmerAnimation,
-        builder: (context, child) {
-          return Container(
-            height: 200,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment(-1.0, 0.0),
-                end: Alignment(1.0, 0.0),
-                colors: [
-                  Colors.white.withValues(alpha: 0.05),
-                  Colors.white.withValues(alpha: 0.15),
-                  Colors.white.withValues(alpha: 0.05),
-                ],
-                stops: [
-                  _shimmerAnimation.value - 0.3,
-                  _shimmerAnimation.value,
-                  _shimmerAnimation.value + 0.3,
-                ],
-              ),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: const Center(
-              child: CircularProgressIndicator(
-                color: Color(0xFFE74C3C),
-                strokeWidth: 3,
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildEmptyState(String message) {
-    return Container(
-      height: 200,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Colors.white.withValues(alpha: 0.05),
-            Colors.white.withValues(alpha: 0.1),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              _isSearching ? Icons.search_off : Icons.inbox_outlined,
-              size: 48,
-              color: Colors.white.withValues(alpha: 0.3),
-            ),
-            const SizedBox(height: 16),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 40),
-              child: Text(
-                message,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.white.withValues(alpha: 0.5),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
                 ),
-                textAlign: TextAlign.center,
+                child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(Icons.analytics_outlined, color: Colors.white, size: 16),
+                  SizedBox(width: 6),
+                  Text('Öffnen',
+                      style: TextStyle(color: Colors.white, fontSize: 12,
+                          fontWeight: FontWeight.bold)),
+                ]),
               ),
-            ),
-          ],
+            ]),
+          ),
         ),
       ),
     );
   }
+}
 
-  List<Color> _getTrendingColors(int index) {
-    const colorSets = [
-      [Color(0xFFE74C3C), Color(0xFFC0392B)],
-      [Color(0xFF3498DB), Color(0xFF2980B9)],
-      [Color(0xFFF39C12), Color(0xFFE67E22)],
-      [Color(0xFF27AE60), Color(0xFF229954)],
-      [Color(0xFF9B59B6), Color(0xFF8E44AD)],
-      [Color(0xFF1ABC9C), Color(0xFF16A085)],
-    ];
+// ═══════════════════════════════════════════════════════════════════════════
+// COSMOS BACKGROUND PAINTER
+// ═══════════════════════════════════════════════════════════════════════════
+class _CosmosBackgroundPainter extends CustomPainter {
+  final double progress;
+  final double scrollOffset;
+  final Color color;
 
-    return colorSets[index % colorSets.length];
-  }
+  _CosmosBackgroundPainter({
+    required this.progress,
+    required this.scrollOffset,
+    required this.color,
+  });
 
-  String _getGreeting() {
-    final hour = DateTime.now().hour;
-    if (hour < 12) return 'Guten Morgen';
-    if (hour < 18) return 'Guten Tag';
-    return 'Guten Abend';
-  }
+  static final List<Offset> _stars = List.generate(40, (i) {
+    final rng = math.Random(i * 7 + 13);
+    return Offset(rng.nextDouble(), rng.nextDouble());
+  });
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // NAVIGATION HANDLERS
-  // ═══════════════════════════════════════════════════════════════════════════
+  @override
+  void paint(Canvas canvas, Size size) {
+    // Deep background
+    final bgPaint = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          const Color(0xFF040A18),
+          const Color(0xFF060D20),
+          const Color(0xFF08101A),
+        ],
+      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), bgPaint);
 
-  void _handleQuickActionTap(String label) {
-    if (kDebugMode) {
-      debugPrint('🎯 Quick Action Tapped: $label');
-    }
+    // Animated nebula glow
+    final nebulaPaint = Paint()
+      ..color = color.withValues(alpha: 0.06 + math.sin(progress * math.pi * 2) * 0.03)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 60);
+    canvas.drawCircle(
+      Offset(size.width * 0.3, size.height * 0.4),
+      size.width * 0.5,
+      nebulaPaint,
+    );
+    canvas.drawCircle(
+      Offset(size.width * 0.8, size.height * 0.2),
+      size.width * 0.3,
+      nebulaPaint..color = const Color(0xFF7C4DFF).withValues(alpha: 0.04),
+    );
 
-    switch (label) {
-      case 'Artikel':
-        // ✅ ECHTE NAVIGATION: Recherche Tab
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const MobileOptimierterRechercheTab(),
-          ),
-        );
-        break;
-
-      case 'Live Chat':
-        // ✅ ECHTE NAVIGATION: Live Chat Screen
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const MaterieLiveChatScreen(),
-          ),
-        );
-        break;
-
-      case 'Erkunden':
-        // ✅ ECHTE NAVIGATION: Recherche Tab mit Suche
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const MobileOptimierterRechercheTab(),
-          ),
-        );
-        break;
-
-      case 'Gespeichert':
-        // ✅ ECHTE NAVIGATION: Recherche Tab (Gespeicherte Filter)
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const MobileOptimierterRechercheTab(),
-          ),
-        );
-        break;
-
-      default:
-        if (kDebugMode) {
-          debugPrint('⚠️ Unknown quick action: $label');
-        }
-    }
-  }
-
-  void _handleArticleTap(Map<String, dynamic> article) {
-    final title = article['title'] ?? 'Unbekannt';
-    final url = article['url'] as String?;
-    
-    if (kDebugMode) {
-      debugPrint('📰 Article Tapped: $title');
-    }
-
-    // ✅ ECHTE NAVIGATION: Artikel in Browser öffnen oder Detail-Screen
-    if (url != null && url.isNotEmpty) {
-      // Option 1: URL im Browser öffnen
-      launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
-    } else {
-      // Option 2: Recherche Tab mit Artikel öffnen
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const MobileOptimierterRechercheTab(),
-        ),
+    // Stars
+    final starPaint = Paint()..color = Colors.white;
+    for (var i = 0; i < _stars.length; i++) {
+      final s = _stars[i];
+      final twinkle = math.sin(progress * math.pi * 2 + i * 0.7);
+      final alpha = (0.2 + twinkle * 0.15).clamp(0.05, 0.4);
+      final radius = 1.0 + (i % 3) * 0.5;
+      starPaint.color = Colors.white.withValues(alpha: alpha);
+      canvas.drawCircle(
+        Offset(s.dx * size.width, s.dy * size.height - scrollOffset * 0.15),
+        radius, starPaint,
       );
     }
   }
 
-  void _handleTrendingTopicTap(String topic) {
-    if (kDebugMode) {
-      debugPrint('🔥 Trending Topic Tapped: $topic');
-    }
+  @override
+  bool shouldRepaint(_CosmosBackgroundPainter old) =>
+      old.progress != progress || old.scrollOffset != scrollOffset;
+}
 
-    // ✅ ECHTE NAVIGATION: Suche mit Trending Topic
-    _searchTextController.text = topic;
-    // Search will auto-trigger via listener in _setupSearch()
+// ═══════════════════════════════════════════════════════════════════════════
+// WIDGETS
+// ═══════════════════════════════════════════════════════════════════════════
 
-    // Optional: Navigiere direkt zu Recherche Tab mit vorausgefüllter Suche
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const MobileOptimierterRechercheTab(),
+class _AdminBadge extends StatelessWidget {
+  final bool isRoot;
+  const _AdminBadge({required this.isRoot});
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+    decoration: BoxDecoration(
+      gradient: LinearGradient(colors: isRoot
+          ? [Colors.amber.shade700, Colors.orange.shade500]
+          : [const Color(0xFFE53935), const Color(0xFFC62828)]),
+      borderRadius: BorderRadius.circular(10),
+    ),
+    child: Text(
+      isRoot ? '👑 ROOT' : '🛡️ ADM',
+      style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+    ),
+  );
+}
+
+class _StatDef {
+  final IconData icon;
+  final String label;
+  final int value;
+  final Color color;
+  const _StatDef({required this.icon, required this.label, required this.value, required this.color});
+}
+
+class _TileDef {
+  final IconData icon;
+  final String label, sub;
+  final List<Color> gradient;
+  final int badge;
+  final VoidCallback onTap;
+  const _TileDef({required this.icon, required this.label, required this.sub,
+    required this.gradient, required this.badge, required this.onTap});
+}
+
+class _Shimmer extends StatelessWidget {
+  final double w, h, r;
+  const _Shimmer({required this.w, required this.h, required this.r});
+  @override
+  Widget build(BuildContext context) => Container(
+    width: w, height: h,
+    decoration: BoxDecoration(
+      color: Colors.white.withValues(alpha: 0.05),
+      borderRadius: BorderRadius.circular(r),
+    ),
+  );
+}
+
+// Featured article (large hero card)
+class _FeaturedArticleCard extends StatelessWidget {
+  final Map<String, dynamic> article;
+  final VoidCallback onTap;
+  final Color accent;
+  const _FeaturedArticleCard({required this.article, required this.onTap, required this.accent});
+
+  @override
+  Widget build(BuildContext context) {
+    final title  = (article['title']  ?? 'Artikel').toString();
+    final source = (article['source'] ?? article['realm'] ?? 'Materie').toString();
+    final date   = (article['created_at'] ?? article['publishedAt'] ?? '').toString();
+    final tags   = (article['tags'] as List?)?.take(2).toList() ?? [];
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              const Color(0xFF0A1828),
+              accent.withValues(alpha: 0.12),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: accent.withValues(alpha: 0.25)),
+          boxShadow: [
+            BoxShadow(color: accent.withValues(alpha: 0.1), blurRadius: 20, offset: const Offset(0, 6)),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header row
+            Row(children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: accent.withValues(alpha: 0.3)),
+                ),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Container(
+                    width: 6, height: 6,
+                    decoration: BoxDecoration(color: accent, shape: BoxShape.circle),
+                  ),
+                  const SizedBox(width: 5),
+                  Text('TOP ARTIKEL',
+                      style: TextStyle(color: accent, fontSize: 9,
+                          fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+                ]),
+              ),
+              const Spacer(),
+              if (date.isNotEmpty)
+                Text(_formatDate(date),
+                    style: const TextStyle(color: Colors.white38, fontSize: 11)),
+            ]),
+            const SizedBox(height: 12),
+            // Title
+            Text(title,
+                style: const TextStyle(
+                    color: Colors.white, fontSize: 16,
+                    fontWeight: FontWeight.bold, height: 1.35),
+                maxLines: 3, overflow: TextOverflow.ellipsis),
+            const SizedBox(height: 10),
+            // Footer
+            Row(children: [
+              Icon(Icons.source_outlined, color: accent.withValues(alpha: 0.7), size: 13),
+              const SizedBox(width: 4),
+              Text(source,
+                  style: TextStyle(color: accent.withValues(alpha: 0.8), fontSize: 12)),
+              const Spacer(),
+              // Tags
+              ...tags.take(2).map((t) => Container(
+                margin: const EdgeInsets.only(left: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.06),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(t.toString(),
+                    style: const TextStyle(color: Colors.white38, fontSize: 10)),
+              )),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(Icons.arrow_forward_rounded, color: accent, size: 14),
+              ),
+            ]),
+          ],
+        ),
       ),
     );
+  }
+
+  String _formatDate(String raw) {
+    try {
+      final d = DateTime.parse(raw);
+      final diff = DateTime.now().difference(d);
+      if (diff.inDays > 7)  return '${d.day}.${d.month}.${d.year}';
+      if (diff.inDays > 0)  return 'vor ${diff.inDays}T';
+      if (diff.inHours > 0) return 'vor ${diff.inHours}h';
+      return 'jetzt';
+    } catch (_) { return ''; }
+  }
+}
+
+// Normal article card (compact)
+class _ArticleCard extends StatelessWidget {
+  final Map<String, dynamic> article;
+  final VoidCallback onTap;
+  final Color accent;
+  const _ArticleCard({required this.article, required this.onTap, required this.accent});
+
+  @override
+  Widget build(BuildContext context) {
+    final title  = (article['title']  ?? 'Artikel').toString();
+    final source = (article['source'] ?? article['realm'] ?? 'Materie').toString();
+    final date   = (article['created_at'] ?? article['publishedAt'] ?? '').toString();
+    final type   = (article['type'] ?? 'article').toString();
+    final icon   = type == 'video' ? Icons.play_circle_outline
+                 : type == 'podcast' ? Icons.mic_outlined
+                 : Icons.article_outlined;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(13),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0A1020),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+        ),
+        child: Row(children: [
+          Container(
+            width: 46, height: 46,
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: accent.withValues(alpha: 0.18)),
+            ),
+            child: Icon(icon, color: accent, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(title,
+                  style: const TextStyle(
+                      color: Colors.white, fontSize: 13,
+                      fontWeight: FontWeight.w600, height: 1.3),
+                  maxLines: 2, overflow: TextOverflow.ellipsis),
+              const SizedBox(height: 4),
+              Row(children: [
+                Text(source,
+                    style: TextStyle(color: accent.withValues(alpha: 0.7), fontSize: 11)),
+                if (date.isNotEmpty) ...[
+                  const Text(' · ', style: TextStyle(color: Colors.white24, fontSize: 11)),
+                  Text(_formatDate(date),
+                      style: const TextStyle(color: Colors.white38, fontSize: 11)),
+                ],
+              ]),
+            ]),
+          ),
+          const SizedBox(width: 8),
+          Icon(Icons.arrow_forward_ios_rounded, color: Colors.white24, size: 13),
+        ]),
+      ),
+    );
+  }
+
+  String _formatDate(String raw) {
+    try {
+      final d = DateTime.parse(raw);
+      final diff = DateTime.now().difference(d);
+      if (diff.inDays > 7)  return '${d.day}.${d.month}.${d.year}';
+      if (diff.inDays > 0)  return 'vor ${diff.inDays}T';
+      if (diff.inHours > 0) return 'vor ${diff.inHours}h';
+      return 'jetzt';
+    } catch (_) { return ''; }
   }
 }
