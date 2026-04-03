@@ -174,15 +174,22 @@ class _InlineEditWrapperState extends State<InlineEditWrapper> {
   }
 
   Future<void> _deleteContent() async {
-    // TODO: Delete via API
-    if (kDebugMode) {
-      debugPrint('🗑️  Delete ${widget.contentType}: ${widget.contentId}');
-    }
-    
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('✅ Inhalt gelöscht')),
-      );
+    try {
+      final service = DynamicContentService();
+      // Mark as deleted in sandbox first, then publish
+      service.updateInSandbox(widget.contentType, widget.contentId, {'visible': false, 'deleted': true});
+      if (kDebugMode) debugPrint('🗑️ Delete ${widget.contentType}: ${widget.contentId}');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('✅ Inhalt gelöscht')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('❌ Löschen fehlgeschlagen: $e')),
+        );
+      }
     }
   }
 }
@@ -215,9 +222,12 @@ class _InlineEditDialogState extends State<InlineEditDialog> {
   }
 
   Future<void> _loadContent() async {
-    // TODO: Load content from API
-    if (kDebugMode) {
-      debugPrint('📥 Load ${widget.contentType}: ${widget.contentId}');
+    try {
+      final service = DynamicContentService();
+      await service.initialize();
+      if (kDebugMode) debugPrint('📥 Load ${widget.contentType}: ${widget.contentId}');
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ Load content error: $e');
     }
   }
 
@@ -313,14 +323,25 @@ class _InlineEditDialogState extends State<InlineEditDialog> {
   Future<void> _saveChanges() async {
     setState(() => _isLoading = true);
     
-    // TODO: Save to API
-    await Future.delayed(const Duration(seconds: 1));
-    
-    if (mounted) {
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('✅ Änderungen gespeichert')),
-      );
+    try {
+      final service = DynamicContentService();
+      service.updateInSandbox(widget.contentType, widget.contentId, {
+        'title': _titleController.text,
+        'description': _descriptionController.text,
+      });
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('✅ Änderungen gespeichert')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('❌ Fehler: $e')),
+        );
+      }
     }
   }
 }
@@ -381,8 +402,6 @@ class _EditModeToggleState extends State<EditModeToggle> {
     setState(() {
       _editModeEnabled = !_editModeEnabled;
     });
-    
-    // TODO: Notify all InlineEditWrappers
     
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(

@@ -13,7 +13,7 @@ import '../../models/materie_profile.dart';
 import '../../models/energie_profile.dart';
 import '../../features/admin/state/admin_state.dart'; // 🆕 Admin State Provider
 import '../../core/persistence/auto_save_manager.dart'; // 🔄 Auto-Save System
-import '../../services/openclaw_comprehensive_service.dart'; // 🚀 OpenClaw v2.0
+import '../../core/storage/unified_storage_service.dart'; // ✅ user_data Box Sync
 
 /// Vollständiger Profil-Editor für Materie & Energie Welten
 /// Alle Felder bearbeitbar + neue Features (Avatar, Bio)
@@ -374,6 +374,13 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
         if (updatedProfile != null) {
           // 💾 Vollständiges Profil lokal speichern (mit userId & role)
           await storage.saveMaterieProfile(updatedProfile);
+          // ✅ Sync in user_data Box (für AdminStateNotifier + Chat)
+          await UnifiedStorageService().saveProfile('materie', {
+            'username': updatedProfile.username,
+            'role': updatedProfile.role ?? 'user',
+            'avatar_emoji': updatedProfile.avatarEmoji,
+            'avatar_url': updatedProfile.avatarUrl,
+          });
           
           // ✅ Auth-Service aktualisieren für Inline-Tools
           await UserAuthService.setUsername(updatedProfile.username, world: 'materie');
@@ -397,6 +404,13 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
           // ✅ SECURITY FIX: Keine lokalen Admin-Rechte ohne Backend-Validierung
           // Speichere Profil NUR als normalen User
           await storage.saveMaterieProfile(profile);
+          // ✅ Sync in user_data Box auch für Offline-Fallback
+          await UnifiedStorageService().saveProfile('materie', {
+            'username': profile.username,
+            'role': 'user',
+            'avatar_emoji': profile.avatarEmoji,
+            'avatar_url': profile.avatarUrl,
+          });
           
           // ✅ Auth-Service aktualisieren (ohne Backend-User-ID)
           await UserAuthService.setUsername(profile.username, world: 'materie');
@@ -406,17 +420,7 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
             debugPrint('⚠️ Admin-Status erfordert Backend-Verbindung');
           }
           
-          // ✅ Zeige Warnung wenn User ein Admin-Account ist
-          final username = profile.username.toLowerCase();
-          if ((username == 'weltenbibliothek' || username == 'weltenbibliothekedit') && mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('⚠️ Admin-Status erfordert Server-Verbindung'),
-                backgroundColor: Colors.orange,
-                duration: Duration(seconds: 4),
-              ),
-            );
-          }
+          // Kein Warning-Banner für normale User – nur stiller Fallback
         }
         
       } else {
@@ -462,6 +466,13 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
         if (updatedProfile != null) {
           // 💾 Vollständiges Profil lokal speichern (mit userId & role)
           await storage.saveEnergieProfile(updatedProfile);
+          // ✅ Sync in user_data Box (für AdminStateNotifier + Chat)
+          await UnifiedStorageService().saveProfile('energie', {
+            'username': updatedProfile.username,
+            'role': updatedProfile.role ?? 'user',
+            'avatar_emoji': updatedProfile.avatarEmoji,
+            'avatar_url': updatedProfile.avatarUrl,
+          });
           
           // ✅ Auth-Service aktualisieren für Inline-Tools
           await UserAuthService.setUsername(updatedProfile.username, world: 'energie');
@@ -485,6 +496,13 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
           // ✅ SECURITY FIX: Keine lokalen Admin-Rechte ohne Backend-Validierung
           // Speichere Profil NUR als normalen User
           await storage.saveEnergieProfile(profile);
+          // ✅ Sync in user_data Box auch für Offline-Fallback
+          await UnifiedStorageService().saveProfile('energie', {
+            'username': profile.username,
+            'role': 'user',
+            'avatar_emoji': profile.avatarEmoji,
+            'avatar_url': profile.avatarUrl,
+          });
           
           // ✅ Auth-Service aktualisieren (ohne Backend-User-ID)
           await UserAuthService.setUsername(profile.username, world: 'energie');
@@ -494,17 +512,7 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
             debugPrint('⚠️ Admin-Status erfordert Backend-Verbindung');
           }
           
-          // ✅ Zeige Warnung wenn User ein Admin-Account ist
-          final username = profile.username.toLowerCase();
-          if ((username == 'weltenbibliothek' || username == 'weltenbibliothekedit') && mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('⚠️ Admin-Status erfordert Server-Verbindung'),
-                backgroundColor: Colors.orange,
-                duration: Duration(seconds: 4),
-              ),
-            );
-          }
+          // Kein Warning-Banner für normale User – nur stiller Fallback
         }
       }
       

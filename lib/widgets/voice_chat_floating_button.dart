@@ -50,8 +50,6 @@ class _VoiceChatFloatingButtonState extends State<VoiceChatFloatingButton>
           case VoiceConnectionState.error:
             callState = CallConnectionState.error;
             break;
-          default:
-            callState = CallConnectionState.idle;
         }
         setState(() => _state = callState);
       }

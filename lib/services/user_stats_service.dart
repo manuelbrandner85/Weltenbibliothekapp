@@ -1,6 +1,7 @@
 import 'dart:async';
 import '../services/storage_service.dart';
 import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'cloudflare_api_service.dart';
 import 'user_service.dart';
 
@@ -19,7 +20,7 @@ class UserStatsService {
 
   final _cloudflareApi = CloudflareApiService();
   final _storage = StorageService();
-  final _userService = UserService();
+  final _userService = UserService(); // ignore: unused_field
   
   // Stream Controller für Realtime Updates
   final _statsController = StreamController<UserStats>.broadcast();
@@ -114,7 +115,8 @@ class UserStatsService {
     try {
       // Get current user ID from UserService
       // If no user logged in, use 'anonymous' or skip sync
-      final userId = 'user_${DateTime.now().millisecondsSinceEpoch}'; // TODO: Get real user ID
+      final userId = Supabase.instance.client.auth.currentUser?.id;
+      if (userId == null) return; // Not logged in, skip sync
       
       // POST stats to Cloudflare
       await _cloudflareApi.saveUserStats(

@@ -11,7 +11,7 @@
 library;
 
 import 'package:flutter/material.dart';
-import '../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
+ // OpenClaw v2.0
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/webrtc_call_provider.dart';
 import '../../models/webrtc_call_state.dart';
@@ -48,7 +48,7 @@ class _ModernVoiceChatScreenState extends ConsumerState<ModernVoiceChatScreen> {
   Widget build(BuildContext context) {
     // Watch WebRTC state
     final callState = ref.watch(webrtcCallProvider);
-    final isInCall = ref.watch(isInCallProvider);
+    final isInCall = ref.watch(isInCallProvider); // ignore: unused_local_variable
     final participantCount = ref.watch(participantCountProvider);
     final isRoomFull = ref.watch(isRoomFullProvider);
 

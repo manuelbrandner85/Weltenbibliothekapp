@@ -1,6 +1,8 @@
 import 'dart:convert';
+import 'package:weltenbibliothek/config/api_config.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:http/http.dart' as http;
 import '../../../core/storage/unified_storage_service.dart';
 import '../../../core/constants/roles.dart';
@@ -122,9 +124,59 @@ class AdminStateNotifier extends StateNotifier<AdminState> {
       debugPrint('🔐 AdminStateNotifier: Lade Status ($world)...');
     }
 
-    // SCHRITT 1: Lokales Profil laden (instant)
-    final username = _storage.getUsername(world);
-    final role = _storage.getRole(world);
+    // SCHRITT 1: Lokales Profil laden – primär aus user_data, Fallback aus Profile-Box
+    String? username = _storage.getUsername(world);
+    String? role = _storage.getRole(world);
+
+    // FALLBACK: Falls user_data-Box leer, aus nativer Profile-Box lesen
+    if (username == null || username.isEmpty) {
+      try {
+        final boxName = world == 'materie' ? 'materie_profiles' : 'energie_profiles';
+        // Box öffnen falls noch nicht geöffnet
+        if (!Hive.isBoxOpen(boxName)) {
+          await Hive.openBox(boxName);
+        }
+        final box = Hive.box(boxName);
+        final raw = box.get('current_profile');
+        if (raw != null) {
+          final data = Map<String, dynamic>.from(raw as Map);
+          username = data['username'] as String?;
+          role = data['role'] as String?;
+          if (kDebugMode) {
+            debugPrint('🔁 AdminStateNotifier: Profil aus $boxName geladen (username=$username, role=$role)');
+          }
+          // Sync back to user_data for next time
+          if (username != null && username.isNotEmpty) {
+            await _storage.saveProfile(world, data);
+          }
+        }
+      } catch (e) {
+        if (kDebugMode) debugPrint('⚠️ AdminStateNotifier: Fallback-Load fehlgeschlagen: $e');
+      }
+    }
+    
+    // LETZTER FALLBACK: SharedPreferences prüfen
+    if (username == null || username.isEmpty) {
+      try {
+        final boxName = 'user_data';
+        if (!Hive.isBoxOpen(boxName)) {
+          await Hive.openBox(boxName);
+        }
+        final box = Hive.box(boxName);
+        // Versuche alle möglichen Keys
+        username = box.get('username_$world') as String? 
+            ?? box.get('username') as String?;
+        role = box.get('role_$world') as String? 
+            ?? box.get('role') as String?;
+        if (username != null && username.isNotEmpty) {
+          if (kDebugMode) {
+            debugPrint('🔁 AdminStateNotifier: Username aus user_data (key fallback): $username');
+          }
+        }
+      } catch (e) {
+        if (kDebugMode) debugPrint('⚠️ AdminStateNotifier: user_data Fallback fehlgeschlagen: $e');
+      }
+    }
 
     if (username == null || username.isEmpty) {
       if (kDebugMode) {
@@ -212,7 +264,7 @@ class AdminStateNotifier extends StateNotifier<AdminState> {
       final username = _storage.getUsername(world);
       if (username != null && username.isNotEmpty) {
         final response = await http.get(
-          Uri.parse('https://weltenbibliothek-api-v2.brandy13062.workers.dev/api/profile/$world/$username'),
+          Uri.parse('${ApiConfig.workerUrl}/api/profile/$world/$username'),
           headers: {'Authorization': 'Bearer sync_token'},
         ).timeout(const Duration(seconds: 5));
         

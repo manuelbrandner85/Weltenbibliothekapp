@@ -44,6 +44,8 @@ class UnifiedStorageService {
   /// Get username for world
   String? getUsername(String world) {
     try {
+      // Box muss geöffnet sein (wird in main.dart geöffnet)
+      if (!Hive.isBoxOpen('user_data')) return null;
       final box = Hive.box('user_data');
       return box.get('username_$world') as String?;
     } catch (e) {
@@ -55,6 +57,7 @@ class UnifiedStorageService {
   /// Get user role for world
   String? getRole(String world) {
     try {
+      if (!Hive.isBoxOpen('user_data')) return 'user';
       final box = Hive.box('user_data');
       return box.get('role_$world') as String?;
     } catch (e) {
@@ -66,6 +69,7 @@ class UnifiedStorageService {
   /// Get user profile for world
   Map<String, dynamic>? getProfile(String world) {
     try {
+      if (!Hive.isBoxOpen('user_data')) return null;
       final box = Hive.box('user_data');
       return box.get('profile_$world') as Map<String, dynamic>?;
     } catch (e) {
@@ -75,10 +79,24 @@ class UnifiedStorageService {
   }
 
   /// Save user profile for world
+  /// Also writes username_ and role_ keys so AdminStateNotifier can read them.
   Future<void> saveProfile(String world, Map<String, dynamic> profile) async {
     try {
+      // Öffne Box falls noch nicht geöffnet
+      if (!Hive.isBoxOpen('user_data')) {
+        await Hive.openBox('user_data');
+      }
       final box = Hive.box('user_data');
       await box.put('profile_$world', profile);
+      // Mirror username and role for fast synchronous reads used by AdminStateNotifier
+      final username = profile['username'] as String?;
+      final role = profile['role'] as String?;
+      if (username != null && username.isNotEmpty) {
+        await box.put('username_$world', username);
+      }
+      if (role != null && role.isNotEmpty) {
+        await box.put('role_$world', role);
+      }
     } catch (e) {
       debugPrint('❌ Error saving profile: $e');
     }

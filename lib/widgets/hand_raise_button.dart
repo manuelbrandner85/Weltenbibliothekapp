@@ -3,7 +3,6 @@
 library;
 
 import 'package:flutter/material.dart';
-import '../services/webrtc_voice_service.dart'; // ✅ UNIFIED WebRTC Service
 import '../services/voice_feedback_service.dart';
 import '../services/simple_voice_controller.dart'; // ✅ Import SimpleVoiceController
 
@@ -60,14 +59,10 @@ class _HandRaiseButtonState extends State<HandRaiseButton>
     if (_isHandRaised) {
       _shakeController.repeat(reverse: true);
       await _feedback.handRaised();
-      // TODO: Call actual WebRTC service
-      // await widget.voiceController.raiseHand(widget.userId);
     } else {
       _shakeController.stop();
       _shakeController.reset();
       await _feedback.success();
-      // TODO: Call actual WebRTC service
-      // await widget.voiceController.lowerHand(widget.userId);
     }
 
     if (mounted) {

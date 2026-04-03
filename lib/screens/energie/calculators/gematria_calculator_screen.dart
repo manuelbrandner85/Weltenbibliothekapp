@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import 'package:flutter/foundation.dart';
 import '../../../models/energie_profile.dart';
 import '../../../services/storage_service.dart';
@@ -25,9 +24,13 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
   // Gematria Berechnungen
   int _hebrewFullName = 0;
   int _latinFullName = 0;
+  // ignore: unused_field
   int _hebrewFirstName = 0;  // ⚠️ UNUSED - Reserved for detailed name analysis
+  // ignore: unused_field
   int _hebrewLastName = 0;   // ⚠️ UNUSED - Reserved for detailed name analysis
+  // ignore: unused_field
   int _latinFirstName = 0;   // ⚠️ UNUSED - Reserved for detailed name analysis
+  // ignore: unused_field
   int _latinLastName = 0;    // ⚠️ UNUSED - Reserved for detailed name analysis
   int _soulNumber = 0;
   int _destinyNumber = 0;
@@ -1118,8 +1121,6 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
     return qualities[number] ?? 'Transformation';
   }
   
-  // TODO: Review unused method: _getLifePathInsight
-  // String _getLifePathInsight(int lifePathNumber) {
     // switch (lifePathNumber) {
       // case 1: return 'Als geborener Pionier wagst du, was andere nicht trauen.';
       // case 2: return 'Deine Diplomatie bringt Menschen zusammen.';
@@ -1137,8 +1138,6 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
     // }
   // }
   
-  // TODO: Review unused method: _getSoulNumberTrait
-  // String _getSoulNumberTrait(int soulNumber) {
     // switch (soulNumber) {
       // case 1: return 'Tief in dir brennt Unabhängigkeit.';
       // case 2: return 'Du sehnst dich nach tiefer Verbundenheit.';
@@ -1153,8 +1152,6 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
     // }
   // }
   
-  // TODO: Review unused method: _getGematriaPattern
-  // String _getGematriaPattern(int hebrewValue, int latinValue) {
     // final ratio = hebrewValue / (latinValue > 0 ? latinValue : 1);
     // if (ratio > 2) {
       // return 'Deine hebräische Schwingung ist VIEL stärker - du trägst alte Weisheit in dir.';
@@ -1165,8 +1162,6 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
     // }
   // }
   
-  // TODO: Review unused method: _getAgePhaseInsight
-  // String _getAgePhaseInsight(int age) {
     // if (age < 7) return 'In diesen frühen Jahren bist du wie ein Schwamm - du absorbierst alles.';
     // if (age < 14) return 'Diese Jahre formen deine Grundpersönlichkeit.';
     // if (age < 21) return 'Jetzt entdeckst du, wer du WIRKLICH bist.';
@@ -1600,6 +1595,7 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
   final TextEditingController _name2Controller = TextEditingController();
   int _compatibilityScore = 0;
   Map<String, dynamic>? _compatibilityDetails;
+  // ignore: unused_field
   List<Map<String, dynamic>> _compatibilityHistory = [];
   
   Widget _buildCompatibilityTab() {

@@ -41,14 +41,60 @@ import 'config/enhanced_app_themes.dart'; // 🎨 ENHANCED UI/UX THEMES
 import 'services/achievement_service.dart';  // 🏆 Achievement System
 import 'widgets/achievement_unlock_dialog.dart';  // 🏆 Achievement UI
 import 'utils/error_boundary.dart';  // 🛡️ Error Boundary
+import 'services/supabase_service.dart';  // 🟢 SUPABASE: Auth + Chat + Community
 // import 'widgets/offline_indicator.dart';  // 📡 OFFLINE INDICATOR (DISABLED - BUILD ISSUE)
 // import 'services/push_notification_service.dart'; // Firebase -> Cloudflare
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // 🗄️ HIVE LOCAL STORAGE - Initialize
+  // 🟢 SUPABASE - Muss als ERSTES initialisiert werden (vor allen anderen Services)
+  await initSupabase();
+
+  // 🗄️ HIVE LOCAL STORAGE - Initialize + alle Boxen vorab öffnen
   await Hive.initFlutter();
+  
+  // Alle Hive-Boxen die in der App verwendet werden vorab öffnen
+  // (verhindert HiveError: Box not found)
+  const _hiveBoxes = [
+    'materie_profiles',
+    'energie_profiles',
+    'research_topics',
+    'community_posts',
+    'achievement_progress',
+    'user_progress',
+    'meditation_sessions',
+    'daily_practices',
+    'complete_content_cache',
+    'offline_articles',
+    'offline_metadata',
+    'sync_queue',
+    'offline_messages',
+    'sync_state',
+    'recherche_bookmarks',
+    'recherche_cache',
+    'research_history',
+    'chat_messages_local',
+    'chat_rooms_local',
+    'chat_presence',
+    'pending_sync',
+    'auth_box',
+    'likes_cache',
+    'comments_cache',
+    'like_cache',
+    'numerology_data',
+    'spirit_calculations',
+    'user_data', // ✅ FIX: UnifiedStorageService benötigt diese Box (Admin Dashboard)
+  ];
+  for (final box in _hiveBoxes) {
+    try {
+      if (!Hive.isBoxOpen(box)) {
+        await Hive.openBox(box);
+      }
+    } catch (e) {
+      debugPrint('⚠️ Hive box "$box" konnte nicht geöffnet werden: $e');
+    }
+  }
   
   // 🛡️ ERROR BOUNDARY - Verhindert App-Crashes
   ErrorBoundary.initialize();
@@ -232,10 +278,10 @@ class _WeltenbibliothekAppState extends State<WeltenbibliothekApp> {
           title: 'Dual Realms - Deep Research',
           debugShowCheckedModeBanner: false,
           
-          // 🌙 PERMANENT DARK MODE (unabhängig von System-Einstellungen)
-          themeMode: ThemeMode.dark,
-          theme: EnhancedAppThemes.darkTheme, // Dark als Standard
-          darkTheme: EnhancedAppThemes.darkTheme, // Immer Dark
+          // 🌗 THEME: Dark/Light via ThemeService (Toggle in Profil-Settings)
+          themeMode: themeService.themeMode,
+          theme: EnhancedAppThemes.lightTheme,
+          darkTheme: EnhancedAppThemes.darkTheme,
           
           // ═══════════════════════════════════════════════════════════
           // MOBILE SCROLL PERFORMANCE

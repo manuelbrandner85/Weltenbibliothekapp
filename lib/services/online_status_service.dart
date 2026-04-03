@@ -1,3 +1,4 @@
+import '../config/api_config.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
@@ -13,7 +14,7 @@ class OnlineStatusService {
   OnlineStatusService._internal();
   
   // ✅ Backend URL (Cloudflare Worker)
-  static const String _baseUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
+  static const String _baseUrl = ApiConfig.workerUrl;
   static const Duration _apiTimeout = Duration(seconds: 5);
   
   // Online users cache

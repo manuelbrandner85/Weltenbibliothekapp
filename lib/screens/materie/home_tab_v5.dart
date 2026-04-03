@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import '../../services/openclaw_dashboard_service.dart';
 import 'package:flutter/foundation.dart';
 import '../../services/storage_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:ui';
+import 'dart:async';
 import '../../models/materie_profile.dart';
-import '../../services/openclaw_dashboard_service.dart'; // 🚀 OpenClaw Dashboard
 import 'package:url_launcher/url_launcher.dart'; // 🔗 Für externe URL-Links
 import 'recherche_tab_mobile.dart'; // 📰 Recherche Screen
 import 'materie_live_chat_screen.dart'; // 💬 Live Chat Screen
@@ -76,7 +78,7 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
   int _researchSessions = 0;
   int _bookmarkedTopics = 0;
   int _sharedFindings = 0;
-  final int _notificationCount = 3; // New notifications badge
+  int _notificationCount = 0; // Wird aus Backend geladen
 
   // Content
   List<Map<String, dynamic>> _recentArticles = [];
@@ -87,6 +89,10 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
   // Controllers
   final TextEditingController _searchTextController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+
+  // 🔴 Supabase Realtime
+  RealtimeChannel? _dashboardChannel;
+  Timer? _fallbackTimer;
 
   @override
   void initState() {
@@ -218,7 +224,10 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
     _shimmerController.dispose();
     _searchTextController.dispose();
     _scrollController.dispose();
-    _dashboardService.stopLiveUpdates(); // 🔄 Stop Live-Updates
+    _dashboardService.stopLiveUpdates(); // 🔄 Stop Legacy-Service
+    // 🔴 Realtime cleanup
+    _dashboardChannel?.unsubscribe();
+    _fallbackTimer?.cancel();
     super.dispose();
   }
 
@@ -238,7 +247,7 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
     try {
       // 📊 ECHTE Statistiken von OpenClaw/Cloudflare
       final stats = await _dashboardService.getStatistics(realm: 'materie');
-      
+
       _totalArticles = stats['totalArticles'] ?? 0;
       _researchSessions = stats['researchSessions'] ?? 0;
       _bookmarkedTopics = stats['bookmarkedTopics'] ?? 0;
@@ -249,13 +258,26 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
         realm: 'materie',
         limit: 10,
       );
-      
+
       // 🔥 ECHTE Trending Topics
       _trendingTopics = await _dashboardService.getTrendingTopics(
         realm: 'materie',
         limit: 10,
       );
-      
+
+      // 🔔 ECHTE Benachrichtigungen – userId: Supabase Auth > StorageService Fallback
+      final supabaseUserId = Supabase.instance.client.auth.currentUser?.id;
+      final storageUserId = await StorageService().getUserId('materie');
+      final userId = supabaseUserId ?? storageUserId;
+      final notifications = await _dashboardService.getNotifications(
+        userId: userId,
+        realm: 'materie',
+        limit: 50,
+      );
+      _notificationCount = notifications
+          .where((n) => n['is_read'] == false || n['read'] == false)
+          .length;
+
       _filteredArticles = _recentArticles;
 
       // Update quick actions with new counts
@@ -266,11 +288,12 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
           _isLoading = false;
         });
       }
-      
+
       if (kDebugMode) {
         debugPrint('✅ Dashboard loaded via OpenClaw');
         debugPrint('   Articles: $_totalArticles');
         debugPrint('   Trending: ${_trendingTopics.length}');
+        debugPrint('   Notifications: $_notificationCount');
       }
     } catch (e) {
       if (kDebugMode) {
@@ -300,23 +323,63 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
     }
   }
   
-  /// 🔄 Live-Updates starten
+  /// 🔄 Live-Updates starten (Supabase Realtime + 30-Min-Fallback)
   void _startLiveUpdates() {
-    _dashboardService.startLiveUpdates(
-      realm: 'materie',
-      interval: const Duration(minutes: 5),
-    );
-    
-    // Stream abonnieren
-    _dashboardService.dashboardStream.listen((data) {
+    final supabase = Supabase.instance.client;
+
+    // ── Supabase Realtime Channel ──────────────────────────────────────────
+    _dashboardChannel = supabase.channel('materie_dashboard')
+      ..onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: 'articles',
+        filter: PostgresChangeFilter(
+          type: PostgresChangeFilterType.eq,
+          column: 'realm',
+          value: 'materie',
+        ),
+        callback: (_) {
+          if (mounted) _loadDashboardData();
+        },
+      )
+      ..onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public',
+        table: 'notifications',
+        callback: (payload) {
+          if (mounted) _refreshNotificationCount();
+        },
+      );
+    _dashboardChannel!.subscribe();
+
+    // ── 30-Minuten Fallback-Timer ──────────────────────────────────────────
+    _fallbackTimer = Timer.periodic(const Duration(minutes: 30), (_) {
+      if (mounted) _loadDashboardData();
+    });
+  }
+
+  /// 🔔 Nur den Notification-Count aktualisieren
+  Future<void> _refreshNotificationCount() async {
+    try {
+      final supabase = Supabase.instance.client;
+      final user = supabase.auth.currentUser;
+      if (user == null) return;
+
+      final data = await supabase
+          .from('notifications')
+          .select('is_read')
+          .eq('user_id', user.id)
+          .eq('is_read', false);
+
       if (mounted) {
         setState(() {
-          _trendingTopics = data['trending'] ?? [];
-          final stats = data['statistics'] ?? {};
-          _totalArticles = stats['totalArticles'] ?? _totalArticles;
+          _notificationCount = (data as List).length;
+          _setupQuickActions();
         });
       }
-    });
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ Notification refresh error: $e');
+    }
   }
 
   @override

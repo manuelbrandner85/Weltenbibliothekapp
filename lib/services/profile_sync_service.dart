@@ -1,3 +1,4 @@
+import '../config/api_config.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'dart:convert';
 import '../models/materie_profile.dart';
@@ -25,7 +26,7 @@ import '../core/network/http_helper.dart';
 /// - saveEnergieProfileAndGetUpdated() - Save + Get in einem (mit Backend-Rollen)
 class ProfileSyncService {
   // Cloudflare Worker URL (v2 - World-Based Multi-Profile System)
-  static const String _baseUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
+  static const String _baseUrl = ApiConfig.workerUrl;
   
   // ════════════════════════════════════════════════════════════
   // MATERIE PROFILE

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
+ // OpenClaw v2.0
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../services/world_admin_service.dart';
@@ -55,11 +55,27 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
     super.initState();
     _tabController = TabController(length: 7, vsync: this); // ✅ PHASE 3 + V16.2: 7 Tabs (User Mgmt, Users, Content, Audit-Log, Moderation, Health, V16.2 Moderation)
     
-    // 🔥 SIMPLIFIED: State wurde bereits VOR Navigation geladen
-    // Direkt Dashboard-Daten laden (State ist garantiert frisch)
+    // 🔥 FIX: AdminStateNotifier.load() ist async – kurz warten damit State geladen ist
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _loadDashboardData();
+      if (mounted) _waitForAdminStateAndLoad();
     });
+  }
+
+  /// Wartet bis AdminStateNotifier geladen hat (max 3s), dann Dashboard laden
+  Future<void> _waitForAdminStateAndLoad() async {
+    // Versuche bis zu 6x mit 500ms Pause den State zu lesen
+    for (int i = 0; i < 6; i++) {
+      final admin = ref.read(adminStateProvider(widget.world));
+      if (admin.username != null && admin.username!.isNotEmpty) {
+        // State ist bereit
+        if (mounted) _loadDashboardData();
+        return;
+      }
+      // State noch nicht geladen – kurz warten
+      await Future.delayed(const Duration(milliseconds: 500));
+    }
+    // Nach Timeout trotzdem laden (zeigt Fehlermeldung)
+    if (mounted) _loadDashboardData();
   }
   
   @override
@@ -487,9 +503,28 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
   
   @override
   Widget build(BuildContext context) {
-    // 🔥 RIVERPOD: Admin-Status aus State lesen
+    // 🔥 RIVERPOD: Admin-Status aus State lesen (watch = auto-rebuild bei State-Änderung)
     final admin = ref.watch(adminStateProvider(widget.world));
     
+    // Noch laden: State noch nicht initialisiert (username == null)
+    if (admin.username == null && _isLoading) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text('${widget.world.toUpperCase()}-Admin'),
+        ),
+        body: const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text('Admin-Status wird geladen...'),
+            ],
+          ),
+        ),
+      );
+    }
+
     // Admin-Check: Wenn nicht Admin, zeige Fehlermeldung
     if (!admin.isAdmin) {
       return Scaffold(

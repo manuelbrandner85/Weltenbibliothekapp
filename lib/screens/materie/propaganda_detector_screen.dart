@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
+ // OpenClaw v2.0
 import '../../services/ai_service.dart';
 
 class PropagandaDetectorScreen extends StatefulWidget {
@@ -14,6 +14,7 @@ class _PropagandaDetectorScreenState extends State<PropagandaDetectorScreen> wit
   Map<String, dynamic>? _analysis;
   bool _isAnalyzing = false;
   late AnimationController _pulseController;
+  // ignore: unused_field
   final bool _useAI = true; // Toggle für KI vs Lokale Analyse
 
   @override

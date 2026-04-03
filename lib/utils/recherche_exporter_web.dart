@@ -258,7 +258,7 @@ class RechercheExporter {
       final bytes = utf8.encode(content);
       final blob = html.Blob([bytes], mimeType);
       final url = html.Url.createObjectUrlFromBlob(blob);
-      final anchor = html.AnchorElement(href: url)
+      final anchor = html.AnchorElement(href: url) // ignore: unused_local_variable
         ..setAttribute('download', filename)
         ..click();
       html.Url.revokeObjectUrl(url);

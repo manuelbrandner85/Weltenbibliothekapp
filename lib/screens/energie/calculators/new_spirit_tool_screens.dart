@@ -3,7 +3,6 @@
 library;
 
 import 'package:flutter/material.dart';
-import '../../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import 'dart:math' as math;
 import 'dart:async';
 import 'package:weltenbibliothek/services/storage_service.dart';
@@ -618,8 +617,6 @@ class _TarotDailyDrawScreenState extends State<TarotDailyDrawScreen> with Single
   }
 
   // OLD drawCard method (kept for compatibility)
-  // TODO: Review unused method: _buildOldDrawButton
-  // Widget _buildOldDrawButton() {
     // return Column(
       // mainAxisAlignment: MainAxisAlignment.center,
       // children: [
@@ -2224,7 +2221,7 @@ class _MeditationTimerScreenState extends State<MeditationTimerScreen> {
     await _storageService.saveMeditationSession(session);
     
     // 🏆 ACHIEVEMENT TRACKING
-    final achievementService = AchievementService();
+    final achievementService = AchievementService(); // ignore: unused_local_variable
     if (mounted) {
       // TODO: Re-enable after achievement integration
       // await achievementService.onMeditationCompleted(context, _selectedMinutes);

@@ -1,3 +1,4 @@
+import '../config/api_config.dart';
 import 'dart:convert';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import '../core/network/http_helper.dart';
@@ -11,7 +12,7 @@ import '../core/network/http_helper.dart';
 /// - User Suspend/Unsuspend
 /// - User Notes (Admin-Notizen)
 class UserManagementService {
-  static const String _baseUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
+  static const String _baseUrl = ApiConfig.workerUrl;
   
   /// Get all users (with optional filters)
   /// @param world - 'materie' or 'energie'

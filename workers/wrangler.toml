@@ -1,0 +1,30 @@
+# ============================================================
+# Weltenbibliothek API Worker – Wrangler Configuration
+# Deploy: cd workers && npx wrangler deploy
+# URL:    https://weltenbibliothek-api.brandy13062.workers.dev
+# ============================================================
+
+name            = "weltenbibliothek-api"
+account_id      = "3472f5994537c3a30c5caeaff4de21fb"
+compatibility_date  = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+main            = "api-worker.js"
+
+[vars]
+SUPABASE_URL            = "https://adtviduaftdquvfjpojb.supabase.co"
+SUPABASE_ANON_KEY       = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkdHZpZHVhZnRkcXV2Zmpwb2piIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxMzY3OTcsImV4cCI6MjA5MDcxMjc5N30.LPtmnjukb6o2CA16RDjoStqYb_1bipNULD4tgOfuD98"
+OPENCLAW_GATEWAY_URL    = "http://72.62.154.95:50074"
+CF_ACCOUNT_ID           = "3472f5994537c3a30c5caeaff4de21fb"
+
+# Workers AI binding (kostenlos im Free-Tier: 10k Requests/Tag)
+[ai]
+binding = "AI"
+
+# R2 Bucket binding (für Media-Uploads)
+[[r2_buckets]]
+binding    = "R2_BUCKET"
+bucket_name = "weltenbibliothek-media"
+
+# Secrets (via `npx wrangler secret put <NAME>` setzen):
+#   SUPABASE_SERVICE_ROLE_KEY  – für Admin-Operationen
+# ============================================================
