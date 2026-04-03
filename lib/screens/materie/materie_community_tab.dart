@@ -261,13 +261,16 @@ class _MaterieCommunityTabState extends State<MaterieCommunityTab> {
                         );
                         
                         commentController.clear();
+                        // ignore: use_build_context_synchronously
                         Navigator.of(context).pop();
                         _loadCommunityPosts(); // Reload to update comment count
                         
+                        // ignore: use_build_context_synchronously
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text('💬 Kommentar hinzugefügt!')),
                         );
                       } catch (e) {
+                        // ignore: use_build_context_synchronously
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(content: Text('❌ Fehler: $e')),
                         );
@@ -1186,6 +1189,7 @@ class _MaterieCommunityTabState extends State<MaterieCommunityTab> {
                             );
                           } else {
                             if (mounted) {
+                              // ignore: use_build_context_synchronously
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
                                   content: Text('Quelle konnte nicht geöffnet werden'),

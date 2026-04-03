@@ -4,6 +4,7 @@ library;
 
 import 'package:flutter/foundation.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
+import 'package:speech_to_text/speech_to_text.dart' show SpeechListenOptions;
 import 'package:permission_handler/permission_handler.dart';
 
 class VoiceSearchService {
@@ -113,9 +114,11 @@ class VoiceSearchService {
         },
         listenFor: timeout,
         pauseFor: const Duration(seconds: 3),
-        partialResults: true,
         localeId: locale,
-        cancelOnError: true,
+        listenOptions: SpeechListenOptions(
+          partialResults: true,
+          cancelOnError: true,
+        ),
       );
       
       // Wait for completion

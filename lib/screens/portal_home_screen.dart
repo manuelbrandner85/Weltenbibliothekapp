@@ -55,8 +55,8 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> with TickerProvider
   // Gyroscope 3D Parallax (deaktiviert - sensors_plus Kompatibilität)
   // Kann reaktiviert werden, wenn gyroscopeEventStream() verfügbar ist
   StreamSubscription<GyroscopeEvent>? _gyroscopeSubscription;
-  double _gyroX = 0.0;
-  double _gyroY = 0.0;
+  double _gyroX = 0.0; // ignore: prefer_final_fields
+  double _gyroY = 0.0; // ignore: prefer_final_fields
   
   // Portal Color Scheme (v5.39 - Dynamic Colors)
   Color _portalColor1 = const Color(0xFF2196F3); // Blau

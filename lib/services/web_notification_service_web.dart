@@ -1,3 +1,4 @@
+// ignore_for_file: avoid_web_libraries_in_flutter, deprecated_member_use
 /// 🔔 Web Push Notification Service
 /// Handles notification permissions, subscriptions, and display
 library;

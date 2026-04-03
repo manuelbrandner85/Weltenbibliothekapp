@@ -1051,6 +1051,7 @@ class _EnergieCommunityTabState extends State<EnergieCommunityTab> {
                             );
                           } else {
                             if (mounted) {
+                              // ignore: use_build_context_synchronously
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
                                   content: Text('Quelle konnte nicht geöffnet werden'),

@@ -105,17 +105,17 @@ class SimpleVoiceService extends ChangeNotifier {
   
   Future<bool> initMicrophone() async {
     try {
-      print('🎤 [SimpleVoice] Initializing microphone...');
+      debugPrint('🎤 [SimpleVoice] Initializing microphone...');
 
       // ✅ ANDROID: Request permission first
       if (!kIsWeb) {
-        print('📱 [SimpleVoice] Requesting microphone permission...');
+        debugPrint('📱 [SimpleVoice] Requesting microphone permission...');
         final status = await Permission.microphone.request();
         if (!status.isGranted) {
-          print('❌ [SimpleVoice] Microphone permission denied');
+          debugPrint('❌ [SimpleVoice] Microphone permission denied');
           return false;
         }
-        print('✅ [SimpleVoice] Microphone permission granted');
+        debugPrint('✅ [SimpleVoice] Microphone permission granted');
       }
 
       // ✅ Get user media
@@ -128,19 +128,19 @@ class SimpleVoiceService extends ChangeNotifier {
         'video': false,
       };
 
-      print('🎙️ [SimpleVoice] Calling getUserMedia()...');
+      debugPrint('🎙️ [SimpleVoice] Calling getUserMedia()...');
       localStream = await navigator.mediaDevices.getUserMedia(constraints);
 
       if (localStream == null || localStream!.getAudioTracks().isEmpty) {
-        print('❌ [SimpleVoice] No local audio stream available');
+        debugPrint('❌ [SimpleVoice] No local audio stream available');
         return false;
       }
 
-      print('✅ [SimpleVoice] Microphone initialized successfully');
-      print('   Audio tracks: ${localStream!.getAudioTracks().length}');
+      debugPrint('✅ [SimpleVoice] Microphone initialized successfully');
+      debugPrint('   Audio tracks: ${localStream!.getAudioTracks().length}');
       return true;
     } catch (e) {
-      print('❌ [SimpleVoice] Failed to initialize microphone: $e');
+      debugPrint('❌ [SimpleVoice] Failed to initialize microphone: $e');
       return false;
     }
   }
@@ -155,22 +155,22 @@ class SimpleVoiceService extends ChangeNotifier {
     required String username,
   }) async {
     try {
-      print('🚀 [SimpleVoice] ===== JOIN VOICE ROOM =====');
-      print('   Room: $roomId');
-      print('   User: $username ($userId)');
+      debugPrint('🚀 [SimpleVoice] ===== JOIN VOICE ROOM =====');
+      debugPrint('   Room: $roomId');
+      debugPrint('   User: $username ($userId)');
 
       // Leave existing room first
       if (isInCall) {
-        print('⚠️ [SimpleVoice] Already in call, leaving first');
+        debugPrint('⚠️ [SimpleVoice] Already in call, leaving first');
         await leaveVoiceRoom();
       }
 
       // Initialize microphone
       if (localStream == null) {
-        print('🎤 [SimpleVoice] Local stream not initialized, initializing...');
+        debugPrint('🎤 [SimpleVoice] Local stream not initialized, initializing...');
         final success = await initMicrophone();
         if (!success) {
-          print('❌ [SimpleVoice] Failed to initialize microphone');
+          debugPrint('❌ [SimpleVoice] Failed to initialize microphone');
           return false;
         }
       }
@@ -184,13 +184,13 @@ class SimpleVoiceService extends ChangeNotifier {
       // ✅ ADD SELF IMMEDIATELY
       addSelf(userId: userId, username: username);
 
-      print('✅ [SimpleVoice] Joined voice room successfully');
-      print('   Participants: ${participants.length}');
+      debugPrint('✅ [SimpleVoice] Joined voice room successfully');
+      debugPrint('   Participants: ${participants.length}');
       debugParticipants();
 
       return true;
     } catch (e) {
-      print('❌ [SimpleVoice] Failed to join room: $e');
+      debugPrint('❌ [SimpleVoice] Failed to join room: $e');
       return false;
     }
   }
@@ -203,7 +203,7 @@ class SimpleVoiceService extends ChangeNotifier {
     required String userId,
     required String username,
   }) {
-    print('👤 [SimpleVoice] Adding self: $username ($userId)');
+    debugPrint('👤 [SimpleVoice] Adding self: $username ($userId)');
 
     participants[userId] = VoiceParticipant(
       userId: userId,
@@ -213,7 +213,7 @@ class SimpleVoiceService extends ChangeNotifier {
     );
 
     notifyListeners();
-    print('✅ [SimpleVoice] Self added successfully');
+    debugPrint('✅ [SimpleVoice] Self added successfully');
   }
 
   /// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -225,11 +225,11 @@ class SimpleVoiceService extends ChangeNotifier {
     required String username,
   }) {
     if (participants.containsKey(userId)) {
-      print('⚠️ [SimpleVoice] User already exists: $userId');
+      debugPrint('⚠️ [SimpleVoice] User already exists: $userId');
       return;
     }
 
-    print('➕ [SimpleVoice] User joined: $username ($userId)');
+    debugPrint('➕ [SimpleVoice] User joined: $username ($userId)');
 
     participants[userId] = VoiceParticipant(
       userId: userId,
@@ -249,7 +249,7 @@ class SimpleVoiceService extends ChangeNotifier {
   
   Future<void> createPeerForUser(String userId) async {
     try {
-      print('🔗 [SimpleVoice] Creating peer for user: $userId');
+      debugPrint('🔗 [SimpleVoice] Creating peer for user: $userId');
 
       final configuration = {
         'iceServers': [
@@ -263,35 +263,35 @@ class SimpleVoiceService extends ChangeNotifier {
       if (localStream != null) {
         for (final track in localStream!.getAudioTracks()) {
           await pc.addTrack(track, localStream!);
-          print('🎵 [SimpleVoice] Added local audio track to peer: $userId');
+          debugPrint('🎵 [SimpleVoice] Added local audio track to peer: $userId');
         }
       }
 
       // ✅ Handle remote track
       pc.onTrack = (RTCTrackEvent event) {
-        print('📥 [SimpleVoice] onTrack from user: $userId');
+        debugPrint('📥 [SimpleVoice] onTrack from user: $userId');
         if (event.streams.isNotEmpty) {
           final participant = participants[userId];
           if (participant != null) {
             participant.stream = event.streams.first;
             notifyListeners();
-            print('✅ [SimpleVoice] Remote stream attached to user: $userId');
-            print('   Audio tracks: ${event.streams.first.getAudioTracks().length}');
+            debugPrint('✅ [SimpleVoice] Remote stream attached to user: $userId');
+            debugPrint('   Audio tracks: ${event.streams.first.getAudioTracks().length}');
           }
         }
       };
 
       // ✅ Handle connection state
       pc.onConnectionState = (RTCPeerConnectionState state) {
-        print('🔗 [SimpleVoice] Connection state [$userId]: $state');
+        debugPrint('🔗 [SimpleVoice] Connection state [$userId]: $state');
       };
 
       // Store peer
       participants[userId]?.peer = pc;
 
-      print('✅ [SimpleVoice] Peer created for user: $userId');
+      debugPrint('✅ [SimpleVoice] Peer created for user: $userId');
     } catch (e) {
-      print('❌ [SimpleVoice] Failed to create peer for user $userId: $e');
+      debugPrint('❌ [SimpleVoice] Failed to create peer for user $userId: $e');
     }
   }
 
@@ -300,13 +300,13 @@ class SimpleVoiceService extends ChangeNotifier {
   /// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   
   void onUserLeft(String userId) {
-    print('➖ [SimpleVoice] User left: $userId');
+    debugPrint('➖ [SimpleVoice] User left: $userId');
 
     participants[userId]?.peer?.close();
     participants.remove(userId);
     notifyListeners();
 
-    print('✅ [SimpleVoice] User removed: $userId');
+    debugPrint('✅ [SimpleVoice] User removed: $userId');
   }
 
   /// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -315,7 +315,7 @@ class SimpleVoiceService extends ChangeNotifier {
   
   Future<void> leaveVoiceRoom() async {
     try {
-      print('🚪 [SimpleVoice] Leaving voice room...');
+      debugPrint('🚪 [SimpleVoice] Leaving voice room...');
 
       // Close all peer connections
       for (var participant in participants.values) {
@@ -331,9 +331,9 @@ class SimpleVoiceService extends ChangeNotifier {
 
       notifyListeners();
 
-      print('✅ [SimpleVoice] Left voice room');
+      debugPrint('✅ [SimpleVoice] Left voice room');
     } catch (e) {
-      print('❌ [SimpleVoice] Error leaving room: $e');
+      debugPrint('❌ [SimpleVoice] Error leaving room: $e');
     }
   }
 
@@ -358,7 +358,7 @@ class SimpleVoiceService extends ChangeNotifier {
       notifyListeners();
     }
 
-    print('🔇 [SimpleVoice] Muted: $newMuteState');
+    debugPrint('🔇 [SimpleVoice] Muted: $newMuteState');
   }
 
   /// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -366,15 +366,15 @@ class SimpleVoiceService extends ChangeNotifier {
   /// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   
   void debugParticipants() {
-    print('');
-    print('═══════════════════════════════════════');
-    print('👥 PARTICIPANTS DEBUG ($participantCount users)');
-    print('═══════════════════════════════════════');
+    debugPrint('');
+    debugPrint('═══════════════════════════════════════');
+    debugPrint('👥 PARTICIPANTS DEBUG ($participantCount users)');
+    debugPrint('═══════════════════════════════════════');
     participants.forEach((id, p) {
-      print('USER=${p.username} | self=${p.isSelf} | stream=${p.stream != null} | peer=${p.peer != null}');
+      debugPrint('USER=${p.username} | self=${p.isSelf} | stream=${p.stream != null} | peer=${p.peer != null}');
     });
-    print('═══════════════════════════════════════');
-    print('');
+    debugPrint('═══════════════════════════════════════');
+    debugPrint('');
   }
 
   /// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

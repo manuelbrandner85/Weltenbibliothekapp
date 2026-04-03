@@ -246,8 +246,8 @@ class EnergyFieldEngine {
     }
     
     // Erstelle Frequenzen mit reduzierter Stärke
-    return weakNumbers.take(3).map((num) {
-      final freq = _createFrequencyFromNumber(num, 'Schwaches Feld');
+    return weakNumbers.take(3).map((numVal) {
+      final freq = _createFrequencyFromNumber(numVal, 'Schwaches Feld');
       return EnergyFrequency(
         name: freq.name,
         strength: freq.strength * 0.3, // Reduzierte Stärke
@@ -437,9 +437,13 @@ class EnergyFieldEngine {
       final prev = history[history.length - 2].fieldStrength;
       if (last > prev + 0.1) {
         trend = 'Steigend';
-      } else if (last < prev - 0.1) trend = 'Fallend';
-      else if ((last - prev).abs() < 0.05) trend = 'Stabil';
-      else trend = 'Oszillierend';
+      } else if (last < prev - 0.1) {
+        trend = 'Fallend';
+      } else if ((last - prev).abs() < 0.05) {
+        trend = 'Stabil';
+      } else {
+        trend = 'Oszillierend';
+      }
     }
     
     return FieldEvolution(

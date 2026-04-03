@@ -28,13 +28,13 @@ class VoiceNotesService {
       });
       
       if (kDebugMode) {
-        print('🎤 Recording started');
+        debugPrint('🎤 Recording started');
       }
       
       return true;
     } catch (e) {
       if (kDebugMode) {
-        print('❌ Recording start error: $e');
+        debugPrint('❌ Recording start error: $e');
       }
       return false;
     }
@@ -47,7 +47,7 @@ class VoiceNotesService {
       _recordingTimer?.cancel();
       
       if (kDebugMode) {
-        print('🎤 Recording stopped: ${_recordingSeconds}s');
+        debugPrint('🎤 Recording stopped: ${_recordingSeconds}s');
       }
       
       // Return audio data (simulated)
@@ -58,7 +58,7 @@ class VoiceNotesService {
       };
     } catch (e) {
       if (kDebugMode) {
-        print('❌ Recording stop error: $e');
+        debugPrint('❌ Recording stop error: $e');
       }
       return null;
     }
@@ -71,7 +71,7 @@ class VoiceNotesService {
     _recordingTimer?.cancel();
     
     if (kDebugMode) {
-      print('🎤 Recording cancelled');
+      debugPrint('🎤 Recording cancelled');
     }
   }
   

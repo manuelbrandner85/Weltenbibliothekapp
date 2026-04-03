@@ -1,3 +1,4 @@
+// ignore_for_file: dangling_library_doc_comments
 /// 🗺️ MARKER-CLUSTERING INTEGRATION EXAMPLE
 /// 
 /// So wird MapClusteringHelper in Karte-Tabs genutzt:

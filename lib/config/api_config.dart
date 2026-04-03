@@ -90,6 +90,7 @@ class ApiConfig {
   static const String voiceRooms = '/voice/rooms';
   static const String voiceParticipants = '/voice/participants';
   static String get webrtcSignalingUrl =>
+  // ignore: prefer_interpolation_to_compose_strings
       workerUrl.replaceAll('https://', 'wss://') + '/voice/signaling';
 
   // Admin (moderative Aktionen, bleibt auf Cloudflare)

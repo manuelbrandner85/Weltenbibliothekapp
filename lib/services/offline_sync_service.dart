@@ -136,7 +136,7 @@ class OfflineSyncService extends ChangeNotifier {
   Future<void> initialize() async {
     try {
       if (kDebugMode) {
-        print('📴 OfflineSync: Initializing...');
+        debugPrint('📴 OfflineSync: Initializing...');
       }
       
       // Initialize Hive
@@ -164,13 +164,13 @@ class OfflineSyncService extends ChangeNotifier {
       _startPeriodicSync();
       
       if (kDebugMode) {
-        print('✅ OfflineSync: Initialized successfully');
-        print('📊 OfflineSync: Pending actions: $_pendingActions');
+        debugPrint('✅ OfflineSync: Initialized successfully');
+        debugPrint('📊 OfflineSync: Pending actions: $_pendingActions');
       }
       
     } catch (e, stack) {
       if (kDebugMode) {
-        print('❌ OfflineSync: Initialization failed - $e');
+        debugPrint('❌ OfflineSync: Initialization failed - $e');
       }
       ErrorReportingService().reportError(
         error: e,
@@ -194,7 +194,7 @@ class OfflineSyncService extends ChangeNotifier {
       
     } catch (e) {
       if (kDebugMode) {
-        print('❌ OfflineSync: Error setting up network monitoring - $e');
+        debugPrint('❌ OfflineSync: Error setting up network monitoring - $e');
       }
     }
   }
@@ -215,7 +215,7 @@ class OfflineSyncService extends ChangeNotifier {
       notifyListeners();
       
       if (kDebugMode) {
-        print('🌐 OfflineSync: Network state changed to ${_networkState.name}');
+        debugPrint('🌐 OfflineSync: Network state changed to ${_networkState.name}');
       }
       
       // Trigger sync when coming online
@@ -247,7 +247,7 @@ class OfflineSyncService extends ChangeNotifier {
       notifyListeners();
       
       if (kDebugMode) {
-        print('📥 OfflineSync: Action queued - ${type.name}');
+        debugPrint('📥 OfflineSync: Action queued - ${type.name}');
       }
       
       // Try to sync immediately if online
@@ -259,7 +259,7 @@ class OfflineSyncService extends ChangeNotifier {
       
     } catch (e, stack) {
       if (kDebugMode) {
-        print('❌ OfflineSync: Error queuing action - $e');
+        debugPrint('❌ OfflineSync: Error queuing action - $e');
       }
       ErrorReportingService().reportError(
         error: e,
@@ -282,7 +282,7 @@ class OfflineSyncService extends ChangeNotifier {
       notifyListeners();
       
       if (kDebugMode) {
-        print('🔄 OfflineSync: Starting sync... ($_pendingActions pending)');
+        debugPrint('🔄 OfflineSync: Starting sync... ($_pendingActions pending)');
       }
       
       final keys = _queueBox?.keys.toList() ?? [];
@@ -306,7 +306,7 @@ class OfflineSyncService extends ChangeNotifier {
             successCount++;
             
             if (kDebugMode) {
-              print('✅ OfflineSync: Action synced - ${action.type.name}');
+              debugPrint('✅ OfflineSync: Action synced - ${action.type.name}');
             }
           } else {
             // Increment retry count
@@ -317,7 +317,7 @@ class OfflineSyncService extends ChangeNotifier {
               await _queueBox?.put(key, jsonEncode(updatedAction.toJson()));
               
               if (kDebugMode) {
-                print('🔄 OfflineSync: Action retry ${action.retryCount + 1}/$_maxRetryAttempts - ${action.type.name}');
+                debugPrint('🔄 OfflineSync: Action retry ${action.retryCount + 1}/$_maxRetryAttempts - ${action.type.name}');
               }
             } else {
               // Max retries reached, remove from queue
@@ -325,7 +325,7 @@ class OfflineSyncService extends ChangeNotifier {
               failCount++;
               
               if (kDebugMode) {
-                print('❌ OfflineSync: Action failed after max retries - ${action.type.name}');
+                debugPrint('❌ OfflineSync: Action failed after max retries - ${action.type.name}');
               }
               
               ErrorReportingService().reportError(
@@ -341,7 +341,7 @@ class OfflineSyncService extends ChangeNotifier {
           
         } catch (e) {
           if (kDebugMode) {
-            print('❌ OfflineSync: Error processing action - $e');
+            debugPrint('❌ OfflineSync: Error processing action - $e');
           }
           failCount++;
         }
@@ -354,12 +354,12 @@ class OfflineSyncService extends ChangeNotifier {
       await _syncStateBox?.put('last_sync_time', _lastSyncTime!.toIso8601String());
       
       if (kDebugMode) {
-        print('✅ OfflineSync: Sync complete - Success: $successCount, Failed: $failCount, Remaining: $_pendingActions');
+        debugPrint('✅ OfflineSync: Sync complete - Success: $successCount, Failed: $failCount, Remaining: $_pendingActions');
       }
       
     } catch (e, stack) {
       if (kDebugMode) {
-        print('❌ OfflineSync: Sync error - $e');
+        debugPrint('❌ OfflineSync: Sync error - $e');
       }
       ErrorReportingService().reportError(
         error: e,
@@ -413,11 +413,11 @@ class OfflineSyncService extends ChangeNotifier {
           return true;
         case OfflineActionType.uploadFile:
           // File upload requires file path - skip if path missing
-          if (kDebugMode) print('📁 OfflineSync: File upload skipped (needs file path)');
+          if (kDebugMode) debugPrint('📁 OfflineSync: File upload skipped (needs file path)');
           return true;
         case OfflineActionType.updateProfile:
           // Profile updates handled by ProfileSyncService
-          if (kDebugMode) print('👤 OfflineSync: Profile update skipped (use ProfileSyncService)');
+          if (kDebugMode) debugPrint('👤 OfflineSync: Profile update skipped (use ProfileSyncService)');
           return true;
         case OfflineActionType.createPost:
           // Post creation - send as chat message
@@ -430,15 +430,15 @@ class OfflineSyncService extends ChangeNotifier {
           );
           return true;
         case OfflineActionType.updatePost:
-          if (kDebugMode) print('📝 OfflineSync: Post update - no offline support');
+          if (kDebugMode) debugPrint('📝 OfflineSync: Post update - no offline support');
           return true;
         case OfflineActionType.deletePost:
-          if (kDebugMode) print('🗑️ OfflineSync: Post delete - no offline support');
+          if (kDebugMode) debugPrint('🗑️ OfflineSync: Post delete - no offline support');
           return true;
       }
     } catch (e) {
       if (kDebugMode) {
-        print('❌ OfflineSync: Action execution failed - $e');
+        debugPrint('❌ OfflineSync: Action execution failed - $e');
       }
       return false;
     }
@@ -453,7 +453,7 @@ class OfflineSyncService extends ChangeNotifier {
       }
     } catch (e) {
       if (kDebugMode) {
-        print('❌ OfflineSync: Error saving message - $e');
+        debugPrint('❌ OfflineSync: Error saving message - $e');
       }
     }
   }
@@ -485,7 +485,7 @@ class OfflineSyncService extends ChangeNotifier {
       
     } catch (e) {
       if (kDebugMode) {
-        print('❌ OfflineSync: Error getting offline messages - $e');
+        debugPrint('❌ OfflineSync: Error getting offline messages - $e');
       }
       return [];
     }
@@ -514,12 +514,12 @@ class OfflineSyncService extends ChangeNotifier {
       notifyListeners();
       
       if (kDebugMode) {
-        print('✅ OfflineSync: All data cleared');
+        debugPrint('✅ OfflineSync: All data cleared');
       }
       
     } catch (e) {
       if (kDebugMode) {
-        print('❌ OfflineSync: Error clearing data - $e');
+        debugPrint('❌ OfflineSync: Error clearing data - $e');
       }
     }
   }

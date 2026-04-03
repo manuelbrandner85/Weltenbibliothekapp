@@ -126,6 +126,7 @@ class _WeisheitToolState extends State<WeisheitTool> {
           debugPrint('Chat-Aktivität fehlgeschlagen: $e');
         }
         
+        // ignore: use_build_context_synchronously
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Weisheit hinzugefügt!'), backgroundColor: Colors.green),
         );
@@ -137,6 +138,7 @@ class _WeisheitToolState extends State<WeisheitTool> {
         await _loadData();
       }
     } catch (e) {
+      // ignore: use_build_context_synchronously
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Fehler: $e'), backgroundColor: Colors.red),
       );

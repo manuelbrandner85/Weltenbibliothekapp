@@ -39,11 +39,11 @@ class ImageCacheService {
       PaintingBinding.instance.imageCache.clearLiveImages();
       
       if (kDebugMode) {
-        print('🗑️ ImageCache: Cache cleared successfully');
+        debugPrint('🗑️ ImageCache: Cache cleared successfully');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('❌ ImageCache: Error clearing cache - $e');
+        debugPrint('❌ ImageCache: Error clearing cache - $e');
       }
     }
   }
@@ -56,11 +56,11 @@ class ImageCacheService {
       await cacheManager.emptyCache();
       
       if (kDebugMode) {
-        print('🗑️ ImageCache: Old cache cleared');
+        debugPrint('🗑️ ImageCache: Old cache cleared');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('❌ ImageCache: Error clearing old cache - $e');
+        debugPrint('❌ ImageCache: Error clearing old cache - $e');
       }
     }
   }
@@ -81,7 +81,7 @@ class ImageCacheService {
       };
     } catch (e) {
       if (kDebugMode) {
-        print('❌ ImageCache: Error getting stats - $e');
+        debugPrint('❌ ImageCache: Error getting stats - $e');
       }
       return {};
     }
@@ -100,7 +100,7 @@ class ImageCacheService {
     }
     
     if (kDebugMode) {
-      print('🎯 ImageCache: Memory limits updated - '
+      debugPrint('🎯 ImageCache: Memory limits updated - '
           'maxCount: ${imageCache.maximumSize}, '
           'maxBytes: ${imageCache.maximumSizeBytes}');
     }
@@ -136,11 +136,11 @@ class ImageCacheService {
       await Future.wait(preloadFutures);
       
       if (kDebugMode) {
-        print('✅ ImageCache: Preloaded ${imageUrls.length} images');
+        debugPrint('✅ ImageCache: Preloaded ${imageUrls.length} images');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('❌ ImageCache: Error preloading images - $e');
+        debugPrint('❌ ImageCache: Error preloading images - $e');
       }
     }
   }
@@ -156,11 +156,11 @@ class ImageCacheService {
       }
       
       if (kDebugMode) {
-        print('🗑️ ImageCache: Removed $imageUrl from cache');
+        debugPrint('🗑️ ImageCache: Removed $imageUrl from cache');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('❌ ImageCache: Error removing from cache - $e');
+        debugPrint('❌ ImageCache: Error removing from cache - $e');
       }
     }
   }
@@ -174,7 +174,7 @@ class ImageCacheService {
     );
     
     if (kDebugMode) {
-      print('✅ ImageCache: Initialized with optimal settings');
+      debugPrint('✅ ImageCache: Initialized with optimal settings');
     }
   }
 
@@ -185,11 +185,11 @@ class ImageCacheService {
       await clearOldCache();
       
       if (kDebugMode) {
-        print('✅ ImageCache: Startup cleanup complete');
+        debugPrint('✅ ImageCache: Startup cleanup complete');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('❌ ImageCache: Startup cleanup failed - $e');
+        debugPrint('❌ ImageCache: Startup cleanup failed - $e');
       }
     }
   }

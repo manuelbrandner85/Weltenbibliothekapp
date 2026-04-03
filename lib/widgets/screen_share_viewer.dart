@@ -293,6 +293,7 @@ class _ScreenShareButtonState extends State<ScreenShareButton> {
           );
           
           if (!success && mounted) {
+            // ignore: use_build_context_synchronously
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text('Fehler beim Starten der Bildschirmfreigabe'),

@@ -42,7 +42,7 @@ class ARLocationService {
       if (!hasPermission) return null;
 
       _currentPosition = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
+        locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
       );
 
       debugPrint('📍 Standort: ${_currentPosition!.latitude}, ${_currentPosition!.longitude}');

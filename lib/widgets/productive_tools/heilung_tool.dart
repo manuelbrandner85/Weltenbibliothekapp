@@ -122,6 +122,7 @@ class _HeilungToolState extends State<HeilungTool> {
           debugPrint('Chat-Aktivität fehlgeschlagen: $e');
         }
         
+        // ignore: use_build_context_synchronously
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Protokoll hinzugefügt!'), backgroundColor: Colors.green),
         );
@@ -133,6 +134,7 @@ class _HeilungToolState extends State<HeilungTool> {
         await _loadData();
       }
     } catch (e) {
+      // ignore: use_build_context_synchronously
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Fehler: $e'), backgroundColor: Colors.red),
       );

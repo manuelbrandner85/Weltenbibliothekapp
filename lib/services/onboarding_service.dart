@@ -88,14 +88,14 @@ class OnboardingService extends ChangeNotifier {
       _currentStep = prefs.getInt(_currentStepKey) ?? 0;
       
       if (kDebugMode) {
-        print('✅ Onboarding: Initialized');
-        print('   Completed: $_isCompleted, Skipped: $_isSkipped, Step: $_currentStep');
+        debugPrint('✅ Onboarding: Initialized');
+        debugPrint('   Completed: $_isCompleted, Skipped: $_isSkipped, Step: $_currentStep');
       }
       
       notifyListeners();
     } catch (e) {
       if (kDebugMode) {
-        print('❌ Onboarding: Initialization failed - $e');
+        debugPrint('❌ Onboarding: Initialization failed - $e');
       }
     }
   }
@@ -128,13 +128,13 @@ class OnboardingService extends ChangeNotifier {
       _isSkipped = true;
       
       if (kDebugMode) {
-        print('⏭️ Onboarding: Skipped');
+        debugPrint('⏭️ Onboarding: Skipped');
       }
       
       notifyListeners();
     } catch (e) {
       if (kDebugMode) {
-        print('❌ Onboarding: Skip failed - $e');
+        debugPrint('❌ Onboarding: Skip failed - $e');
       }
     }
   }
@@ -147,13 +147,13 @@ class OnboardingService extends ChangeNotifier {
       _isCompleted = true;
       
       if (kDebugMode) {
-        print('✅ Onboarding: Completed');
+        debugPrint('✅ Onboarding: Completed');
       }
       
       notifyListeners();
     } catch (e) {
       if (kDebugMode) {
-        print('❌ Onboarding: Complete failed - $e');
+        debugPrint('❌ Onboarding: Complete failed - $e');
       }
     }
   }
@@ -171,13 +171,13 @@ class OnboardingService extends ChangeNotifier {
       _currentStep = 0;
       
       if (kDebugMode) {
-        print('🔄 Onboarding: Reset');
+        debugPrint('🔄 Onboarding: Reset');
       }
       
       notifyListeners();
     } catch (e) {
       if (kDebugMode) {
-        print('❌ Onboarding: Reset failed - $e');
+        debugPrint('❌ Onboarding: Reset failed - $e');
       }
     }
   }
@@ -189,7 +189,7 @@ class OnboardingService extends ChangeNotifier {
       await prefs.setInt(_currentStepKey, _currentStep);
     } catch (e) {
       if (kDebugMode) {
-        print('❌ Onboarding: Save step failed - $e');
+        debugPrint('❌ Onboarding: Save step failed - $e');
       }
     }
   }

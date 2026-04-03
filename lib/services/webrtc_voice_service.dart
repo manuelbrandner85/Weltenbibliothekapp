@@ -233,7 +233,7 @@ class WebRTCVoiceService with ChangeNotifier {
       
       if (currentParticipantCount >= maxParticipants) {
         if (kDebugMode) {
-          print('❌ WebRTC: Room full ($currentParticipantCount/$maxParticipants)');
+          debugPrint('❌ WebRTC: Room full ($currentParticipantCount/$maxParticipants)');
         }
         _setState(VoiceConnectionState.error);
         throw RoomFullException(
@@ -249,19 +249,19 @@ class WebRTCVoiceService with ChangeNotifier {
       final permissionStatus = await Permission.microphone.status;
       
       if (kDebugMode) {
-        print('🎤 WebRTC: Current permission status: $permissionStatus');
+        debugPrint('🎤 WebRTC: Current permission status: $permissionStatus');
       }
       
       // Request microphone permission
       final permission = await Permission.microphone.request();
       
       if (kDebugMode) {
-        print('🎤 WebRTC: Permission result: ${permission.toString()}');
+        debugPrint('🎤 WebRTC: Permission result: ${permission.toString()}');
       }
       
       if (!permission.isGranted) {
         if (kDebugMode) {
-          print('❌ WebRTC: Microphone permission denied');
+          debugPrint('❌ WebRTC: Microphone permission denied');
         }
         _setState(VoiceConnectionState.error);
         
@@ -278,21 +278,21 @@ class WebRTCVoiceService with ChangeNotifier {
         _localStream = await navigator.mediaDevices.getUserMedia(_mediaConstraints);
       } catch (mediaError) {
         if (kDebugMode) {
-          print('❌ WebRTC: getUserMedia failed - $mediaError');
+          debugPrint('❌ WebRTC: getUserMedia failed - $mediaError');
         }
         throw Exception('Mikrofon konnte nicht aktiviert werden: $mediaError');
       }
       
       if (_localStream == null) {
         if (kDebugMode) {
-          print('❌ WebRTC: Failed to get local stream');
+          debugPrint('❌ WebRTC: Failed to get local stream');
         }
         _setState(VoiceConnectionState.error);
         throw Exception('Mikrofon-Stream konnte nicht erstellt werden.');
       }
       
       if (kDebugMode) {
-        print('✅ WebRTC: Local stream acquired successfully');
+        debugPrint('✅ WebRTC: Local stream acquired successfully');
       }
       
       _currentRoomId = roomId;
@@ -330,15 +330,15 @@ class WebRTCVoiceService with ChangeNotifier {
       );
       
       if (kDebugMode) {
-        print('✅ WebRTC: Joined room $roomId');
-        print('📊 Session tracking started');
+        debugPrint('✅ WebRTC: Joined room $roomId');
+        debugPrint('📊 Session tracking started');
       }
       
       return true;
       
     } catch (e, stack) {
       if (kDebugMode) {
-        print('❌ WebRTC: Error joining room - $e');
+        debugPrint('❌ WebRTC: Error joining room - $e');
       }
       
       // ✅ SET: Detailed error message for UI
@@ -411,13 +411,13 @@ class WebRTCVoiceService with ChangeNotifier {
       await _sessionTracker.endSession();
       
       if (kDebugMode) {
-        print('👋 WebRTC: Left voice room');
-        print('📊 Session tracking ended');
+        debugPrint('👋 WebRTC: Left voice room');
+        debugPrint('📊 Session tracking ended');
       }
       
     } catch (e, stack) {
       if (kDebugMode) {
-        print('❌ WebRTC: Error leaving room - $e');
+        debugPrint('❌ WebRTC: Error leaving room - $e');
       }
       ErrorReportingService().reportError(
         error: e,
@@ -454,7 +454,7 @@ class WebRTCVoiceService with ChangeNotifier {
       }
       
       if (kDebugMode) {
-        print('🔇 WebRTC: Muted');
+        debugPrint('🔇 WebRTC: Muted');
       }
     }
   }
@@ -477,7 +477,7 @@ class WebRTCVoiceService with ChangeNotifier {
       }
       
       if (kDebugMode) {
-        print('🔊 WebRTC: Unmuted');
+        debugPrint('🔊 WebRTC: Unmuted');
       }
     }
   }
@@ -518,7 +518,7 @@ class WebRTCVoiceService with ChangeNotifier {
       }
     } catch (e, stack) {
       if (kDebugMode) {
-        print('❌ WebRTC: Error handling signaling message - $e');
+        debugPrint('❌ WebRTC: Error handling signaling message - $e');
       }
       ErrorReportingService().reportError(
         error: e,
@@ -547,7 +547,7 @@ class WebRTCVoiceService with ChangeNotifier {
     await _createPeerConnection(userId, true);
     
     if (kDebugMode) {
-      print('👤 WebRTC: User $username joined');
+      debugPrint('👤 WebRTC: User $username joined');
     }
   }
 
@@ -572,7 +572,7 @@ class WebRTCVoiceService with ChangeNotifier {
     }
     
     if (kDebugMode) {
-      print('👋 WebRTC: User $userId left');
+      debugPrint('👋 WebRTC: User $userId left');
     }
   }
 
@@ -618,14 +618,14 @@ class WebRTCVoiceService with ChangeNotifier {
       // 🆕 Handle connection state changes for auto-reconnect
       pc.onConnectionState = (RTCPeerConnectionState state) {
         if (kDebugMode) {
-          print('🔌 WebRTC: Peer connection state changed to $state');
+          debugPrint('🔌 WebRTC: Peer connection state changed to $state');
         }
         
         // Auto-reconnect on failed/disconnected
         if (state == RTCPeerConnectionState.RTCPeerConnectionStateFailed ||
             state == RTCPeerConnectionState.RTCPeerConnectionStateDisconnected) {
           if (kDebugMode) {
-            print('⚠️ WebRTC: Connection lost, attempting reconnect...');
+            debugPrint('⚠️ WebRTC: Connection lost, attempting reconnect...');
           }
           // Trigger auto-reconnect after short delay
           Future.delayed(const Duration(seconds: 2), () {
@@ -651,7 +651,7 @@ class WebRTCVoiceService with ChangeNotifier {
       
     } catch (e, stack) {
       if (kDebugMode) {
-        print('❌ WebRTC: Error creating peer connection - $e');
+        debugPrint('❌ WebRTC: Error creating peer connection - $e');
       }
       ErrorReportingService().reportError(
         error: e,
@@ -740,7 +740,7 @@ class WebRTCVoiceService with ChangeNotifier {
     notifyListeners(); // 🔧 Notify widgets listening to this service
     
     if (kDebugMode) {
-      print('🎤 WebRTC: State changed to ${newState.toString()}');
+      debugPrint('🎤 WebRTC: State changed to ${newState.toString()}');
     }
   }
   
@@ -758,7 +758,7 @@ class WebRTCVoiceService with ChangeNotifier {
         final tracks = _localStream!.getAudioTracks();
         if (tracks.isNotEmpty) {
           if (kDebugMode) {
-            print('✅ WebRTC: Connection healthy - local stream active');
+            debugPrint('✅ WebRTC: Connection healthy - local stream active');
           }
           return true;
         }
@@ -768,14 +768,14 @@ class WebRTCVoiceService with ChangeNotifier {
       // TODO: Add WebSocket health check
       
       if (kDebugMode) {
-        print('⚠️ WebRTC: Connection check - no active stream');
+        debugPrint('⚠️ WebRTC: Connection check - no active stream');
       }
       
       return _state == VoiceConnectionState.connected;
       
     } catch (e) {
       if (kDebugMode) {
-        print('❌ WebRTC: Connection check failed - $e');
+        debugPrint('❌ WebRTC: Connection check failed - $e');
       }
       return false;
     }
@@ -784,7 +784,7 @@ class WebRTCVoiceService with ChangeNotifier {
   // ✅ PHASE 2: Auto-Recovery
   Future<bool> attemptReconnect() async {
     if (kDebugMode) {
-      print('🔄 WebRTC: Attempting reconnection...');
+      debugPrint('🔄 WebRTC: Attempting reconnection...');
     }
     
     try {
@@ -794,7 +794,7 @@ class WebRTCVoiceService with ChangeNotifier {
       
       if (savedRoomId == null || savedUserId == null) {
         if (kDebugMode) {
-          print('❌ WebRTC: Cannot reconnect - no previous room info');
+          debugPrint('❌ WebRTC: Cannot reconnect - no previous room info');
         }
         return false;
       }
@@ -818,16 +818,16 @@ class WebRTCVoiceService with ChangeNotifier {
       );
       
       if (success && kDebugMode) {
-        print('✅ WebRTC: Reconnection successful');
+        debugPrint('✅ WebRTC: Reconnection successful');
       } else if (!success && kDebugMode) {
-        print('❌ WebRTC: Reconnection failed');
+        debugPrint('❌ WebRTC: Reconnection failed');
       }
       
       return success;
       
     } catch (e) {
       if (kDebugMode) {
-        print('❌ WebRTC: Reconnection error - $e');
+        debugPrint('❌ WebRTC: Reconnection error - $e');
       }
       return false;
     }
@@ -967,7 +967,7 @@ class WebRTCVoiceService with ChangeNotifier {
   /// Initialize voice service
   Future<void> initialize() async {
     if (kDebugMode) {
-      print('🎤 WebRTC Voice Service initialized');
+      debugPrint('🎤 WebRTC Voice Service initialized');
     }
     // Service is already initialized via singleton
   }
@@ -997,7 +997,7 @@ class WebRTCVoiceService with ChangeNotifier {
   /// Switch to different room
   Future<bool> switchRoom(String newRoomId) async {
     if (kDebugMode) {
-      print('🔄 Switching voice room: $_currentRoomId → $newRoomId');
+      debugPrint('🔄 Switching voice room: $_currentRoomId → $newRoomId');
     }
     
     // Leave current room
@@ -1030,7 +1030,7 @@ class WebRTCVoiceService with ChangeNotifier {
     try {
       if (_currentRoomId == null) {
         if (kDebugMode) {
-          print('❌ WebRTC: Cannot kick - not in room');
+          debugPrint('❌ WebRTC: Cannot kick - not in room');
         }
         return false;
       }
@@ -1047,14 +1047,14 @@ class WebRTCVoiceService with ChangeNotifier {
       _notifyParticipantsChanged();
       
       if (kDebugMode) {
-        print('🚫 WebRTC: User $userId kicked by admin $adminId');
+        debugPrint('🚫 WebRTC: User $userId kicked by admin $adminId');
       }
       
       return true;
       
     } catch (e) {
       if (kDebugMode) {
-        print('❌ WebRTC: Kick user error - $e');
+        debugPrint('❌ WebRTC: Kick user error - $e');
       }
       return false;
     }
@@ -1068,7 +1068,7 @@ class WebRTCVoiceService with ChangeNotifier {
     try {
       if (_currentRoomId == null) {
         if (kDebugMode) {
-          print('❌ WebRTC: Cannot mute - not in room');
+          debugPrint('❌ WebRTC: Cannot mute - not in room');
         }
         return false;
       }
@@ -1088,14 +1088,14 @@ class WebRTCVoiceService with ChangeNotifier {
       }
       
       if (kDebugMode) {
-        print('🔇 WebRTC: User $userId muted by admin $adminId');
+        debugPrint('🔇 WebRTC: User $userId muted by admin $adminId');
       }
       
       return true;
       
     } catch (e) {
       if (kDebugMode) {
-        print('❌ WebRTC: Mute user error - $e');
+        debugPrint('❌ WebRTC: Mute user error - $e');
       }
       return false;
     }
@@ -1140,7 +1140,7 @@ class WebRTCVoiceService with ChangeNotifier {
     }
     
     if (kDebugMode) {
-      print('🎧 WebRTC: Audio quality set to $quality');
+      debugPrint('🎧 WebRTC: Audio quality set to $quality');
     }
     
     // TODO: Apply new constraints to existing stream

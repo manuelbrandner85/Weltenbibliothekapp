@@ -176,6 +176,7 @@ class _VoiceChatFloatingButtonState extends State<VoiceChatFloatingButton>
                       }
                     } on VoiceException catch (e) {
                       if (!mounted) return;
+                      // ignore: use_build_context_synchronously
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text('⚠️ Fehler beim Stummschalten: ${e.message}'),
@@ -189,6 +190,7 @@ class _VoiceChatFloatingButtonState extends State<VoiceChatFloatingButton>
                       );
                     } catch (e) {
                       if (!mounted) return;
+                      // ignore: use_build_context_synchronously
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text('❌ Unerwarteter Fehler: $e'),
@@ -216,6 +218,7 @@ class _VoiceChatFloatingButtonState extends State<VoiceChatFloatingButton>
                       await _voiceService.leaveRoom();
                       if (!mounted) return;
                       setState(() => _isExpanded = false);
+                      // ignore: use_build_context_synchronously
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('✅ Voice Chat verlassen'),
@@ -225,6 +228,7 @@ class _VoiceChatFloatingButtonState extends State<VoiceChatFloatingButton>
                       );
                     } on VoiceException catch (e) {
                       if (!mounted) return;
+                      // ignore: use_build_context_synchronously
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text('⚠️ Fehler beim Verlassen: ${e.message}'),
@@ -239,6 +243,7 @@ class _VoiceChatFloatingButtonState extends State<VoiceChatFloatingButton>
                       setState(() => _isExpanded = false);
                     } catch (e) {
                       if (!mounted) return;
+                      // ignore: use_build_context_synchronously
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text('❌ Unerwarteter Fehler: $e'),

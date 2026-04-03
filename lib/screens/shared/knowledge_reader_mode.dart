@@ -105,6 +105,7 @@ class _KnowledgeReaderModeState extends State<KnowledgeReaderMode> {
     
     HapticFeedback.mediumImpact();
     
+    // ignore: use_build_context_synchronously
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(_isFavorite ? '⭐ Zu Favoriten hinzugefügt' : '💔 Von Favoriten entfernt'),

@@ -120,17 +120,17 @@ class _MindmapWidgetState extends State<MindmapWidget> {
         IconButton(
           icon: const Icon(Icons.zoom_in, color: Colors.white),
           onPressed: () {
-            final matrix = _transformationController.value.clone();
-            matrix.scale(1.2);
-            _transformationController.value = matrix;
+            // FIX v5.28.0: Zoom mit Matrix4.diagonal3Values statt deprecated scale()
+            final current = _transformationController.value;
+            _transformationController.value = current * (Matrix4.diagonal3Values(1.2, 1.2, 1.0));
           },
         ),
         IconButton(
           icon: const Icon(Icons.zoom_out, color: Colors.white),
           onPressed: () {
-            final matrix = _transformationController.value.clone();
-            matrix.scale(0.8);
-            _transformationController.value = matrix;
+            // FIX v5.28.0: Zoom mit Matrix4.diagonal3Values statt deprecated scale()
+            final current = _transformationController.value;
+            _transformationController.value = current * (Matrix4.diagonal3Values(0.8, 0.8, 1.0));
           },
         ),
         IconButton(

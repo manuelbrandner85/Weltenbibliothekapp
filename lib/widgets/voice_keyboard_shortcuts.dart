@@ -1,10 +1,11 @@
 /// ⌨️ VOICE KEYBOARD SHORTCUTS
 /// Keyboard shortcuts for voice chat controls
+/// v5.28.0: Updated from deprecated RawKeyboard to KeyboardListener/HardwareKeyboard
 library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../services/webrtc_voice_service.dart'; // ✅ UNIFIED WebRTC Service
+import '../services/webrtc_voice_service.dart';
 import '../services/voice_feedback_service.dart';
 
 class VoiceKeyboardShortcuts extends StatefulWidget {
@@ -41,16 +42,17 @@ class _VoiceKeyboardShortcutsState extends State<VoiceKeyboardShortcuts> {
     super.dispose();
   }
 
-  Future<void> _handleKeyPress(RawKeyEvent event) async {
-    if (event is! RawKeyDownEvent) return;
+  /// FIX v5.28.0: Verwendet KeyEvent statt deprecated RawKeyEvent
+  Future<void> _handleKeyEvent(KeyEvent event) async {
+    // Nur Key-Down Events verarbeiten
+    if (event is! KeyDownEvent) return;
 
-    // Only handle if not typing in a text field
+    // Nicht behandeln wenn in Text-Eingabe
     if (FocusScope.of(context).focusedChild?.context?.widget is EditableText) {
       return;
     }
 
     switch (event.logicalKey) {
-      // M - Toggle Mute
       case LogicalKeyboardKey.keyM:
         await widget.voiceController.toggleMute();
         await _feedback.micOn();
@@ -61,7 +63,6 @@ class _VoiceKeyboardShortcutsState extends State<VoiceKeyboardShortcuts> {
         }
         break;
 
-      // L - Leave Voice Chat
       case LogicalKeyboardKey.keyL:
         await widget.voiceController.leaveVoiceRoom();
         if (mounted) {
@@ -70,19 +71,16 @@ class _VoiceKeyboardShortcutsState extends State<VoiceKeyboardShortcuts> {
         }
         break;
 
-      // E - Emoji Reactions
       case LogicalKeyboardKey.keyE:
         widget.onEmojiShortcut?.call('👍');
         _showShortcutSnackBar('👍 Reaktion gesendet');
         break;
 
-      // H - Raise Hand
       case LogicalKeyboardKey.keyH:
         widget.onHandRaiseShortcut?.call();
         _showShortcutSnackBar('✋ Hand gehoben/gesenkt');
         break;
 
-      // Numbers 1-5: Quick Emoji Reactions
       case LogicalKeyboardKey.digit1:
         widget.onEmojiShortcut?.call('👍');
         _showShortcutSnackBar('👍');
@@ -108,9 +106,9 @@ class _VoiceKeyboardShortcutsState extends State<VoiceKeyboardShortcuts> {
         _showShortcutSnackBar('👏');
         break;
 
-      // ? - Show Shortcuts Help
       case LogicalKeyboardKey.slash:
-        if (event.isShiftPressed) {
+        // FIX v5.28.0: HardwareKeyboard.instance.isShiftPressed statt event.isShiftPressed
+        if (HardwareKeyboard.instance.isShiftPressed) {
           _showShortcutsHelp();
         }
         break;
@@ -121,6 +119,7 @@ class _VoiceKeyboardShortcutsState extends State<VoiceKeyboardShortcuts> {
   }
 
   void _showShortcutSnackBar(String message) {
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
@@ -132,6 +131,7 @@ class _VoiceKeyboardShortcutsState extends State<VoiceKeyboardShortcuts> {
   }
 
   void _showShortcutsHelp() {
+    if (!mounted) return;
     showDialog(
       context: context,
       builder: (context) => const VoiceShortcutsHelpDialog(),
@@ -140,9 +140,10 @@ class _VoiceKeyboardShortcutsState extends State<VoiceKeyboardShortcuts> {
 
   @override
   Widget build(BuildContext context) {
-    return RawKeyboardListener(
+    // FIX v5.28.0: KeyboardListener statt deprecated RawKeyboardListener
+    return KeyboardListener(
       focusNode: _focusNode,
-      onKey: _handleKeyPress,
+      onKeyEvent: _handleKeyEvent,
       child: widget.child,
     );
   }
@@ -184,7 +185,6 @@ class VoiceShortcutsHelpDialog extends StatelessWidget {
             _buildShortcut('L', 'Voice Chat verlassen'),
             _buildShortcut('E', 'Emoji-Reaktion (👍)'),
             _buildShortcut('H', 'Hand heben/senken'),
-            _buildShortcut('Space', 'Push-to-Talk (gedrückt halten)'),
             const SizedBox(height: 16),
             const Text(
               '📱 Schnell-Emojis:',
@@ -201,7 +201,7 @@ class VoiceShortcutsHelpDialog extends StatelessWidget {
             _buildShortcut('4', '🎉 Party'),
             _buildShortcut('5', '👏 Applaus'),
             const SizedBox(height: 16),
-            _buildShortcut('?', 'Diese Hilfe anzeigen (Shift + ?)'),
+            _buildShortcut('Shift+?', 'Diese Hilfe anzeigen'),
             const SizedBox(height: 24),
             Align(
               alignment: Alignment.centerRight,

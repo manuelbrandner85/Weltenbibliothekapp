@@ -76,7 +76,7 @@ class OpenClawDashboardService {
           };
         }).toList();
       } catch (e) {
-        if (kDebugMode) print('⚠️ [Dashboard] Supabase notifications error: $e');
+        if (kDebugMode) debugPrint('⚠️ [Dashboard] Supabase notifications error: $e');
       }
     }
     // Fallback: neueste Artikel als Info-Notifications
@@ -109,7 +109,7 @@ class OpenClawDashboardService {
         };
       }).toList();
     } catch (e) {
-      if (kDebugMode) print('⚠️ [Dashboard] Articles fallback error: $e');
+      if (kDebugMode) debugPrint('⚠️ [Dashboard] Articles fallback error: $e');
       return [];
     }
   }
@@ -143,7 +143,7 @@ class OpenClawDashboardService {
       // Fallback: Cloudflare
       return await _getTrendingFromCloudflare(realm, limit);
     } catch (e) {
-      if (kDebugMode) print('⚠️ [Dashboard] Trending error: $e');
+      if (kDebugMode) debugPrint('⚠️ [Dashboard] Trending error: $e');
       return await _getTrendingFromCloudflare(realm, limit);
     }
   }
@@ -234,12 +234,12 @@ class OpenClawDashboardService {
           'timestamp': DateTime.now().toIso8601String(),
         });
       } catch (e) {
-        if (kDebugMode) print('⚠️ [Dashboard] Live update error: $e');
+        if (kDebugMode) debugPrint('⚠️ [Dashboard] Live update error: $e');
       }
     });
 
     if (kDebugMode) {
-      print('✅ [Dashboard] Live updates started (every ${interval.inMinutes}min)');
+      debugPrint('✅ [Dashboard] Live updates started (every ${interval.inMinutes}min)');
     }
   }
 
@@ -247,7 +247,7 @@ class OpenClawDashboardService {
   void stopLiveUpdates() {
     _liveUpdateTimer?.cancel();
     _liveUpdateTimer = null;
-    if (kDebugMode) print('🛑 [Dashboard] Live updates stopped');
+    if (kDebugMode) debugPrint('🛑 [Dashboard] Live updates stopped');
   }
 
   /// 📊 Statistiken (ECHT)
@@ -278,7 +278,7 @@ class OpenClawDashboardService {
       // Fallback: Cloudflare
       return await _getStatisticsFromCloudflare(realm);
     } catch (e) {
-      if (kDebugMode) print('⚠️ [Dashboard] Statistics error: $e');
+      if (kDebugMode) debugPrint('⚠️ [Dashboard] Statistics error: $e');
       return await _getStatisticsFromCloudflare(realm);
     }
   }
@@ -391,7 +391,7 @@ class OpenClawDashboardService {
       // Fallback: Cloudflare Admin Service
       return await _checkAdminViaCloudflare(userId, realm);
     } catch (e) {
-      if (kDebugMode) print('⚠️ [Dashboard] Admin check error: $e');
+      if (kDebugMode) debugPrint('⚠️ [Dashboard] Admin check error: $e');
       return false;
     }
   }
@@ -429,7 +429,7 @@ class OpenClawDashboardService {
 
       return articles;
     } catch (e) {
-      if (kDebugMode) print('⚠️ [Dashboard] Recent articles error: $e');
+      if (kDebugMode) debugPrint('⚠️ [Dashboard] Recent articles error: $e');
       return [];
     }
   }

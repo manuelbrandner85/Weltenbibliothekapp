@@ -143,10 +143,9 @@ class AccessibilityHelper {
   
   /// Screen reader announcement
   static void announce(String message) {
-    SemanticsService.announce(
-      message,
-      TextDirection.ltr,
-    );
+    // Use the standard announce method with explicit TextDirection
+    // ignore: deprecated_member_use
+    SemanticsService.announce(message, TextDirection.ltr);
   }
   
   /// Check if screen reader is enabled
@@ -161,7 +160,7 @@ class AccessibilityHelper {
   
   /// Get text scale factor
   static double getTextScaleFactor(BuildContext context) {
-    return MediaQuery.of(context).textScaleFactor;
+    return MediaQuery.of(context).textScaler.scale(1.0);
   }
   
   /// Accessible card

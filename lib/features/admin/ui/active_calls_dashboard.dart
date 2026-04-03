@@ -230,7 +230,7 @@ class _ActiveCallsDashboardState extends ConsumerState<ActiveCallsDashboard> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(
-          color: Colors.green.withOpacity(0.3),
+          color: Colors.green.withValues(alpha: 0.3),
           width: 1,
         ),
       ),
@@ -246,7 +246,7 @@ class _ActiveCallsDashboardState extends ConsumerState<ActiveCallsDashboard> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.2),
+                    color: Colors.green.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Icon(
@@ -599,6 +599,7 @@ class _ActiveCallsDashboardState extends ConsumerState<ActiveCallsDashboard> {
                   // Reload calls list via provider refresh
                   ref.invalidate(activeCallsProvider(widget.world));
                   
+                  // ignore: use_build_context_synchronously
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text('✅ Call in ${call.roomName} ended successfully'),
@@ -610,6 +611,7 @@ class _ActiveCallsDashboardState extends ConsumerState<ActiveCallsDashboard> {
                 }
               } catch (e) {
                 if (!mounted) return;
+                // ignore: use_build_context_synchronously
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text('❌ Failed to end call: $e'),

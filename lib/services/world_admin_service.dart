@@ -125,7 +125,7 @@ class WorldAdminService {
   /// Get list of users in a specific world
   /// ✅ FIXED AUTH: Uses simple Bearer token (username)
   /// 
-  /// Returns: List<WorldUser>
+  /// Returns: List[WorldUser]
   static Future<List<WorldUser>> getUsersByWorld(String world, {String? role}) async {
     if (kDebugMode) {
       debugPrint('📋 Fetching users for world: $world');
@@ -416,7 +416,7 @@ class WorldAdminService {
   /// Get audit log for a world
   /// ✅ MIT AUTH-HEADER
   /// 
-  /// Returns: List<AuditLogEntry>
+  /// Returns: List[AuditLogEntry]
   static Future<List<AuditLogEntry>> getAuditLog(String world, {int limit = 50, String? role}) async {
     // ─────────────────────────────────────────────────────────────────────
     // 1️⃣ PRIMARY: Worker API

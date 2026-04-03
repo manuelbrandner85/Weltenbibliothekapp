@@ -585,7 +585,7 @@ class _EnergieHomeTabV4State extends State<EnergieHomeTabV4>
     return AppBar(
       backgroundColor: Color.lerp(
         Colors.transparent,
-        const Color(0xFF1A1A1A).withOpacity(0.9),
+        const Color(0xFF1A1A1A).withValues(alpha: 0.9),
         opacity,
       ),
       elevation: 0,
@@ -598,8 +598,8 @@ class _EnergieHomeTabV4State extends State<EnergieHomeTabV4>
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  const Color(0xFF1A1A2E).withOpacity(0.9 * opacity),
-                  const Color(0xFF0A0A0A).withOpacity(0.8 * opacity),
+                  const Color(0xFF1A1A2E).withValues(alpha: 0.9 * opacity),
+                  const Color(0xFF0A0A0A).withValues(alpha: 0.8 * opacity),
                 ],
               ),
             ),
@@ -653,7 +653,7 @@ class _EnergieHomeTabV4State extends State<EnergieHomeTabV4>
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFFFF6B6B).withOpacity(0.5),
+                        color: const Color(0xFFFF6B6B).withValues(alpha: 0.5),
                         blurRadius: 8,
                         spreadRadius: 2,
                       ),
@@ -739,8 +739,8 @@ class _EnergieHomeTabV4State extends State<EnergieHomeTabV4>
                               center: Alignment.topRight,
                               radius: 1.5,
                               colors: [
-                                Colors.purple.withOpacity(0.2 * _auraAnimation.value),
-                                Colors.pink.withOpacity(0.1 * _auraAnimation.value),
+                                Colors.purple.withValues(alpha: 0.2 * _auraAnimation.value),
+                                Colors.pink.withValues(alpha: 0.1 * _auraAnimation.value),
                                 Colors.transparent,
                               ],
                             ),
@@ -759,7 +759,7 @@ class _EnergieHomeTabV4State extends State<EnergieHomeTabV4>
                       return CustomPaint(
                         painter: ParticlesPainter(
                           animation: _breathAnimation.value,
-                          color: Colors.white.withOpacity(0.1),
+                          color: Colors.white.withValues(alpha: 0.1),
                         ),
                       );
                     },
@@ -788,18 +788,18 @@ class _EnergieHomeTabV4State extends State<EnergieHomeTabV4>
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
                                   colors: [
-                                    Colors.white.withOpacity(0.2),
-                                    Colors.white.withOpacity(0.1),
+                                    Colors.white.withValues(alpha: 0.2),
+                                    Colors.white.withValues(alpha: 0.1),
                                   ],
                                 ),
                                 borderRadius: BorderRadius.circular(24),
                                 border: Border.all(
-                                  color: Colors.white.withOpacity(0.3),
+                                  color: Colors.white.withValues(alpha: 0.3),
                                   width: 1.5,
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.purple.withOpacity(0.2),
+                                    color: Colors.purple.withValues(alpha: 0.2),
                                     blurRadius: 24,
                                     spreadRadius: 4,
                                   ),
@@ -814,7 +814,7 @@ class _EnergieHomeTabV4State extends State<EnergieHomeTabV4>
                                     _getSpiritualGreeting(),
                                     style: TextStyle(
                                       fontSize: 16,
-                                      color: Colors.white.withOpacity(0.9),
+                                      color: Colors.white.withValues(alpha: 0.9),
                                       fontWeight: FontWeight.w500,
                                     ),
                                   ),
@@ -851,7 +851,7 @@ class _EnergieHomeTabV4State extends State<EnergieHomeTabV4>
                                           borderRadius: BorderRadius.circular(20),
                                           boxShadow: [
                                             BoxShadow(
-                                              color: const Color(0xFF667EEA).withOpacity(0.3),
+                                              color: const Color(0xFF667EEA).withValues(alpha: 0.3),
                                               blurRadius: 12,
                                               offset: const Offset(0, 4),
                                             ),
@@ -896,7 +896,7 @@ class _EnergieHomeTabV4State extends State<EnergieHomeTabV4>
                                           borderRadius: BorderRadius.circular(20),
                                           boxShadow: [
                                             BoxShadow(
-                                              color: const Color(0xFFFF6B6B).withOpacity(0.3),
+                                              color: const Color(0xFFFF6B6B).withValues(alpha: 0.3),
                                               blurRadius: 12,
                                               offset: const Offset(0, 4),
                                             ),
@@ -966,11 +966,11 @@ class _EnergieHomeTabV4State extends State<EnergieHomeTabV4>
             ),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: Colors.white.withOpacity(0.2),
+              color: Colors.white.withValues(alpha: 0.2),
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.purple.withOpacity(0.3),
+                color: Colors.purple.withValues(alpha: 0.3),
                 blurRadius: 20,
                 offset: const Offset(0, 10),
               ),
@@ -991,7 +991,7 @@ class _EnergieHomeTabV4State extends State<EnergieHomeTabV4>
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF4FACFE).withOpacity(0.5),
+                          color: const Color(0xFF4FACFE).withValues(alpha: 0.5),
                           blurRadius: 16,
                           spreadRadius: 2,
                         ),
@@ -1023,7 +1023,7 @@ class _EnergieHomeTabV4State extends State<EnergieHomeTabV4>
                         Text(
                           _cosmicMessage,
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.7),
+                            color: Colors.white.withValues(alpha: 0.7),
                             fontSize: 13,
                             height: 1.4,
                           ),
@@ -1042,7 +1042,7 @@ class _EnergieHomeTabV4State extends State<EnergieHomeTabV4>
                 child: LinearProgressIndicator(
                   value: _moonPhaseProgress,
                   minHeight: 8,
-                  backgroundColor: Colors.white.withOpacity(0.1),
+                  backgroundColor: Colors.white.withValues(alpha: 0.1),
                   valueColor: const AlwaysStoppedAnimation<Color>(
                     Color(0xFF4FACFE),
                   ),
@@ -1136,7 +1136,7 @@ class _EnergieHomeTabV4State extends State<EnergieHomeTabV4>
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.3),
+            color: Colors.black.withValues(alpha: 0.3),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),
@@ -1161,7 +1161,7 @@ class _EnergieHomeTabV4State extends State<EnergieHomeTabV4>
               Text(
                 label,
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.9),
+                  color: Colors.white.withValues(alpha: 0.9),
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
                 ),
@@ -1229,7 +1229,7 @@ class _EnergieHomeTabV4State extends State<EnergieHomeTabV4>
                 height: 80,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.white.withOpacity(0.1),
+                  color: Colors.white.withValues(alpha: 0.1),
                 ),
               ),
               
@@ -1260,7 +1260,7 @@ class _EnergieHomeTabV4State extends State<EnergieHomeTabV4>
           Text(
             name,
             style: TextStyle(
-              color: Colors.white.withOpacity(0.8),
+              color: Colors.white.withValues(alpha: 0.8),
               fontSize: 12,
               fontWeight: FontWeight.w600,
             ),
@@ -1325,7 +1325,7 @@ class _EnergieHomeTabV4State extends State<EnergieHomeTabV4>
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.2),
+                color: Colors.black.withValues(alpha: 0.2),
                 blurRadius: 8,
                 offset: const Offset(0, 4),
               ),
@@ -1373,7 +1373,7 @@ class _EnergieHomeTabV4State extends State<EnergieHomeTabV4>
                       borderRadius: BorderRadius.circular(10),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.red.withOpacity(0.5),
+                          color: Colors.red.withValues(alpha: 0.5),
                           blurRadius: 8,
                         ),
                       ],
@@ -1469,13 +1469,13 @@ class _EnergieHomeTabV4State extends State<EnergieHomeTabV4>
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  Colors.purple.withOpacity(0.3),
-                  Colors.purple.withOpacity(0.1),
+                  Colors.purple.withValues(alpha: 0.3),
+                  Colors.purple.withValues(alpha: 0.1),
                 ],
               ),
               borderRadius: BorderRadius.circular(25),
               border: Border.all(
-                color: Colors.purple.withOpacity(0.5),
+                color: Colors.purple.withValues(alpha: 0.5),
               ),
             ),
             child: Row(
@@ -1499,7 +1499,7 @@ class _EnergieHomeTabV4State extends State<EnergieHomeTabV4>
                 Text(
                   '${topic['count']}',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.6),
+                    color: Colors.white.withValues(alpha: 0.6),
                     fontSize: 12,
                   ),
                 ),
@@ -1582,12 +1582,12 @@ class _EnergieHomeTabV4State extends State<EnergieHomeTabV4>
                 end: Alignment.bottomRight,
                 colors: [
                   const Color(0xFF2E1A47),
-                  const Color(0xFF1A1A3E).withOpacity(0.9),
+                  const Color(0xFF1A1A3E).withValues(alpha: 0.9),
                 ],
               ),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: Colors.purple.withOpacity(0.3),
+                color: Colors.purple.withValues(alpha: 0.3),
               ),
             ),
             child: Column(
@@ -1605,13 +1605,13 @@ class _EnergieHomeTabV4State extends State<EnergieHomeTabV4>
                     width: double.infinity,
                     fit: BoxFit.cover,
                     placeholder: (context, url) => Container(
-                      color: Colors.white.withOpacity(0.05),
+                      color: Colors.white.withValues(alpha: 0.05),
                       child: const Center(
                         child: CircularProgressIndicator(strokeWidth: 2),
                       ),
                     ),
                     errorWidget: (context, url, error) => Container(
-                      color: Colors.white.withOpacity(0.05),
+                      color: Colors.white.withValues(alpha: 0.05),
                       child: const Icon(Icons.broken_image, color: Colors.white54),
                     ),
                   ),
@@ -1667,13 +1667,13 @@ class _EnergieHomeTabV4State extends State<EnergieHomeTabV4>
                             Icon(
                               Icons.access_time_rounded,
                               size: 14,
-                              color: Colors.white.withOpacity(0.5),
+                              color: Colors.white.withValues(alpha: 0.5),
                             ),
                             const SizedBox(width: 4),
                             Text(
                               '${practice['duration']} Min.',
                               style: TextStyle(
-                                color: Colors.white.withOpacity(0.5),
+                                color: Colors.white.withValues(alpha: 0.5),
                                 fontSize: 12,
                               ),
                             ),
@@ -1681,13 +1681,13 @@ class _EnergieHomeTabV4State extends State<EnergieHomeTabV4>
                             Icon(
                               Icons.people_outline,
                               size: 14,
-                              color: Colors.white.withOpacity(0.5),
+                              color: Colors.white.withValues(alpha: 0.5),
                             ),
                             const SizedBox(width: 4),
                             Text(
                               '${practice['participants']}',
                               style: TextStyle(
-                                color: Colors.white.withOpacity(0.5),
+                                color: Colors.white.withValues(alpha: 0.5),
                                 fontSize: 12,
                               ),
                             ),
@@ -1717,7 +1717,7 @@ class _EnergieHomeTabV4State extends State<EnergieHomeTabV4>
             width: 280,
             margin: const EdgeInsets.only(right: 16),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.05),
+              color: Colors.white.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(20),
             ),
             child: AnimatedBuilder(
@@ -1729,9 +1729,9 @@ class _EnergieHomeTabV4State extends State<EnergieHomeTabV4>
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [
-                        Colors.purple.withOpacity(0.05),
-                        Colors.purple.withOpacity(0.15),
-                        Colors.purple.withOpacity(0.05),
+                        Colors.purple.withValues(alpha: 0.05),
+                        Colors.purple.withValues(alpha: 0.15),
+                        Colors.purple.withValues(alpha: 0.05),
                       ],
                       stops: [
                         _shimmerController.value - 0.3,
@@ -1789,13 +1789,13 @@ class _EnergieHomeTabV4State extends State<EnergieHomeTabV4>
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            Colors.purple.withOpacity(0.2),
-            Colors.purple.withOpacity(0.1),
+            Colors.purple.withValues(alpha: 0.2),
+            Colors.purple.withValues(alpha: 0.1),
           ],
         ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Colors.purple.withOpacity(0.3),
+          color: Colors.purple.withValues(alpha: 0.3),
         ),
       ),
       child: Row(
@@ -1832,7 +1832,7 @@ class _EnergieHomeTabV4State extends State<EnergieHomeTabV4>
                 Text(
                   activity['timestamp'] as String,
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.5),
+                    color: Colors.white.withValues(alpha: 0.5),
                     fontSize: 12,
                   ),
                 ),

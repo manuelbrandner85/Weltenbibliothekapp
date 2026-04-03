@@ -165,13 +165,13 @@ class RewardService {
       await _loadMilestones();
       
       if (kDebugMode) {
-        print('✅ RewardService initialized');
-        print('   🎁 Unlocked rewards: ${_unlockedRewards.length}');
-        print('   🎯 Milestones: ${_milestones.length}');
+        debugPrint('✅ RewardService initialized');
+        debugPrint('   🎁 Unlocked rewards: ${_unlockedRewards.length}');
+        debugPrint('   🎯 Milestones: ${_milestones.length}');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('❌ RewardService init error: $e');
+        debugPrint('❌ RewardService init error: $e');
       }
     }
   }
@@ -189,7 +189,7 @@ class RewardService {
       }
     } catch (e) {
       if (kDebugMode) {
-        print('❌ Error loading rewards: $e');
+        debugPrint('❌ Error loading rewards: $e');
       }
     }
   }
@@ -202,7 +202,7 @@ class RewardService {
       await _prefs?.setString(_rewardsKey, rewardsJson);
     } catch (e) {
       if (kDebugMode) {
-        print('❌ Error saving rewards: $e');
+        debugPrint('❌ Error saving rewards: $e');
       }
     }
   }
@@ -220,7 +220,7 @@ class RewardService {
       }
     } catch (e) {
       if (kDebugMode) {
-        print('❌ Error loading milestones: $e');
+        debugPrint('❌ Error loading milestones: $e');
       }
       _milestones = _generateDefaultMilestones();
     }
@@ -234,7 +234,7 @@ class RewardService {
       await _prefs?.setString(_milestonesKey, milestonesJson);
     } catch (e) {
       if (kDebugMode) {
-        print('❌ Error saving milestones: $e');
+        debugPrint('❌ Error saving milestones: $e');
       }
     }
   }
@@ -457,8 +457,8 @@ class RewardService {
           newRewards.add(milestone.reward);
 
           if (kDebugMode) {
-            print('🎁 Milestone unlocked: ${milestone.title}');
-            print('   Reward: ${milestone.reward.title}');
+            debugPrint('🎁 Milestone unlocked: ${milestone.title}');
+            debugPrint('   Reward: ${milestone.reward.title}');
           }
         }
       }

@@ -220,11 +220,13 @@ class _FrequencySessionScreenState extends State<FrequencySessionScreen> {
       final freqData = _frequencies[frequency]!;
       await _toolsService.createFrequencySession(
         roomId: widget.roomId,
-        userId: UserService.getCurrentUserId(), // 🔥 Real User ID from UserService
+        userId: UserService.getCurrentUserId(),
         frequencyHz: frequency,
         durationMinutes: duration,
       );
       
+      // FIX v5.28.0: mounted-Check nach async gap
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('✅ ${freqData['name']} Session gestartet!'),
@@ -234,6 +236,8 @@ class _FrequencySessionScreenState extends State<FrequencySessionScreen> {
       
       await _loadSessions();
     } catch (e) {
+      // FIX v5.28.0: mounted-Check nach async gap
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('❌ Fehler: $e'), backgroundColor: Colors.red),
       );

@@ -91,6 +91,7 @@ class _EnergieToolState extends State<EnergieTool> {
       ).timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200 || response.statusCode == 201) {
+        // ignore: use_build_context_synchronously
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Energie-Reading gespeichert!'), backgroundColor: Colors.green),
         );
@@ -113,6 +114,7 @@ class _EnergieToolState extends State<EnergieTool> {
         }
       }
     } catch (e) {
+      // ignore: use_build_context_synchronously
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Fehler: $e'), backgroundColor: Colors.red),
       );

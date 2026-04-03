@@ -143,7 +143,7 @@ class _ResearchHistoryScreenState extends State<ResearchHistoryScreen> {
               color: const Color(0xFF1A1A1A),
               border: Border(
                 bottom: BorderSide(
-                  color: Colors.white.withOpacity(0.1),
+                  color: Colors.white.withValues(alpha: 0.1),
                 ),
               ),
             ),
@@ -152,7 +152,7 @@ class _ResearchHistoryScreenState extends State<ResearchHistoryScreen> {
               style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(
                 hintText: 'Suche im Verlauf...',
-                hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
+                hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
                 prefixIcon: const Icon(Icons.search, color: Colors.white70),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
@@ -164,7 +164,7 @@ class _ResearchHistoryScreenState extends State<ResearchHistoryScreen> {
                       )
                     : null,
                 filled: true,
-                fillColor: Colors.white.withOpacity(0.05),
+                fillColor: Colors.white.withValues(alpha: 0.05),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
@@ -182,7 +182,7 @@ class _ResearchHistoryScreenState extends State<ResearchHistoryScreen> {
                 color: const Color(0xFF1A1A1A),
                 border: Border(
                   bottom: BorderSide(
-                    color: Colors.white.withOpacity(0.1),
+                    color: Colors.white.withValues(alpha: 0.1),
                   ),
                 ),
               ),
@@ -232,7 +232,7 @@ class _ResearchHistoryScreenState extends State<ResearchHistoryScreen> {
                             Icon(
                               Icons.history,
                               size: 64,
-                              color: Colors.white.withOpacity(0.3),
+                              color: Colors.white.withValues(alpha: 0.3),
                             ),
                             const SizedBox(height: 16),
                             Text(
@@ -240,7 +240,7 @@ class _ResearchHistoryScreenState extends State<ResearchHistoryScreen> {
                                   ? 'Keine Ergebnisse gefunden'
                                   : 'Kein Suchverlauf',
                               style: TextStyle(
-                                color: Colors.white.withOpacity(0.5),
+                                color: Colors.white.withValues(alpha: 0.5),
                                 fontSize: 16,
                               ),
                             ),
@@ -291,8 +291,8 @@ class _ResearchHistoryScreenState extends State<ResearchHistoryScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
           color: isSelected
-              ? Colors.cyan.withOpacity(0.2)
-              : Colors.white.withOpacity(0.05),
+              ? Colors.cyan.withValues(alpha: 0.2)
+              : Colors.white.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected ? Colors.cyan : Colors.transparent,
@@ -320,7 +320,7 @@ class _ResearchHistoryScreenState extends State<ResearchHistoryScreen> {
   
   Widget _buildHistoryCard(ResearchHistoryEntry entry) {
     return Card(
-      color: Colors.white.withOpacity(0.05),
+      color: Colors.white.withValues(alpha: 0.05),
       margin: const EdgeInsets.only(bottom: 12),
       child: InkWell(
         onTap: () {
@@ -356,7 +356,7 @@ class _ResearchHistoryScreenState extends State<ResearchHistoryScreen> {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.cyan.withOpacity(0.2),
+                      color: Colors.cyan.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
@@ -383,13 +383,13 @@ class _ResearchHistoryScreenState extends State<ResearchHistoryScreen> {
                     Icon(
                       Icons.article,
                       size: 14,
-                      color: Colors.white.withOpacity(0.5),
+                      color: Colors.white.withValues(alpha: 0.5),
                     ),
                     const SizedBox(width: 4),
                     Text(
                       '${entry.resultCount} Ergebnisse',
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.5),
+                        color: Colors.white.withValues(alpha: 0.5),
                         fontSize: 12,
                       ),
                     ),
@@ -400,13 +400,13 @@ class _ResearchHistoryScreenState extends State<ResearchHistoryScreen> {
                   Icon(
                     Icons.schedule,
                     size: 14,
-                    color: Colors.white.withOpacity(0.5),
+                    color: Colors.white.withValues(alpha: 0.5),
                   ),
                   const SizedBox(width: 4),
                   Text(
                     entry.formattedTime,
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.5),
+                      color: Colors.white.withValues(alpha: 0.5),
                       fontSize: 12,
                     ),
                   ),

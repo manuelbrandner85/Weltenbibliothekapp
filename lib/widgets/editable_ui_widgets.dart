@@ -76,8 +76,8 @@ class EditableButton extends StatelessWidget {
                     'label': label,
                     'icon': icon?.codePoint,
                     'tooltip': tooltip,
-                    'backgroundColor': backgroundColor?.value,
-                    'foregroundColor': foregroundColor?.value,
+                    'backgroundColor': backgroundColor?.toARGB32(),
+                    'foregroundColor': foregroundColor?.toARGB32(),
                   });
                 }
               },
@@ -161,7 +161,7 @@ class EditableIconButton extends StatelessWidget {
                   onEdit!(buttonId, {
                     'icon': icon.codePoint,
                     'tooltip': tooltip,
-                    'color': color?.value,
+                    'color': color?.toARGB32(),
                   });
                 }
               },

@@ -30,10 +30,10 @@ class OnlineStatusService {
   String? _currentUsername;
   
   // Status constants
-  static const String STATUS_ONLINE = 'online';
-  static const String STATUS_AWAY = 'away';
-  static const String STATUS_BUSY = 'busy';
-  static const String STATUS_OFFLINE = 'offline';
+  static const String statusOnline = 'online';
+  static const String statusAway = 'away';
+  static const String statusBusy = 'busy';
+  static const String statusOffline = 'offline';
   
   // Timeouts
   static const Duration onlineTimeout = Duration(minutes: 2);
@@ -42,7 +42,7 @@ class OnlineStatusService {
   /// Initialize service with current user
   void initialize(String username) {
     _currentUsername = username;
-    setStatus(username, STATUS_ONLINE);
+    setStatus(username, statusOnline);
     _startHeartbeat();
     
     if (kDebugMode) {
@@ -85,7 +85,7 @@ class OnlineStatusService {
         body: json.encode({
           'username': username,
           'timestamp': DateTime.now().toIso8601String(),
-          'status': _userStatus[username] ?? STATUS_ONLINE,
+          'status': _userStatus[username] ?? statusOnline,
         }),
       ).timeout(_apiTimeout);
       
@@ -161,13 +161,13 @@ class OnlineStatusService {
       final status = _userStatus[username]!;
       
       // If status is online, verify it's still recent
-      if (status == STATUS_ONLINE) {
+      if (status == statusOnline) {
         final lastSeen = _onlineUsers[username];
         if (lastSeen != null) {
           final diff = DateTime.now().difference(lastSeen);
           if (diff > onlineTimeout) {
-            _userStatus[username] = STATUS_OFFLINE;
-            return STATUS_OFFLINE;
+            _userStatus[username] = statusOffline;
+            return statusOffline;
           }
         }
       }
@@ -180,16 +180,16 @@ class OnlineStatusService {
     if (lastSeen != null) {
       final diff = DateTime.now().difference(lastSeen);
       if (diff < onlineTimeout) {
-        return STATUS_ONLINE;
+        return statusOnline;
       }
     }
     
-    return STATUS_OFFLINE;
+    return statusOffline;
   }
   
   /// Check if user is online
   bool isOnline(String username) {
-    return getUserStatus(username) == STATUS_ONLINE;
+    return getUserStatus(username) == statusOnline;
   }
   
   /// Get last seen time
@@ -202,11 +202,11 @@ class OnlineStatusService {
     final status = getUserStatus(username);
     
     switch (status) {
-      case STATUS_ONLINE:
+      case statusOnline:
         return 'Online';
-      case STATUS_AWAY:
+      case statusAway:
         return 'Abwesend';
-      case STATUS_BUSY:
+      case statusBusy:
         return 'Beschäftigt';
       default:
         final lastSeen = getLastSeen(username);
@@ -235,11 +235,11 @@ class OnlineStatusService {
     final status = getUserStatus(username);
     
     switch (status) {
-      case STATUS_ONLINE:
+      case statusOnline:
         return const Color(0xFF4CAF50); // Green
-      case STATUS_AWAY:
+      case statusAway:
         return const Color(0xFFFFC107); // Amber
-      case STATUS_BUSY:
+      case statusBusy:
         return const Color(0xFFF44336); // Red
       default:
         return const Color(0xFF9E9E9E); // Grey
@@ -251,14 +251,14 @@ class OnlineStatusService {
     _updateLastSeen(username, DateTime.now());
     
     // Update status to online if offline
-    if (getUserStatus(username) == STATUS_OFFLINE) {
-      setStatus(username, STATUS_ONLINE);
+    if (getUserStatus(username) == statusOffline) {
+      setStatus(username, statusOnline);
     }
   }
   
   /// Set user offline
   void setOffline(String username) {
-    setStatus(username, STATUS_OFFLINE);
+    setStatus(username, statusOffline);
   }
   
   /// Clean up old entries

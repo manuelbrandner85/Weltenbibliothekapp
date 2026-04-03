@@ -137,7 +137,9 @@ class ShareDialog extends StatelessWidget {
               version: QrVersions.auto,
               size: 200,
               backgroundColor: Colors.white,
-              foregroundColor: Colors.black,
+              eyeStyle: QrEyeStyle(eyeShape: QrEyeShape.square, color: Colors.black),
+
+              dataModuleStyle: QrDataModuleStyle(dataModuleShape: QrDataModuleShape.square, color: Colors.black),
             ),
           ),
           
@@ -209,7 +211,6 @@ class ShareDialog extends StatelessWidget {
                 label: const Text('Kopieren'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.cyan,
-                  foregroundColor: Colors.black,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
                     vertical: 12,
@@ -336,7 +337,6 @@ class ShareDialog extends StatelessWidget {
       label: const Text('Über System teilen'),
       style: ElevatedButton.styleFrom(
         backgroundColor: Colors.cyan,
-        foregroundColor: Colors.black,
         padding: const EdgeInsets.symmetric(vertical: 16),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),

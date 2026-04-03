@@ -2277,12 +2277,12 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
           _buildSectionTitle('📖 ZAHLEN-LEXIKON', 'Bedeutungen wichtiger Zahlen'),
           const SizedBox(height: 20),
           
-          ...importantNumbers.map((num) => Padding(
+          ...importantNumbers.map((numItem) => Padding(
             padding: const EdgeInsets.only(bottom: 12),
             child: _buildLexiconCard(
-              num['number'] as int,
-              num['meaning'] as String,
-              num['icon'] as String,
+              numItem['number'] as int,
+              numItem['meaning'] as String,
+              numItem['icon'] as String,
             ),
           )),
         ],

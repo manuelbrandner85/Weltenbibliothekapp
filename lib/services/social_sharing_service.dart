@@ -146,13 +146,13 @@ class SocialSharingService {
       _referralCount = _prefs?.getInt(_referralCountKey) ?? 0;
       
       if (kDebugMode) {
-        print('✅ SocialSharingService initialized');
-        print('   📊 Total shares: ${_shareHistory.length}');
-        print('   👥 Referrals: $_referralCount');
+        debugPrint('✅ SocialSharingService initialized');
+        debugPrint('   📊 Total shares: ${_shareHistory.length}');
+        debugPrint('   👥 Referrals: $_referralCount');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('❌ SocialSharingService init error: $e');
+        debugPrint('❌ SocialSharingService init error: $e');
       }
     }
   }
@@ -276,19 +276,19 @@ class SocialSharingService {
         await _trackShare(platform, contentType, contentId);
         
         if (kDebugMode) {
-          print('✅ Shared $contentType via ${platform.label}');
+          debugPrint('✅ Shared $contentType via ${platform.label}');
         }
         
         return true;
       } else {
         if (kDebugMode) {
-          print('❌ Cannot launch $shareUrl');
+          debugPrint('❌ Cannot launch $shareUrl');
         }
         return false;
       }
     } catch (e) {
       if (kDebugMode) {
-        print('❌ Share error: $e');
+        debugPrint('❌ Share error: $e');
       }
       return false;
     }
@@ -316,7 +316,7 @@ class SocialSharingService {
       await _saveShareHistory();
     } catch (e) {
       if (kDebugMode) {
-        print('❌ Track share error: $e');
+        debugPrint('❌ Track share error: $e');
       }
     }
   }
@@ -330,7 +330,7 @@ class SocialSharingService {
       }
     } catch (e) {
       if (kDebugMode) {
-        print('❌ Load share history error: $e');
+        debugPrint('❌ Load share history error: $e');
       }
     }
   }
@@ -343,7 +343,7 @@ class SocialSharingService {
       await _prefs?.setString(_shareHistoryKey, historyJson);
     } catch (e) {
       if (kDebugMode) {
-        print('❌ Save share history error: $e');
+        debugPrint('❌ Save share history error: $e');
       }
     }
   }
@@ -358,11 +358,11 @@ class SocialSharingService {
       await _prefs?.setInt(_referralCountKey, _referralCount);
       
       if (kDebugMode) {
-        print('👥 Referral count: $_referralCount');
+        debugPrint('👥 Referral count: $_referralCount');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('❌ Increment referral error: $e');
+        debugPrint('❌ Increment referral error: $e');
       }
     }
   }

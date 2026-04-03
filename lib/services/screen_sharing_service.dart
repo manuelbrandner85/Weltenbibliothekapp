@@ -100,7 +100,7 @@ class ScreenSharingService extends ChangeNotifier {
       _setState(ScreenShareState.starting);
       
       if (kDebugMode) {
-        print('🖥️ ScreenShare: Starting screen share for $username');
+        debugPrint('🖥️ ScreenShare: Starting screen share for $username');
       }
       
       // Update constraints if audio is needed
@@ -113,7 +113,7 @@ class ScreenSharingService extends ChangeNotifier {
         _localScreenStream = await navigator.mediaDevices.getDisplayMedia(_screenConstraints);
       } catch (e) {
         if (kDebugMode) {
-          print('❌ ScreenShare: Failed to get display media - $e');
+          debugPrint('❌ ScreenShare: Failed to get display media - $e');
         }
         _setState(ScreenShareState.error);
         ErrorReportingService().reportError(
@@ -143,7 +143,7 @@ class ScreenSharingService extends ChangeNotifier {
       // Handle track ended (user stops sharing)
       _localScreenStream!.getVideoTracks().first.onEnded = () {
         if (kDebugMode) {
-          print('🖥️ ScreenShare: Screen sharing track ended');
+          debugPrint('🖥️ ScreenShare: Screen sharing track ended');
         }
         stopScreenShare();
       };
@@ -157,14 +157,14 @@ class ScreenSharingService extends ChangeNotifier {
       _setState(ScreenShareState.active);
       
       if (kDebugMode) {
-        print('✅ ScreenShare: Screen sharing started successfully');
+        debugPrint('✅ ScreenShare: Screen sharing started successfully');
       }
       
       return true;
       
     } catch (e, stack) {
       if (kDebugMode) {
-        print('❌ ScreenShare: Error starting screen share - $e');
+        debugPrint('❌ ScreenShare: Error starting screen share - $e');
       }
       ErrorReportingService().reportError(
         error: e,
@@ -182,7 +182,7 @@ class ScreenSharingService extends ChangeNotifier {
       _setState(ScreenShareState.stopping);
       
       if (kDebugMode) {
-        print('🖥️ ScreenShare: Stopping screen share');
+        debugPrint('🖥️ ScreenShare: Stopping screen share');
       }
       
       // Stop local screen stream
@@ -214,12 +214,12 @@ class ScreenSharingService extends ChangeNotifier {
       _setState(ScreenShareState.inactive);
       
       if (kDebugMode) {
-        print('✅ ScreenShare: Screen sharing stopped');
+        debugPrint('✅ ScreenShare: Screen sharing stopped');
       }
       
     } catch (e, stack) {
       if (kDebugMode) {
-        print('❌ ScreenShare: Error stopping screen share - $e');
+        debugPrint('❌ ScreenShare: Error stopping screen share - $e');
       }
       ErrorReportingService().reportError(
         error: e,
@@ -242,12 +242,12 @@ class ScreenSharingService extends ChangeNotifier {
       // For now, we'll send via signaling
       
       if (kDebugMode) {
-        print('🖥️ ScreenShare: Adding screen track to peers');
+        debugPrint('🖥️ ScreenShare: Adding screen track to peers');
       }
       
     } catch (e) {
       if (kDebugMode) {
-        print('❌ ScreenShare: Error adding screen track - $e');
+        debugPrint('❌ ScreenShare: Error adding screen track - $e');
       }
     }
   }
@@ -256,12 +256,12 @@ class ScreenSharingService extends ChangeNotifier {
   Future<void> _removeScreenTrackFromPeers() async {
     try {
       if (kDebugMode) {
-        print('🖥️ ScreenShare: Removing screen track from peers');
+        debugPrint('🖥️ ScreenShare: Removing screen track from peers');
       }
       
     } catch (e) {
       if (kDebugMode) {
-        print('❌ ScreenShare: Error removing screen track - $e');
+        debugPrint('❌ ScreenShare: Error removing screen track - $e');
       }
     }
   }
@@ -273,12 +273,12 @@ class ScreenSharingService extends ChangeNotifier {
       // This would use the existing signaling infrastructure
       
       if (kDebugMode) {
-        print('📡 ScreenShare: Notifying screen share start');
+        debugPrint('📡 ScreenShare: Notifying screen share start');
       }
       
     } catch (e) {
       if (kDebugMode) {
-        print('❌ ScreenShare: Error notifying screen share start - $e');
+        debugPrint('❌ ScreenShare: Error notifying screen share start - $e');
       }
     }
   }
@@ -287,12 +287,12 @@ class ScreenSharingService extends ChangeNotifier {
   Future<void> _notifyScreenShareStop(String userId) async {
     try {
       if (kDebugMode) {
-        print('📡 ScreenShare: Notifying screen share stop');
+        debugPrint('📡 ScreenShare: Notifying screen share stop');
       }
       
     } catch (e) {
       if (kDebugMode) {
-        print('❌ ScreenShare: Error notifying screen share stop - $e');
+        debugPrint('❌ ScreenShare: Error notifying screen share stop - $e');
       }
     }
   }
@@ -315,12 +315,12 @@ class ScreenSharingService extends ChangeNotifier {
       _screenParticipantsController.add(screenParticipants);
       
       if (kDebugMode) {
-        print('✅ ScreenShare: Remote screen share from $username received');
+        debugPrint('✅ ScreenShare: Remote screen share from $username received');
       }
       
     } catch (e) {
       if (kDebugMode) {
-        print('❌ ScreenShare: Error handling remote screen share - $e');
+        debugPrint('❌ ScreenShare: Error handling remote screen share - $e');
       }
     }
   }
@@ -342,12 +342,12 @@ class ScreenSharingService extends ChangeNotifier {
       }
       
       if (kDebugMode) {
-        print('✅ ScreenShare: Remote screen share stopped');
+        debugPrint('✅ ScreenShare: Remote screen share stopped');
       }
       
     } catch (e) {
       if (kDebugMode) {
-        print('❌ ScreenShare: Error handling remote screen share stop - $e');
+        debugPrint('❌ ScreenShare: Error handling remote screen share stop - $e');
       }
     }
   }

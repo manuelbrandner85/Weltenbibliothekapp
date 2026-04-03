@@ -209,14 +209,14 @@ class UserContentService {
       await _loadNarratives();
       
       if (kDebugMode) {
-        print('✅ UserContentService initialized');
-        print('   📝 Total narratives: ${_narratives.length}');
-        print('   📤 Drafts: ${_getDraftCount()}');
-        print('   🌟 Published: ${_getPublishedCount()}');
+        debugPrint('✅ UserContentService initialized');
+        debugPrint('   📝 Total narratives: ${_narratives.length}');
+        debugPrint('   📤 Drafts: ${_getDraftCount()}');
+        debugPrint('   🌟 Published: ${_getPublishedCount()}');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('❌ UserContentService init error: $e');
+        debugPrint('❌ UserContentService init error: $e');
       }
     }
   }
@@ -251,13 +251,13 @@ class UserContentService {
       await _saveNarratives();
 
       if (kDebugMode) {
-        print('✅ Narrative created: ${narrative.title}');
+        debugPrint('✅ Narrative created: ${narrative.title}');
       }
 
       return narrative;
     } catch (e) {
       if (kDebugMode) {
-        print('❌ Create narrative error: $e');
+        debugPrint('❌ Create narrative error: $e');
       }
       rethrow;
     }
@@ -271,12 +271,12 @@ class UserContentService {
         await _saveNarratives();
 
         if (kDebugMode) {
-          print('✅ Narrative updated: ${narrative.title}');
+          debugPrint('✅ Narrative updated: ${narrative.title}');
         }
       }
     } catch (e) {
       if (kDebugMode) {
-        print('❌ Update narrative error: $e');
+        debugPrint('❌ Update narrative error: $e');
       }
     }
   }
@@ -287,11 +287,11 @@ class UserContentService {
       await _saveNarratives();
 
       if (kDebugMode) {
-        print('✅ Narrative deleted: $narrativeId');
+        debugPrint('✅ Narrative deleted: $narrativeId');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('❌ Delete narrative error: $e');
+        debugPrint('❌ Delete narrative error: $e');
       }
     }
   }
@@ -307,11 +307,11 @@ class UserContentService {
       await updateNarrative(updated);
 
       if (kDebugMode) {
-        print('✅ Narrative submitted: ${narrative.title}');
+        debugPrint('✅ Narrative submitted: ${narrative.title}');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('❌ Submit narrative error: $e');
+        debugPrint('❌ Submit narrative error: $e');
       }
     }
   }
@@ -323,11 +323,11 @@ class UserContentService {
       await updateNarrative(updated);
 
       if (kDebugMode) {
-        print('✅ Narrative approved: ${narrative.title}');
+        debugPrint('✅ Narrative approved: ${narrative.title}');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('❌ Approve narrative error: $e');
+        debugPrint('❌ Approve narrative error: $e');
       }
     }
   }
@@ -342,12 +342,12 @@ class UserContentService {
       await updateNarrative(updated);
 
       if (kDebugMode) {
-        print('❌ Narrative rejected: ${narrative.title}');
-        print('   Reason: $reason');
+        debugPrint('❌ Narrative rejected: ${narrative.title}');
+        debugPrint('   Reason: $reason');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('❌ Reject narrative error: $e');
+        debugPrint('❌ Reject narrative error: $e');
       }
     }
   }
@@ -359,11 +359,11 @@ class UserContentService {
       await updateNarrative(updated);
 
       if (kDebugMode) {
-        print('🌟 Narrative published: ${narrative.title}');
+        debugPrint('🌟 Narrative published: ${narrative.title}');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('❌ Publish narrative error: $e');
+        debugPrint('❌ Publish narrative error: $e');
       }
     }
   }
@@ -381,7 +381,7 @@ class UserContentService {
       }
     } catch (e) {
       if (kDebugMode) {
-        print('❌ Load narratives error: $e');
+        debugPrint('❌ Load narratives error: $e');
       }
     }
   }
@@ -394,7 +394,7 @@ class UserContentService {
       await _prefs?.setString(_narrativesKey, narrativesJson);
     } catch (e) {
       if (kDebugMode) {
-        print('❌ Save narratives error: $e');
+        debugPrint('❌ Save narratives error: $e');
       }
     }
   }

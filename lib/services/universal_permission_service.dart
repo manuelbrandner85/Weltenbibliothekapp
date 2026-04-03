@@ -1,3 +1,4 @@
+// ignore_for_file: avoid_web_libraries_in_flutter, deprecated_member_use
 /// 🔐 UNIVERSAL PERMISSION SERVICE - Platform-agnostic Permissions
 /// 
 /// Handles permissions for both Web and Native platforms.

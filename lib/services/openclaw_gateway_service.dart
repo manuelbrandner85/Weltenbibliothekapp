@@ -341,7 +341,7 @@ Antworte im JSON-Format auf Deutsch, sehr detailliert.
   }) async {
     try {
       final prompt = '''
-Erstelle eine ${duration}-minütige geführte Meditation:
+Erstelle eine $duration-minütige geführte Meditation:
 
 Intention: $intention
 ${chakra != null ? 'Chakra-Fokus: $chakra' : ''}

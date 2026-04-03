@@ -525,6 +525,9 @@ class _SpiritJournalWidgetState extends State<SpiritJournalWidget> {
                   onPressed: () async {
                     if (content.trim().isEmpty) return;
 
+                    // FIX v5.28.0: Capture navigators before async gap
+                    final nav = Navigator.of(dialogContext);
+                    final messenger = ScaffoldMessenger.of(context);
                     await _service.createEntry(
                       category: selectedCategory,
                       content: content,
@@ -534,8 +537,8 @@ class _SpiritJournalWidgetState extends State<SpiritJournalWidget> {
                     );
                     if (mounted) {
                       setState(() {});
-                      Navigator.pop(dialogContext);
-                      ScaffoldMessenger.of(context).showSnackBar(
+                      nav.pop();
+                      messenger.showSnackBar(
                         SnackBar(
                           content: const Text('Journal-Eintrag gespeichert! +8 Punkte'),
                           backgroundColor: widget.accentColor,

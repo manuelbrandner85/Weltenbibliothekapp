@@ -1,3 +1,4 @@
+// ignore_for_file: avoid_web_libraries_in_flutter, deprecated_member_use
 /// Data Export/Import Service (WEB VERSION)
 /// Backup and restore app data as JSON
 library;

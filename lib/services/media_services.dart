@@ -24,20 +24,20 @@ class VideoService {
         
         if (sizeMB > maxSizeMB) {
           if (kDebugMode) {
-            print('⚠️ Video zu groß: ${sizeMB.toStringAsFixed(1)} MB (Max: $maxSizeMB MB)');
+            debugPrint('⚠️ Video zu groß: ${sizeMB.toStringAsFixed(1)} MB (Max: $maxSizeMB MB)');
           }
           return null;
         }
         
         if (kDebugMode) {
-          print('✅ Video ausgewählt: ${video.name} (${sizeMB.toStringAsFixed(1)} MB)');
+          debugPrint('✅ Video ausgewählt: ${video.name} (${sizeMB.toStringAsFixed(1)} MB)');
         }
       }
       
       return video;
     } catch (e) {
       if (kDebugMode) {
-        print('❌ Video-Auswahl Fehler: $e');
+        debugPrint('❌ Video-Auswahl Fehler: $e');
       }
       return null;
     }
@@ -54,7 +54,7 @@ class VideoService {
       return video;
     } catch (e) {
       if (kDebugMode) {
-        print('❌ Video-Aufnahme Fehler: $e');
+        debugPrint('❌ Video-Aufnahme Fehler: $e');
       }
       return null;
     }
@@ -74,7 +74,7 @@ class VideoService {
       };
     } catch (e) {
       if (kDebugMode) {
-        print('❌ Video-Metadaten Fehler: $e');
+        debugPrint('❌ Video-Metadaten Fehler: $e');
       }
       return null;
     }
@@ -110,7 +110,7 @@ class GifService {
       }
     } catch (e) {
       if (kDebugMode) {
-        print('❌ Trending GIFs Fehler: $e');
+        debugPrint('❌ Trending GIFs Fehler: $e');
       }
     }
     
@@ -143,7 +143,7 @@ class GifService {
       }
     } catch (e) {
       if (kDebugMode) {
-        print('❌ GIF-Suche Fehler: $e');
+        debugPrint('❌ GIF-Suche Fehler: $e');
       }
     }
     
@@ -184,7 +184,7 @@ class MultiImageService {
       
       if (images.length > maxImages) {
         if (kDebugMode) {
-          print('⚠️ Zu viele Bilder: ${images.length} (Max: $maxImages)');
+          debugPrint('⚠️ Zu viele Bilder: ${images.length} (Max: $maxImages)');
         }
         return images.take(maxImages).toList();
       }
@@ -199,19 +199,19 @@ class MultiImageService {
           validImages.add(image);
         } else {
           if (kDebugMode) {
-            print('⚠️ Bild zu groß übersprungen: ${image.name} (${sizeMB.toStringAsFixed(1)} MB)');
+            debugPrint('⚠️ Bild zu groß übersprungen: ${image.name} (${sizeMB.toStringAsFixed(1)} MB)');
           }
         }
       }
       
       if (kDebugMode) {
-        print('✅ ${validImages.length} Bilder ausgewählt');
+        debugPrint('✅ ${validImages.length} Bilder ausgewählt');
       }
       
       return validImages;
     } catch (e) {
       if (kDebugMode) {
-        print('❌ Multi-Image Auswahl Fehler: $e');
+        debugPrint('❌ Multi-Image Auswahl Fehler: $e');
       }
       return [];
     }
@@ -234,7 +234,7 @@ class MultiImageService {
         
         if (sizeMB > maxSizeMBPerImage) {
           if (kDebugMode) {
-            print('⚠️ Bild zu groß: ${sizeMB.toStringAsFixed(1)} MB');
+            debugPrint('⚠️ Bild zu groß: ${sizeMB.toStringAsFixed(1)} MB');
           }
           return null;
         }
@@ -243,7 +243,7 @@ class MultiImageService {
       return image;
     } catch (e) {
       if (kDebugMode) {
-        print('❌ Single-Image Auswahl Fehler: $e');
+        debugPrint('❌ Single-Image Auswahl Fehler: $e');
       }
       return null;
     }
@@ -262,7 +262,7 @@ class MultiImageService {
       return image;
     } catch (e) {
       if (kDebugMode) {
-        print('❌ Foto-Aufnahme Fehler: $e');
+        debugPrint('❌ Foto-Aufnahme Fehler: $e');
       }
       return null;
     }

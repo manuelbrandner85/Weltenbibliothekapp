@@ -50,7 +50,7 @@ class OpenClawAdminService {
   /// {
   ///   'shouldModerate': bool,
   ///   'severity': 'low' | 'medium' | 'high' | 'critical',
-  ///   'reasons': List<String>,
+  ///   'reasons': List[String],
   ///   'confidence': 0.0 - 1.0,
   ///   'suggestedAction': 'warn' | 'mute' | 'ban' | 'delete',
   ///   'explanation': String
@@ -158,7 +158,7 @@ class OpenClawAdminService {
   ///   'shouldBan': bool,
   ///   'banDuration': 'permanent' | '1d' | '7d' | '30d',
   ///   'reason': String,
-  ///   'evidence': List<String>,
+  ///   'evidence': List[String],
   ///   'confidence': 0.0 - 1.0
   /// }
   Future<Map<String, dynamic>> recommendBanAction({
@@ -239,8 +239,8 @@ class OpenClawAdminService {
   ///   'riskScore': 0-100,
   ///   'activityLevel': 'low' | 'medium' | 'high',
   ///   'contentQuality': 'poor' | 'average' | 'good' | 'excellent',
-  ///   'warnings': List<String>,
-  ///   'insights': List<String>
+  ///   'warnings': List[String],
+  ///   'insights': List[String]
   /// }
   Future<Map<String, dynamic>> getUserAnalytics({
     required String userId,

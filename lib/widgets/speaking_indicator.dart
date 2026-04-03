@@ -89,12 +89,12 @@ class _SpeakingIndicatorState extends State<SpeakingIndicator>
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: widget.color.withOpacity(0.6 * _opacityAnimation.value),
+                      color: widget.color.withValues(alpha: 0.6 * _opacityAnimation.value),
                       blurRadius: 30 * _scaleAnimation.value,
                       spreadRadius: 10 * _scaleAnimation.value,
                     ),
                     BoxShadow(
-                      color: widget.color.withOpacity(0.3 * _opacityAnimation.value),
+                      color: widget.color.withValues(alpha: 0.3 * _opacityAnimation.value),
                       blurRadius: 50 * _scaleAnimation.value,
                       spreadRadius: 15 * _scaleAnimation.value,
                     ),
@@ -108,7 +108,7 @@ class _SpeakingIndicatorState extends State<SpeakingIndicator>
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: widget.color.withOpacity(_opacityAnimation.value),
+                    color: widget.color.withValues(alpha: _opacityAnimation.value),
                     width: 3,
                   ),
                 ),
@@ -120,7 +120,7 @@ class _SpeakingIndicatorState extends State<SpeakingIndicator>
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: widget.color.withOpacity(0.3 * _opacityAnimation.value),
+                    color: widget.color.withValues(alpha: 0.3 * _opacityAnimation.value),
                     width: 2,
                   ),
                 ),

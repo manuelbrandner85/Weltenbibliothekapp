@@ -1906,6 +1906,9 @@ class _MeditationSessionPlayerState extends State<MeditationSessionPlayer> {
       'timestamp': DateTime.now().toIso8601String(),
     });
     
+    // FIX v5.28.0: mounted-Check nach async gap
+    if (!mounted) return;
+    
     // Show completion dialog
     showDialog(
       context: context,

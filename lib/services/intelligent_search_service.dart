@@ -116,7 +116,7 @@ class IntelligentSearchService {
       final daysSincePublished = DateTime.now().difference(publishedDate).inDays;
       if (daysSincePublished < 7) {
         score += 10.0;
-      } else if (daysSincePublished < 30) score += 5.0;
+      } else if (daysSincePublished < 30) { score += 5.0; }
     }
 
     // 5. POPULARITÄT (falls verfügbar)

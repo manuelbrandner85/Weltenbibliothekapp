@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
  // OpenClaw v2.0
 import 'dart:async';
 import '../../services/backend_recherche_service.dart';
 import '../../services/favorites_service.dart';  // 🆕 Favorites Service
 import '../../services/search_history_service.dart';  // 🆕 Search History Service
+import '../../services/free_research_tools_service.dart';  // 🆕 Free Research APIs
+import 'package:url_launcher/url_launcher.dart';
 import '../../models/favorite.dart';  // 🆕 Favorite Model
 import '../../widgets/follow_up_questions_widget.dart';
 import '../../widgets/enhanced_multimedia_section.dart';
@@ -32,6 +35,7 @@ class MaterieResearchScreen extends StatefulWidget {
 class _MaterieResearchScreenState extends State<MaterieResearchScreen> {
   // Services
   final BackendRechercheService _searchService = BackendRechercheService();
+  final FreeResearchToolsService _freeTools = FreeResearchToolsService();
   
   // Controllers
   final TextEditingController _queryController = TextEditingController();
@@ -43,6 +47,13 @@ class _MaterieResearchScreenState extends State<MaterieResearchScreen> {
   bool _isSearching = false;
   bool _showSuggestions = false;
   bool _isFavorite = false;
+  
+  // Free Research Tools State
+  WikipediaSummary? _wikiSummary;
+  List<ArxivPaper> _arxivPapers = [];
+  List<OpenAlexWork> _scholarlySources = [];
+  bool _isLoadingFreeTools = false;
+  bool _showFreeToolsPanel = false;
   
   // Debounce Timer
   Timer? _debounceTimer;
@@ -121,6 +132,9 @@ class _MaterieResearchScreenState extends State<MaterieResearchScreen> {
       
       // Check if this research is already favorited
       _checkIfFavorite();
+      
+      // 🆕 Load free research tools in parallel
+      _loadFreeResearchTools(query);
       
       // 🆕 Save to search history
       try {
@@ -271,6 +285,37 @@ class _MaterieResearchScreenState extends State<MaterieResearchScreen> {
           ),
         );
       }
+    }
+  }
+
+  /// Lädt kostenlose Recherche-Ergebnisse parallel
+  Future<void> _loadFreeResearchTools(String query) async {
+    if (!mounted) return;
+    setState(() => _isLoadingFreeTools = true);
+
+    try {
+      // Parallel-Anfragen für maximale Geschwindigkeit
+      final results = await Future.wait([
+        _freeTools.getWikipediaSummary(query, lang: 'de')
+            .catchError((_) => null),
+        _freeTools.searchArxiv(query, maxResults: 3)
+            .catchError((_) => <ArxivPaper>[]),
+        _freeTools.searchOpenAlex(query, limit: 3)
+            .catchError((_) => <OpenAlexWork>[]),
+      ]);
+
+      if (!mounted) return;
+      setState(() {
+        _wikiSummary = results[0] as WikipediaSummary?;
+        _arxivPapers = results[1] as List<ArxivPaper>;
+        _scholarlySources = results[2] as List<OpenAlexWork>;
+        _isLoadingFreeTools = false;
+        _showFreeToolsPanel =
+            _wikiSummary != null || _arxivPapers.isNotEmpty || _scholarlySources.isNotEmpty;
+      });
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ Free Tools Fehler: $e');
+      if (mounted) setState(() => _isLoadingFreeTools = false);
     }
   }
 
@@ -648,9 +693,257 @@ class _MaterieResearchScreenState extends State<MaterieResearchScreen> {
             questions: result.followUpQuestions,
             onQuestionTap: _handleFollowUpQuestion,
           ),
+          
+          const SizedBox(height: 24),
+          
+          // ─── FREE RESEARCH TOOLS PANEL ───
+          _buildFreeToolsPanel(),
         ],
       ),
     );
+  }
+
+  Widget _buildFreeToolsPanel() {
+    if (_isLoadingFreeTools) {
+      return Container(
+        margin: const EdgeInsets.only(top: 8),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1A1A2E),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+        ),
+        child: const Row(
+          children: [
+            SizedBox(
+              width: 20, height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.blue),
+            ),
+            SizedBox(width: 12),
+            Text(
+              'Lade kostenlose Quellen…',
+              style: TextStyle(color: Colors.blue, fontSize: 13),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (!_showFreeToolsPanel) return const SizedBox.shrink();
+
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0D1B2A),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.blue.withValues(alpha: 0.4)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.blue.withValues(alpha: 0.15),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+            ),
+            child: const Row(
+              children: [
+                Icon(Icons.public, color: Colors.blue, size: 20),
+                SizedBox(width: 8),
+                Text(
+                  '🔬 Kostenlose Wissensdatenbanken',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Wikipedia
+          if (_wikiSummary != null) ...[
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 28, height: 28,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: const Center(
+                          child: Text('W', style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black,
+                          )),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Wikipedia',
+                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                      ),
+                      const Spacer(),
+                      Text(
+                        "DE",
+                        style: TextStyle(color: Colors.grey[500], fontSize: 11),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    _wikiSummary!.title,
+                    style: const TextStyle(color: Colors.lightBlue, fontSize: 14, fontWeight: FontWeight.w500),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _wikiSummary!.extract.length > 300
+                        ? '${_wikiSummary!.extract.substring(0, 300)}…'
+                        : _wikiSummary!.extract,
+                    style: TextStyle(color: Colors.grey[300], fontSize: 13, height: 1.4),
+                  ),
+                  if (_wikiSummary!.url.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    GestureDetector(
+                      onTap: () => _openUrl(_wikiSummary!.url),
+                      child: Text(
+                        'Vollständigen Artikel lesen →',
+                        style: TextStyle(color: Colors.blue[300], fontSize: 12),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            if (_arxivPapers.isNotEmpty || _scholarlySources.isNotEmpty)
+              Divider(color: Colors.blue.withValues(alpha: 0.2), height: 1),
+          ],
+
+          // arXiv Papers
+          if (_arxivPapers.isNotEmpty) ...[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+              child: Row(
+                children: [
+                  const Icon(Icons.science, color: Colors.green, size: 18),
+                  const SizedBox(width: 6),
+                  const Text(
+                    'arXiv – Wissenschaftliche Paper',
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13),
+                  ),
+                ],
+              ),
+            ),
+            ..._arxivPapers.take(3).map((paper) => Padding(
+              padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+              child: InkWell(
+                onTap: () => _openUrl(paper.url),
+                child: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withValues(alpha: 0.07),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.green.withValues(alpha: 0.2)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        paper.title,
+                        style: const TextStyle(color: Colors.lightGreen, fontSize: 13, fontWeight: FontWeight.w500),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${paper.authors.take(2).join(', ')}${paper.authors.length > 2 ? ' u.a.' : ''}  •  ${paper.published.substring(0, 10)}',
+                        style: TextStyle(color: Colors.grey[500], fontSize: 11),
+                      ),
+                      if (paper.summary.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          paper.summary.length > 150 ? '${paper.summary.substring(0, 150)}…' : paper.summary,
+                          style: TextStyle(color: Colors.grey[400], fontSize: 11, height: 1.3),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            )),
+            if (_scholarlySources.isNotEmpty)
+              Divider(color: Colors.blue.withValues(alpha: 0.2), height: 1),
+          ],
+
+          // OpenAlex Scholarly Sources
+          if (_scholarlySources.isNotEmpty) ...[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+              child: Row(
+                children: [
+                  const Icon(Icons.menu_book, color: Colors.purple, size: 18),
+                  const SizedBox(width: 6),
+                  const Text(
+                    'OpenAlex – Fachpublikationen',
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13),
+                  ),
+                ],
+              ),
+            ),
+            ..._scholarlySources.take(3).map((work) => Padding(
+              padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+              child: InkWell(
+                onTap: work.doi != null ? () => _openUrl(work.displayUrl) : null,
+                child: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.purple.withValues(alpha: 0.07),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.purple.withValues(alpha: 0.2)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        work.title,
+                        style: const TextStyle(color: Colors.purpleAccent, fontSize: 13, fontWeight: FontWeight.w500),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${work.year ?? ''}  •  Zitiert: ${work.citedByCount}x',
+                        style: TextStyle(color: Colors.grey[500], fontSize: 11),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            )),
+          ],
+
+          const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openUrl(String url) async {
+    try {
+      final uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      }
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ URL öffnen fehlgeschlagen: $e');
+    }
   }
 
   Widget _buildSourceTypeStats(List<SearchSource> sources) {

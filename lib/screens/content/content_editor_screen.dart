@@ -228,12 +228,20 @@ class _ContentEditorScreenState extends State<ContentEditorScreen> {
   
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (bool didPop, dynamic result) async {
+        if (didPop) return;
         if (_hasUnsavedChanges) {
-          return await _showUnsavedDialog() ?? false;
+          final shouldPop = await _showUnsavedDialog() ?? false;
+          if (shouldPop && context.mounted) {
+            // ignore: use_build_context_synchronously
+            Navigator.of(context).pop();
+          }
+        } else {
+          // ignore: use_build_context_synchronously
+          Navigator.of(context).pop();
         }
-        return true;
       },
       child: Scaffold(
         appBar: AppBar(
@@ -392,7 +400,7 @@ class _ContentEditorScreenState extends State<ContentEditorScreen> {
                               });
                             },
                             style: IconButton.styleFrom(
-                              backgroundColor: Colors.black.withOpacity(0.5),
+                              backgroundColor: Colors.black.withValues(alpha: 0.5),
                             ),
                           ),
                         ),
@@ -526,6 +534,7 @@ class _ContentEditorScreenState extends State<ContentEditorScreen> {
             TextButton(
               onPressed: () async {
                 await _autoSaveDraft();
+                // ignore: use_build_context_synchronously
                 if (mounted) Navigator.pop(context, true);
               },
               child: const Text('Speichern'),

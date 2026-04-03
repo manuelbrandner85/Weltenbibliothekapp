@@ -121,6 +121,7 @@ class _ChakraScanScreenState extends State<ChakraScanScreen> {
           if (scanId != null) {
             _loadScans();
             if (mounted) {
+              // ignore: use_build_context_synchronously
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text('✅ Chakra-Scan gespeichert!'),

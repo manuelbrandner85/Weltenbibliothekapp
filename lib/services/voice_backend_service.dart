@@ -250,7 +250,7 @@ class VoiceBackendService {
       
     } catch (e) {
       if (kDebugMode) {
-        print('❌ Get active rooms error: $e');
+        debugPrint('❌ Get active rooms error: $e');
       }
       throw Exception('Failed to get active rooms: $e');
     }

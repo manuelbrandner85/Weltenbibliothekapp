@@ -57,7 +57,7 @@ void main() async {
   
   // Alle Hive-Boxen die in der App verwendet werden vorab öffnen
   // (verhindert HiveError: Box not found)
-  const _hiveBoxes = [
+  const hiveBoxes = [
     'materie_profiles',
     'energie_profiles',
     'research_topics',
@@ -87,7 +87,7 @@ void main() async {
     'spirit_calculations',
     'user_data', // ✅ FIX: UnifiedStorageService benötigt diese Box (Admin Dashboard)
   ];
-  for (final box in _hiveBoxes) {
+  for (final box in hiveBoxes) {
     try {
       if (!Hive.isBoxOpen(box)) {
         await Hive.openBox(box);

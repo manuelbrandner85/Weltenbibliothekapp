@@ -144,7 +144,7 @@ class OpenClawWebRTCProxyService {
   ///   'participants': int,
   ///   'averageLatency': int (ms),
   ///   'hasIssues': bool,
-  ///   'recommendations': List<String>
+  ///   'recommendations': List[String]
   /// }
   Future<Map<String, dynamic>> _analyzeRoom(String roomId, String world) async {
     try {

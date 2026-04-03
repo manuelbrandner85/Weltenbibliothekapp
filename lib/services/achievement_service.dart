@@ -186,13 +186,13 @@ class AchievementService {
       await _loadProgress();
       
       if (kDebugMode) {
-        print('✅ AchievementService initialized');
-        print('📊 Total Achievements: ${_achievements.length}');
-        print('🏆 Unlocked: ${_progress.values.where((p) => p.isUnlocked).length}');
-        print('⭐ User Level: ${_userLevel.level} (${_userLevel.currentXP}/${_userLevel.xpForNextLevel} XP)');
+        debugPrint('✅ AchievementService initialized');
+        debugPrint('📊 Total Achievements: ${_achievements.length}');
+        debugPrint('🏆 Unlocked: ${_progress.values.where((p) => p.isUnlocked).length}');
+        debugPrint('⭐ User Level: ${_userLevel.level} (${_userLevel.currentXP}/${_userLevel.xpForNextLevel} XP)');
       }
     } catch (e) {
-      if (kDebugMode) print('❌ AchievementService init error: $e');
+      if (kDebugMode) debugPrint('❌ AchievementService init error: $e');
     }
   }
 
@@ -440,7 +440,7 @@ class AchievementService {
         }
       }
     } catch (e) {
-      if (kDebugMode) print('❌ Error loading progress: $e');
+      if (kDebugMode) debugPrint('❌ Error loading progress: $e');
     }
   }
 
@@ -451,7 +451,7 @@ class AchievementService {
       await _box?.put(_progressKey, jsonEncode(progressList));
       await _box?.put(_levelKey, jsonEncode(_userLevel.toJson()));
     } catch (e) {
-      if (kDebugMode) print('❌ Error saving progress: $e');
+      if (kDebugMode) debugPrint('❌ Error saving progress: $e');
     }
   }
 
@@ -498,7 +498,7 @@ class AchievementService {
     }
 
     if (kDebugMode) {
-      print('🏆 Achievement Unlocked: ${achievement.name} (+${achievement.xpReward} XP)');
+      debugPrint('🏆 Achievement Unlocked: ${achievement.name} (+${achievement.xpReward} XP)');
     }
 
     // Check for perfectionist achievement
@@ -523,7 +523,7 @@ class AchievementService {
       }
 
       if (kDebugMode) {
-        print('⬆️ LEVEL UP! Level ${_userLevel.level}');
+        debugPrint('⬆️ LEVEL UP! Level ${_userLevel.level}');
       }
     }
 

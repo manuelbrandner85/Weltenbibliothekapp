@@ -79,12 +79,12 @@ class Mechanismus {
 class NetzwerkAnalyse {
   final List<NetzwerkNode> nodes;
   final List<NetzwerkEdge> edges;
-  final Map<String, int> zentrale_akteure;
+  final Map<String, int> zentraleAkteure;
 
   NetzwerkAnalyse({
     required this.nodes,
     required this.edges,
-    required this.zentrale_akteure,
+    required this.zentraleAkteure,
   });
 
   factory NetzwerkAnalyse.fromJson(Map<String, dynamic> json) {
@@ -97,7 +97,7 @@ class NetzwerkAnalyse {
               ?.map((e) => NetzwerkEdge.fromJson(e))
               .toList() ??
           [],
-      zentrale_akteure: Map<String, int>.from(json['zentrale_akteure'] ?? {}),
+      zentraleAkteure: Map<String, int>.from(json['zentraleAkteure'] ?? {}),
     );
   }
 }
@@ -195,27 +195,27 @@ class TimelineEvent {
 class NarrativVergleich {
   final String mainstream;
   final String alternative;
-  final dynamic zentrale_unterschiede; // Kann String oder List sein
+  final dynamic zentraleUnterschiede; // Kann String oder List sein
 
   NarrativVergleich({
     required this.mainstream,
     required this.alternative,
-    required this.zentrale_unterschiede,
+    required this.zentraleUnterschiede,
   });
 
   factory NarrativVergleich.fromJson(Map<String, dynamic> json) {
     return NarrativVergleich(
       mainstream: json['mainstream'] ?? '',
       alternative: json['alternative'] ?? '',
-      zentrale_unterschiede: json['zentrale_unterschiede'] ?? [],
+      zentraleUnterschiede: json['zentraleUnterschiede'] ?? [],
     );
   }
 
   List<String> get unterschiedeList {
-    if (zentrale_unterschiede is List) {
-      return (zentrale_unterschiede as List).cast<String>();
-    } else if (zentrale_unterschiede is String) {
-      return [zentrale_unterschiede as String];
+    if (zentraleUnterschiede is List) {
+      return (zentraleUnterschiede as List).cast<String>();
+    } else if (zentraleUnterschiede is String) {
+      return [zentraleUnterschiede as String];
     }
     return [];
   }

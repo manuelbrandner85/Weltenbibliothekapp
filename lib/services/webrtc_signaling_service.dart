@@ -47,7 +47,7 @@ class WebRTCSignalingService {
   Future<void> connect() async {
     // Supabase Realtime ist immer "verbunden" wenn Supabase initialisiert ist
     _isConnected = true;
-    if (kDebugMode) print('✅ WebRTC Signaling: Supabase Realtime bereit');
+    if (kDebugMode) debugPrint('✅ WebRTC Signaling: Supabase Realtime bereit');
   }
 
   void disconnect() {
@@ -56,7 +56,7 @@ class WebRTCSignalingService {
     _isConnected = false;
     _currentRoomId = null;
     _currentUserId = null;
-    if (kDebugMode) print('🔌 WebRTC Signaling: getrennt');
+    if (kDebugMode) debugPrint('🔌 WebRTC Signaling: getrennt');
   }
 
   // ═══════════════════════════════════════════════════════════
@@ -80,7 +80,7 @@ class WebRTCSignalingService {
             final data = Map<String, dynamic>.from(payload);
             // Nur fremde Nachrichten verarbeiten
             if (data['senderId'] != userId) {
-              if (kDebugMode) print('📥 Signal erhalten: ${data['type']} von ${data['senderId']}');
+              if (kDebugMode) debugPrint('📥 Signal erhalten: ${data['type']} von ${data['senderId']}');
               _messageController.add(data);
             }
           },
@@ -88,16 +88,16 @@ class WebRTCSignalingService {
         .subscribe((status, [error]) {
           if (status == RealtimeSubscribeStatus.subscribed) {
             _isConnected = true;
-            if (kDebugMode) print('✅ Voice Signaling Kanal aktiv: $roomId');
+            if (kDebugMode) debugPrint('✅ Voice Signaling Kanal aktiv: $roomId');
             // Join-Event senden
             _broadcastSignal({'type': 'join', 'username': username});
           } else if (status == RealtimeSubscribeStatus.channelError) {
             _isConnected = false;
-            if (kDebugMode) print('❌ Voice Signaling Fehler: $error');
+            if (kDebugMode) debugPrint('❌ Voice Signaling Fehler: $error');
           }
         });
 
-    if (kDebugMode) print('🎤 Voice Signaling: Raum $roomId beigetreten als $username');
+    if (kDebugMode) debugPrint('🎤 Voice Signaling: Raum $roomId beigetreten als $username');
   }
 
   void leaveRoom() {
@@ -107,7 +107,7 @@ class WebRTCSignalingService {
     _signalingChannel = null;
     _currentRoomId = null;
     _currentUserId = null;
-    if (kDebugMode) print('🚪 Voice Signaling: Raum verlassen');
+    if (kDebugMode) debugPrint('🚪 Voice Signaling: Raum verlassen');
   }
 
   // ═══════════════════════════════════════════════════════════
@@ -132,7 +132,7 @@ class WebRTCSignalingService {
         },
       );
     } catch (e) {
-      if (kDebugMode) print('❌ Broadcast Fehler: $e');
+      if (kDebugMode) debugPrint('❌ Broadcast Fehler: $e');
     }
   }
 

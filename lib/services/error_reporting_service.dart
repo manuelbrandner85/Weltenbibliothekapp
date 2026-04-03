@@ -58,7 +58,7 @@ class ErrorReportingService {
     _isInitialized = true;
     
     if (kDebugMode) {
-      print('✅ ErrorReporting: Initialized');
+      debugPrint('✅ ErrorReporting: Initialized');
     }
   }
 
@@ -88,9 +88,9 @@ class ErrorReportingService {
       
       // Log to console in debug mode
       if (kDebugMode) {
-        print('🚨 ErrorReport: ${errorReport.error}');
+        debugPrint('🚨 ErrorReport: ${errorReport.error}');
         if (errorReport.stackTrace != null) {
-          print('Stack: ${errorReport.stackTrace}');
+          debugPrint('Stack: ${errorReport.stackTrace}');
         }
       }
       
@@ -99,7 +99,7 @@ class ErrorReportingService {
       
     } catch (e) {
       if (kDebugMode) {
-        print('❌ ErrorReporting: Failed to report error - $e');
+        debugPrint('❌ ErrorReporting: Failed to report error - $e');
       }
     }
   }
@@ -115,12 +115,12 @@ class ErrorReportingService {
       
       if (response.statusCode == 200) {
         if (kDebugMode) {
-          print('✅ ErrorReporting: Error sent to backend');
+          debugPrint('✅ ErrorReporting: Error sent to backend');
         }
       }
     } catch (e) {
       if (kDebugMode) {
-        print('❌ ErrorReporting: Failed to send error to backend - $e');
+        debugPrint('❌ ErrorReporting: Failed to send error to backend - $e');
       }
     }
   }
@@ -146,7 +146,7 @@ class ErrorReportingService {
     Map<String, dynamic>? data,
   }) {
     if (kDebugMode) {
-      print('⚠️ Warning: $warning');
+      debugPrint('⚠️ Warning: $warning');
     }
     
     reportError(
@@ -190,7 +190,7 @@ class ErrorReportingService {
     _errorHistory.clear();
     
     if (kDebugMode) {
-      print('🗑️ ErrorReporting: History cleared');
+      debugPrint('🗑️ ErrorReporting: History cleared');
     }
   }
 

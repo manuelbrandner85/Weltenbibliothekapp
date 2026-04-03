@@ -301,9 +301,9 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
           _buildSectionTitle('MEISTERZAHLEN'),
           const SizedBox(height: 16),
           if (_masterNumbers != null && _masterNumbers!.isNotEmpty)
-            ..._masterNumbers!.map((num) => Padding(
+            ..._masterNumbers!.map((numItem) => Padding(
               padding: const EdgeInsets.only(bottom: 12),
-              child: _buildMasterNumberCard(num),
+              child: _buildMasterNumberCard(numItem),
             ))
           else
             _buildEmptyCard('Keine Meisterzahlen gefunden', Icons.info_outline),
@@ -311,9 +311,9 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
           _buildSectionTitle('KARMA-ZAHLEN'),
           const SizedBox(height: 16),
           if (_karmaNumbers != null && _karmaNumbers!.isNotEmpty)
-            ..._karmaNumbers!.map((num) => Padding(
+            ..._karmaNumbers!.map((numItem) => Padding(
               padding: const EdgeInsets.only(bottom: 12),
-              child: _buildKarmaNumberCard(num),
+              child: _buildKarmaNumberCard(numItem),
             ))
           else
             _buildEmptyCard('Keine Karma-Zahlen gefunden', Icons.check_circle_outline),
@@ -2812,10 +2812,11 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
                 'date': DateTime.now().toIso8601String(),
               };
               
+              // FIX v5.28.0: Navigator aus dem Dialog-Context nutzen
+              final nav = Navigator.of(context);
               await StorageService().saveNumerologyMilestone(milestone);
               await _loadPersonalYearJourney();
-              
-              if (mounted) Navigator.pop(context);
+              nav.pop();
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFFFD700),
@@ -2908,10 +2909,11 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
                   'timestamp': DateTime.now().toIso8601String(),
                 };
                 
+                // FIX v5.28.0: Navigator aus dem Dialog-Context nutzen
+                final nav = Navigator.of(context);
                 await StorageService().saveNumerologyJournalEntry(entry);
                 await _loadPersonalYearJourney();
-                
-                if (mounted) Navigator.pop(context);
+                nav.pop();
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF9C27B0),

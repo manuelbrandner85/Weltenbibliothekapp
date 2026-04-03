@@ -92,14 +92,14 @@ class HealthCheckService extends ChangeNotifier {
   /// Initialize health monitoring
   Future<void> initialize() async {
     if (kDebugMode) {
-      print('🏥 HealthCheck: Initializing...');
+      debugPrint('🏥 HealthCheck: Initializing...');
     }
     
     // Initial check
     await checkAllServices();
     
     if (kDebugMode) {
-      print('✅ HealthCheck: Initialized');
+      debugPrint('✅ HealthCheck: Initialized');
     }
   }
 
@@ -113,7 +113,7 @@ class HealthCheckService extends ChangeNotifier {
     });
     
     if (kDebugMode) {
-      print('🔄 HealthCheck: Monitoring started (interval: ${interval.inSeconds}s)');
+      debugPrint('🔄 HealthCheck: Monitoring started (interval: ${interval.inSeconds}s)');
     }
   }
 
@@ -123,7 +123,7 @@ class HealthCheckService extends ChangeNotifier {
     _isMonitoring = false;
     
     if (kDebugMode) {
-      print('⏸️ HealthCheck: Monitoring stopped');
+      debugPrint('⏸️ HealthCheck: Monitoring stopped');
     }
   }
 

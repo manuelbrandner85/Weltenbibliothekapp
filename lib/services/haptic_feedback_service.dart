@@ -3,6 +3,7 @@
 library;
 
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Haptic Feedback Service für taktiles Feedback
@@ -25,9 +26,9 @@ class HapticFeedbackService {
     try {
       final prefs = await SharedPreferences.getInstance();
       _isEnabled = prefs.getBool(_enabledKey) ?? true;
-      print('🔄 HapticFeedbackService initialized: enabled=$_isEnabled');
+      debugPrint('🔄 HapticFeedbackService initialized: enabled=$_isEnabled');
     } catch (e) {
-      print('❌ HapticFeedbackService initialization failed: $e');
+      debugPrint('❌ HapticFeedbackService initialization failed: $e');
       _isEnabled = true; // Default: enabled
     }
   }
@@ -38,9 +39,9 @@ class HapticFeedbackService {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_enabledKey, enabled);
-      print('✅ Haptic Feedback: ${enabled ? "aktiviert" : "deaktiviert"}');
+      debugPrint('✅ Haptic Feedback: ${enabled ? "aktiviert" : "deaktiviert"}');
     } catch (e) {
-      print('❌ Failed to save haptic setting: $e');
+      debugPrint('❌ Failed to save haptic setting: $e');
     }
   }
 
@@ -58,7 +59,7 @@ class HapticFeedbackService {
     try {
       await HapticFeedback.lightImpact();
     } catch (e) {
-      print('❌ Haptic light failed: $e');
+      debugPrint('❌ Haptic light failed: $e');
     }
   }
 
@@ -69,7 +70,7 @@ class HapticFeedbackService {
     try {
       await HapticFeedback.mediumImpact();
     } catch (e) {
-      print('❌ Haptic medium failed: $e');
+      debugPrint('❌ Haptic medium failed: $e');
     }
   }
 
@@ -80,7 +81,7 @@ class HapticFeedbackService {
     try {
       await HapticFeedback.heavyImpact();
     } catch (e) {
-      print('❌ Haptic heavy failed: $e');
+      debugPrint('❌ Haptic heavy failed: $e');
     }
   }
 
@@ -91,7 +92,7 @@ class HapticFeedbackService {
     try {
       await HapticFeedback.selectionClick();
     } catch (e) {
-      print('❌ Haptic selection failed: $e');
+      debugPrint('❌ Haptic selection failed: $e');
     }
   }
 
@@ -102,7 +103,7 @@ class HapticFeedbackService {
     try {
       await HapticFeedback.vibrate();
     } catch (e) {
-      print('❌ Haptic vibrate failed: $e');
+      debugPrint('❌ Haptic vibrate failed: $e');
     }
   }
 

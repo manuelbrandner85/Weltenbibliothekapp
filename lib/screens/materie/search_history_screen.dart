@@ -275,7 +275,9 @@ class _SearchHistoryScreenState extends State<SearchHistoryScreen> {
               await SearchHistoryService.clearAllHistory();
               setState(() {});
               if (mounted) {
+                // ignore: use_build_context_synchronously
                 Navigator.pop(context);
+                // ignore: use_build_context_synchronously
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('🗑️ Historie gelöscht'),

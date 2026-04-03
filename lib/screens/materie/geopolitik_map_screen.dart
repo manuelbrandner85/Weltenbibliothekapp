@@ -89,11 +89,13 @@ class _GeopolitikMapScreenState extends State<GeopolitikMapScreen> {
                   title: titleCtrl.text.trim(),
                   description: descCtrl.text.trim(),
                 );
+                // ignore: use_build_context_synchronously
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('✅ Ereignis hinzugefügt!'), backgroundColor: Colors.green),
                 );
                 await _loadEvents();
               } catch (e) {
+                // ignore: use_build_context_synchronously
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text('❌ Fehler: $e'), backgroundColor: Colors.red),
                 );

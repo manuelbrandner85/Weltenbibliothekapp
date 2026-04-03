@@ -407,6 +407,7 @@ class _SynchronicityTrackerWidgetState extends State<SynchronicityTrackerWidget>
           setState(() {});
           
           if (mounted) {
+            // ignore: use_build_context_synchronously
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: const Text('Synchronizität gespeichert! +5 Punkte'),
@@ -434,7 +435,9 @@ class _SynchronicityTrackerWidgetState extends State<SynchronicityTrackerWidget>
           await _service.deleteEntry(entry.id);
           setState(() {});
           if (mounted) {
+            // ignore: use_build_context_synchronously
             Navigator.pop(context);
+            // ignore: use_build_context_synchronously
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Synchronizität gelöscht')),
             );

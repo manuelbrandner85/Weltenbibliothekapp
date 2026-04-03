@@ -758,6 +758,7 @@ class _MeditationTimerEnhancedState extends State<MeditationTimerEnhanced> with 
                 await StorageService().saveMeditationPreset(preset);
                 await _loadData();
                 
+                // ignore: use_build_context_synchronously
                 if (mounted) Navigator.pop(context);
               },
               style: ElevatedButton.styleFrom(

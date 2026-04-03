@@ -143,13 +143,13 @@ class DailyChallengesService {
       await _loadChallenges();
       
       if (kDebugMode) {
-        print('✅ DailyChallengesService initialized');
-        print('   📋 Challenges today: ${_todaysChallenges.length}');
-        print('   ✓ Completed: $_completedToday');
+        debugPrint('✅ DailyChallengesService initialized');
+        debugPrint('   📋 Challenges today: ${_todaysChallenges.length}');
+        debugPrint('   ✓ Completed: $_completedToday');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('❌ DailyChallengesService init error: $e');
+        debugPrint('❌ DailyChallengesService init error: $e');
       }
     }
   }
@@ -170,7 +170,7 @@ class DailyChallengesService {
       _completedToday = 0;
       
       if (kDebugMode) {
-        print('🔄 Daily challenges reset for $today');
+        debugPrint('🔄 Daily challenges reset for $today');
       }
     }
   }
@@ -245,7 +245,7 @@ class DailyChallengesService {
       _completedToday = _prefs?.getInt(_completedTodayKey) ?? 0;
     } catch (e) {
       if (kDebugMode) {
-        print('❌ Error loading challenges: $e');
+        debugPrint('❌ Error loading challenges: $e');
       }
       await _generateDailyChallenges();
     }
@@ -259,7 +259,7 @@ class DailyChallengesService {
       await _prefs?.setString(_challengesKey, challengesJson);
     } catch (e) {
       if (kDebugMode) {
-        print('❌ Error saving challenges: $e');
+        debugPrint('❌ Error saving challenges: $e');
       }
     }
   }
@@ -289,8 +289,8 @@ class DailyChallengesService {
             await AchievementService().incrementProgress('first_search');  // Trigger achievement als Belohnung
             
             if (kDebugMode) {
-              print('🎉 Challenge completed: ${_todaysChallenges[i].title}');
-              print('   🎁 Bonus XP: +${_todaysChallenges[i].bonusXp}');
+              debugPrint('🎉 Challenge completed: ${_todaysChallenges[i].title}');
+              debugPrint('   🎁 Bonus XP: +${_todaysChallenges[i].bonusXp}');
             }
           }
         }
@@ -301,7 +301,7 @@ class DailyChallengesService {
       }
     } catch (e) {
       if (kDebugMode) {
-        print('❌ Error incrementing challenge progress: $e');
+        debugPrint('❌ Error incrementing challenge progress: $e');
       }
     }
   }

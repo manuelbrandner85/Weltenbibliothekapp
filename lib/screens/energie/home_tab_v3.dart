@@ -280,7 +280,7 @@ class _EnergieHomeTabV3State extends State<EnergieHomeTabV3>
                     color: Colors.white,
                   ),
                 ),
-                if (_profile?.isAdmin == true) ...[
+                if (_profile?.isAdmin() == true) ...[
                   const SizedBox(width: 12),
                   _buildAdminBadge(),
                 ],
@@ -328,7 +328,7 @@ class _EnergieHomeTabV3State extends State<EnergieHomeTabV3>
           ),
           const SizedBox(width: 4),
           Text(
-            _profile?.isRootAdmin == true ? 'ROOT ADMIN' : 'ADMIN',
+            _profile?.isRootAdmin() == true ? 'ROOT ADMIN' : 'ADMIN',
             style: const TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.bold,

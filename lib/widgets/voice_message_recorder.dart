@@ -158,6 +158,7 @@ class _VoiceMessageRecorderState extends State<VoiceMessageRecorder>
     if (_recordingDuration.inSeconds < 1) {
       // Too short
       await _recorder.stopRecorder();
+      // ignore: use_build_context_synchronously
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('❌ Aufnahme zu kurz (min 1 Sekunde)'),

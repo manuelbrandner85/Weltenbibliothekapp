@@ -460,6 +460,7 @@ class _UnifiedKnowledgeTabState extends State<UnifiedKnowledgeTab> with SingleTi
     
     // Navigate to NEW Reader Mode
     Navigator.push(
+      // ignore: use_build_context_synchronously
       context,
       MaterialPageRoute(
         builder: (context) => KnowledgeReaderMode(
@@ -726,6 +727,7 @@ class _KnowledgeDetailScreenState extends State<KnowledgeDetailScreen> {
                             widget.entry.id,
                             _noteController.text,
                           );
+                          // ignore: use_build_context_synchronously
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text('Notiz gespeichert!')),
                           );

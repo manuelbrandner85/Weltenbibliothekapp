@@ -362,6 +362,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
               // 🔥 REAL CHAT CLEAR IMPLEMENTATION (NO TODO)
               await _controller.clearMessages();
               if (mounted) {
+                // ignore: use_build_context_synchronously
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('✅ Chat cleared successfully'),

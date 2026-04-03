@@ -109,7 +109,7 @@ class DynamicTab {
       'title': title,
       'world_id': worldId,
       'icon': _iconToString(icon),
-      'color': color.value,  // Using .value is OK for serialization
+      'color': color.toARGB32(),
       'order': order,
       'is_visible': isVisible,
       'status': status.name,

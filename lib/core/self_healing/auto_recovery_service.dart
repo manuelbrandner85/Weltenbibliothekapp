@@ -21,7 +21,7 @@ class AutoRecoveryService {
       const Duration(seconds: 30),
       (_) => _performHealthCheck(),
     );
-    if (kDebugMode) print('🔧 Auto-Recovery: Monitoring started');
+    if (kDebugMode) debugPrint('🔧 Auto-Recovery: Monitoring started');
   }
 
   Future<void> _performHealthCheck() async {
@@ -34,11 +34,11 @@ class AutoRecoveryService {
       final results = await Future.wait(checks);
       final allHealthy = results.every((r) => r);
       if (!allHealthy && kDebugMode) {
-        print('⚠️ Auto-Recovery: System health degraded');
+        debugPrint('⚠️ Auto-Recovery: System health degraded');
         _attemptRecovery();
       }
     } catch (e) {
-      if (kDebugMode) print('❌ Auto-Recovery: Health check failed - $e');
+      if (kDebugMode) debugPrint('❌ Auto-Recovery: Health check failed - $e');
     }
   }
 
@@ -78,12 +78,12 @@ class AutoRecoveryService {
   }
 
   Future<void> _attemptRecovery() async {
-    if (kDebugMode) print('🔄 Auto-Recovery: Attempting recovery...');
+    if (kDebugMode) debugPrint('🔄 Auto-Recovery: Attempting recovery...');
     try {
       // Recovery strategies here
-      if (kDebugMode) print('✅ Auto-Recovery: Recovery completed');
+      if (kDebugMode) debugPrint('✅ Auto-Recovery: Recovery completed');
     } catch (e) {
-      if (kDebugMode) print('❌ Auto-Recovery: Recovery failed - $e');
+      if (kDebugMode) debugPrint('❌ Auto-Recovery: Recovery failed - $e');
     }
   }
 
@@ -94,7 +94,7 @@ class AutoRecoveryService {
   Future<void> rollbackToStableState(String stateKey) async {
     final lastSuccess = _lastSuccessfulStates[stateKey];
     if (lastSuccess != null && kDebugMode) {
-      print('⏮️ Rolling back to $stateKey');
+      debugPrint('⏮️ Rolling back to $stateKey');
     }
   }
 
@@ -103,7 +103,7 @@ class AutoRecoveryService {
   
   void stopMonitoring() {
     _healthCheckTimer?.cancel();
-    if (kDebugMode) print('🛑 Auto-Recovery: Monitoring stopped');
+    if (kDebugMode) debugPrint('🛑 Auto-Recovery: Monitoring stopped');
   }
 
   void dispose() {

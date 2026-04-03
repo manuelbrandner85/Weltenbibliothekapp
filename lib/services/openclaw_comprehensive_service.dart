@@ -55,13 +55,13 @@ class OpenClawComprehensiveService {
       _isInitialized = true;
       
       if (kDebugMode) {
-        print('🔧 [OpenClaw Comprehensive v2.0] Status: ${_openClawAvailable ? "✅ Online" : "❌ Offline"}');
+        debugPrint('🔧 [OpenClaw Comprehensive v2.0] Status: ${_openClawAvailable ? "✅ Online" : "❌ Offline"}');
       }
     } catch (e) {
       _openClawAvailable = false;
       _isInitialized = true;
       if (kDebugMode) {
-        print('⚠️ [OpenClaw Comprehensive] Health check failed: $e');
+        debugPrint('⚠️ [OpenClaw Comprehensive] Health check failed: $e');
       }
     }
   }
@@ -88,7 +88,7 @@ class OpenClawComprehensiveService {
       final cached = _cache[cacheKey];
       if (DateTime.now().difference(cached['timestamp']).inHours < 1) {
         if (kDebugMode) {
-          print('💾 [OpenClaw Comprehensive v2.0] Using cached result');
+          debugPrint('💾 [OpenClaw Comprehensive v2.0] Using cached result');
         }
         return cached['data'];
       }
@@ -97,8 +97,8 @@ class OpenClawComprehensiveService {
     try {
       // Worker-Route (direkt, kein OpenClaw Gateway mehr)
       if (kDebugMode) {
-        print('🚀 [OpenClaw Comprehensive v2.0] Starting research via Worker...');
-        print('   → Query: $query');
+        debugPrint('🚀 [OpenClaw Comprehensive v2.0] Starting research via Worker...');
+        debugPrint('   → Query: $query');
       }
 
       final result = await _deepResearchViaWorker(
@@ -117,7 +117,7 @@ class OpenClawComprehensiveService {
       
     } catch (e) {
       if (kDebugMode) {
-        print('❌ [OpenClaw Comprehensive v2.0] Error: $e');
+        debugPrint('❌ [OpenClaw Comprehensive v2.0] Error: $e');
       }
       
       // Fallback zu Cloudflare
@@ -166,8 +166,8 @@ class OpenClawComprehensiveService {
     };
 
     if (kDebugMode) {
-      print('✅ [Worker Recherche] Found ${articles.length} articles');
-      print('   → Sources: ${sourcesMap.keys.join(', ')}');
+      debugPrint('✅ [Worker Recherche] Found ${articles.length} articles');
+      debugPrint('   → Sources: ${sourcesMap.keys.join(', ')}');
     }
 
     return {
@@ -299,7 +299,7 @@ class OpenClawComprehensiveService {
       };
     } catch (e) {
       if (kDebugMode) {
-        print('❌ [Cloudflare Fallback] Error: $e');
+        debugPrint('❌ [Cloudflare Fallback] Error: $e');
       }
       
       return {
@@ -331,7 +331,7 @@ class OpenClawComprehensiveService {
       return (result['images'] as List?)?.cast<Map<String, dynamic>>() ?? [];
     } catch (e) {
       if (kDebugMode) {
-        print('❌ [Image Scraping] Error: $e');
+        debugPrint('❌ [Image Scraping] Error: $e');
       }
       return [];
     }
@@ -348,7 +348,7 @@ class OpenClawComprehensiveService {
       return (result['videos'] as List?)?.cast<Map<String, dynamic>>() ?? [];
     } catch (e) {
       if (kDebugMode) {
-        print('❌ [Video Scraping] Error: $e');
+        debugPrint('❌ [Video Scraping] Error: $e');
       }
       return [];
     }
@@ -365,7 +365,7 @@ class OpenClawComprehensiveService {
       return (result['audio'] as List?)?.cast<Map<String, dynamic>>() ?? [];
     } catch (e) {
       if (kDebugMode) {
-        print('❌ [Audio Scraping] Error: $e');
+        debugPrint('❌ [Audio Scraping] Error: $e');
       }
       return [];
     }
@@ -382,7 +382,7 @@ class OpenClawComprehensiveService {
       return (result['pdfs'] as List?)?.cast<Map<String, dynamic>>() ?? [];
     } catch (e) {
       if (kDebugMode) {
-        print('❌ [PDF Scraping] Error: $e');
+        debugPrint('❌ [PDF Scraping] Error: $e');
       }
       return [];
     }
@@ -392,7 +392,7 @@ class OpenClawComprehensiveService {
   void clearCache() {
     _cache.clear();
     if (kDebugMode) {
-      print('🗑️ [OpenClaw Comprehensive v2.0] Cache cleared');
+      debugPrint('🗑️ [OpenClaw Comprehensive v2.0] Cache cleared');
     }
   }
   

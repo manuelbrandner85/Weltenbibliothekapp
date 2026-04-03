@@ -10,6 +10,7 @@
 library;
 
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -50,9 +51,9 @@ class PushNotificationServiceV2 {
       }
 
       _isInitialized = true;
-      print('✅ Push Notification Service initialized');
+      debugPrint('✅ Push Notification Service initialized');
     } catch (e) {
-      print('❌ Push Notification init error: $e');
+      debugPrint('❌ Push Notification init error: $e');
     }
   }
 
@@ -89,15 +90,15 @@ class PushNotificationServiceV2 {
           await prefs.setString('push_token_$userId', token);
           _currentToken = token;
           
-          print('✅ Push token registered: $token');
+          debugPrint('✅ Push token registered: $token');
           return true;
         }
       }
 
-      print('❌ Token registration failed: ${response.statusCode}');
+      debugPrint('❌ Token registration failed: ${response.statusCode}');
       return false;
     } catch (e) {
-      print('❌ Token registration error: $e');
+      debugPrint('❌ Token registration error: $e');
       return false;
     }
   }
@@ -109,10 +110,10 @@ class PushNotificationServiceV2 {
       await prefs.remove('push_token_$userId');
       _currentToken = null;
       
-      print('✅ Push token unregistered');
+      debugPrint('✅ Push token unregistered');
       return true;
     } catch (e) {
-      print('❌ Token unregister error: $e');
+      debugPrint('❌ Token unregister error: $e');
       return false;
     }
   }
@@ -145,9 +146,9 @@ class PushNotificationServiceV2 {
       };
 
       await prefs.setString('push_settings_$userId', jsonEncode(settings));
-      print('✅ Notification settings updated');
+      debugPrint('✅ Notification settings updated');
     } catch (e) {
-      print('❌ Settings update error: $e');
+      debugPrint('❌ Settings update error: $e');
     }
   }
 
@@ -161,7 +162,7 @@ class PushNotificationServiceV2 {
         return jsonDecode(settingsJson);
       }
     } catch (e) {
-      print('❌ Settings get error: $e');
+      debugPrint('❌ Settings get error: $e');
     }
 
     // Default settings
@@ -204,18 +205,18 @@ class PushNotificationServiceV2 {
       if (response.statusCode == 200) {
         final result = jsonDecode(response.body);
         if (result['success'] == true) {
-          print('✅ Push notification sent: ${result['notification_id']}');
+          debugPrint('✅ Push notification sent: ${result['notification_id']}');
           return result['notification_id'];
         }
       } else if (response.statusCode == 429) {
-        print('⚠️ Rate limit exceeded, queueing notification');
+        debugPrint('⚠️ Rate limit exceeded, queueing notification');
         _queueNotification(userId, title, body, data, category);
       }
 
-      print('❌ Push send failed: ${response.statusCode}');
+      debugPrint('❌ Push send failed: ${response.statusCode}');
       return null;
     } catch (e) {
-      print('❌ Push send error: $e');
+      debugPrint('❌ Push send error: $e');
       _queueNotification(userId, title, body, data, category);
       return null;
     }
@@ -246,7 +247,7 @@ class PushNotificationServiceV2 {
   Future<void> _processQueue() async {
     if (_notificationQueue.isEmpty) return;
 
-    print('📤 Processing ${_notificationQueue.length} queued notifications...');
+    debugPrint('📤 Processing ${_notificationQueue.length} queued notifications...');
 
     final toProcess = List<Map<String, dynamic>>.from(_notificationQueue);
     _notificationQueue.clear();
@@ -264,7 +265,7 @@ class PushNotificationServiceV2 {
       await Future.delayed(const Duration(milliseconds: 600));
     }
 
-    print('✅ Queue processed');
+    debugPrint('✅ Queue processed');
   }
 
   // ==========================================================================

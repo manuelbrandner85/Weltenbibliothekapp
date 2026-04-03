@@ -496,7 +496,7 @@ class _ContentEditorScreenState extends State<ContentEditorScreen> {
             const SizedBox(height: 8),
             DropdownButtonFormField<String>(
               decoration: const InputDecoration(border: OutlineInputBorder()),
-              value: 'allgemein',
+              initialValue: 'allgemein',
               items: ['allgemein', 'tool', 'screen', 'tab', 'marker']
                   .map((c) => DropdownMenuItem(value: c, child: Text(c)))
                   .toList(),

@@ -50,7 +50,7 @@ class PushNotificationService {
     _initialized = true;
     
     if (kDebugMode) {
-      print('✅ Push Notifications initialized for user: $userId');
+      debugPrint('✅ Push Notifications initialized for user: $userId');
     }
   }
 
@@ -87,7 +87,7 @@ class PushNotificationService {
 
       if (response.statusCode == 200) {
         if (kDebugMode) {
-          print('✅ Push token registered: $token');
+          debugPrint('✅ Push token registered: $token');
         }
         return true;
       }
@@ -95,7 +95,7 @@ class PushNotificationService {
       return false;
     } catch (e) {
       if (kDebugMode) {
-        print('❌ Push token registration failed: $e');
+        debugPrint('❌ Push token registration failed: $e');
       }
       return false;
     }
@@ -133,7 +133,7 @@ class PushNotificationService {
       return response.statusCode == 200;
     } catch (e) {
       if (kDebugMode) {
-        print('❌ Update settings failed: $e');
+        debugPrint('❌ Update settings failed: $e');
       }
       return false;
     }
@@ -163,7 +163,7 @@ class PushNotificationService {
       };
     } catch (e) {
       if (kDebugMode) {
-        print('❌ Get settings failed: $e');
+        debugPrint('❌ Get settings failed: $e');
       }
       return {
         'enabled': true,
@@ -210,7 +210,7 @@ class PushNotificationService {
       }
     } catch (e) {
       if (kDebugMode) {
-        print('❌ Check notifications failed: $e');
+        debugPrint('❌ Check notifications failed: $e');
       }
     }
   }
@@ -250,7 +250,7 @@ class PushNotificationService {
       final payload = jsonDecode(response.payload!);
       
       if (kDebugMode) {
-        print('📱 Notification tapped: ${payload['roomId']}');
+        debugPrint('📱 Notification tapped: ${payload['roomId']}');
       }
       
       // Navigate to room (implement in main app)

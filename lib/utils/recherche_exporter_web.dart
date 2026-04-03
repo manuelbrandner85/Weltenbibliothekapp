@@ -1,3 +1,4 @@
+// ignore_for_file: avoid_web_libraries_in_flutter, deprecated_member_use
 /// WELTENBIBLIOTHEK v5.6 – EXPORT-FUNKTIONALITÄT
 /// 
 /// Export von Recherche-Ergebnissen in verschiedenen Formaten:
@@ -10,7 +11,6 @@ library;
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:flutter/foundation.dart' show kIsWeb;
-// ignore: avoid_web_libraries_in_flutter
 import 'dart:html' as html;
 
 class RechercheExporter {

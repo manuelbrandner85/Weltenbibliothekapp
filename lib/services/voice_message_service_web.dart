@@ -1,3 +1,4 @@
+// ignore_for_file: avoid_web_libraries_in_flutter, deprecated_member_use
 /// 🎙️ Voice Message Service
 /// Handles audio recording and playback for voice messages
 library;

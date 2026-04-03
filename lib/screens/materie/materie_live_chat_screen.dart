@@ -627,6 +627,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
 
             // Close upload indicator
             if (mounted) {
+              // ignore: use_build_context_synchronously
               ScaffoldMessenger.of(context).hideCurrentSnackBar();
             }
             
@@ -634,6 +635,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
             await _sendVoiceMessage(audioUrl, duration);
             
             if (mounted) {
+              // ignore: use_build_context_synchronously
               Navigator.pop(context);
             }
           } catch (e) {
@@ -641,6 +643,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
               debugPrint('❌ Voice upload error: $e');
             }
             if (mounted) {
+              // ignore: use_build_context_synchronously
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text('❌ Upload fehlgeschlagen: $e'),
@@ -928,7 +931,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
                 context,
                 MaterialPageRoute(
                   builder: (_) => VideoVoiceChatScreen(
-                    roomId: 'materie_${_selectedRoom}',
+                    roomId: 'materie_$_selectedRoom',
                     userId: _userId,
                     username: _username,
                     avatar: _avatar.isNotEmpty ? _avatar : '🔴',

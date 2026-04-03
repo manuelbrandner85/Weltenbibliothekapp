@@ -439,7 +439,7 @@ class _MaterieHomeTabV4State extends State<MaterieHomeTabV4>
     return AppBar(
       backgroundColor: Color.lerp(
         Colors.transparent,
-        const Color(0xFF1A1A1A).withOpacity(0.9),
+        const Color(0xFF1A1A1A).withValues(alpha: 0.9),
         opacity,
       ),
       elevation: 0,
@@ -452,8 +452,8 @@ class _MaterieHomeTabV4State extends State<MaterieHomeTabV4>
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  const Color(0xFF1A1A1A).withOpacity(0.9 * opacity),
-                  const Color(0xFF0A0A0A).withOpacity(0.8 * opacity),
+                  const Color(0xFF1A1A1A).withValues(alpha: 0.9 * opacity),
+                  const Color(0xFF0A0A0A).withValues(alpha: 0.8 * opacity),
                 ],
               ),
             ),
@@ -505,7 +505,7 @@ class _MaterieHomeTabV4State extends State<MaterieHomeTabV4>
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.red.withOpacity(0.5),
+                        color: Colors.red.withValues(alpha: 0.5),
                         blurRadius: 8,
                         spreadRadius: 2,
                       ),
@@ -579,7 +579,7 @@ class _MaterieHomeTabV4State extends State<MaterieHomeTabV4>
                           center: Alignment.topRight,
                           radius: 1.5,
                           colors: [
-                            Colors.cyan.withOpacity(0.15),
+                            Colors.cyan.withValues(alpha: 0.15),
                             Colors.transparent,
                           ],
                         ),
@@ -605,13 +605,13 @@ class _MaterieHomeTabV4State extends State<MaterieHomeTabV4>
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                             colors: [
-                              Colors.white.withOpacity(0.15),
-                              Colors.white.withOpacity(0.05),
+                              Colors.white.withValues(alpha: 0.15),
+                              Colors.white.withValues(alpha: 0.05),
                             ],
                           ),
                           borderRadius: BorderRadius.circular(24),
                           border: Border.all(
-                            color: Colors.white.withOpacity(0.2),
+                            color: Colors.white.withValues(alpha: 0.2),
                             width: 1.5,
                           ),
                         ),
@@ -624,7 +624,7 @@ class _MaterieHomeTabV4State extends State<MaterieHomeTabV4>
                               _getGreeting(),
                               style: TextStyle(
                                 fontSize: 16,
-                                color: Colors.white.withOpacity(0.8),
+                                color: Colors.white.withValues(alpha: 0.8),
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -660,7 +660,7 @@ class _MaterieHomeTabV4State extends State<MaterieHomeTabV4>
                                     borderRadius: BorderRadius.circular(20),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: const Color(0xFFFF6B6B).withOpacity(0.3),
+                                        color: const Color(0xFFFF6B6B).withValues(alpha: 0.3),
                                         blurRadius: 12,
                                         offset: const Offset(0, 4),
                                       ),
@@ -790,7 +790,7 @@ class _MaterieHomeTabV4State extends State<MaterieHomeTabV4>
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.3),
+            color: Colors.black.withValues(alpha: 0.3),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),
@@ -815,7 +815,7 @@ class _MaterieHomeTabV4State extends State<MaterieHomeTabV4>
               Text(
                 label,
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.9),
+                  color: Colors.white.withValues(alpha: 0.9),
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
                 ),
@@ -882,7 +882,7 @@ class _MaterieHomeTabV4State extends State<MaterieHomeTabV4>
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.2),
+                color: Colors.black.withValues(alpha: 0.2),
                 blurRadius: 8,
                 offset: const Offset(0, 4),
               ),
@@ -930,7 +930,7 @@ class _MaterieHomeTabV4State extends State<MaterieHomeTabV4>
                       borderRadius: BorderRadius.circular(10),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.red.withOpacity(0.5),
+                          color: Colors.red.withValues(alpha: 0.5),
                           blurRadius: 8,
                         ),
                       ],
@@ -1024,10 +1024,10 @@ class _MaterieHomeTabV4State extends State<MaterieHomeTabV4>
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
+              color: Colors.white.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(25),
               border: Border.all(
-                color: Colors.white.withOpacity(0.2),
+                color: Colors.white.withValues(alpha: 0.2),
               ),
             ),
             child: Row(
@@ -1051,7 +1051,7 @@ class _MaterieHomeTabV4State extends State<MaterieHomeTabV4>
                 Text(
                   '${topic['count']}',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.6),
+                    color: Colors.white.withValues(alpha: 0.6),
                     fontSize: 12,
                   ),
                 ),
@@ -1132,7 +1132,7 @@ class _MaterieHomeTabV4State extends State<MaterieHomeTabV4>
               color: const Color(0xFF1A1A1A),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: Colors.white.withOpacity(0.1),
+                color: Colors.white.withValues(alpha: 0.1),
               ),
             ),
             child: Column(
@@ -1150,13 +1150,13 @@ class _MaterieHomeTabV4State extends State<MaterieHomeTabV4>
                     width: double.infinity,
                     fit: BoxFit.cover,
                     placeholder: (context, url) => Container(
-                      color: Colors.white.withOpacity(0.05),
+                      color: Colors.white.withValues(alpha: 0.05),
                       child: const Center(
                         child: CircularProgressIndicator(strokeWidth: 2),
                       ),
                     ),
                     errorWidget: (context, url, error) => Container(
-                      color: Colors.white.withOpacity(0.05),
+                      color: Colors.white.withValues(alpha: 0.05),
                       child: const Icon(Icons.broken_image, color: Colors.white54),
                     ),
                   ),
@@ -1176,7 +1176,7 @@ class _MaterieHomeTabV4State extends State<MaterieHomeTabV4>
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.cyan.withOpacity(0.2),
+                            color: Colors.cyan.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
@@ -1210,13 +1210,13 @@ class _MaterieHomeTabV4State extends State<MaterieHomeTabV4>
                             Icon(
                               Icons.access_time_rounded,
                               size: 14,
-                              color: Colors.white.withOpacity(0.5),
+                              color: Colors.white.withValues(alpha: 0.5),
                             ),
                             const SizedBox(width: 4),
                             Text(
                               '${article['readTime']} Min.',
                               style: TextStyle(
-                                color: Colors.white.withOpacity(0.5),
+                                color: Colors.white.withValues(alpha: 0.5),
                                 fontSize: 12,
                               ),
                             ),
@@ -1224,13 +1224,13 @@ class _MaterieHomeTabV4State extends State<MaterieHomeTabV4>
                             Icon(
                               Icons.visibility_outlined,
                               size: 14,
-                              color: Colors.white.withOpacity(0.5),
+                              color: Colors.white.withValues(alpha: 0.5),
                             ),
                             const SizedBox(width: 4),
                             Text(
                               '${article['views']}',
                               style: TextStyle(
-                                color: Colors.white.withOpacity(0.5),
+                                color: Colors.white.withValues(alpha: 0.5),
                                 fontSize: 12,
                               ),
                             ),
@@ -1260,7 +1260,7 @@ class _MaterieHomeTabV4State extends State<MaterieHomeTabV4>
             width: 280,
             margin: const EdgeInsets.only(right: 16),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.05),
+              color: Colors.white.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(20),
             ),
             child: AnimatedBuilder(
@@ -1272,9 +1272,9 @@ class _MaterieHomeTabV4State extends State<MaterieHomeTabV4>
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [
-                        Colors.white.withOpacity(0.05),
-                        Colors.white.withOpacity(0.1),
-                        Colors.white.withOpacity(0.05),
+                        Colors.white.withValues(alpha: 0.05),
+                        Colors.white.withValues(alpha: 0.1),
+                        Colors.white.withValues(alpha: 0.05),
                       ],
                       stops: [
                         _shimmerController.value - 0.3,
@@ -1330,10 +1330,10 @@ class _MaterieHomeTabV4State extends State<MaterieHomeTabV4>
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Colors.white.withOpacity(0.1),
+          color: Colors.white.withValues(alpha: 0.1),
         ),
       ),
       child: Row(
@@ -1370,7 +1370,7 @@ class _MaterieHomeTabV4State extends State<MaterieHomeTabV4>
                 Text(
                   activity['timestamp'] as String,
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.5),
+                    color: Colors.white.withValues(alpha: 0.5),
                     fontSize: 12,
                   ),
                 ),

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 
 /// 🚀 Performance Optimizer Utility
 /// Zentrale Performance-Optimierungen für die Weltenbibliothek

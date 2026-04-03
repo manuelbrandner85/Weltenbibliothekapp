@@ -125,6 +125,7 @@ class _AndroidVoiceRecorderState extends State<AndroidVoiceRecorder>
         });
       });
     } catch (e) {
+      // ignore: use_build_context_synchronously
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('❌ Aufnahme-Fehler: $e'),
@@ -140,6 +141,7 @@ class _AndroidVoiceRecorderState extends State<AndroidVoiceRecorder>
     if (_recordingDuration.inSeconds < 1) {
       // Too short
       await _recorder.stopRecorder();
+      // ignore: use_build_context_synchronously
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('❌ Aufnahme zu kurz (min 1 Sekunde)'),
@@ -164,6 +166,7 @@ class _AndroidVoiceRecorderState extends State<AndroidVoiceRecorder>
         }
       }
     } catch (e) {
+      // ignore: use_build_context_synchronously
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('❌ Fehler beim Stoppen: $e'),

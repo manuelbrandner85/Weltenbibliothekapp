@@ -171,14 +171,14 @@ class _EnhancedMessageBubbleState extends State<EnhancedMessageBubble> {
       alignment: widget.isMyMessage ? Alignment.centerRight : Alignment.centerLeft,
       child: InkWell(
         onLongPress: () {
-          print('🔧 [Mobile Fix] Long press detected on message');
+          debugPrint('🔧 [Mobile Fix] Long press detected on message');
           _showMessageActions(context);
         },
         onTap: () {
           // Optional: tap to show actions on mobile
           if (defaultTargetPlatform == TargetPlatform.android || 
               defaultTargetPlatform == TargetPlatform.iOS) {
-            print('🔧 [Mobile Fix] Tap detected - showing actions');
+            debugPrint('🔧 [Mobile Fix] Tap detected - showing actions');
             _showMessageActions(context);
           }
         },

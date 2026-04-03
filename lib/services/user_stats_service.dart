@@ -125,11 +125,11 @@ class UserStatsService {
       );
       
       if (kDebugMode) {
-        print('✅ Stats synced to Cloudflare');
+        debugPrint('✅ Stats synced to Cloudflare');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('⚠️ Stats sync failed: $e');
+        debugPrint('⚠️ Stats sync failed: $e');
       }
       // Continue offline - don't throw
     }

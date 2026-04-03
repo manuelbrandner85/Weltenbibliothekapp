@@ -83,7 +83,7 @@ final callStateProvider = StateNotifierProvider.autoDispose<CallStateNotifier, C
 
 /// Call State Notifier
 class CallStateNotifier extends StateNotifier<CallState> {
-  final AutoDisposeStateNotifierProviderRef<CallStateNotifier, CallState> ref;
+  final Ref ref;
   
   CallStateNotifier(this.ref) : super(CallState.initial());
 
@@ -316,9 +316,9 @@ class CallState {
 /// 
 /// // Check state
 /// if (controller.inCall) {
-///   print('Currently in call');
-///   print('Session ID: ${controller.sessionId}');
-///   print('Room ID: ${controller.currentRoomId}');
+///   debugPrint('Currently in call');
+///   debugPrint('Session ID: ${controller.sessionId}');
+///   debugPrint('Room ID: ${controller.currentRoomId}');
 /// }
 /// 
 /// // Force cleanup (emergency)
