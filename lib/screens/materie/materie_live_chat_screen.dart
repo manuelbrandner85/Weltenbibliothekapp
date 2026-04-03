@@ -2372,7 +2372,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
       try {
         await _api.editChatMessage(
           messageId: msg['message_id'] ?? msg['id'],
-          roomId: _selectedRoom,
+          roomId: _fullRoomId,
           realm: 'materie',
           newMessage: newText.trim(),
           userId: _userId,
@@ -2432,7 +2432,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
       try {
         await _api.deleteChatMessage(
           messageId: msg['message_id'] ?? msg['id'],
-          roomId: _selectedRoom,
+          roomId: _fullRoomId,
           realm: 'materie',
           userId: _userId,
           username: _username,
@@ -2836,15 +2836,16 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
     
     if (confirmed == true) {
       try {
-        // ✅ Admin delete via Cloudflare API (soft delete)
+        // ✅ Admin delete via Supabase (soft delete – isAdmin überspringt user_id-Filter)
         final messageId = msg['id']?.toString() ?? '';
         if (messageId.isNotEmpty) {
           await _api.deleteChatMessage(
             messageId: messageId,
-            roomId: _selectedRoom,
+            roomId: _fullRoomId,
             userId: _userId,
             username: _username,
             realm: 'materie',
+            isAdmin: true,
           );
         }
         

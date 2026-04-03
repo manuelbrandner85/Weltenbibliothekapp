@@ -2344,7 +2344,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
           newMessage: newContent,
           userId: _userId,
           username: _username,
-          roomId: _selectedRoom,
+          roomId: _fullRoomId,
           realm: 'energie',
         );
       }
@@ -2534,7 +2534,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
       try {
         await _api.editChatMessage(
           messageId: msg['message_id'] ?? msg['id'],
-          roomId: _selectedRoom,
+          roomId: _fullRoomId,
           realm: 'energie',
           newMessage: newText.trim(),
           userId: _userId,
@@ -2594,7 +2594,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
       try {
         await _api.deleteChatMessage(
           messageId: msg['message_id'] ?? msg['id'],
-          roomId: _selectedRoom,
+          roomId: _fullRoomId,
           realm: 'energie',
           userId: _userId,
           username: _username,
@@ -2998,15 +2998,16 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
     
     if (confirmed == true) {
       try {
-        // Admin-Delete via API
+        // Admin-Delete via Supabase (isAdmin überspringt user_id-Filter)
         final messageId = msg['id']?.toString() ?? '';
         if (messageId.isNotEmpty) {
           await _api.deleteChatMessage(
             messageId: messageId,
             userId: _userId,
             username: _username,
-            roomId: _selectedRoom,
+            roomId: _fullRoomId,
             realm: 'energie',
+            isAdmin: true,
           );
         }
         

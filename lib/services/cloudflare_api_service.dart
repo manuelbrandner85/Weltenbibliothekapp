@@ -162,11 +162,13 @@ class CloudflareApiService {
           .where((m) => m['is_deleted'] != true)
           .map((m) => {
                 ...m,
+                'id': m['id'],             // ✅ immer vorhanden für Edit/Delete
+                'message_id': m['id'],     // ✅ Alias für Edit/Delete-Aufrufe
                 'userId': m['user_id'],
                 'user_id': m['user_id'],
                 'timestamp': m['created_at'],
                 'created_at': m['created_at'],
-                'avatarEmoji': '👤', // avatar_emoji column may not exist yet
+                'avatarEmoji': m['avatar_emoji'] ?? '👤',
                 'message': m['message'] ?? m['content'] ?? '',
                 'content': m['content'] ?? m['message'] ?? '',
                 'deleted': false,
@@ -399,115 +401,162 @@ class CloudflareApiService {
     required String userId,
     required String username,
     required String newMessage,
-    String? realm,  // 🔧 FIX: Add realm for backend API
+    String? realm,
+    bool? isAdmin,
   }) async {
     if (kDebugMode) {
       debugPrint('🔧 editChatMessage: roomId=$roomId, messageId=$messageId, realm=$realm');
     }
-    
+
+    // ✅ PRIMARY: Direkt Supabase PATCH (Worker umgehen – zuverlässiger)
+    // DB-Schema hat KEIN is_edited-Feld, nur edited_at als Marker
     try {
-      final body = {
+      final supabaseUrl = ApiConfig.supabaseUrl;
+      final anonKey = ApiConfig.supabaseAnonKey;
+      final filterQuery = 'id=eq.$messageId&user_id=eq.$userId';
+      final patchBody = json.encode({
+        'message': newMessage,
+        'content': newMessage,
+        'edited_at': DateTime.now().toUtc().toIso8601String(),
+      });
+
+      final response = await http.patch(
+        Uri.parse('$supabaseUrl/rest/v1/chat_messages?$filterQuery'),
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': anonKey,
+          'Authorization': 'Bearer $anonKey',
+          'Prefer': 'return=representation',
+        },
+        body: patchBody,
+      ).timeout(const Duration(seconds: 15));
+
+      if (kDebugMode) {
+        debugPrint('🔧 edit Supabase response: ${response.statusCode} ${response.body}');
+      }
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return {'success': true, 'message': 'Nachricht bearbeitet', 'data': data};
+      }
+      // Bei Fehler: Worker als Fallback
+      if (kDebugMode) debugPrint('⚠️ Supabase edit failed (${response.statusCode}), trying worker...');
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ Supabase edit error: $e – trying worker...');
+    }
+
+    // 🔄 FALLBACK: Worker API
+    try {
+      final body = <String, dynamic>{
         'roomId': roomId,
         'userId': userId,
-        'message': newMessage,  // Backend expects 'message', not 'newMessage'
+        'message': newMessage,
+        if (realm != null) 'realm': realm,
+        if (isAdmin == true) 'isAdmin': true,
       };
-      
-      // ✅ FIX: Add realm parameter to request body
-      if (realm != null) {
-        body['realm'] = realm;
-      }
-      
+
       final response = await http.put(
         Uri.parse('$mainApiUrl/api/chat/messages/$messageId'),
         headers: _headers,
         body: json.encode(body),
-      ).timeout(
-        const Duration(seconds: 30),
-        onTimeout: () {
-          throw TimeoutException('Bearbeiten dauert zu lange');
-        },
-      );
-
-      if (kDebugMode) {
-        debugPrint('🔧 editChatMessage response: ${response.statusCode}');
-        debugPrint('🔧 editChatMessage body: ${response.body}');
-      }
+      ).timeout(const Duration(seconds: 20));
 
       if (response.statusCode == 200) {
         return json.decode(response.body);
-      } else {
-        throw Exception('Server Fehler beim Bearbeiten: ${response.statusCode}');
       }
+      throw Exception('Worker Fehler beim Bearbeiten: ${response.statusCode}');
     } on SocketException {
       throw Exception('Keine Internetverbindung');
-    } on TimeoutException catch (e) {
-      throw Exception('Timeout: ${e.message}');
+    } on TimeoutException {
+      throw Exception('Timeout beim Bearbeiten');
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ Edit Error: $e');
-      }
+      if (kDebugMode) debugPrint('❌ Edit Error: $e');
       rethrow;
     }
   }
 
-  /// Delete chat message (only own messages)
+  /// Delete chat message – Soft-delete via Supabase (is_deleted = true)
   Future<Map<String, dynamic>> deleteChatMessage({
     required String roomId,
     required String messageId,
     required String userId,
     required String username,
-    String? realm,  // 🔧 FIX: Add realm for backend API
+    String? realm,
+    bool? isAdmin,
   }) async {
     if (kDebugMode) {
-      debugPrint('🗑️ deleteChatMessage: messageId=$messageId, userId=$userId, realm=$realm');
+      debugPrint('🗑️ deleteChatMessage: messageId=$messageId, userId=$userId, realm=$realm, isAdmin=$isAdmin');
     }
-    
+
+    // ✅ PRIMARY: Direkt Supabase PATCH – Soft-Delete
+    // DB-Schema: is_deleted BOOLEAN, deleted_at TIMESTAMPTZ
     try {
-      // Build request body with realm
-      final body = {
+      final supabaseUrl = ApiConfig.supabaseUrl;
+      final anonKey = ApiConfig.supabaseAnonKey;
+      // Admins dürfen alle löschen, normale User nur eigene
+      final filterQuery = (isAdmin == true)
+          ? 'id=eq.$messageId'
+          : 'id=eq.$messageId&user_id=eq.$userId';
+      final patchBody = json.encode({
+        'is_deleted': true,
+        'deleted_at': DateTime.now().toUtc().toIso8601String(),
+      });
+
+      final response = await http.patch(
+        Uri.parse('$supabaseUrl/rest/v1/chat_messages?$filterQuery'),
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': anonKey,
+          'Authorization': 'Bearer $anonKey',
+          'Prefer': 'return=representation',
+        },
+        body: patchBody,
+      ).timeout(const Duration(seconds: 15));
+
+      if (kDebugMode) {
+        debugPrint('🗑️ delete Supabase response: ${response.statusCode} ${response.body}');
+      }
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return {'success': true, 'message': 'Nachricht gelöscht', 'data': data};
+      }
+      if (kDebugMode) debugPrint('⚠️ Supabase delete failed (${response.statusCode}), trying worker...');
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ Supabase delete error: $e – trying worker...');
+    }
+
+    // 🔄 FALLBACK: Worker API
+    try {
+      final body = <String, dynamic>{
         'roomId': roomId,
         'userId': userId,
+        if (realm != null) 'realm': realm,
+        if (isAdmin == true) 'isAdmin': true,
       };
-      
-      // ✅ FIX: Add realm parameter to request body
-      if (realm != null) {
-        body['realm'] = realm;
-      }
-      
-      // Dart http.delete doesn't support body, use Request instead
+
       final request = http.Request(
         'DELETE',
         Uri.parse('$mainApiUrl/api/chat/messages/$messageId'),
       );
       request.headers.addAll(_headers);
       request.body = json.encode(body);
-      
-      final streamedResponse = await request.send().timeout(
-        const Duration(seconds: 30),
-        onTimeout: () {
-          throw TimeoutException('Löschen dauert zu lange');
-        },
-      );
-      
-      final response = await http.Response.fromStream(streamedResponse);
 
-      if (kDebugMode) {
-        debugPrint('🗑️ Delete Response: ${response.statusCode}');
-      }
+      final streamed = await request.send().timeout(const Duration(seconds: 20));
+      final response = await http.Response.fromStream(streamed);
+
+      if (kDebugMode) debugPrint('🗑️ Delete Worker Response: ${response.statusCode}');
 
       if (response.statusCode == 200) {
         return json.decode(response.body);
-      } else {
-        throw Exception('Server Fehler beim Löschen: ${response.statusCode}');
       }
+      throw Exception('Worker Fehler beim Löschen: ${response.statusCode}');
     } on SocketException {
       throw Exception('Keine Internetverbindung');
-    } on TimeoutException catch (e) {
-      throw Exception('Timeout: ${e.message}');
+    } on TimeoutException {
+      throw Exception('Timeout beim Löschen');
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ Delete Error: $e');
-      }
+      if (kDebugMode) debugPrint('❌ Delete Error: $e');
       rethrow;
     }
   }

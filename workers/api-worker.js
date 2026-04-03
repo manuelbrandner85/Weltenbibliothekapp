@@ -449,32 +449,36 @@ export default {
         const body = await request.json().catch(() => ({}));
         const { roomId, userId, message, realm } = body;
         if (!userId) return errorResponse('userId erforderlich', 400);
-        const anonKey = env.SUPABASE_ANON_KEY || '';
-        const authHeader = request.headers.get('Authorization') || `Bearer ${anonKey}`;
-        // Update the message - only if userId matches
+        const svcKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY || '';
+        // ✅ FIX: Nur Spalten verwenden die wirklich in der DB existieren
+        // Schema: id, room_id, user_id, content, message_type, media_url,
+        //         edited_at, deleted_at, created_at, username, avatar_url,
+        //         is_deleted, message, read_by
+        // KEIN is_edited Feld! Nur edited_at als Marker.
         const updateRes = await fetch(
           `${SUPABASE_URL}/rest/v1/chat_messages?id=eq.${messageId}&user_id=eq.${userId}`,
           {
             method: 'PATCH',
             headers: {
               'Content-Type': 'application/json',
-              'apikey': anonKey,
-              'Authorization': authHeader,
+              'apikey': svcKey,
+              'Authorization': `Bearer ${svcKey}`,
               'Prefer': 'return=representation',
             },
             body: JSON.stringify({
               message: message || '',
               content: message || '',
-              is_edited: true,
-              edited_at: new Date().toISOString(),
+              edited_at: new Date().toISOString(),  // ✅ nur edited_at (kein is_edited)
             }),
           }
         );
-        const updated = await updateRes.json().catch(() => []);
-        if (updateRes.ok) {
-          return jsonResponse({ success: true, message: 'Nachricht bearbeitet', data: updated });
+        if (!updateRes.ok) {
+          const errText = await updateRes.text().catch(() => '');
+          console.error('Edit Supabase error:', updateRes.status, errText);
+          return errorResponse(`Supabase Fehler beim Bearbeiten: ${updateRes.status}`, updateRes.status);
         }
-        return errorResponse(`Supabase Fehler: ${updateRes.status}`, updateRes.status);
+        const updated = await updateRes.json().catch(() => []);
+        return jsonResponse({ success: true, message: 'Nachricht bearbeitet', data: updated });
       } catch (e) {
         return errorResponse(`Edit-Fehler: ${e.message}`);
       }
@@ -486,19 +490,22 @@ export default {
       if (!messageId) return errorResponse('Nachrichten-ID fehlt', 400);
       try {
         const body = await request.json().catch(() => ({}));
-        const { userId, roomId, realm } = body;
+        const { userId, roomId, realm, isAdmin } = body;
         if (!userId) return errorResponse('userId erforderlich', 400);
-        const anonKey = env.SUPABASE_ANON_KEY || '';
-        const authHeader = request.headers.get('Authorization') || `Bearer ${anonKey}`;
-        // Soft-delete: set is_deleted=true
+        const svcKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY || '';
+        // ✅ FIX: Service Role Key + richtiger Filter
+        // Admins dürfen alle Nachrichten löschen, normale User nur ihre eigenen
+        const filterQuery = isAdmin
+          ? `id=eq.${messageId}`
+          : `id=eq.${messageId}&user_id=eq.${userId}`;
         const deleteRes = await fetch(
-          `${SUPABASE_URL}/rest/v1/chat_messages?id=eq.${messageId}&user_id=eq.${userId}`,
+          `${SUPABASE_URL}/rest/v1/chat_messages?${filterQuery}`,
           {
             method: 'PATCH',
             headers: {
               'Content-Type': 'application/json',
-              'apikey': anonKey,
-              'Authorization': authHeader,
+              'apikey': svcKey,
+              'Authorization': `Bearer ${svcKey}`,
               'Prefer': 'return=representation',
             },
             body: JSON.stringify({
@@ -507,11 +514,13 @@ export default {
             }),
           }
         );
-        const deleted = await deleteRes.json().catch(() => []);
-        if (deleteRes.ok) {
-          return jsonResponse({ success: true, message: 'Nachricht gelöscht', data: deleted });
+        if (!deleteRes.ok) {
+          const errText = await deleteRes.text().catch(() => '');
+          console.error('Delete Supabase error:', deleteRes.status, errText);
+          return errorResponse(`Supabase Fehler beim Löschen: ${deleteRes.status}`, deleteRes.status);
         }
-        return errorResponse(`Supabase Fehler: ${deleteRes.status}`, deleteRes.status);
+        const deleted = await deleteRes.json().catch(() => []);
+        return jsonResponse({ success: true, message: 'Nachricht gelöscht', data: deleted });
       } catch (e) {
         return errorResponse(`Delete-Fehler: ${e.message}`);
       }
