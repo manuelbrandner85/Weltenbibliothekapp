@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="de" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0A0A0A" />
+  <title>Weltenbibliothek – Offline</title>
+  <link rel="icon" href="/icons/icon-192x192.png" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: #0A0A0A;
+      color: #FFFFFF;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .container {
+      text-align: center;
+      max-width: 380px;
+    }
+
+    .icon-ring {
+      position: relative;
+      width: 96px;
+      height: 96px;
+      margin: 0 auto 32px;
+    }
+
+    .ring-outer {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 82, 82, 0.3);
+      animation: spin 8s linear infinite;
+    }
+
+    .ring-inner {
+      position: absolute;
+      inset: 8px;
+      border-radius: 50%;
+      border: 1px solid rgba(77, 208, 225, 0.2);
+      animation: spin 5s linear infinite reverse;
+    }
+
+    .ring-core {
+      position: absolute;
+      inset: 16px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, rgba(255,82,82,0.15), rgba(77,208,225,0.15));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(360deg); }
+    }
+
+    h1 {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .subtitle {
+      color: rgba(255,255,255,0.5);
+      font-size: 14px;
+      line-height: 1.6;
+      margin-bottom: 32px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 28px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #FF5252, #4DD0E1);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    .btn:hover { opacity: 0.85; }
+
+    .note {
+      margin-top: 24px;
+      color: rgba(255,255,255,0.3);
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="icon-ring">
+      <div class="ring-outer"></div>
+      <div class="ring-inner"></div>
+      <div class="ring-core">🌍</div>
+    </div>
+
+    <h1>Weltenbibliothek</h1>
+    <p class="subtitle">
+      Du bist gerade offline.<br />
+      Verbinde dich mit dem Internet, um die Weltenbibliothek zu nutzen.
+    </p>
+
+    <button class="btn" onclick="window.location.reload()">
+      ↻ Erneut versuchen
+    </button>
+
+    <p class="note">Diese Seite wurde aus dem Service-Worker-Cache geladen.</p>
+  </div>
+</body>
+</html>

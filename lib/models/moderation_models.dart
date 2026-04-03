@@ -1,7 +1,7 @@
 /// Flagged Content Model
 /// Repräsentiert gemeldeten Inhalt (Post oder Kommentar)
 class FlaggedContent {
-  final int id;
+  final dynamic id; // int oder String (Worker gibt String-IDs zurück)
   final String world;
   final String contentType; // 'post' oder 'comment'
   final String contentId;
@@ -41,17 +41,18 @@ class FlaggedContent {
   
   factory FlaggedContent.fromJson(Map<String, dynamic> json) {
     return FlaggedContent(
-      id: json['id'] as int,
-      world: json['world'] as String,
-      contentType: json['content_type'] as String,
-      contentId: json['content_id'] as String,
+      // id kann int oder String sein (Worker-Kompatibilität)
+      id: json['id'] ?? json['flag_id'] ?? 0,
+      world: (json['world'] as String?) ?? 'materie',
+      contentType: (json['content_type'] as String?) ?? 'chat_message',
+      contentId: (json['content_id'] ?? '').toString(),
       contentAuthorId: json['content_author_id'] as String?,
-      contentAuthorUsername: json['content_author_username'] as String?,
-      flaggedById: json['flagged_by_id'] as String,
-      flaggedByUsername: json['flagged_by_username'] as String,
-      flaggedByRole: json['flagged_by_role'] as String,
-      reason: json['reason'] as String,
-      status: json['status'] as String,
+      contentAuthorUsername: (json['content_author_username'] ?? json['author_username']) as String?,
+      flaggedById: (json['flagged_by_id'] ?? json['reported_by'] ?? 'system') as String,
+      flaggedByUsername: (json['flagged_by_username'] ?? json['reported_by'] ?? 'system') as String,
+      flaggedByRole: (json['flagged_by_role'] ?? 'user') as String,
+      reason: (json['reason'] ?? '') as String,
+      status: (json['status'] ?? 'pending') as String,
       resolvedById: json['resolved_by_id'] as String?,
       resolvedByUsername: json['resolved_by_username'] as String?,
       resolutionAction: json['resolution_action'] as String?,
@@ -59,7 +60,9 @@ class FlaggedContent {
       resolvedAt: json['resolved_at'] != null 
           ? DateTime.parse(json['resolved_at'] as String)
           : null,
-      createdAt: DateTime.parse(json['created_at'] as String),
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'] as String)
+          : DateTime.now(),
     );
   }
   
@@ -84,7 +87,7 @@ class FlaggedContent {
 /// User Mute Model
 /// Repräsentiert eine User-Sperre
 class UserMute {
-  final int id;
+  final dynamic id; // int oder String
   final String world;
   final String userId;
   final String username;
@@ -120,22 +123,26 @@ class UserMute {
   
   factory UserMute.fromJson(Map<String, dynamic> json) {
     return UserMute(
-      id: json['id'] as int,
-      world: json['world'] as String,
-      userId: json['user_id'] as String,
-      username: json['username'] as String,
-      muteType: json['mute_type'] as String,
-      mutedById: json['muted_by_id'] as String,
-      mutedByUsername: json['muted_by_username'] as String,
-      mutedByRole: json['muted_by_role'] as String,
+      id: json['id'] ?? 0,
+      world: (json['world'] as String?) ?? 'materie',
+      userId: (json['user_id'] ?? '') as String,
+      username: (json['username'] ?? '') as String,
+      muteType: (json['mute_type'] ?? '24h') as String,
+      mutedById: (json['muted_by_id'] ?? 'system') as String,
+      mutedByUsername: (json['muted_by_username'] ?? 'system') as String,
+      mutedByRole: (json['muted_by_role'] ?? 'admin') as String,
       reason: json['reason'] as String?,
-      isActive: (json['is_active'] as int) == 1,
+      isActive: json['is_active'] is bool
+          ? json['is_active'] as bool
+          : (json['is_active'] is int ? (json['is_active'] as int) == 1 : true),
       expiresAt: json['expires_at'] != null
-          ? DateTime.parse(json['expires_at'] as String)
+          ? DateTime.tryParse(json['expires_at'] as String)
           : null,
-      createdAt: DateTime.parse(json['created_at'] as String),
+      createdAt: json['created_at'] != null
+          ? (DateTime.tryParse(json['created_at'] as String) ?? DateTime.now())
+          : DateTime.now(),
       unmutedAt: json['unmuted_at'] != null
-          ? DateTime.parse(json['unmuted_at'] as String)
+          ? DateTime.tryParse(json['unmuted_at'] as String)
           : null,
       unmutedById: json['unmuted_by_id'] as String?,
       unmutedByUsername: json['unmuted_by_username'] as String?,
@@ -172,7 +179,7 @@ class UserMute {
 /// Moderation Log Entry Model
 /// Repräsentiert einen Eintrag im Moderation-Log
 class ModerationLogEntry {
-  final int id;
+  final dynamic id; // int oder String
   final String world;
   final String actionType;
   final String moderatorId;
@@ -202,20 +209,22 @@ class ModerationLogEntry {
   
   factory ModerationLogEntry.fromJson(Map<String, dynamic> json) {
     return ModerationLogEntry(
-      id: json['id'] as int,
-      world: json['world'] as String,
-      actionType: json['action_type'] as String,
-      moderatorId: json['moderator_id'] as String,
-      moderatorUsername: json['moderator_username'] as String,
-      moderatorRole: json['moderator_role'] as String,
-      targetType: json['target_type'] as String,
-      targetId: json['target_id'] as String,
-      targetUsername: json['target_username'] as String?,
+      id: json['id'] ?? json['log_id'] ?? 0,
+      world: (json['world'] ?? 'materie') as String,
+      actionType: (json['action_type'] ?? json['action'] ?? 'unknown') as String,
+      moderatorId: (json['moderator_id'] ?? json['admin_username'] ?? 'system') as String,
+      moderatorUsername: (json['moderator_username'] ?? json['admin_username'] ?? 'system') as String,
+      moderatorRole: (json['moderator_role'] ?? 'admin') as String,
+      targetType: (json['target_type'] ?? 'user') as String,
+      targetId: (json['target_id'] ?? json['target_username'] ?? '') as String,
+      targetUsername: (json['target_username']) as String?,
       reason: json['reason'] as String?,
       metadata: json['metadata'] != null
           ? Map<String, dynamic>.from(json['metadata'] as Map)
           : null,
-      createdAt: DateTime.parse(json['created_at'] as String),
+      createdAt: json['created_at'] != null
+          ? (DateTime.tryParse(json['created_at'] as String) ?? DateTime.now())
+          : DateTime.now(),
     );
   }
   

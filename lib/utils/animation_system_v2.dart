@@ -366,7 +366,7 @@ class StaggeredAnimation {
     Duration? itemDuration,
     Curve? curve,
   }) {
-    final delayDuration = delay ?? AnimationSystem.micro;
+    final delayDuration = delay ?? AnimationSystem.micro; // ignore: unused_local_variable
     final animDuration = itemDuration ?? AnimationSystem.short3;
     
     return Column(

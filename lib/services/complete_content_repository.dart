@@ -1,3 +1,4 @@
+import '../config/api_config.dart';
 import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
 import 'dart:convert';
@@ -25,7 +26,7 @@ class CompleteContentRepository {
   static CompleteContentRepository get instance => _instance;
 
   // Backend URL
-  static const String _baseUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
+  static const String _baseUrl = ApiConfig.workerUrl;
   
   // Cache
   Map<String, dynamic>? _completeContent;

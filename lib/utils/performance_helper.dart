@@ -31,7 +31,7 @@ class PerformanceHelper {
     Function function, {
     Duration delay = const Duration(milliseconds: 300),
   }) {
-    Timer? timer;
+    Timer? timer; // ignore: unused_local_variable
     bool canCall = true;
     
     return () {
@@ -151,7 +151,7 @@ class Timer {
   final Duration duration;
   final VoidCallback callback;
   
-  Future<void>? _future;
+  Future<void>? _future; // ignore: unused_field
   
   Timer(this.duration, this.callback) {
     _start();

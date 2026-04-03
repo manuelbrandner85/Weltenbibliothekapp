@@ -95,38 +95,25 @@ class OpenClawComprehensiveService {
     }
     
     try {
-      // OpenClaw-Route (bevorzugt)
-      if (_openClawAvailable) {
-        if (kDebugMode) {
-          print('🚀 [OpenClaw Comprehensive v2.0] Starting DEEP research...');
-          print('   → Query: $query');
-          print('   → Max results per type: $maxResultsPerType');
-        }
-        
-        final result = await _deepResearchViaOpenClaw(
-          query: query,
-          url: url,
-          includeImages: includeImages,
-          includeVideos: includeVideos,
-          includeAudio: includeAudio,
-          includePdfs: includePdfs,
-          maxResultsPerType: maxResultsPerType,
-        );
-        
-        // Cache speichern
-        _cache[cacheKey] = {
-          'data': result,
-          'timestamp': DateTime.now(),
-        };
-        
-        return result;
-      }
-      
-      // Fallback zu Cloudflare
+      // Worker-Route (direkt, kein OpenClaw Gateway mehr)
       if (kDebugMode) {
-        print('🔄 [OpenClaw Comprehensive v2.0] Falling back to Cloudflare...');
+        print('🚀 [OpenClaw Comprehensive v2.0] Starting research via Worker...');
+        print('   → Query: $query');
       }
-      return await _comprehensiveResearchViaCloudflare(query: query);
+
+      final result = await _deepResearchViaWorker(
+        query: query,
+        url: url,
+        maxResultsPerType: maxResultsPerType,
+      );
+
+      // Cache speichern
+      _cache[cacheKey] = {
+        'data': result,
+        'timestamp': DateTime.now(),
+      };
+
+      return result;
       
     } catch (e) {
       if (kDebugMode) {
@@ -138,219 +125,71 @@ class OpenClawComprehensiveService {
     }
   }
   
-  /// 🚀 TIEFES SCRAPING über MEHRERE Quellen mit Relevanz-Filtering
-  Future<Map<String, dynamic>> _deepResearchViaOpenClaw({
+  /// 🚀 RECHERCHE via Cloudflare Worker /recherche Endpoint
+  /// Ersetzt den nicht erreichbaren OpenClaw Gateway (http://72.62.154.95:50074)
+  Future<Map<String, dynamic>> _deepResearchViaWorker({
     required String query,
     String? url,
-    required bool includeImages,
-    required bool includeVideos,
-    required bool includeAudio,
-    required bool includePdfs,
     required int maxResultsPerType,
   }) async {
-    final results = <String, dynamic>{
-      'source': 'openclaw_deep',
+    final workerUrl = Uri.parse(
+      '${ApiConfig.workerUrl}/recherche?q=${Uri.encodeComponent(query)}',
+    );
+
+    final response = await http.get(workerUrl).timeout(const Duration(seconds: 30));
+
+    if (response.statusCode != 200) {
+      throw Exception('Worker /recherche returned ${response.statusCode}');
+    }
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+
+    // Worker liefert: results[], summary, sources{}
+    // Wir mappen auf: articles[], media{}, analysis{}, sources_scraped
+    final rawResults = (data['results'] as List<dynamic>? ?? []);
+    final sourcesMap = data['sources'] as Map<String, dynamic>? ?? {};
+
+    final articles = rawResults
+        .whereType<Map<String, dynamic>>()
+        .map((r) => <String, dynamic>{
+              'title': r['title'] ?? '',
+              'url': r['url'] ?? r['link'] ?? '',
+              'snippet': r['snippet'] ?? r['description'] ?? '',
+              'source': r['source'] ?? '',
+            })
+        .take(maxResultsPerType)
+        .toList();
+
+    final analysis = <String, dynamic>{
+      if (data['summary'] != null) 'summary': data['summary'],
+      'sources_count': sourcesMap.length,
+    };
+
+    if (kDebugMode) {
+      print('✅ [Worker Recherche] Found ${articles.length} articles');
+      print('   → Sources: ${sourcesMap.keys.join(', ')}');
+    }
+
+    return {
+      'source': 'worker_recherche',
       'query': query,
       'url': url,
       'timestamp': DateTime.now().toIso8601String(),
-      'articles': [],
+      'articles': articles,
       'media': {
         'images': <Map<String, dynamic>>[],
         'videos': <Map<String, dynamic>>[],
         'audio': <Map<String, dynamic>>[],
         'pdfs': <Map<String, dynamic>>[],
       },
-      'analysis': {},
-      'sources_scraped': 0,
+      'analysis': analysis,
+      'sources_scraped': sourcesMap.length,
     };
-    
-    // 1. Artikel-Recherche über OpenClaw Gateway
-    List<String> articleUrls = [];
-    try {
-      final articlesResponse = await http.post(
-        Uri.parse('${ApiConfig.openClawGatewayUrl}/api/research'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ${ApiConfig.openClawGatewayToken}',
-        },
-        body: jsonEncode({
-          'query': query,
-          'maxResults': 50, // Mehr Artikel für tieferes Scraping
-          'includeAnalysis': true,
-        }),
-      ).timeout(const Duration(seconds: 30));
-      
-      if (articlesResponse.statusCode == 200) {
-        final data = jsonDecode(articlesResponse.body);
-        results['articles'] = data['articles'] ?? [];
-        results['analysis'] = data['analysis'] ?? {};
-        
-        // Extrahiere alle URLs
-        for (var article in results['articles']) {
-          if (article['url'] != null && article['url'].toString().isNotEmpty) {
-            articleUrls.add(article['url'].toString());
-          }
-        }
-        
-        if (kDebugMode) {
-          print('✅ [OpenClaw Deep] Found ${results['articles'].length} articles');
-          print('   → URLs to scrape: ${articleUrls.length}');
-        }
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        print('⚠️ [OpenClaw Deep] Article research failed: $e');
-      }
-    }
-    
-    // 2. Falls spezifische URL vorhanden, diese auch scrapen
-    if (url != null && url.isNotEmpty && !articleUrls.contains(url)) {
-      articleUrls.insert(0, url);
-    }
-    
-    // 3. TIEFES SCRAPING über ALLE gefundenen URLs
-    // Limitiere auf max 20 URLs für Performance
-    final urlsToScrape = articleUrls.take(20).toList();
-    int sourcesScraped = 0;
-    
-    if (kDebugMode) {
-      print('🔍 [OpenClaw Deep] Starting deep scraping of ${urlsToScrape.length} sources...');
-    }
-    
-    for (var sourceUrl in urlsToScrape) {
-      try {
-        sourcesScraped++;
-        
-        if (kDebugMode && sourcesScraped % 5 == 0) {
-          print('   → Progress: $sourcesScraped/${urlsToScrape.length} sources scraped');
-        }
-        
-        // Scrape alle Medientypen von dieser URL
-        if (includeImages) {
-          try {
-            final imageResult = await _mediaScraper.scrapeImage(url: sourceUrl);
-            if (imageResult['images'] != null) {
-              final images = imageResult['images'] as List;
-              for (var img in images) {
-                if (img is Map<String, dynamic>) {
-                  // Füge Source-URL hinzu für Tracking
-                  img['source_url'] = sourceUrl;
-                  results['media']['images'].add(img);
-                }
-              }
-            }
-          } catch (e) {
-            if (kDebugMode) print('   ⚠️ Image scraping failed for $sourceUrl');
-          }
-        }
-        
-        if (includeVideos) {
-          try {
-            final videoResult = await _mediaScraper.scrapeVideo(url: sourceUrl);
-            if (videoResult['videos'] != null) {
-              final videos = videoResult['videos'] as List;
-              for (var vid in videos) {
-                if (vid is Map<String, dynamic>) {
-                  vid['source_url'] = sourceUrl;
-                  results['media']['videos'].add(vid);
-                }
-              }
-            }
-          } catch (e) {
-            if (kDebugMode) print('   ⚠️ Video scraping failed for $sourceUrl');
-          }
-        }
-        
-        if (includeAudio) {
-          try {
-            final audioResult = await _mediaScraper.scrapeAudio(url: sourceUrl);
-            if (audioResult['audio'] != null) {
-              final audios = audioResult['audio'] as List;
-              for (var aud in audios) {
-                if (aud is Map<String, dynamic>) {
-                  aud['source_url'] = sourceUrl;
-                  results['media']['audio'].add(aud);
-                }
-              }
-            }
-          } catch (e) {
-            if (kDebugMode) print('   ⚠️ Audio scraping failed for $sourceUrl');
-          }
-        }
-        
-        if (includePdfs) {
-          try {
-            final pdfResult = await _mediaScraper.scrapePDF(url: sourceUrl);
-            if (pdfResult['pdfs'] != null) {
-              final pdfs = pdfResult['pdfs'] as List;
-              for (var pdf in pdfs) {
-                if (pdf is Map<String, dynamic>) {
-                  pdf['source_url'] = sourceUrl;
-                  results['media']['pdfs'].add(pdf);
-                }
-              }
-            }
-          } catch (e) {
-            if (kDebugMode) print('   ⚠️ PDF scraping failed for $sourceUrl');
-          }
-        }
-        
-      } catch (e) {
-        if (kDebugMode) {
-          print('   ⚠️ Failed to scrape source $sourceUrl: $e');
-        }
-      }
-    }
-    
-    results['sources_scraped'] = sourcesScraped;
-    
-    if (kDebugMode) {
-      print('✅ [OpenClaw Deep] Scraping completed:');
-      print('   → Sources scraped: $sourcesScraped');
-      print('   → Raw images found: ${results['media']['images'].length}');
-      print('   → Raw videos found: ${results['media']['videos'].length}');
-      print('   → Raw audio found: ${results['media']['audio'].length}');
-      print('   → Raw PDFs found: ${results['media']['pdfs'].length}');
-    }
-    
-    // 4. RELEVANZ-FILTERING und DEDUPLIZIERUNG
-    results['media']['images'] = _filterAndRankMedia(
-      results['media']['images'] as List<Map<String, dynamic>>,
-      query,
-      maxResultsPerType,
-    );
-    
-    results['media']['videos'] = _filterAndRankMedia(
-      results['media']['videos'] as List<Map<String, dynamic>>,
-      query,
-      maxResultsPerType,
-    );
-    
-    results['media']['audio'] = _filterAndRankMedia(
-      results['media']['audio'] as List<Map<String, dynamic>>,
-      query,
-      maxResultsPerType,
-    );
-    
-    results['media']['pdfs'] = _filterAndRankMedia(
-      results['media']['pdfs'] as List<Map<String, dynamic>>,
-      query,
-      maxResultsPerType,
-    );
-    
-    if (kDebugMode) {
-      print('✅ [OpenClaw Deep] After filtering (top $maxResultsPerType):');
-      print('   → Images: ${results['media']['images'].length}');
-      print('   → Videos: ${results['media']['videos'].length}');
-      print('   → Audio: ${results['media']['audio'].length}');
-      print('   → PDFs: ${results['media']['pdfs'].length}');
-    }
-    
-    return results;
   }
   
   /// 🎯 RELEVANZ-FILTERING und RANKING
   /// Filtert Medien nach Relevanz zum Suchbegriff und dedupliziert
+  // ignore: unused_element
   List<Map<String, dynamic>> _filterAndRankMedia(
     List<Map<String, dynamic>> items,
     String query,

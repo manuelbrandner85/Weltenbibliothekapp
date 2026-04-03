@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode;
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:image_picker/image_picker.dart';
 import '../models/community_post.dart';
 import '../services/community_service.dart';
@@ -115,8 +115,6 @@ class _CreatePostDialogState extends State<CreatePostDialog> {
     }
   }
   
-  // TODO: Review unused method: _showMediaUploadInfoDialog
-  // void _showMediaUploadInfoDialog(String mediaType) {
     // showDialog(
       // context: context,
       // builder: (context) => AlertDialog(
@@ -189,8 +187,6 @@ class _CreatePostDialogState extends State<CreatePostDialog> {
     // );
   // }
   
-  // TODO: Review unused method: _buildFeatureItem
-  // Widget _buildFeatureItem(String text) {
     // return Padding(
       // padding: const EdgeInsets.symmetric(vertical: 4),
       // child: Row(

@@ -1,12 +1,15 @@
-/// 💬 CHAT ROOM CONTROLLER (SIMPLIFIED)
+/// 💬 CHAT ROOM CONTROLLER
 /// 
-/// Simplified chat controller without external dependencies
+/// Supabase Realtime + Offline-First mit LocalChatStorageService
 library;
 
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/state/chat_room_state.dart';
 import '../models/chat_models.dart';
+import '../services/supabase_service.dart';         // 🟢 Supabase Backend
+import '../services/local_chat_storage_service.dart'; // 📦 Offline-Fallback
 
 class ChatRoomController extends ChangeNotifier {
   ChatRoomState _state = const ChatRoomState();
@@ -21,14 +24,127 @@ class ChatRoomController extends ChangeNotifier {
   
   ChatRoomState get state => _state;
   
+  // Realtime-Subscription
+  dynamic _realtimeChannel;
+
   Future<void> _initialize() async {
+    // 📦 Offline-Storage initialisieren
+    await LocalChatStorageService().initialize();
     try {
       await loadMessages();
-      _startMessagePolling();
+      _subscribeRealtime();
+      // ✅ Alle Nachrichten beim Öffnen als gelesen markieren
+      await markAllAsRead();
     } catch (e) {
       _state = _state.copyWith(error: 'Failed to initialize: $e');
       notifyListeners();
     }
+  }
+
+  /// 🟢 Realtime-Subscription: Nachrichten + Typing + Read-Receipts
+  void _subscribeRealtime() {
+    try {
+      _realtimeChannel = SupabaseChatService.instance.subscribeToRoomFull(
+        roomId,
+        onMessage: (data) {
+          final msgId = data['id'] as String? ?? 'rt_${DateTime.now().millisecondsSinceEpoch}';
+          final readBy = (data['read_by'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ?? [];
+
+          // Existierende Nachricht aktualisieren (z.B. read_by oder edit)
+          final existingIndex = _state.messages.indexWhere((m) => m.id == msgId);
+          if (existingIndex >= 0) {
+            final updated = _state.messages[existingIndex].copyWith(
+              content: data['content'] as String? ?? data['message'] as String?
+                  ?? _state.messages[existingIndex].content,
+              readBy: readBy.isNotEmpty ? readBy : _state.messages[existingIndex].readBy,
+              editedAt: data['edited_at'] != null
+                  ? DateTime.tryParse(data['edited_at'] as String)
+                  : _state.messages[existingIndex].editedAt,
+            );
+            final msgs = List<ChatMessage>.from(_state.messages);
+            msgs[existingIndex] = updated;
+            _state = _state.copyWith(messages: msgs);
+            notifyListeners();
+            return;
+          }
+
+          // Neue Nachricht einfügen
+          final msg = ChatMessage.text(
+            id: msgId,
+            senderId: data['user_id'] as String? ?? 'unknown',
+            senderName: data['username'] as String? ?? 'Anonym',
+            content: data['message'] as String? ?? data['content'] as String? ?? '',
+            timestamp: data['created_at'] != null
+                ? DateTime.tryParse(data['created_at'] as String) ?? DateTime.now()
+                : DateTime.now(),
+          ).copyWith(readBy: readBy);
+
+          _state = _state.copyWith(messages: [..._state.messages, msg]);
+          notifyListeners();
+
+          // Neue Nachricht sofort als gelesen markieren
+          _markIncomingMessageAsRead(msg);
+        },
+        onTyping: (userId, username, isTyping) {
+          final currentUserId = Supabase.instance.client.auth.currentUser?.id;
+          if (userId == currentUserId) return; // eigene Typing-Events ignorieren
+          if (isTyping) {
+            handleUserTyping(userId);
+          } else {
+            final removed = Set<String>.from(_state.typingUsers)..remove(userId);
+            _state = _state.copyWith(typingUsers: removed);
+            notifyListeners();
+          }
+        },
+        onRead: (messageId, userId) {
+          // read_by in lokaler State aktualisieren
+          final idx = _state.messages.indexWhere((m) => m.id == messageId);
+          if (idx >= 0) {
+            final msg = _state.messages[idx];
+            if (!msg.readBy.contains(userId)) {
+              final updated = msg.copyWith(readBy: [...msg.readBy, userId]);
+              final msgs = List<ChatMessage>.from(_state.messages);
+              msgs[idx] = updated;
+              _state = _state.copyWith(messages: msgs);
+              notifyListeners();
+            }
+          }
+        },
+      );
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ [Chat] Realtime subscribe failed: $e');
+    }
+  }
+
+  /// Eingehende Nachricht sofort als gelesen markieren (wenn nicht eigene)
+  void _markIncomingMessageAsRead(ChatMessage msg) {
+    final currentUserId = Supabase.instance.client.auth.currentUser?.id;
+    if (currentUserId == null || msg.senderId == currentUserId) return;
+    SupabaseChatService.instance.markMessageAsRead(
+      messageId: msg.id,
+      userId: currentUserId,
+    );
+  }
+
+  /// Alle Nachrichten im Raum als gelesen markieren (beim Öffnen des Chats)
+  Future<void> markAllAsRead() async {
+    final currentUserId = Supabase.instance.client.auth.currentUser?.id;
+    if (currentUserId == null) return;
+    await SupabaseChatService.instance.markRoomMessagesAsRead(
+      roomId: roomId,
+      userId: currentUserId,
+    );
+    // Lokalen State aktualisieren
+    final msgs = _state.messages.map((m) {
+      if (!m.readBy.contains(currentUserId)) {
+        return m.copyWith(readBy: [...m.readBy, currentUserId]);
+      }
+      return m;
+    }).toList();
+    _state = _state.copyWith(messages: msgs);
+    notifyListeners();
   }
   
   Future<void> loadMessages({bool loadMore = false}) async {
@@ -65,10 +181,15 @@ class ChatRoomController extends ChangeNotifier {
     if (content.trim().isEmpty) return;
     
     try {
+      final currentUser = Supabase.instance.client.auth.currentUser;
+      final userId = currentUser?.id ?? 'anon_${DateTime.now().millisecondsSinceEpoch}';
+      final username = currentUser?.userMetadata?['username'] as String?
+          ?? currentUser?.email?.split('@').first
+          ?? 'Anonym';
       final tempMessage = ChatMessage.text(
         id: 'temp_${DateTime.now().millisecondsSinceEpoch}',
-        senderId: 'current_user',
-        senderName: 'You',
+        senderId: userId,
+        senderName: username,
         content: content.trim(),
         timestamp: DateTime.now(),
         replyToMessageId: _state.replyToMessage?['id'],
@@ -137,7 +258,7 @@ class ChatRoomController extends ChangeNotifier {
   
   Future<void> addReaction(String messageId, String emoji) async {
     try {
-      final currentUserId = 'current_user';
+      final currentUserId = Supabase.instance.client.auth.currentUser?.id ?? 'anon';
       
       final updatedReactions = Map<String, Map<String, List<String>>>.from(_state.reactions);
       final messageReactions = Map<String, List<String>>.from(
@@ -163,7 +284,7 @@ class ChatRoomController extends ChangeNotifier {
   
   Future<void> removeReaction(String messageId, String emoji) async {
     try {
-      final currentUserId = 'current_user';
+      final currentUserId = Supabase.instance.client.auth.currentUser?.id ?? 'anon';
       
       final updatedReactions = Map<String, Map<String, List<String>>>.from(_state.reactions);
       final messageReactions = Map<String, List<String>>.from(
@@ -222,8 +343,31 @@ class ChatRoomController extends ChangeNotifier {
   }
   
   void sendTypingIndicator() {
+    final currentUser = Supabase.instance.client.auth.currentUser;
+    if (currentUser == null) return;
+    final userId = currentUser.id;
+    final username = currentUser.userMetadata?['username'] as String?
+        ?? currentUser.email?.split('@').first
+        ?? 'Anonym';
+
+    // Typing-Broadcast über Supabase Realtime senden
+    SupabaseChatService.instance.sendTypingIndicator(
+      roomId: roomId,
+      userId: userId,
+      username: username,
+      isTyping: true,
+    );
+
+    // Nach 3 Sekunden Typing-Stop senden
     _typingTimer?.cancel();
-    _typingTimer = Timer(const Duration(seconds: 3), () {});
+    _typingTimer = Timer(const Duration(seconds: 3), () {
+      SupabaseChatService.instance.sendTypingIndicator(
+        roomId: roomId,
+        userId: userId,
+        username: username,
+        isTyping: false,
+      );
+    });
   }
   
   void handleUserTyping(String userId) {
@@ -289,6 +433,7 @@ class ChatRoomController extends ChangeNotifier {
     }
   }
   
+  // ignore: unused_element
   void _startMessagePolling() {
     _messagePollingTimer = Timer.periodic(
       const Duration(seconds: 5),
@@ -303,53 +448,157 @@ class ChatRoomController extends ChangeNotifier {
   }
   
   Future<List<ChatMessage>> _fetchMessagesFromServer({DateTime? before}) async {
-    await Future.delayed(const Duration(milliseconds: 500));
-    return List.generate(20, (index) {
-      return ChatMessage.text(
-        id: 'msg_${DateTime.now().millisecondsSinceEpoch}_$index',
-        senderId: index % 2 == 0 ? 'user1' : 'user2',
-        senderName: index % 2 == 0 ? 'Alice' : 'Bob',
-        content: 'Sample message $index',
-        timestamp: DateTime.now().subtract(Duration(minutes: 20 - index)),
-      );
-    });
+    // 🟢 Versuche Supabase
+    try {
+      final rows = await SupabaseChatService.instance.getMessages(roomId);
+      final msgs = rows.map((data) => ChatMessage.text(
+        id: data['id'] as String? ?? 'srv_${DateTime.now().millisecondsSinceEpoch}',
+        senderId: data['user_id'] as String? ?? 'unknown',
+        senderName: data['username'] as String? ?? 'Anonym',
+        content: data['message'] as String? ?? data['content'] as String? ?? '',
+        timestamp: data['created_at'] != null
+            ? DateTime.tryParse(data['created_at'] as String) ?? DateTime.now()
+            : DateTime.now(),
+      )).toList();
+
+      // 📦 Lokal cachen für Offline-Nutzung
+      final local = LocalChatStorageService();
+      for (final r in rows) {
+        await local.sendMessage(
+          roomId: roomId,
+          realm: 'materie',
+          userId: r['user_id'] as String? ?? 'unknown',
+          username: r['username'] as String? ?? 'Anonym',
+          message: r['message'] as String? ?? r['content'] as String? ?? '',
+          avatarUrl: r['avatar_url'] as String?,
+        );
+      }
+      return msgs;
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ [Chat] Supabase fetch failed, lade offline: $e');
+      // 📦 Offline-Fallback: lokale Nachrichten zurückgeben
+      try {
+        final localMsgs = await LocalChatStorageService().getMessages(roomId, 'materie');
+        return localMsgs.map((data) => ChatMessage.text(
+          id: data['id'] as String? ?? 'local_${DateTime.now().millisecondsSinceEpoch}',
+          senderId: data['userId'] as String? ?? 'unknown',
+          senderName: data['username'] as String? ?? 'Anonym',
+          content: data['message'] as String? ?? '',
+          timestamp: data['timestamp'] != null
+              ? DateTime.tryParse(data['timestamp'] as String) ?? DateTime.now()
+              : DateTime.now(),
+        )).toList();
+      } catch (_) {
+        return [];
+      }
+    }
   }
   
   Future<ChatMessage> _sendMessageToServer(ChatMessage message) async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    return message.copyWith(
-      id: 'msg_${DateTime.now().millisecondsSinceEpoch}',
-      status: MessageStatus.sent,
-    );
+    // 📦 Immer lokal speichern (Offline-First)
+    try {
+      await LocalChatStorageService().sendMessage(
+        roomId: roomId,
+        realm: 'materie',
+        userId: message.senderId,
+        username: message.senderName,
+        message: message.content,
+      );
+    } catch (_) {}
+
+    // 🟢 Supabase: Online senden
+    try {
+      final sent = await SupabaseChatService.instance.sendMessage(
+        roomId: roomId,
+        message: message.content,
+      );
+      return message.copyWith(
+        id: sent['id'] as String? ?? message.id,
+        status: MessageStatus.sent,
+      );
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ [Chat] Offline – Nachricht lokal gespeichert: $e');
+      // Offline: lokale ID bestätigen
+      return message.copyWith(
+        id: 'offline_${DateTime.now().millisecondsSinceEpoch}',
+        status: MessageStatus.sent,
+      );
+    }
   }
   
   Future<void> _editMessageOnServer(String messageId, String content) async {
-    await Future.delayed(const Duration(milliseconds: 200));
+    try {
+      await supabase
+          .from('chat_messages')
+          .update({'message': content, 'edited_at': DateTime.now().toIso8601String()})
+          .eq('id', messageId);
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ [Chat] Edit failed: $e');
+    }
   }
   
   Future<void> _deleteMessageOnServer(String messageId) async {
-    await Future.delayed(const Duration(milliseconds: 200));
+    try {
+      await supabase
+          .from('chat_messages')
+          .update({'is_deleted': true})
+          .eq('id', messageId);
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ [Chat] Delete failed: $e');
+    }
   }
   
   Future<void> _sendReactionToServer(String messageId, String emoji) async {
-    await Future.delayed(const Duration(milliseconds: 100));
+    try {
+      final userId = Supabase.instance.client.auth.currentUser?.id;
+      if (userId == null) return;
+      await supabase.from('message_reactions').upsert({
+        'message_id': messageId,
+        'user_id': userId,
+        'emoji': emoji,
+        'created_at': DateTime.now().toIso8601String(),
+      });
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ [Chat] Reaction send failed: $e');
+    }
   }
   
   Future<void> _removeReactionFromServer(String messageId, String emoji) async {
-    await Future.delayed(const Duration(milliseconds: 100));
+    try {
+      final userId = Supabase.instance.client.auth.currentUser?.id;
+      if (userId == null) return;
+      await supabase
+          .from('message_reactions')
+          .delete()
+          .eq('message_id', messageId)
+          .eq('user_id', userId)
+          .eq('emoji', emoji);
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ [Chat] Reaction remove failed: $e');
+    }
   }
 
-  /// Server call to clear all messages in the room
+  /// Server call to clear all messages in the room (soft-delete via Supabase)
   Future<void> _clearMessagesOnServer() async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    // TODO: Implement actual API call when backend endpoint is ready
-    // Example: await http.delete('${ApiConfig.baseUrl}/api/chat/$roomId/messages');
+    try {
+      // Soft-delete: alle Nachrichten im Raum als gelöscht markieren
+      await supabase
+          .from('chat_messages')
+          .update({'is_deleted': true})
+          .eq('room_id', roomId);
+    } catch (e) {
+      debugPrint('⚠️ Fehler beim Löschen der Nachrichten: $e');
+    }
   }
   
   @override
   void dispose() {
     _typingTimer?.cancel();
     _messagePollingTimer?.cancel();
+    // 🔌 Realtime-Subscription beenden
+    try {
+      _realtimeChannel?.unsubscribe();
+    } catch (_) {}
     super.dispose();
   }
 }

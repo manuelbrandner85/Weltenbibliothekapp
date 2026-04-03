@@ -25,8 +25,8 @@ class _FrequencyAudioPlayerState extends State<FrequencyAudioPlayer> with Single
   
   bool _isPlaying = false;
   bool _isLoading = false;
-  Duration _currentPosition = Duration.zero;
-  Duration _totalDuration = Duration.zero;
+  Duration _currentPosition = Duration.zero; // ignore: unused_field
+  Duration _totalDuration = Duration.zero; // ignore: unused_field
   double _volume = 0.7;
   
   Timer? _sessionTimer;

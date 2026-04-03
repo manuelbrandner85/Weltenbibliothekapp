@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
+ // OpenClaw v2.0
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// 🎓 ONBOARDING FLOW
@@ -306,16 +306,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   /// Check if onboarding should be shown
-  // TODO: Review unused method: shouldShowOnboarding
-  // static Future<bool> shouldShowOnboarding() async {
     // final prefs = await SharedPreferences.getInstance();
     // final completed = prefs.getBool('new_onboarding_completed') ?? false;
     // return !completed;
   // }
 
   /// Reset onboarding (for testing)
-  // TODO: Review unused method: resetOnboarding
-  // static Future<void> resetOnboarding() async {
     // final prefs = await SharedPreferences.getInstance();
     // await prefs.remove('new_onboarding_completed');
   // }

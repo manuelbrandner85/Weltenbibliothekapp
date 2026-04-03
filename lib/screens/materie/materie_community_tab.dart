@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
-import '../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
+ // OpenClaw v2.0
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:url_launcher/url_launcher.dart';
 import '../../models/community_post.dart';
 import '../../models/live_feed_entry.dart';
 import '../../services/live_feed_service.dart';
 import '../../services/favorites_service.dart';
+import '../../models/favorite.dart'; // FavoriteType enum
 import '../../services/feed_filter_service.dart';
 import '../../services/reading_progress_service.dart';
 import '../../services/community_service.dart';
@@ -16,6 +17,7 @@ import '../../widgets/like_button.dart';  // 🆕 Like Widget
 import '../../widgets/comment_button.dart';  // 🆕 Comment Widget
 import '../../widgets/share_dialog.dart';  // 🆕 Share Dialog
 import 'dart:async';
+import '../../services/user_auth_service.dart';
 
 /// Community-Tab für MATERIE-Welt mit integrierten Live-Feeds
 class MaterieCommunityTab extends StatefulWidget {
@@ -27,7 +29,7 @@ class MaterieCommunityTab extends StatefulWidget {
 
 class _MaterieCommunityTabState extends State<MaterieCommunityTab> {
   final LiveFeedService _feedService = LiveFeedService();
-  final FavoritesService _favoritesService = FavoritesService();
+  final FavoritesService _favoritesService = FavoritesService(); // ignore: unused_field
   
   /// Get favorites count (uses static method)
   int get _favoritesCount => FavoritesService.getFavoritesCount();
@@ -35,6 +37,9 @@ class _MaterieCommunityTabState extends State<MaterieCommunityTab> {
   final ReadingProgressService _readingService = ReadingProgressService();
   final CommunityService _communityService = CommunityService();
   final UserService _userService = UserService();
+  // Echte User-Daten (werden in initState geladen)
+  String _currentUserId = 'user_anonymous';
+  String _currentUsername = 'Anonym';
   List<MaterieFeedEntry> _liveFeeds = [];
   List<CommunityPost> _posts = []; // ✅ REAL POSTS from backend
   Timer? _updateTimer;
@@ -54,12 +59,18 @@ class _MaterieCommunityTabState extends State<MaterieCommunityTab> {
     if (kDebugMode) {
       debugPrint('🔵 MATERIE Community Tab initialisiert');
     }
+    _loadUserData();
     _loadFeeds();
     _loadCommunityPosts(); // ✅ Load real posts
     
     _filterService.init();
     _readingService.init();
     _startAutoUpdate();
+  }
+
+  Future<void> _loadUserData() async {
+    _currentUserId = UserService.getCurrentUserId();
+    _currentUsername = await UserAuthService.getUsername() ?? 'Anonym';
   }
 
   @override
@@ -144,42 +155,10 @@ class _MaterieCommunityTabState extends State<MaterieCommunityTab> {
     });
   }
   
-  /// Like a post
-  Future<void> _likePost(CommunityPost post) async {
-    try {
-      await _communityService.likePost(post.id);
-      
-      // Update local state
-      setState(() {
-        final index = _posts.indexWhere((p) => p.id == post.id);
-        if (index != -1) {
-          _posts[index] = CommunityPost(
-            id: post.id,
-            authorUsername: post.authorUsername,
-            authorAvatar: post.authorAvatar,
-            content: post.content,
-            tags: post.tags,
-            createdAt: post.createdAt,
-            likes: post.likes + 1,
-            comments: post.comments,
-            shares: post.shares,
-            hasImage: post.hasImage,
-            worldType: post.worldType,
-          );
-        }
-      });
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('👍 Post geliked!')),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('❌ Fehler: $e')),
-      );
-    }
-  }
+  // _likePost: removed - handled by LikeButton widget
   
   /// Show comments dialog
+  // ignore: unused_element
   Future<void> _showCommentsDialog(CommunityPost post) async {
     final commentController = TextEditingController();
     
@@ -314,7 +293,7 @@ class _MaterieCommunityTabState extends State<MaterieCommunityTab> {
         postId: post.id,
         postTitle: post.authorUsername,
         postContent: post.content,
-        userId: 'user_manuel',  // TODO: Get from UserService
+        userId: _currentUserId,
       ),
     );
   }
@@ -683,8 +662,10 @@ class _MaterieCommunityTabState extends State<MaterieCommunityTab> {
         if (_selectedView == 'favorites') ...[
           _buildSectionHeader('⭐ Gespeicherte Feeds', '$_favoritesCount Favoriten'),
           
-          // Empty favorites placeholder - using actual feed data instead
-          // ..._filterService.applyFilters([]).map((feed) => _buildFeedCard(feed)),
+          // ✅ Show favorited feeds
+          ..._filterService.applyFilters(_liveFeeds.where((feed) => 
+            FavoritesService.getAllFavorites().any((f) => f.metadata?['feedId'] == feed.feedId)
+          ).toList()).map((feed) => _buildFeedCard(feed)),
           
           if (_favoritesCount == 0)
             Center(
@@ -808,24 +789,31 @@ class _MaterieCommunityTabState extends State<MaterieCommunityTab> {
                   const Spacer(),                  
                   const Spacer(),
                   
-                  // ⭐ FAVORITEN-ICON (NEU!)
-                  IconButton(
-                    icon: Icon(
-                      false
-                          ? Icons.favorite
-                          : Icons.favorite_border,
-                      color: false
-                          ? const Color(0xFFE91E63)
-                          : Colors.grey,
-                    ),
-                    onPressed: () async {
-                      // TODO: Implement favorites
-                      setState(() {}); // UI aktualisieren
-                    },
-                    tooltip: false
-                        ? 'Aus Favoriten entfernen'
-                        : 'Zu Favoriten hinzufügen',
-                  ),
+                  // ⭐ FAVORITEN-ICON (implementiert)
+                  Builder(builder: (ctx) {
+                    final isFav = FavoritesService.getAllFavorites().any((f) => f.metadata?['feedId'] == feed.feedId);
+                    return IconButton(
+                      icon: Icon(
+                        isFav ? Icons.favorite : Icons.favorite_border,
+                        color: isFav ? const Color(0xFFE91E63) : Colors.grey,
+                      ),
+                      onPressed: () async {
+                        final existing = FavoritesService.getAllFavorites().where((f) => f.metadata?['feedId'] == feed.feedId);
+                        if (existing.isNotEmpty) {
+                          await FavoritesService.deleteFavorite(existing.first.id);
+                        } else {
+                          await FavoritesService.addQuickFavorite(
+                            type: FavoriteType.research,
+                            title: feed.titel,
+                            description: feed.zusammenfassung,
+                            metadata: {'feedId': feed.feedId, 'world': 'materie'},
+                          );
+                        }
+                        setState(() {}); // UI aktualisieren
+                      },
+                      tooltip: isFav ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen',
+                    );
+                  }),
 
                   
                   // Tiefe-Level
@@ -1015,9 +1003,9 @@ class _MaterieCommunityTabState extends State<MaterieCommunityTab> {
                 // Like Button
                 LikeButton(
                   postId: post.id,
-                  userId: 'user_manuel',  // TODO: Get from UserService
+                  userId: _currentUserId,
                   initialLikeCount: post.likes,
-                  initialIsLiked: false,  // TODO: Load actual state
+                  initialIsLiked: false,
                   onLikeChanged: () {
                     setState(() {
                       // UI will auto-update via LikeButton
@@ -1029,8 +1017,8 @@ class _MaterieCommunityTabState extends State<MaterieCommunityTab> {
                 // Comment Button
                 CommentButton(
                   postId: post.id,
-                  userId: 'user_manuel',  // TODO: Get from UserService
-                  username: 'Manuel',  // TODO: Get from UserService
+                  userId: _currentUserId,
+                  username: _currentUsername,
                   initialCommentCount: post.comments,
                   onCommentAdded: () {
                     setState(() {

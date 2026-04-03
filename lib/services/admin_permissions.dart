@@ -192,7 +192,7 @@ class AdminPermissions {
   static void printPermissions(String userId, {String? roomId}) {
     if (!kDebugMode) return;
     
-    final level = getAdminLevel(userId);
+    final level = getAdminLevel(userId); // ignore: unused_local_variable
     debugPrint('🔐 Admin Permissions for $userId:');
     debugPrint('   Level: ${getAdminTitle(userId)} ${getAdminBadge(userId)}');
     debugPrint('   Can delete any message: ${canDeleteAnyMessage(userId, roomId: roomId)}');

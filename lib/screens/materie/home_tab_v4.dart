@@ -6,7 +6,6 @@ import '../../services/smart_articles_service.dart'; // 🧠 NEW: Smart Articles
 import '../../services/user_stats_service.dart';
 import '../../services/user_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import '../../services/openclaw_comprehensive_service.dart'; // 🚀 OpenClaw v2.0
 
 /// 🏠 MATERIE HOME DASHBOARD V4 - ULTRA PROFESSIONAL EDITION
 /// 
@@ -56,9 +55,9 @@ class _MaterieHomeTabV4State extends State<MaterieHomeTabV4>
   
   // 📊 STATE
   final ScrollController _scrollController = ScrollController();
-  MaterieProfile? _profile;
+  MaterieProfile? _profile; // ignore: unused_field
   String _userName = 'Forscher';
-  final String _userAvatar = '';
+  final String _userAvatar = ''; // ignore: unused_field
   
   // 📈 STATISTICS
   int _totalArticles = 0;
@@ -144,8 +143,8 @@ class _MaterieHomeTabV4State extends State<MaterieHomeTabV4>
   ];
   
   // 🔄 LOADING STATE
-  bool _isLoading = true;
-  bool _isRefreshing = false;
+  bool _isLoading = true; // ignore: unused_field
+  bool _isRefreshing = false; // ignore: unused_field
   double _scrollOffset = 0.0;
   
   // 🎨 SERVICES
@@ -237,7 +236,7 @@ class _MaterieHomeTabV4State extends State<MaterieHomeTabV4>
   
   Future<void> _loadUserProfile() async {
     try {
-      final userId = UserService.getCurrentUserId();
+      final userId = UserService.getCurrentUserId(); // ignore: unused_local_variable
       final userName = UserService.getCurrentUsername();
       
       if (mounted) {

@@ -5,7 +5,7 @@
 library;
 
 import 'dart:async';
-import 'package:flutter/foundation.dart' show debugPrint, kDebugMode, kIsWeb;
+import 'package:flutter/foundation.dart' show debugPrint, kDebugMode;
 import '../models/live_feed_entry.dart';
 import 'rss_parser_service.dart';
 

@@ -24,7 +24,7 @@ class _UfoSichtungenEnhancedState extends State<UfoSichtungenEnhanced> {
   // ✅ Real User Auth
   String? _currentUsername;
   String? _currentUserId;
-  bool _isAuthenticated = false;
+  bool _isAuthenticated = false; // ignore: unused_field
   int _activeWitnesses = 0;
   String _selectedType = 'Licht';
 

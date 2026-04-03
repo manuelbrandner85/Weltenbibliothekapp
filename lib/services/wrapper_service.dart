@@ -1,7 +1,9 @@
+import '../config/api_config.dart';
+
 /// Wrapper Service für Telegram, External Links und Media Proxy
 /// Weltenbibliothek V2.4 - Link Management
 class WrapperService {
-  static const String _baseUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
+  static const String _baseUrl = ApiConfig.workerUrl;
 
   // ==========================================
   // #22 - TELEGRAM LINK WRAPPER

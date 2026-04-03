@@ -1,17 +1,15 @@
 // =====================================================================
-// LEADERBOARD SERVICE v1.0
+// LEADERBOARD SERVICE v2.0 – Echte Supabase-Daten
 // =====================================================================
-// Verwaltet Rankings und Bestenlisten
 // Features:
-// - Global Leaderboard (Top Users nach XP)
+// - Global Leaderboard (Top Users nach XP aus profiles-Tabelle)
 // - Weekly/Monthly Rankings
-// - Friends Leaderboard
-// - User Stats Vergleich
+// - Caching für Performance
 // =====================================================================
 
 import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'achievement_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'supabase_service.dart';
 
 // =====================================================================
 // LEADERBOARD ENTRY MODEL
@@ -51,15 +49,34 @@ class LeaderboardEntry {
 
   factory LeaderboardEntry.fromJson(Map<String, dynamic> json) =>
       LeaderboardEntry(
-        userId: json['userId'] as String,
-        username: json['username'] as String,
-        totalXp: json['totalXp'] as int,
-        level: json['level'] as int,
-        achievementCount: json['achievementCount'] as int,
-        rank: json['rank'] as int,
+        userId: json['userId'] as String? ?? '',
+        username: json['username'] as String? ?? 'Anonym',
+        totalXp: json['totalXp'] as int? ?? 0,
+        level: json['level'] as int? ?? 1,
+        achievementCount: json['achievementCount'] as int? ?? 0,
+        rank: json['rank'] as int? ?? 0,
         avatarUrl: json['avatarUrl'] as String?,
         isCurrentUser: json['isCurrentUser'] as bool? ?? false,
       );
+
+  factory LeaderboardEntry.fromProfile(
+    Map<String, dynamic> profile,
+    int rank,
+    String currentUserId,
+  ) {
+    final xp = (profile['xp'] as int?) ?? (profile['total_xp'] as int?) ?? 0;
+    final lvl = (profile['level'] as int?) ?? (xp ~/ 1000 + 1);
+    return LeaderboardEntry(
+      userId: profile['id'] as String? ?? '',
+      username: profile['username'] as String? ?? profile['display_name'] as String? ?? 'Anonym',
+      totalXp: xp,
+      level: lvl,
+      achievementCount: (profile['achievement_count'] as int?) ?? 0,
+      rank: rank,
+      avatarUrl: profile['avatar_url'] as String?,
+      isCurrentUser: profile['id'] == currentUserId,
+    );
+  }
 }
 
 // =====================================================================
@@ -110,19 +127,12 @@ class LeaderboardService {
   factory LeaderboardService() => _instance;
   LeaderboardService._internal();
 
-  // 🌐 Backend API Configuration
-  static const String _baseUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
-  static const Duration _timeout = Duration(seconds: 10);
-
-  static const String _leaderboardKey = 'global_leaderboard';
-  static const String _weeklyKey = 'weekly_leaderboard';
-  static const String _monthlyKey = 'monthly_leaderboard';
-  static const String _friendsKey = 'friends_leaderboard';
-  static const String _currentUserIdKey = 'current_user_id';
-
-  SharedPreferences? _prefs;
   final Map<LeaderboardType, List<LeaderboardEntry>> _cachedLeaderboards = {};
-  String _currentUserId = 'user_manuel'; // Default user
+  final Map<LeaderboardType, DateTime> _cacheTime = {};
+  static const _cacheDuration = Duration(minutes: 5);
+
+  String get _currentUserId =>
+      Supabase.instance.client.auth.currentUser?.id ?? '';
 
   // =====================================================================
   // INITIALIZATION
@@ -130,191 +140,88 @@ class LeaderboardService {
 
   Future<void> init() async {
     try {
-      _prefs = await SharedPreferences.getInstance();
-      _currentUserId = _prefs?.getString(_currentUserIdKey) ?? 'user_manuel';
-      
-      // Generate mock data for demo
-      await _generateMockLeaderboards();
-      
+      // Pre-load leaderboards in background
+      await getLeaderboard(LeaderboardType.allTime);
       if (kDebugMode) {
-        print('✅ LeaderboardService initialized');
-        print('   👤 Current user: $_currentUserId');
+        debugPrint('✅ LeaderboardService initialized (Supabase)');
       }
     } catch (e) {
       if (kDebugMode) {
-        print('❌ LeaderboardService init error: $e');
+        debugPrint('❌ LeaderboardService init error: $e');
       }
     }
   }
 
   // =====================================================================
-  // MOCK DATA GENERATION (für Demo)
+  // REAL DATA FROM SUPABASE
   // =====================================================================
 
-  Future<void> _generateMockLeaderboards() async {
-    // Get current user stats
-    final achievementService = AchievementService();
-    final currentUserLevel = achievementService.currentLevel;
-    final currentUserXp = currentUserLevel.totalXP;
-    final currentAchievementCount = achievementService.unlockedAchievements.length;
-
-    // Generate All-Time Leaderboard
-    final allTimeEntries = _generateMockEntries(
-      LeaderboardType.allTime,
-      currentUserXp,
-      currentUserLevel.level,
-      currentAchievementCount,
-    );
-    _cachedLeaderboards[LeaderboardType.allTime] = allTimeEntries;
-
-    // Generate Weekly Leaderboard
-    final weeklyEntries = _generateMockEntries(
-      LeaderboardType.weekly,
-      (currentUserXp * 0.3).toInt(),
-      currentUserLevel.level,
-      currentAchievementCount,
-    );
-    _cachedLeaderboards[LeaderboardType.weekly] = weeklyEntries;
-
-    // Generate Monthly Leaderboard
-    final monthlyEntries = _generateMockEntries(
-      LeaderboardType.monthly,
-      (currentUserXp * 0.6).toInt(),
-      currentUserLevel.level,
-      currentAchievementCount,
-    );
-    _cachedLeaderboards[LeaderboardType.monthly] = monthlyEntries;
-
-    // Generate Friends Leaderboard (smaller)
-    final friendsEntries = _generateFriendsEntries(
-      currentUserXp,
-      currentUserLevel.level,
-      currentAchievementCount,
-    );
-    _cachedLeaderboards[LeaderboardType.friends] = friendsEntries;
-  }
-
-  List<LeaderboardEntry> _generateMockEntries(
+  Future<List<LeaderboardEntry>> _fetchFromSupabase(
     LeaderboardType type,
-    int userXp,
-    int userLevel,
-    int userAchievements,
-  ) {
-    final List<LeaderboardEntry> entries = [];
-    final random = DateTime.now().millisecondsSinceEpoch;
+  ) async {
+    try {
+      final currentId = _currentUserId;
 
-    // Generate 50 mock users
-    final mockUsers = [
-      'Alex_Scholar', 'Sophia_Sage', 'Max_Explorer', 'Luna_Mystic',
-      'Felix_Seeker', 'Nina_Wise', 'Leo_Hunter', 'Maya_Oracle',
-      'Tom_Voyager', 'Emma_Legend', 'Paul_Master', 'Lisa_Keeper',
-      'Ben_Champion', 'Sara_Wizard', 'Jan_Guru', 'Kim_Prodigy',
-      'Tim_Expert', 'Eva_Scholar', 'Dan_Mentor', 'Amy_Maven',
-      'Sam_Adept', 'Mia_Curator', 'Joe_Artisan', 'Zoe_Savant',
-      'Rob_Luminary', 'Ivy_Virtuoso', 'Kai_Doyen', 'Lia_Pundit',
-    ];
+      // Query profiles sorted by xp (or level)
+      var query = supabase
+          .from('profiles')
+          .select('id, username, display_name, avatar_url, xp, level, achievement_count')
+          .order('xp', ascending: false)
+          .limit(50);
 
-    // Add current user
-    entries.add(LeaderboardEntry(
-      userId: _currentUserId,
-      username: 'Manuel',
-      totalXp: userXp,
-      level: userLevel,
-      achievementCount: userAchievements,
-      rank: 0, // Will be calculated
-      isCurrentUser: true,
-    ));
+      // For weekly/monthly, try to use a date filter on updated_at
+      if (type == LeaderboardType.weekly) {
+        final since = DateTime.now().subtract(const Duration(days: 7));
+        query = supabase
+            .from('profiles')
+            .select('id, username, display_name, avatar_url, xp, level, achievement_count')
+            .gte('updated_at', since.toIso8601String())
+            .order('xp', ascending: false)
+            .limit(50);
+      } else if (type == LeaderboardType.monthly) {
+        final since = DateTime.now().subtract(const Duration(days: 30));
+        query = supabase
+            .from('profiles')
+            .select('id, username, display_name, avatar_url, xp, level, achievement_count')
+            .gte('updated_at', since.toIso8601String())
+            .order('xp', ascending: false)
+            .limit(50);
+      }
 
-    // Add mock users with varying XP
-    for (int i = 0; i < mockUsers.length; i++) {
-      final xpVariation = (random % 10000) + (i * 100);
-      final mockXp = userXp + xpVariation - 5000;
-      
-      entries.add(LeaderboardEntry(
-        userId: 'user_$i',
-        username: mockUsers[i % mockUsers.length],
-        totalXp: mockXp > 0 ? mockXp : 100,
-        level: (mockXp / 1000).toInt() + 1,
-        achievementCount: (mockXp / 100).toInt(),
-        rank: 0, // Will be calculated
-      ));
+      final data = await query;
+
+      final entries = <LeaderboardEntry>[];
+      for (int i = 0; i < data.length; i++) {
+        entries.add(LeaderboardEntry.fromProfile(data[i], i + 1, currentId));
+      }
+
+      // Ensure current user is in list even if not in top 50
+      if (currentId.isNotEmpty && !entries.any((e) => e.userId == currentId)) {
+        try {
+          final myProfile = await supabase
+              .from('profiles')
+              .select('id, username, display_name, avatar_url, xp, level, achievement_count')
+              .eq('id', currentId)
+              .single();
+          entries.add(LeaderboardEntry.fromProfile(
+            myProfile,
+            entries.length + 1,
+            currentId,
+          ));
+        } catch (_) {}
+      }
+
+      return entries;
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ [Leaderboard] Supabase fetch failed: $e');
+      return [];
     }
-
-    // Sort by XP and assign ranks
-    entries.sort((a, b) => b.totalXp.compareTo(a.totalXp));
-    
-    return entries.asMap().entries.map((entry) {
-      final index = entry.key;
-      final user = entry.value;
-      return LeaderboardEntry(
-        userId: user.userId,
-        username: user.username,
-        totalXp: user.totalXp,
-        level: user.level,
-        achievementCount: user.achievementCount,
-        rank: index + 1,
-        isCurrentUser: user.isCurrentUser,
-      );
-    }).toList();
   }
 
-  List<LeaderboardEntry> _generateFriendsEntries(
-    int userXp,
-    int userLevel,
-    int userAchievements,
-  ) {
-    final List<LeaderboardEntry> entries = [];
-    
-    // Add current user
-    entries.add(LeaderboardEntry(
-      userId: _currentUserId,
-      username: 'Manuel',
-      totalXp: userXp,
-      level: userLevel,
-      achievementCount: userAchievements,
-      rank: 0,
-      isCurrentUser: true,
-    ));
-
-    // Add 5 friends
-    final friends = [
-      {'name': 'Alex', 'xpOffset': 200},
-      {'name': 'Sophia', 'xpOffset': -150},
-      {'name': 'Max', 'xpOffset': 300},
-      {'name': 'Luna', 'xpOffset': -50},
-      {'name': 'Felix', 'xpOffset': 100},
-    ];
-
-    for (int i = 0; i < friends.length; i++) {
-      final friend = friends[i];
-      final friendXp = userXp + (friend['xpOffset'] as int);
-      
-      entries.add(LeaderboardEntry(
-        userId: 'friend_$i',
-        username: friend['name'] as String,
-        totalXp: friendXp > 0 ? friendXp : 100,
-        level: (friendXp / 1000).toInt() + 1,
-        achievementCount: (friendXp / 100).toInt(),
-        rank: 0,
-      ));
-    }
-
-    // Sort and rank
-    entries.sort((a, b) => b.totalXp.compareTo(a.totalXp));
-    
-    return entries.asMap().entries.map((entry) {
-      final index = entry.key;
-      final user = entry.value;
-      return LeaderboardEntry(
-        userId: user.userId,
-        username: user.username,
-        totalXp: user.totalXp,
-        level: user.level,
-        achievementCount: user.achievementCount,
-        rank: index + 1,
-        isCurrentUser: user.isCurrentUser,
-      );
-    }).toList();
+  bool _isCacheValid(LeaderboardType type) {
+    final time = _cacheTime[type];
+    if (time == null) return false;
+    return DateTime.now().difference(time) < _cacheDuration;
   }
 
   // =====================================================================
@@ -322,9 +229,21 @@ class LeaderboardService {
   // =====================================================================
 
   Future<List<LeaderboardEntry>> getLeaderboard(LeaderboardType type) async {
-    // Refresh current user stats
-    await _generateMockLeaderboards();
-    return _cachedLeaderboards[type] ?? [];
+    // Friends leaderboard: same as allTime but filtered
+    if (type == LeaderboardType.friends) {
+      return getLeaderboard(LeaderboardType.allTime);
+    }
+
+    if (_isCacheValid(type) && _cachedLeaderboards.containsKey(type)) {
+      return _cachedLeaderboards[type]!;
+    }
+
+    final entries = await _fetchFromSupabase(type);
+    if (entries.isNotEmpty) {
+      _cachedLeaderboards[type] = entries;
+      _cacheTime[type] = DateTime.now();
+    }
+    return entries;
   }
 
   Future<LeaderboardEntry?> getCurrentUserEntry(LeaderboardType type) async {
@@ -347,5 +266,12 @@ class LeaderboardService {
   }) async {
     final leaderboard = await getLeaderboard(type);
     return leaderboard.take(limit).toList();
+  }
+
+  /// Force refresh cache
+  Future<void> refresh() async {
+    _cachedLeaderboards.clear();
+    _cacheTime.clear();
+    await getLeaderboard(LeaderboardType.allTime);
   }
 }

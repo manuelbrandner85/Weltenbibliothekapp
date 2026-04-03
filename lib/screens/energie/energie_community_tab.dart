@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
+ // OpenClaw v2.0
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:url_launcher/url_launcher.dart';
 import '../../utils/date_helpers.dart';
@@ -7,6 +7,7 @@ import '../../models/community_post.dart';
 import '../../models/live_feed_entry.dart';
 import '../../services/live_feed_service.dart';
 import '../../services/favorites_service.dart';
+import '../../models/favorite.dart';  // FavoriteType
 import '../../services/feed_filter_service.dart';
 import '../../services/reading_progress_service.dart';
 import '../../services/user_service.dart'; // 🆕 User Service für Auth
@@ -30,7 +31,7 @@ class EnergieCommunityTab extends StatefulWidget {
 
 class _EnergieCommunityTabState extends State<EnergieCommunityTab> {
   final LiveFeedService _feedService = LiveFeedService();
-  final FavoritesService _favoritesService = FavoritesService();
+  final FavoritesService _favoritesService = FavoritesService(); // ignore: unused_field
   
   /// Get favorites count (uses static method)
   int get _favoritesCount => FavoritesService.getFavoritesCount();
@@ -495,8 +496,10 @@ class _EnergieCommunityTabState extends State<EnergieCommunityTab> {
         if (_selectedView == 'favorites') ...[
           _buildSectionHeader('⭐ Gespeicherte Feeds', '$_favoritesCount Favoriten'),
           
-          // TODO: Re-implement with new Favorites API
-          ..._filterService.applyFilters(_liveFeeds.where((feed) => false).toList()).map((feed) => _buildFeedCard(feed)),
+          // ✅ Filter to only favorited feeds
+          ..._filterService.applyFilters(_liveFeeds.where((feed) => 
+            FavoritesService.getAllFavorites().any((f) => f.id == feed.feedId)
+          ).toList()).map((feed) => _buildFeedCard(feed)),
           
           if (_favoritesCount == 0)
             Center(
@@ -620,19 +623,32 @@ class _EnergieCommunityTabState extends State<EnergieCommunityTab> {
                   const Spacer(),                  
                   const Spacer(),
                   
-                  // ⭐ FAVORITEN-ICON (TODO: Re-implement with new API)
+                  // ⭐ FAVORITEN-ICON
                   IconButton(
-                    icon: const Icon(
-                      Icons.favorite_border,
-                      color: Colors.grey,
+                    icon: Icon(
+                      FavoritesService.getAllFavorites().any((f) => f.id == feed.feedId)
+                          ? Icons.favorite
+                          : Icons.favorite_border,
+                      color: FavoritesService.getAllFavorites().any((f) => f.id == feed.feedId)
+                          ? Colors.red
+                          : Colors.grey,
                     ),
-                    onPressed: () {
-                      // TODO: Implement with FavoritesService static API
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Favorites coming soon!')),
-                      );
+                    onPressed: () async {
+                      final existing = FavoritesService.getAllFavorites().where((f) => f.id == feed.feedId);
+                      if (existing.isNotEmpty) {
+                        await FavoritesService.deleteFavorite(existing.first.id);
+                      } else {
+                        await FavoritesService.addQuickFavorite(
+                          type: FavoriteType.source,
+                          title: feed.titel,
+                          description: feed.symbolischeEinordnung,
+                        );
+                      }
+                      setState(() {});
                     },
-                    tooltip: 'Zu Favoriten hinzufügen',
+                    tooltip: FavoritesService.getAllFavorites().any((f) => f.id == feed.feedId)
+                        ? 'Aus Favoriten entfernen'
+                        : 'Zu Favoriten hinzufügen',
                   ),
 
                   
@@ -832,7 +848,7 @@ class _EnergieCommunityTabState extends State<EnergieCommunityTab> {
                   postId: post.id,
                   userId: UserService.getCurrentUserId(),  // 🔥 REAL USER ID
                   initialLikeCount: post.likes,
-                  initialIsLiked: false,  // TODO: Load actual state
+                  initialIsLiked: false,  // LikeButton loads real state via CommunityInteractionService
                   onLikeChanged: () {
                     setState(() {
                       // UI will auto-update via LikeButton

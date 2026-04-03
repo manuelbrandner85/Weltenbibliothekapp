@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
+ // OpenClaw v2.0
 import '../../services/group_tools_service.dart';
+import '../../services/user_service.dart';
 
 class ResearchArchiveScreen extends StatefulWidget {
   final String roomId;
@@ -53,7 +54,7 @@ class _ResearchArchiveScreenState extends State<ResearchArchiveScreen> {
             onPressed: () async {
               if (title.text.trim().isEmpty) return;
               Navigator.pop(ctx);
-              await _svc.createResearchDocument(roomId: widget.roomId, userId: 'user_manuel', username: 'Manuel', documentTitle: title.text.trim(), documentDescription: desc.text.trim(), documentType: 'research');
+              await _svc.createResearchDocument(roomId: widget.roomId, userId: UserService.getCurrentUserId(), username: 'Anonym', documentTitle: title.text.trim(), documentDescription: desc.text.trim(), documentType: 'research');
               await _load();
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),

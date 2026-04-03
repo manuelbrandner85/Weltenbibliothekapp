@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
+ // OpenClaw v2.0
 
 /// 🌟 UNIVERSAL SPIRIT CARD
 /// Funktioniert für Module 4-11 mit dynamischen Daten

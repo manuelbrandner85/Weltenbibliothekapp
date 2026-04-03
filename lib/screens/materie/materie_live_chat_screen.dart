@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'dart:async';
 import 'package:hive_flutter/hive_flutter.dart'; // 🗄️ HIVE für Profile
+import '../../services/supabase_service.dart'; // 🔥 supabase Auth
+import 'package:supabase_flutter/supabase_flutter.dart' show RealtimeChannel;
 import '../../services/cloudflare_api_service.dart';
 import '../../services/websocket_chat_service.dart'; // 🌐 WEBSOCKET REAL-TIME (NEW)
 import '../../services/hybrid_chat_service.dart'; // 🔄 HYBRID WEBSOCKET+HTTP - STUB for now
@@ -11,7 +13,9 @@ import '../../widgets/mention_autocomplete.dart'; // @ MENTIONS
 import 'package:image_picker/image_picker.dart'; // 📷 Image Picker
 // 👤 PROFIL
 import '../../services/storage_service.dart'; // StorageService for profile access
-import '../../services/openclaw_dashboard_service.dart'; // 🚀 OpenClaw Dashboard for Live Updates
+import '../../core/storage/unified_storage_service.dart'; // UnifiedStorageService sync
+import '../../models/materie_profile.dart'; // MaterieProfile model
+import '../../services/profile_sync_service.dart'; // ProfileSyncService
 import 'package:flutter_riverpod/flutter_riverpod.dart'; // Riverpod
 // 🔥 BACKEND SYNC
 import '../../services/typing_indicator_service.dart'; // ⌨️ TYPING
@@ -35,6 +39,7 @@ import '../../widgets/poll_widget.dart'; // 🗳️ Poll Widget
 import '../../widgets/pinned_message_banner.dart'; // 📌 Pinned Message Banner
 
 import '../shared/modern_voice_chat_screen.dart'; // 🎤 Modern Voice Chat Screen (Phase B)
+import '../shared/video_voice_chat_screen.dart'; // 🎥 Video + Voice Chat (Telegram-Style)
 import '../../providers/webrtc_call_provider.dart'; // Riverpod provider
 // 🎤 Admin Dialogs & Notifications
 // 🚫 Kick User Dialog
@@ -42,7 +47,6 @@ import '../../providers/webrtc_call_provider.dart'; // Riverpod provider
 // ⚠️ Warning Dialog
 // 📢 Admin Notifications
 // 📋 Admin Action Models
-import '../../services/admin_action_service.dart'; // 🔧 Admin Action Service
 // 🎤 Voice Player Widget
 import '../../widgets/android_voice_recorder.dart'; // 🎤 Android Voice Recorder (flutter_sound)
 // import '../../widgets/telegram_voice_recorder.dart'; // 🎙️ Telegram Voice Recorder (Disabled for Android)
@@ -68,22 +72,41 @@ class MaterieLiveChatScreen extends StatefulWidget {
 class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   final CloudflareApiService _api = CloudflareApiService();
+  // ignore: unused_field
   final WebSocketChatService _ws = WebSocketChatService(); // 🌐 NEW: WebSocket Service
   late final HybridChatService _hybridChat; // 🔄 NEW: HYBRID SERVICE - STUB for now
   final ScrollController _scrollController = ScrollController();
   final ChatNotificationService _notificationService = ChatNotificationService(); // 🔔 NEW
   final TypingIndicatorService _typingService = TypingIndicatorService(); // ⌨️ NEW
-  final OpenClawDashboardService _dashboardService = OpenClawDashboardService(); // 🚀 OpenClaw
   // UNUSED FIELD: final AudioRecordingService _audioService = AudioRecordingService(); // 🎙️ NEW
   // UNUSED FIELD: final ReadReceiptsService _readReceiptsService = ReadReceiptsService(); // ✅ NEW
   // UNUSED FIELD: final OnlineStatusService _onlineStatusService = OnlineStatusService(); // 🟢 NEW
   StreamSubscription? _messageSubscription; // 🎧 WebSocket Stream
-  StreamSubscription<Map<String, dynamic>>? _wsMessageSubscription; // 🌐 NEW: WebSocket Messages
-  StreamSubscription<String>? _wsTypingSubscription; // 🌐 NEW: Typing Indicators
+  // ignore: unused_field
   StreamSubscription<List<String>>? _wsOnlineSubscription; // 🌐 NEW: Online Users
+  RealtimeChannel? _realtimeChannel; // 🔴 Supabase Realtime
   
   late String _selectedRoom;
-  String _username = 'User${DateTime.now().millisecondsSinceEpoch % 10000}';
+  
+  /// Maps internal room key → DB room ID (materie world)
+  static const Map<String, String> _roomIdMap = {
+    'politik': 'materie-politik',
+    'geschichte': 'materie-geschichte',
+    'ufo': 'materie-ufo',
+    'ufos': 'materie-ufo',
+    'verschwoerungen': 'materie-verschwoerung',
+    'verschwoerung': 'materie-verschwoerung',
+    'wissenschaft': 'materie-wissenschaft',
+    'technologie': 'materie-tech',
+    'tech': 'materie-tech',
+    'gesundheit': 'materie-gesundheit',
+    'medien': 'materie-medien',
+    'finanzen': 'materie-finanzen',
+  };
+  
+  /// Returns the full DB room ID for the currently selected room.
+  String get _fullRoomId => _roomIdMap[_selectedRoom] ?? 'materie-$_selectedRoom';
+  String _username = ''; // ✅ Leer bis Profil geladen – isOwn-Check + Profil-Dialog funktionieren korrekt
   late String _userId; // 🔥 Real User ID from UserService (initialized in initState)
   String _avatar = '👤'; // 🆕 Avatar Emoji (default)
   String? _avatarEmoji; // 🆕 Avatar Emoji aus Profil
@@ -116,12 +139,13 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
   List<Map<String, dynamic>> _voiceParticipants = [];
   
   // 🆕 ADMIN ACTION SERVICE
-  final AdminActionService _adminService = AdminActionService();
   
   // 🆕 FEATURE 2: TYPING INDICATORS
   final Set<String> _typingUsers = {};
   Timer? _typingTimer;
+  // ignore: unused_field
   String? _currentTypingUser; // 🌐 NEW: Current typing user from WebSocket
+  // ignore: unused_field
   final List<String> _onlineUsers = []; // 🌐 NEW: Online users list
   
   // 🆕 FEATURE 3: SWIPE TO REPLY
@@ -132,6 +156,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
   bool _showSearch = false;
   
   // 🆕 FEATURE 4: EMOJI REACTIONS
+  // ignore: unused_field
   final Map<String, Map<String, List<String>>> _messageReactions = {}; // messageId -> emoji -> userIds
 
   // 🔧 FIX 16: MATERIE Räume - API-kompatible IDs (Verschwörungstheorien-Themen)
@@ -179,8 +204,6 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
   };
 
   @override
-  @override
-  @override
   void initState() {
     super.initState();
     
@@ -215,8 +238,11 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
       }
     });
     
-    // 🔄 AUTO-REFRESH: Profil-Updates alle 5 Sekunden laden (wie ENERGIE)
-    _refreshTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+    // 🔴 SUPABASE REALTIME: Echtzeit-Subscription starten
+    _subscribeToRoom(_fullRoomId);
+    
+    // 🔄 AUTO-REFRESH: Profil-Updates alle 30 Sekunden als Fallback (Realtime ist primär)
+    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
       _loadMessages(silent: true); // ✅ Silent refresh - kein Flickering
       _loadPolls(silent: true); // ✅ Silent refresh - kein Flickering
       _loadUsernameFromProfile(); // Profil-Sync für Avatar-Updates
@@ -232,7 +258,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
         final newMessage = message['message'] as Map<String, dynamic>;
         
         // Nur wenn Nachricht zum aktuellen Raum gehört
-        if (newMessage['room_id'] == _selectedRoom) {
+        if (newMessage['room_id'] == _fullRoomId || newMessage['room_id'] == _selectedRoom) {
           if (mounted) {
             setState(() {
             // Füge neue Nachricht ans Ende hinzu (wenn nicht schon vorhanden)
@@ -256,12 +282,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
     _loadMessages();
   }
   
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // 🔄 Reload Avatar & Profil wenn zurück zum Chat navigiert wird
-    _loadUsernameFromProfile();
-  }
+  // didChangeDependencies removed – profile loading happens once in initState.
   
   // 🔄 Connect to chat with hybrid service
   Future<void> _connectToChat() async {
@@ -272,51 +293,55 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
     );
   }
   Future<void> _loadUsernameFromProfile() async {
+    MaterieProfile? profile;
     try {
+      // Ensure box is open – main.dart opens it, but guard for safety
+      if (!Hive.isBoxOpen('materie_profiles')) {
+        await Hive.openBox('materie_profiles');
+      }
       final storage = StorageService();
-      
-      // 🆕 WICHTIG: Init aufrufen falls noch nicht geschehen
-      if (!Hive.isBoxOpen('materie_profile')) {
-        await storage.init();
-        if (kDebugMode) {
-          debugPrint('✅ UnifiedStorageService initialisiert');
-        }
-      }
-      
-      final profile = storage.getMaterieProfile();
-      
-      if (profile != null && profile.username.isNotEmpty) {
-        if (mounted) {
-          setState(() {
-          _username = profile.username;
-          _userId = 'user_${profile.username.toLowerCase()}';
-          _avatar = profile.avatarEmoji ?? '👤'; // ✅ Avatar aus Profil laden!
-          _avatarEmoji = profile.avatarEmoji; // 🆕 Load avatar emoji
-          _avatarUrl = profile.avatarUrl; // 🆕 Load avatar URL
-        });
-        }
-        _notificationService.setCurrentUsername(_username);
-        if (kDebugMode) {
-          debugPrint('✅ Username aus Materie-Profil geladen: $_username');
-        }
-      } else {
-        // 🆕 KEIN PROFIL: Zeige Username-Dialog (nur einmal)
-        if (kDebugMode) {
-          debugPrint('⚠️ Kein Materie-Profil gefunden, zeige Username-Dialog');
-        }
-        // Warte kurz, dann zeige Dialog
-        if (!_profileDialogShown) {
-          _profileDialogShown = true; // ✅ Setze Flag sofort
-          Future.delayed(const Duration(milliseconds: 500), () {
-            if (mounted) {
-              _showUsernameDialog();
-            }
-          });
-        }
-      }
+      profile = storage.getMaterieProfile();
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('❌ Fehler beim Laden des Profils: $e');
+        debugPrint('❌ Fehler beim Laden des Materie-Profils: $e');
+      }
+      // Fall through – profile stays null → dialog will be shown
+    }
+
+    if (profile != null && profile.username.isNotEmpty) {
+      if (mounted) {
+        setState(() {
+          _username = profile!.username;
+          _userId = supabase.auth.currentUser?.id ?? 'user_${profile.username.toLowerCase()}';
+          _avatar = profile.avatarEmoji ?? '👤';
+          _avatarEmoji = profile.avatarEmoji;
+          _avatarUrl = profile.avatarUrl;
+        });
+      }
+      // Sync into user_data box so AdminStateNotifier can find it
+      try {
+        final unified = UnifiedStorageService();
+        await unified.saveProfile('materie', {
+          'username': profile.username,
+          'role': profile.role ?? 'user',
+          'avatar_emoji': profile.avatarEmoji,
+          'avatar_url': profile.avatarUrl,
+        });
+      } catch (_) {}
+      _notificationService.setCurrentUsername(_username);
+      if (kDebugMode) {
+        debugPrint('✅ Username aus Materie-Profil geladen: $_username (role: ${profile.role})');
+      }
+      // ✅ Flag NICHT zurücksetzen – verhindert erneutes Popup nach
+      // Rückkehr aus ProfileEditorScreen wenn Profil schon existiert
+    } else {
+      // Kein Profil → Dialog einmalig zeigen
+      if (kDebugMode) debugPrint('⚠️ Kein Materie-Profil gefunden – zeige Profil-Dialog');
+      if (!_profileDialogShown) {
+        _profileDialogShown = true;
+        Future.delayed(const Duration(milliseconds: 800), () {
+          if (mounted) _showUsernameDialog();
+        });
       }
     }
   }
@@ -331,10 +356,31 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
     _messageSubscription?.cancel(); // 🎧 Cancel WebSocket stream
     _hybridChat.disconnect(); // 🔌 Disconnect WebSocket
     _typingService.dispose(); // ⌨️ Dispose typing service
+    _realtimeChannel?.unsubscribe(); // 🔴 Realtime cleanup
     super.dispose();
   }
   
+  // 🔴 SUPABASE REALTIME: Subscribe to live chat updates
+  void _subscribeToRoom(String roomId) {
+    _realtimeChannel?.unsubscribe();
+    _realtimeChannel = SupabaseChatService.instance.subscribeToRoom(
+      roomId,
+      onMessage: (newMsg) {
+        if (!mounted) return;
+        final exists = _messages.any((m) => m['id'] == newMsg['id']);
+        if (!exists) {
+          setState(() {
+            _messages.add(newMsg);
+          });
+          WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+        }
+      },
+    );
+    if (kDebugMode) debugPrint('🔴 [Materie Realtime] Subscribed to room: $roomId');
+  }
+  
   // 🛠️ TOOL NAVIGATION
+  // ignore: unused_element
   void _navigateToTool() {
     Widget? screen;
     
@@ -375,7 +421,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
     try {
       // 🔧 Lade echte Chat-Nachrichten von Cloudflare API
       final messages = await _api.getChatMessages(
-        _selectedRoom,
+        _fullRoomId, // 'materie-politik' etc.
         realm: 'materie',
         limit: 50,
       ).timeout(const Duration(seconds: 15));
@@ -394,9 +440,9 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
       
       if (mounted) {
         setState(() {
-        // Reverse messages if they come in descending order (newest first)
-        // We want chronological order: oldest first, newest last
-        _messages = messages.reversed.toList();
+        // Worker returns messages in ascending order (created_at.asc)
+        // → already chronological, no reversal needed
+        _messages = messages;
         _isLoading = false;
         _errorMessage = null;
       });
@@ -424,7 +470,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
   // 🗳️ LOAD POLLS
   Future<void> _loadPolls({bool silent = false}) async {
     try {
-      final polls = await _api.getPolls(_selectedRoom);
+      final polls = await _api.getPolls(_fullRoomId);
       if (mounted) {
         _polls = polls; // ← Update direkt
         
@@ -454,7 +500,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
     try {
       // Sende Nachricht
       await _api.sendChatMessage(
-        roomId: _selectedRoom,
+        roomId: _fullRoomId, // 'materie-politik' etc.
         realm: 'materie',
         userId: _userId,
         username: _username,
@@ -492,7 +538,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
     try {
       // Send voice message with media_type
       await _api.sendChatMessage(
-        roomId: _selectedRoom,
+        roomId: _fullRoomId, // 'materie-politik' etc.
         realm: 'materie',
         userId: _userId,
         username: _username,
@@ -711,7 +757,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
       if (result['success'] == true && result['url'] != null) {
         // Send message with image URL
         await _api.sendChatMessage(
-          roomId: _selectedRoom,
+          roomId: _fullRoomId, // 'materie-politik' etc.
           realm: 'materie',
           userId: _userId,
           username: _username,
@@ -828,49 +874,28 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
     }
   }
   
-  // 🆕 ADD REACTION (Ready for Cloudflare API)
-  // TODO: Review unused method: _addReaction
-  // Future<void> _addReaction(String messageId, String emoji) async {
-    // debugPrint('🎨 Add reaction: $emoji to message $messageId');
-     //     // ✅ Bereit für Cloudflare API-Erweiterung
-    // Endpoint: POST /chat/messages/:messageId/reactions
-    // Body: { "emoji": "👍", "username": "currentUser" }
-     //     // if (mounted) {
-      // ScaffoldMessenger.of(context).showSnackBar(
-        // SnackBar(
-          // content: Row(
-            // children: [
-              // Text('$emoji '),
-              // const Text('Reaktion gespeichert!'),
-            // ],
-          // ),
-          // duration: const Duration(seconds: 1),
-          // backgroundColor: Colors.green,
-        // ),
-      // );
-    // }
-     //     // TODO Backend: Cloudflare Worker erweitern
-    // await _api.addReaction(messageId, emoji, _username);
-  // }
-  
-  // 🆕 REMOVE REACTION (Ready for Cloudflare API)
-  // TODO: Review unused method: _removeReaction
-  // Future<void> _removeReaction(String messageId, String emoji) async {
-    // debugPrint('❌ Remove reaction: $emoji from message $messageId');
-     //     // ✅ Bereit für Cloudflare API-Erweiterung
-    // Endpoint: DELETE /chat/messages/:messageId/reactions/:emoji
-    // Query: ?username=currentUser
-     //     // if (mounted) {
-      // ScaffoldMessenger.of(context).showSnackBar(
-        // SnackBar(
-          // content: Text('$emoji Reaktion entfernt'),
-          // duration: const Duration(seconds: 1),
-        // ),
-      // );
-    // }
-     //     // TODO Backend: Cloudflare Worker erweitern
-    // await _api.removeReaction(messageId, emoji, _username);
-  // }
+  // ✅ SYNC REACTION via Cloudflare API (called after local state update)
+  Future<void> _syncReactionToApi(String messageId, String emoji, bool isAdding) async {
+    try {
+      if (isAdding) {
+        await _api.addReaction(
+          messageId: messageId,
+          emoji: emoji,
+          username: _username,
+          userId: _userId,
+        );
+      } else {
+        await _api.removeReaction(
+          messageId: messageId,
+          emoji: emoji,
+          username: _username,
+          userId: _userId,
+        );
+      }
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ syncReaction API error: $e');
+    }
+  }
 
   void _scrollToBottom() {
     if (_scrollController.hasClients) {
@@ -895,10 +920,29 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
         backgroundColor: const Color(0xFF121212),
         title: const Text('💬 MATERIE LIVE-CHAT'),
         actions: [
-          // 🎤 VOICE CHAT JOIN BUTTON (Telegram-Style: Only when NOT in voice chat)
+          // 🎥 VIDEO + VOICE CHAT BUTTON (Telegram-Style)
+          IconButton(
+            icon: const Icon(Icons.video_call, color: Colors.white),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => VideoVoiceChatScreen(
+                    roomId: 'materie_${_selectedRoom}',
+                    userId: _userId,
+                    username: _username,
+                    avatar: _avatar.isNotEmpty ? _avatar : '🔴',
+                    accentColor: const Color(0xFFE53935),
+                  ),
+                ),
+              );
+            },
+            tooltip: 'Video / Voice Chat',
+          ),
+          // 🎤 VOICE CHAT JOIN BUTTON (Mikrofon-Icon)
           if (!_isInVoiceRoom)
             IconButton(
-              icon: const Icon(Icons.group, color: Colors.white),
+              icon: const Icon(Icons.mic, color: Colors.white),
               onPressed: _joinVoiceChatAndOpen,
               tooltip: 'Voice Chat beitreten',
             ),
@@ -962,7 +1006,8 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
                           _loadMessages();
                         },
                         onTap: () {
-                          // TODO: Scroll to message
+                          // ✅ Scroll to bottom (pinned message visible)
+                          _scrollToBottom();
                         },
                         worldColor: Colors.red, // MATERIE Red
                       ),
@@ -1038,8 +1083,6 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
   }
 
   // 🛠️ TOOL-WIDGET FÜR DEN AKTUELLEN RAUM
-  // TODO: Review unused method: _getToolForRoom
-  // Widget? _getToolForRoom() {
     // switch (_selectedRoom) {
       // case 'politik':
         // return DebattenKarte(roomId: 'politik');
@@ -1057,8 +1100,6 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
   // }
 
   // 🏷️ TOOL-NAME
-  // TODO: Review unused method: _getToolName
-  // String _getToolName() {
     // switch (_selectedRoom) {
       // case 'politik':
         // return '🎯 DEBATTENKARTE';
@@ -1076,8 +1117,6 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
   // }
 
   // 🎨 TOOL-ICON
-  // TODO: Review unused method: _getToolIcon
-  // IconData _getToolIcon() {
     // switch (_selectedRoom) {
       // case 'politik':
         // return Icons.forum;
@@ -1095,8 +1134,6 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
   // }
 
   // 🌈 TOOL-COLOR
-  // TODO: Review unused method: _getToolColor
-  // Color _getToolColor() {
     // switch (_selectedRoom) {
       // case 'politik':
         // return Colors.blue;
@@ -1146,8 +1183,10 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
                 }
                 
                 // 🔧 CRITICAL FIX: Switch WebRTC Voice Room + HybridChat
-                await _voiceService.switchRoom(_selectedRoom); // ← WebRTC cleanup
-                await _hybridChat.switchRoom(_selectedRoom);
+                await _voiceService.switchRoom(_fullRoomId); // ← WebRTC cleanup
+                await _hybridChat.switchRoom(_fullRoomId);
+                // 🔴 Re-subscribe Realtime for new room
+                _subscribeToRoom(_fullRoomId);
                 await _loadMessages();
               }
             },
@@ -1296,7 +1335,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
               
               // 👤 AVATAR BUTTON (Klickbar zum Ändern - wie ENERGIE)
               GestureDetector(
-                onTap: () {}, // TODO: Avatar-Picker implementieren
+                onTap: _showAvatarPicker, // ✅ Avatar-Picker implementiert
                 child: Container(
                   width: 40,
                   height: 40,
@@ -1472,6 +1511,8 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
     );
   }
 
+  */ // END OLD VERSION
+
   // 🎨 AVATAR PICKER - Wie in ENERGIE
   Future<void> _showAvatarPicker() async {
     final avatars = ['👤', '🤓', '🧙', '🔮', '📚', '🎭', '🎨', '⚡', '🔥', '💀', '👁️', '🌙', '⭐', '💎', '🗿'];
@@ -1544,10 +1585,12 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
     );
     
     if (selected != null) {
-      if (mounted) setState(() {
-        _avatar = selected;
-        _avatarEmoji = selected; // Update auch avatarEmoji
-      });
+      if (mounted) {
+        setState(() {
+          _avatar = selected;
+          _avatarEmoji = selected; // Update auch avatarEmoji
+        });
+      }
       
       // 💾 Speichere in Profil
       final storage = StorageService();
@@ -1582,7 +1625,6 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
   }
 
 
-  */ // END OLD VERSION
 
   void _showUsernameDialog() {
     // ✅ NEU: Profil-Popup statt Username-Dialog
@@ -1607,15 +1649,17 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
             child: const Text('Abbrechen'),
           ),
           ElevatedButton.icon(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(dialogContext);
-              // ✅ FIXED: Direkt zum ProfileEditorScreen navigieren
-              Navigator.push(
+              // ✅ FIXED: await → nach Rückkehr Profil sofort neu laden
+              await Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => const ProfileEditorScreen(world: 'materie'),
                 ),
               );
+              // Profil neu laden nachdem User zurückkehrt
+              if (mounted) _loadUsernameFromProfile();
             },
             icon: const Icon(Icons.person_add),
             label: const Text('Profil erstellen'),
@@ -1628,8 +1672,6 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
     );
   }
 
-  // TODO: Review unused method: _formatTimestamp
-  // String _formatTimestamp(dynamic timestamp) {
     // if (timestamp == null) return '';
      //     // final dt = DateTime.fromMillisecondsSinceEpoch(timestamp as int);
     // final now = DateTime.now();
@@ -1667,6 +1709,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
     });
   }
   
+  // ignore: unused_element
   Future<void> _toggleVoiceRoom() async {
     if (_isInVoiceRoom) {
       await _voiceService.leaveVoiceRoom();
@@ -1721,6 +1764,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
     }
   }
   
+  // ignore: unused_element
   Future<void> _toggleMute() async {
     await _voiceService.toggleMute();
     if (mounted) {
@@ -1836,6 +1880,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
 
   
   // 🎤 VOICE ROOM BAR
+  // ignore: unused_element
   Widget _buildVoiceRoomBar() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -2013,8 +2058,14 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
         if (userList.isEmpty) {
           reactions.remove(emoji);
         }
+        // ✅ Sync to API (remove)
+        final msgId = msg['id']?.toString() ?? '';
+        if (msgId.isNotEmpty) _syncReactionToApi(msgId, emoji, false);
       } else {
         userList.add(_username);
+        // ✅ Sync to API (add)
+        final msgId = msg['id']?.toString() ?? '';
+        if (msgId.isNotEmpty) _syncReactionToApi(msgId, emoji, true);
       }
     });
     }
@@ -2507,7 +2558,10 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
   
   // 🆕 ENHANCED MESSAGE BUBBLE (Modern Design)
   Widget _buildEnhancedMessageBubble(Map<String, dynamic> msg) {
-    final isOwn = msg['userId'] == _userId;
+    // ✅ isOwn: vergleiche userId (camelCase) und user_id (snake_case) + username als Fallback
+    final msgUserId = msg['userId']?.toString() ?? msg['user_id']?.toString() ?? '';
+    final isOwn = (msgUserId.isNotEmpty && msgUserId == _userId) ||
+        (msg['username']?.toString() == _username && _username.isNotEmpty);
     
     return Padding(
       padding: EdgeInsets.only(
@@ -2620,7 +2674,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        _formatTime(msg['timestamp']),
+                        _formatTime(msg['timestamp'] ?? msg['created_at']),
                         style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.6),
                           fontSize: 11,
@@ -2755,6 +2809,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
   }
   
   /// 🗑️ ADMIN DELETE: Root admin can delete any message
+  // ignore: unused_element
   void _adminDeleteMessage(Map<String, dynamic> msg) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -2781,18 +2836,23 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
     
     if (confirmed == true) {
       try {
-        // TODO: Implement admin delete via API
-        // For now, just flag it as deleted
-        final moderation = ModerationService();
-        await moderation.flagContent(
-          world: 'materie',
-          contentType: 'comment',
-          contentId: msg['id']?.toString() ?? '',
-          reason: 'Deleted by admin',
-          adminToken: _username,
-        );
+        // ✅ Admin delete via Cloudflare API (soft delete)
+        final messageId = msg['id']?.toString() ?? '';
+        if (messageId.isNotEmpty) {
+          await _api.deleteChatMessage(
+            messageId: messageId,
+            roomId: _selectedRoom,
+            userId: _userId,
+            username: _username,
+            realm: 'materie',
+          );
+        }
         
+        // Remove from local list immediately
         if (mounted) {
+          setState(() {
+            _messages.removeWhere((m) => m['id']?.toString() == messageId);
+          });
           _showSnackBar('✅ Nachricht wurde gelöscht', Colors.green);
         }
       } catch (e) {
@@ -2827,40 +2887,34 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
               // Mute Type Selector
               const Text('Sperrdauer:', style: TextStyle(color: Colors.white)),
               const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: RadioListTile<String>(
-                      title: const Text('24 Stunden', style: TextStyle(color: Colors.white, fontSize: 14)),
-                      value: '24h',
-                      groupValue: muteType,
-                      onChanged: (value) {
-                        if (mounted) {
-                          setState(() {
-                          muteType = value!;
-                        });
-                        }
-                      },
-                      activeColor: Colors.orange,
-                    ),
-                  ),
-                  if (isRootAdmin)
+              RadioGroup<String>(
+                groupValue: muteType,
+                onChanged: (value) {
+                  if (mounted && value != null) {
+                    setState(() {
+                      muteType = value;
+                    });
+                  }
+                },
+                child: Row(
+                  children: [
                     Expanded(
                       child: RadioListTile<String>(
-                        title: const Text('Permanent', style: TextStyle(color: Colors.white, fontSize: 14)),
-                        value: 'permanent',
-                        groupValue: muteType,
-                        onChanged: (value) {
-                          if (mounted) {
-                            setState(() {
-                            muteType = value!;
-                          });
-                          }
-                        },
-                        activeColor: Colors.red,
+                        title: const Text('24 Stunden', style: TextStyle(color: Colors.white, fontSize: 14)),
+                        value: '24h',
+                        activeColor: Colors.orange,
                       ),
                     ),
-                ],
+                    if (isRootAdmin)
+                      Expanded(
+                        child: RadioListTile<String>(
+                          title: const Text('Permanent', style: TextStyle(color: Colors.white, fontSize: 14)),
+                          value: 'permanent',
+                          activeColor: Colors.red,
+                        ),
+                      ),
+                  ],
+                ),
               ),
               
               const SizedBox(height: 16),

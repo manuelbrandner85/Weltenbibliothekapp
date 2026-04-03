@@ -14,6 +14,7 @@ import 'package:flutter/foundation.dart';
 import '../models/webrtc_call_state.dart';
 import '../services/webrtc_participant.dart';
 import '../services/webrtc_voice_service.dart';
+import '../services/user_auth_service.dart';
 
 /// WebRTC Call StateNotifier
 class WebRTCCallNotifier extends StateNotifier<WebRTCCallState> {
@@ -204,7 +205,7 @@ class WebRTCCallNotifier extends StateNotifier<WebRTCCallState> {
         await _voiceService.joinRoom(
           roomId: state.roomId!,
           userId: state.localUserId!,
-          username: 'User', // TODO: Get from profile
+          username: await UserAuthService.getUsername() ?? 'Nutzer',
           world: world,  // 🆕 World parameter
           pushToTalk: state.isPushToTalk,
         );

@@ -1,3 +1,4 @@
+import '../config/api_config.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
@@ -5,7 +6,7 @@ import 'package:flutter/foundation.dart';
 /// Service für Chat-Tool-Ergebnisse (Meditation, Traumanalyse, etc.)
 /// Speichert Tool-Daten in Cloudflare D1 und macht sie für alle Nutzer sichtbar
 class ChatToolsService {
-  static const String baseUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
+  static const String baseUrl = ApiConfig.workerUrl;
   
   // Singleton Pattern
   static final ChatToolsService _instance = ChatToolsService._internal();

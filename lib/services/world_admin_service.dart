@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'invisible_auth_service.dart'; // ✅ Auth-Integration
 import '../core/storage/unified_storage_service.dart'; // ✅ Storage für Username
 import '../config/api_config.dart'; // 🆕 API Config for admin token
+import 'supabase_service.dart'; // 🔥 Supabase Direct Access
 
 /// World-Based Admin Service
 /// Verbindet mit weltenbibliothek-api-v2 für weltspezifische Admin-Funktionen
@@ -30,7 +31,7 @@ import '../config/api_config.dart'; // 🆕 API Config for admin token
 /// - Admin kann nur User in seiner Welt verwalten
 class WorldAdminService {
   // Cloudflare Worker URL (API v2 - World-Based Multi-Profile System)
-  static const String _baseUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
+  static const String _baseUrl = ApiConfig.workerUrl;
   static const Duration _timeout = Duration(seconds: 10);
   
   // ✅ AUTH SERVICE
@@ -126,64 +127,75 @@ class WorldAdminService {
   /// 
   /// Returns: List<WorldUser>
   static Future<List<WorldUser>> getUsersByWorld(String world, {String? role}) async {
+    if (kDebugMode) {
+      debugPrint('📋 Fetching users for world: $world');
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    // 1️⃣ PRIMARY: Supabase direct query (both world and world_preference)
+    // ─────────────────────────────────────────────────────────────────────
+    try {
+      final result = await supabase
+          .from('profiles')
+          .select('id,username,display_name,role,is_banned,avatar_url,created_at,world,world_preference')
+          .or('world.eq.$world,world_preference.eq.$world')
+          .order('created_at', ascending: false)
+          .limit(200);
+
+      final users = (result as List<dynamic>)
+          .map((u) => Map<String, dynamic>.from(u as Map))
+          .map((u) => WorldUser(
+                profileId: u['id'] as String? ?? '',
+                userId: u['id'] as String? ?? '',
+                username: u['username'] as String? ?? 'Unbekannt',
+                displayName: u['display_name'] as String?,
+                role: u['role'] as String? ?? 'user',
+                avatarUrl: u['avatar_url'] as String?,
+                avatarEmoji: null,
+                createdAt: u['created_at'] as String? ?? '',
+              ))
+          .toList();
+
+      if (kDebugMode) {
+        debugPrint('✅ Supabase users: ${users.length} for world=$world');
+      }
+      return users;
+    } catch (supaErr) {
+      if (kDebugMode) {
+        debugPrint('⚠️ Supabase users failed: $supaErr – trying worker...');
+      }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    // 2️⃣ FALLBACK: Cloudflare Worker
+    // ─────────────────────────────────────────────────────────────────────
     try {
       final url = Uri.parse('$_baseUrl/api/admin/users/$world');
-      
-      // ✅ FIX: Get username from storage (same as UserManagementService)
-      final storage = UnifiedStorageService();
-      final username = storage.getUsername(world);
-      
-      if (username == null || username.isEmpty) {
-        if (kDebugMode) {
-          debugPrint('❌ No username found for world: $world');
-        }
-        return [];
-      }
-      
-      if (kDebugMode) {
-        debugPrint('📋 Fetching users for world: $world (admin: $username)');
-      }
-      
       final response = await http.get(
         url,
         headers: {
-          'Authorization': 'Bearer ${ApiConfig.adminToken}', // ✅ FIXED: Use admin token instead of username
+          'Authorization': 'Bearer ${ApiConfig.adminToken}',
           'Content-Type': 'application/json',
         },
       ).timeout(_timeout);
-      
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
         final users = (data['users'] as List<dynamic>?) ?? [];
-        
         if (kDebugMode) {
-          debugPrint('✅ Fetched ${users.length} users');
+          debugPrint('✅ Worker users: ${users.length}');
         }
-        
         return users.map((u) => WorldUser.fromJson(u as Map<String, dynamic>)).toList();
-      } else {
-        if (kDebugMode) {
-          debugPrint('⚠️  Failed to fetch users: ${response.statusCode}');
-          debugPrint('   Response: ${response.body}');
-        }
-        return [];
       }
     } on SocketException {
-      if (kDebugMode) {
-        debugPrint('❌ Network: Keine Internetverbindung');
-      }
-      return [];
+      if (kDebugMode) debugPrint('❌ Network: Keine Internetverbindung');
     } on TimeoutException catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ Timeout: $e');
-      }
-      return [];
+      if (kDebugMode) debugPrint('❌ Timeout: $e');
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ Error fetching users: $e $e');
-      }
-      return [];
+      if (kDebugMode) debugPrint('❌ Error fetching users: $e');
     }
+
+    return [];
   }
 
   // ════════════════════════════════════════════════════════════

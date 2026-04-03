@@ -1,3 +1,4 @@
+import '../config/api_config.dart';
 import 'dart:convert';
 import 'dart:async';
 import 'dart:io';
@@ -6,7 +7,7 @@ import 'package:flutter/foundation.dart';
 import '../core/storage/unified_storage_service.dart';
 
 class ContentManagementService {
-  static const String _baseUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
+  static const String _baseUrl = ApiConfig.workerUrl;
   static const Duration _timeout = Duration(seconds: 30);
 
   /// Get all content for a world

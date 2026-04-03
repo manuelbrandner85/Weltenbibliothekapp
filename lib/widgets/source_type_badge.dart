@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../services/backend_recherche_service.dart';
 
 /// Source Type Badge Widget
@@ -80,8 +81,13 @@ class SourceCard extends StatelessWidget {
       color: const Color(0xFF1A1A1A),
       margin: const EdgeInsets.only(bottom: 12),
       child: InkWell(
-        onTap: () {
-          // Open URL - TODO: Add URL launcher
+        onTap: () async {
+          if (source.url.isNotEmpty) {
+            final uri = Uri.tryParse(source.url);
+            if (uri != null && await canLaunchUrl(uri)) {
+              await launchUrl(uri, mode: LaunchMode.externalApplication);
+            }
+          }
         },
         child: Padding(
           padding: const EdgeInsets.all(12),

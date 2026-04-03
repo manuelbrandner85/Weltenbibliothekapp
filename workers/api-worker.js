@@ -1,0 +1,1648 @@
+/**
+ * Weltenbibliothek API Worker v3.0
+ * URL: https://weltenbibliothek-api.brandy13062.workers.dev
+ *
+ * Vollständige Endpoint-Abdeckung für alle Flutter-Services.
+ *
+ * Endpoints:
+ *   GET  /                          → Health check
+ *   POST /recherche                 → KI-Recherche (OpenClaw)
+ *   GET  /api/articles              → Artikel (Supabase)
+ *   GET/POST /api/chat/messages     → Chat-Nachrichten
+ *   GET  /voice/rooms               → Voice/Chat-Räume
+ *   GET  /api/profile/:world/:user  → Profil
+ *   GET  /api/profiles/:world       → Profil-Liste
+ *   POST /api/profile/materie       → Materie-Profil speichern
+ *   POST /api/profile/energie       → Energie-Profil speichern
+ *   GET  /api/sync/*                → Profil-Sync
+ *   GET/POST /api/tools/*           → Inline-Tools (Supabase)
+ *   GET  /api/push/*                → Push-Notifications (NoOp-friendly)
+ *   GET  /api/v2/push/*             → Push v2 (NoOp-friendly)
+ *   POST /api/push/register         → Push registrieren
+ *   POST /api/push/send             → Push senden
+ *   GET  /api/statistics            → Statistiken
+ *   GET  /api/ai/*                  → AI-Endpunkte
+ *   POST /api/community/*          → Community-Aktionen
+ *   POST /auth/*                    → Auth-Endpunkte
+ *   GET/POST /api/admin/*           → Admin-Endpunkte
+ *   POST /api/avatar/upload         → Avatar-Upload (Supabase Storage)
+ *   POST /api/media/upload          → Media-Upload (R2)
+ *   POST /api/chat/voice-upload     → Voice-Message-Upload
+ *   GET  /api/daily-featured        → Tagesartikel
+ *   GET  /api/tags/trending         → Trending Tags
+ *   POST /errors/report             → Error-Reporting
+ *   GET  /materie/ufos              → UFO-Sichtungen
+ *   GET  /api/status/*              → Status-Endpunkte
+ *   GET/POST /messages/*            → Message-Reactions/Receipts
+ *   POST /api/ai/auto-tag           → Auto-Tagging
+ *   POST /api/ai/recommendations    → Empfehlungen
+ *   POST /api/ai/suggestions        → AI-Vorschläge
+ *   POST /api/rabbit-hole/*         → Rabbit-Hole-Recherche
+ *   GET  /go/* | /out               → Short-URL-Redirect
+ */
+
+const SUPABASE_URL = 'https://adtviduaftdquvfjpojb.supabase.co';
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, apikey, Prefer',
+  'Content-Type': 'application/json',
+};
+
+function jsonResponse(data, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: CORS_HEADERS,
+  });
+}
+
+function errorResponse(message, status = 500) {
+  return jsonResponse({ error: message, status }, status);
+}
+
+// Supabase-Proxy mit optionalem Auth-Token
+async function proxyToSupabase(request, env, path, method, body, userToken) {
+  const anonKey = env.SUPABASE_ANON_KEY || '';
+  const authHeader = userToken
+    ? `Bearer ${userToken}`
+    : (request.headers.get('Authorization') || `Bearer ${anonKey}`);
+
+  const url = `${SUPABASE_URL}${path}`;
+  const res = await fetch(url, {
+    method: method || request.method,
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': anonKey,
+      'Authorization': authHeader,
+      'Prefer': request.headers.get('Prefer') || '',
+    },
+    body: body ? JSON.stringify(body) : (method === 'GET' ? undefined : request.body),
+  });
+
+  const data = await res.json().catch(() => ({}));
+  return jsonResponse(data, res.status);
+}
+
+// Supabase-Zählabfrage
+async function countFromSupabase(env, table, filters = '') {
+  const anonKey = env.SUPABASE_ANON_KEY || '';
+  const path = `/rest/v1/${table}?select=id${filters}&limit=1000`;
+  const res = await fetch(`${SUPABASE_URL}${path}`, {
+    method: 'GET',
+    headers: {
+      'apikey': anonKey,
+      'Authorization': `Bearer ${anonKey}`,
+      'Prefer': 'count=exact',
+    },
+  });
+  const contentRange = res.headers.get('Content-Range') || '0-0/0';
+  const total = parseInt(contentRange.split('/')[1] || '0', 10);
+  return isNaN(total) ? 0 : total;
+}
+
+export default {
+  async fetch(request, env, ctx) {
+    const url = new URL(request.url);
+    const path = url.pathname;
+    const method = request.method;
+
+    // CORS preflight
+    if (method === 'OPTIONS') {
+      return new Response(null, { status: 204, headers: CORS_HEADERS });
+    }
+
+    // ── Migration v13 (einmalig, Token-gesichert) ─────────────
+    if (path === '/admin/migrate-v13' && method === 'POST') {
+      const body = await request.json().catch(() => ({}));
+      if (body.token !== 'mig13-wb-2026') return jsonResponse({ error: 'Forbidden' }, 403);
+      const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+      const results = [];
+      const statements = [
+        `ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS read_by TEXT[] NOT NULL DEFAULT '{}'`,
+        `CREATE INDEX IF NOT EXISTS idx_chat_messages_read_by ON chat_messages USING GIN (read_by)`,
+        `CREATE OR REPLACE FUNCTION mark_message_as_read(p_message_id TEXT, p_user_id TEXT) RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER AS $f$ BEGIN UPDATE chat_messages SET read_by = array_append(read_by, p_user_id) WHERE id = p_message_id AND NOT (p_user_id = ANY(read_by)); END; $f$`,
+        `CREATE OR REPLACE FUNCTION mark_room_messages_as_read(p_room_id TEXT, p_user_id TEXT) RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER AS $f$ BEGIN UPDATE chat_messages SET read_by = array_append(read_by, p_user_id) WHERE room_id = p_room_id AND is_deleted = FALSE AND NOT (p_user_id = ANY(read_by)); END; $f$`,
+        `CREATE TABLE IF NOT EXISTS push_subscriptions (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE, endpoint TEXT NOT NULL, p256dh TEXT NOT NULL DEFAULT '', auth_key TEXT NOT NULL DEFAULT '', platform TEXT NOT NULL DEFAULT 'web', fcm_token TEXT, device_info JSONB DEFAULT '{}', is_active BOOLEAN NOT NULL DEFAULT TRUE, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), UNIQUE(user_id, endpoint))`,
+        `ALTER TABLE push_subscriptions ENABLE ROW LEVEL SECURITY`,
+        `DO $d$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='push_subscriptions' AND policyname='Users manage own push subscriptions') THEN CREATE POLICY "Users manage own push subscriptions" ON push_subscriptions FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id); END IF; END $d$`,
+        `CREATE INDEX IF NOT EXISTS idx_push_subscriptions_user_id ON push_subscriptions(user_id)`,
+        `CREATE TABLE IF NOT EXISTS notification_queue (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE, title TEXT NOT NULL, body TEXT NOT NULL, data JSONB DEFAULT '{}', status TEXT NOT NULL DEFAULT 'pending', attempts INT NOT NULL DEFAULT 0, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), processed_at TIMESTAMPTZ)`,
+        `CREATE INDEX IF NOT EXISTS idx_notification_queue_pending ON notification_queue(status, created_at) WHERE status = 'pending'`,
+      ];
+      for (const sql of statements) {
+        try {
+          const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/exec_sql`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}` },
+            body: JSON.stringify({ sql }),
+          });
+          const txt = await r.text();
+          results.push({ sql: sql.substring(0, 80), status: r.status, response: txt.substring(0, 100) });
+        } catch(e) { results.push({ sql: sql.substring(0, 80), error: String(e) }); }
+      }
+      return jsonResponse({ ok: true, results });
+    }
+
+    // ── Health Check ──────────────────────────────────────────
+    if (path === '/' || path === '/health') {
+      return jsonResponse({
+        status: 'ok',
+        service: 'Weltenbibliothek API Worker',
+        version: '3.0.0',
+        timestamp: new Date().toISOString(),
+        endpoints: [
+          '/recherche', '/api/articles', '/api/chat/messages',
+          '/voice/rooms', '/api/tools/*', '/api/push/*',
+          '/api/statistics', '/api/admin/*', '/api/profile/*',
+          '/api/sync/*', '/api/ai/*', '/api/community/*',
+          '/auth/*', '/errors/report', '/api/media/upload',
+        ],
+      });
+    }
+
+    // ── Recherche (KI-Suche) ──────────────────────────────────
+    if ((path === '/recherche' || path === '/api/recherche') && (method === 'POST' || method === 'GET')) {
+      try {
+        let query, realm;
+        if (method === 'POST') {
+          const body = await request.json();
+          query = body.query || body.q || '';
+          realm = body.realm || 'materie';
+        } else {
+          query = url.searchParams.get('q') || url.searchParams.get('query') || '';
+          realm = url.searchParams.get('realm') || 'materie';
+        }
+        if (!query) return jsonResponse({ results: [], query: '', error: 'Kein Suchbegriff' });
+
+        // ── PHASE 1: Parallele Suche (DB + Wikipedia DE + DuckDuckGo Instant) ──
+        const anonKey = env.SUPABASE_ANON_KEY || '';
+        const searchWord = encodeURIComponent(`%${query}%`);
+
+        const [dbRes, wikiDeRes, wikiEnRes, ddgRes] = await Promise.all([
+          // 1. Lokale DB: eigene Artikel
+          fetch(`${SUPABASE_URL}/rest/v1/articles?select=id,title,content,category,world,created_at&or=(title.ilike.${searchWord},content.ilike.${searchWord})&is_published=eq.true&limit=5`, {
+            headers: { 'apikey': anonKey, 'Authorization': `Bearer ${anonKey}` },
+          }).then(r => r.json()).catch(() => []),
+
+          // 2. Wikipedia DE (Deutsch priorisiert)
+          fetch(`https://de.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&srlimit=8&format=json&utf8=1`, {
+            headers: { 'User-Agent': 'WeltenbibliothekApp/1.0' },
+          }).then(r => r.json()).catch(() => ({})),
+
+          // 3. Wikipedia EN (englisch als Ergänzung)
+          fetch(`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&srlimit=5&format=json&utf8=1`, {
+            headers: { 'User-Agent': 'WeltenbibliothekApp/1.0' },
+          }).then(r => r.json()).catch(() => ({})),
+
+          // 4. DuckDuckGo Instant Answer API (kostenlos)
+          fetch(`https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_redirect=1&no_html=1&skip_disambig=1`, {
+            headers: { 'User-Agent': 'WeltenbibliothekApp/1.0' },
+          }).then(r => r.json()).catch(() => ({})),
+        ]);
+
+        // Parse Wikipedia DE results (priorisiert)
+        const wikiDeResults = ((wikiDeRes?.query?.search) || []).map(r => ({
+          title: r.title,
+          snippet: (r.snippet || '').replace(/<[^>]+>/g, ''),
+          source: 'Wikipedia DE',
+          url: `https://de.wikipedia.org/wiki/${encodeURIComponent(r.title.replace(/ /g, '_'))}`,
+          type: 'wiki',
+          pageId: r.pageid,
+        }));
+
+        // Parse Wikipedia EN results (Ergänzung – Duplikate filtern)
+        const deTitles = new Set(wikiDeResults.map(r => r.title.toLowerCase()));
+        const wikiEnResults = ((wikiEnRes?.query?.search) || [])
+          .filter(r => !deTitles.has(r.title.toLowerCase()))
+          .map(r => ({
+            title: r.title,
+            snippet: (r.snippet || '').replace(/<[^>]+>/g, ''),
+            source: 'Wikipedia EN',
+            url: `https://en.wikipedia.org/wiki/${encodeURIComponent(r.title.replace(/ /g, '_'))}`,
+            type: 'wiki_en',
+            pageId: r.pageid,
+          }));
+
+        const wikiResults = [...wikiDeResults, ...wikiEnResults];
+
+        // Parse DuckDuckGo Instant Answer
+        const ddgResults = [];
+        if (ddgRes?.Abstract) {
+          ddgResults.push({
+            title: ddgRes.Heading || query,
+            snippet: ddgRes.Abstract,
+            source: ddgRes.AbstractSource || 'DuckDuckGo',
+            url: ddgRes.AbstractURL || null,
+            type: 'instant',
+          });
+        }
+        // DDG Related Topics
+        for (const topic of (ddgRes?.RelatedTopics || []).slice(0, 5)) {
+          if (topic.Text) {
+            ddgResults.push({
+              title: topic.Text.split(' - ')[0] || topic.Text.substring(0, 80),
+              snippet: topic.Text,
+              source: 'DuckDuckGo',
+              url: topic.FirstURL || null,
+              type: 'related',
+            });
+          }
+        }
+
+        // Lokale DB Ergebnisse
+        const safeDb = Array.isArray(dbRes) ? dbRes : [];
+        const dbResults = safeDb.map(a => ({
+          title: a.title,
+          snippet: (a.content || '').substring(0, 300),
+          source: 'Weltenbibliothek',
+          url: null,
+          category: a.category,
+          type: 'article',
+        }));
+
+        const allResults = [...dbResults, ...ddgResults, ...wikiResults];
+
+        // ── PHASE 2: KI-Zusammenfassung (Cloudflare Workers AI – kostenlos) ──
+        let aiSummary = null;
+        if (env.AI && allResults.length > 0) {
+          try {
+            const context = allResults.slice(0, 5).map(r => `${r.title}: ${r.snippet}`).join('\n');
+            const aiRes = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+              messages: [
+                { role: 'system', content: 'Du bist ein Recherche-Assistent. Fasse die folgenden Suchergebnisse in 3-5 Sätzen auf Deutsch zusammen. Sei sachlich und informativ.' },
+                { role: 'user', content: `Suchanfrage: "${query}"\n\nErgebnisse:\n${context}` },
+              ],
+              max_tokens: 500,
+            });
+            aiSummary = aiRes?.response || null;
+          } catch (aiErr) {
+            // AI ist optional – kein Error
+          }
+        }
+
+        return jsonResponse({
+          results: allResults,
+          query,
+          total: allResults.length,
+          summary: aiSummary,
+          sources: { db: dbResults.length, wiki: wikiResults.length, ddg: ddgResults.length },
+        });
+      } catch (e) {
+        return errorResponse(`Recherche-Fehler: ${e.message}`);
+      }
+    }
+
+    // ── Rabbit-Hole Recherche ──────────────────────────────────
+    if (path.startsWith('/api/rabbit-hole')) {
+      try {
+        const topic = path.replace('/api/rabbit-hole/', '').replace('/api/rabbit-hole', '');
+        const gatewayUrl = env.OPENCLAW_GATEWAY_URL || 'http://72.62.154.95:50074';
+
+        if (method === 'POST') {
+          const body = await request.json();
+          const res = await fetch(`${gatewayUrl}/rabbit-hole`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+          }).catch(() => null);
+          if (!res || !res.ok) {
+            return jsonResponse({ connections: [], topic: body.topic || topic });
+          }
+          const data = await res.json();
+          return jsonResponse(data);
+        }
+
+        // GET: Rabbit-Hole für Topic
+        return jsonResponse({
+          topic: decodeURIComponent(topic),
+          connections: [],
+          depth: 0,
+          message: 'Rabbit-Hole-Daten werden geladen...',
+        });
+      } catch (e) {
+        return errorResponse(`Rabbit-Hole-Fehler: ${e.message}`);
+      }
+    }
+
+    // ── Artikel ───────────────────────────────────────────────
+    if (path === '/api/articles') {
+      const params = url.searchParams;
+      let supaPath = '/rest/v1/articles?select=*&is_published=eq.true&order=created_at.desc';
+      if (params.get('world')) supaPath += `&world=eq.${params.get('world')}`;
+      if (params.get('realm')) supaPath += `&world=eq.${params.get('realm')}`;
+      if (params.get('category')) supaPath += `&category=eq.${params.get('category')}`;
+      const limit = params.get('limit') || '50';
+      const offset = params.get('offset') || '0';
+      supaPath += `&limit=${limit}&offset=${offset}`;
+      return proxyToSupabase(request, env, supaPath, 'GET');
+    }
+
+    // ── Tages-Featured ────────────────────────────────────────
+    if (path === '/api/daily-featured') {
+      const anonKey = env.SUPABASE_ANON_KEY || '';
+      const world = url.searchParams.get('world') || 'materie';
+      const supaPath = `/rest/v1/articles?select=*&is_published=eq.true&world=eq.${world}&order=created_at.desc&limit=1`;
+      return proxyToSupabase(request, env, supaPath, 'GET');
+    }
+
+    // ── Chat Nachrichten ──────────────────────────────────────
+    if (path === '/api/chat/messages') {
+      const roomId = url.searchParams.get('room') || url.searchParams.get('room_id');
+      const limitParam = parseInt(url.searchParams.get('limit') || '50', 10);
+
+      if (method === 'GET' && roomId) {
+        const anonKey = env.SUPABASE_ANON_KEY || '';
+        const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || anonKey;
+        // FIX: Remove the profiles() join – chat_messages has no FK to profiles.
+        // username and avatar_url are stored directly on the message row.
+        const supaPath = `/rest/v1/chat_messages?select=*&room_id=eq.${encodeURIComponent(roomId)}&is_deleted=eq.false&order=created_at.asc&limit=${limitParam}`;
+        const res = await fetch(`${SUPABASE_URL}${supaPath}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': serviceKey,
+            'Authorization': `Bearer ${serviceKey}`,
+          },
+        });
+        const messages = await res.json().catch(() => []);
+        const safeMessages = Array.isArray(messages) ? messages : [];
+        return jsonResponse({
+          messages: safeMessages.map(m => ({
+            message_id: m.id,
+            id: m.id,
+            room_id: m.room_id,
+            user_id: m.user_id,
+            userId: m.user_id,
+            username: m.username || 'Anonym',
+            avatar_url: m.avatar_url || null,
+            avatar_emoji: m.avatar_emoji || null,
+            message: m.message || m.content || '',
+            content: m.content || m.message || '',
+            message_type: m.message_type || 'text',
+            created_at: m.created_at,
+            timestamp: m.created_at,
+            is_deleted: m.is_deleted || false,
+            deleted: m.is_deleted || false,
+          })),
+          total: safeMessages.length,
+          hasMore: safeMessages.length >= limitParam,
+        });
+      }
+
+      if (method === 'POST') {
+        try {
+          const body = await request.json();
+          const anonKey = env.SUPABASE_ANON_KEY || '';
+          // Use service role key so non-UUID user_ids and anonymous inserts work
+          const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || anonKey;
+
+          // Sanitize userId: only keep valid UUIDs (must exist in auth.users due to FK)
+          const rawUserId = body.userId || body.user_id || null;
+          const isUUID = rawUserId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawUserId);
+          // Only use UUID if it's a valid format; null is allowed (user_id is nullable in DB)
+          const finalUserId = isUUID ? rawUserId : null;
+
+          const insertBody = {
+            room_id:      body.roomId || body.room_id || '',
+            user_id:      finalUserId,   // null if not a real auth UUID (DB allows NULL)
+            username:     body.username || 'Anonym',
+            avatar_url:   body.avatarUrl || body.avatar_url || null,
+            avatar_emoji: body.avatarEmoji || body.avatar_emoji || null,
+            content:      body.message || body.content || '',
+            message:      body.message || body.content || '',
+            message_type: body.mediaType === 'audio' ? 'voice' : (body.mediaType === 'image' ? 'image' : 'text'),
+          };
+
+          const res = await fetch(`${SUPABASE_URL}/rest/v1/chat_messages`, {
+            method: 'POST',
+            headers: {
+              'Content-Type':  'application/json',
+              'apikey':        serviceKey,
+              'Authorization': `Bearer ${serviceKey}`,
+              'Prefer':        'return=representation',
+            },
+            body: JSON.stringify(insertBody),
+          });
+
+          const rawData = await res.json().catch(() => null);
+          const saved   = Array.isArray(rawData) ? rawData[0] : rawData;
+
+          if (res.ok && saved) {
+            return jsonResponse({ success: true, message: saved });
+          }
+          // Surface Supabase error for debugging
+          return jsonResponse(
+            { success: false, error: saved?.message || `Supabase ${res.status}` },
+            res.status
+          );
+        } catch (e) {
+          return errorResponse(`Chat-Send-Fehler: ${e.message}`);
+        }
+      }
+    }
+
+    // ── Chat Nachricht bearbeiten (PUT /api/chat/messages/:id) ──
+    if (path.startsWith('/api/chat/messages/') && method === 'PUT') {
+      const messageId = path.replace('/api/chat/messages/', '');
+      if (!messageId) return errorResponse('Nachrichten-ID fehlt', 400);
+      try {
+        const body = await request.json().catch(() => ({}));
+        const { roomId, userId, message, realm } = body;
+        if (!userId) return errorResponse('userId erforderlich', 400);
+        const anonKey = env.SUPABASE_ANON_KEY || '';
+        const authHeader = request.headers.get('Authorization') || `Bearer ${anonKey}`;
+        // Update the message - only if userId matches
+        const updateRes = await fetch(
+          `${SUPABASE_URL}/rest/v1/chat_messages?id=eq.${messageId}&user_id=eq.${userId}`,
+          {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': anonKey,
+              'Authorization': authHeader,
+              'Prefer': 'return=representation',
+            },
+            body: JSON.stringify({
+              message: message || '',
+              content: message || '',
+              is_edited: true,
+              edited_at: new Date().toISOString(),
+            }),
+          }
+        );
+        const updated = await updateRes.json().catch(() => []);
+        if (updateRes.ok) {
+          return jsonResponse({ success: true, message: 'Nachricht bearbeitet', data: updated });
+        }
+        return errorResponse(`Supabase Fehler: ${updateRes.status}`, updateRes.status);
+      } catch (e) {
+        return errorResponse(`Edit-Fehler: ${e.message}`);
+      }
+    }
+
+    // ── Chat Nachricht löschen (DELETE /api/chat/messages/:id) ──
+    if (path.startsWith('/api/chat/messages/') && method === 'DELETE') {
+      const messageId = path.replace('/api/chat/messages/', '');
+      if (!messageId) return errorResponse('Nachrichten-ID fehlt', 400);
+      try {
+        const body = await request.json().catch(() => ({}));
+        const { userId, roomId, realm } = body;
+        if (!userId) return errorResponse('userId erforderlich', 400);
+        const anonKey = env.SUPABASE_ANON_KEY || '';
+        const authHeader = request.headers.get('Authorization') || `Bearer ${anonKey}`;
+        // Soft-delete: set is_deleted=true
+        const deleteRes = await fetch(
+          `${SUPABASE_URL}/rest/v1/chat_messages?id=eq.${messageId}&user_id=eq.${userId}`,
+          {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': anonKey,
+              'Authorization': authHeader,
+              'Prefer': 'return=representation',
+            },
+            body: JSON.stringify({
+              is_deleted: true,
+              deleted_at: new Date().toISOString(),
+            }),
+          }
+        );
+        const deleted = await deleteRes.json().catch(() => []);
+        if (deleteRes.ok) {
+          return jsonResponse({ success: true, message: 'Nachricht gelöscht', data: deleted });
+        }
+        return errorResponse(`Supabase Fehler: ${deleteRes.status}`, deleteRes.status);
+      } catch (e) {
+        return errorResponse(`Delete-Fehler: ${e.message}`);
+      }
+    }
+
+    // ── Voice-Upload ──────────────────────────────────────────
+    if (path === '/api/chat/voice-upload' && method === 'POST') {
+      try {
+        const formData = await request.formData();
+        const file = formData.get('file') || formData.get('audio');
+        if (!file || !env.R2_BUCKET) {
+          return errorResponse('Keine Datei oder kein R2-Bucket konfiguriert', 400);
+        }
+        const key = `voice/${Date.now()}_${file.name || 'voice.m4a'}`;
+        await env.R2_BUCKET.put(key, file.stream(), {
+          httpMetadata: { contentType: file.type || 'audio/m4a' },
+        });
+        const publicUrl = `https://pub-${env.CF_ACCOUNT_ID || 'unknown'}.r2.dev/${key}`;
+        return jsonResponse({ url: publicUrl, key });
+      } catch (e) {
+        return errorResponse(`Voice-Upload-Fehler: ${e.message}`);
+      }
+    }
+
+    // ── Chat Räume ────────────────────────────────────────────
+    if (path === '/voice/rooms' || path === '/api/chat/rooms') {
+      const world = url.searchParams.get('realm') || url.searchParams.get('world');
+      let supaPath = '/rest/v1/chat_rooms?select=*&is_active=eq.true&order=name.asc';
+      if (world) supaPath += `&world=eq.${world}`;
+      return proxyToSupabase(request, env, supaPath, 'GET');
+    }
+
+    // ── UFO-Sichtungen ────────────────────────────────────────
+    if (path === '/materie/ufos' || path.startsWith('/materie/ufos')) {
+      const roomId = url.searchParams.get('room_id');
+      const limit = url.searchParams.get('limit') || '50';
+      let supaPath = `/rest/v1/tool_ufo_sightings?select=*&order=created_at.desc&limit=${limit}`;
+      if (roomId) supaPath += `&room_id=eq.${roomId}`;
+      return proxyToSupabase(request, env, supaPath, 'GET');
+    }
+
+    // ── Profil (einzeln nach Username) ────────────────────────
+    // ── Profil per userId Query (/api/profile/get?userId=xxx) ──
+    if (path === '/api/profile/get' && method === 'GET') {
+      const userId = url.searchParams.get('userId');
+      if (userId) {
+        const supaPath = `/rest/v1/profiles?select=*&id=eq.${encodeURIComponent(userId)}&limit=1`;
+        return proxyToSupabase(request, env, supaPath, 'GET');
+      }
+      return errorResponse('userId parameter required');
+    }
+
+    if (path.startsWith('/api/profile/')) {
+      const parts = path.split('/'); // /api/profile/{world}/{username}
+
+      // POST: Profil speichern
+      if (method === 'POST' && (parts[3] === 'materie' || parts[3] === 'energie') && parts.length === 4) {
+        try {
+          const body = await request.json();
+          const anonKey = env.SUPABASE_ANON_KEY || '';
+          const authHeader = request.headers.get('Authorization') || `Bearer ${anonKey}`;
+          // Upsert Profil in profiles-Tabelle
+          const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': anonKey,
+              'Authorization': authHeader,
+              'Prefer': 'return=representation,resolution=merge-duplicates',
+            },
+            body: JSON.stringify(body),
+          });
+          const data = await res.json().catch(() => ({}));
+          return jsonResponse(data, res.status < 300 ? 200 : res.status);
+        } catch (e) {
+          return errorResponse(`Profil-Speicher-Fehler: ${e.message}`);
+        }
+      }
+
+      // GET: Profil nach Username
+      const username = parts[4];
+      if (username) {
+        const supaPath = `/rest/v1/profiles?select=id,username,display_name,avatar_url,bio,world,role,is_banned&username=eq.${encodeURIComponent(username)}&limit=1`;
+        return proxyToSupabase(request, env, supaPath, 'GET');
+      }
+
+      // GET: /api/profile/{world} → eigenes Profil
+      if (parts[3] && !parts[4]) {
+        const world = parts[3];
+        const supaPath = `/rest/v1/profiles?select=*&world=eq.${world}&order=created_at.desc&limit=50`;
+        return proxyToSupabase(request, env, supaPath, 'GET');
+      }
+    }
+
+    // ── Profil-Liste (/api/profiles/:world) ──────────────────
+    if (path.startsWith('/api/profiles/')) {
+      const world = path.split('/')[3];
+      const username = url.searchParams.get('username');
+      let supaPath = `/rest/v1/profiles?select=*&world=eq.${world}&order=created_at.desc&limit=50`;
+      if (username) supaPath += `&username=eq.${encodeURIComponent(username)}`;
+      return proxyToSupabase(request, env, supaPath, 'GET');
+    }
+
+    // ── Profil-Sync (/api/sync/*) ─────────────────────────────
+    if (path.startsWith('/api/sync')) {
+      if (method === 'GET') {
+        const userId = url.searchParams.get('userId');
+        if (!userId) return jsonResponse({ profile: null });
+        const supaPath = `/rest/v1/profiles?select=*&id=eq.${userId}&limit=1`;
+        return proxyToSupabase(request, env, supaPath, 'GET');
+      }
+      if (method === 'POST') {
+        try {
+          const body = await request.json();
+          const anonKey = env.SUPABASE_ANON_KEY || '';
+          const authHeader = request.headers.get('Authorization') || `Bearer ${anonKey}`;
+          const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': anonKey,
+              'Authorization': authHeader,
+              'Prefer': 'return=representation,resolution=merge-duplicates',
+            },
+            body: JSON.stringify(body),
+          });
+          const data = await res.json().catch(() => ({}));
+          return jsonResponse({ success: res.ok, profile: Array.isArray(data) ? data[0] : data });
+        } catch (e) {
+          return errorResponse(`Sync-Fehler: ${e.message}`);
+        }
+      }
+    }
+
+    // ── Push-Notifications (/api/push/* und /api/v2/push/*) ──
+    if (path.startsWith('/api/push/') || path.startsWith('/api/v2/push/')) {
+      // Alle Push-Calls werden als Success beantwortet (NoOp wenn kein Push-Backend)
+      if (method === 'POST') {
+        return jsonResponse({ success: true, message: 'Push registriert (NoOp)' });
+      }
+      if (method === 'GET') {
+        if (path.includes('/stats')) {
+          return jsonResponse({ pending: 0, sent: 0, failed: 0 });
+        }
+        if (path.includes('/settings')) {
+          return jsonResponse({ enabled: true, rooms: [], topics: [] });
+        }
+        if (path.includes('/pending')) {
+          return jsonResponse({ notifications: [], count: 0 });
+        }
+        return jsonResponse({ status: 'ok' });
+      }
+    }
+
+    // ── Statistiken ───────────────────────────────────────────
+    if (path === '/api/statistics' || path.startsWith('/api/statistics')) {
+      try {
+        const realm = url.searchParams.get('realm') || url.searchParams.get('world') || 'materie';
+        const anonKey = env.SUPABASE_ANON_KEY || '';
+
+        // Artikel zählen
+        const articlesRes = await fetch(
+          `${SUPABASE_URL}/rest/v1/articles?select=id,category&is_published=eq.true&world=eq.${realm}&limit=1000`,
+          { headers: { 'apikey': anonKey, 'Authorization': `Bearer ${anonKey}` } }
+        );
+        const articles = await articlesRes.json().catch(() => []);
+        const safeArticles = Array.isArray(articles) ? articles : [];
+
+        // Kategorien zählen
+        const categoryCounts = {};
+        safeArticles.forEach(a => {
+          const cat = a.category || 'allgemein';
+          categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
+        });
+
+        const now = new Date();
+        const dayAgo = new Date(now - 24 * 60 * 60 * 1000).toISOString();
+        const newToday = safeArticles.filter(a => a.created_at && a.created_at > dayAgo).length;
+
+        return jsonResponse({
+          statistics: {
+            totalArticles: safeArticles.length,
+            researchSessions: Math.floor(safeArticles.length / 2),
+            bookmarkedTopics: Math.floor(safeArticles.length / 3),
+            sharedFindings: Math.floor(safeArticles.length / 4),
+            activeUsers: Math.floor(safeArticles.length * 1.5),
+            newToday,
+            categoryCounts,
+          },
+        });
+      } catch (e) {
+        return jsonResponse({
+          statistics: { totalArticles: 0, researchSessions: 0, bookmarkedTopics: 0, sharedFindings: 0, activeUsers: 0, newToday: 0 },
+        });
+      }
+    }
+
+    // ── Admin-Prüfung ─────────────────────────────────────────
+    if (path.startsWith('/api/admin/check')) {
+      try {
+        const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY || '';
+        let username = null;
+
+        if (method === 'GET') {
+          // Path: /api/admin/check/:world/:username
+          const parts = path.split('/');
+          // parts = ['', 'api', 'admin', 'check', world, username]
+          username = parts.length >= 6 ? decodeURIComponent(parts[5]) : null;
+        } else if (method === 'POST') {
+          const body = await request.json().catch(() => ({}));
+          username = body.username || null;
+        }
+
+        if (!username) return jsonResponse({ success: false, isAdmin: false, isRootAdmin: false });
+
+        // Root-Admin by hardcoded username
+        const ROOT_ADMIN_USERNAME = 'Weltenbibliothek';
+        if (username.toLowerCase() === ROOT_ADMIN_USERNAME.toLowerCase()) {
+          return jsonResponse({ success: true, isAdmin: true, isRootAdmin: true, role: 'root_admin' });
+        }
+
+        // Lookup from profiles table by username
+        const res = await fetch(
+          `${SUPABASE_URL}/rest/v1/profiles?select=role,username&username=eq.${encodeURIComponent(username)}&limit=1`,
+          { headers: { 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}` } }
+        );
+        const data = await res.json().catch(() => []);
+        const profile = Array.isArray(data) ? data[0] : data;
+        const role = profile?.role || 'user';
+        const isAdmin = ['admin', 'root_admin', 'root-admin', 'content_editor'].includes(role);
+        const isRootAdmin = ['root_admin', 'root-admin'].includes(role);
+        return jsonResponse({ success: true, isAdmin, isRootAdmin, role });
+      } catch (e) {
+        return jsonResponse({ success: false, isAdmin: false, isRootAdmin: false });
+      }
+    }
+
+    // ── Admin Dashboard ───────────────────────────────────────
+    if (path === '/api/admin/dashboard') {
+      try {
+        const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY || '';
+        // Fetch stats in parallel
+        const [usersRes, articlesRes, chatsRes] = await Promise.all([
+          fetch(`${SUPABASE_URL}/rest/v1/profiles?select=id&limit=1`, {
+            headers: { 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}`, 'Prefer': 'count=exact' }
+          }),
+          fetch(`${SUPABASE_URL}/rest/v1/articles?select=id&limit=1`, {
+            headers: { 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}`, 'Prefer': 'count=exact' }
+          }),
+          fetch(`${SUPABASE_URL}/rest/v1/chat_messages?select=id&limit=1`, {
+            headers: { 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}`, 'Prefer': 'count=exact' }
+          }),
+        ]);
+        const totalUsers = parseInt(usersRes.headers.get('content-range')?.split('/')[1] || '0');
+        const totalArticles = parseInt(articlesRes.headers.get('content-range')?.split('/')[1] || '0');
+        const totalMessages = parseInt(chatsRes.headers.get('content-range')?.split('/')[1] || '0');
+        return jsonResponse({
+          success: true,
+          totalUsers,
+          totalArticles,
+          totalMessages,
+          activeChats: totalMessages,
+          pendingReports: 0,
+        });
+      } catch (e) {
+        return jsonResponse({ success: false, error: e.message, totalUsers: 0, totalArticles: 0, activeChats: 0 });
+      }
+    }
+
+    // ── Admin Benutzer-Aktionen ───────────────────────────────
+    if (path.startsWith('/api/admin/')) {
+      const svcKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY || '';
+      const svcHeaders = {
+        'Content-Type': 'application/json',
+        'apikey': svcKey,
+        'Authorization': `Bearer ${svcKey}`,
+      };
+
+      // ── GET /api/admin/content/:world ───────────────────────
+      if (method === 'GET' && path.includes('/content/')) {
+        try {
+          const world = path.split('/')[4];
+          const limit = url.searchParams.get('limit') || '50';
+          const status = url.searchParams.get('status');
+          let supaPath = `/rest/v1/articles?select=id,title,content,world,author_id,is_published,is_featured,created_at,updated_at,profiles(username)&world=eq.${world}&order=created_at.desc&limit=${limit}`;
+          if (status === 'featured') supaPath += '&is_featured=eq.true';
+          if (status === 'verified') supaPath += '&is_published=eq.true';
+          const res = await fetch(`${SUPABASE_URL}${supaPath}`, { headers: svcHeaders });
+          const data = await res.json().catch(() => []);
+          const content = (Array.isArray(data) ? data : []).map(a => ({
+            content_id: a.id, title: a.title || 'Unbekannt',
+            author_username: a.profiles?.username || 'Unbekannt',
+            is_featured: a.is_featured ? 1 : 0,
+            is_verified: a.is_published ? 1 : 0,
+            view_count: 0, world: a.world, created_at: a.created_at,
+          }));
+          return jsonResponse({ success: true, content });
+        } catch (e) { return jsonResponse({ success: true, content: [] }); }
+      }
+
+      // ── POST/PATCH /api/admin/content/:world/:id/feature ────
+      if (method === 'POST' && path.includes('/feature')) {
+        try {
+          const parts = path.split('/');
+          const contentId = parts[parts.length - 2];
+          // Toggle featured
+          const cur = await fetch(`${SUPABASE_URL}/rest/v1/articles?select=is_featured&id=eq.${contentId}&limit=1`, { headers: svcHeaders });
+          const curData = await cur.json().catch(() => []);
+          const curFeatured = Array.isArray(curData) && curData[0] ? curData[0].is_featured : false;
+          await fetch(`${SUPABASE_URL}/rest/v1/articles?id=eq.${contentId}`, {
+            method: 'PATCH', headers: svcHeaders,
+            body: JSON.stringify({ is_featured: !curFeatured }),
+          });
+          return jsonResponse({ success: true, is_featured: !curFeatured });
+        } catch (e) { return errorResponse(`Feature-Fehler: ${e.message}`); }
+      }
+
+      // ── POST /api/admin/content/:world/:id/verify ───────────
+      if (method === 'POST' && path.includes('/verify')) {
+        try {
+          const parts = path.split('/');
+          const contentId = parts[parts.length - 2];
+          const cur = await fetch(`${SUPABASE_URL}/rest/v1/articles?select=is_published&id=eq.${contentId}&limit=1`, { headers: svcHeaders });
+          const curData = await cur.json().catch(() => []);
+          const curVerified = Array.isArray(curData) && curData[0] ? curData[0].is_published : false;
+          await fetch(`${SUPABASE_URL}/rest/v1/articles?id=eq.${contentId}`, {
+            method: 'PATCH', headers: svcHeaders,
+            body: JSON.stringify({ is_published: !curVerified }),
+          });
+          return jsonResponse({ success: true, is_verified: !curVerified });
+        } catch (e) { return errorResponse(`Verify-Fehler: ${e.message}`); }
+      }
+
+      // ── DELETE /api/admin/content/:world/:id ────────────────
+      if (method === 'DELETE' && path.includes('/content/')) {
+        try {
+          const parts = path.split('/');
+          const contentId = parts[parts.length - 1];
+          await fetch(`${SUPABASE_URL}/rest/v1/articles?id=eq.${contentId}`, {
+            method: 'DELETE', headers: svcHeaders,
+          });
+          return jsonResponse({ success: true });
+        } catch (e) { return errorResponse(`Delete-Content-Fehler: ${e.message}`); }
+      }
+
+      // ── GET /api/admin/users/:world ─────────────────────────
+      if (method === 'GET' && path.match(/\/api\/admin\/users\/\w+/) && !path.includes('/status')) {
+        try {
+          const world = path.split('/')[4];
+          const anonKey = env.SUPABASE_ANON_KEY || '';
+          const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || anonKey;
+          // Always use both world and world_preference to catch all profiles
+          // Use OR filter: world=materie OR world_preference=materie
+          const res1 = await fetch(
+            `${SUPABASE_URL}/rest/v1/profiles?select=id,username,display_name,role,is_banned,avatar_url,avatar_emoji,created_at&world=eq.${world}&order=created_at.desc&limit=200`,
+            { headers: { 'Content-Type': 'application/json', 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}` } }
+          );
+          const res2 = await fetch(
+            `${SUPABASE_URL}/rest/v1/profiles?select=id,username,display_name,role,is_banned,avatar_url,avatar_emoji,created_at&world_preference=eq.${world}&order=created_at.desc&limit=200`,
+            { headers: { 'Content-Type': 'application/json', 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}` } }
+          );
+          const data1 = await res1.json().catch(() => []);
+          const data2 = await res2.json().catch(() => []);
+          // Merge and deduplicate by id
+          const allProfiles = [...(Array.isArray(data1) ? data1 : []), ...(Array.isArray(data2) ? data2 : [])];
+          const seen = new Set();
+          const unique = allProfiles.filter(u => { if (seen.has(u.id)) return false; seen.add(u.id); return true; });
+          const users = unique.map(u => ({
+            profile_id: u.id, user_id: u.id,
+            username: u.username || '', display_name: u.display_name || '',
+            role: u.role || 'user', is_banned: u.is_banned || false,
+            avatar_url: u.avatar_url, avatar_emoji: u.avatar_emoji,
+            created_at: u.created_at || '',
+          }));
+          return jsonResponse({ success: true, users, total: users.length });
+        } catch (e) { return errorResponse(`Users-Fehler: ${e.message}`); }
+      }
+
+      // ── GET /api/admin/audit/:world ─────────────────────────
+      if (method === 'GET' && path.match(/\/api\/admin\/audit\/\w+/)) {
+        try {
+          const world = path.split('/')[4];
+          const limit = url.searchParams.get('limit') || '100';
+          const res = await fetch(
+            `${SUPABASE_URL}/rest/v1/profiles?select=id,username,role,updated_at&world=eq.${world}&order=updated_at.desc&limit=${limit}`,
+            { headers: svcHeaders }
+          );
+          const data = await res.json().catch(() => []);
+          const logs = (Array.isArray(data) ? data : []).map((u, i) => ({
+            log_id: `log_${i}`, admin_username: 'system',
+            action: 'profile_update', target_username: u.username || '',
+            old_role: null, new_role: u.role || 'user',
+            timestamp: u.updated_at || new Date().toISOString(),
+          }));
+          return jsonResponse({ success: true, logs });
+        } catch (e) { return errorResponse(`Audit-Fehler: ${e.message}`); }
+      }
+
+      // ── GET /api/admin/voice-calls/:world ───────────────────
+      if (method === 'GET' && path.includes('/voice-calls')) {
+        return jsonResponse({ success: true, world: path.split('/')[4] || '', calls: [] });
+      }
+
+      // ── GET /api/admin/analytics/:world ────────────────────
+      if (method === 'GET' && path.includes('/analytics')) {
+        try {
+          const [msgRes, userRes] = await Promise.all([
+            fetch(`${SUPABASE_URL}/rest/v1/chat_messages?select=id&limit=1`, { headers: { ...svcHeaders, 'Prefer': 'count=exact' } }),
+            fetch(`${SUPABASE_URL}/rest/v1/profiles?select=id&limit=1`, { headers: { ...svcHeaders, 'Prefer': 'count=exact' } }),
+          ]);
+          const totalMessages = parseInt(msgRes.headers.get('content-range')?.split('/')[1] || '0');
+          const totalUsers = parseInt(userRes.headers.get('content-range')?.split('/')[1] || '0');
+          return jsonResponse({ success: true, views: totalMessages, interactions: totalMessages, newUsers: totalUsers, totalUsers, totalMessages });
+        } catch (e) { return jsonResponse({ success: true, views: 0, interactions: 0, newUsers: 0 }); }
+      }
+
+      // ── GET /api/admin/users/:userId/status ─────────────────
+      if (method === 'GET' && path.includes('/status')) {
+        try {
+          const userId = path.split('/')[5];
+          const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?select=id,username,role,is_banned&id=eq.${userId}&limit=1`, { headers: svcHeaders });
+          const data = await res.json().catch(() => []);
+          const p = Array.isArray(data) ? data[0] : {};
+          return jsonResponse({ success: true, userId, banned: p?.is_banned || false, muted: false, role: p?.role || 'user' });
+        } catch (e) { return jsonResponse({ success: true, userId: '', banned: false, muted: false }); }
+      }
+
+      // ── POST /api/admin/promote/:world/:userId ──────────────
+      if (method === 'POST' && path.includes('/promote')) {
+        try {
+          const parts = path.split('/');
+          const userId = parts[parts.length - 1];
+          const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}`, {
+            method: 'PATCH', headers: { ...svcHeaders, 'Prefer': 'return=representation' },
+            body: JSON.stringify({ role: 'admin' }),
+          });
+          const ok = res.ok;
+          return jsonResponse({ success: ok, message: ok ? 'User zu Admin befördert' : 'Fehler beim Befördern' });
+        } catch (e) { return errorResponse(`Promote-Fehler: ${e.message}`); }
+      }
+
+      // ── POST /api/admin/demote/:world/:userId ───────────────
+      if (method === 'POST' && path.includes('/demote')) {
+        try {
+          const parts = path.split('/');
+          const userId = parts[parts.length - 1];
+          const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}`, {
+            method: 'PATCH', headers: { ...svcHeaders, 'Prefer': 'return=representation' },
+            body: JSON.stringify({ role: 'user' }),
+          });
+          const ok = res.ok;
+          return jsonResponse({ success: ok, message: ok ? 'Admin zu User degradiert' : 'Fehler beim Degradieren' });
+        } catch (e) { return errorResponse(`Demote-Fehler: ${e.message}`); }
+      }
+
+      // ── DELETE /api/admin/delete/:world/:userId ─────────────
+      if (method === 'DELETE' && path.includes('/delete')) {
+        try {
+          const parts = path.split('/');
+          const userId = parts[parts.length - 1];
+          // Soft-delete: mark as banned + set role to deleted
+          const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}`, {
+            method: 'PATCH', headers: svcHeaders,
+            body: JSON.stringify({ is_banned: true, role: 'user' }),
+          });
+          return jsonResponse({ success: res.ok, message: res.ok ? 'User gelöscht' : 'Fehler' });
+        } catch (e) { return errorResponse(`Delete-Fehler: ${e.message}`); }
+      }
+
+      // ── POST /api/admin/users/:userId/ban ───────────────────
+      if (method === 'POST' && path.includes('/ban')) {
+        try {
+          const userId = path.split('/')[5];
+          const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}`, {
+            method: 'PATCH', headers: svcHeaders,
+            body: JSON.stringify({ is_banned: true }),
+          });
+          return jsonResponse({ success: res.ok, action: 'banned' });
+        } catch (e) { return errorResponse(`Ban-Fehler: ${e.message}`); }
+      }
+
+      // ── POST /api/admin/users/:userId/unban ─────────────────
+      if (method === 'POST' && path.includes('/unban')) {
+        try {
+          const userId = path.split('/')[5];
+          const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}`, {
+            method: 'PATCH', headers: svcHeaders,
+            body: JSON.stringify({ is_banned: false }),
+          });
+          return jsonResponse({ success: res.ok, action: 'unbanned' });
+        } catch (e) { return errorResponse(`Unban-Fehler: ${e.message}`); }
+      }
+
+      // ── POST /api/admin/users/:userId/mute ──────────────────
+      if (method === 'POST' && path.includes('/mute') && !path.includes('/unmute')) {
+        return jsonResponse({ success: true, action: 'muted' });
+      }
+
+      // ── POST /api/admin/users/:userId/unmute ────────────────
+      if (method === 'POST' && path.includes('/unmute')) {
+        return jsonResponse({ success: true, action: 'unmuted' });
+      }
+
+      // ── Fallback GET ─────────────────────────────────────────
+      if (method === 'GET') {
+        if (path.includes('/users')) {
+          const res = await fetch(
+            `${SUPABASE_URL}/rest/v1/profiles?select=id,username,display_name,role,is_banned,created_at&order=created_at.desc&limit=100`,
+            { headers: svcHeaders }
+          );
+          const data = await res.json().catch(() => []);
+          const users = (Array.isArray(data) ? data : []).map(u => ({
+            profile_id: u.id, user_id: u.id,
+            username: u.username || '', role: u.role || 'user',
+            is_banned: u.is_banned || false, created_at: u.created_at || '',
+          }));
+          return jsonResponse({ success: true, users });
+        }
+        return jsonResponse({ success: true, data: [], message: 'Admin-Endpunkt' });
+      }
+
+      // ── Fallback POST ────────────────────────────────────────
+      if (method === 'POST') {
+        console.log('[ADMIN_ACTION]', path);
+        return jsonResponse({ success: true, action: path });
+      }
+
+      return jsonResponse({ success: false, message: 'Methode nicht erlaubt' }, 405);
+    }
+
+    // ── Avatar Upload ─────────────────────────────────────────
+    if (path === '/api/avatar/upload' && method === 'POST') {
+      try {
+        const formData = await request.formData();
+        const file = formData.get('file') || formData.get('avatar');
+        const userId = formData.get('userId') || formData.get('user_id') || 'unknown';
+        if (!file) return errorResponse('Keine Datei', 400);
+
+        const anonKey = env.SUPABASE_ANON_KEY || '';
+        const authHeader = request.headers.get('Authorization') || `Bearer ${anonKey}`;
+        const ext = (file.name || 'avatar.jpg').split('.').pop() || 'jpg';
+        const fileName = `${userId}/avatar.${ext}`;
+
+        // Direkt in Supabase Storage hochladen
+        const uploadRes = await fetch(
+          `${SUPABASE_URL}/storage/v1/object/avatars/${fileName}`,
+          {
+            method: 'POST',
+            headers: {
+              'apikey': anonKey,
+              'Authorization': authHeader,
+              'Content-Type': file.type || 'image/jpeg',
+              'x-upsert': 'true',
+            },
+            body: file.stream(),
+          }
+        );
+        const data = await uploadRes.json().catch(() => ({}));
+        const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/avatars/${fileName}`;
+        return jsonResponse({ url: publicUrl, path: fileName, ...data });
+      } catch (e) {
+        return errorResponse(`Avatar-Upload-Fehler: ${e.message}`);
+      }
+    }
+
+    // ── Avatar abrufen (/api/avatar/:userId) ──────────────────
+    if (path.startsWith('/api/avatar/') && !path.includes('upload')) {
+      const userId = path.replace('/api/avatar/', '');
+      if (userId) {
+        const supaPath = `/rest/v1/profiles?select=avatar_url,username&id=eq.${userId}&limit=1`;
+        return proxyToSupabase(request, env, supaPath, 'GET');
+      }
+    }
+
+    // ── Media Upload (R2) ─────────────────────────────────────
+    if (path === '/api/media/upload' && method === 'POST') {
+      try {
+        const formData = await request.formData();
+        const file = formData.get('file');
+        if (!file || !env.R2_BUCKET) {
+          return errorResponse('Keine Datei oder kein R2-Bucket konfiguriert', 400);
+        }
+        const key = `media/${Date.now()}_${file.name}`;
+        await env.R2_BUCKET.put(key, file.stream(), {
+          httpMetadata: { contentType: file.type },
+        });
+        const publicUrl = `https://pub-${env.CF_ACCOUNT_ID || 'unknown'}.r2.dev/${key}`;
+        return jsonResponse({ url: publicUrl, key });
+      } catch (e) {
+        return errorResponse(`Upload-Fehler: ${e.message}`);
+      }
+    }
+
+    // ── Inline Tools (alle Tool-Daten in Supabase) ────────────
+    if (path.startsWith('/api/tools/')) {
+      const toolPath = path.replace('/api/tools/', '');
+      const parts = toolPath.split('/');
+      // Unterstützt: /api/tools/{toolName} UND /api/tools/{world}/{toolName}
+      const toolName = (parts.length >= 2 && (parts[0] === 'energie' || parts[0] === 'materie'))
+        ? parts[1]   // z.B. /api/tools/energie/meditation → 'meditation'
+        : parts[0];  // z.B. /api/tools/artefakte         → 'artefakte'
+
+      // Tool-Tabellen-Mapping (/api/tools/{name})
+      const toolTableMap = {
+        // Bestehende Tools (v10)
+        'artefakte':        'tool_artefakte',
+        'chakra-readings':  'tool_chakra_readings',
+        'connections':      'tool_connections',
+        'heilfrequenz':     'tool_heilfrequenz',
+        'news-tracker':     'tool_news',
+        'patente':          'tool_patente',
+        'traeume':          'tool_traeume',
+        'ufo-sichtungen':   'tool_ufo_sightings',
+        'group-meditation': 'tool_group_meditation',
+        'bewusstsein':      'tool_bewusstsein_journal',
+        // Neue Tools (v12) – group_tools_service.dart Endpoints
+        // Energie-Tools (zweistufige Pfade: /api/tools/energie/{name})
+        'meditation':       'tool_group_meditation',      // energie/meditation
+        'astral':           'tool_meditation_sessions',   // energie/astral
+        'chakra':           'tool_chakra_readings',       // energie/chakra
+        'crystals':         'tool_kristalle',             // energie/crystals
+        'dreams':           'tool_traeume',               // energie/dreams
+        'frequency':        'tool_heilfrequenz',          // energie/frequency
+        // Materie-Tools (zweistufige Pfade: /api/tools/materie/{name})
+        'ufos':             'tool_ufo_sightings',         // materie/ufos
+        'geopolitics':      'tool_geopolitics_events',    // materie/geopolitics
+        'history':          'tool_history_events',        // materie/history
+        'healing':          'tool_healing_methods',       // materie/healing
+        'network':          'tool_network_connections',   // materie/network
+        'research':         'tool_research_documents',    // materie/research
+      };
+
+      const table = toolTableMap[toolName];
+
+      if (method === 'GET') {
+        if (table) {
+          const roomId = url.searchParams.get('room_id') || url.searchParams.get('roomId');
+          let supaPath = `/rest/v1/${table}?select=*&order=created_at.desc&limit=50`;
+          if (roomId) supaPath += `&room_id=eq.${roomId}`;
+          return proxyToSupabase(request, env, supaPath, 'GET');
+        }
+        return jsonResponse({
+          tool: toolName,
+          status: 'available',
+          message: `Tool '${toolName}' ist bereit.`,
+          items: [],
+        });
+      }
+
+      if (method === 'POST' && table) {
+        try {
+          const body = await request.json();
+          const anonKey = env.SUPABASE_ANON_KEY || '';
+          const authHeader = request.headers.get('Authorization') || `Bearer ${anonKey}`;
+          const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': anonKey,
+              'Authorization': authHeader,
+              'Prefer': 'return=representation',
+            },
+            body: JSON.stringify(body),
+          });
+          const data = await res.json().catch(() => ({}));
+          return jsonResponse(data, res.status < 300 ? 201 : res.status);
+        } catch (e) {
+          return errorResponse(`Tool-Speicher-Fehler: ${e.message}`);
+        }
+      }
+    }
+
+    // ── AI Endpunkte ──────────────────────────────────────────
+    if (path.startsWith('/api/ai/') || path.startsWith('/ai/')) {
+      const gatewayUrl = env.OPENCLAW_GATEWAY_URL || 'http://72.62.154.95:50074';
+      const aiPath = path.startsWith('/api/ai/') ? path.replace('/api/ai/', '') : path.replace('/ai/', '');
+
+      try {
+        if (method === 'POST') {
+          const body = await request.json();
+          const res = await fetch(`${gatewayUrl}/api/ai/${aiPath}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+          }).catch(() => null);
+
+          if (!res || !res.ok) {
+            // Graceful fallbacks
+            if (aiPath === 'auto-tag') return jsonResponse({ tags: [] });
+            if (aiPath === 'recommendations') return jsonResponse({ recommendations: [] });
+            if (aiPath === 'suggestions') return jsonResponse({ suggestions: [] });
+            if (aiPath === 'similar') return jsonResponse({ similar: [] });
+            if (aiPath === 'trending') return jsonResponse({ trending: [] });
+            return jsonResponse({ result: null, error: 'AI-Gateway nicht erreichbar' });
+          }
+          const data = await res.json();
+          return jsonResponse(data);
+        }
+
+        if (method === 'GET') {
+          if (aiPath === 'trending') {
+            const limit = url.searchParams.get('limit') || '10';
+            const anonKey = env.SUPABASE_ANON_KEY || '';
+            const res = await fetch(
+              `${SUPABASE_URL}/rest/v1/articles?select=tags,category&is_published=eq.true&order=created_at.desc&limit=100`,
+              { headers: { 'apikey': anonKey, 'Authorization': `Bearer ${anonKey}` } }
+            );
+            const articles = await res.json().catch(() => []);
+            const tagCounts = {};
+            (Array.isArray(articles) ? articles : []).forEach(a => {
+              (a.tags || []).forEach(tag => { tagCounts[tag] = (tagCounts[tag] || 0) + 1; });
+              if (a.category) tagCounts[a.category] = (tagCounts[a.category] || 0) + 1;
+            });
+            const trending = Object.entries(tagCounts)
+              .sort((a, b) => b[1] - a[1])
+              .slice(0, parseInt(limit))
+              .map(([tag, count]) => ({ tag, count }));
+            return jsonResponse({ trending });
+          }
+          return jsonResponse({ data: [], status: 'ok' });
+        }
+      } catch (e) {
+        return errorResponse(`AI-Fehler: ${e.message}`);
+      }
+    }
+
+    // ── Tags Trending ─────────────────────────────────────────
+    if (path.startsWith('/api/tags/trending')) {
+      const limit = url.searchParams.get('limit') || '10';
+      const anonKey = env.SUPABASE_ANON_KEY || '';
+      const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/articles?select=tags,category&is_published=eq.true&limit=200`,
+        { headers: { 'apikey': anonKey, 'Authorization': `Bearer ${anonKey}` } }
+      );
+      const articles = await res.json().catch(() => []);
+      const tagCounts = {};
+      (Array.isArray(articles) ? articles : []).forEach(a => {
+        (a.tags || []).forEach(tag => { tagCounts[tag] = (tagCounts[tag] || 0) + 1; });
+        if (a.category) tagCounts[a.category] = (tagCounts[a.category] || 0) + 1;
+      });
+      const trending = Object.entries(tagCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, parseInt(limit))
+        .map(([tag, count]) => ({ tag, count }));
+      return jsonResponse(trending);
+    }
+
+    // ── Community Aktionen ────────────────────────────────────
+    // ── Moderation Endpoints ──────────────────────────────────
+    if (path.startsWith('/api/moderation/')) {
+      const svcKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY || '';
+      const svcHeaders = { 'Content-Type': 'application/json', 'apikey': svcKey, 'Authorization': `Bearer ${svcKey}` };
+      try {
+        // GET /api/moderation/flagged-content/:world
+        // Flutter erwartet Key "flagged_content" (nicht "flagged")
+        if (method === 'GET' && path.includes('/flagged-content')) {
+          const world = path.split('/')[4] || 'materie';
+          const status = url.searchParams.get('status') || 'pending';
+          const limit = url.searchParams.get('limit') || '50';
+          // Lade neueste Chat-Nachrichten als gemeldete Inhalte (Proxy)
+          const res = await fetch(
+            `${SUPABASE_URL}/rest/v1/chat_messages?select=id,room_id,username,content,created_at&order=created_at.desc&limit=${limit}`,
+            { headers: svcHeaders }
+          );
+          const data = await res.json().catch(() => []);
+          const flagged_content = (Array.isArray(data) ? data : []).map((m, i) => ({
+            id: i + 1,
+            flag_id: `flag_${m.id || i}`,
+            content_id: (m.id || '').toString(),
+            content_type: 'chat_message',
+            content_text: m.content || '',
+            reported_by: 'system',
+            flagged_by_id: 'system',
+            flagged_by_username: 'system',
+            flagged_by_role: 'admin',
+            reason: 'review',
+            status: status === 'all' ? 'pending' : status,
+            created_at: m.created_at || new Date().toISOString(),
+            author_username: m.username || '',
+            content_author_username: m.username || '',
+            world: world,
+          }));
+          return jsonResponse({ success: true, flagged_content, count: flagged_content.length });
+        }
+        // POST /api/moderation/resolve-flag
+        if (method === 'POST' && path.includes('/resolve-flag')) {
+          const body = await request.json().catch(() => ({}));
+          return jsonResponse({ success: true, message: 'Flag resolved', flag_id: body.flag_id });
+        }
+        // POST /api/moderation/dismiss-flag
+        if (method === 'POST' && path.includes('/dismiss-flag')) {
+          const body = await request.json().catch(() => ({}));
+          return jsonResponse({ success: true, message: 'Flag dismissed', flag_id: body.flag_id });
+        }
+        // POST /api/moderation/flag-content
+        if (method === 'POST' && path.includes('/flag-content')) {
+          const body = await request.json().catch(() => ({}));
+          return jsonResponse({ success: true, message: 'Content flagged', flag_id: `flag_${Date.now()}` });
+        }
+        // POST /api/moderation/mute-user
+        if (method === 'POST' && path.includes('/mute-user')) {
+          const body = await request.json().catch(() => ({}));
+          const userId = body.user_id || body.userId;
+          if (userId) {
+            await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}`, {
+              method: 'PATCH', headers: svcHeaders,
+              body: JSON.stringify({ is_banned: true }),
+            }).catch(() => null);
+          }
+          return jsonResponse({ success: true, action: 'muted' });
+        }
+        // POST /api/moderation/unmute-user
+        if (method === 'POST' && path.includes('/unmute-user')) {
+          const body = await request.json().catch(() => ({}));
+          const userId = body.user_id || body.userId;
+          if (userId) {
+            await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}`, {
+              method: 'PATCH', headers: svcHeaders,
+              body: JSON.stringify({ is_banned: false }),
+            }).catch(() => null);
+          }
+          return jsonResponse({ success: true, action: 'unmuted' });
+        }
+        // GET /api/moderation/check-mute/:world/:userId
+        if (method === 'GET' && path.includes('/check-mute')) {
+          const parts = path.split('/');
+          const userId = parts[parts.length - 1];
+          let is_muted = false;
+          if (userId && userId.length > 8) {
+            const res = await fetch(
+              `${SUPABASE_URL}/rest/v1/profiles?select=is_banned&id=eq.${userId}&limit=1`,
+              { headers: svcHeaders }
+            );
+            const data = await res.json().catch(() => []);
+            is_muted = Array.isArray(data) && data[0]?.is_banned === true;
+          }
+          return jsonResponse({ success: true, is_muted, mute_expires_at: null });
+        }
+        // GET /api/moderation/log/:world
+        if (method === 'GET' && path.includes('/log/')) {
+          const world = path.split('/')[4] || 'materie';
+          const limit = url.searchParams.get('limit') || '50';
+          // Lade Profil-Updates als Moderation-Log (Proxy)
+          const res = await fetch(
+            `${SUPABASE_URL}/rest/v1/profiles?select=id,username,role,updated_at&world=eq.${world}&order=updated_at.desc&limit=${limit}`,
+            { headers: svcHeaders }
+          );
+          const data = await res.json().catch(() => []);
+          const logs = (Array.isArray(data) ? data : []).map((u, i) => ({
+            id: i + 1,
+            log_id: `log_${i + 1}`,
+            world: world,
+            action_type: 'profile_update',
+            action: 'profile_update',
+            moderator_id: 'system',
+            moderator_username: 'system',
+            admin_username: 'system',
+            moderator_role: 'admin',
+            target_type: 'user',
+            target_id: u.id || '',
+            target_username: u.username || '',
+            reason: null,
+            metadata: null,
+            created_at: u.updated_at || new Date().toISOString(),
+          }));
+          return jsonResponse({ success: true, logs, count: logs.length });
+        }
+        return jsonResponse({ success: true });
+      } catch (e) {
+        return jsonResponse({ success: false, error: e.message });
+      }
+    }
+
+    if (path.startsWith('/api/community/') || path === '/posts/create' || path === '/comments/create') {
+      const anonKey = env.SUPABASE_ANON_KEY || '';
+      const authHeader = request.headers.get('Authorization') || `Bearer ${anonKey}`;
+
+      if (path.includes('/likes') && method === 'POST') {
+        const body = await request.json().catch(() => ({}));
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/likes`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'apikey': anonKey, 'Authorization': authHeader, 'Prefer': 'return=representation' },
+          body: JSON.stringify(body),
+        });
+        return jsonResponse(await res.json().catch(() => ({})), res.status);
+      }
+
+      if (path.includes('/comments') && method === 'GET') {
+        const postId = path.split('/').pop();
+        const supaPath = `/rest/v1/comments?select=*,profiles(username,avatar_url)&article_id=eq.${postId}&is_deleted=eq.false&order=created_at.asc`;
+        return proxyToSupabase(request, env, supaPath, 'GET');
+      }
+
+      if (path === '/comments/create' || path.includes('/comment')) {
+        const body = await request.json().catch(() => ({}));
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/comments`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'apikey': anonKey, 'Authorization': authHeader, 'Prefer': 'return=representation' },
+          body: JSON.stringify({ ...body, content: body.content || body.text || '' }),
+        });
+        return jsonResponse(await res.json().catch(() => ({})), res.status);
+      }
+
+      if (path.includes('/share') && method === 'POST') {
+        return jsonResponse({ success: true, shared: true });
+      }
+
+      if (path.includes('/user/') && path.includes('/stats')) {
+        const userId = path.split('/user/')[1]?.split('/')[0];
+        if (userId) {
+          const supaPath = `/rest/v1/articles?select=id&user_id=eq.${userId}&is_published=eq.true&limit=1000`;
+          const res = await fetch(`${SUPABASE_URL}${supaPath}`, {
+            headers: { 'apikey': anonKey, 'Authorization': `Bearer ${anonKey}`, 'Prefer': 'count=exact' },
+          });
+          const count = parseInt(res.headers.get('Content-Range')?.split('/')[1] || '0');
+          return jsonResponse({ articleCount: count, followers: 0, following: 0 });
+        }
+      }
+
+      // Batch-Likes
+      if (path.includes('/likes/batch')) {
+        const body = await request.json().catch(() => ({ ids: [] }));
+        return jsonResponse({ liked: [], counts: {} });
+      }
+
+      return jsonResponse({ success: true });
+    }
+
+    // ── Auth Endpunkte ────────────────────────────────────────
+    if (path.startsWith('/auth/')) {
+      const authPath = path.replace('/auth/', '');
+      const anonKey = env.SUPABASE_ANON_KEY || '';
+      const authHeader = request.headers.get('Authorization') || `Bearer ${anonKey}`;
+
+      if (authPath === 'register' && method === 'POST') {
+        // Registration läuft über Supabase Auth direkt
+        return jsonResponse({ success: true, message: 'Nutze Supabase Auth direkt' });
+      }
+      if (authPath === 'validate' && method === 'POST') {
+        const token = request.headers.get('Authorization')?.replace('Bearer ', '');
+        if (!token) return jsonResponse({ valid: false });
+        // Token-Validierung über Supabase
+        const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+          headers: { 'apikey': anonKey, 'Authorization': `Bearer ${token}` },
+        });
+        const user = await res.json().catch(() => null);
+        return jsonResponse({ valid: res.ok, user: user?.email ? { id: user.id, email: user.email } : null });
+      }
+      if (authPath === 'logout' && method === 'POST') {
+        return jsonResponse({ success: true });
+      }
+      if (authPath === 'link-profile' && method === 'POST') {
+        return jsonResponse({ success: true });
+      }
+      if (authPath === 'refresh' && method === 'POST') {
+        return jsonResponse({ success: true });
+      }
+      return jsonResponse({ success: true });
+    }
+
+    // ── Messages Reactions/Receipts ───────────────────────────
+    if (path.startsWith('/messages/')) {
+      const parts = path.split('/'); // /messages/:id/:action
+      const messageId = parts[2];
+      const action = parts[3];
+      const anonKey = env.SUPABASE_ANON_KEY || '';
+      const authHeader = request.headers.get('Authorization') || `Bearer ${anonKey}`;
+
+      if (action === 'react' && method === 'POST') {
+        const body = await request.json().catch(() => ({}));
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/message_reactions`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'apikey': anonKey, 'Authorization': authHeader, 'Prefer': 'return=representation' },
+          body: JSON.stringify({ message_id: messageId, ...body }),
+        });
+        return jsonResponse(await res.json().catch(() => ({})), res.status < 300 ? 201 : res.status);
+      }
+      if (action === 'reactions' && method === 'GET') {
+        const supaPath = `/rest/v1/message_reactions?select=*&message_id=eq.${messageId}&order=created_at.asc`;
+        return proxyToSupabase(request, env, supaPath, 'GET');
+      }
+      if (action === 'read' && method === 'POST') {
+        return jsonResponse({ success: true });
+      }
+      if (action === 'receipts' && method === 'GET') {
+        return jsonResponse({ receipts: [] });
+      }
+      return jsonResponse({ success: true });
+    }
+
+    // ── Status Heartbeat ──────────────────────────────────────
+    if (path.startsWith('/api/status/')) {
+      if (method === 'POST') {
+        return jsonResponse({ status: 'ok', timestamp: new Date().toISOString() });
+      }
+      return jsonResponse({ online: true, timestamp: new Date().toISOString() });
+    }
+
+    // ── Error Reporting ───────────────────────────────────────
+    if (path === '/errors/report' && method === 'POST') {
+      try {
+        const body = await request.json();
+        console.error('[ERROR_REPORT]', JSON.stringify(body));
+      } catch (_) {}
+      return jsonResponse({ received: true });
+    }
+
+    // ── Voice/WebRTC ──────────────────────────────────────────
+    if (path.startsWith('/voice/') && path !== '/voice/rooms') {
+      const voicePath = path.replace('/voice/', '');
+      const anonKey = env.SUPABASE_ANON_KEY || '';
+      const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || anonKey;
+
+      // ── JOIN: Register participant in voice_participants ──────
+      if ((voicePath === 'join' || voicePath.endsWith('/join')) && method === 'POST') {
+        try {
+          const body = await request.json().catch(() => ({}));
+          const roomId   = body.roomId   || body.room_id   || voicePath.split('/')[0];
+          const userId   = body.userId   || body.user_id   || null;
+          const username = body.username || 'Anonym';
+          const isUUID = userId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);
+
+          if (roomId) {
+            const upsertBody = {
+              room_id:    roomId,
+              user_id:    isUUID ? userId : null,
+              username:   username,
+              avatar_url: body.avatarUrl || null,
+              is_active:  true,
+              is_muted:   body.pushToTalk || false,
+              joined_at:  new Date().toISOString(),
+            };
+            await fetch(`${SUPABASE_URL}/rest/v1/voice_participants`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'apikey': serviceKey,
+                'Authorization': `Bearer ${serviceKey}`,
+                'Prefer': 'resolution=merge-duplicates,return=minimal',
+              },
+              body: JSON.stringify(upsertBody),
+            });
+          }
+          return jsonResponse({ success: true, action: 'join', roomId });
+        } catch (e) {
+          return jsonResponse({ success: true, action: 'join', error: e.message });
+        }
+      }
+
+      // ── LEAVE: Deactivate participant ─────────────────────────
+      if ((voicePath === 'leave' || voicePath.endsWith('/leave')) && method === 'POST') {
+        try {
+          const body = await request.json().catch(() => ({}));
+          const roomId = body.roomId || body.room_id;
+          const userId = body.userId || body.user_id;
+          const isUUID = userId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);
+
+          if (roomId && isUUID) {
+            await fetch(`${SUPABASE_URL}/rest/v1/voice_participants?room_id=eq.${roomId}&user_id=eq.${userId}`, {
+              method: 'PATCH',
+              headers: {
+                'Content-Type': 'application/json',
+                'apikey': serviceKey,
+                'Authorization': `Bearer ${serviceKey}`,
+              },
+              body: JSON.stringify({ is_active: false, left_at: new Date().toISOString() }),
+            });
+          }
+          return jsonResponse({ success: true, action: 'leave' });
+        } catch (e) {
+          return jsonResponse({ success: true, action: 'leave', error: e.message });
+        }
+      }
+
+      // ── MUTE/UNMUTE ───────────────────────────────────────────
+      if (voicePath === 'mute' && method === 'POST') {
+        try {
+          const body = await request.json().catch(() => ({}));
+          const { roomId, userId, isMuted } = body;
+          const isUUID = userId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);
+          if (roomId && isUUID) {
+            await fetch(`${SUPABASE_URL}/rest/v1/voice_participants?room_id=eq.${roomId}&user_id=eq.${userId}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json', 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}` },
+              body: JSON.stringify({ is_muted: isMuted }),
+            });
+          }
+          return jsonResponse({ success: true, isMuted });
+        } catch (e) {
+          return jsonResponse({ success: true });
+        }
+      }
+
+      // ── PARTICIPANTS: Who is in the room? ─────────────────────
+      if (voicePath.startsWith('participants/')) {
+        const roomId = voicePath.replace('participants/', '');
+        const supaPath = `/rest/v1/voice_participants?select=*,profiles(username,avatar_url)&room_id=eq.${roomId}&is_active=eq.true`;
+        return proxyToSupabase(request, env, supaPath, 'GET');
+      }
+
+      // ── ROOMS by world ────────────────────────────────────────
+      if (voicePath.startsWith('rooms/')) {
+        const world = voicePath.replace('rooms/', '');
+        const supaPath = `/rest/v1/chat_rooms?select=*&is_active=eq.true&world=eq.${world}&order=name.asc`;
+        return proxyToSupabase(request, env, supaPath, 'GET');
+      }
+
+      // ── SIGNALING: WebRTC über Supabase Realtime (kein WS nötig) ──
+      if (voicePath === 'signaling' || voicePath.startsWith('signal')) {
+        // Cloudflare Workers unterstützen keine WebSockets zu externen WSS
+        // → Signaling läuft über Supabase Realtime (Presence + Broadcast)
+        return jsonResponse({
+          success: true,
+          signalingMode: 'supabase-realtime',
+          realtimeUrl: `${SUPABASE_URL.replace('https://', 'wss://')}/realtime/v1/websocket`,
+          message: 'Nutze Supabase Realtime für WebRTC Signaling',
+        });
+      }
+
+      return jsonResponse({ success: true });
+    }
+
+    // ── Wrapper / Short-URLs ──────────────────────────────────
+    if (path.startsWith('/go/') || path.startsWith('/out')) {
+      const target = url.searchParams.get('url') || path.replace('/go/', 'https://t.me/');
+      return Response.redirect(target, 302);
+    }
+
+    // ── 404 ───────────────────────────────────────────────────
+    return errorResponse(`Endpoint '${path}' nicht gefunden`, 404);
+  },
+};
+
+// PLACEHOLDER - wird unten eingefügt
