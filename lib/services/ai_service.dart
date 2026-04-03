@@ -1,5 +1,7 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import '../config/api_config.dart';
+import 'image_analysis_service.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 
@@ -38,125 +40,23 @@ class AIService {
     }
   }
   
-  /// 📸 BILD-FORENSIK mit echter KI
-  /// 
-  /// Analysiert Bilder auf Manipulation, Deep Fakes, AI-Generierung
-  /// 8 FORENSISCHE TESTS:
-  /// 1. EXIF Analysis - Metadaten Überprüfung
-  /// 2. ELA (Error Level Analysis) - Kompressionsartefakte
-  /// 3. Copy-Move Detection - Duplizierte Bereiche
-  /// 4. Splicing Detection - Zusammengefügte Bilder
-  /// 5. Noise Analysis - Rauschen-Inkonsistenzen
-  /// 6. Lighting Analysis - Beleuchtungs-Inkonsistenzen
-  /// 7. Clone Detection - Klonierte Objekte
-  /// 8. GAN Detection - AI-generierte Bilder (Deep Fakes)
+  /// 📸 BILD-FORENSIK mit echter KI (delegiert an ImageAnalysisService v2)
+  ///
+  /// Nutzt Hugging Face API (kostenlos) für echte KI-Analyse:
+  /// - Bildklassifikation (google/vit-base-patch16-224)
+  /// - KI/Deep-Fake Erkennung (umm-maybe/AI-image-detector)
+  /// - Bildbeschreibung (Salesforce/blip-image-captioning-base)
+  /// - Lokale EXIF + Byte-Forensik (immer verfügbar)
   static Future<Map<String, dynamic>> analyzeImage(String base64Image) async {
     // 🤖 ECHTE FORENSISCHE ANALYSE (keine Fake-Daten!)
     // Jedes Bild wird individuell analysiert
     
     try {
-      // Decode Image für Analyse
-      final bytes = base64.decode(base64Image);
-      final imageSize = bytes.length;
-      
-      // Starte alle 8 Tests
-      final results = {
-        'timestamp': DateTime.now().toIso8601String(),
-        'imageSize': imageSize,
-        'tests': {},
-        'overallVerdict': '',
-        'manipulationScore': 0,
-        'confidence': 0,
-        'evidence': <String>[],
-        'warnings': <String>[],
-        'isRealAI': true,
-        'isLocalFallback': false,
-      };
-      
-      // TEST 1: EXIF Analysis
-      final exifResult = _analyzeEXIF(bytes);
-      (results['tests'] as Map<String, dynamic>)['exif'] = exifResult;
-      if (exifResult['suspicious'] == true) {
-        results['manipulationScore'] = (results['manipulationScore'] as int) + 15;
-        (results['evidence'] as List<String>).add('⚠️ EXIF: ${exifResult['reason']}');
-      }
-      
-      // TEST 2: Error Level Analysis (ELA)
-      final elaResult = _analyzeELA(bytes);
-      (results['tests'] as Map<String, dynamic>)['ela'] = elaResult;
-      if (elaResult['suspicious'] == true) {
-        results['manipulationScore'] = (results['manipulationScore'] as int) + 20;
-        (results['evidence'] as List<String>).add('⚠️ ELA: ${elaResult['reason']}');
-      }
-      
-      // TEST 3: Copy-Move Detection
-      final copyMoveResult = _detectCopyMove(bytes);
-      (results['tests'] as Map<String, dynamic>)['copy_move'] = copyMoveResult;
-      if (copyMoveResult['suspicious'] == true) {
-        results['manipulationScore'] = (results['manipulationScore'] as int) + 25;
-        (results['evidence'] as List<String>).add('⚠️ Copy-Move: ${copyMoveResult['reason']}');
-      }
-      
-      // TEST 4: Splicing Detection
-      final splicingResult = _detectSplicing(bytes);
-      (results['tests'] as Map<String, dynamic>)['splicing'] = splicingResult;
-      if (splicingResult['suspicious'] == true) {
-        results['manipulationScore'] = (results['manipulationScore'] as int) + 20;
-        (results['evidence'] as List<String>).add('⚠️ Splicing: ${splicingResult['reason']}');
-      }
-      
-      // TEST 5: Noise Analysis
-      final noiseResult = _analyzeNoise(bytes);
-      (results['tests'] as Map<String, dynamic>)['noise'] = noiseResult;
-      if (noiseResult['suspicious'] == true) {
-        results['manipulationScore'] = (results['manipulationScore'] as int) + 15;
-        (results['evidence'] as List<String>).add('⚠️ Noise: ${noiseResult['reason']}');
-      }
-      
-      // TEST 6: Lighting Analysis
-      final lightingResult = _analyzeLighting(bytes);
-      (results['tests'] as Map<String, dynamic>)['lighting'] = lightingResult;
-      if (lightingResult['suspicious'] == true) {
-        results['manipulationScore'] = (results['manipulationScore'] as int) + 15;
-        (results['evidence'] as List<String>).add('⚠️ Lighting: ${lightingResult['reason']}');
-      }
-      
-      // TEST 7: Clone Detection
-      final cloneResult = _detectClone(bytes);
-      (results['tests'] as Map<String, dynamic>)['clone'] = cloneResult;
-      if (cloneResult['suspicious'] == true) {
-        results['manipulationScore'] = (results['manipulationScore'] as int) + 20;
-        (results['evidence'] as List<String>).add('⚠️ Clone: ${cloneResult['reason']}');
-      }
-      
-      // TEST 8: AI/GAN Detection (Deep Fakes)
-      final aiResult = _detectAIGeneration(bytes);
-      (results['tests'] as Map<String, dynamic>)['ai_detection'] = aiResult;
-      if (aiResult['suspicious'] == true) {
-        results['manipulationScore'] = (results['manipulationScore'] as int) + 30;
-        (results['evidence'] as List<String>).add('⚠️ AI Detection: ${aiResult['reason']}');
-      }
-      
-      // Calculate Overall Verdict
-      final manipScore = results['manipulationScore'] as int;
-      if (manipScore == 0) {
-        results['overallVerdict'] = 'AUTHENTISCH';
-        results['confidence'] = 95;
-      } else if (manipScore < 30) {
-        results['overallVerdict'] = 'VERDÄCHTIG';
-        results['confidence'] = 70;
-      } else if (manipScore < 60) {
-        results['overallVerdict'] = 'WAHRSCHEINLICH MANIPULIERT';
-        results['confidence'] = 85;
-      } else {
-        results['overallVerdict'] = 'MANIPULIERT / GEFÄLSCHT';
-        results['confidence'] = 95;
-      }
-      
-      return results;
-      
+      // Base64 → Bytes → ImageAnalysisService (mit HF API + lokaler Forensik)
+      final bytes = Uint8List.fromList(base64.decode(base64Image));
+      return await ImageAnalysisService.analyzeImage(bytes);
     } catch (e) {
-      print('❌ Forensische Analyse fehlgeschlagen: $e');
+      if (kDebugMode) debugPrint('❌ Forensische Analyse fehlgeschlagen: $e');
       return _fallbackImageAnalysis();
     }
   }

@@ -32,6 +32,7 @@ class _VideoVoiceChatScreenState extends State<VideoVoiceChatScreen>
   late VideoVoiceService _service;
   late AnimationController _pulseController;
   bool _isInitialized = false;
+  bool _cameraLoading = false; // Loading-Indikator für Kameraoperationen
 
   // Lokale Kamera-Vorschau Offset (draggable)
   Offset _localPreviewOffset = const Offset(16, 16);
@@ -183,7 +184,7 @@ class _VideoVoiceChatScreenState extends State<VideoVoiceChatScreen>
         .toList();
 
     // Lokaler Video-Teilnehmer
-    final hasLocalVideo = _service.isCameraOn;
+    final hasLocalVideo = _service.isCameraOn && _isInitialized;
     final totalVideoCount = videoParticipants.length + (hasLocalVideo ? 1 : 0);
 
     return Padding(
@@ -218,7 +219,7 @@ class _VideoVoiceChatScreenState extends State<VideoVoiceChatScreen>
     List<VoiceVideoParticipant> videoParticipants,
     bool hasLocalVideo,
   ) {
-    final count = videoParticipants.length + (hasLocalVideo ? 0 : 0);
+    final count = videoParticipants.length + (hasLocalVideo ? 1 : 0);
     // Grid-Layout
     int columns = count <= 1 ? 1 : 2;
 
@@ -529,15 +530,25 @@ class _VideoVoiceChatScreenState extends State<VideoVoiceChatScreen>
 
           // Kamera
           _buildControlButton(
-            icon: _service.isCameraOn ? Icons.videocam : Icons.videocam_off,
-            label: _service.isCameraOn ? 'Kamera' : 'Kamera aus',
-            color: _service.isCameraOn ? Colors.blue : Colors.white54,
+            icon: _cameraLoading
+                ? Icons.hourglass_empty
+                : (_service.isCameraOn ? Icons.videocam : Icons.videocam_off),
+            label: _cameraLoading
+                ? 'Warte...'
+                : (_service.isCameraOn ? 'Kamera' : 'Kamera aus'),
+            color: _cameraLoading
+                ? Colors.orange
+                : (_service.isCameraOn ? Colors.blue : Colors.white54),
             bgColor: _service.isCameraOn
                 ? Colors.blue.withValues(alpha: 0.2)
                 : Colors.white.withValues(alpha: 0.1),
-            onTap: () async {
-              await _service.toggleCamera();
-              setState(() {});
+            onTap: _cameraLoading ? null : () async {
+              if (mounted) setState(() => _cameraLoading = true);
+              try {
+                await _service.toggleCamera();
+              } finally {
+                if (mounted) setState(() => _cameraLoading = false);
+              }
             },
           ),
 
@@ -545,12 +556,16 @@ class _VideoVoiceChatScreenState extends State<VideoVoiceChatScreen>
           _buildControlButton(
             icon: Icons.flip_camera_ios,
             label: 'Wechseln',
-            color: _service.isCameraOn ? Colors.white : Colors.white24,
+            color: (_service.isCameraOn && !_cameraLoading) ? Colors.white : Colors.white24,
             bgColor: Colors.white.withValues(alpha: 0.1),
-            onTap: _service.isCameraOn
+            onTap: (_service.isCameraOn && !_cameraLoading)
                 ? () async {
-                    await _service.switchCamera();
-                    setState(() {});
+                    if (mounted) setState(() => _cameraLoading = true);
+                    try {
+                      await _service.switchCamera();
+                    } finally {
+                      if (mounted) setState(() => _cameraLoading = false);
+                    }
                   }
                 : null,
           ),

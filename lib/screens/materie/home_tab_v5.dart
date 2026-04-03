@@ -169,28 +169,37 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
   // ══════════════════════════════════════════════════════════════════════
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: _bg,
-      body: RefreshIndicator(
-        onRefresh: _loadAll,
-        color: _blue,
-        backgroundColor: _cardB,
-        displacement: 60,
-        child: CustomScrollView(
-          controller: _scrollCtrl,
-          physics: const BouncingScrollPhysics(
-              parent: AlwaysScrollableScrollPhysics()),
-          slivers: [
-            _buildHeroHeader(),
-            _buildLiveStatBanner(),
-            _buildActionGrid(),
-            _buildSectionTitle('🔥 Trending', subtitle: 'Heiß diskutiert'),
-            _buildTrendingChips(),
-            _buildSectionTitle('📰 Neueste Artikel', subtitle: 'Frisch aus der Welt'),
-            _buildArticleCards(),
-            _buildExploreSection(),
-            const SliverPadding(padding: EdgeInsets.only(bottom: 120)),
-          ],
+    return DefaultTextStyle.merge(
+      style: const TextStyle(
+        decoration: TextDecoration.none,
+        decorationColor: Colors.transparent,
+        fontFamily: 'Roboto',
+        letterSpacing: 0.1,
+        height: 1.25,
+      ),
+      child: Scaffold(
+        backgroundColor: _bg,
+        body: RefreshIndicator(
+          onRefresh: _loadAll,
+          color: _blue,
+          backgroundColor: _cardB,
+          displacement: 60,
+          child: CustomScrollView(
+            controller: _scrollCtrl,
+            physics: const BouncingScrollPhysics(
+                parent: AlwaysScrollableScrollPhysics()),
+            slivers: [
+              _buildHeroHeader(),
+              _buildLiveStatBanner(),
+              _buildActionGrid(),
+              _buildSectionTitle('🔥 Trending', subtitle: 'Heiß diskutiert'),
+              _buildTrendingChips(),
+              _buildSectionTitle('📰 Neueste Artikel', subtitle: 'Frisch aus der Welt'),
+              _buildArticleCards(),
+              _buildExploreSection(),
+              const SliverPadding(padding: EdgeInsets.only(bottom: 120)),
+            ],
+          ),
         ),
       ),
     );

@@ -190,29 +190,38 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
   // ══════════════════════════════════════════════════════════════════════
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: _bg,
-      body: RefreshIndicator(
-        onRefresh: _loadAll,
-        color: _purple,
-        backgroundColor: _cardB,
-        displacement: 60,
-        child: CustomScrollView(
-          controller: _scrollCtrl,
-          physics: const BouncingScrollPhysics(
-              parent: AlwaysScrollableScrollPhysics()),
-          slivers: [
-            _buildHeroHeader(),
-            _buildMysticBanner(),
-            _buildLiveStatBanner(),
-            _buildActionGrid(),
-            _buildSectionTitle('✨ Spirituelle Themen', subtitle: 'Im Fokus'),
-            _buildTrendingChips(),
-            _buildSectionTitle('📿 Neueste Artikel', subtitle: 'Wissen & Weisheit'),
-            _buildArticleCards(),
-            _buildExploreSection(),
-            const SliverPadding(padding: EdgeInsets.only(bottom: 120)),
-          ],
+    return DefaultTextStyle.merge(
+      style: const TextStyle(
+        decoration: TextDecoration.none,
+        decorationColor: Colors.transparent,
+        fontFamily: 'Roboto',
+        letterSpacing: 0.1,
+        height: 1.25,
+      ),
+      child: Scaffold(
+        backgroundColor: _bg,
+        body: RefreshIndicator(
+          onRefresh: _loadAll,
+          color: _purple,
+          backgroundColor: _cardB,
+          displacement: 60,
+          child: CustomScrollView(
+            controller: _scrollCtrl,
+            physics: const BouncingScrollPhysics(
+                parent: AlwaysScrollableScrollPhysics()),
+            slivers: [
+              _buildHeroHeader(),
+              _buildMysticBanner(),
+              _buildLiveStatBanner(),
+              _buildActionGrid(),
+              _buildSectionTitle('✨ Spirituelle Themen', subtitle: 'Im Fokus'),
+              _buildTrendingChips(),
+              _buildSectionTitle('📿 Neueste Artikel', subtitle: 'Wissen & Weisheit'),
+              _buildArticleCards(),
+              _buildExploreSection(),
+              const SliverPadding(padding: EdgeInsets.only(bottom: 120)),
+            ],
+          ),
         ),
       ),
     );
