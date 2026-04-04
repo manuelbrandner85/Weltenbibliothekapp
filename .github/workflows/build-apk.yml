@@ -10,7 +10,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
 
     steps:
       - name: Checkout Code
@@ -35,19 +35,57 @@ jobs:
       - name: Flutter Analyze
         run: flutter analyze --no-fatal-infos || true
 
-      - name: Build APK (Release)
-        run: flutter build apk --release
-
-      - name: Rename APK
+      - name: Get Version
         run: |
           VERSION=$(grep 'version:' pubspec.yaml | head -1 | awk '{print $2}' | cut -d'+' -f1)
-          cp build/app/outputs/flutter-apk/app-release.apk "weltenbibliothek-v${VERSION}-release.apk"
-          echo "APK_NAME=weltenbibliothek-v${VERSION}-release.apk" >> $GITHUB_ENV
           echo "VERSION=${VERSION}" >> $GITHUB_ENV
+          echo "Building Weltenbibliothek v${VERSION}"
 
-      - name: Upload APK Artifact
+      - name: Build Split APKs (arm64, armeabi-v7a, x86_64)
+        run: flutter build apk --release --split-per-abi
+
+      - name: Build Universal APK
+        run: flutter build apk --release
+
+      - name: Rename APKs
+        run: |
+          # Split APKs (optimiert pro Architektur)
+          cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk \
+            "weltenbibliothek-v${VERSION}-arm64.apk"
+          cp build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk \
+            "weltenbibliothek-v${VERSION}-armeabi-v7a.apk"
+          cp build/app/outputs/flutter-apk/app-x86_64-release.apk \
+            "weltenbibliothek-v${VERSION}-x86_64.apk"
+          # Universal APK (alle Architekturen)
+          cp build/app/outputs/flutter-apk/app-release.apk \
+            "weltenbibliothek-v${VERSION}-universal.apk"
+          echo "--- APK Sizes ---"
+          ls -lh weltenbibliothek-v${VERSION}-*.apk
+
+      - name: Upload arm64 APK (empfohlen)
         uses: actions/upload-artifact@v4
         with:
-          name: weltenbibliothek-v${{ env.VERSION }}-release
-          path: ${{ env.APK_NAME }}
-          retention-days: 30
+          name: weltenbibliothek-v${{ env.VERSION }}-arm64
+          path: weltenbibliothek-v${{ env.VERSION }}-arm64.apk
+          retention-days: 90
+
+      - name: Upload armeabi-v7a APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: weltenbibliothek-v${{ env.VERSION }}-armeabi-v7a
+          path: weltenbibliothek-v${{ env.VERSION }}-armeabi-v7a.apk
+          retention-days: 90
+
+      - name: Upload x86_64 APK (Emulator)
+        uses: actions/upload-artifact@v4
+        with:
+          name: weltenbibliothek-v${{ env.VERSION }}-x86_64
+          path: weltenbibliothek-v${{ env.VERSION }}-x86_64.apk
+          retention-days: 90
+
+      - name: Upload Universal APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: weltenbibliothek-v${{ env.VERSION }}-universal
+          path: weltenbibliothek-v${{ env.VERSION }}-universal.apk
+          retention-days: 90
