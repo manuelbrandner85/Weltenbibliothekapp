@@ -2,6 +2,7 @@
 /// Zentrale Navigation für alle Spirit-Tools
 library;
 
+import 'dart:async';
 import 'package:flutter/material.dart';
  // OpenClaw v2.0
 import 'package:flutter/foundation.dart';
@@ -195,17 +196,25 @@ class OfflineIndicator extends StatefulWidget {
 
 class _OfflineIndicatorState extends State<OfflineIndicator> {
   final _offlineService = OfflineService();
+  StreamSubscription? _connectSub;
 
   @override
   void initState() {
     super.initState();
     _offlineService.checkConnectivity();
-    Connectivity().onConnectivityChanged.listen((result) {
+    _connectSub = Connectivity().onConnectivityChanged.listen((result) {
+      if (!mounted) return;
       setState(() {});
       if (!result.contains(ConnectivityResult.none)) {
         _offlineService.syncAll();
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _connectSub?.cancel();
+    super.dispose();
   }
 
   @override

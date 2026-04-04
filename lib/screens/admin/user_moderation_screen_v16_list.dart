@@ -69,10 +69,8 @@ class _UserModerationScreenV16ListState extends ConsumerState<UserModerationScre
     });
     
     try {
-      final users = await WorldAdminService.getUsersByWorld(
-        widget.world,
-        role: admin.role ?? 'root_admin',
-      );
+      // ✅ FIX: Lade ALLE User aus beiden Welten
+      final users = await WorldAdminService.getAllUsers();
       
       setState(() {
         _allUsers = users;
@@ -618,7 +616,32 @@ class _UserModerationScreenV16ListState extends ConsumerState<UserModerationScre
         title: Row(
           children: [
             Text(user.username, style: const TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(width: 8),
+            const SizedBox(width: 6),
+            // ✅ Welt-Badge
+            if (user.world != null)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                decoration: BoxDecoration(
+                  color: user.world == 'materie'
+                      ? Colors.orange.withValues(alpha: 0.15)
+                      : Colors.teal.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(
+                    color: user.world == 'materie'
+                        ? Colors.orange.withValues(alpha: 0.4)
+                        : Colors.teal.withValues(alpha: 0.4),
+                  ),
+                ),
+                child: Text(
+                  user.world == 'materie' ? 'Materie' : 'Energie',
+                  style: TextStyle(
+                    color: user.world == 'materie' ? Colors.orange : Colors.teal,
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            const SizedBox(width: 6),
             if (user.isRootAdmin)
               const Chip(
                 label: Text('ROOT', style: TextStyle(fontSize: 10)),
@@ -655,7 +678,7 @@ class _UserModerationScreenV16ListState extends ConsumerState<UserModerationScre
                 _buildInfoRow('User-ID:', user.userId),
                 _buildInfoRow('Display Name:', user.displayName ?? user.username),
                 _buildInfoRow('Rolle:', user.role),
-                _buildInfoRow('Erstellt:', user.createdAt.split('T')[0]),
+                _buildInfoRow('Erstellt:', user.createdAt.contains('T') ? user.createdAt.split('T')[0] : user.createdAt),
                 
                 const Divider(height: 24),
                 

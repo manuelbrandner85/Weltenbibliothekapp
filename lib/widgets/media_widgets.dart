@@ -3,6 +3,7 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'glassmorphism_card.dart';
 import 'premium_icons.dart';
+import '../services/media_services.dart'; // Real Tenor API
 
 /// 🎬 VIDEO PREVIEW WIDGET - Video-Vorschau mit Thumbnail
 class VideoPreviewWidget extends StatelessWidget {
@@ -124,16 +125,19 @@ class _GifPickerWidgetState extends State<GifPickerWidget> {
   
   Future<void> _loadTrendingGifs() async {
     setState(() => _isLoading = true);
-    // Simuliere Tenor API Call
-    await Future.delayed(const Duration(milliseconds: 500));
-    setState(() {
-      _gifs = List.generate(20, (i) => {
-        'id': 'gif_$i',
-        'url': 'https://via.placeholder.com/200x150.gif?text=GIF+${i+1}',
-        'title': 'Trending GIF ${i+1}',
-      });
-      _isLoading = false;
-    });
+    try {
+      final results = await GifService.getTrendingGifs(limit: 20);
+      if (mounted) {
+        setState(() {
+          _gifs = results;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
   
   Future<void> _searchGifs(String query) async {
@@ -143,15 +147,19 @@ class _GifPickerWidgetState extends State<GifPickerWidget> {
     }
     
     setState(() => _isLoading = true);
-    await Future.delayed(const Duration(milliseconds: 500));
-    setState(() {
-      _gifs = List.generate(20, (i) => {
-        'id': 'search_$i',
-        'url': 'https://via.placeholder.com/200x150.gif?text=$query+${i+1}',
-        'title': '$query ${i+1}',
-      });
-      _isLoading = false;
-    });
+    try {
+      final results = await GifService.searchGifs(query, limit: 20);
+      if (mounted) {
+        setState(() {
+          _gifs = results;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
   
   @override
@@ -272,19 +280,38 @@ class _GifPickerWidgetState extends State<GifPickerWidget> {
                         },
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(12),
-                          child: Container(
-                            color: Colors.white.withValues(alpha: 0.1),
-                            child: Center(
-                              child: Text(
-                                gif['title'],
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10,
+                          child: gif['url'] != null && (gif['url'] as String).startsWith('http')
+                            ? Image.network(
+                                gif['preview'] ?? gif['url'],
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) => Container(
+                                  color: Colors.white.withValues(alpha: 0.1),
+                                  child: Center(
+                                    child: Text(
+                                      gif['title'] ?? 'GIF',
+                                      textAlign: TextAlign.center,
+                                      style: const TextStyle(color: Colors.white, fontSize: 10),
+                                    ),
+                                  ),
+                                ),
+                                loadingBuilder: (context, child, loadingProgress) {
+                                  if (loadingProgress == null) return child;
+                                  return Container(
+                                    color: Colors.white.withValues(alpha: 0.1),
+                                    child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                                  );
+                                },
+                              )
+                            : Container(
+                                color: Colors.white.withValues(alpha: 0.1),
+                                child: Center(
+                                  child: Text(
+                                    gif['title'] ?? 'GIF',
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(color: Colors.white, fontSize: 10),
+                                  ),
                                 ),
                               ),
-                            ),
-                          ),
                         ),
                       );
                     },

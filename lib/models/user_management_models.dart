@@ -3,78 +3,8 @@
 /// Models für Admin User Management (Phase 2)
 library;
 
-/// WorldUser - Repräsentiert einen User im System
-class WorldUser {
-  final String id;
-  final String username;
-  final String? world; // 'materie' or 'energie'
-  final String? role; // 'user', 'admin', 'root_admin'
-  final bool isAdmin;
-  final bool isRootAdmin;
-  final String? email;
-  final String? avatarUrl;
-  final String? avatarEmoji;
-  final DateTime? createdAt;
-  final DateTime? lastActivityAt;
-  final bool isSuspended;
-  final String? suspensionReason;
-
-  WorldUser({
-    required this.id,
-    required this.username,
-    this.world,
-    this.role,
-    this.isAdmin = false,
-    this.isRootAdmin = false,
-    this.email,
-    this.avatarUrl,
-    this.avatarEmoji,
-    this.createdAt,
-    this.lastActivityAt,
-    this.isSuspended = false,
-    this.suspensionReason,
-  });
-
-  factory WorldUser.fromJson(Map<String, dynamic> json) {
-    return WorldUser(
-      id: json['id'] as String? ?? '',
-      username: json['username'] as String? ?? '',
-      world: json['world'] as String?,
-      role: json['role'] as String?,
-      isAdmin: json['is_admin'] as bool? ?? false,
-      isRootAdmin: json['is_root_admin'] as bool? ?? false,
-      email: json['email'] as String?,
-      avatarUrl: json['avatar_url'] as String?,
-      avatarEmoji: json['avatar_emoji'] as String?,
-      createdAt: json['created_at'] != null 
-          ? DateTime.tryParse(json['created_at'] as String)
-          : null,
-      lastActivityAt: json['last_activity_at'] != null
-          ? DateTime.tryParse(json['last_activity_at'] as String)
-          : null,
-      isSuspended: json['is_suspended'] as bool? ?? false,
-      suspensionReason: json['suspension_reason'] as String?,
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'username': username,
-      if (world != null) 'world': world,
-      if (role != null) 'role': role,
-      'is_admin': isAdmin,
-      'is_root_admin': isRootAdmin,
-      if (email != null) 'email': email,
-      if (avatarUrl != null) 'avatar_url': avatarUrl,
-      if (avatarEmoji != null) 'avatar_emoji': avatarEmoji,
-      if (createdAt != null) 'created_at': createdAt!.toIso8601String(),
-      if (lastActivityAt != null) 'last_activity_at': lastActivityAt!.toIso8601String(),
-      'is_suspended': isSuspended,
-      if (suspensionReason != null) 'suspension_reason': suspensionReason,
-    };
-  }
-}
+// ✅ KONSOLIDIERT: WorldUser kommt aus world_admin_service.dart (kanonische Definition)
+export '../services/world_admin_service.dart' show WorldUser;
 
 /// UserActivity - Repräsentiert eine User-Aktivität
 class UserActivity {

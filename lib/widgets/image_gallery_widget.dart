@@ -263,9 +263,10 @@ class _ImageGalleryFullscreenState extends State<ImageGalleryFullscreen> {
             itemCount: widget.images.length,
             builder: (context, index) {
               final image = widget.images[index];
+              final imageUrl = (image['url'] ?? image['src'] ?? '') as String;
               
               return PhotoViewGalleryPageOptions(
-                imageProvider: const AssetImage('assets/placeholder.png'),
+                imageProvider: NetworkImage(imageUrl),
                 minScale: PhotoViewComputedScale.contained,
                 maxScale: PhotoViewComputedScale.covered * 2,
                 heroAttributes: PhotoViewHeroAttributes(tag: 'image_$index'),
@@ -281,7 +282,7 @@ class _ImageGalleryFullscreenState extends State<ImageGalleryFullscreen> {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          image['title'] ?? 'Bild ${index + 1}',
+                          image['title'] as String? ?? 'Bild ${index + 1}',
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 16,
@@ -291,7 +292,7 @@ class _ImageGalleryFullscreenState extends State<ImageGalleryFullscreen> {
                         const SizedBox(height: 24),
                         ElevatedButton.icon(
                           onPressed: () async {
-                            final uri = Uri.parse(image['url'] as String);
+                            final uri = Uri.parse((image['url'] ?? '') as String);
                             if (await canLaunchUrl(uri)) {
                               await launchUrl(uri, mode: LaunchMode.externalApplication);
                             }

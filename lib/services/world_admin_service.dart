@@ -216,6 +216,56 @@ class WorldAdminService {
     return [];
   }
 
+  /// Get ALL users from BOTH worlds (Energie + Materie)
+  /// Admin sees all users with world label
+  static Future<List<WorldUser>> getAllUsers() async {
+    if (kDebugMode) {
+      debugPrint('📋 Loading ALL users from both worlds...');
+    }
+
+    final results = await Future.wait([
+      getUsersByWorld('materie'),
+      getUsersByWorld('energie'),
+    ]);
+
+    final materieUsers = results[0];
+    final energieUsers = results[1];
+
+    // Tag users with their world
+    for (final u in materieUsers) {
+      u.world = 'materie';
+    }
+    for (final u in energieUsers) {
+      u.world = 'energie';
+    }
+
+    // Merge and deduplicate (same userId might appear in both worlds)
+    final Map<String, WorldUser> merged = {};
+    for (final u in materieUsers) {
+      merged[u.userId] = u;
+    }
+    for (final u in energieUsers) {
+      if (!merged.containsKey(u.userId)) {
+        merged[u.userId] = u;
+      }
+    }
+
+    // Sort: root_admin first, then admin, then user
+    final allUsers = merged.values.toList();
+    allUsers.sort((a, b) {
+      const order = {'root_admin': 0, 'admin': 1, 'user': 2};
+      final aOrder = order[a.role] ?? 2;
+      final bOrder = order[b.role] ?? 2;
+      return aOrder.compareTo(bOrder);
+    });
+
+    if (kDebugMode) {
+      debugPrint('✅ Total users: ${allUsers.length} (Materie: ${materieUsers.length}, Energie: ${energieUsers.length})');
+    }
+
+    return allUsers;
+  }
+
   // ════════════════════════════════════════════════════════════
   // ROLE MANAGEMENT
   // ════════════════════════════════════════════════════════════
@@ -525,6 +575,9 @@ class WorldUser {
   final String? avatarUrl;
   final String? avatarEmoji;
   final String createdAt;
+  String? world; // Welche Welt (materie/energie) - mutable for tagging
+  final bool isSuspended;
+  final String? suspensionReason;
 
   WorldUser({
     required this.profileId,
@@ -535,6 +588,9 @@ class WorldUser {
     this.avatarUrl,
     this.avatarEmoji,
     required this.createdAt,
+    this.world,
+    this.isSuspended = false,
+    this.suspensionReason,
   });
 
   factory WorldUser.fromJson(Map<String, dynamic> json) {
@@ -547,11 +603,21 @@ class WorldUser {
       avatarUrl: json['avatar_url'] as String? ?? json['avatarUrl'] as String?,
       avatarEmoji: json['avatar_emoji'] as String? ?? json['avatarEmoji'] as String?,
       createdAt: json['created_at'] as String? ?? json['createdAt'] as String? ?? '',
+      world: json['world'] as String?,
+      isSuspended: json['is_suspended'] as bool? ?? json['is_banned'] as bool? ?? false,
+      suspensionReason: json['suspension_reason'] as String? ?? json['ban_reason'] as String?,
     );
   }
 
   bool get isAdmin => role == 'admin' || role == 'root_admin';
   bool get isRootAdmin => role == 'root_admin';
+  
+  /// World label for display
+  String get worldLabel {
+    if (world == 'materie') return 'Materie';
+    if (world == 'energie') return 'Energie';
+    return 'Unbekannt';
+  }
 }
 
 /// Audit Log Entry Model

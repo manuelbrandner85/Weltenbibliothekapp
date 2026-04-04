@@ -72,7 +72,7 @@ class _UserDetailScreenState extends State<UserDetailScreen> with SingleTickerPr
     try {
       final result = await _service.getUserActivity(
         world: widget.world,
-        userId: widget.user.id,
+        userId: widget.user.userId,
         adminToken: widget.adminToken,
         limit: 100,
       );
@@ -102,7 +102,7 @@ class _UserDetailScreenState extends State<UserDetailScreen> with SingleTickerPr
     try {
       final result = await _service.getUserStats(
         world: widget.world,
-        userId: widget.user.id,
+        userId: widget.user.userId,
         adminToken: widget.adminToken,
       );
 
@@ -131,7 +131,7 @@ class _UserDetailScreenState extends State<UserDetailScreen> with SingleTickerPr
     try {
       final result = await _service.getUserNotes(
         world: widget.world,
-        userId: widget.user.id,
+        userId: widget.user.userId,
         adminToken: widget.adminToken,
       );
 
@@ -239,7 +239,7 @@ class _UserDetailScreenState extends State<UserDetailScreen> with SingleTickerPr
 
         await _service.suspendUser(
           world: widget.world,
-          userId: widget.user.id,
+          userId: widget.user.userId,
           suspensionType: suspensionType,
           reason: reasonController.text.trim(),
           adminToken: widget.adminToken,
@@ -300,7 +300,7 @@ class _UserDetailScreenState extends State<UserDetailScreen> with SingleTickerPr
       try {
         await _service.unsuspendUser(
           world: widget.world,
-          userId: widget.user.id,
+          userId: widget.user.userId,
           adminToken: widget.adminToken,
         );
 
@@ -399,7 +399,7 @@ class _UserDetailScreenState extends State<UserDetailScreen> with SingleTickerPr
       try {
         await _service.addUserNote(
           world: widget.world,
-          userId: widget.user.id,
+          userId: widget.user.userId,
           note: noteController.text.trim(),
           noteType: noteType,
           adminToken: widget.adminToken,
@@ -504,7 +504,7 @@ class _UserDetailScreenState extends State<UserDetailScreen> with SingleTickerPr
       try {
         await _service.muteUser(
           world: widget.world,
-          userId: widget.user.id,
+          userId: widget.user.userId,
           adminToken: widget.adminToken,
           duration: muteDuration,
           reason: reasonController.text.trim(),
@@ -588,7 +588,7 @@ class _UserDetailScreenState extends State<UserDetailScreen> with SingleTickerPr
       try {
         await _service.banUser(
           world: widget.world,
-          userId: widget.user.id,
+          userId: widget.user.userId,
           adminToken: widget.adminToken,
           reason: reasonController.text.trim(),
         );
@@ -684,7 +684,7 @@ class _UserDetailScreenState extends State<UserDetailScreen> with SingleTickerPr
       try {
         await _service.deleteUser(
           world: widget.world,
-          userId: widget.user.id,
+          userId: widget.user.userId,
           adminToken: widget.adminToken,
           reason: reasonController.text.trim(),
         );
@@ -909,7 +909,7 @@ class _UserDetailScreenState extends State<UserDetailScreen> with SingleTickerPr
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'ID: ${widget.user.id}',
+                    'ID: ${widget.user.userId}',
                     style: TextStyle(color: Colors.grey[500], fontSize: 12),
                   ),
                   if (widget.user.isSuspended) ...[

@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// 🚀 POST CREATION HELPER SERVICES
 /// Alle Services für die 10 neuen Features
@@ -68,19 +69,55 @@ class HashtagService {
 /// ═══════════════════════════════════════════════════════════════════════════
 
 class MentionService {
-  // Mock user database (später aus Firestore)
-  static const List<Map<String, String>> mockUsers = [
-    {'username': 'ManuelBrandner', 'avatar': '👨‍💼'},
-    {'username': 'SarahMueller', 'avatar': '👩‍🔬'},
-    {'username': 'MaxSchmidt', 'avatar': '👨‍🎓'},
-    {'username': 'LisaWagner', 'avatar': '👩‍💻'},
-    {'username': 'TomBecker', 'avatar': '👨‍🏫'},
-  ];
-  
+  // Cached user list from Supabase (populated on first call)
+  static List<Map<String, String>> _cachedUsers = [];
+  static DateTime? _lastFetch;
+
+  /// Fetch real users from Supabase profiles table
+  static Future<void> _ensureUsersLoaded() async {
+    if (_cachedUsers.isNotEmpty &&
+        _lastFetch != null &&
+        DateTime.now().difference(_lastFetch!) < const Duration(minutes: 5)) {
+      return; // Use cache
+    }
+    try {
+      final result = await _fetchUsersFromSupabase();
+      _cachedUsers = result;
+      _lastFetch = DateTime.now();
+    } catch (e) {
+      debugPrint('MentionService: Supabase fetch failed: $e');
+    }
+  }
+
+  static Future<List<Map<String, String>>> _fetchUsersFromSupabase() async {
+    try {
+      final supa = Supabase.instance.client;
+      final rows = await supa
+          .from('profiles')
+          .select('username, avatar_emoji')
+          .order('created_at', ascending: false)
+          .limit(200);
+      return (rows as List)
+          .where((r) => r['username'] != null && (r['username'] as String).isNotEmpty)
+          .map((r) => {
+                'username': r['username'] as String,
+                'avatar': (r['avatar_emoji'] as String?) ?? '👤',
+              })
+          .toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
   static List<Map<String, String>> searchUsers(String query) {
-    if (query.isEmpty) return mockUsers.take(5).toList();
-    
-    return mockUsers
+    // Trigger async load; return cached results synchronously
+    _ensureUsersLoaded();
+
+    final users = _cachedUsers;
+    if (users.isEmpty) return []; // No cached users yet
+    if (query.isEmpty) return users.take(5).toList();
+
+    return users
         .where((user) => user['username']!.toLowerCase().contains(query.toLowerCase()))
         .take(5)
         .toList();

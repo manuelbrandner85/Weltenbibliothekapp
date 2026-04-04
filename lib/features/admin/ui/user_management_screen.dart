@@ -433,13 +433,13 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'ID: ${user.id}',
+                      'ID: ${user.userId}',
                       style: TextStyle(color: Colors.grey[500], fontSize: 12),
                     ),
-                    if (user.lastActivityAt != null) ...[
+                    if (user.createdAt.isNotEmpty) ...[
                       const SizedBox(height: 4),
                       Text(
-                        'Letzte Aktivität: ${_formatDateTime(user.lastActivityAt!)}',
+                        'Erstellt: ${user.createdAt.contains("T") ? user.createdAt.split("T")[0] : user.createdAt}',
                         style: TextStyle(color: Colors.grey[400], fontSize: 12),
                       ),
                     ],
@@ -471,18 +471,6 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
         ),
       ),
     );
-  }
-
-  String _formatDateTime(DateTime dt) {
-    final now = DateTime.now();
-    final diff = now.difference(dt);
-
-    if (diff.inMinutes < 1) return 'Jetzt';
-    if (diff.inMinutes < 60) return 'vor ${diff.inMinutes} Min';
-    if (diff.inHours < 24) return 'vor ${diff.inHours} Std';
-    if (diff.inDays < 7) return 'vor ${diff.inDays} Tagen';
-    
-    return '${dt.day}.${dt.month}.${dt.year}';
   }
 
   @override

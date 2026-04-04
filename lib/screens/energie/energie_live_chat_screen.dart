@@ -1716,6 +1716,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
     _typingTimer?.cancel(); // 🆕
     _messageController.dispose();
     _scrollController.dispose();
+    _voiceParticipantsSub?.cancel(); // 🔧 Prevent memory leak
     _voiceService.dispose(); // 🆕
     _realtimeChannel?.unsubscribe(); // 🔴 Realtime cleanup
     super.dispose();
@@ -1804,15 +1805,16 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
   
   // 🎤 WEBRTC VOICE METHODS
   final WebRTCVoiceService _voiceService = WebRTCVoiceService();
+  StreamSubscription? _voiceParticipantsSub;
   
   Future<void> _initializeWebRTC() async {
     await _voiceService.initialize();
     
-    // Listen to participants
-    _voiceService.participantsStream.listen((participants) {
+    // Listen to participants (cancel in dispose)
+    _voiceParticipantsSub?.cancel();
+    _voiceParticipantsSub = _voiceService.participantsStream.listen((participants) {
       if (!mounted) return;
-      if (mounted) {
-        setState(() {
+      setState(() {
         _voiceParticipants = participants.map((p) => {
           'userId': p.userId,
           'username': p.username,
@@ -1821,7 +1823,6 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
           'isMuted': p.isMuted,
         }).toList();
       });
-      }
     });
   }
   

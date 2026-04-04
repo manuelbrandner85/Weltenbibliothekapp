@@ -356,6 +356,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
     _messageSubscription?.cancel(); // 🎧 Cancel WebSocket stream
     _hybridChat.disconnect(); // 🔌 Disconnect WebSocket
     _typingService.dispose(); // ⌨️ Dispose typing service
+    _voiceParticipantsSub?.cancel(); // 🔧 Prevent memory leak
     _realtimeChannel?.unsubscribe(); // 🔴 Realtime cleanup
     super.dispose();
   }
@@ -1691,15 +1692,16 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
   
   // 🎤 WEBRTC VOICE METHODS
   final WebRTCVoiceService _voiceService = WebRTCVoiceService();
+  StreamSubscription? _voiceParticipantsSub;
   
   Future<void> _initializeWebRTC() async {
     await _voiceService.initialize();
     
-    // Listen to participants
-    _voiceService.participantsStream.listen((participants) {
+    // Listen to participants (cancel in dispose)
+    _voiceParticipantsSub?.cancel();
+    _voiceParticipantsSub = _voiceService.participantsStream.listen((participants) {
       if (!mounted) return;
-      if (mounted) {
-        setState(() {
+      setState(() {
         _voiceParticipants = participants.map((p) => {
           'userId': p.userId,
           'username': p.username,
@@ -1708,7 +1710,6 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
           'isMuted': p.isMuted,
         }).toList();
       });
-      }
     });
   }
   

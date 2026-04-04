@@ -505,10 +505,8 @@ class _UsersTabState extends State<_UsersTab> {
   Future<void> _load() async {
     if (mounted) setState(() => _loading = true);
     try {
-      final users = await WorldAdminService.getUsersByWorld(
-        widget.world,
-        role: widget.admin.isRootAdmin ? 'root_admin' : 'admin',
-      );
+      // ✅ FIX: Lade ALLE User aus beiden Welten
+      final users = await WorldAdminService.getAllUsers();
       if (mounted) {
         setState(() {
           _all = users;
@@ -623,7 +621,7 @@ class _UsersTabState extends State<_UsersTab> {
 
     setState(() => _processing = true);
     final ok = await WorldAdminService.promoteUser(
-        widget.world, u.userId,
+        u.world ?? widget.world, u.userId,
         role: widget.admin.isRootAdmin ? 'root_admin' : 'admin');
     setState(() => _processing = false);
     _snack(ok ? '⬆️ ${u.username} ist jetzt Admin' : '❌ Fehler',
@@ -641,7 +639,7 @@ class _UsersTabState extends State<_UsersTab> {
 
     setState(() => _processing = true);
     final ok = await WorldAdminService.demoteUser(
-        widget.world, u.userId,
+        u.world ?? widget.world, u.userId,
         role: widget.admin.isRootAdmin ? 'root_admin' : 'admin');
     setState(() => _processing = false);
     _snack(ok ? '⬇️ ${u.username} degradiert' : '❌ Fehler',
@@ -1584,8 +1582,37 @@ class _UserTile extends StatelessWidget {
           title: Text(user.displayName ?? user.username,
               style: const TextStyle(
                   color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14)),
-          subtitle: Text('@${user.username}',
-              style: TextStyle(color: accent.withValues(alpha: 0.7), fontSize: 11)),
+          subtitle: Row(
+            children: [
+              Text('@${user.username}',
+                  style: TextStyle(color: accent.withValues(alpha: 0.7), fontSize: 11)),
+              if (user.world != null) ...[
+                const SizedBox(width: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                  decoration: BoxDecoration(
+                    color: user.world == 'materie'
+                        ? Colors.orange.withValues(alpha: 0.15)
+                        : Colors.teal.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: user.world == 'materie'
+                          ? Colors.orange.withValues(alpha: 0.4)
+                          : Colors.teal.withValues(alpha: 0.4),
+                    ),
+                  ),
+                  child: Text(
+                    user.world == 'materie' ? 'M' : 'E',
+                    style: TextStyle(
+                      color: user.world == 'materie' ? Colors.orange : Colors.teal,
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
           trailing: Row(mainAxisSize: MainAxisSize.min, children: [
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

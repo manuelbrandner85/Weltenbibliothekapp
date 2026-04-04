@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
  // OpenClaw v2.0
 import 'package:flutter/foundation.dart';
@@ -25,6 +26,7 @@ class _FrequencyGeneratorScreenState extends State<FrequencyGeneratorScreen> wit
   // Real audio player for Solfeggio frequencies
   final AudioPlayer _audioPlayer = AudioPlayer();
   final double _volume = 0.7;
+  StreamSubscription<bool>? _playStateSub;
 
   @override
   void initState() {
@@ -36,8 +38,8 @@ class _FrequencyGeneratorScreenState extends State<FrequencyGeneratorScreen> wit
       vsync: this,
     )..repeat(reverse: true);
 
-    // Listen to play state changes
-    FrequencyPlayerService.playStateStream.listen((isPlaying) {
+    // Listen to play state changes (cancel in dispose)
+    _playStateSub = FrequencyPlayerService.playStateStream.listen((isPlaying) {
       if (mounted) {
         setState(() {
           _isPlaying = isPlaying;
@@ -48,6 +50,7 @@ class _FrequencyGeneratorScreenState extends State<FrequencyGeneratorScreen> wit
 
   @override
   void dispose() {
+    _playStateSub?.cancel();
     _pulseController.dispose();
     _searchController.dispose();
     _audioPlayer.dispose();
