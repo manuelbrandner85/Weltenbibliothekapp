@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../services/world_admin_service.dart';
@@ -154,14 +153,17 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
   }
   
   /// Load Users List
+  /// FIXED: Laedt User aus BEIDEN Welten - Admin sieht alle mit Welt-Vermerk
+  /// User sind getrennt zwischen Energie und Materie Welt,
+  /// aber Admin sieht alle User im Dashboard mit Welt-Label
   Future<void> _loadUsers() async {
     try {
-      // 🚀 PRODUCTION: Echte API verwenden
-      final admin = ref.read(adminStateProvider(widget.world));
-      final users = await WorldAdminService.getUsersByWorld(
-        widget.world,
-        role: admin.isRootAdmin ? 'root_admin' : 'admin',
-      );
+      if (kDebugMode) {
+        debugPrint('Lade User aus BEIDEN Welten fuer Admin Dashboard...');
+      }
+      
+      // FIXED: getAllUsers() laedt parallel Materie + Energie
+      final users = await WorldAdminService.getAllUsers();
       
       if (mounted) {
         setState(() {
@@ -170,11 +172,13 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
       }
       
       if (kDebugMode) {
-        debugPrint('✅ Loaded ${users.length} users from backend');
+        final materieCount = users.where((u) => u.world == 'materie').length;
+        final energieCount = users.where((u) => u.world == 'energie').length;
+        debugPrint('Loaded ${users.length} users (Materie: $materieCount, Energie: $energieCount)');
       }
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('❌ Fehler beim Laden der User: $e');
+        debugPrint('Fehler beim Laden der User: $e');
       }
     }
   }
@@ -254,7 +258,9 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
     // 🔥 FIX: Fallback auf "root_admin" wenn role NULL
     final effectiveRole = admin.role ?? (admin.isRootAdmin ? 'root_admin' : 'admin');
     
-    final success = await WorldAdminService.promoteUser(widget.world, user.userId, role: effectiveRole);
+    // FIXED: user.world statt widget.world - User kann aus anderer Welt sein
+    final userWorld = user.world ?? widget.world;
+    final success = await WorldAdminService.promoteUser(userWorld, user.userId, role: effectiveRole);
     
     if (mounted) {
       if (success) {
@@ -358,7 +364,9 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
     // 🔥 FIX: Fallback auf "root_admin" wenn role NULL
     final effectiveRole = admin.role ?? (admin.isRootAdmin ? 'root_admin' : 'admin');
     
-    final success = await WorldAdminService.demoteUser(widget.world, user.userId, role: effectiveRole);
+    // FIXED: user.world statt widget.world - User kann aus anderer Welt sein
+    final userWorld = user.world ?? widget.world;
+    final success = await WorldAdminService.demoteUser(userWorld, user.userId, role: effectiveRole);
     
     if (mounted) {
       if (success) {
@@ -463,7 +471,9 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
     // 🔥 FIX: Fallback auf "root_admin" wenn role NULL
     final effectiveRole = admin.role ?? (admin.isRootAdmin ? 'root_admin' : 'admin');
     
-    final success = await WorldAdminService.deleteUser(widget.world, user.userId, role: effectiveRole);
+    // FIXED: user.world statt widget.world - User kann aus anderer Welt sein
+    final userWorld = user.world ?? widget.world;
+    final success = await WorldAdminService.deleteUser(userWorld, user.userId, role: effectiveRole);
     
     if (mounted) {
       if (success) {
@@ -577,7 +587,7 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
     );
   }
   
-  /// Users Tab
+  /// Users Tab - Zeigt ALLE User aus BEIDEN Welten mit Welt-Label
   Widget _buildUsersTab(AdminState admin) {
     if (_users.isEmpty) {
       return const Center(
@@ -592,81 +602,138 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
       );
     }
     
-    return ListView.builder(
-      itemCount: _users.length,
-      itemBuilder: (context, index) {
-        final user = _users[index];
-        final isCurrentUser = user.username == admin.username;
-        
-        return Card(
-          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          child: ListTile(
-            // Icon basierend auf Role
-            leading: user.role != 'user'
-                ? const Icon(Icons.shield, color: Colors.amber)
-                : const Icon(Icons.person),
-            
-            // Username + Badge für aktuellen User
-            title: Row(
-              children: [
-                Text(user.username),
-                if (isCurrentUser) ...[
-                  const SizedBox(width: 8),
-                  const Chip(
-                    label: Text('DU', style: TextStyle(fontSize: 10)),
-                    padding: EdgeInsets.symmetric(horizontal: 4),
-                    visualDensity: VisualDensity.compact,
-                  ),
-                ],
-              ],
-            ),
-            
-            // Role
-            subtitle: Text(user.role),
-            
-            // 🎯 QUICK-ACTION BUTTONS (NUR Root-Admin, nicht bei sich selbst!)
-            trailing: admin.isRootAdmin && !isCurrentUser
-                ? Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // ⬆️ PROMOTE Button (nur für normale User)
-                      if (user.role == 'user')
-                        IconButton(
-                          icon: const Icon(Icons.arrow_upward, color: Colors.green),
-                          tooltip: 'Zum Admin machen',
-                          onPressed: () => _promoteUser(user),
-                          style: IconButton.styleFrom(
-                            backgroundColor: Colors.green.withValues(alpha: 0.1),
-                          ),
-                        ),
-                      
-                      // ⬇️ DEMOTE Button (nur für Admins, nicht Root-Admins)
-                      if (user.role == 'admin' && !user.isRootAdmin)
-                        IconButton(
-                          icon: const Icon(Icons.arrow_downward, color: Colors.orange),
-                          tooltip: 'Admin entfernen',
-                          onPressed: () => _demoteUser(user),
-                          style: IconButton.styleFrom(
-                            backgroundColor: Colors.orange.withValues(alpha: 0.1),
-                          ),
-                        ),
-                      
-                      // 🗑️ DELETE Button (für alle außer Root-Admins)
-                      if (!user.isRootAdmin)
-                        IconButton(
-                          icon: const Icon(Icons.delete, color: Colors.red),
-                          tooltip: 'User löschen',
-                          onPressed: () => _deleteUser(user),
-                          style: IconButton.styleFrom(
-                            backgroundColor: Colors.red.withValues(alpha: 0.1),
-                          ),
-                        ),
-                    ],
-                  )
-                : null,
+    return Column(
+      children: [
+        // User-Zaehler mit Welt-Aufschluesselung
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                '${_users.length} User gesamt',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(width: 16),
+              _buildWorldCountChip('Materie', _users.where((u) => u.world == 'materie').length, const Color(0xFFFF6B35)),
+              const SizedBox(width: 8),
+              _buildWorldCountChip('Energie', _users.where((u) => u.world == 'energie').length, const Color(0xFF4ECDC4)),
+            ],
           ),
-        );
-      },
+        ),
+        Expanded(
+          child: ListView.builder(
+            itemCount: _users.length,
+            itemBuilder: (context, index) {
+              final user = _users[index];
+              final isCurrentUser = user.username == admin.username;
+              // Farbe basierend auf Welt
+              final worldColor = user.world == 'energie' 
+                  ? const Color(0xFF4ECDC4) 
+                  : const Color(0xFFFF6B35);
+              
+              return Card(
+                margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                child: ListTile(
+                  // Icon basierend auf Role
+                  leading: user.role != 'user'
+                      ? const Icon(Icons.shield, color: Colors.amber)
+                      : const Icon(Icons.person),
+                  
+                  // Username + Welt-Badge + DU-Badge
+                  title: Row(
+                    children: [
+                      Flexible(child: Text(user.username, overflow: TextOverflow.ellipsis)),
+                      const SizedBox(width: 6),
+                      // WELT-BADGE
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: worldColor.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: worldColor, width: 1),
+                        ),
+                        child: Text(
+                          user.worldLabel,
+                          style: TextStyle(fontSize: 9, color: worldColor, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      if (isCurrentUser) ...[
+                        const SizedBox(width: 4),
+                        const Chip(
+                          label: Text('DU', style: TextStyle(fontSize: 10)),
+                          padding: EdgeInsets.symmetric(horizontal: 4),
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      ],
+                    ],
+                  ),
+                  
+                  // Role
+                  subtitle: Text(user.role),
+                  
+                  // QUICK-ACTION BUTTONS (NUR Root-Admin, nicht bei sich selbst!)
+                  trailing: admin.isRootAdmin && !isCurrentUser
+                      ? Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // PROMOTE Button (nur fuer normale User)
+                            if (user.role == 'user')
+                              IconButton(
+                                icon: const Icon(Icons.arrow_upward, color: Colors.green),
+                                tooltip: 'Zum Admin machen',
+                                onPressed: () => _promoteUser(user),
+                                style: IconButton.styleFrom(
+                                  backgroundColor: Colors.green.withValues(alpha: 0.1),
+                                ),
+                              ),
+                            
+                            // DEMOTE Button (nur fuer Admins, nicht Root-Admins)
+                            if (user.role == 'admin' && !user.isRootAdmin)
+                              IconButton(
+                                icon: const Icon(Icons.arrow_downward, color: Colors.orange),
+                                tooltip: 'Admin entfernen',
+                                onPressed: () => _demoteUser(user),
+                                style: IconButton.styleFrom(
+                                  backgroundColor: Colors.orange.withValues(alpha: 0.1),
+                                ),
+                              ),
+                            
+                            // DELETE Button (fuer alle ausser Root-Admins)
+                            if (!user.isRootAdmin)
+                              IconButton(
+                                icon: const Icon(Icons.delete, color: Colors.red),
+                                tooltip: 'User loeschen',
+                                onPressed: () => _deleteUser(user),
+                                style: IconButton.styleFrom(
+                                  backgroundColor: Colors.red.withValues(alpha: 0.1),
+                                ),
+                              ),
+                          ],
+                        )
+                      : null,
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Welt-Zaehler Chip
+  Widget _buildWorldCountChip(String label, int count, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color, width: 1),
+      ),
+      child: Text(
+        '$label: $count',
+        style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.bold),
+      ),
     );
   }
   
@@ -727,11 +794,12 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
     }
   }
   
-  /// Format Timestamp
+  /// Format Timestamp - FIXED: Zero-Padding fuer Tag, Monat, Stunde, Minute
   String _formatTimestamp(String timestamp) {
     try {
       final dt = DateTime.parse(timestamp);
-      return '${dt.day}.${dt.month}.${dt.year} ${dt.hour}:${dt.minute}';
+      return '${dt.day.toString().padLeft(2, '0')}.${dt.month.toString().padLeft(2, '0')}.${dt.year} '
+             '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
     } catch (e) {
       return timestamp;
     }

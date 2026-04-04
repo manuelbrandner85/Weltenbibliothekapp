@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import '../core/network/http_helper.dart';
+import '../config/api_config.dart';
 
 /// User Management Service für Admin User Management
 /// 
@@ -11,7 +12,17 @@ import '../core/network/http_helper.dart';
 /// - User Suspend/Unsuspend
 /// - User Notes (Admin-Notizen)
 class UserManagementService {
+  // FIXED: Zentrale API URL aus ApiConfig statt hardcoded V2
   static const String _baseUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
+
+  /// Einheitliche Admin-Auth-Headers
+  /// FIXED: Verwendet immer ApiConfig.adminToken statt User-Token
+  static Map<String, String> _adminHeaders({String? userId}) => {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer ${ApiConfig.adminToken}',
+    'X-Role': 'root_admin',
+    if (userId != null) 'X-User-ID': userId,
+  };
   
   /// Get all users (with optional filters)
   /// @param world - 'materie' or 'energie'
@@ -58,10 +69,7 @@ class UserManagementService {
       
       return await HttpHelper.get<Map<String, dynamic>>(
         uri: uri,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $adminToken',
-        },
+        headers: _adminHeaders(userId: adminToken.isNotEmpty ? adminToken : null),
         parseResponse: (body) {
           final data = jsonDecode(body) as Map<String, dynamic>;
           if (data['success'] == true) {
@@ -100,10 +108,7 @@ class UserManagementService {
       
       return await HttpHelper.get<Map<String, dynamic>>(
         uri: uri,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $adminToken',
-        },
+        headers: _adminHeaders(userId: adminToken.isNotEmpty ? adminToken : null),
         parseResponse: (body) {
           final data = jsonDecode(body) as Map<String, dynamic>;
           if (data['success'] == true) {
@@ -138,10 +143,7 @@ class UserManagementService {
       
       return await HttpHelper.get<Map<String, dynamic>>(
         uri: uri,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $adminToken',
-        },
+        headers: _adminHeaders(userId: adminToken.isNotEmpty ? adminToken : null),
         parseResponse: (body) {
           final data = jsonDecode(body) as Map<String, dynamic>;
           if (data['success'] == true) {
@@ -182,10 +184,7 @@ class UserManagementService {
       
       return await HttpHelper.post<Map<String, dynamic>>(
         uri: uri,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $adminToken',
-        },
+        headers: _adminHeaders(userId: adminToken.isNotEmpty ? adminToken : null),
         body: {
           'suspension_type': suspensionType,
           'reason': reason,
@@ -225,10 +224,7 @@ class UserManagementService {
       
       return await HttpHelper.post<Map<String, dynamic>>(
         uri: uri,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $adminToken',
-        },
+        headers: _adminHeaders(userId: adminToken.isNotEmpty ? adminToken : null),
         body: {},
         parseResponse: (body) {
           final data = jsonDecode(body) as Map<String, dynamic>;
@@ -268,10 +264,7 @@ class UserManagementService {
       
       return await HttpHelper.post<Map<String, dynamic>>(
         uri: uri,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $adminToken',
-        },
+        headers: _adminHeaders(userId: adminToken.isNotEmpty ? adminToken : null),
         body: {
           'note': note,
           'note_type': noteType,
@@ -310,10 +303,7 @@ class UserManagementService {
       
       return await HttpHelper.get<Map<String, dynamic>>(
         uri: uri,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $adminToken',
-        },
+        headers: _adminHeaders(userId: adminToken.isNotEmpty ? adminToken : null),
         parseResponse: (body) {
           final data = jsonDecode(body) as Map<String, dynamic>;
           if (data['success'] == true) {
@@ -350,10 +340,7 @@ class UserManagementService {
       
       return await HttpHelper.post<Map<String, dynamic>>(
         uri: uri,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $adminToken',
-        },
+        headers: _adminHeaders(userId: adminToken.isNotEmpty ? adminToken : null),
         body: {
           'reason': reason,
         },
@@ -393,10 +380,7 @@ class UserManagementService {
       
       return await HttpHelper.post<Map<String, dynamic>>(
         uri: uri,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $adminToken',
-        },
+        headers: _adminHeaders(userId: adminToken.isNotEmpty ? adminToken : null),
         body: {
           'reason': reason,
         },
@@ -438,10 +422,7 @@ class UserManagementService {
       
       return await HttpHelper.post<Map<String, dynamic>>(
         uri: uri,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $adminToken',
-        },
+        headers: _adminHeaders(userId: adminToken.isNotEmpty ? adminToken : null),
         body: {
           if (duration != null) 'duration_hours': duration,
           'reason': reason,
@@ -480,10 +461,7 @@ class UserManagementService {
       
       return await HttpHelper.post<Map<String, dynamic>>(
         uri: uri,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $adminToken',
-        },
+        headers: _adminHeaders(userId: adminToken.isNotEmpty ? adminToken : null),
         body: {},
         parseResponse: (body) {
           final data = jsonDecode(body) as Map<String, dynamic>;

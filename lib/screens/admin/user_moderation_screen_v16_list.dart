@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../services/world_admin_service.dart';
@@ -51,8 +50,9 @@ class _UserModerationScreenV16ListState extends ConsumerState<UserModerationScre
   }
   
   /// Load Users from Backend
+  /// FIXED: Laedt User aus BEIDEN Welten - Admin sieht alle mit Welt-Vermerk
   Future<void> _loadUsers() async {
-    // ✅ ROLLEN-PRÜFUNG
+    // ROLLEN-PRUEFUNG
     final admin = ref.read(adminStateProvider(widget.world));
     
     if (!admin.isRootAdmin) {
@@ -69,10 +69,8 @@ class _UserModerationScreenV16ListState extends ConsumerState<UserModerationScre
     });
     
     try {
-      final users = await WorldAdminService.getUsersByWorld(
-        widget.world,
-        role: admin.role ?? 'root_admin',
-      );
+      // FIXED: getAllUsers() laedt parallel Materie + Energie
+      final users = await WorldAdminService.getAllUsers();
       
       setState(() {
         _allUsers = users;
@@ -81,7 +79,9 @@ class _UserModerationScreenV16ListState extends ConsumerState<UserModerationScre
       });
       
       if (kDebugMode) {
-        debugPrint('✅ Loaded ${users.length} users');
+        final materieCount = users.where((u) => u.world == 'materie').length;
+        final energieCount = users.where((u) => u.world == 'energie').length;
+        debugPrint('Loaded ${users.length} users (Materie: $materieCount, Energie: $energieCount)');
       }
     } catch (e) {
       setState(() {
@@ -90,7 +90,7 @@ class _UserModerationScreenV16ListState extends ConsumerState<UserModerationScre
       });
       
       if (kDebugMode) {
-        debugPrint('❌ Load users error: $e');
+        debugPrint('Load users error: $e');
       }
     }
   }
@@ -160,7 +160,7 @@ class _UserModerationScreenV16ListState extends ConsumerState<UserModerationScre
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<int>(
-                initialValue: durationHours,
+                value: durationHours,
                 decoration: const InputDecoration(labelText: 'Dauer'),
                 items: const [
                   DropdownMenuItem(value: 1, child: Text('1 Stunde')),
@@ -363,7 +363,7 @@ class _UserModerationScreenV16ListState extends ConsumerState<UserModerationScre
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<int>(
-                initialValue: durationMinutes,
+                value: durationMinutes,
                 decoration: const InputDecoration(labelText: 'Dauer'),
                 items: const [
                   DropdownMenuItem(value: 10, child: Text('10 Minuten')),
@@ -604,6 +604,11 @@ class _UserModerationScreenV16ListState extends ConsumerState<UserModerationScre
     final isBanned = status?['banned'] == true;
     final isMuted = status?['muted'] == true;
     
+    // Farbe basierend auf Welt
+    final worldColor = user.world == 'energie' 
+        ? const Color(0xFF4ECDC4) 
+        : const Color(0xFFFF6B35);
+    
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: ExpansionTile(
@@ -613,12 +618,26 @@ class _UserModerationScreenV16ListState extends ConsumerState<UserModerationScre
               : user.isAdmin
                   ? Colors.blue
                   : Colors.grey,
-          child: Text(user.avatarEmoji ?? '👤'),
+          child: Text(user.avatarEmoji ?? '\u{1F464}'),
         ),
         title: Row(
           children: [
-            Text(user.username, style: const TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(width: 8),
+            Flexible(child: Text(user.username, style: const TextStyle(fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis)),
+            const SizedBox(width: 6),
+            // WELT-BADGE
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: worldColor.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: worldColor, width: 1),
+              ),
+              child: Text(
+                user.worldLabel,
+                style: TextStyle(fontSize: 9, color: worldColor, fontWeight: FontWeight.bold),
+              ),
+            ),
+            const SizedBox(width: 4),
             if (user.isRootAdmin)
               const Chip(
                 label: Text('ROOT', style: TextStyle(fontSize: 10)),
@@ -640,9 +659,9 @@ class _UserModerationScreenV16ListState extends ConsumerState<UserModerationScre
           children: [
             Text(user.displayName ?? user.username),
             if (isBanned)
-              const Text('🚫 GEBANNT', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+              const Text('GEBANNT', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
             if (isMuted)
-              const Text('🔇 STUMM', style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)),
+              const Text('STUMM', style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)),
           ],
         ),
         children: [
@@ -655,7 +674,8 @@ class _UserModerationScreenV16ListState extends ConsumerState<UserModerationScre
                 _buildInfoRow('User-ID:', user.userId),
                 _buildInfoRow('Display Name:', user.displayName ?? user.username),
                 _buildInfoRow('Rolle:', user.role),
-                _buildInfoRow('Erstellt:', user.createdAt.split('T')[0] ?? 'N/A'),
+                _buildInfoRow('Welt:', user.worldLabel),
+                _buildInfoRow('Erstellt:', _formatCreatedAt(user.createdAt)),
                 
                 const Divider(height: 24),
                 
@@ -721,6 +741,17 @@ class _UserModerationScreenV16ListState extends ConsumerState<UserModerationScre
         ],
       ),
     );
+  }
+  
+  /// FIXED: Crash-safe createdAt formatting
+  String _formatCreatedAt(String createdAt) {
+    if (createdAt.isEmpty) return 'N/A';
+    try {
+      final dt = DateTime.parse(createdAt);
+      return '${dt.day.toString().padLeft(2, '0')}.${dt.month.toString().padLeft(2, '0')}.${dt.year}';
+    } catch (e) {
+      return createdAt.contains('T') ? createdAt.split('T')[0] : createdAt;
+    }
   }
   
   /// Info Row

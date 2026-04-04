@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
+import '../../services/openclaw_dashboard_service.dart'; // OpenClaw v2.0
 import 'package:flutter/services.dart';
 import '../../services/backend_recherche_service.dart';
 
