@@ -3,9 +3,8 @@ import 'dart:io';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'invisible_auth_service.dart'; // ✅ Auth-Integration
 import '../core/storage/unified_storage_service.dart'; // ✅ Storage für Username
-import '../config/api_config.dart'; // 🆕 API Config for admin token
+import '../config/api_config.dart'; // ✅ Zentrale API Config
 
 /// World-Based Admin Service
 /// Verbindet mit weltenbibliothek-api-v2 für weltspezifische Admin-Funktionen
@@ -29,12 +28,19 @@ import '../config/api_config.dart'; // 🆕 API Config for admin token
 /// - Root-Admin in Materie ≠ Root-Admin in Energie
 /// - Admin kann nur User in seiner Welt verwalten
 class WorldAdminService {
-  // Cloudflare Worker URL (API v2 - World-Based Multi-Profile System)
+  // ✅ ZENTRALE API URL aus ApiConfig
   static const String _baseUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
-  static const Duration _timeout = Duration(seconds: 10);
+  static const Duration _timeout = Duration(seconds: 15);
   
-  // ✅ AUTH SERVICE
-  static final InvisibleAuthService _auth = InvisibleAuthService();
+  /// ✅ EINHEITLICHE Admin-Auth-Headers
+  /// Verwendet immer ApiConfig.adminToken für alle Admin-Operationen
+  static Map<String, String> _adminHeaders({String? world, String? username}) => {
+    'Authorization': 'Bearer ${ApiConfig.adminToken}',
+    'Content-Type': 'application/json',
+    if (world != null) 'X-World': world,
+    'X-Role': 'root_admin',
+    if (username != null) 'X-User-ID': username,
+  };
 
   // ════════════════════════════════════════════════════════════
   // ADMIN STATUS CHECK
@@ -60,7 +66,7 @@ class WorldAdminService {
       
       final response = await http.get(
         url,
-        headers: _auth.authHeaders(world: world, role: role), // ✅ Auth-Header
+        headers: _adminHeaders(world: world, username: username),
       ).timeout(_timeout);
       
       if (response.statusCode == 200) {
@@ -106,7 +112,7 @@ class WorldAdminService {
       };
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('❌ Admin check error: $e $e');
+        debugPrint('❌ Admin check error: $e');
       }
       return {
         'success': false,
@@ -122,34 +128,30 @@ class WorldAdminService {
   // ════════════════════════════════════════════════════════════
 
   /// Get list of users in a specific world
-  /// ✅ FIXED AUTH: Uses simple Bearer token (username)
-  /// 
   /// Returns: List<WorldUser>
   static Future<List<WorldUser>> getUsersByWorld(String world, {String? role}) async {
     try {
       final url = Uri.parse('$_baseUrl/api/admin/users/$world');
       
-      // ✅ FIX: Get username from storage (same as UserManagementService)
       final storage = UnifiedStorageService();
-      final username = storage.getUsername(world);
+      // Versuche Username aus der angefragten Welt, Fallback auf andere Welt
+      final username = storage.getUsername(world) 
+          ?? storage.getUsername(world == 'materie' ? 'energie' : 'materie');
       
       if (username == null || username.isEmpty) {
         if (kDebugMode) {
-          debugPrint('❌ No username found for world: $world');
+          debugPrint('Kein Benutzername gefunden');
         }
         return [];
       }
       
       if (kDebugMode) {
-        debugPrint('📋 Fetching users for world: $world (admin: $username)');
+        debugPrint('Lade User fuer $world (Admin: $username)');
       }
       
       final response = await http.get(
         url,
-        headers: {
-          'Authorization': 'Bearer ${ApiConfig.adminToken}', // ✅ FIXED: Use admin token instead of username
-          'Content-Type': 'application/json',
-        },
+        headers: _adminHeaders(world: world, username: username),
       ).timeout(_timeout);
       
       if (response.statusCode == 200) {
@@ -157,30 +159,73 @@ class WorldAdminService {
         final users = (data['users'] as List<dynamic>?) ?? [];
         
         if (kDebugMode) {
-          debugPrint('✅ Fetched ${users.length} users');
+          debugPrint('${users.length} User geladen ($world)');
         }
         
-        return users.map((u) => WorldUser.fromJson(u as Map<String, dynamic>)).toList();
+        // Setze world auf jeden User damit Admin sieht woher der User kommt
+        return users.map((u) {
+          final map = u as Map<String, dynamic>;
+          map['world'] = world; // Welt-Vermerk setzen
+          return WorldUser.fromJson(map);
+        }).toList();
       } else {
         if (kDebugMode) {
-          debugPrint('⚠️  Failed to fetch users: ${response.statusCode}');
+          debugPrint('User-Laden fehlgeschlagen: ${response.statusCode}');
           debugPrint('   Response: ${response.body}');
         }
         return [];
       }
     } on SocketException {
       if (kDebugMode) {
-        debugPrint('❌ Network: Keine Internetverbindung');
+        debugPrint('Keine Internetverbindung');
       }
       return [];
     } on TimeoutException catch (e) {
       if (kDebugMode) {
-        debugPrint('❌ Timeout: $e');
+        debugPrint('Timeout: $e');
       }
       return [];
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('❌ Error fetching users: $e $e');
+        debugPrint('Error fetching users: $e');
+      }
+      return [];
+    }
+  }
+
+  /// ADMIN: Alle User aus BEIDEN Welten laden
+  /// Admin sieht alle User mit Welt-Vermerk (Materie/Energie)
+  static Future<List<WorldUser>> getAllUsers({String? role}) async {
+    try {
+      if (kDebugMode) {
+        debugPrint('Lade User aus beiden Welten...');
+      }
+      
+      // Parallel beide Welten laden
+      final results = await Future.wait([
+        getUsersByWorld('materie', role: role),
+        getUsersByWorld('energie', role: role),
+      ]);
+      
+      final allUsers = <WorldUser>[...results[0], ...results[1]];
+      
+      // Sortiere: Root-Admins zuerst, dann Admins, dann User
+      allUsers.sort((a, b) {
+        if (a.isRootAdmin && !b.isRootAdmin) return -1;
+        if (!a.isRootAdmin && b.isRootAdmin) return 1;
+        if (a.isAdmin && !b.isAdmin) return -1;
+        if (!a.isAdmin && b.isAdmin) return 1;
+        return a.username.compareTo(b.username);
+      });
+      
+      if (kDebugMode) {
+        debugPrint('${allUsers.length} User gesamt (Materie: ${results[0].length}, Energie: ${results[1].length})');
+      }
+      
+      return allUsers;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Error loading all users: $e');
       }
       return [];
     }
@@ -196,7 +241,6 @@ class WorldAdminService {
     try {
       final url = Uri.parse('$_baseUrl/api/admin/promote/$world/$userId');
       
-      // ✅ FIX: Get username from storage
       final storage = UnifiedStorageService();
       final username = storage.getUsername(world);
       
@@ -213,10 +257,7 @@ class WorldAdminService {
       
       final response = await http.post(
         url,
-        headers: {
-          'Authorization': 'Bearer $username',
-          'Content-Type': 'application/json',
-        },
+        headers: _adminHeaders(world: world, username: username),
       ).timeout(_timeout);
       
       if (response.statusCode == 200) {
@@ -229,7 +270,6 @@ class WorldAdminService {
         if (kDebugMode) {
           debugPrint('⚠️  Promotion failed: ${response.statusCode}');
           debugPrint('   Response: ${response.body}');
-          debugPrint('   Headers sent: ${_auth.authHeaders(world: world, role: role)}');
         }
         return false;
       }
@@ -245,7 +285,7 @@ class WorldAdminService {
       return false;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('❌ Promotion error: $e $e');
+        debugPrint('❌ Promotion error: $e');
       }
       return false;
     }
@@ -257,7 +297,6 @@ class WorldAdminService {
     try {
       final url = Uri.parse('$_baseUrl/api/admin/demote/$world/$userId');
       
-      // ✅ FIX: Get username from storage
       final storage = UnifiedStorageService();
       final username = storage.getUsername(world);
       
@@ -274,10 +313,7 @@ class WorldAdminService {
       
       final response = await http.post(
         url,
-        headers: {
-          'Authorization': 'Bearer $username',
-          'Content-Type': 'application/json',
-        },
+        headers: _adminHeaders(world: world, username: username),
       ).timeout(_timeout);
       
       if (response.statusCode == 200) {
@@ -290,7 +326,6 @@ class WorldAdminService {
         if (kDebugMode) {
           debugPrint('⚠️  Demotion failed: ${response.statusCode}');
           debugPrint('   Response: ${response.body}');
-          debugPrint('   Headers sent: ${_auth.authHeaders(world: world, role: role)}');
         }
         return false;
       }
@@ -306,7 +341,7 @@ class WorldAdminService {
       return false;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('❌ Demotion error: $e $e');
+        debugPrint('❌ Demotion error: $e');
       }
       return false;
     }
@@ -322,7 +357,6 @@ class WorldAdminService {
     try {
       final url = Uri.parse('$_baseUrl/api/admin/delete/$world/$userId');
       
-      // ✅ FIX: Get username from storage
       final storage = UnifiedStorageService();
       final username = storage.getUsername(world);
       
@@ -339,12 +373,7 @@ class WorldAdminService {
       
       final response = await http.delete(
         url,
-        headers: {
-          'Authorization': 'Bearer ${ApiConfig.adminToken}', // 🆕 Use admin-specific token
-          'X-Role': 'root_admin',
-          'X-User-ID': username,
-          'Content-Type': 'application/json',
-        },
+        headers: _adminHeaders(world: world, username: username),
       ).timeout(_timeout);
       
       if (response.statusCode == 200) {
@@ -357,7 +386,6 @@ class WorldAdminService {
         if (kDebugMode) {
           debugPrint('⚠️  Deletion failed: ${response.statusCode}');
           debugPrint('   Response: ${response.body}');
-          debugPrint('   Headers sent: ${_auth.authHeaders(world: world, role: role)}');
         }
         return false;
       }
@@ -373,7 +401,7 @@ class WorldAdminService {
       return false;
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('❌ Deletion error: $e $e');
+        debugPrint('❌ Deletion error: $e');
       }
       return false;
     }
@@ -391,13 +419,16 @@ class WorldAdminService {
     try {
       final url = Uri.parse('$_baseUrl/api/admin/audit/$world?limit=$limit');
       
+      final storage = UnifiedStorageService();
+      final username = storage.getUsername(world);
+      
       if (kDebugMode) {
-        debugPrint('📜 Fetching audit log for: $world (role: $role)');
+        debugPrint('📜 Fetching audit log for: $world (admin: $username)');
       }
       
       final response = await http.get(
         url,
-        headers: _auth.authHeaders(world: world, role: role), // ✅ Auth-Header
+        headers: _adminHeaders(world: world, username: username),
       ).timeout(_timeout);
       
       if (response.statusCode == 200) {
@@ -427,7 +458,7 @@ class WorldAdminService {
       return [];
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('❌ Error fetching audit log: $e $e');
+        debugPrint('❌ Error fetching audit log: $e');
       }
       return [];
     }
@@ -439,43 +470,60 @@ class WorldAdminService {
 // DATA MODELS
 // ════════════════════════════════════════════════════════════
 
-/// World User Model
+/// World User Model - EINHEITLICH fuer gesamte App
 class WorldUser {
   final String profileId;
   final String userId;
   final String username;
   final String role;
+  final String? world; // 'materie' oder 'energie' - Welt-Zuordnung
   final String? displayName;
   final String? avatarUrl;
   final String? avatarEmoji;
   final String createdAt;
+  final bool isSuspended;
+  final String? suspensionReason;
+  final DateTime? lastActivityAt;
 
   WorldUser({
     required this.profileId,
     required this.userId,
     required this.username,
     required this.role,
+    this.world,
     this.displayName,
     this.avatarUrl,
     this.avatarEmoji,
     required this.createdAt,
+    this.isSuspended = false,
+    this.suspensionReason,
+    this.lastActivityAt,
   });
 
   factory WorldUser.fromJson(Map<String, dynamic> json) {
     return WorldUser(
       profileId: json['profile_id'] as String? ?? json['profileId'] as String? ?? '',
-      userId: json['user_id'] as String? ?? json['userId'] as String? ?? '',
+      userId: json['user_id'] as String? ?? json['userId'] as String? ?? json['id'] as String? ?? '',
       username: json['username'] as String? ?? '',
       role: json['role'] as String? ?? 'user',
+      world: json['world'] as String?,
       displayName: json['display_name'] as String? ?? json['displayName'] as String?,
       avatarUrl: json['avatar_url'] as String? ?? json['avatarUrl'] as String?,
       avatarEmoji: json['avatar_emoji'] as String? ?? json['avatarEmoji'] as String?,
       createdAt: json['created_at'] as String? ?? json['createdAt'] as String? ?? '',
+      isSuspended: json['is_suspended'] as bool? ?? false,
+      suspensionReason: json['suspension_reason'] as String?,
+      lastActivityAt: json['last_activity_at'] != null
+          ? DateTime.tryParse(json['last_activity_at'] as String)
+          : null,
     );
   }
 
   bool get isAdmin => role == 'admin' || role == 'root_admin';
   bool get isRootAdmin => role == 'root_admin';
+  
+  /// Welt-Label fuer UI
+  String get worldLabel => world == 'energie' ? 'Energie' : world == 'materie' ? 'Materie' : 'Unbekannt';
 }
 
 /// Audit Log Entry Model
@@ -547,12 +595,7 @@ extension WorldAdminServiceV162 on WorldAdminService {
       
       final response = await http.post(
         url,
-        headers: {
-          'Authorization': 'Bearer ${ApiConfig.adminToken}', // 🆕 Use admin-specific token
-          'X-Role': 'root_admin',
-          'X-User-ID': adminUser,
-          'Content-Type': 'application/json',
-        },
+        headers: WorldAdminService._adminHeaders(username: adminUser),
         body: jsonEncode({'reason': reason, 'durationHours': durationHours}),
       ).timeout(WorldAdminService._timeout);
       
@@ -594,12 +637,7 @@ extension WorldAdminServiceV162 on WorldAdminService {
       
       final response = await http.post(
         url,
-        headers: {
-          'Authorization': 'Bearer ${ApiConfig.adminToken}', // 🆕 Use admin-specific token
-          'X-Role': 'root_admin',
-          'X-User-ID': adminUser,
-          'Content-Type': 'application/json',
-        },
+        headers: WorldAdminService._adminHeaders(username: adminUser),
       ).timeout(WorldAdminService._timeout);
       
       return response.statusCode == 200;
@@ -622,12 +660,7 @@ extension WorldAdminServiceV162 on WorldAdminService {
       
       final response = await http.post(
         url,
-        headers: {
-          'Authorization': 'Bearer ${ApiConfig.adminToken}', // 🆕 Use admin-specific token
-          'X-Role': 'root_admin',
-          'X-User-ID': adminUser,
-          'Content-Type': 'application/json',
-        },
+        headers: WorldAdminService._adminHeaders(username: adminUser),
         body: jsonEncode({'reason': reason, 'durationMinutes': durationMinutes}),
       ).timeout(WorldAdminService._timeout);
       
@@ -649,12 +682,7 @@ extension WorldAdminServiceV162 on WorldAdminService {
       
       final response = await http.post(
         url,
-        headers: {
-          'Authorization': 'Bearer ${ApiConfig.adminToken}', // 🆕 Use admin-specific token
-          'X-Role': 'root_admin',
-          'X-User-ID': adminUser,
-          'Content-Type': 'application/json',
-        },
+        headers: WorldAdminService._adminHeaders(username: adminUser),
       ).timeout(WorldAdminService._timeout);
       
       return response.statusCode == 200;
@@ -675,7 +703,7 @@ extension WorldAdminServiceV162 on WorldAdminService {
       
       final response = await http.get(
         url,
-        headers: {'X-Role': 'root_admin', 'X-User-ID': adminUser},
+        headers: WorldAdminService._adminHeaders(username: adminUser),
       ).timeout(WorldAdminService._timeout);
       
       if (response.statusCode == 200) {
@@ -696,7 +724,7 @@ extension WorldAdminServiceV162 on WorldAdminService {
       
       final response = await http.get(
         url,
-        headers: {'X-Role': 'root_admin', 'X-User-ID': adminUser},
+        headers: WorldAdminService._adminHeaders(username: adminUser),
       ).timeout(WorldAdminService._timeout);
       
       if (response.statusCode == 200) {
@@ -721,7 +749,7 @@ extension WorldAdminServiceV162 on WorldAdminService {
       
       final response = await http.get(
         url,
-        headers: {'X-Role': 'root_admin', 'X-User-ID': adminUser},
+        headers: WorldAdminService._adminHeaders(username: adminUser),
       ).timeout(WorldAdminService._timeout);
       
       if (response.statusCode == 200) {
@@ -760,9 +788,6 @@ extension WorldAdminServiceV162 on WorldAdminService {
   /// ```
   static Future<List<Map<String, dynamic>>> getActiveVoiceCalls(String world) async {
     try {
-      // Use API token from ApiConfig
-      const token = 'y-Xiv3kKeiybDm2CV0yLFu7TSd22co6NBw3udn5Y';
-      
       final url = Uri.parse('${WorldAdminService._baseUrl}/api/admin/voice-calls/$world');
       
       if (kDebugMode) {
@@ -771,10 +796,7 @@ extension WorldAdminServiceV162 on WorldAdminService {
       
       final response = await http.get(
         url,
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
+        headers: WorldAdminService._adminHeaders(world: world),
       ).timeout(WorldAdminService._timeout);
       
       if (response.statusCode == 200) {
@@ -834,8 +856,6 @@ extension WorldAdminServiceV162 on WorldAdminService {
     int limit = 50,
   }) async {
     try {
-      const token = 'y-Xiv3kKeiybDm2CV0yLFu7TSd22co6NBw3udn5Y';
-      
       final url = Uri.parse('${WorldAdminService._baseUrl}/api/admin/call-history/$world?limit=$limit');
       
       if (kDebugMode) {
@@ -844,10 +864,7 @@ extension WorldAdminServiceV162 on WorldAdminService {
       
       final response = await http.get(
         url,
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
+        headers: WorldAdminService._adminHeaders(world: world),
       ).timeout(WorldAdminService._timeout);
       
       if (response.statusCode == 200) {
@@ -907,8 +924,6 @@ extension WorldAdminServiceV162 on WorldAdminService {
   /// ```
   static Future<Map<String, dynamic>> getUserProfile(String userId) async {
     try {
-      const token = 'y-Xiv3kKeiybDm2CV0yLFu7TSd22co6NBw3udn5Y';
-      
       final url = Uri.parse('${WorldAdminService._baseUrl}/api/admin/user-profile/$userId');
       
       if (kDebugMode) {
@@ -917,10 +932,7 @@ extension WorldAdminServiceV162 on WorldAdminService {
       
       final response = await http.get(
         url,
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
+        headers: WorldAdminService._adminHeaders(),
       ).timeout(WorldAdminService._timeout);
       
       if (response.statusCode == 200) {

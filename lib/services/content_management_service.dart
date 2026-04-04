@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 import '../core/storage/unified_storage_service.dart';
+import '../config/api_config.dart';
 
 class ContentManagementService {
   static const String _baseUrl = 'https://weltenbibliothek-api-v2.brandy13062.workers.dev';
@@ -35,8 +36,10 @@ class ContentManagementService {
       final response = await http.get(
         url,
         headers: {
-          'Authorization': 'Bearer $username',
+          'Authorization': 'Bearer ${ApiConfig.adminToken}',
           'Content-Type': 'application/json',
+          'X-User-ID': username,
+          'X-Role': 'root_admin',
         },
       ).timeout(
         _timeout,
@@ -92,8 +95,10 @@ class ContentManagementService {
       final response = await http.post(
         url,
         headers: {
-          'Authorization': 'Bearer $username',
+          'Authorization': 'Bearer ${ApiConfig.adminToken}',
           'Content-Type': 'application/json',
+          'X-User-ID': username,
+          'X-Role': 'root_admin',
         },
       ).timeout(
         _timeout,
@@ -140,8 +145,10 @@ class ContentManagementService {
       final response = await http.post(
         url,
         headers: {
-          'Authorization': 'Bearer $username',
+          'Authorization': 'Bearer ${ApiConfig.adminToken}',
           'Content-Type': 'application/json',
+          'X-User-ID': username,
+          'X-Role': 'root_admin',
         },
       ).timeout(
         _timeout,
@@ -188,8 +195,10 @@ class ContentManagementService {
       final response = await http.delete(
         url,
         headers: {
-          'Authorization': 'Bearer $username',
+          'Authorization': 'Bearer ${ApiConfig.adminToken}',
           'Content-Type': 'application/json',
+          'X-User-ID': username,
+          'X-Role': 'root_admin',
         },
       ).timeout(
         _timeout,
@@ -248,8 +257,10 @@ class ContentManagementService {
       final response = await http.post(
         url,
         headers: {
-          'Authorization': 'Bearer $username',
+          'Authorization': 'Bearer ${ApiConfig.adminToken}',
           'Content-Type': 'application/json',
+          'X-User-ID': username,
+          'X-Role': 'root_admin',
         },
         body: json.encode({
           'world': world,

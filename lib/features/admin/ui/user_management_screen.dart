@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
-import '../../../services/user_management_service.dart';
-import '../../../models/user_management_models.dart';
+import '../../../services/world_admin_service.dart'; // WorldUser + WorldAdminService
 import 'user_detail_screen.dart';
 
 /// User Management Screen - Übersicht aller User
@@ -28,16 +27,13 @@ class UserManagementScreen extends StatefulWidget {
 }
 
 class _UserManagementScreenState extends State<UserManagementScreen> {
-  final UserManagementService _service = UserManagementService();
   final TextEditingController _searchController = TextEditingController();
   
-  List<WorldUser> _users = [];
+  List<WorldUser> _allUsers = []; // Alle User aus beiden Welten
+  List<WorldUser> _filteredUsers = []; // Gefilterte Ansicht
   bool _isLoading = false;
   String? _error;
   String? _selectedRole; // null = all, 'user', 'admin', 'root_admin'
-  int _total = 0;
-  int _currentPage = 0;
-  final int _pageSize = 50;
 
   @override
   void initState() {
@@ -54,7 +50,8 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     _loadUsers();
   }
 
-  Future<void> _loadUsers({bool append = false}) async {
+  /// FIXED: Laedt User aus BEIDEN Welten - Admin sieht alle mit Welt-Vermerk
+  Future<void> _loadUsers() async {
     if (_isLoading) return;
     
     setState(() {
@@ -63,33 +60,24 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     });
 
     try {
-      // ⚠️ CRITICAL: Token-Validation
-      if (widget.adminToken.isEmpty) {
-        throw Exception('Kein Profil gefunden! Bitte erstelle zuerst ein Profil in deiner Welt.');
+      if (kDebugMode) {
+        debugPrint('Lade User aus BEIDEN Welten fuer User Management...');
       }
       
-      final result = await _service.getUsers(
-        world: widget.world,
-        adminToken: widget.adminToken,
-        search: _searchController.text.trim().isEmpty ? null : _searchController.text.trim(),
-        role: _selectedRole,
-        limit: _pageSize,
-        offset: _currentPage * _pageSize,
-      );
-
-      final users = (result['users'] as List<dynamic>?)
-          ?.map((json) => WorldUser.fromJson(json as Map<String, dynamic>))
-          .toList() ?? [];
+      // FIXED: getAllUsers() laedt parallel Materie + Energie
+      final users = await WorldAdminService.getAllUsers();
+      
+      if (kDebugMode) {
+        final materieCount = users.where((u) => u.world == 'materie').length;
+        final energieCount = users.where((u) => u.world == 'energie').length;
+        debugPrint('Loaded ${users.length} users (Materie: $materieCount, Energie: $energieCount)');
+      }
 
       setState(() {
-        if (append) {
-          _users.addAll(users);
-        } else {
-          _users = users;
-        }
-        _total = result['total'] as int? ?? 0;
+        _allUsers = users;
         _isLoading = false;
       });
+      _applyFilters();
     } catch (e) {
       setState(() {
         _error = e.toString();
@@ -98,21 +86,36 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     }
   }
 
-  void _search() {
+  /// Filter und Suche anwenden
+  void _applyFilters() {
+    List<WorldUser> filtered = List.from(_allUsers);
+    
+    // Filter by role
+    if (_selectedRole != null) {
+      filtered = filtered.where((user) {
+        if (_selectedRole == 'root_admin') return user.isRootAdmin;
+        if (_selectedRole == 'admin') return user.isAdmin && !user.isRootAdmin;
+        if (_selectedRole == 'user') return !user.isAdmin;
+        return true;
+      }).toList();
+    }
+    
+    // Filter by search query
+    final query = _searchController.text.trim().toLowerCase();
+    if (query.isNotEmpty) {
+      filtered = filtered.where((user) {
+        return user.username.toLowerCase().contains(query) ||
+               (user.displayName ?? '').toLowerCase().contains(query);
+      }).toList();
+    }
+    
     setState(() {
-      _currentPage = 0;
-      _users.clear();
+      _filteredUsers = filtered;
     });
-    _loadUsers();
   }
 
-  void _loadMore() {
-    if (_users.length < _total) {
-      setState(() {
-        _currentPage++;
-      });
-      _loadUsers(append: true);
-    }
+  void _search() {
+    _applyFilters();
   }
 
   @override
@@ -218,10 +221,8 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
       onSelected: (selected) {
         setState(() {
           _selectedRole = role;
-          _currentPage = 0;
-          _users.clear();
         });
-        _loadUsers();
+        _applyFilters();
       },
       backgroundColor: const Color(0xFF16213E),
       selectedColor: color.withValues(alpha: 0.3),
@@ -231,7 +232,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   }
 
   Widget _buildBody(Color worldColor) {
-    if (_isLoading && _users.isEmpty) {
+    if (_isLoading && _allUsers.isEmpty) {
       return Center(
         child: CircularProgressIndicator(color: worldColor),
       );
@@ -256,13 +257,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
-              onPressed: () {
-                setState(() {
-                  _currentPage = 0;
-                  _users.clear();
-                });
-                _loadUsers();
-              },
+              onPressed: _loadUsers,
               icon: const Icon(Icons.refresh),
               label: const Text('Erneut versuchen'),
               style: ElevatedButton.styleFrom(
@@ -274,7 +269,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
       );
     }
 
-    if (_users.isEmpty) {
+    if (_filteredUsers.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -282,7 +277,9 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
             Icon(Icons.people_outline, size: 64, color: Colors.grey[600]),
             const SizedBox(height: 16),
             Text(
-              'Keine User gefunden',
+              _searchController.text.isNotEmpty
+                  ? 'Keine User gefunden fuer "${_searchController.text}"'
+                  : 'Keine User gefunden',
               style: TextStyle(color: Colors.grey[400], fontSize: 18),
             ),
           ],
@@ -292,53 +289,58 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
 
     return Column(
       children: [
-        // TOTAL COUNT
+        // USER-ZAEHLER MIT WELT-AUFSCHLUESSELUNG
         Padding(
-          padding: const EdgeInsets.all(16),
-          child: Text(
-            '${_users.length} von $_total Usern',
-            style: TextStyle(color: Colors.grey[400]),
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                '${_filteredUsers.length} User',
+                style: TextStyle(color: Colors.grey[400], fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(width: 12),
+              _buildWorldCountBadge('Materie', _allUsers.where((u) => u.world == 'materie').length, const Color(0xFFFF6B35)),
+              const SizedBox(width: 8),
+              _buildWorldCountBadge('Energie', _allUsers.where((u) => u.world == 'energie').length, const Color(0xFF4ECDC4)),
+            ],
           ),
         ),
         
         // USER LIST
         Expanded(
-          child: ListView.builder(
-            itemCount: _users.length + (_users.length < _total ? 1 : 0),
-            itemBuilder: (context, index) {
-              if (index == _users.length) {
-                // LOAD MORE BUTTON
-                return Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Center(
-                    child: ElevatedButton.icon(
-                      onPressed: _isLoading ? null : _loadMore,
-                      icon: _isLoading
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.arrow_downward),
-                      label: Text(_isLoading ? 'Laden...' : 'Mehr laden'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: worldColor,
-                      ),
-                    ),
-                  ),
-                );
-              }
-
-              final user = _users[index];
-              return _buildUserCard(user, worldColor);
-            },
+          child: RefreshIndicator(
+            onRefresh: _loadUsers,
+            child: ListView.builder(
+              itemCount: _filteredUsers.length,
+              itemBuilder: (context, index) {
+                final user = _filteredUsers[index];
+                return _buildUserCard(user, worldColor);
+              },
+            ),
           ),
         ),
       ],
     );
   }
+  
+  /// Welt-Zaehler Badge
+  Widget _buildWorldCountBadge(String label, int count, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color, width: 1),
+      ),
+      child: Text(
+        '$label: $count',
+        style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.bold),
+      ),
+    );
+  }
 
-  Widget _buildUserCard(WorldUser user, Color worldColor) {
+  Widget _buildUserCard(WorldUser user, Color defaultWorldColor) {
     // ROLE BADGE COLOR
     Color roleBadgeColor = Colors.grey;
     String roleLabel = 'User';
@@ -349,6 +351,11 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
       roleBadgeColor = Colors.orange;
       roleLabel = 'ADMIN';
     }
+    
+    // WELT-FARBE basierend auf User-Welt
+    final userWorldColor = user.world == 'energie' 
+        ? const Color(0xFF4ECDC4) 
+        : const Color(0xFFFF6B35);
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -356,7 +363,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
-          color: user.isSuspended ? Colors.red : worldColor.withValues(alpha: 0.3),
+          color: user.isSuspended ? Colors.red : userWorldColor.withValues(alpha: 0.3),
           width: user.isSuspended ? 2 : 1,
         ),
       ),
@@ -367,7 +374,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
             MaterialPageRoute(
               builder: (context) => UserDetailScreen(
                 user: user,
-                world: widget.world,
+                world: user.world ?? widget.world, // FIXED: Nutze User-Welt
                 adminToken: widget.adminToken,
                 isRootAdmin: widget.isRootAdmin,
               ),
@@ -382,13 +389,13 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
               // AVATAR
               CircleAvatar(
                 radius: 28,
-                backgroundColor: worldColor.withValues(alpha: 0.2),
+                backgroundColor: userWorldColor.withValues(alpha: 0.2),
                 child: user.avatarEmoji != null
                     ? Text(user.avatarEmoji!, style: const TextStyle(fontSize: 24))
                     : Text(
-                        user.username[0].toUpperCase(),
+                        user.username.isNotEmpty ? user.username[0].toUpperCase() : '?',
                         style: TextStyle(
-                          color: worldColor,
+                          color: userWorldColor,
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
                         ),
@@ -403,15 +410,18 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                   children: [
                     Row(
                       children: [
-                        Text(
-                          user.username,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
+                        Flexible(
+                          child: Text(
+                            user.username,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 6),
                         // ROLE BADGE
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -429,17 +439,31 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                             ),
                           ),
                         ),
+                        const SizedBox(width: 6),
+                        // WELT-BADGE
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: userWorldColor.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: userWorldColor, width: 1),
+                          ),
+                          child: Text(
+                            user.worldLabel,
+                            style: TextStyle(fontSize: 9, color: userWorldColor, fontWeight: FontWeight.bold),
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'ID: ${user.id}',
+                      'ID: ${user.userId}',
                       style: TextStyle(color: Colors.grey[500], fontSize: 12),
                     ),
                     if (user.lastActivityAt != null) ...[
                       const SizedBox(height: 4),
                       Text(
-                        'Letzte Aktivität: ${_formatDateTime(user.lastActivityAt!)}',
+                        'Letzte Aktivitaet: ${_formatDateTime(user.lastActivityAt!)}',
                         style: TextStyle(color: Colors.grey[400], fontSize: 12),
                       ),
                     ],
@@ -482,7 +506,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     if (diff.inHours < 24) return 'vor ${diff.inHours} Std';
     if (diff.inDays < 7) return 'vor ${diff.inDays} Tagen';
     
-    return '${dt.day}.${dt.month}.${dt.year}';
+    return '${dt.day.toString().padLeft(2, '0')}.${dt.month.toString().padLeft(2, '0')}.${dt.year}';
   }
 
   @override
