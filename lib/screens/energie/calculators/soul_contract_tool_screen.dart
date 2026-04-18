@@ -227,11 +227,210 @@ class _NewContractTabState extends State<_NewContractTab> {
             if (_result != null) ...[
               const SizedBox(height: 24),
               _ResultPreview(result: _result!),
+              const SizedBox(height: 16),
+              SizedBox(
+                child: ElevatedButton.icon(
+                  onPressed: () => _showDeepResult(_result!),
+                  icon: const Icon(Icons.menu_book),
+                  label: const Text('Deutung & Speichern'),
+                  style: ElevatedButton.styleFrom(
+                      backgroundColor: _kCardBg,
+                      foregroundColor: _kGold,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: const BorderSide(color: _kGold))),
+                ),
+              ),
             ],
           ],
         ),
       ),
     );
+  }
+
+  Future<List<Map<String, dynamic>>> _loadMeanings(
+      SoulNumerologyResult r) async {
+    // Lade genau die relevanten (number, category)-Kombinationen.
+    final wanted = <List<dynamic>>[
+      [r.lifePath, 'life_path'],
+      [r.destiny, 'destiny'],
+      [r.soulUrge, 'soul_urge'],
+      [r.personality, 'personality'],
+      ...r.karmicDebts.map((n) => [n, 'karmic_debt']),
+    ];
+    final rows = await _db
+        .from('soul_number_meanings')
+        .select('number, category, title, keywords, short_text, deep_text, practice_text');
+    final byKey = <String, Map<String, dynamic>>{
+      for (final m in rows)
+        '${m['number']}_${m['category']}': Map<String, dynamic>.from(m)
+    };
+    final out = <Map<String, dynamic>>[];
+    for (final w in wanted) {
+      final key = '${w[0]}_${w[1]}';
+      final m = byKey[key];
+      if (m != null) out.add(m);
+    }
+    return out;
+  }
+
+  Future<void> _saveContract(SoulNumerologyResult r, String notes) async {
+    final user = _db.auth.currentUser;
+    if (user == null) throw Exception('Nicht angemeldet');
+    await _db.from('soul_contracts').insert({
+      'user_id': user.id,
+      'full_name': _nameCtrl.text.trim(),
+      'birth_date': _birthDate!.toIso8601String().split('T').first,
+      'life_path': r.lifePath,
+      'destiny': r.destiny,
+      'soul_urge': r.soulUrge,
+      'personality': r.personality,
+      'birth_day': r.birthDay,
+      'karmic_debts': r.karmicDebts,
+      'computation': r.computation,
+      'notes': notes.trim().isEmpty ? null : notes.trim(),
+    });
+  }
+
+  void _showDeepResult(SoulNumerologyResult r) {
+    final notesCtrl = TextEditingController();
+    bool saving = false;
+    bool saved = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: _kCardBg,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (sheetCtx) => StatefulBuilder(
+        builder: (sheetCtx2, setSheet) => DraggableScrollableSheet(
+          initialChildSize: 0.85,
+          maxChildSize: 0.95,
+          minChildSize: 0.5,
+          expand: false,
+          builder: (_, sc) => FutureBuilder<List<Map<String, dynamic>>>(
+            future: _loadMeanings(r),
+            builder: (_, snap) {
+              if (snap.connectionState != ConnectionState.done) {
+                return const Center(
+                    child: CircularProgressIndicator(color: _kGold));
+              }
+              if (snap.hasError) {
+                return Center(
+                    child: Text('Fehler: ${snap.error}',
+                        style: const TextStyle(color: Colors.white54)));
+              }
+              final meanings = snap.data ?? [];
+              return ListView(
+                controller: sc,
+                padding: const EdgeInsets.all(20),
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                          color: Colors.white24,
+                          borderRadius: BorderRadius.circular(2)),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text('📜 Deutung deines Seelenvertrags',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 16),
+                  ...meanings.map((m) => _MeaningCard(meaning: m)),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: notesCtrl,
+                    enabled: !saving && !saved,
+                    maxLines: 3,
+                    minLines: 2,
+                    style: const TextStyle(
+                        color: Colors.white, fontSize: 13),
+                    decoration: InputDecoration(
+                      hintText: 'Optionale Notiz …',
+                      hintStyle: const TextStyle(
+                          color: Colors.white38, fontSize: 13),
+                      filled: true,
+                      fillColor: _kDarkBg,
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide:
+                              const BorderSide(color: _kBorder)),
+                      enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide:
+                              const BorderSide(color: _kBorder)),
+                      focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide:
+                              const BorderSide(color: _kGold)),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: (saving || saved)
+                          ? null
+                          : () async {
+                              setSheet(() => saving = true);
+                              try {
+                                await _saveContract(r, notesCtrl.text);
+                                if (!sheetCtx2.mounted) return;
+                                setSheet(() {
+                                  saving = false;
+                                  saved = true;
+                                });
+                                ScaffoldMessenger.of(sheetCtx2).showSnackBar(
+                                    const SnackBar(
+                                        content: Text(
+                                            '✅ Seelenvertrag gespeichert')));
+                              } catch (e) {
+                                if (!sheetCtx2.mounted) return;
+                                setSheet(() => saving = false);
+                                ScaffoldMessenger.of(sheetCtx2).showSnackBar(
+                                    SnackBar(
+                                        content: Text('Fehler: $e')));
+                              }
+                            },
+                      icon: saving
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.black))
+                          : Icon(saved ? Icons.check_circle : Icons.save),
+                      label: Text(saving
+                          ? 'Speichern …'
+                          : (saved ? 'Gespeichert' : 'Vertrag speichern')),
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor:
+                              saved ? Colors.green : _kGold,
+                          foregroundColor: Colors.black,
+                          disabledBackgroundColor:
+                              saved ? Colors.green : _kBorder,
+                          disabledForegroundColor: Colors.white70,
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 14),
+                          shape: RoundedRectangleBorder(
+                              borderRadius:
+                                  BorderRadius.circular(12))),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+      ),
+    ).whenComplete(() => notesCtrl.dispose());
   }
 
   InputDecoration _inputDeco({required String label, String? hint}) {
@@ -372,6 +571,143 @@ class _NumbersGuideTab extends StatelessWidget {
     return const Center(
       child: Text('Zahlen – Phase 5.2f',
           style: TextStyle(color: Colors.white38)),
+    );
+  }
+}
+
+const _kCategoryLabels = <String, String>{
+  'life_path': '🌟 Lebensweg',
+  'destiny': '🎯 Ausdruck',
+  'soul_urge': '💖 Seelenantrieb',
+  'personality': '🎭 Persönlichkeit',
+  'birth_day': '🌙 Geburtstag',
+  'karmic_debt': '⚖️ Karmische Schuld',
+  'master': '✨ Meisterzahl',
+};
+
+class _MeaningCard extends StatelessWidget {
+  final Map<String, dynamic> meaning;
+  const _MeaningCard({required this.meaning});
+
+  @override
+  Widget build(BuildContext context) {
+    final cat = meaning['category'] as String? ?? '';
+    final catLabel = _kCategoryLabels[cat] ?? cat;
+    final number = meaning['number'];
+    final title = meaning['title'] as String? ?? '';
+    final keywords = (meaning['keywords'] as List?) ?? const [];
+    final shortText = meaning['short_text'] as String? ?? '';
+    final deepText = meaning['deep_text'] as String? ?? '';
+    final practice = meaning['practice_text'] as String?;
+    final isKarmic = cat == 'karmic_debt';
+    final accent = isKarmic ? Colors.orangeAccent : _kGold;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+          color: _kDarkBg,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: accent.withValues(alpha: 0.4))),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            Container(
+              width: 48,
+              height: 48,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                  color: _kCardBg,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: accent, width: 2)),
+              child: Text('$number',
+                  style: TextStyle(
+                      color: accent,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18)),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(catLabel,
+                      style: TextStyle(
+                          color: accent,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 2),
+                  Text(title,
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600)),
+                ],
+              ),
+            ),
+          ]),
+          if (keywords.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 6,
+              runSpacing: 4,
+              children: keywords
+                  .map((k) => Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                            color: _kCardBg,
+                            borderRadius: BorderRadius.circular(20),
+                            border:
+                                Border.all(color: _kBorder)),
+                        child: Text('$k',
+                            style: const TextStyle(
+                                color: Colors.white70, fontSize: 11)),
+                      ))
+                  .toList(),
+            ),
+          ],
+          const SizedBox(height: 10),
+          Text(shortText,
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontStyle: FontStyle.italic)),
+          const SizedBox(height: 8),
+          Text(deepText,
+              style: const TextStyle(
+                  color: Colors.white70, fontSize: 13, height: 1.4)),
+          if (practice != null && practice.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                  color: _kCardBg,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                      color: Colors.lightGreenAccent
+                          .withValues(alpha: 0.4))),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('🌱 Praxis',
+                      style: TextStyle(
+                          color: Colors.lightGreenAccent,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 4),
+                  Text(practice,
+                      style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12,
+                          height: 1.35)),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }
