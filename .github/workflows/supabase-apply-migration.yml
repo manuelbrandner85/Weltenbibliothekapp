@@ -127,7 +127,9 @@ jobs:
           } | tee "$LOG"
           # URL-encode des Passworts (Sonderzeichen-safe)
           ENC_PW=$(python3 -c "import urllib.parse,os; print(urllib.parse.quote(os.environ['PG_PASSWORD'], safe=''))")
-          PGURL="postgresql://postgres.adtviduaftdquvfjpojb:${ENC_PW}@${PG_HOST}:6543/postgres"
+          # SSL ist PFLICHT bei Supabase Pooler (FATAL: ESSLREQUIRED sonst)
+          export PGSSLMODE=require
+          PGURL="postgresql://postgres.adtviduaftdquvfjpojb:${ENC_PW}@${PG_HOST}:6543/postgres?sslmode=require"
           # Verbindungs-Test mit verbose Output
           echo "::group::Connection test" | tee -a "$LOG"
           psql "$PGURL" -t -A -c "SELECT current_user, inet_server_addr(), inet_server_port();" 2>&1 | tee -a "$LOG"
