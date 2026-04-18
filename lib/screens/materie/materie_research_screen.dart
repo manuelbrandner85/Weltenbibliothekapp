@@ -17,6 +17,7 @@ import '../../widgets/related_topics_widget.dart';  // RelatedTopic, RelatedTopi
 import '../../widgets/research_timeline_widget.dart';  // TimelineEvent, ResearchTimelineWidget
 import '../../widgets/native_share_helper.dart';  // 🆕 Native Share Helper
 import 'compare_mode_screen.dart';
+import '../../core/error/app_error_handler.dart'; // ⚠️ Zentraler Error-Handler
 
 /// MATERIE RESEARCH SCREEN - Production Internet Research
 /// 
@@ -276,14 +277,9 @@ class _MaterieResearchScreenState extends State<MaterieResearchScreen> {
           );
         }
       }
-    } catch (e) {
+    } catch (e, st) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ Fehler: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        AppErrorHandler.handle(context, e, stackTrace: st);
       }
     }
   }

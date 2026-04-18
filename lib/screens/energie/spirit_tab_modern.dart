@@ -15,6 +15,7 @@ import 'calculators/spirit_universal_tool_screen.dart';
 import 'calculators/new_spirit_tool_screens.dart';
 import 'frequency_generator_screen.dart';  // 🎵 FREQUENCY GENERATOR
 import '../spirit/spirit_tools_mega_screen.dart'; // 🆕 V115 MEGA UPDATE TOOLS
+import 'dream_journal_screen.dart'; // Working Supabase-backed version
 
 /// Moderner Spirit-Tab mit ALLEN 16 originalen Tools
 class SpiritTabModern extends StatefulWidget {
@@ -423,7 +424,7 @@ class _SpiritTabModernState extends State<SpiritTabModern> {
         'subtitle': 'Träume & Symbole',
         'color': const Color(0xFF1A237E),
         'category': 'new',
-        'screen': const DreamJournalScreen(),
+        'screen': const DreamJournalScreen(roomId: 'traumarbeit'),
       },
       
       // ᚱ Runen-Orakel (V115 Feature #20)

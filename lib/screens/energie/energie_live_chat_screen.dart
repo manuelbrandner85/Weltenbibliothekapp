@@ -19,6 +19,7 @@ import '../../models/energie_profile.dart';
 import '../shared/profile_editor_screen.dart'; // ✅ Profile Editor
 import '../../services/moderation_service.dart'; // 🔧 ADMIN MODERATION
 import '../../services/admin_permissions.dart'; // 🔐 ADMIN SYSTEM
+import '../../core/error/app_error_handler.dart'; // ⚠️ Zentraler Error-Handler
 import '../../widgets/error_display_widget.dart'; // 🎨 ERROR DISPLAY (NEW)
 import 'crystal_library_screen.dart'; // 💠 Kristall-Bibliothek Screen
 import 'meditation_timer_screen.dart'; // 🧘 Meditation Timer Screen
@@ -294,9 +295,17 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
           }
         });
       }
-    } catch (e) {
-      if (kDebugMode) debugPrint('❌ ENERGIE Chat Load Error: $e');
-      if (mounted) setState(() { _isLoading = false; _errorMessage = e.toString(); });
+    } catch (e, st) {
+      if (kDebugMode) {
+        debugPrint('❌ ENERGIE Chat Load Error: $e');
+        debugPrintStack(stackTrace: st);
+      }
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = AppErrorHandler.messageFor(e);
+        });
+      }
     }
   }
   
@@ -460,17 +469,12 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
           ),
         );
       }
-    } catch (e) {
+    } catch (e, st) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ Fehler: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        AppErrorHandler.handle(context, e, stackTrace: st);
       }
     } finally {
-      setState(() => _isSending = false);
+      if (mounted) setState(() => _isSending = false);
     }
   }
 
@@ -504,17 +508,9 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
           ),
         );
       }
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ Voice message error: $e');
-      }
+    } catch (e, st) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ Fehler beim Senden: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        AppErrorHandler.handle(context, e, stackTrace: st);
       }
     }
   }
@@ -586,18 +582,10 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
               // ignore: use_build_context_synchronously
               Navigator.pop(context);
             }
-          } catch (e) {
-            if (kDebugMode) {
-              debugPrint('❌ Voice upload error: $e');
-            }
+          } catch (e, st) {
             if (mounted) {
               // ignore: use_build_context_synchronously
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('❌ Upload fehlgeschlagen: $e'),
-                  backgroundColor: Colors.red,
-                ),
-              );
+              AppErrorHandler.handle(context, e, stackTrace: st);
             }
           }
         },
@@ -731,17 +719,10 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
           );
         }
       }
-    } catch (e) {
-      if (kDebugMode) debugPrint('❌ Image upload error: $e');
+    } catch (e, st) {
       if (mounted) {
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ Upload fehlgeschlagen: ${e.toString().substring(0, 50)}...'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 3),
-          ),
-        );
+        AppErrorHandler.handle(context, e, stackTrace: st);
       }
     }
   }
@@ -2465,20 +2446,14 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
           );
           await _loadMessages(silent: true);
         }
-      } catch (e) {
+      } catch (e, st) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('❌ Fehler: $e'),
-              backgroundColor: Colors.red,
-              duration: Duration(seconds: 3),
-            ),
-          );
+          AppErrorHandler.handle(context, e, stackTrace: st);
         }
       }
     }
   }
-  
+
   /// 🆕 DELETE MESSAGE
   Future<void> _deleteMessage(Map<String, dynamic> msg) async {
     final confirm = await showDialog<bool>(

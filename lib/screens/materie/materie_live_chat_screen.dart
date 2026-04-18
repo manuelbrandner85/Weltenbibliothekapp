@@ -27,6 +27,7 @@ import '../../widgets/offline_indicator.dart'; // 📡 OFFLINE INDICATOR (NEW Ph
 import '../shared/profile_editor_screen.dart'; // ✅ Profile Editor
 import '../../services/moderation_service.dart'; // 🔧 ADMIN MODERATION
 import '../../services/admin_permissions.dart'; // 🔐 ADMIN SYSTEM
+import '../../core/error/app_error_handler.dart'; // ⚠️ Zentraler Error-Handler
 import '../../widgets/error_display_widget.dart'; // 🎨 ERROR DISPLAY (NEW)
 // 💬 Enhanced Message Bubble  
 import '../../widgets/message_reactions_widget.dart'; // 😀 Message Reactions
@@ -99,7 +100,8 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
   String _username = ''; // ✅ Leer bis Profil geladen – isOwn-Check + Profil-Dialog funktionieren korrekt
   late String _userId; // 🔥 Real User ID from UserService (initialized in initState)
   String _avatar = '👤'; // 🆕 Avatar Emoji (default)
-  String? _avatarEmoji; // 🆕 Avatar Emoji aus Profil
+  // ignore: unused_field
+  String? _avatarEmoji; // 🆕 Avatar Emoji aus Profil (written by profile-sync; read indirectly via _avatar)
   String? _avatarUrl; // 🆕 Avatar URL aus Profil
   
   List<Map<String, dynamic>> _messages = [];
@@ -362,9 +364,17 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
         });
         WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
       }
-    } catch (e) {
-      if (kDebugMode) debugPrint('❌ MATERIE Chat Load Error: $e');
-      if (mounted) setState(() { _isLoading = false; _errorMessage = e.toString(); });
+    } catch (e, st) {
+      if (kDebugMode) {
+        debugPrint('❌ MATERIE Chat Load Error: $e');
+        debugPrintStack(stackTrace: st);
+      }
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = AppErrorHandler.messageFor(e);
+        });
+      }
     }
   }
   
@@ -408,12 +418,9 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
       // Realtime subscription delivers the new message – manual reload as fallback
       await Future.delayed(const Duration(milliseconds: 300));
       await _loadMessages(silent: true);
-    } catch (e) {
-      if (kDebugMode) debugPrint('❌ Fehler beim Senden: $e');
+    } catch (e, st) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Fehler beim Senden: $e'), backgroundColor: Colors.red),
-        );
+        AppErrorHandler.handle(context, e, stackTrace: st);
       }
     }
   }
@@ -433,12 +440,9 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
       await Future.delayed(const Duration(milliseconds: 300));
       await _loadMessages(silent: true);
       if (kDebugMode) debugPrint('✅ Sprachnachricht gesendet: $audioUrl');
-    } catch (e) {
-      if (kDebugMode) debugPrint('❌ Fehler beim Senden der Sprachnachricht: $e');
+    } catch (e, st) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Fehler beim Senden: $e'), backgroundColor: Colors.red),
-        );
+        AppErrorHandler.handle(context, e, stackTrace: st);
       }
     }
   }
@@ -510,18 +514,10 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
               // ignore: use_build_context_synchronously
               Navigator.pop(context);
             }
-          } catch (e) {
-            if (kDebugMode) {
-              debugPrint('❌ Voice upload error: $e');
-            }
+          } catch (e, st) {
             if (mounted) {
               // ignore: use_build_context_synchronously
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('❌ Upload fehlgeschlagen: $e'),
-                  backgroundColor: Colors.red,
-                ),
-              );
+              AppErrorHandler.handle(context, e, stackTrace: st);
             }
           }
         },
@@ -656,17 +652,10 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
           );
         }
       }
-    } catch (e) {
-      if (kDebugMode) debugPrint('❌ Image upload error: $e');
+    } catch (e, st) {
       if (mounted) {
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ Upload fehlgeschlagen: ${e.toString().substring(0, 50)}...'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 3),
-          ),
-        );
+        AppErrorHandler.handle(context, e, stackTrace: st);
       }
     }
   }

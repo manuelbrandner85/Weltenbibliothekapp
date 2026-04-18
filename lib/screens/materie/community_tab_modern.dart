@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import '../../models/community_post.dart';
 import '../../services/supabase_community_service.dart'; // 🔴 Supabase
+import '../../core/error/app_error_handler.dart'; // ⚠️ Zentraler Error-Handler
 import '../../widgets/create_post_dialog_v2.dart'; // ✅ POST-DIALOG
 import '../../widgets/loading_skeletons.dart'; // 💀 LOADING SKELETONS
 import '../../widgets/article_like_button.dart'; // 👍 NEW: Like Button
@@ -70,15 +71,17 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
         _errorMessage = null; // ✅ FIX #7: Clear error
         _isLoading = false;
       });
-    } catch (e) {
+    } catch (e, st) {
       if (kDebugMode) {
-        debugPrint('🔵 MATERIE Community (AKTIV): Error loading posts: $e');
+        debugPrint('🔵 MATERIE Community: Error loading posts: $e');
+        debugPrintStack(stackTrace: st);
       }
-      
-      setState(() {
-        _isLoading = false;
-        _errorMessage = 'Fehler beim Laden der Posts. Bitte erneut versuchen.'; // ✅ FIX #7
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = AppErrorHandler.messageFor(e);
+        });
+      }
     }
   }
   

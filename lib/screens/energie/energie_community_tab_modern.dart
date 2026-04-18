@@ -3,6 +3,7 @@ import '../../services/storage_service.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import '../../models/community_post.dart';
 import '../../services/supabase_community_service.dart'; // 🟣 Supabase
+import '../../core/error/app_error_handler.dart'; // ⚠️ Zentraler Error-Handler
 // 🔐 PROFIL-DATEN
 import '../../widgets/create_post_dialog_v2.dart'; // ✅ Post-Dialog
 import '../../widgets/post_actions_row.dart'; // ✅ POST ACTIONS
@@ -61,15 +62,10 @@ class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern> w
           _isLoading = false;
         });
       }
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('🟣 ENERGIE: Fehler beim Laden: $e');
-      }
+    } catch (e, st) {
       if (mounted) {
         setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('❌ Fehler: $e')),
-        );
+        AppErrorHandler.handle(context, e, stackTrace: st);
       }
     }
   }
@@ -906,16 +902,14 @@ class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern> w
           );
           _loadData(); // Reload
         }
-      } catch (e) {
+      } catch (e, st) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('❌ Fehler: $e'), backgroundColor: Colors.red),
-          );
+          AppErrorHandler.handle(context, e, stackTrace: st);
         }
       }
     }
   }
-  
+
   /// 🗑️ POST LÖSCHEN
   Future<void> _deletePost(CommunityPost post) async {
     final storage = StorageService();
@@ -960,11 +954,9 @@ class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern> w
           );
           _loadData(); // Reload
         }
-      } catch (e) {
+      } catch (e, st) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('❌ Fehler: $e'), backgroundColor: Colors.red),
-          );
+          AppErrorHandler.handle(context, e, stackTrace: st);
         }
       }
     }
