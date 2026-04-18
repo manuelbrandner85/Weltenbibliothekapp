@@ -11,6 +11,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../services/moon_calculator.dart';
 import '../../../services/moon_recommendations.dart';
@@ -81,11 +82,7 @@ class _MoonCalendarToolScreenState extends State<MoonCalendarToolScreen>
         children: [
           _TodayTab(snapshot: _snapshot),
           const _MonthTab(),
-          const _PlaceholderTab(
-            emoji: '🕯️',
-            title: 'Rituale',
-            hint: 'Kommt in Phase 8C.3',
-          ),
+          _RitualsTab(currentPhaseKey: _snapshot.phaseKey),
           const _PlaceholderTab(
             emoji: '📖',
             title: 'Mond-Tagebuch',
@@ -636,6 +633,282 @@ class _SelectedDayCard extends StatelessWidget {
 
   static String _formatDate(DateTime d) =>
       '${d.day}. ${_monthNames[d.month - 1]} ${d.year}';
+}
+
+// ═══════════════════════════════════════════════════════════
+// Tab 3: Rituale (Supabase: moon_rituals)
+// ═══════════════════════════════════════════════════════════
+
+class _MoonRitual {
+  final String phaseKey;
+  final String title;
+  final String description;
+  final List<String> steps;
+  final int sortOrder;
+
+  _MoonRitual({
+    required this.phaseKey,
+    required this.title,
+    required this.description,
+    required this.steps,
+    required this.sortOrder,
+  });
+
+  factory _MoonRitual.fromRow(Map<String, dynamic> row) {
+    final rawSteps = (row['steps'] as String? ?? '').trim();
+    final parsed = rawSteps
+        .split('\n')
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .toList();
+    return _MoonRitual(
+      phaseKey: row['moon_phase'] as String,
+      title: row['title'] as String,
+      description: row['description'] as String,
+      steps: parsed,
+      sortOrder: (row['sort_order'] as num?)?.toInt() ?? 0,
+    );
+  }
+}
+
+class _RitualsTab extends StatefulWidget {
+  const _RitualsTab({required this.currentPhaseKey});
+
+  final String currentPhaseKey;
+
+  @override
+  State<_RitualsTab> createState() => _RitualsTabState();
+}
+
+class _RitualsTabState extends State<_RitualsTab> {
+  late Future<List<_MoonRitual>> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = _loadRituals();
+  }
+
+  Future<List<_MoonRitual>> _loadRituals() async {
+    final rows = await Supabase.instance.client
+        .from('moon_rituals')
+        .select('moon_phase,title,description,steps,sort_order')
+        .order('sort_order', ascending: true);
+    return (rows as List)
+        .map((r) => _MoonRitual.fromRow(r as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<void> _refresh() async {
+    setState(() {
+      _future = _loadRituals();
+    });
+    await _future;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return RefreshIndicator(
+      onRefresh: _refresh,
+      color: Colors.amberAccent,
+      backgroundColor: const Color(0xFF1A237E),
+      child: FutureBuilder<List<_MoonRitual>>(
+        future: _future,
+        builder: (context, snap) {
+          if (snap.connectionState == ConnectionState.waiting) {
+            return const Center(
+              child: CircularProgressIndicator(color: Colors.white70),
+            );
+          }
+          if (snap.hasError) {
+            return ListView(
+              children: [
+                const SizedBox(height: 80),
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      children: [
+                        const Icon(Icons.cloud_off,
+                            size: 48, color: Colors.white38),
+                        const SizedBox(height: 12),
+                        const Text(
+                          'Rituale konnten nicht geladen werden.',
+                          style: TextStyle(color: Colors.white70),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '${snap.error}',
+                          style: const TextStyle(
+                              color: Colors.white38, fontSize: 12),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: _refresh,
+                          child: const Text('Erneut versuchen'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            );
+          }
+
+          final rituals = snap.data ?? const [];
+          if (rituals.isEmpty) {
+            return ListView(
+              children: const [
+                SizedBox(height: 80),
+                Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(24),
+                    child: Text(
+                      'Noch keine Rituale hinterlegt.',
+                      style: TextStyle(color: Colors.white70),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          }
+
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: rituals.length,
+            itemBuilder: (_, i) => _RitualCard(
+              ritual: rituals[i],
+              isCurrent: rituals[i].phaseKey == widget.currentPhaseKey,
+              initiallyExpanded: rituals[i].phaseKey == widget.currentPhaseKey,
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _RitualCard extends StatelessWidget {
+  const _RitualCard({
+    required this.ritual,
+    required this.isCurrent,
+    required this.initiallyExpanded,
+  });
+
+  final _MoonRitual ritual;
+  final bool isCurrent;
+  final bool initiallyExpanded;
+
+  @override
+  Widget build(BuildContext context) {
+    final emoji = moonPhaseEmojis[ritual.phaseKey] ?? '🌙';
+    final phaseLabel = moonPhaseLabels[ritual.phaseKey] ?? ritual.phaseKey;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isCurrent
+              ? Colors.amberAccent.withValues(alpha: 0.75)
+              : Colors.white12,
+          width: isCurrent ? 2 : 1,
+        ),
+      ),
+      child: Theme(
+        data: Theme.of(context).copyWith(
+          dividerColor: Colors.transparent,
+          unselectedWidgetColor: Colors.white70,
+          colorScheme: Theme.of(context).colorScheme.copyWith(
+                primary: Colors.amberAccent,
+              ),
+        ),
+        child: ExpansionTile(
+          initiallyExpanded: initiallyExpanded,
+          tilePadding:
+              const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+          childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          iconColor: Colors.white70,
+          collapsedIconColor: Colors.white54,
+          leading: Text(emoji, style: const TextStyle(fontSize: 32)),
+          title: Text(
+            ritual.title,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+              fontSize: 15,
+            ),
+          ),
+          subtitle: Row(
+            children: [
+              Text(
+                phaseLabel,
+                style: const TextStyle(
+                  color: Colors.white54,
+                  fontSize: 12,
+                ),
+              ),
+              if (isCurrent) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.amberAccent.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: const Text(
+                    'HEUTE',
+                    style: TextStyle(
+                      color: Colors.amberAccent,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          children: [
+            Text(
+              ritual.description,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 13.5,
+                height: 1.45,
+              ),
+            ),
+            const SizedBox(height: 14),
+            const Text(
+              'Ablauf',
+              style: TextStyle(
+                color: Colors.amberAccent,
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+                letterSpacing: 0.5,
+              ),
+            ),
+            const SizedBox(height: 8),
+            for (final step in ritual.steps)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Text(
+                  step,
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 13,
+                    height: 1.4,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 // ═══════════════════════════════════════════════════════════
