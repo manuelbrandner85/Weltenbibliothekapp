@@ -9,6 +9,7 @@ on:
       - 'pubspec.yaml'
       - 'lib/**'
       - 'android/**'
+      - '.github/workflows/build_apk.yml'
   workflow_dispatch:
     inputs:
       version_note:
