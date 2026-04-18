@@ -82,7 +82,7 @@ jobs:
           sudo apt-get install -y -qq postgresql-client
           psql --version
 
-      - name: 🔌 Pooler-URL bauen + Verbindung testen
+      - name: 🔌 Verbindung testen (Session-Pooler Port 5432 für DDL)
         id: conn
         env:
           PG_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
@@ -93,30 +93,38 @@ jobs:
             echo "::error::Secret SUPABASE_DB_PASSWORD ist nicht gesetzt."
             exit 1
           fi
-          PRIMARY_REGION="${INPUT_REGION:-${DEFAULT_REGION}}"
           ENC_PW=$(python3 -c "import urllib.parse,os; print(urllib.parse.quote(os.environ['PG_PASSWORD'], safe=''))")
-          REGIONS=("$PRIMARY_REGION" eu-central-1 eu-west-1 us-east-1 us-west-1 ap-southeast-1)
+          # DDL (GRANT) braucht Session-Pooler (Port 5432), nicht Transaction-Pooler (6543)
+          # Direkter Host hat keine IPv4-Adresse in GitHub Actions → Session-Pooler nutzen
+          REGIONS=("${INPUT_REGION:-${DEFAULT_REGION}}" eu-central-1 eu-west-1 us-east-1 us-west-1 ap-southeast-1)
           SEEN=""
           WINNER=""
+          WINNER_HOST=""
           for R in "${REGIONS[@]}"; do
             case " $SEEN " in *" $R "*) continue;; esac
             SEEN="$SEEN $R"
+            # Session Pooler: gleicher Host, Port 5432
             HOST="aws-0-${R}.pooler.supabase.com"
-            if ! getent ahostsv4 "$HOST" >/dev/null 2>&1; then continue; fi
-            if ! timeout 5 bash -c "</dev/tcp/$HOST/6543" 2>/dev/null; then continue; fi
-            URL="postgresql://postgres.${PROJECT_REF}:${ENC_PW}@${HOST}:6543/postgres"
-            if psql "$URL" -t -A -c "SELECT 1" >/dev/null 2>&1; then
-              echo "✅ Verbindung ok in Region $R"
+            echo "--- Teste $R Port 5432 ---"
+            if ! getent ahostsv4 "$HOST" >/dev/null 2>&1; then echo "  kein DNS"; continue; fi
+            if ! timeout 8 bash -c "</dev/tcp/$HOST/5432" 2>/dev/null; then echo "  TCP 5432 blockiert"; continue; fi
+            URL="postgresql://postgres.${PROJECT_REF}:${ENC_PW}@${HOST}:5432/postgres?sslmode=require"
+            if psql "$URL" -t -A -c "SELECT current_user" 2>&1; then
+              echo "  ✅ Session-Pooler ok in Region $R"
               WINNER="$R"
+              WINNER_HOST="$HOST"
               break
+            else
+              echo "  ↪ Login fehlgeschlagen in $R"
             fi
           done
           if [ -z "$WINNER" ]; then
-            echo "::error::Keine Region erlaubt Verbindung."
+            echo "::error::Keine Region erlaubt Verbindung (Port 5432/Session-Pooler)."
             exit 1
           fi
-          echo "host=aws-0-${WINNER}.pooler.supabase.com" >> "$GITHUB_OUTPUT"
-          echo "region=$WINNER" >> "$GITHUB_OUTPUT"
+          echo "host=${WINNER_HOST}" >> "$GITHUB_OUTPUT"
+          echo "region=${WINNER}" >> "$GITHUB_OUTPUT"
+          echo "port=5432" >> "$GITHUB_OUTPUT"
 
       - name: 🚀 Migration additiv ausführen
         id: migrate
@@ -126,13 +134,12 @@ jobs:
         run: |
           set +e
           ENC_PW=$(python3 -c "import urllib.parse,os; print(urllib.parse.quote(os.environ['PG_PASSWORD'], safe=''))")
-          PGCONN="postgresql://postgres.${PROJECT_REF}:${ENC_PW}@${PG_HOST}:6543/postgres"
+          PGCONN="postgresql://postgres.${PROJECT_REF}:${ENC_PW}@${PG_HOST}:5432/postgres?sslmode=require"
           FILE="${{ steps.mig.outputs.file }}"
           LOG=/tmp/psql.log
           echo "::group::Applying $FILE (additive)"
           psql "$PGCONN" \
             --set ON_ERROR_STOP=1 \
-            --single-transaction \
             -f "$FILE" 2>&1 | tee "$LOG"
           RC=${PIPESTATUS[0]}
           echo "::endgroup::"
