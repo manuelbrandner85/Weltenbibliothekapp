@@ -154,16 +154,32 @@ jobs:
           PG_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
           PG_HOST: ${{ steps.conn.outputs.host }}
         run: |
-          set -e
+          set +e
           ENC_PW=$(python3 -c "import urllib.parse,os; print(urllib.parse.quote(os.environ['PG_PASSWORD'], safe=''))")
           PGCONN="postgresql://postgres.${PROJECT_REF}:${ENC_PW}@${PG_HOST}:6543/postgres"
           FILE="${{ steps.mig.outputs.file }}"
+          LOG=/tmp/psql.log
           echo "::group::Running $FILE"
           psql "$PGCONN" \
             --set ON_ERROR_STOP=1 \
             --single-transaction \
-            -f "$FILE"
+            -f "$FILE" 2>&1 | tee "$LOG"
+          RC=${PIPESTATUS[0]}
           echo "::endgroup::"
+          if [ $RC -ne 0 ]; then
+            echo "### ❌ Migration fehlgeschlagen (exit $RC)" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "#### Fehler-Zeilen aus psql:" >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            grep -E '^(psql:|ERROR:|DETAIL:|HINT:|CONTEXT:|LINE |.*line [0-9]+:)' "$LOG" | head -60 >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "#### Letzte 40 Zeilen aus psql-Log:" >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            tail -n 40 "$LOG" >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            exit $RC
+          fi
 
       - name: ✅ Zustand NACHHER (Verifikation)
         env:
