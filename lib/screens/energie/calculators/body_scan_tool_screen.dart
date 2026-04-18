@@ -837,11 +837,270 @@ class _HistoryTabState extends State<_HistoryTab> {
 class _InfoTab extends StatelessWidget {
   const _InfoTab();
 
+  static const List<Map<String, dynamic>> _chakras = [
+    {
+      'nr': 1,
+      'name': 'Wurzelchakra',
+      'sanskrit': 'Muladhara',
+      'color': '#F44336',
+      'emoji': '🔴',
+      'location': 'Steißbein / Beckenboden',
+      'element': 'Erde',
+      'theme': 'Sicherheit, Erdung, Urvertrauen',
+      'balance':
+          'Gefühl von Sicherheit, Stabilität, Vertrauen ins Leben, finanzielle Klarheit.',
+      'blockade':
+          'Existenzangst, Rückenschmerzen, Unsicherheit, Gefühl von Entwurzelung.',
+      'heal':
+          'Barfuß gehen, Wurzelgemüse essen, rote Kristalle (Jaspis, Granat), Wurzel-Meditation.',
+    },
+    {
+      'nr': 2,
+      'name': 'Sakralchakra',
+      'sanskrit': 'Svadhisthana',
+      'color': '#FF9800',
+      'emoji': '🟠',
+      'location': 'Unterbauch, zwei Finger unter Bauchnabel',
+      'element': 'Wasser',
+      'theme': 'Kreativität, Lust, Gefühle, Sexualität',
+      'balance':
+          'Leidenschaft, gesunder Genuss, kreativer Fluss, lebendige Beziehungen.',
+      'blockade':
+          'Gefühlstaubheit, Kontrollzwang, sexuelle Scham, Kreativitätsblockade.',
+      'heal':
+          'Tanzen, Wasser-Rituale, Karneol tragen, Becken kreisen, Atemarbeit.',
+    },
+    {
+      'nr': 3,
+      'name': 'Solarplexuschakra',
+      'sanskrit': 'Manipura',
+      'color': '#FFEB3B',
+      'emoji': '🟡',
+      'location': 'Oberbauch, unter Brustbein',
+      'element': 'Feuer',
+      'theme': 'Selbstwert, Willenskraft, Identität',
+      'balance':
+          'Starkes Selbstbewusstsein, klare Entscheidungen, persönliche Kraft.',
+      'blockade':
+          'Selbstkritik, Perfektionismus, Verdauungsprobleme, Opferhaltung.',
+      'heal':
+          'Sonnenlicht, gelbe Lebensmittel, Citrin, Lachyoga, "Ich bin"-Affirmationen.',
+    },
+    {
+      'nr': 4,
+      'name': 'Herzchakra',
+      'sanskrit': 'Anahata',
+      'color': '#4CAF50',
+      'emoji': '💚',
+      'location': 'Mitte der Brust',
+      'element': 'Luft',
+      'theme': 'Liebe, Mitgefühl, Vergebung',
+      'balance':
+          'Bedingungslose Liebe zu sich und anderen, tiefe Verbindung, Mitgefühl.',
+      'blockade':
+          'Bitterkeit, Isolation, Herz-Kreislauf-Probleme, unfähig zu vergeben.',
+      'heal':
+          'Herzöffnende Yoga-Haltungen, Rosenquarz, Vergebungsrituale, Naturkontakt.',
+    },
+    {
+      'nr': 5,
+      'name': 'Kehlchakra',
+      'sanskrit': 'Vishuddha',
+      'color': '#2196F3',
+      'emoji': '🔵',
+      'location': 'Hals / Kehle',
+      'element': 'Äther',
+      'theme': 'Wahrheit, Ausdruck, Kommunikation',
+      'balance':
+          'Authentisches Sprechen, klare Grenzen, kreativer Ausdruck, Zuhören können.',
+      'blockade':
+          'Halsschmerzen, Schilddrüsenprobleme, Angst zu sprechen, Lügen.',
+      'heal':
+          'Singen, Mantren, Tagebuchschreiben, Sodalith/Aquamarin, Kehl-Atmung.',
+    },
+    {
+      'nr': 6,
+      'name': 'Drittes Auge',
+      'sanskrit': 'Ajna',
+      'color': '#9C27B0',
+      'emoji': '🟣',
+      'location': 'Stirn zwischen den Augenbrauen',
+      'element': 'Licht',
+      'theme': 'Intuition, Weisheit, innere Visionen',
+      'balance':
+          'Klare Intuition, lebendige Träume, innere Führung, Weitsicht.',
+      'blockade':
+          'Migräne, Überanalyse, Fantasie-Realität-Vermischung, Zweifel an Intuition.',
+      'heal':
+          'Meditation, Amethyst, Traumjournal, Stille, Yoga Nidra.',
+    },
+    {
+      'nr': 7,
+      'name': 'Kronenchakra',
+      'sanskrit': 'Sahasrara',
+      'color': '#E1BEE7',
+      'emoji': '⚪',
+      'location': 'Scheitel / über dem Kopf',
+      'element': 'Reines Bewusstsein',
+      'theme': 'Spiritualität, Einheit, Transzendenz',
+      'balance':
+          'Gefühl von Einheit, spirituelle Verbundenheit, tiefer Sinn, innerer Frieden.',
+      'blockade':
+          'Sinnverlust, Nihilismus, Abgeschnittenheit, spiritueller Hochmut.',
+      'heal':
+          'Stille Meditation, Beten, Bergkristall, Fasten, heilige Räume aufsuchen.',
+    },
+  ];
+
+  Color _parseColor(String hex) {
+    final cleaned = hex.replaceAll('#', '');
+    return Color(int.parse('FF$cleaned', radix: 16));
+  }
+
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Text('Chakra-Info – Phase 7.2f',
-          style: TextStyle(color: Colors.white38)),
+    return ListView.builder(
+      padding: const EdgeInsets.all(12),
+      itemCount: _chakras.length,
+      itemBuilder: (_, i) {
+        final c = _chakras[i];
+        final color = _parseColor(c['color'] as String);
+        return Card(
+          color: _kCardBg,
+          margin: const EdgeInsets.only(bottom: 10),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+              side: BorderSide(color: color.withValues(alpha: 0.4))),
+          child: Theme(
+            data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+            child: ExpansionTile(
+              iconColor: Colors.white70,
+              collapsedIconColor: Colors.white54,
+              tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+              childrenPadding:
+                  const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              title: Row(children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                        colors: [color.withValues(alpha: 0.4), _kDarkBg]),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: color),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(c['emoji'] as String,
+                      style: const TextStyle(fontSize: 22)),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('${c['nr']}. ${c['name']}',
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600)),
+                      const SizedBox(height: 2),
+                      Text(c['sanskrit'] as String,
+                          style: TextStyle(color: color, fontSize: 11)),
+                    ],
+                  ),
+                ),
+              ]),
+              children: [
+                _InfoRow(
+                    label: 'Ort', value: c['location'] as String, color: color),
+                _InfoRow(
+                    label: 'Element',
+                    value: c['element'] as String,
+                    color: color),
+                _InfoRow(
+                    label: 'Thema',
+                    value: c['theme'] as String,
+                    color: color),
+                const SizedBox(height: 8),
+                _InfoBlock(
+                    title: '✨ Im Gleichgewicht',
+                    text: c['balance'] as String,
+                    color: color),
+                const SizedBox(height: 8),
+                _InfoBlock(
+                    title: '⚠️ Bei Blockade',
+                    text: c['blockade'] as String,
+                    color: Colors.orangeAccent),
+                const SizedBox(height: 8),
+                _InfoBlock(
+                    title: '🌱 Heilpraxis',
+                    text: c['heal'] as String,
+                    color: Colors.lightGreenAccent),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color color;
+  const _InfoRow(
+      {required this.label, required this.value, required this.color});
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 72,
+            child: Text(label,
+                style: const TextStyle(
+                    color: Colors.white54, fontSize: 12)),
+          ),
+          Expanded(
+            child: Text(value,
+                style:
+                    const TextStyle(color: Colors.white, fontSize: 13)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InfoBlock extends StatelessWidget {
+  final String title;
+  final String text;
+  final Color color;
+  const _InfoBlock(
+      {required this.title, required this.text, required this.color});
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+          color: _kDarkBg,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: color.withValues(alpha: 0.4))),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title,
+              style: TextStyle(
+                  color: color, fontSize: 12, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 4),
+          Text(text,
+              style: const TextStyle(
+                  color: Colors.white70, fontSize: 12, height: 1.35)),
+        ],
+      ),
     );
   }
 }
