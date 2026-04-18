@@ -641,20 +641,576 @@ class _AncestorEditorSheetState extends State<_AncestorEditorSheet> {
 // Tab 1: Muster  (Phase 4.2c)
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _PatternsTab extends StatelessWidget {
+const Map<String, String> _kPatternTypes = {
+  'belief': 'Glaubenssatz',
+  'trauma': 'Trauma',
+  'strength': 'Stärke',
+  'gift': 'Gabe',
+  'silence': 'Schweigen',
+  'taboo': 'Tabu',
+  'other': 'Andere',
+};
+
+const Map<String, String> _kPatternStatus = {
+  'recognized': 'Erkannt',
+  'in_healing': 'In Heilung',
+  'integrated': 'Integriert',
+};
+
+const Map<String, Color> _kPatternStatusColor = {
+  'recognized': Color(0xFFD4A24C),
+  'in_healing': Color(0xFF64B5F6),
+  'integrated': Color(0xFF81C784),
+};
+
+class _PatternsTab extends StatefulWidget {
   const _PatternsTab();
+  @override
+  State<_PatternsTab> createState() => _PatternsTabState();
+}
+
+class _PatternsTabState extends State<_PatternsTab> {
+  List<Map<String, dynamic>> _rows = [];
+  bool _loading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final user = _db.auth.currentUser;
+      if (user == null) {
+        if (!mounted) return;
+        setState(() {
+          _loading = false;
+          _error = 'Bitte zuerst anmelden';
+        });
+        return;
+      }
+      final rows = await _db
+          .from('ancestor_patterns')
+          .select()
+          .eq('user_id', user.id)
+          .order('created_at', ascending: false);
+      if (!mounted) return;
+      setState(() {
+        _rows = List<Map<String, dynamic>>.from(rows);
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = '$e';
+      });
+    }
+  }
+
+  Future<void> _delete(String id) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: _kCardBg,
+        title: const Text('Muster löschen?',
+            style: TextStyle(color: Colors.white)),
+        content: const Text(
+            'Dieser Eintrag wird unwiderruflich gelöscht.',
+            style: TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Abbrechen',
+                  style: TextStyle(color: Colors.white54))),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Löschen',
+                  style: TextStyle(color: _kAmber))),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    try {
+      await _db.from('ancestor_patterns').delete().eq('id', id);
+      if (!mounted) return;
+      setState(() => _rows.removeWhere((r) => r['id'] == id));
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Muster gelöscht')));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Fehler: $e')));
+    }
+  }
+
+  Future<void> _openEditor({Map<String, dynamic>? existing}) async {
+    final saved = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _PatternEditorSheet(existing: existing),
+    );
+    if (saved == true) _load();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Padding(
-        padding: EdgeInsets.all(24),
-        child: Text(
-          'Muster-Tab folgt in Phase 4.2c',
-          style: TextStyle(color: Colors.white54, fontSize: 14),
-          textAlign: TextAlign.center,
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      floatingActionButton: FloatingActionButton.extended(
+        backgroundColor: _kAmber,
+        foregroundColor: Colors.black,
+        icon: const Icon(Icons.add),
+        label: const Text('Muster'),
+        onPressed: () => _openEditor(),
+      ),
+      body: _buildBody(),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator(color: _kAmber));
+    }
+    if (_error != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(_error!,
+                  style: const TextStyle(color: Colors.white54),
+                  textAlign: TextAlign.center),
+              const SizedBox(height: 12),
+              TextButton(
+                  onPressed: _load,
+                  child: const Text('Erneut versuchen',
+                      style: TextStyle(color: _kAmber))),
+            ],
+          ),
+        ),
+      );
+    }
+    if (_rows.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: const [
+              Icon(Icons.hub_outlined, color: _kAmber, size: 48),
+              SizedBox(height: 12),
+              Text(
+                  'Noch keine Muster erkannt.\nTippe unten + Muster, um zu beginnen.',
+                  style: TextStyle(color: Colors.white54),
+                  textAlign: TextAlign.center),
+            ],
+          ),
+        ),
+      );
+    }
+    return RefreshIndicator(
+      color: _kAmber,
+      onRefresh: _load,
+      child: ListView.builder(
+        padding: const EdgeInsets.fromLTRB(12, 12, 12, 88),
+        itemCount: _rows.length,
+        itemBuilder: (_, i) {
+          final r = _rows[i];
+          final pType = r['pattern_type'] as String? ?? 'other';
+          final status = r['status'] as String? ?? 'recognized';
+          final statusColor =
+              _kPatternStatusColor[status] ?? Colors.white54;
+          return Card(
+            color: _kCardBg,
+            margin: const EdgeInsets.only(bottom: 10),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+                side: BorderSide(color: _kAmber.withValues(alpha: 0.3))),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(14),
+              onTap: () => _openEditor(existing: r),
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(r['title'] as String? ?? '—',
+                                style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600)),
+                            const SizedBox(height: 4),
+                            Row(children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                    color: _kBorder,
+                                    borderRadius:
+                                        BorderRadius.circular(10)),
+                                child: Text(
+                                    _kPatternTypes[pType] ?? pType,
+                                    style: const TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w600)),
+                              ),
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                    color:
+                                        statusColor.withValues(alpha: 0.2),
+                                    borderRadius:
+                                        BorderRadius.circular(10),
+                                    border: Border.all(
+                                        color: statusColor
+                                            .withValues(alpha: 0.5))),
+                                child: Text(
+                                    _kPatternStatus[status] ?? status,
+                                    style: TextStyle(
+                                        color: statusColor,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w600)),
+                              ),
+                            ]),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline,
+                            color: Colors.white38, size: 20),
+                        onPressed: () => _delete(r['id'] as String),
+                      ),
+                    ]),
+                    const SizedBox(height: 10),
+                    Text(r['description'] as String? ?? '',
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            color: Colors.white70, fontSize: 12)),
+                    if ((r['generations_affected'] as String?)?.isNotEmpty ??
+                        false) ...[
+                      const SizedBox(height: 6),
+                      Row(children: [
+                        const Icon(Icons.people_outline,
+                            size: 13, color: Colors.white38),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(r['generations_affected'] as String,
+                              style: const TextStyle(
+                                  color: Colors.white54, fontSize: 11)),
+                        ),
+                      ]),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _PatternEditorSheet extends StatefulWidget {
+  final Map<String, dynamic>? existing;
+  const _PatternEditorSheet({this.existing});
+  @override
+  State<_PatternEditorSheet> createState() => _PatternEditorSheetState();
+}
+
+class _PatternEditorSheetState extends State<_PatternEditorSheet> {
+  final _titleCtrl = TextEditingController();
+  final _descCtrl = TextEditingController();
+  final _genCtrl = TextEditingController();
+  final _healCtrl = TextEditingController();
+  String _type = 'other';
+  String _status = 'recognized';
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final e = widget.existing;
+    if (e != null) {
+      _titleCtrl.text = e['title'] as String? ?? '';
+      _descCtrl.text = e['description'] as String? ?? '';
+      _genCtrl.text = e['generations_affected'] as String? ?? '';
+      _healCtrl.text = e['healing_intention'] as String? ?? '';
+      _type = e['pattern_type'] as String? ?? 'other';
+      _status = e['status'] as String? ?? 'recognized';
+    }
+  }
+
+  @override
+  void dispose() {
+    _titleCtrl.dispose();
+    _descCtrl.dispose();
+    _genCtrl.dispose();
+    _healCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    final title = _titleCtrl.text.trim();
+    final desc = _descCtrl.text.trim();
+    if (title.isEmpty || desc.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Titel und Beschreibung sind Pflicht')));
+      return;
+    }
+    final user = _db.auth.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Bitte zuerst anmelden')));
+      return;
+    }
+    setState(() => _saving = true);
+    try {
+      final payload = {
+        'title': title,
+        'description': desc,
+        'pattern_type': _type,
+        'status': _status,
+        'generations_affected':
+            _genCtrl.text.trim().isEmpty ? null : _genCtrl.text.trim(),
+        'healing_intention':
+            _healCtrl.text.trim().isEmpty ? null : _healCtrl.text.trim(),
+        'updated_at': DateTime.now().toIso8601String(),
+      };
+      if (widget.existing == null) {
+        await _db.from('ancestor_patterns').insert({
+          ...payload,
+          'user_id': user.id,
+        });
+      } else {
+        await _db
+            .from('ancestor_patterns')
+            .update(payload)
+            .eq('id', widget.existing!['id'] as String);
+      }
+      if (!mounted) return;
+      Navigator.pop(context, true);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _saving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Fehler: $e')));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottom = MediaQuery.of(context).viewInsets.bottom;
+    return Padding(
+      padding: EdgeInsets.only(bottom: bottom),
+      child: DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.88,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        builder: (_, scrollCtrl) => Container(
+          decoration: const BoxDecoration(
+            color: _kDarkBg,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            children: [
+              Container(
+                margin: const EdgeInsets.only(top: 8),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(2)),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+                child: Row(
+                  children: [
+                    const Icon(Icons.hub_outlined, color: _kAmber),
+                    const SizedBox(width: 8),
+                    Text(
+                        widget.existing == null
+                            ? 'Neues Muster'
+                            : 'Muster bearbeiten',
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16)),
+                    const Spacer(),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white54),
+                      onPressed: () => Navigator.pop(context, false),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: ListView(
+                  controller: scrollCtrl,
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                  children: [
+                    _field(_titleCtrl, 'Titel*', Icons.title),
+                    const SizedBox(height: 12),
+                    _typeDropdown(),
+                    const SizedBox(height: 12),
+                    _field(_descCtrl, 'Beschreibung*',
+                        Icons.description_outlined,
+                        maxLines: 4),
+                    const SizedBox(height: 12),
+                    _field(_genCtrl, 'Betroffene Generationen',
+                        Icons.people_outline,
+                        maxLines: 2),
+                    const SizedBox(height: 12),
+                    _field(_healCtrl, 'Heil-Intention',
+                        Icons.healing_outlined,
+                        maxLines: 3),
+                    const SizedBox(height: 12),
+                    _statusDropdown(),
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      height: 48,
+                      child: ElevatedButton.icon(
+                        onPressed: _saving ? null : _save,
+                        icon: _saving
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.black))
+                            : const Icon(Icons.save_outlined),
+                        label: Text(widget.existing == null
+                            ? 'Speichern'
+                            : 'Aktualisieren'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _kAmber,
+                          foregroundColor: Colors.black,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
+    );
+  }
+
+  Widget _field(TextEditingController c, String label, IconData icon,
+      {int maxLines = 1}) {
+    return TextField(
+      controller: c,
+      maxLines: maxLines,
+      style: const TextStyle(color: Colors.white),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: const TextStyle(color: Colors.white54),
+        prefixIcon: Icon(icon, color: _kAmber),
+        filled: true,
+        fillColor: _kCardBg,
+        border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: _kBorder)),
+        enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: _kBorder)),
+        focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: _kAmber)),
+      ),
+    );
+  }
+
+  Widget _typeDropdown() {
+    return DropdownButtonFormField<String>(
+      initialValue: _type,
+      dropdownColor: _kCardBg,
+      iconEnabledColor: _kAmber,
+      style: const TextStyle(color: Colors.white),
+      decoration: InputDecoration(
+        labelText: 'Typ',
+        labelStyle: const TextStyle(color: Colors.white54),
+        prefixIcon: const Icon(Icons.category_outlined, color: _kAmber),
+        filled: true,
+        fillColor: _kCardBg,
+        border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: _kBorder)),
+        enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: _kBorder)),
+        focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: _kAmber)),
+      ),
+      items: _kPatternTypes.entries
+          .map((e) => DropdownMenuItem(
+                value: e.key,
+                child: Text(e.value,
+                    style: const TextStyle(color: Colors.white)),
+              ))
+          .toList(),
+      onChanged: (v) {
+        if (v != null) setState(() => _type = v);
+      },
+    );
+  }
+
+  Widget _statusDropdown() {
+    return DropdownButtonFormField<String>(
+      initialValue: _status,
+      dropdownColor: _kCardBg,
+      iconEnabledColor: _kAmber,
+      style: const TextStyle(color: Colors.white),
+      decoration: InputDecoration(
+        labelText: 'Status',
+        labelStyle: const TextStyle(color: Colors.white54),
+        prefixIcon: const Icon(Icons.flag_outlined, color: _kAmber),
+        filled: true,
+        fillColor: _kCardBg,
+        border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: _kBorder)),
+        enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: _kBorder)),
+        focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: _kAmber)),
+      ),
+      items: _kPatternStatus.entries
+          .map((e) => DropdownMenuItem(
+                value: e.key,
+                child: Text(e.value,
+                    style: const TextStyle(color: Colors.white)),
+              ))
+          .toList(),
+      onChanged: (v) {
+        if (v != null) setState(() => _status = v);
+      },
     );
   }
 }
