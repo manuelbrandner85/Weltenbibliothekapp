@@ -18,6 +18,7 @@ import 'calculators/dream_interpretation_tool_screen.dart'; // 💭 v20 Traumdeu
 import 'calculators/body_scan_tool_screen.dart'; // 🧘 v21 Körperscan
 import 'calculators/soul_contract_tool_screen.dart'; // 📜 v22 Seelenvertrag
 import 'calculators/ancestral_work_tool_screen.dart'; // 🕯️ v23 Ahnenarbeit
+import 'calculators/shamanic_journey_tool_screen.dart'; // 🥁 v24 Schamanische Reise
 import 'frequency_generator_screen.dart';  // 🎵 FREQUENCY GENERATOR
 import '../spirit/spirit_tools_mega_screen.dart'; // 🆕 V115 MEGA UPDATE TOOLS
 
@@ -462,6 +463,17 @@ class _SpiritTabModernState extends State<SpiritTabModern> {
         'color': const Color(0xFFD4A24C),
         'category': 'new',
         'screen': const AncestralWorkToolScreen(),
+      },
+
+      // 🥁 Schamanische Reise (v24 – Timer + Journal + Krafttiere + Guides)
+      {
+        'icon': Icons.nightlight_round,
+        'iconEmoji': '🥁',
+        'title': 'Schamanische Reise',
+        'subtitle': 'Trommel-Reise mit Journal',
+        'color': const Color(0xFF8E5AE2),
+        'category': 'new',
+        'screen': const ShamanicJourneyToolScreen(),
       },
 
       // ᚱ Runen-Orakel (V115 Feature #20)
