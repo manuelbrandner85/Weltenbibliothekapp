@@ -143,7 +143,9 @@ class _ScanTabState extends State<_ScanTab> {
     }
     final chakraKeys = byChakra.keys.toList()..sort();
 
-    return Column(
+    return Stack(
+      children: [
+        Column(
       children: [
         // Filter-Chips
         SizedBox(
@@ -260,6 +262,32 @@ class _ScanTabState extends State<_ScanTab> {
           ),
         ),
       ],
+        ),
+        // Auswerten-Button (unten pinned)
+        Positioned(
+          left: 16,
+          right: 16,
+          bottom: 16,
+          child: SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _selected.isEmpty ? null : _showResult,
+              icon: const Icon(Icons.auto_graph),
+              label: Text(_selected.isEmpty
+                  ? 'Symptome auswählen'
+                  : 'Auswerten (${_selected.length})'),
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: _kPink,
+                  foregroundColor: Colors.white,
+                  disabledBackgroundColor: _kBorder,
+                  disabledForegroundColor: Colors.white38,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12))),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -267,6 +295,211 @@ class _ScanTabState extends State<_ScanTab> {
     if (hex == null) return Colors.white;
     final cleaned = hex.replaceAll('#', '');
     return Color(int.parse('FF$cleaned', radix: 16));
+  }
+
+  // ────── Phase 7.2c: Score-Berechnung + Ergebnis ──────
+  Map<int, int> _computeScores() {
+    final scores = <int, int>{};
+    for (final s in _symptoms) {
+      if (!_selected.contains(s['id'])) continue;
+      final n = s['chakra_number'] as int;
+      final w = s['weight'] as int? ?? 2;
+      scores[n] = (scores[n] ?? 0) + w;
+    }
+    return scores;
+  }
+
+  int? _primaryBlocked(Map<int, int> scores) {
+    if (scores.isEmpty) return null;
+    return scores.entries.reduce((a, b) => a.value >= b.value ? a : b).key;
+  }
+
+  List<Map<String, dynamic>> _chakraInfoRows() {
+    final seen = <int>{};
+    final out = <Map<String, dynamic>>[];
+    for (final s in _symptoms) {
+      final n = s['chakra_number'] as int;
+      if (seen.add(n)) {
+        out.add({
+          'chakra_number': n,
+          'chakra_name': s['chakra_name'],
+          'chakra_color': s['chakra_color'],
+          'chakra_emoji': s['chakra_emoji'],
+        });
+      }
+    }
+    out.sort((a, b) =>
+        (a['chakra_number'] as int).compareTo(b['chakra_number'] as int));
+    return out;
+  }
+
+  void _showResult() {
+    if (_selected.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Bitte mindestens ein Symptom auswählen')));
+      return;
+    }
+    final scores = _computeScores();
+    final primary = _primaryBlocked(scores);
+    final maxScore =
+        scores.values.isEmpty ? 1 : scores.values.reduce((a, b) => a > b ? a : b);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: _kCardBg,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (_) => DraggableScrollableSheet(
+        initialChildSize: 0.7,
+        maxChildSize: 0.95,
+        minChildSize: 0.4,
+        expand: false,
+        builder: (_, sc) => ListView(
+          controller: sc,
+          padding: const EdgeInsets.all(20),
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(2)),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text('🔮 Dein Scan-Ergebnis',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold)),
+            const SizedBox(height: 4),
+            Text('Basierend auf ${_selected.length} Symptom(en)',
+                style: const TextStyle(color: Colors.white54, fontSize: 13)),
+            const SizedBox(height: 20),
+            if (primary != null) ...[
+              _PrimaryChakraCard(
+                chakra: _chakraInfoRows()
+                    .firstWhere((c) => c['chakra_number'] == primary),
+                score: scores[primary]!,
+              ),
+              const SizedBox(height: 20),
+            ],
+            const Text('Alle Chakren-Scores',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            ..._chakraInfoRows().map((c) {
+              final n = c['chakra_number'] as int;
+              final score = scores[n] ?? 0;
+              final pct = maxScore > 0 ? score / maxScore : 0.0;
+              final color = _parseColor(c['chakra_color'] as String?);
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(children: [
+                      Text(c['chakra_emoji'] as String? ?? '',
+                          style: const TextStyle(fontSize: 18)),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(c['chakra_name'] as String? ?? '',
+                            style: const TextStyle(
+                                color: Colors.white70, fontSize: 13)),
+                      ),
+                      Text(score > 0 ? '$score' : '–',
+                          style: TextStyle(
+                              color: score > 0 ? color : Colors.white38,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13)),
+                    ]),
+                    const SizedBox(height: 4),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(
+                        value: pct,
+                        backgroundColor: _kBorder,
+                        valueColor: AlwaysStoppedAnimation<Color>(color),
+                        minHeight: 6,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+            const SizedBox(height: 24),
+            // Save button placeholder – Phase 7.2d füllt den Handler
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: null,
+                icon: const Icon(Icons.save),
+                label: const Text('Scan speichern (Phase 7.2d)'),
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: _kPink,
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: _kBorder,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12))),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PrimaryChakraCard extends StatelessWidget {
+  final Map<String, dynamic> chakra;
+  final int score;
+  const _PrimaryChakraCard({required this.chakra, required this.score});
+
+  @override
+  Widget build(BuildContext context) {
+    final cleaned =
+        (chakra['chakra_color'] as String? ?? '#E91E63').replaceAll('#', '');
+    final color = Color(int.parse('FF$cleaned', radix: 16));
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [color.withValues(alpha: 0.3), _kCardBg],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color),
+      ),
+      child: Row(
+        children: [
+          Text(chakra['chakra_emoji'] as String? ?? '',
+              style: const TextStyle(fontSize: 40)),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Hauptblockade',
+                    style: TextStyle(color: Colors.white70, fontSize: 12)),
+                const SizedBox(height: 2),
+                Text(chakra['chakra_name'] as String? ?? '',
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold)),
+                const SizedBox(height: 2),
+                Text('Score: $score',
+                    style: TextStyle(color: color, fontSize: 13)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
