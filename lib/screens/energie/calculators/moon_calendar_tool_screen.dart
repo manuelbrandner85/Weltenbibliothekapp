@@ -83,11 +83,7 @@ class _MoonCalendarToolScreenState extends State<MoonCalendarToolScreen>
           _TodayTab(snapshot: _snapshot),
           const _MonthTab(),
           _RitualsTab(currentPhaseKey: _snapshot.phaseKey),
-          const _PlaceholderTab(
-            emoji: '📖',
-            title: 'Mond-Tagebuch',
-            hint: 'Kommt in Phase 8C.4',
-          ),
+          _JournalTab(snapshot: _snapshot),
         ],
       ),
     );
@@ -912,19 +908,274 @@ class _RitualCard extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════
-// Platzhalter für die noch nicht gebauten Tabs
+// Tab 4: Mond-Tagebuch (Supabase: moon_journal, RLS pro User)
 // ═══════════════════════════════════════════════════════════
 
-class _PlaceholderTab extends StatelessWidget {
-  const _PlaceholderTab({
-    required this.emoji,
-    required this.title,
-    required this.hint,
+class _JournalEntry {
+  final String id;
+  final DateTime entryDate;
+  final String? phaseKey;
+  final String? moonSign;
+  final String content;
+  final bool ritualCompleted;
+
+  _JournalEntry({
+    required this.id,
+    required this.entryDate,
+    required this.phaseKey,
+    required this.moonSign,
+    required this.content,
+    required this.ritualCompleted,
   });
 
-  final String emoji;
-  final String title;
-  final String hint;
+  factory _JournalEntry.fromRow(Map<String, dynamic> row) {
+    return _JournalEntry(
+      id: row['id'] as String,
+      entryDate: DateTime.parse(row['entry_date'] as String),
+      phaseKey: row['moon_phase'] as String?,
+      moonSign: row['moon_sign'] as String?,
+      content: (row['content'] as String?) ?? '',
+      ritualCompleted: (row['ritual_completed'] as bool?) ?? false,
+    );
+  }
+}
+
+class _JournalTab extends StatefulWidget {
+  const _JournalTab({required this.snapshot});
+
+  final MoonSnapshot snapshot;
+
+  @override
+  State<_JournalTab> createState() => _JournalTabState();
+}
+
+class _JournalTabState extends State<_JournalTab> {
+  SupabaseClient get _db => Supabase.instance.client;
+
+  Future<List<_JournalEntry>>? _future;
+
+  @override
+  void initState() {
+    super.initState();
+    if (_db.auth.currentUser != null) {
+      _future = _loadEntries();
+    }
+  }
+
+  Future<List<_JournalEntry>> _loadEntries() async {
+    final rows = await _db
+        .from('moon_journal')
+        .select('id,entry_date,moon_phase,moon_sign,content,ritual_completed')
+        .order('entry_date', ascending: false)
+        .limit(200);
+    return (rows as List)
+        .map((r) => _JournalEntry.fromRow(r as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<void> _refresh() async {
+    if (_db.auth.currentUser == null) return;
+    setState(() => _future = _loadEntries());
+    await _future;
+  }
+
+  Future<void> _openNewEntrySheet() async {
+    final user = _db.auth.currentUser;
+    if (user == null) {
+      _showLoginRequired();
+      return;
+    }
+
+    final saved = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF1A1A2E),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => _NewEntrySheet(snapshot: widget.snapshot),
+    );
+
+    if (saved == true) {
+      _refresh();
+    }
+  }
+
+  Future<void> _confirmDelete(_JournalEntry entry) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A2E),
+        title: const Text(
+          'Eintrag löschen?',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: const Text(
+          'Dieser Tagebuch-Eintrag wird dauerhaft aus der Cloud gelöscht.',
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Abbrechen'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.redAccent),
+            child: const Text('Löschen'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      await _db.from('moon_journal').delete().eq('id', entry.id);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Eintrag gelöscht.'),
+          backgroundColor: Color(0xFF1A237E),
+        ),
+      );
+      _refresh();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Löschen fehlgeschlagen: $e'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    }
+  }
+
+  void _showLoginRequired() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Bitte melde dich an, um das Mond-Tagebuch zu nutzen.'),
+        backgroundColor: Colors.redAccent,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final user = _db.auth.currentUser;
+
+    if (user == null) {
+      return const _JournalLoggedOut();
+    }
+
+    return Stack(
+      children: [
+        RefreshIndicator(
+          onRefresh: _refresh,
+          color: Colors.amberAccent,
+          backgroundColor: const Color(0xFF1A237E),
+          child: FutureBuilder<List<_JournalEntry>>(
+            future: _future,
+            builder: (context, snap) {
+              if (snap.connectionState == ConnectionState.waiting) {
+                return const Center(
+                  child: CircularProgressIndicator(color: Colors.white70),
+                );
+              }
+              if (snap.hasError) {
+                return ListView(
+                  children: [
+                    const SizedBox(height: 80),
+                    Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          children: [
+                            const Icon(Icons.cloud_off,
+                                size: 48, color: Colors.white38),
+                            const SizedBox(height: 12),
+                            Text(
+                              'Einträge konnten nicht geladen werden:\n${snap.error}',
+                              style: const TextStyle(color: Colors.white70),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 16),
+                            ElevatedButton(
+                              onPressed: _refresh,
+                              child: const Text('Erneut versuchen'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              }
+              final entries = snap.data ?? const [];
+              if (entries.isEmpty) {
+                return ListView(
+                  children: const [
+                    SizedBox(height: 80),
+                    Center(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 32),
+                        child: Column(
+                          children: [
+                            Text('📖', style: TextStyle(fontSize: 64)),
+                            SizedBox(height: 12),
+                            Text(
+                              'Dein Mond-Tagebuch ist noch leer.',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            SizedBox(height: 8),
+                            Text(
+                              'Notiere deine Reflexionen, Träume oder Ritual-Erlebnisse zu jedem Mondzyklus. '
+                              'Tippe auf +, um den ersten Eintrag anzulegen.',
+                              style: TextStyle(
+                                  color: Colors.white54, fontSize: 13),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              }
+              return ListView.builder(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+                itemCount: entries.length,
+                itemBuilder: (_, i) => _JournalEntryCard(
+                  entry: entries[i],
+                  onDelete: () => _confirmDelete(entries[i]),
+                ),
+              );
+            },
+          ),
+        ),
+        Positioned(
+          right: 16,
+          bottom: 16,
+          child: FloatingActionButton.extended(
+            backgroundColor: Colors.amberAccent,
+            foregroundColor: Colors.black,
+            onPressed: _openNewEntrySheet,
+            icon: const Icon(Icons.add),
+            label: const Text('Eintrag'),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _JournalLoggedOut extends StatelessWidget {
+  const _JournalLoggedOut();
 
   @override
   Widget build(BuildContext context) {
@@ -934,24 +1185,297 @@ class _PlaceholderTab extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(emoji, style: const TextStyle(fontSize: 64)),
+            const Text('🔒', style: TextStyle(fontSize: 56)),
             const SizedBox(height: 16),
-            Text(
-              title,
-              style: const TextStyle(
+            const Text(
+              'Anmeldung erforderlich',
+              style: TextStyle(
                 color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(height: 8),
-            Text(
-              hint,
+            const Text(
+              'Das Mond-Tagebuch speichert deine Einträge verschlüsselt in deinem persönlichen Account.',
               textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.white54, fontSize: 13),
+              style: TextStyle(color: Colors.white54, fontSize: 13),
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _JournalEntryCard extends StatelessWidget {
+  const _JournalEntryCard({required this.entry, required this.onDelete});
+
+  final _JournalEntry entry;
+  final VoidCallback onDelete;
+
+  static const _monthNames = [
+    'Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez',
+  ];
+
+  String _formatDate(DateTime d) =>
+      '${d.day}. ${_monthNames[d.month - 1]} ${d.year}';
+
+  @override
+  Widget build(BuildContext context) {
+    final emoji = moonPhaseEmojis[entry.phaseKey ?? ''] ?? '🌙';
+    final phaseLabel =
+        moonPhaseLabels[entry.phaseKey ?? ''] ?? (entry.phaseKey ?? '');
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(emoji, style: const TextStyle(fontSize: 28)),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _formatDate(entry.entryDate),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    if (phaseLabel.isNotEmpty || entry.moonSign != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Text(
+                          [
+                            if (phaseLabel.isNotEmpty) phaseLabel,
+                            if (entry.moonSign != null) 'Mond in ${entry.moonSign}',
+                          ].join('  •  '),
+                          style: const TextStyle(
+                            color: Colors.white54,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              if (entry.ritualCompleted)
+                const Padding(
+                  padding: EdgeInsets.only(right: 4),
+                  child: Tooltip(
+                    message: 'Ritual ausgeführt',
+                    child: Icon(Icons.check_circle,
+                        color: Colors.greenAccent, size: 20),
+                  ),
+                ),
+              IconButton(
+                tooltip: 'Löschen',
+                icon: const Icon(Icons.delete_outline,
+                    color: Colors.white54, size: 20),
+                onPressed: onDelete,
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            entry.content,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 13.5,
+              height: 1.45,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _NewEntrySheet extends StatefulWidget {
+  const _NewEntrySheet({required this.snapshot});
+
+  final MoonSnapshot snapshot;
+
+  @override
+  State<_NewEntrySheet> createState() => _NewEntrySheetState();
+}
+
+class _NewEntrySheetState extends State<_NewEntrySheet> {
+  final _controller = TextEditingController();
+  bool _ritualDone = false;
+  bool _saving = false;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    final content = _controller.text.trim();
+    if (content.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Bitte etwas schreiben.')),
+      );
+      return;
+    }
+
+    setState(() => _saving = true);
+
+    final client = Supabase.instance.client;
+    final user = client.auth.currentUser;
+    if (user == null) {
+      if (!mounted) return;
+      Navigator.pop(context, false);
+      return;
+    }
+
+    try {
+      final today = DateTime.now();
+      await client.from('moon_journal').insert({
+        'user_id': user.id,
+        'entry_date':
+            '${today.year.toString().padLeft(4, '0')}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}',
+        'moon_phase': widget.snapshot.phaseKey,
+        'moon_sign': widget.snapshot.moonSignName,
+        'content': content,
+        'ritual_completed': _ritualDone,
+      });
+      if (!mounted) return;
+      Navigator.pop(context, true);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _saving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Speichern fehlgeschlagen: $e'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottom = MediaQuery.of(context).viewInsets.bottom;
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 20,
+        right: 20,
+        top: 20,
+        bottom: 20 + bottom,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Text(widget.snapshot.phaseEmoji,
+                  style: const TextStyle(fontSize: 32)),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Neuer Tagebuch-Eintrag',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    Text(
+                      '${widget.snapshot.phaseLabel}  •  Mond in ${widget.snapshot.moonSignName}',
+                      style: const TextStyle(
+                          color: Colors.white54, fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _controller,
+            autofocus: true,
+            minLines: 4,
+            maxLines: 10,
+            maxLength: 4000,
+            style: const TextStyle(color: Colors.white, fontSize: 14),
+            decoration: InputDecoration(
+              hintText: 'Was bewegt dich heute? Träume, Gedanken, Ritual-Erlebnisse…',
+              hintStyle: const TextStyle(color: Colors.white38),
+              filled: true,
+              fillColor: Colors.white.withValues(alpha: 0.06),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              counterStyle: const TextStyle(color: Colors.white38),
+            ),
+          ),
+          const SizedBox(height: 8),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            value: _ritualDone,
+            onChanged: (v) => setState(() => _ritualDone = v),
+            activeThumbColor: Colors.amberAccent,
+            title: const Text(
+              'Ritual wurde heute ausgeführt',
+              style: TextStyle(color: Colors.white, fontSize: 14),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: _saving ? null : () => Navigator.pop(context, false),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.white70,
+                    side: const BorderSide(color: Colors.white30),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  child: const Text('Abbrechen'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: _saving ? null : _save,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.amberAccent,
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  child: _saving
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.black),
+                        )
+                      : const Text('Speichern'),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
