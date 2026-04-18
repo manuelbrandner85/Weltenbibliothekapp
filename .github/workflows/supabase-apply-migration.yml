@@ -109,7 +109,9 @@ jobs:
           FILE="${{ steps.mig.outputs.file }}"
           LOG=/tmp/psql.log
           # Keyword-Syntax: Username mit Punkt sicher übergeben, SSL explizit
-          PGCONN="host=${PG_HOST} port=6543 dbname=postgres user=postgres.${PROJECT_REF} sslmode=require"
+          # PROJECT_REF hardcoded — env-Var wird in Shell nicht automatisch expandiert
+          PGCONN="host=${PG_HOST} port=6543 dbname=postgres user=postgres.adtviduaftdquvfjpojb sslmode=require"
+          echo "DEBUG: user=postgres.adtviduaftdquvfjpojb host=${PG_HOST}"
           echo "::group::Applying $FILE → ${PG_HOST}:6543"
           psql "$PGCONN" \
             --set ON_ERROR_STOP=1 \
