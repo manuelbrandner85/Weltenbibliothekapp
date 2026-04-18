@@ -842,14 +842,267 @@ class _HdChartDetailView extends StatelessWidget {
       );
 }
 
-class _HdLexiconTab extends StatelessWidget {
+class _HdLexiconTab extends StatefulWidget {
   const _HdLexiconTab();
   @override
+  State<_HdLexiconTab> createState() => _HdLexiconTabState();
+}
+
+class _HdLexiconTabState extends State<_HdLexiconTab> {
+  static const _cats = <Map<String, String>>[
+    {'key': 'type', 'label': '5 Typen'},
+    {'key': 'authority', 'label': 'Autoritäten'},
+    {'key': 'center', 'label': '9 Zentren'},
+    {'key': 'gate', 'label': '64 Tore'},
+    {'key': 'strategy', 'label': 'Strategien'},
+  ];
+
+  String _category = 'type';
+  late Future<List<Map<String, dynamic>>> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = _load();
+  }
+
+  Future<List<Map<String, dynamic>>> _load() async {
+    final res = await _db
+        .from('hd_meanings')
+        .select()
+        .eq('category', _category)
+        .order('sort_order', ascending: true);
+    return (res as List).cast<Map<String, dynamic>>();
+  }
+
+  void _switch(String c) {
+    if (_category == c) return;
+    setState(() {
+      _category = c;
+      _future = _load();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Text('HD-Lexikon…\n(Phase 3.2e)',
-          textAlign: TextAlign.center,
-          style: TextStyle(color: Colors.white70, fontSize: 16)),
+    return Column(
+      children: [
+        SizedBox(
+          height: 48,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            itemCount: _cats.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 8),
+            itemBuilder: (_, i) {
+              final c = _cats[i];
+              final active = c['key'] == _category;
+              return InkWell(
+                onTap: () => _switch(c['key']!),
+                borderRadius: BorderRadius.circular(20),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: active ? _kTeal : _kCardBg,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: active ? _kTeal : _kBorder),
+                  ),
+                  child: Text(
+                    c['label']!,
+                    style: TextStyle(
+                      color: active ? Colors.black : Colors.white70,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        Expanded(
+          child: FutureBuilder<List<Map<String, dynamic>>>(
+            future: _future,
+            builder: (ctx, snap) {
+              if (snap.connectionState != ConnectionState.done) {
+                return const Center(
+                    child: CircularProgressIndicator(color: _kTeal));
+              }
+              if (snap.hasError) {
+                return Center(
+                  child: Text('Fehler: ${snap.error}',
+                      style: const TextStyle(color: Colors.white70)),
+                );
+              }
+              final items = snap.data ?? [];
+              if (items.isEmpty) {
+                return const Center(
+                  child: Text('Keine Einträge.',
+                      style: TextStyle(color: Colors.white54)),
+                );
+              }
+              return ListView.builder(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                itemCount: items.length,
+                itemBuilder: (_, i) => _HdLexiconCard(data: items[i]),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _HdLexiconCard extends StatelessWidget {
+  final Map<String, dynamic> data;
+  const _HdLexiconCard({required this.data});
+
+  @override
+  Widget build(BuildContext context) {
+    final title = data['title'] as String? ?? '';
+    final emoji = data['emoji'] as String? ?? '✨';
+    final short = data['short_text'] as String? ?? '';
+    final keywords = (data['keywords'] as List?)?.cast<String>() ?? const [];
+    final hasDeep = (data['deep_text'] as String?)?.isNotEmpty == true ||
+        (data['shadow_text'] as String?)?.isNotEmpty == true;
+
+    return InkWell(
+      onTap: hasDeep ? () => _showDetail(context) : null,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: _kCardBg,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: _kBorder),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(emoji, style: const TextStyle(fontSize: 24)),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title,
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15)),
+                  const SizedBox(height: 4),
+                  Text(short,
+                      style: const TextStyle(
+                          color: Colors.white70, fontSize: 13)),
+                  if (keywords.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 4,
+                      children: keywords
+                          .take(4)
+                          .map((k) => Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: _kTeal.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text(k,
+                                    style: const TextStyle(
+                                        color: Colors.white70, fontSize: 11)),
+                              ))
+                          .toList(),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showDetail(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: _kDarkBg,
+      isScrollControlled: true,
+      builder: (_) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.75,
+        minChildSize: 0.4,
+        maxChildSize: 0.95,
+        builder: (_, ctrl) => Container(
+          decoration: const BoxDecoration(
+            color: _kDarkBg,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: ListView(
+            controller: ctrl,
+            padding: const EdgeInsets.all(20),
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Text(data['emoji'] as String? ?? '',
+                      style: const TextStyle(fontSize: 32)),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(data['title'] as String? ?? '',
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(data['short_text'] as String? ?? '',
+                  style: const TextStyle(
+                      color: Colors.white, fontSize: 15, height: 1.4)),
+              if ((data['deep_text'] as String?)?.isNotEmpty == true) ...[
+                const SizedBox(height: 20),
+                const Text('Vertiefung',
+                    style: TextStyle(
+                        color: _kTeal,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.3)),
+                const SizedBox(height: 6),
+                Text(data['deep_text'] as String,
+                    style: const TextStyle(
+                        color: Colors.white70, fontSize: 14, height: 1.5)),
+              ],
+              if ((data['shadow_text'] as String?)?.isNotEmpty == true) ...[
+                const SizedBox(height: 20),
+                const Text('Schatten & Übung',
+                    style: TextStyle(
+                        color: Colors.orangeAccent,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.3)),
+                const SizedBox(height: 6),
+                Text(data['shadow_text'] as String,
+                    style: const TextStyle(
+                        color: Colors.white70, fontSize: 14, height: 1.5)),
+              ],
+              const SizedBox(height: 40),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
