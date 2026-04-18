@@ -469,18 +469,347 @@ class _ChartResultCard extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Tab 1: Verlauf (Phase 1.2d) – Skeleton
+// Tab 1: Verlauf (Phase 1.2d) – Liste gespeicherter Charts
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _HistoryTab extends StatelessWidget {
+class _HistoryTab extends StatefulWidget {
   const _HistoryTab();
   @override
+  State<_HistoryTab> createState() => _HistoryTabState();
+}
+
+class _HistoryTabState extends State<_HistoryTab> {
+  late Future<List<Map<String, dynamic>>> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = _load();
+  }
+
+  Future<List<Map<String, dynamic>>> _load() async {
+    final user = _db.auth.currentUser;
+    if (user == null) return [];
+    final res = await _db
+        .from('natal_charts')
+        .select()
+        .eq('user_id', user.id)
+        .order('computed_at', ascending: false);
+    return (res as List).cast<Map<String, dynamic>>();
+  }
+
+  Future<void> _refresh() async {
+    setState(() => _future = _load());
+    await _future;
+  }
+
+  Future<void> _delete(String id) async {
+    try {
+      await _db.from('natal_charts').delete().eq('id', id);
+      await _refresh();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Löschen fehlgeschlagen: $e'),
+        backgroundColor: Colors.red,
+      ));
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Text(
-        'Gespeicherte Charts…\n(Phase 1.2d)',
-        textAlign: TextAlign.center,
-        style: TextStyle(color: Colors.white70, fontSize: 16),
+    return RefreshIndicator(
+      onRefresh: _refresh,
+      color: _kIndigo,
+      backgroundColor: _kCardBg,
+      child: FutureBuilder<List<Map<String, dynamic>>>(
+        future: _future,
+        builder: (ctx, snap) {
+          if (snap.connectionState != ConnectionState.done) {
+            return const Center(
+              child: CircularProgressIndicator(color: _kIndigo),
+            );
+          }
+          if (snap.hasError) {
+            return ListView(children: [
+              const SizedBox(height: 120),
+              Center(
+                child: Text('Fehler: ${snap.error}',
+                    style: const TextStyle(color: Colors.white70)),
+              ),
+            ]);
+          }
+          final items = snap.data ?? [];
+          if (items.isEmpty) {
+            return ListView(children: const [
+              SizedBox(height: 120),
+              Center(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 32),
+                  child: Text(
+                    'Noch keine Charts gespeichert.\nGehe zu "Neu", um dein Geburtshoroskop zu berechnen.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.white54),
+                  ),
+                ),
+              ),
+            ]);
+          }
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: items.length,
+            itemBuilder: (_, i) =>
+                _HistoryCard(data: items[i], onDelete: () => _delete(items[i]['id'] as String)),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _HistoryCard extends StatelessWidget {
+  final Map<String, dynamic> data;
+  final VoidCallback onDelete;
+  const _HistoryCard({required this.data, required this.onDelete});
+
+  @override
+  Widget build(BuildContext context) {
+    final label = (data['label'] as String?) ?? 'Chart';
+    final date = (data['birth_date'] as String?) ?? '';
+    final place = (data['birth_place'] as String?) ?? '';
+    final sunSign = data['sun_sign'] as int?;
+    final moonSign = data['moon_sign'] as int?;
+    final ascSign = data['ascendant_sign'] as int?;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: _kCardBg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _kBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(label,
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16)),
+              ),
+              IconButton(
+                onPressed: () => _confirmDelete(context),
+                icon: const Icon(Icons.delete_outline, color: Colors.white54),
+                tooltip: 'Löschen',
+              ),
+            ],
+          ),
+          const SizedBox(height: 2),
+          Text('$date${place.isNotEmpty ? "  ·  $place" : ""}',
+              style: const TextStyle(color: Colors.white54, fontSize: 12)),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 10,
+            runSpacing: 6,
+            children: [
+              if (sunSign != null)
+                _miniChip('☉', kZodiacSigns[sunSign], kZodiacGlyphs[sunSign]),
+              if (moonSign != null)
+                _miniChip('☽', kZodiacSigns[moonSign], kZodiacGlyphs[moonSign]),
+              if (ascSign != null)
+                _miniChip('AC', kZodiacSigns[ascSign], kZodiacGlyphs[ascSign]),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: () => _showDetail(context),
+              icon: const Icon(Icons.open_in_new, size: 16),
+              label: const Text('Öffnen'),
+              style: TextButton.styleFrom(foregroundColor: _kIndigo),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _miniChip(String glyph, String sign, String signGlyph) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: _kIndigo.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: _kIndigo.withValues(alpha: 0.3)),
+      ),
+      child: Text('$glyph  $signGlyph $sign',
+          style: const TextStyle(color: Colors.white, fontSize: 12)),
+    );
+  }
+
+  void _confirmDelete(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: _kCardBg,
+        title: const Text('Chart löschen?',
+            style: TextStyle(color: Colors.white)),
+        content: Text(
+            'Möchtest du "${data['label']}" wirklich entfernen?',
+            style: const TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Abbrechen',
+                style: TextStyle(color: Colors.white54)),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              onDelete();
+            },
+            child: const Text('Löschen',
+                style: TextStyle(color: Colors.redAccent)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDetail(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: _kDarkBg,
+      isScrollControlled: true,
+      builder: (_) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.85,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        builder: (_, controller) => _ChartDetailView(data: data, scroll: controller),
+      ),
+    );
+  }
+}
+
+class _ChartDetailView extends StatelessWidget {
+  final Map<String, dynamic> data;
+  final ScrollController scroll;
+  const _ChartDetailView({required this.data, required this.scroll});
+
+  @override
+  Widget build(BuildContext context) {
+    final rows = <Widget>[];
+    for (final key in kPlanetNames) {
+      final sign = data['${key}_sign'] as int?;
+      final deg = (data['${key}_degree'] as num?)?.toDouble();
+      if (sign == null || deg == null) continue;
+      rows.add(_detailRow(
+        glyph: kPlanetGlyphs[key] ?? '•',
+        label: kPlanetLabels[key] ?? key,
+        sign: sign,
+        degree: deg,
+      ));
+    }
+    final ascSign = data['ascendant_sign'] as int?;
+    final ascDeg = (data['ascendant_degree'] as num?)?.toDouble();
+    if (ascSign != null && ascDeg != null) {
+      rows.add(_detailRow(
+          glyph: 'AC', label: 'Aszendent', sign: ascSign, degree: ascDeg));
+    }
+    final mcSign = data['mc_sign'] as int?;
+    final mcDeg = (data['mc_degree'] as num?)?.toDouble();
+    if (mcSign != null && mcDeg != null) {
+      rows.add(_detailRow(
+          glyph: 'MC', label: 'Medium Coeli', sign: mcSign, degree: mcDeg));
+    }
+
+    return Container(
+      decoration: const BoxDecoration(
+        color: _kDarkBg,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: ListView(
+        controller: scroll,
+        padding: const EdgeInsets.all(20),
+        children: [
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.white24,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            data['label'] as String? ?? 'Chart',
+            style: const TextStyle(
+                color: Colors.white,
+                fontSize: 22,
+                fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '${data['birth_date'] ?? ''}'
+            '${data['birth_time'] != null ? "  ·  ${data['birth_time']}" : ""}'
+            '${(data['birth_place'] as String?)?.isNotEmpty == true ? "\n${data['birth_place']}" : ""}',
+            style: const TextStyle(color: Colors.white54, fontSize: 13),
+          ),
+          const SizedBox(height: 20),
+          ...rows,
+          if ((data['notes'] as String?)?.isNotEmpty == true) ...[
+            const SizedBox(height: 20),
+            const Text('Notizen',
+                style: TextStyle(
+                    color: _kIndigo, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 6),
+            Text(data['notes'] as String,
+                style: const TextStyle(color: Colors.white70)),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _detailRow({
+    required String glyph,
+    required String label,
+    required int sign,
+    required double degree,
+  }) {
+    final deg = degree.floor();
+    final min = ((degree - deg) * 60).round();
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 36,
+            child: Text(glyph,
+                style: const TextStyle(
+                    color: _kIndigo, fontSize: 20, fontWeight: FontWeight.bold)),
+          ),
+          SizedBox(
+            width: 110,
+            child: Text(label,
+                style: const TextStyle(color: Colors.white, fontSize: 14)),
+          ),
+          Text('${kZodiacGlyphs[sign]}  ',
+              style: const TextStyle(color: Colors.white70, fontSize: 16)),
+          Expanded(
+            child: Text(
+                '${kZodiacSigns[sign]}  $deg° ${min.toString().padLeft(2, "0")}′',
+                style: const TextStyle(color: Colors.white70, fontSize: 13)),
+          ),
+        ],
       ),
     );
   }
