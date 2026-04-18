@@ -19,6 +19,17 @@ class MaterieCommunityTabModern extends StatefulWidget {
   State<MaterieCommunityTabModern> createState() => _MaterieCommunityTabModernState();
 }
 
+// ── Design palette (mirrors Materie Home Dashboard V7) ────────────────────
+const _mBg    = Color(0xFF04080F);
+const _mCard  = Color(0xFF0A1020);
+const _mCardB = Color(0xFF0D1528);
+const _mBlue  = Color(0xFF2979FF);
+const _mBlueL = Color(0xFF82B1FF);
+const _mCyan  = Color(0xFF00E5FF);
+const _mAmber = Color(0xFFFFAB00);
+const _mGreen = Color(0xFF00E676);
+const _mRed   = Color(0xFFFF1744);
+
 class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> with SingleTickerProviderStateMixin {
   bool _isLoading = false;
   // ignore: unused_field
@@ -98,31 +109,22 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: _mBg,
       body: Column(
         children: [
         // 💬 TAB BAR: Posts vs Live Chat
         Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                const Color(0xFF0D47A1).withValues(alpha: 0.2),
-                Colors.transparent,
-              ],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-            ),
-          ),
+          color: _mBg,
           child: TabBar(
             controller: _tabController,
-            indicatorColor: const Color(0xFF2196F3),
-            indicatorWeight: 3,
+            indicatorColor: _mBlue,
+            indicatorWeight: 2,
+            indicatorSize: TabBarIndicatorSize.label,
             labelColor: Colors.white,
-            unselectedLabelColor: Colors.white60,
-            labelStyle: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
+            unselectedLabelColor: Colors.white38,
+            labelStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+            unselectedLabelStyle: const TextStyle(fontSize: 14),
+            dividerColor: Colors.white.withValues(alpha: 0.06),
             tabs: [
               const Tab(
                 icon: Icon(Icons.article),
@@ -203,13 +205,13 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16),
                 gradient: const LinearGradient(
-                  colors: [Color(0xFF2196F3), Color(0xFF1976D2)],
+                  colors: [Color(0xFF1565C0), Color(0xFF2979FF)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF2196F3).withValues(alpha: 0.4),
+                    color: Color(0xFF2979FF).withValues(alpha: 0.35),
                     blurRadius: 16,
                     offset: const Offset(0, 4),
                   ),
@@ -234,32 +236,20 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
     );
   }
   
-  // Original Posts View
+  // Posts View
   Widget _buildPostsView() {
     return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            const Color(0xFF0D47A1).withValues(alpha: 0.05),
-            Colors.black,
-          ],
-        ),
-      ),
+      color: _mBg,
       child: CustomScrollView(
+        physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
         slivers: [
-          // Header mit View-Tabs
-          SliverToBoxAdapter(
-            child: _buildHeader(),
-          ),
-          
-          // Trending-Sektion
+          SliverToBoxAdapter(child: _buildHeader()),
+          SliverToBoxAdapter(child: _buildStatBanner()),
           if (_selectedView == 'trending')
-            SliverToBoxAdapter(
-              child: _buildTrendingSection(),
-            ),
-          
+            SliverToBoxAdapter(child: _buildTrendingSection()),
+          SliverToBoxAdapter(
+            child: _buildSectionTitle('🔥 Neueste Beiträge', subtitle: 'Fakten & Recherchen'),
+          ),
           // Community-Posts
           _isLoading
               ? SliverPadding(
@@ -287,44 +277,131 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
 
   Widget _buildHeader() {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Titel
-          const Text(
-            'Community',
-            style: TextStyle(
-              fontSize: 32,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
+          // ── Title row ─────────────────────────────────────────────────
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Avatar orb (cosmos style)
+              Container(
+                width: 50, height: 50,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: const RadialGradient(
+                    colors: [Color(0x552979FF), Color(0x1A1A237E)],
+                  ),
+                  border: Border.all(color: _mBlueL.withValues(alpha: 0.4), width: 1.5),
+                  boxShadow: [
+                    BoxShadow(color: _mBlue.withValues(alpha: 0.3), blurRadius: 14, spreadRadius: 2),
+                  ],
+                ),
+                child: const Center(child: Text('🌍', style: TextStyle(fontSize: 22))),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  const Text('Materie Community',
+                      style: TextStyle(color: Colors.white, fontSize: 19,
+                          fontWeight: FontWeight.bold, letterSpacing: -0.3)),
+                  const SizedBox(height: 3),
+                  Row(children: [
+                    Container(
+                      width: 6, height: 6,
+                      decoration: BoxDecoration(
+                        color: _mGreen,
+                        shape: BoxShape.circle,
+                        boxShadow: [BoxShadow(color: _mGreen.withValues(alpha: 0.6), blurRadius: 4)],
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text('Teile Recherchen & Erkenntnisse',
+                        style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 11)),
+                  ]),
+                ]),
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
-          Text(
-            'Teile deine Recherchen und Erkenntnisse',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.white.withValues(alpha: 0.7),
-            ),
-          ),
-          const SizedBox(height: 20),
-          
-          // View-Tabs
+          const SizedBox(height: 18),
+
+          // ── View-Chips ─────────────────────────────────────────────────
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
                 _buildViewTab('trending', '🔥 Trending', Colors.orange),
-                const SizedBox(width: 12),
-                _buildViewTab('following', '👥 Following', Colors.blue),
-                const SizedBox(width: 12),
-                _buildViewTab('community', '💬 Alle Posts', Colors.purple),
+                const SizedBox(width: 10),
+                _buildViewTab('following', '👥 Following', _mBlue),
+                const SizedBox(width: 10),
+                _buildViewTab('community', '💬 Alle Posts', _mCyan),
               ],
             ),
           ),
+          const SizedBox(height: 16),
         ],
       ),
+    );
+  }
+
+  Widget _buildStatBanner() {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      decoration: BoxDecoration(
+        color: _mCardB,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+      ),
+      child: Row(
+        children: [
+          _mStat(Icons.article_outlined, 'Posts', _posts.length, _mBlue, true),
+          _mStat(Icons.comment_outlined, 'Komm.', _posts.fold(0, (s, p) => s + p.comments), _mCyan, true),
+          _mStat(Icons.favorite_outline, 'Likes', _posts.fold(0, (s, p) => s + p.likes), _mAmber, true),
+          _mStat(Icons.share_outlined, 'Geteilt', _posts.fold(0, (s, p) => s + (p.shares ?? 0)), _mGreen, false),
+        ],
+      ),
+    );
+  }
+
+  Widget _mStat(IconData icon, String label, int value, Color color, bool border) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 3),
+        decoration: border
+            ? BoxDecoration(border: Border(right: BorderSide(color: Colors.white.withValues(alpha: 0.05))))
+            : null,
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Icon(icon, color: color, size: 17),
+          const SizedBox(height: 4),
+          Text('$value', style: TextStyle(color: color, fontSize: 15, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 1),
+          Text(label, style: const TextStyle(color: Colors.white38, fontSize: 9, fontWeight: FontWeight.w500)),
+        ]),
+      ),
+    );
+  }
+
+  Widget _buildSectionTitle(String title, {String subtitle = ''}) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 10),
+      child: Row(children: [
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(title, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+          if (subtitle.isNotEmpty)
+            Text(subtitle, style: const TextStyle(color: Colors.white38, fontSize: 11)),
+        ])),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
+          decoration: BoxDecoration(
+            color: _mBlue.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: _mBlue.withValues(alpha: 0.28)),
+          ),
+          child: const Text('Alle →', style: TextStyle(color: _mBlueL, fontSize: 10, fontWeight: FontWeight.w600)),
+        ),
+      ]),
     );
   }
 
@@ -334,360 +411,195 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
       onTap: () => setState(() => _selectedView = view),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
         decoration: BoxDecoration(
-          gradient: isSelected
-              ? LinearGradient(
-                  colors: [
-                    color.withValues(alpha: 0.7),
-                    color.withValues(alpha: 0.3),
-                  ],
-                )
-              : null,
-          color: isSelected ? null : Colors.white.withValues(alpha: 0.05),
-          borderRadius: BorderRadius.circular(25),
+          color: isSelected ? color.withValues(alpha: 0.15) : Colors.white.withValues(alpha: 0.04),
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? color : Colors.white.withValues(alpha: 0.2),
-            width: isSelected ? 2 : 1,
+            color: isSelected ? color.withValues(alpha: 0.5) : Colors.white.withValues(alpha: 0.1),
           ),
           boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: color.withValues(alpha: 0.3),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ]
+              ? [BoxShadow(color: color.withValues(alpha: 0.18), blurRadius: 10)]
               : null,
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 14,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-          ),
-        ),
+        child: Text(label,
+            style: TextStyle(
+                color: isSelected ? Colors.white : Colors.white54,
+                fontSize: 13,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
       ),
     );
   }
 
   Widget _buildTrendingSection() {
-    return Container(
-      margin: const EdgeInsets.only(left: 16, right: 16, bottom: 20),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Colors.orange.withValues(alpha: 0.15),
-            Colors.deepOrange.withValues(alpha: 0.05),
-          ],
+    const topics = ['Geopolitik', 'WikiLeaks', 'CERN', 'Transparenz', 'Kaninchenbau', 'Geschichte', 'UFOs'];
+    final colors = [_mBlue, Colors.orange, _mCyan, _mAmber, _mGreen, _mBlueL, _mRed];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Text('🔥 Trending Topics',
+                style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+            const Text('Heiß diskutiert', style: TextStyle(color: Colors.white38, fontSize: 11)),
+          ]),
         ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.orange.withValues(alpha: 0.3),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Text(
-                '🔥',
-                style: TextStyle(fontSize: 24),
-              ),
-              const SizedBox(width: 8),
-              const Text(
-                'Trending Topics',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+        SizedBox(
+          height: 42,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            physics: const BouncingScrollPhysics(),
+            itemCount: topics.length,
+            itemBuilder: (_, i) {
+              final c = colors[i % colors.length];
+              return Container(
+                margin: const EdgeInsets.only(right: 10),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                decoration: BoxDecoration(
+                  color: c.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: c.withValues(alpha: 0.3)),
                 ),
-              ),
-            ],
+                child: Text('#${topics[i]}',
+                    style: TextStyle(color: c, fontSize: 13, fontWeight: FontWeight.w600)),
+              );
+            },
           ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _buildTrendingTag('Geopolitik', 347),
-              _buildTrendingTag('WikiLeaks', 234),
-              _buildTrendingTag('CERN', 189),
-              _buildTrendingTag('Transparenz', 156),
-              _buildTrendingTag('Kaninchenbau', 142),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTrendingTag(String tag, int count) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.orange.withValues(alpha: 0.4),
-          width: 1,
         ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            '#$tag',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(width: 6),
-          Text(
-            '$count',
-            style: TextStyle(
-              color: Colors.orange.withValues(alpha: 0.8, red: 1.0, green: 0.6, blue: 0.2),
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
+        const SizedBox(height: 8),
+      ],
     );
   }
 
   Widget _buildPostCard(CommunityPost post) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Colors.white.withValues(alpha: 0.08),
-            Colors.white.withValues(alpha: 0.03),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.1),
-          width: 1,
-        ),
+        color: _mCard,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: _mBlue.withValues(alpha: 0.13)),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.2),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
+          BoxShadow(color: _mBlue.withValues(alpha: 0.07), blurRadius: 14, offset: const Offset(0, 5)),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header mit Avatar und Username
+          // ── Header ──────────────────────────────────────────────────────
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(14, 14, 8, 0),
             child: Row(
               children: [
-                // Avatar
                 Container(
-                  width: 48,
-                  height: 48,
+                  width: 44, height: 44,
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        Colors.blue.shade700,
-                        Colors.purple.shade700,
-                      ],
+                    gradient: RadialGradient(
+                      colors: [_mBlue.withValues(alpha: 0.45), const Color(0xFF1A237E).withValues(alpha: 0.2)],
                     ),
                     shape: BoxShape.circle,
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.3),
-                      width: 2,
-                    ),
+                    border: Border.all(color: _mBlueL.withValues(alpha: 0.35), width: 1.5),
+                    boxShadow: [BoxShadow(color: _mBlue.withValues(alpha: 0.25), blurRadius: 8)],
                   ),
-                  child: Center(
-                    child: Text(
-                      post.authorAvatar ?? '👤',
-                      style: const TextStyle(fontSize: 24),
-                    ),
-                  ),
+                  child: Center(child: Text(post.authorAvatar ?? '🌍', style: const TextStyle(fontSize: 20))),
                 ),
-                const SizedBox(width: 12),
-                
-                // Username und Zeit
+                const SizedBox(width: 10),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        post.authorUsername,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Row(children: [
+                      Flexible(
+                        child: Text(post.authorUsername,
+                            style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                            overflow: TextOverflow.ellipsis),
                       ),
-                      Text(
-                        _formatTimestamp(post.createdAt),
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.5),
-                          fontSize: 13,
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: _mBlue.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: _mBlue.withValues(alpha: 0.3)),
                         ),
+                        child: const Text('🌍 Materie',
+                            style: TextStyle(fontSize: 9, color: _mBlueL, fontWeight: FontWeight.bold)),
                       ),
-                    ],
-                  ),
+                    ]),
+                    const SizedBox(height: 2),
+                    Text(_formatTimestamp(post.createdAt),
+                        style: TextStyle(color: Colors.white.withValues(alpha: 0.38), fontSize: 11)),
+                  ]),
                 ),
-                
-                // More-Button
                 IconButton(
-                  icon: Icon(
-                    Icons.more_horiz,
-                    color: Colors.white.withValues(alpha: 0.7),
-                  ),
-                  onPressed: () {
-                    showModalBottomSheet(
-                      context: context,
-                      backgroundColor: const Color(0xFF1A1A2E),
-                      builder: (ctx) => SafeArea(
-                        child: Wrap(
-                          children: [
-                            ListTile(
-                              leading: const Icon(Icons.share, color: Colors.white),
-                              title: const Text('Teilen', style: TextStyle(color: Colors.white)),
-                              onTap: () {
-                                Navigator.pop(ctx);
-                                Share.share('${post.content}\n\nGeteilt aus der Weltenbibliothek');
-                              },
-                            ),
-                            ListTile(
-                              leading: const Icon(Icons.flag_outlined, color: Colors.orange),
-                              title: const Text('Melden', style: TextStyle(color: Colors.white)),
-                              onTap: () {
-                                Navigator.pop(ctx);
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Gemeldet. Danke für dein Feedback.')),
-                                );
-                              },
-                            ),
-                          ],
+                  icon: Icon(Icons.more_vert, color: Colors.white.withValues(alpha: 0.45), size: 20),
+                  onPressed: () => showModalBottomSheet(
+                    context: context,
+                    backgroundColor: _mCardB,
+                    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(22))),
+                    builder: (ctx) => SafeArea(
+                      child: Wrap(children: [
+                        ListTile(
+                          leading: const Icon(Icons.share, color: Colors.white),
+                          title: const Text('Teilen', style: TextStyle(color: Colors.white)),
+                          onTap: () { Navigator.pop(ctx); Share.share('${post.content}\n\nGeteilt aus der Weltenbibliothek'); },
                         ),
-                      ),
-                    );
-                  },
+                        ListTile(
+                          leading: const Icon(Icons.flag_outlined, color: Colors.orange),
+                          title: const Text('Melden', style: TextStyle(color: Colors.white)),
+                          onTap: () { Navigator.pop(ctx);
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Gemeldet. Danke.')));
+                          },
+                        ),
+                      ]),
+                    ),
+                  ),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
                 ),
               ],
             ),
           ),
-          
-          // Content
+
+          // ── Content ──────────────────────────────────────────────────────
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Text(
-              post.content,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 15,
-                height: 1.5,
-              ),
-            ),
+            padding: const EdgeInsets.fromLTRB(14, 10, 14, 0),
+            child: Text(post.content,
+                style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.5)),
           ),
-          const SizedBox(height: 12),
-          
-          // Tags
+
+          // ── Tags ─────────────────────────────────────────────────────────
           if (post.tags.isNotEmpty)
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: post.tags.map((tag) => _buildPostTag(tag)).toList(),
-              ),
+              padding: const EdgeInsets.fromLTRB(14, 10, 14, 0),
+              child: Wrap(spacing: 6, runSpacing: 6,
+                  children: post.tags.map(_buildPostTag).toList()),
             ),
-          const SizedBox(height: 16),
-          
-          // Image-Placeholder (wenn hasImage true)
-          if (post.hasImage == true)
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16),
-              height: 200,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Colors.blue.withValues(alpha: 0.3),
-                    Colors.purple.withValues(alpha: 0.3),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  width: 1,
-                ),
-              ),
-              child: Center(
-                child: Icon(
-                  Icons.image,
-                  size: 48,
-                  color: Colors.white.withValues(alpha: 0.5),
+
+          // ── Actions row ──────────────────────────────────────────────────
+          Container(
+            margin: const EdgeInsets.only(top: 10),
+            decoration: BoxDecoration(border: Border(top: BorderSide(color: _mBlue.withValues(alpha: 0.1)))),
+            padding: const EdgeInsets.fromLTRB(14, 8, 14, 12),
+            child: Row(children: [
+              ArticleLikeButton(articleId: post.id, initialLikes: post.likes, initiallyLiked: false),
+              const SizedBox(width: 18),
+              ArticleCommentsWidget(articleId: post.id, initialCommentCount: post.comments),
+              const Spacer(),
+              InkWell(
+                onTap: () => Share.share('${post.content}\n\nGeteilt aus der Weltenbibliothek'),
+                borderRadius: BorderRadius.circular(16),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Icon(Icons.share_outlined, color: Colors.white.withValues(alpha: 0.55), size: 18),
+                    const SizedBox(width: 4),
+                    Text('${post.shares ?? 0}',
+                        style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 13)),
+                  ]),
                 ),
               ),
-            ),
-          const SizedBox(height: 16),
-          
-          // 🆕 NEW: Interactive Engagement Widgets
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                ArticleLikeButton(
-                  articleId: post.id,
-                  initialLikes: post.likes,
-                  initiallyLiked: false, // Wird async in _loadLikeStatus geladen
-                ),
-                const SizedBox(width: 20),
-                ArticleCommentsWidget(
-                  articleId: post.id,
-                  initialCommentCount: post.comments,
-                ),
-                const Spacer(),
-                InkWell(
-                  onTap: () {
-                    Share.share('${post.content}\n\nGeteilt aus der Weltenbibliothek');
-                  },
-                  borderRadius: BorderRadius.circular(20),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.share_outlined,
-                          color: Colors.white.withValues(alpha: 0.7),
-                          size: 20,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          '${post.shares ?? 0}',
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.9),
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
+            ]),
           ),
-          const SizedBox(height: 16),
         ],
       ),
     );

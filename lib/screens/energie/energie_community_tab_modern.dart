@@ -20,6 +20,18 @@ class EnergieCommunityTabModern extends StatefulWidget {
   State<EnergieCommunityTabModern> createState() => _EnergieCommunityTabModernState();
 }
 
+// ── Design palette (mirrors Energie Home Dashboard V7) ───────────────────
+const _kBg      = Color(0xFF06040F);
+const _kCard    = Color(0xFF100B1E);
+const _kCardB   = Color(0xFF150E25);
+const _kPurple  = Color(0xFFAB47BC);
+const _kPurpleD = Color(0xFF4A148C);
+const _kPurpleL = Color(0xFFCE93D8);
+const _kGold    = Color(0xFFFFD54F);
+const _kTeal    = Color(0xFF26C6DA);
+const _kPink    = Color(0xFFEC407A);
+const _kGreen   = Color(0xFF66BB6A);
+
 class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern> with SingleTickerProviderStateMixin {
   bool _isLoading = true;
   String _selectedView = 'trending'; // 'trending', 'sacred', 'experiences'
@@ -96,31 +108,22 @@ class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern> w
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: _kBg,
       body: Column(
         children: [
         // 💬 TAB BAR: Posts vs Live Chat
         Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                const Color(0xFF4A148C).withValues(alpha: 0.2),
-                Colors.transparent,
-              ],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-            ),
-          ),
+          color: _kBg,
           child: TabBar(
             controller: _tabController,
-            indicatorColor: const Color(0xFF9C27B0),
-            indicatorWeight: 3,
+            indicatorColor: _kPurple,
+            indicatorWeight: 2,
+            indicatorSize: TabBarIndicatorSize.label,
             labelColor: Colors.white,
-            unselectedLabelColor: Colors.white60,
-            labelStyle: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
+            unselectedLabelColor: Colors.white38,
+            labelStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+            unselectedLabelStyle: const TextStyle(fontSize: 14),
+            dividerColor: Colors.white.withValues(alpha: 0.06),
             tabs: [
               const Tab(
                 icon: Icon(Icons.article),
@@ -236,29 +239,23 @@ class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern> w
   // Original Posts View
   Widget _buildPostsView() {
     return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            const Color(0xFF4A148C).withValues(alpha: 0.05),
-            Colors.black,
-          ],
-        ),
-      ),
+      color: _kBg,
       child: CustomScrollView(
+        physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
         slivers: [
-          // Header mit View-Tabs
-          SliverToBoxAdapter(
-            child: _buildHeader(),
-          ),
-          
+          SliverToBoxAdapter(child: _buildHeader()),
+          SliverToBoxAdapter(child: _buildStatBanner()),
+
           // Trending Energie-Tags
           if (_selectedView == 'trending')
             SliverToBoxAdapter(
               child: _buildTrendingSection(),
             ),
           
+          SliverToBoxAdapter(
+            child: _buildSectionTitle('✨ Neueste Beiträge', subtitle: 'Spiritueller Austausch'),
+          ),
+
           // Community-Posts
           _isLoading
               ? SliverPadding(
@@ -313,52 +310,113 @@ class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern> w
 
   Widget _buildHeader() {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Titel
+          // ── Title row ─────────────────────────────────────────────────
           Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const Text(
-                '🌟',
-                style: TextStyle(fontSize: 36),
+              // Aura orb
+              Container(
+                width: 50, height: 50,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: const RadialGradient(
+                    colors: [Color(0x66AB47BC), Color(0x1A4A148C)],
+                  ),
+                  border: Border.all(color: _kPurpleL.withValues(alpha: 0.45), width: 1.5),
+                  boxShadow: [
+                    BoxShadow(color: _kPurple.withValues(alpha: 0.3), blurRadius: 16, spreadRadius: 2),
+                  ],
+                ),
+                child: const Center(child: Text('🌟', style: TextStyle(fontSize: 22))),
               ),
-              const SizedBox(width: 12),
-              const Text(
-                'Spirituelle Community',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Spirituelle Community',
+                        style: TextStyle(color: Colors.white, fontSize: 19,
+                            fontWeight: FontWeight.bold, letterSpacing: -0.3)),
+                    const SizedBox(height: 3),
+                    Row(children: [
+                      Container(
+                        width: 6, height: 6,
+                        decoration: BoxDecoration(
+                          color: _kPurple,
+                          shape: BoxShape.circle,
+                          boxShadow: [BoxShadow(color: _kPurple.withValues(alpha: 0.6), blurRadius: 4)],
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text('Teile Erfahrungen & Erkenntnisse',
+                          style: TextStyle(color: Colors.white.withValues(alpha: 0.45), fontSize: 11)),
+                    ]),
+                  ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          Text(
-            'Teile deine Erfahrungen und Erkenntnisse',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.white.withValues(alpha: 0.7),
-            ),
-          ),
-          const SizedBox(height: 20),
-          
-          // View-Tabs
+          const SizedBox(height: 18),
+
+          // ── View-Chips ─────────────────────────────────────────────────
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
                 _buildViewTab('trending', '🔥 Trending', Colors.orange),
-                const SizedBox(width: 12),
-                _buildViewTab('sacred', '🕉️ Heilig', Colors.purple),
-                const SizedBox(width: 12),
-                _buildViewTab('experiences', '✨ Erfahrungen', Colors.pink),
+                const SizedBox(width: 10),
+                _buildViewTab('sacred', '🕉️ Heilig', _kPurple),
+                const SizedBox(width: 10),
+                _buildViewTab('experiences', '✨ Erfahrungen', _kPink),
               ],
             ),
           ),
+          const SizedBox(height: 16),
         ],
+      ),
+    );
+  }
+
+  Widget _buildStatBanner() {
+    final stats = [
+      _CommStat(icon: Icons.article_outlined,   label: 'Posts',   value: _posts.length, color: _kPurple),
+      _CommStat(icon: Icons.comment_outlined,   label: 'Komm.',   value: _posts.fold(0, (s, p) => s + p.comments), color: _kTeal),
+      _CommStat(icon: Icons.favorite_outline,   label: 'Likes',   value: _posts.fold(0, (s, p) => s + p.likes), color: _kPink),
+      _CommStat(icon: Icons.share_outlined,     label: 'Geteilt', value: _posts.fold(0, (s, p) => s + (p.shares ?? 0)), color: _kGold),
+    ];
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      decoration: BoxDecoration(
+        color: _kCardB,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+      ),
+      child: Row(
+        children: stats.asMap().entries.map((e) {
+          final i = e.key; final s = e.value;
+          return Expanded(
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 3),
+              decoration: i < stats.length - 1
+                  ? BoxDecoration(border: Border(right: BorderSide(color: Colors.white.withValues(alpha: 0.05))))
+                  : null,
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                Icon(s.icon, color: s.color, size: 17),
+                const SizedBox(height: 4),
+                Text('${s.value}',
+                    style: TextStyle(color: s.color, fontSize: 15, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 1),
+                Text(s.label,
+                    style: const TextStyle(color: Colors.white38, fontSize: 9, fontWeight: FontWeight.w500)),
+              ]),
+            ),
+          );
+        }).toList(),
       ),
     );
   }
@@ -369,377 +427,188 @@ class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern> w
       onTap: () => setState(() => _selectedView = view),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
         decoration: BoxDecoration(
-          gradient: isSelected
-              ? LinearGradient(
-                  colors: [
-                    color.withValues(alpha: 0.7),
-                    color.withValues(alpha: 0.3),
-                  ],
-                )
-              : null,
-          color: isSelected ? null : Colors.white.withValues(alpha: 0.05),
-          borderRadius: BorderRadius.circular(25),
+          color: isSelected ? color.withValues(alpha: 0.15) : Colors.white.withValues(alpha: 0.04),
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? color : Colors.white.withValues(alpha: 0.2),
-            width: isSelected ? 2 : 1,
+            color: isSelected ? color.withValues(alpha: 0.5) : Colors.white.withValues(alpha: 0.1),
           ),
           boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: color.withValues(alpha: 0.3),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ]
+              ? [BoxShadow(color: color.withValues(alpha: 0.2), blurRadius: 10)]
               : null,
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 14,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-          ),
-        ),
+        child: Text(label,
+            style: TextStyle(
+                color: isSelected ? Colors.white : Colors.white54,
+                fontSize: 13,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
       ),
     );
   }
 
   Widget _buildTrendingSection() {
-    return Container(
-      margin: const EdgeInsets.only(left: 16, right: 16, bottom: 20),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Colors.purple.withValues(alpha: 0.15),
-            Colors.pink.withValues(alpha: 0.05),
-          ],
+    const topics = ['Kraftorte', 'Meditation', 'Chakren', 'Kristalle', 'Vollmond', 'Bewusstsein', 'Heilung'];
+    final colors = [_kGreen, _kPurple, _kPink, _kTeal, _kGold, _kPurpleL, _kGreen];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
+          child: Row(children: [
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Text('✨ Spirituelle Themen',
+                  style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+              const Text('Im Fokus', style: TextStyle(color: Colors.white38, fontSize: 11)),
+            ])),
+          ]),
         ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.purple.withValues(alpha: 0.3),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Text(
-                '✨',
-                style: TextStyle(fontSize: 24),
-              ),
-              const SizedBox(width: 8),
-              const Text(
-                'Spirituelle Themen',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+        SizedBox(
+          height: 42,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            physics: const BouncingScrollPhysics(),
+            itemCount: topics.length,
+            itemBuilder: (_, i) {
+              final c = colors[i % colors.length];
+              return GestureDetector(
+                onTap: () => setState(() => _selectedView = 'trending'),
+                child: Container(
+                  margin: const EdgeInsets.only(right: 10),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                  decoration: BoxDecoration(
+                    color: c.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: c.withValues(alpha: 0.3)),
+                  ),
+                  child: Text('#${topics[i]}',
+                      style: TextStyle(color: c, fontSize: 13, fontWeight: FontWeight.w600)),
                 ),
-              ),
-            ],
+              );
+            },
           ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _buildTrendingTag('Kraftorte', 234, Colors.green),
-              _buildTrendingTag('Meditation', 189, Colors.purple),
-              _buildTrendingTag('Chakren', 167, Colors.pink),
-              _buildTrendingTag('Kristalle', 143, Colors.cyan),
-              _buildTrendingTag('Vollmond', 128, Colors.yellow),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTrendingTag(String tag, int count, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: color.withValues(alpha: 0.4),
-          width: 1,
         ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            '#$tag',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(width: 6),
-          Text(
-            '$count',
-            style: TextStyle(
-              color: color.withValues(alpha: 0.9),
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
+        const SizedBox(height: 8),
+      ],
     );
   }
 
   Widget _buildPostCard(CommunityPost post) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Colors.purple.withValues(alpha: 0.08),
-            Colors.pink.withValues(alpha: 0.03),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.purple.withValues(alpha: 0.2),
-          width: 1,
-        ),
+        color: _kCard,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: _kPurple.withValues(alpha: 0.14)),
         boxShadow: [
-          BoxShadow(
-            color: Colors.purple.withValues(alpha: 0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
+          BoxShadow(color: _kPurple.withValues(alpha: 0.07), blurRadius: 14, offset: const Offset(0, 5)),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header mit Avatar und Username
+          // ── Header ──────────────────────────────────────────────────────
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(14, 14, 8, 0),
             child: Row(
               children: [
-                // Avatar mit mystischem Glow
+                // Avatar
                 Container(
-                  width: 48,
-                  height: 48,
+                  width: 44, height: 44,
                   decoration: BoxDecoration(
                     gradient: RadialGradient(
-                      colors: [
-                        Colors.purple.withValues(alpha: 0.6),
-                        Colors.pink.withValues(alpha: 0.3),
-                      ],
+                      colors: [_kPurple.withValues(alpha: 0.5), _kPurpleD.withValues(alpha: 0.2)],
                     ),
                     shape: BoxShape.circle,
-                    border: Border.all(
-                      color: Colors.purple.withValues(alpha: 0.5),
-                      width: 2,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.purple.withValues(alpha: 0.4),
-                        blurRadius: 12,
-                        spreadRadius: 2,
-                      ),
-                    ],
+                    border: Border.all(color: _kPurpleL.withValues(alpha: 0.35), width: 1.5),
+                    boxShadow: [BoxShadow(color: _kPurple.withValues(alpha: 0.3), blurRadius: 8)],
                   ),
-                  child: Center(
-                    child: Text(
-                      post.authorAvatar ?? '🌟',
-                      style: const TextStyle(fontSize: 24),
-                    ),
-                  ),
+                  child: Center(child: Text(post.authorAvatar ?? '🌟', style: const TextStyle(fontSize: 20))),
                 ),
-                const SizedBox(width: 12),
-                
-                // Username und Zeit
+                const SizedBox(width: 10),
+                // Name + time
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Text(
-                            post.authorUsername,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  Colors.purple.withValues(alpha: 0.4),
-                                  Colors.pink.withValues(alpha: 0.4),
-                                ],
-                              ),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Text(
-                              '⚡ Energie',
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Row(children: [
+                      Flexible(
+                        child: Text(post.authorUsername,
+                            style: const TextStyle(color: Colors.white, fontSize: 14,
+                                fontWeight: FontWeight.bold),
+                            overflow: TextOverflow.ellipsis),
                       ),
-                      Text(
-                        _formatTimestamp(post.createdAt),
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.5),
-                          fontSize: 13,
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: _kPurple.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: _kPurple.withValues(alpha: 0.3)),
                         ),
+                        child: const Text('⚡ Energie',
+                            style: TextStyle(fontSize: 9, color: _kPurpleL, fontWeight: FontWeight.bold)),
                       ),
-                    ],
-                  ),
+                    ]),
+                    const SizedBox(height: 2),
+                    Text(_formatTimestamp(post.createdAt),
+                        style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 11)),
+                  ]),
                 ),
-                
-                // More-Button (3-Punkte-Menü)
                 IconButton(
-                  icon: Icon(
-                    Icons.more_vert,
-                    color: Colors.white.withValues(alpha: 0.7),
-                  ),
+                  icon: Icon(Icons.more_vert, color: Colors.white.withValues(alpha: 0.5), size: 20),
                   onPressed: () => _showPostMenu(context, post),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
                 ),
               ],
             ),
           ),
-          
-          // Content
+
+          // ── Content ──────────────────────────────────────────────────────
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Text(
-              post.content,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 15,
-                height: 1.5,
-              ),
-            ),
+            padding: const EdgeInsets.fromLTRB(14, 10, 14, 0),
+            child: Text(post.content,
+                style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.5)),
           ),
-          const SizedBox(height: 12),
-          
-          // Tags
+
+          // ── Tags ─────────────────────────────────────────────────────────
           if (post.tags.isNotEmpty)
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: post.tags.map((tag) => _buildPostTag(tag)).toList(),
-              ),
+              padding: const EdgeInsets.fromLTRB(14, 10, 14, 0),
+              child: Wrap(spacing: 6, runSpacing: 6,
+                  children: post.tags.map(_buildPostTag).toList()),
             ),
-          const SizedBox(height: 16),
-          
-          // Media Display (Image or Video)
+
+          // ── Media ────────────────────────────────────────────────────────
           if (post.mediaUrl != null && post.mediaUrl!.isNotEmpty)
             Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16),
+              margin: const EdgeInsets.fromLTRB(14, 10, 14, 0),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: Colors.purple.withValues(alpha: 0.3),
-                  width: 1,
-                ),
+                border: Border.all(color: _kPurple.withValues(alpha: 0.2)),
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(12),
-                child: Image.network(
-                  post.mediaUrl!,
-                  fit: BoxFit.cover,
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return Container(
-                      height: 200,
-                      color: Colors.purple.withValues(alpha: 0.1),
-                      child: Center(
-                        child: CircularProgressIndicator(
-                          value: loadingProgress.expectedTotalBytes != null
-                              ? loadingProgress.cumulativeBytesLoaded /
-                                  loadingProgress.expectedTotalBytes!
-                              : null,
-                          color: Colors.purple,
-                        ),
-                      ),
-                    );
-                  },
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      height: 200,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            Colors.purple.withValues(alpha: 0.3),
-                            Colors.pink.withValues(alpha: 0.3),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.broken_image,
-                              size: 48,
-                              color: Colors.white.withValues(alpha: 0.5),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Bild konnte nicht geladen werden',
-                              style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.5),
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
+                child: Image.network(post.mediaUrl!, fit: BoxFit.cover,
+                    loadingBuilder: (_, child, prog) => prog == null ? child
+                        : Container(height: 180, color: _kPurple.withValues(alpha: 0.08),
+                            child: Center(child: CircularProgressIndicator(color: _kPurple,
+                                value: prog.expectedTotalBytes != null
+                                    ? prog.cumulativeBytesLoaded / prog.expectedTotalBytes! : null))),
+                    errorBuilder: (_, __, ___) => Container(height: 180,
+                        decoration: BoxDecoration(color: _kCard),
+                        child: Icon(Icons.broken_image, color: Colors.white24, size: 40))),
               ),
             ),
-          const SizedBox(height: 16),
-          
-          // Post Actions (Like, Comment, Share, Energie, Save)
+
+          // ── Actions ──────────────────────────────────────────────────────
           Container(
+            margin: const EdgeInsets.only(top: 10),
             decoration: BoxDecoration(
-              border: Border(
-                top: BorderSide(
-                  color: Colors.purple.withValues(alpha: 0.2),
-                  width: 1,
-                ),
-              ),
+              border: Border(top: BorderSide(color: _kPurple.withValues(alpha: 0.12))),
             ),
-            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-            child: PostActionsRow(
-              post: post,
-              accentColor: Colors.purple,
-              onPostUpdated: _loadData,
-            ),
+            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 14),
+            child: PostActionsRow(post: post, accentColor: _kPurple, onPostUpdated: _loadData),
           ),
         ],
       ),
@@ -792,9 +661,9 @@ class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern> w
     
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF1A1A2E),
+      backgroundColor: _kCardB,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
       ),
       builder: (context) {
         return SafeArea(
@@ -881,7 +750,7 @@ class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern> w
       context: context,
       builder: (context) {
         return AlertDialog(
-          backgroundColor: const Color(0xFF1A1A2E),
+          backgroundColor: _kCardB,
           title: const Text('Post bearbeiten', style: TextStyle(color: Colors.white)),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -962,7 +831,7 @@ class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern> w
       context: context,
       builder: (context) {
         return AlertDialog(
-          backgroundColor: const Color(0xFF1A1A2E),
+          backgroundColor: _kCardB,
           title: const Text('Post löschen?', style: TextStyle(color: Colors.white)),
           content: const Text(
             'Dieser Post wird dauerhaft gelöscht.',
@@ -1064,6 +933,29 @@ class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern> w
     // );
   // }
 
+  // ── Section title (home-dashboard style) ────────────────────────────────
+  Widget _buildSectionTitle(String title, {String subtitle = ''}) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
+      child: Row(children: [
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(title, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+          if (subtitle.isNotEmpty)
+            Text(subtitle, style: const TextStyle(color: Colors.white38, fontSize: 11)),
+        ])),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
+          decoration: BoxDecoration(
+            color: _kPurple.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: _kPurple.withValues(alpha: 0.28)),
+          ),
+          child: const Text('Alle →', style: TextStyle(color: _kPurpleL, fontSize: 10, fontWeight: FontWeight.w600)),
+        ),
+      ]),
+    );
+  }
+
   String _formatTimestamp(DateTime timestamp) {
     final now = DateTime.now();
     final difference = now.difference(timestamp);
@@ -1086,4 +978,12 @@ class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern> w
     // }
     // return number.toString();
   // }
+}
+
+class _CommStat {
+  final IconData icon;
+  final String label;
+  final int value;
+  final Color color;
+  const _CommStat({required this.icon, required this.label, required this.value, required this.color});
 }
