@@ -816,18 +816,258 @@ class _ChartDetailView extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Tab 2: Lexikon (Phase 1.2e) – Skeleton
+// Tab 2: Lexikon (Phase 1.2e) – Zeichen & Planeten aus astrology_meanings
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _LexiconTab extends StatelessWidget {
+class _LexiconTab extends StatefulWidget {
   const _LexiconTab();
   @override
+  State<_LexiconTab> createState() => _LexiconTabState();
+}
+
+class _LexiconTabState extends State<_LexiconTab> {
+  String _category = 'sign';
+  late Future<List<Map<String, dynamic>>> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = _load();
+  }
+
+  Future<List<Map<String, dynamic>>> _load() async {
+    final res = await _db
+        .from('astrology_meanings')
+        .select()
+        .eq('category', _category)
+        .order('sort_order', ascending: true);
+    return (res as List).cast<Map<String, dynamic>>();
+  }
+
+  void _switch(String cat) {
+    if (_category == cat) return;
+    setState(() {
+      _category = cat;
+      _future = _load();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Text(
-        'Astrologie-Lexikon…\n(Phase 1.2e)',
-        textAlign: TextAlign.center,
-        style: TextStyle(color: Colors.white70, fontSize: 16),
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+          child: Row(
+            children: [
+              Expanded(child: _catChip('sign', '♈ Zeichen')),
+              const SizedBox(width: 8),
+              Expanded(child: _catChip('planet', '☉ Planeten')),
+            ],
+          ),
+        ),
+        Expanded(
+          child: FutureBuilder<List<Map<String, dynamic>>>(
+            future: _future,
+            builder: (ctx, snap) {
+              if (snap.connectionState != ConnectionState.done) {
+                return const Center(
+                    child: CircularProgressIndicator(color: _kIndigo));
+              }
+              if (snap.hasError) {
+                return Center(
+                    child: Text('Fehler: ${snap.error}',
+                        style: const TextStyle(color: Colors.white70)));
+              }
+              final items = snap.data ?? [];
+              if (items.isEmpty) {
+                return const Center(
+                    child: Text('Keine Einträge.',
+                        style: TextStyle(color: Colors.white54)));
+              }
+              return ListView.builder(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                itemCount: items.length,
+                itemBuilder: (_, i) => _LexiconCard(data: items[i]),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _catChip(String cat, String label) {
+    final active = _category == cat;
+    return InkWell(
+      onTap: () => _switch(cat),
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+        decoration: BoxDecoration(
+          color: active ? _kIndigo : _kCardBg,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: active ? _kIndigo : _kBorder),
+        ),
+        child: Center(
+          child: Text(label,
+              style: TextStyle(
+                  color: active ? Colors.white : Colors.white70,
+                  fontWeight: FontWeight.w600)),
+        ),
+      ),
+    );
+  }
+}
+
+class _LexiconCard extends StatelessWidget {
+  final Map<String, dynamic> data;
+  const _LexiconCard({required this.data});
+
+  @override
+  Widget build(BuildContext context) {
+    final title = data['title'] as String? ?? '';
+    final emoji = data['emoji'] as String? ?? '✨';
+    final short = data['short_text'] as String? ?? '';
+    final keywords = (data['keywords'] as List?)?.cast<String>() ?? const [];
+
+    return InkWell(
+      onTap: () => _showDetail(context),
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: _kCardBg,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: _kBorder),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(emoji, style: const TextStyle(fontSize: 28)),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title,
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16)),
+                  const SizedBox(height: 4),
+                  Text(short,
+                      style: const TextStyle(
+                          color: Colors.white70, fontSize: 13)),
+                  if (keywords.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 4,
+                      children: keywords
+                          .take(4)
+                          .map((k) => Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: _kIndigo.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text(k,
+                                    style: const TextStyle(
+                                        color: Colors.white70, fontSize: 11)),
+                              ))
+                          .toList(),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showDetail(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: _kDarkBg,
+      isScrollControlled: true,
+      builder: (_) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.75,
+        minChildSize: 0.4,
+        maxChildSize: 0.95,
+        builder: (_, ctrl) => Container(
+          decoration: const BoxDecoration(
+            color: _kDarkBg,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: ListView(
+            controller: ctrl,
+            padding: const EdgeInsets.all(20),
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Text(data['emoji'] as String? ?? '',
+                      style: const TextStyle(fontSize: 34)),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(data['title'] as String? ?? '',
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(data['short_text'] as String? ?? '',
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      height: 1.4)),
+              if ((data['deep_text'] as String?)?.isNotEmpty == true) ...[
+                const SizedBox(height: 20),
+                const Text('Vertiefung',
+                    style: TextStyle(
+                        color: _kIndigo,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.3)),
+                const SizedBox(height: 6),
+                Text(data['deep_text'] as String,
+                    style: const TextStyle(
+                        color: Colors.white70, fontSize: 14, height: 1.5)),
+              ],
+              if ((data['shadow_text'] as String?)?.isNotEmpty == true) ...[
+                const SizedBox(height: 20),
+                const Text('Schatten & Übung',
+                    style: TextStyle(
+                        color: Colors.orangeAccent,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.3)),
+                const SizedBox(height: 6),
+                Text(data['shadow_text'] as String,
+                    style: const TextStyle(
+                        color: Colors.white70, fontSize: 14, height: 1.5)),
+              ],
+              const SizedBox(height: 40),
+            ],
+          ),
+        ),
       ),
     );
   }
