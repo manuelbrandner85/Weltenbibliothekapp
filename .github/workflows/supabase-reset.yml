@@ -150,6 +150,7 @@ jobs:
           psql "$PGCONN" -c "SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename;" || true
 
       - name: 🚀 Migration ausführen
+        id: migrate
         env:
           PG_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
           PG_HOST: ${{ steps.conn.outputs.host }}
@@ -166,20 +167,60 @@ jobs:
             -f "$FILE" 2>&1 | tee "$LOG"
           RC=${PIPESTATUS[0]}
           echo "::endgroup::"
-          if [ $RC -ne 0 ]; then
-            echo "### ❌ Migration fehlgeschlagen (exit $RC)" >> "$GITHUB_STEP_SUMMARY"
-            echo "" >> "$GITHUB_STEP_SUMMARY"
-            echo "#### Fehler-Zeilen aus psql:" >> "$GITHUB_STEP_SUMMARY"
-            echo '```' >> "$GITHUB_STEP_SUMMARY"
-            grep -E '^(psql:|ERROR:|DETAIL:|HINT:|CONTEXT:|LINE |.*line [0-9]+:)' "$LOG" | head -60 >> "$GITHUB_STEP_SUMMARY"
-            echo '```' >> "$GITHUB_STEP_SUMMARY"
-            echo "" >> "$GITHUB_STEP_SUMMARY"
-            echo "#### Letzte 40 Zeilen aus psql-Log:" >> "$GITHUB_STEP_SUMMARY"
-            echo '```' >> "$GITHUB_STEP_SUMMARY"
-            tail -n 40 "$LOG" >> "$GITHUB_STEP_SUMMARY"
-            echo '```' >> "$GITHUB_STEP_SUMMARY"
-            exit $RC
-          fi
+          echo "rc=$RC" >> "$GITHUB_OUTPUT"
+          cp "$LOG" psql.log
+          exit $RC
+
+      - name: 📤 Upload psql log als Artifact (immer)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: psql-log
+          path: psql.log
+          retention-days: 7
+
+      - name: 💬 Fehler als PR-Kommentar posten
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let log = '';
+            try { log = fs.readFileSync('psql.log', 'utf8'); } catch(e) { log = '(Log nicht lesbar: ' + e.message + ')'; }
+            const errLines = log.split('\n').filter(l =>
+              /^(psql:|ERROR:|DETAIL:|HINT:|CONTEXT:|LINE )/.test(l)
+            ).slice(0, 80).join('\n');
+            const tail = log.split('\n').slice(-60).join('\n');
+            const body = [
+              '### ❌ Supabase-Migration fehlgeschlagen',
+              '',
+              '**Run:** ' + context.runId,
+              '**Commit:** ' + context.sha.slice(0,7),
+              '',
+              '#### psql Fehler-Zeilen',
+              '```',
+              errLines || '(keine ERROR-Zeilen gefunden)',
+              '```',
+              '',
+              '#### Letzte 60 Zeilen',
+              '```',
+              tail,
+              '```',
+            ].join('\n');
+            // PR-Nummer aus Branch-Suche ermitteln
+            const prs = await github.rest.pulls.list({
+              owner: context.repo.owner, repo: context.repo.repo,
+              state: 'open', head: context.repo.owner + ':' + context.ref.replace('refs/heads/', '')
+            });
+            if (prs.data.length > 0) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: prs.data[0].number, body
+              });
+            } else {
+              core.warning('Keine PR gefunden — Kommentar nicht gepostet.');
+              core.setOutput('body', body);
+            }
 
       - name: ✅ Zustand NACHHER (Verifikation)
         env:
