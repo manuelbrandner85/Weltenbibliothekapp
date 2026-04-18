@@ -238,3 +238,101 @@ CREATE TABLE user_stats (
   last_active       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- ============================================================
+-- PHASE F: TOOLS ENERGIE (7)
+-- Endpunkte in Worker (workers/api-worker.js toolTableMap)
+-- ============================================================
+
+-- ── tool_meditation_sessions ── Endpunkt: energie/astral
+CREATE TABLE tool_meditation_sessions (
+  id               UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  room_id          TEXT NOT NULL,
+  user_id          UUID REFERENCES profiles(id) ON DELETE SET NULL,
+  username         TEXT NOT NULL DEFAULT 'Anonym',
+  title            TEXT NOT NULL,
+  experience       TEXT,
+  techniques_used  TEXT[] NOT NULL DEFAULT '{}',
+  success_level    INTEGER NOT NULL DEFAULT 5 CHECK (success_level BETWEEN 1 AND 10),
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- ── tool_kristalle ── Endpunkt: energie/crystals
+CREATE TABLE tool_kristalle (
+  id           UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  room_id      TEXT NOT NULL,
+  user_id      UUID REFERENCES profiles(id) ON DELETE SET NULL,
+  username     TEXT NOT NULL DEFAULT 'Anonym',
+  crystal_name TEXT NOT NULL,
+  crystal_type TEXT,
+  properties   TEXT[] NOT NULL DEFAULT '{}',
+  uses         TEXT[] NOT NULL DEFAULT '{}',
+  image_url    TEXT,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- ── tool_chakra_readings ── Endpunkt: energie/chakra
+CREATE TABLE tool_chakra_readings (
+  id           UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  room_id      TEXT NOT NULL,
+  user_id      UUID REFERENCES profiles(id) ON DELETE SET NULL,
+  username     TEXT NOT NULL DEFAULT 'Anonym',
+  chakra_name  TEXT NOT NULL,
+  energy_level INTEGER NOT NULL DEFAULT 50 CHECK (energy_level BETWEEN 0 AND 100),
+  note         TEXT,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- ── tool_heilfrequenz ── Endpunkt: energie/heilfrequenz
+CREATE TABLE tool_heilfrequenz (
+  id               UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  room_id          TEXT NOT NULL,
+  user_id          UUID REFERENCES profiles(id) ON DELETE SET NULL,
+  username         TEXT NOT NULL DEFAULT 'Anonym',
+  frequency        DOUBLE PRECISION NOT NULL,
+  name             TEXT NOT NULL,
+  description      TEXT,
+  duration_seconds INTEGER NOT NULL DEFAULT 60,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- ── tool_traeume ── Endpunkt: energie/traeume
+CREATE TABLE tool_traeume (
+  id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  room_id     TEXT NOT NULL,
+  user_id     UUID REFERENCES profiles(id) ON DELETE SET NULL,
+  username    TEXT NOT NULL DEFAULT 'Anonym',
+  dream_title TEXT NOT NULL,
+  dream_text  TEXT NOT NULL,
+  symbols     TEXT[] NOT NULL DEFAULT '{}',
+  mood        TEXT,
+  clarity     INTEGER NOT NULL DEFAULT 5 CHECK (clarity BETWEEN 1 AND 10),
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- ── tool_bewusstsein_journal ── Endpunkt: energie/bewusstsein
+CREATE TABLE tool_bewusstsein_journal (
+  id           UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  room_id      TEXT NOT NULL,
+  user_id      UUID REFERENCES profiles(id) ON DELETE SET NULL,
+  username     TEXT NOT NULL DEFAULT 'Anonym',
+  entry_title  TEXT NOT NULL,
+  entry_text   TEXT NOT NULL,
+  mood         TEXT,
+  energy_level INTEGER NOT NULL DEFAULT 5 CHECK (energy_level BETWEEN 1 AND 10),
+  tags         TEXT[] NOT NULL DEFAULT '{}',
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- ── tool_group_meditation ── Endpunkt: energie/group_meditation
+CREATE TABLE tool_group_meditation (
+  id             UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  room_id        TEXT NOT NULL,
+  user_id        UUID REFERENCES profiles(id) ON DELETE SET NULL,
+  username       TEXT NOT NULL DEFAULT 'Anonym',
+  session_title  TEXT NOT NULL,
+  intention      TEXT,
+  duration_mins  INTEGER NOT NULL DEFAULT 15,
+  participants   INTEGER NOT NULL DEFAULT 1,
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
