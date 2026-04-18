@@ -8,7 +8,6 @@ import '../../services/storage_service.dart';
 import '../../models/energie_profile.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../materie/recherche_tab_mobile.dart';
-import 'energie_live_chat_screen.dart';
 import '../shared/bookmarks_screen.dart';
 import '../shared/stats_dashboard_screen.dart';
 import 'spirit_tab_modern.dart';
@@ -617,14 +616,6 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
         gradient: [const Color(0xFF3E0D6B), const Color(0xFF6A1B9A), const Color(0xFFAB47BC)],
         badge: 0,
         onTap: () => _go(const SpiritTabModern()),
-      ),
-      _TileDef(
-        icon: Icons.forum_rounded,
-        label: 'Live Chat',
-        sub: 'Spiritueller Austausch',
-        gradient: [const Color(0xFF004D40), const Color(0xFF00796B), const Color(0xFF26C6DA)],
-        badge: _notifs,
-        onTap: () => _go(const EnergieLiveChatScreen()),
       ),
       _TileDef(
         icon: Icons.spa_rounded,

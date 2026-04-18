@@ -8,7 +8,6 @@ import '../../services/storage_service.dart';
 import '../../models/materie_profile.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'recherche_tab_mobile.dart';
-import 'materie_live_chat_screen.dart';
 import '../shared/bookmarks_screen.dart';
 import '../shared/stats_dashboard_screen.dart';
 
@@ -509,14 +508,6 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
         gradient: [const Color(0xFF0D47A1), const Color(0xFF1565C0), const Color(0xFF2979FF)],
         badge: 0,
         onTap: () => _go(const MobileOptimierterRechercheTab()),
-      ),
-      _TileDef(
-        icon: Icons.forum_rounded,
-        label: 'Live Chat',
-        sub: 'Jetzt diskutieren',
-        gradient: [const Color(0xFF006064), const Color(0xFF00838F), const Color(0xFF00E5FF)],
-        badge: _notifs,
-        onTap: () => _go(const MaterieLiveChatScreen()),
       ),
       _TileDef(
         icon: Icons.explore_rounded,
