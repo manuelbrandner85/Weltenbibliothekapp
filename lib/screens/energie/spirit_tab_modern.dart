@@ -17,6 +17,7 @@ import 'calculators/moon_calendar_tool_screen.dart'; // 🌕 v19 Mondkalender
 import 'calculators/dream_interpretation_tool_screen.dart'; // 💭 v20 Traumdeutung
 import 'calculators/body_scan_tool_screen.dart'; // 🧘 v21 Körperscan
 import 'calculators/soul_contract_tool_screen.dart'; // 📜 v22 Seelenvertrag
+import 'calculators/ancestral_work_tool_screen.dart'; // 🕯️ v23 Ahnenarbeit
 import 'frequency_generator_screen.dart';  // 🎵 FREQUENCY GENERATOR
 import '../spirit/spirit_tools_mega_screen.dart'; // 🆕 V115 MEGA UPDATE TOOLS
 
@@ -451,7 +452,18 @@ class _SpiritTabModernState extends State<SpiritTabModern> {
         'category': 'new',
         'screen': const SoulContractToolScreen(),
       },
-      
+
+      // 🕯️ Ahnenarbeit (v23 – Ahnen, Muster, Rituale)
+      {
+        'icon': Icons.family_restroom,
+        'iconEmoji': '🕯️',
+        'title': 'Ahnenarbeit',
+        'subtitle': 'Ahnen, Muster & Heil-Rituale',
+        'color': const Color(0xFFD4A24C),
+        'category': 'new',
+        'screen': const AncestralWorkToolScreen(),
+      },
+
       // ᚱ Runen-Orakel (V115 Feature #20)
       {
         'icon': Icons.auto_stories,
