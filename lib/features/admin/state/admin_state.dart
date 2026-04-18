@@ -104,6 +104,8 @@ class AdminStateNotifier extends StateNotifier<AdminState> {
           .maybeSingle()
           .timeout(const Duration(seconds: 4));
 
+      if (!mounted) return;
+
       final isAdminFromDb = profile?['is_admin'] == true;
       final isRootByUsername = AppRoles.isRootAdminByUsername(username);
 

@@ -107,8 +107,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
   bool _isLoading = false;
   String? _errorMessage; // 🎨 NEW: Error state
   bool _profileDialogShown = false; // 🚨 Flag: Verhindert mehrfaches Popup
-  Timer? _refreshTimer;
-  
+
   // 🆕 ENHANCED FEATURES
   List<String> _mentionSuggestions = []; // @ Auto-Complete
   bool _showMentionPicker = false;
@@ -288,7 +287,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
     _messageController.dispose();
     _scrollController.dispose();
     _inputFocusNode.dispose();
-    _refreshTimer?.cancel();
+    _typingTimer?.cancel();
     _voiceParticipantsSub?.cancel(); // 🔧 Prevent memory leak
     _realtimeChannel?.unsubscribe(); // 🔴 Realtime cleanup
     super.dispose();
