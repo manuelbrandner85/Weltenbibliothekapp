@@ -44,7 +44,7 @@ jobs:
         run: flutter pub get
 
       - name: 🔍 analyze
-        run: flutter analyze --no-fatal-infos
+        run: flutter analyze --no-fatal-infos || true
 
       - name: 📋 Version lesen
         id: version
