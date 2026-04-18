@@ -19,6 +19,7 @@ import 'calculators/body_scan_tool_screen.dart'; // 🧘 v21 Körperscan
 import 'calculators/soul_contract_tool_screen.dart'; // 📜 v22 Seelenvertrag
 import 'calculators/ancestral_work_tool_screen.dart'; // 🕯️ v23 Ahnenarbeit
 import 'calculators/shamanic_journey_tool_screen.dart'; // 🥁 v24 Schamanische Reise
+import 'calculators/natal_chart_tool_screen.dart'; // ♓ v25 Geburtshoroskop
 import 'frequency_generator_screen.dart';  // 🎵 FREQUENCY GENERATOR
 import '../spirit/spirit_tools_mega_screen.dart'; // 🆕 V115 MEGA UPDATE TOOLS
 
@@ -474,6 +475,17 @@ class _SpiritTabModernState extends State<SpiritTabModern> {
         'color': const Color(0xFF8E5AE2),
         'category': 'new',
         'screen': const ShamanicJourneyToolScreen(),
+      },
+
+      // ♓ Geburtshoroskop (v25 – Meeus-Astrologie + Lexikon)
+      {
+        'icon': Icons.auto_awesome,
+        'iconEmoji': '♓',
+        'title': 'Geburtshoroskop',
+        'subtitle': 'Natal-Chart mit echter Ephemeride',
+        'color': const Color(0xFF6C63FF),
+        'category': 'new',
+        'screen': const NatalChartToolScreen(),
       },
 
       // ᚱ Runen-Orakel (V115 Feature #20)
