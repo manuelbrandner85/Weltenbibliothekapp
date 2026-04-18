@@ -1,6 +1,6 @@
 -- ============================================================
 -- WELTENBIBLIOTHEK v16 – FULL RESET + REBUILD
--- Datum: 2026-04-18 (Run #4)
+-- Datum: 2026-04-18 (Run #5)
 -- Projekt: adtviduaftdquvfjpojb
 --
 -- WARNUNG: Diese Migration LÖSCHT alles im public-Schema und
