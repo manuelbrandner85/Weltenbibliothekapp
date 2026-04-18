@@ -14,6 +14,7 @@ import 'calculators/gematria_calculator_screen.dart';
 import 'calculators/spirit_universal_tool_screen.dart';
 import 'calculators/new_spirit_tool_screens.dart';
 import 'calculators/moon_calendar_tool_screen.dart'; // 🌕 v19 Mondkalender
+import 'calculators/dream_interpretation_tool_screen.dart'; // 💭 v20 Traumdeutung
 import 'frequency_generator_screen.dart';  // 🎵 FREQUENCY GENERATOR
 import '../spirit/spirit_tools_mega_screen.dart'; // 🆕 V115 MEGA UPDATE TOOLS
 
@@ -416,15 +417,15 @@ class _SpiritTabModernState extends State<SpiritTabModern> {
       // 🆕 V115 MEGA UPDATE - NEUE SPIRIT-TOOLS
       // ═══════════════════════════════════════════════════════════
       
-      // 💭 Traumtagebuch (V115 Feature #16)
+      // 💭 Traumdeutung (v20 – Symbol-Lexikon + Auto-Tagging)
       {
         'icon': Icons.bedtime,
         'iconEmoji': '💭',
-        'title': 'Traumtagebuch',
-        'subtitle': 'Träume & Symbole',
+        'title': 'Traumdeutung',
+        'subtitle': 'Symbole deuten & Muster erkennen',
         'color': const Color(0xFF1A237E),
         'category': 'new',
-        'screen': const DreamJournalScreen(),
+        'screen': const DreamInterpretationToolScreen(),
       },
       
       // ᚱ Runen-Orakel (V115 Feature #20)
