@@ -82,7 +82,7 @@ jobs:
           sudo apt-get install -y -qq postgresql-client
           psql --version
 
-      - name: 🔌 Pooler-URL bauen (Port 6543, wie v16-Reset-Workflow)
+      - name: 🔌 Pooler-Verbindung vorbereiten
         id: conn
         env:
           PG_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
@@ -93,24 +93,25 @@ jobs:
             exit 1
           fi
           REGION="${INPUT_REGION:-${DEFAULT_REGION}}"
-          ENC_PW=$(python3 -c "import urllib.parse,os; print(urllib.parse.quote(os.environ['PG_PASSWORD'], safe=''))")
           HOST="aws-0-${REGION}.pooler.supabase.com"
           echo "host=${HOST}" >> "$GITHUB_OUTPUT"
           echo "region=${REGION}" >> "$GITHUB_OUTPUT"
-          echo "url=postgresql://postgres.${PROJECT_REF}:${ENC_PW}@${HOST}:6543/postgres" >> "$GITHUB_OUTPUT"
-          echo "✅ Pooler-URL gebaut: ${HOST}:6543"
+          echo "✅ Pooler-Host: ${HOST}:6543 (Region: ${REGION})"
 
       - name: 🚀 Migration additiv ausführen
         id: migrate
         env:
-          PG_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-          PG_URL: ${{ steps.conn.outputs.url }}
+          # PGPASSWORD verhindert Passwort in URL (Sonderzeichen-safe)
+          PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          PG_HOST: ${{ steps.conn.outputs.host }}
         run: |
           set +e
           FILE="${{ steps.mig.outputs.file }}"
           LOG=/tmp/psql.log
-          echo "::group::Applying $FILE via ${PG_URL%%:*@*}:6543"
-          psql "$PG_URL" \
+          # Keyword-Syntax: Username mit Punkt sicher übergeben, SSL explizit
+          PGCONN="host=${PG_HOST} port=6543 dbname=postgres user=postgres.${PROJECT_REF} sslmode=require"
+          echo "::group::Applying $FILE → ${PG_HOST}:6543"
+          psql "$PGCONN" \
             --set ON_ERROR_STOP=1 \
             -f "$FILE" 2>&1 | tee "$LOG"
           RC=${PIPESTATUS[0]}
