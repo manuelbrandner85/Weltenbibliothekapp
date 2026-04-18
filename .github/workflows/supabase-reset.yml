@@ -48,7 +48,7 @@ jobs:
       - name: 📥 Checkout
         uses: actions/checkout@v4
 
-      - name: 🧭 Auflösen: welche Migrations-Datei?
+      - name: "🧭 Auflösen: welche Migrations-Datei?"
         id: mig
         run: |
           FILE="${{ inputs.migration_file }}"
