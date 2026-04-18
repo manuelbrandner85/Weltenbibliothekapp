@@ -101,21 +101,33 @@ jobs:
       - name: 🚀 Migration additiv ausführen
         id: migrate
         env:
-          # PGPASSWORD verhindert Passwort in URL (Sonderzeichen-safe)
-          PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          PG_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
           PG_HOST: ${{ steps.conn.outputs.host }}
         run: |
           set +e
           FILE="${{ steps.mig.outputs.file }}"
           LOG=/tmp/psql.log
-          # Keyword-Syntax: Username mit Punkt sicher übergeben, SSL explizit
-          # PROJECT_REF hardcoded — env-Var wird in Shell nicht automatisch expandiert
-          PGCONN="host=${PG_HOST} port=6543 dbname=postgres user=postgres.adtviduaftdquvfjpojb sslmode=require"
-          echo "DEBUG: user=postgres.adtviduaftdquvfjpojb host=${PG_HOST}"
+          # Password-Länge für Debug (Wert selbst bleibt maskiert)
+          echo "DEBUG: password length=${#PG_PASSWORD}"
+          # URL-encode des Passworts (Sonderzeichen-safe)
+          ENC_PW=$(python3 -c "import urllib.parse,os; print(urllib.parse.quote(os.environ['PG_PASSWORD'], safe=''))")
+          # URL-Format (wie im reset-workflow, der funktioniert hat)
+          PGURL="postgresql://postgres.adtviduaftdquvfjpojb:${ENC_PW}@${PG_HOST}:6543/postgres?sslmode=require"
+          echo "DEBUG: host=${PG_HOST}, user=postgres.adtviduaftdquvfjpojb"
+          # Zuerst Verbindung testen
+          echo "::group::Connection test"
+          psql "$PGURL" -t -A -c "SELECT current_user, now();" 2>&1 | tee -a "$LOG"
+          TEST_RC=${PIPESTATUS[0]}
+          echo "::endgroup::"
+          if [ "$TEST_RC" -ne 0 ]; then
+            cp "$LOG" psql.log
+            echo "::error::Connection test failed (RC=$TEST_RC). Check SUPABASE_DB_PASSWORD secret."
+            exit $TEST_RC
+          fi
           echo "::group::Applying $FILE → ${PG_HOST}:6543"
-          psql "$PGCONN" \
+          psql "$PGURL" \
             --set ON_ERROR_STOP=1 \
-            -f "$FILE" 2>&1 | tee "$LOG"
+            -f "$FILE" 2>&1 | tee -a "$LOG"
           RC=${PIPESTATUS[0]}
           echo "::endgroup::"
           cp "$LOG" psql.log
