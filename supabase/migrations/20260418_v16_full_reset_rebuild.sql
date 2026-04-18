@@ -714,3 +714,53 @@ INSERT INTO chat_rooms (id, name, description, world, icon, color) VALUES
   ('spiritualitaet',  'Spiritualität',   'Bewusstsein, Sinn, innere Erfahrungen',                     'energie', '✨',  '#7C4DFF'),
   ('heilung',         'Heilung',         'Heilfrequenzen, Energieheilung, Selbsterkenntnis',          'energie', '💖',  '#7C4DFF'),
   ('kristalle',       'Kristalle',       'Kristalle, Steine, Wirkungen und Anwendungen',              'energie', '💎',  '#7C4DFF');
+
+-- ============================================================
+-- PHASE M: STORAGE-BUCKETS
+-- ============================================================
+
+-- Buckets neu anlegen (CASCADE DROP räumt Objekte aus alten Buckets NICHT weg,
+-- deshalb zuerst vorhandene Objekte/Buckets löschen, dann neu anlegen)
+DELETE FROM storage.objects WHERE bucket_id IN ('avatars', 'media');
+DELETE FROM storage.buckets WHERE id        IN ('avatars', 'media');
+
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types) VALUES
+  ('avatars', 'avatars', TRUE, 5242880,
+   ARRAY['image/jpeg','image/png','image/webp','image/gif']),
+  ('media',   'media',   TRUE, 10485760,
+   ARRAY['image/jpeg','image/png','image/webp','image/gif','image/svg+xml','audio/mpeg','audio/wav','audio/webm']);
+
+-- Storage-Policies: Public Read + anon Write (Flutter ohne Auth)
+-- service_role bypasst RLS sowieso.
+DROP POLICY IF EXISTS "avatars_public_read"  ON storage.objects;
+DROP POLICY IF EXISTS "avatars_public_write" ON storage.objects;
+DROP POLICY IF EXISTS "media_public_read"    ON storage.objects;
+DROP POLICY IF EXISTS "media_public_write"   ON storage.objects;
+
+CREATE POLICY "avatars_public_read"
+  ON storage.objects FOR SELECT TO public
+  USING (bucket_id = 'avatars');
+
+CREATE POLICY "avatars_public_write"
+  ON storage.objects FOR INSERT TO public
+  WITH CHECK (bucket_id = 'avatars');
+
+CREATE POLICY "media_public_read"
+  ON storage.objects FOR SELECT TO public
+  USING (bucket_id = 'media');
+
+CREATE POLICY "media_public_write"
+  ON storage.objects FOR INSERT TO public
+  WITH CHECK (bucket_id = 'media');
+
+-- ============================================================
+-- FERTIG
+-- Verifikation:
+--   SELECT COUNT(*) FROM information_schema.tables
+--     WHERE table_schema='public';  -- erwartet: 23
+--   SELECT username, world FROM profiles;                            -- erwartet: 2
+--   SELECT id, world FROM chat_rooms ORDER BY world, id;             -- erwartet: 12
+--   SELECT name FROM storage.buckets ORDER BY name;                  -- erwartet: 2
+--   SELECT tablename FROM pg_publication_tables
+--     WHERE pubname='supabase_realtime';                             -- erwartet: 5
+-- ============================================================
