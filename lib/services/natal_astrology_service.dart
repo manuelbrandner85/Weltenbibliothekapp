@@ -109,6 +109,39 @@ class NatalAstrology {
     );
   }
 
+  /// Roh-Längen aller Planeten zu einem beliebigen Julian Day.
+  /// Wird von Human Design für Personality (JD) + Design (JD − 88° Sonnenbogen)
+  /// genutzt. Keys: sun, moon, mercury, venus, mars, jupiter, saturn,
+  /// uranus, neptune, pluto, earth, north_node, south_node.
+  static Map<String, double> longitudesAtJd(double jd) {
+    final t = (jd - 2451545.0) / 36525.0;
+    final sunLon = _normalizeDeg(_sunLongitude(t));
+    // Mond-Knoten Ω (mittlerer aufsteigender Knoten, Meeus 47)
+    final omegaNode = _normalizeDeg(125.04452 -
+        1934.136261 * t +
+        0.0020708 * t * t +
+        t * t * t / 450000.0);
+    return {
+      'sun': sunLon,
+      'moon': _normalizeDeg(_moonLongitude(t)),
+      'mercury': _normalizeDeg(_planetLongitude('mercury', t)),
+      'venus': _normalizeDeg(_planetLongitude('venus', t)),
+      'mars': _normalizeDeg(_planetLongitude('mars', t)),
+      'jupiter': _normalizeDeg(_planetLongitude('jupiter', t)),
+      'saturn': _normalizeDeg(_planetLongitude('saturn', t)),
+      'uranus': _normalizeDeg(_planetLongitude('uranus', t)),
+      'neptune': _normalizeDeg(_planetLongitude('neptune', t)),
+      'pluto': _normalizeDeg(_plutoLongitude(t)),
+      'earth': _normalizeDeg(sunLon + 180.0),
+      // Nord-Knoten = Ω, Süd-Knoten = Ω + 180°
+      'north_node': omegaNode,
+      'south_node': _normalizeDeg(omegaNode + 180.0),
+    };
+  }
+
+  /// Julian Day aus UTC-DateTime (public helper).
+  static double julianDayFromUtc(DateTime utc) => _julianDay(utc);
+
   // ── helpers ─────────────────────────────────────────────────────
 
   static PlanetPosition _toPos(double lon) {
