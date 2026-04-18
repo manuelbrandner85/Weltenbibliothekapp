@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
  // OpenClaw v2.0
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import '../../models/community_post.dart';
-import '../../services/community_service.dart'; // 🌐 ECHTE API
+import '../../services/supabase_community_service.dart'; // 🔴 Supabase
 import '../../widgets/create_post_dialog_v2.dart'; // ✅ POST-DIALOG
 import '../../widgets/loading_skeletons.dart'; // 💀 LOADING SKELETONS
 import '../../widgets/article_like_button.dart'; // 👍 NEW: Like Button
 import '../../widgets/article_comments_widget.dart'; // 💬 NEW: Comments Widget
 import 'materie_live_chat_screen.dart'; // 💬 LIVE-CHAT INTEGRATION
-import '../../services/chat_notification_service.dart'; // 🔔 NOTIFICATION SERVICE
+// chat_notification_service removed
 import 'package:share_plus/share_plus.dart';
 
 /// Modernes Community-Tab für MATERIE-Welt - Social-Media-Style
@@ -27,8 +27,7 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
   
   // 💬 TAB CONTROLLER für Posts vs Chat
   late TabController _tabController;
-  final ChatNotificationService _notificationService = ChatNotificationService();
-  final CommunityService _communityService = CommunityService(); // 🌐 ECHTE API
+  final SupabaseCommunityService _communityService = SupabaseCommunityService();
   
   // 🌐 ECHTE Community-Posts von Cloudflare API
   List<CommunityPost> _posts = [];
@@ -133,46 +132,11 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
                   clipBehavior: Clip.none,
                   children: [
                     const Icon(Icons.chat_bubble),
-                    // 🔔 UNREAD BADGE
-                    Positioned(
+                    // 🔔 UNREAD BADGE (removed – ChatNotificationService deleted)
+                    const Positioned(
                       right: -6,
                       top: -6,
-                      child: ListenableBuilder(
-                        listenable: _notificationService,
-                        builder: (context, _) {
-                          final count = _notificationService.getTotalUnreadCount();
-                          if (count == 0) return const SizedBox.shrink();
-                          
-                          return Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: BoxDecoration(
-                              color: Colors.red,
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.red.withValues(alpha: 0.5),
-                                  blurRadius: 4,
-                                ),
-                              ],
-                            ),
-                            constraints: const BoxConstraints(
-                              minWidth: 16,
-                              minHeight: 16,
-                            ),
-                            child: Center(
-                              child: Text(
-                                count > 9 ? '9+' : count.toString(),
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
+                      child: SizedBox.shrink(),
                     ),
                   ],
                 ),

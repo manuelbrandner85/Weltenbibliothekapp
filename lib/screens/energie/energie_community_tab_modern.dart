@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../services/storage_service.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import '../../models/community_post.dart';
-import '../../services/community_service.dart'; // ✅ Cloudflare API
+import '../../services/supabase_community_service.dart'; // 🟣 Supabase
 // 🔐 PROFIL-DATEN
 import '../../widgets/create_post_dialog_v2.dart'; // ✅ Post-Dialog
 import '../../widgets/post_actions_row.dart'; // ✅ POST ACTIONS
@@ -10,7 +10,7 @@ import '../../widgets/loading_skeletons.dart'; // 💀 LOADING SKELETONS
 // 👍 NEW: Like Button
 // 💬 NEW: Comments Widget
 import 'energie_live_chat_screen.dart'; // 💬 LIVE-CHAT INTEGRATION
-import '../../services/chat_notification_service.dart'; // 🔔 NOTIFICATION SERVICE
+// chat_notification_service removed
 
 /// Moderner Energie-Community-Tab - Spiritueller Feed-Style
 class EnergieCommunityTabModern extends StatefulWidget {
@@ -26,8 +26,7 @@ class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern> w
   
   // 💬 TAB CONTROLLER für Posts vs Chat
   late TabController _tabController;
-  final ChatNotificationService _notificationService = ChatNotificationService();
-  final CommunityService _communityService = CommunityService();
+  final SupabaseCommunityService _communityService = SupabaseCommunityService();
   
   // ✅ Echte Posts von Cloudflare API
   List<CommunityPost> _posts = [];
@@ -131,46 +130,11 @@ class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern> w
                   clipBehavior: Clip.none,
                   children: [
                     const Icon(Icons.chat_bubble),
-                    // 🔔 UNREAD BADGE
-                    Positioned(
+                    // 🔔 UNREAD BADGE (removed – ChatNotificationService deleted)
+                    const Positioned(
                       right: -6,
                       top: -6,
-                      child: ListenableBuilder(
-                        listenable: _notificationService,
-                        builder: (context, _) {
-                          final count = _notificationService.getTotalUnreadCount();
-                          if (count == 0) return const SizedBox.shrink();
-                          
-                          return Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: BoxDecoration(
-                              color: Colors.red,
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.red.withValues(alpha: 0.5),
-                                  blurRadius: 4,
-                                ),
-                              ],
-                            ),
-                            constraints: const BoxConstraints(
-                              minWidth: 16,
-                              minHeight: 16,
-                            ),
-                            child: Center(
-                              child: Text(
-                                count > 9 ? '9+' : count.toString(),
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
+                      child: SizedBox.shrink(),
                     ),
                   ],
                 ),
@@ -931,7 +895,7 @@ class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern> w
           post.id,
           content: newContent,
           tags: newTags,
-        );
+        ); // SupabaseCommunityService.editPost
         
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

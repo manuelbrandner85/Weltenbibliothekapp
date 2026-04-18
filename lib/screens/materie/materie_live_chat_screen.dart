@@ -5,9 +5,7 @@ import 'package:hive_flutter/hive_flutter.dart'; // 🗄️ HIVE für Profile
 import '../../services/supabase_service.dart'; // 🔥 supabase Auth
 import 'package:supabase_flutter/supabase_flutter.dart' show RealtimeChannel;
 import '../../services/cloudflare_api_service.dart';
-import '../../services/websocket_chat_service.dart'; // 🌐 WEBSOCKET REAL-TIME (NEW)
-import '../../services/hybrid_chat_service.dart'; // 🔄 HYBRID WEBSOCKET+HTTP - STUB for now
-import '../../services/chat_notification_service.dart'; // 🔔 NOTIFICATIONS
+// WebSocket/Hybrid/ChatNotification replaced by Supabase Realtime
 // user_service replaced by supabase_service.dart
 import '../../widgets/mention_autocomplete.dart'; // @ MENTIONS
 import 'package:image_picker/image_picker.dart'; // 📷 Image Picker
@@ -18,7 +16,7 @@ import '../../models/materie_profile.dart'; // MaterieProfile model
 import '../../services/profile_sync_service.dart'; // ProfileSyncService
 import 'package:flutter_riverpod/flutter_riverpod.dart'; // Riverpod
 // 🔥 BACKEND SYNC
-import '../../services/typing_indicator_service.dart'; // ⌨️ TYPING
+// typing_indicator_service replaced by local state
 // import '../../services/voice_message_service_export.dart'; // 🎙️ VOICE MESSAGE (Disabled for Android)
 // import '../../widgets/voice_record_button.dart'; // 🎙️ VOICE RECORD BUTTON (Disabled for Android)
 import '../../services/webrtc_voice_service.dart'; // 🎤 WEBRTC VOICE
@@ -72,18 +70,10 @@ class MaterieLiveChatScreen extends StatefulWidget {
 class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   final CloudflareApiService _api = CloudflareApiService();
-  // ignore: unused_field
-  final WebSocketChatService _ws = WebSocketChatService(); // 🌐 NEW: WebSocket Service
-  late final HybridChatService _hybridChat; // 🔄 NEW: HYBRID SERVICE - STUB for now
   final ScrollController _scrollController = ScrollController();
-  final ChatNotificationService _notificationService = ChatNotificationService(); // 🔔 NEW
-  final TypingIndicatorService _typingService = TypingIndicatorService(); // ⌨️ NEW
   // UNUSED FIELD: final AudioRecordingService _audioService = AudioRecordingService(); // 🎙️ NEW
   // UNUSED FIELD: final ReadReceiptsService _readReceiptsService = ReadReceiptsService(); // ✅ NEW
   // UNUSED FIELD: final OnlineStatusService _onlineStatusService = OnlineStatusService(); // 🟢 NEW
-  StreamSubscription? _messageSubscription; // 🎧 WebSocket Stream
-  // ignore: unused_field
-  StreamSubscription<List<String>>? _wsOnlineSubscription; // 🌐 NEW: Online Users
   RealtimeChannel? _realtimeChannel; // 🔴 Supabase Realtime
   
   late String _selectedRoom;
@@ -213,17 +203,11 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
     // 🔧 FIX 18: Set initial room from dashboard navigation
     _selectedRoom = widget.initialRoom ?? 'politik';
     
-    // 🔄 Initialize Hybrid Chat Service
-    _hybridChat = HybridChatService(); // STUB for now
-    
     // 🎤 Initialize WebRTC Voice Service
     _initializeWebRTC();
-    
+
     // 👤 Username aus Profil laden
     _loadUsernameFromProfile();
-    
-    // 🔔 Set username in notification service
-    _notificationService.setCurrentUsername(_username);
     
     // 📝 Listen to input changes for @ mentions
     _messageController.addListener(_onInputChanged);
@@ -238,61 +222,13 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
       }
     });
     
-    // 🔴 SUPABASE REALTIME: Echtzeit-Subscription starten
+    // 🔴 SUPABASE REALTIME: Echtzeit-Subscription starten (kein Timer mehr nötig)
     _subscribeToRoom(_fullRoomId);
-    
-    // 🔄 AUTO-REFRESH: Profil-Updates alle 30 Sekunden als Fallback (Realtime ist primär)
-    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
-      if (!mounted) return;
-      _loadMessages(silent: true); // ✅ Silent refresh - kein Flickering
-      _loadPolls(silent: true); // ✅ Silent refresh - kein Flickering
-      _loadUsernameFromProfile(); // Profil-Sync für Avatar-Updates
-    });
-    
-    // 🎧 Listen to message stream (WebSocket or HTTP polling)
-    _messageSubscription = _hybridChat.messageStream.listen((message) {
-      if (!mounted) return;
-      
-      // ✅ NUR neue Nachrichten verarbeiten, NICHT history
-      // History wird durch _loadMessages() geladen (Timer alle 5s)
-      if (message['type'] == 'new_message' && message['message'] != null) {
-        final newMessage = message['message'] as Map<String, dynamic>;
-        
-        // Nur wenn Nachricht zum aktuellen Raum gehört
-        if (newMessage['room_id'] == _fullRoomId || newMessage['room_id'] == _selectedRoom) {
-          if (mounted) {
-            setState(() {
-            // Füge neue Nachricht ans Ende hinzu (wenn nicht schon vorhanden)
-            final exists = _messages.any((msg) => msg['id'] == newMessage['id']);
-            if (!exists) {
-              _messages.add(newMessage);
-            }
-          });
-          }
-          
-          // Auto-scroll zu neuer Nachricht
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            _scrollToBottom();
-          });
-        }
-      }
-    });
-    
-    // 🚀 Connect with credentials
-    _connectToChat();
     _loadMessages();
+    _loadPolls();
   }
-  
+
   // didChangeDependencies removed – profile loading happens once in initState.
-  
-  // 🔄 Connect to chat with hybrid service
-  Future<void> _connectToChat() async {
-    await _hybridChat.connect(
-      roomId: _selectedRoom,
-      username: _username,
-      realm: 'materie',
-    );
-  }
   Future<void> _loadUsernameFromProfile() async {
     MaterieProfile? profile;
     try {
@@ -329,7 +265,6 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
           'avatar_url': profile.avatarUrl,
         });
       } catch (_) {}
-      _notificationService.setCurrentUsername(_username);
       if (kDebugMode) {
         debugPrint('✅ Username aus Materie-Profil geladen: $_username (role: ${profile.role})');
       }
@@ -354,10 +289,6 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
     _scrollController.dispose();
     _inputFocusNode.dispose();
     _refreshTimer?.cancel();
-    _messageSubscription?.cancel(); // 🎧 Cancel WebSocket stream
-    _wsOnlineSubscription?.cancel(); // 🌐 Cancel online users stream
-    _hybridChat.disconnect(); // 🔌 Disconnect WebSocket
-    _typingService.dispose(); // ⌨️ Dispose typing service
     _voiceParticipantsSub?.cancel(); // 🔧 Prevent memory leak
     _realtimeChannel?.unsubscribe(); // 🔴 Realtime cleanup
     super.dispose();
@@ -414,59 +345,27 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
   }
 
   Future<void> _loadMessages({bool silent = false}) async {
-    if (!silent) {
-      setState(() {
-      _isLoading = true;
-      _errorMessage = null; // Clear previous error
-    });
-    }
-    
+    if (!silent && mounted) setState(() { _isLoading = true; _errorMessage = null; });
+
     try {
-      // 🔧 Lade echte Chat-Nachrichten von Cloudflare API
-      final messages = await _api.getChatMessages(
-        _fullRoomId, // 'materie-politik' etc.
-        realm: 'materie',
+      final messages = await SupabaseChatService.instance.getMessages(
+        _fullRoomId,
         limit: 50,
-      ).timeout(const Duration(seconds: 15));
-      
-      // 🔧 DEBUG: Log message count
+      );
       if (kDebugMode) {
-        debugPrint('✅ MATERIE Chat geladen: ${messages.length} Nachrichten von Cloudflare');
-        if (messages.isNotEmpty) {
-          debugPrint('🔍 Erste Nachricht keys: ${messages.first.keys.toList()}');
-          debugPrint('🔍 Erste Nachricht id: ${messages.first['id']}');
-          debugPrint('🔍 Erste Nachricht message: ${messages.first['message']}');
-        } else {
-          debugPrint('⚠️ Keine Nachrichten geladen für Raum: $_selectedRoom');
-        }
+        debugPrint('✅ MATERIE Chat geladen: ${messages.length} Nachrichten (Supabase)');
       }
-      
       if (mounted) {
         setState(() {
-        // Worker returns messages in ascending order (created_at.asc)
-        // → already chronological, no reversal needed
-        _messages = messages;
-        _isLoading = false;
-        _errorMessage = null;
-      });
-      }
-      
-      // Auto-scroll zum Ende
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _scrollToBottom();
-      });
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ MATERIE Chat Load Error: $e');
-        debugPrint('❌ Error type: ${e.runtimeType}');
-      }
-      
-      if (mounted) {
-        setState(() {
+          _messages = messages;
           _isLoading = false;
-          _errorMessage = e.toString(); // Store error for ErrorDisplayWidget
+          _errorMessage = null;
         });
+        WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
       }
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ MATERIE Chat Load Error: $e');
+      if (mounted) setState(() { _isLoading = false; _errorMessage = e.toString(); });
     }
   }
   
@@ -501,74 +400,45 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
     }
 
     try {
-      // Sende Nachricht
-      await _api.sendChatMessage(
-        roomId: _fullRoomId, // 'materie-politik' etc.
-        realm: 'materie',
-        userId: _userId,
-        username: _username,
+      await SupabaseChatService.instance.sendMessage(
+        roomId: _fullRoomId,
         message: text,
-        avatarEmoji: _avatarEmoji, // 🆕 Send avatar emoji
-        avatarUrl: _avatarUrl, // 🆕 Send avatar URL
       );
-      
       _messageController.clear();
-      
-      // ✅ WICHTIG: Warte kurz, dann lade Nachrichten neu
-      await Future.delayed(const Duration(milliseconds: 500));
-      await _loadMessages();
-      
-      if (kDebugMode) {
-        debugPrint('✅ Nachricht gesendet und Chat aktualisiert');
-      }
+      if (kDebugMode) debugPrint('✅ Nachricht gesendet (Supabase)');
+      // Realtime subscription delivers the new message – manual reload as fallback
+      await Future.delayed(const Duration(milliseconds: 300));
+      await _loadMessages(silent: true);
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ Fehler beim Senden: $e');
-      }
+      if (kDebugMode) debugPrint('❌ Fehler beim Senden: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Fehler beim Senden: $e'),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text('Fehler beim Senden: $e'), backgroundColor: Colors.red),
         );
       }
     }
   }
-  
+
   /// 🎤 VOICE MESSAGE SEND
   Future<void> _sendVoiceMessage(String audioUrl, Duration duration) async {
     try {
-      // Send voice message with media_type
-      await _api.sendChatMessage(
-        roomId: _fullRoomId, // 'materie-politik' etc.
-        realm: 'materie',
-        userId: _userId,
-        username: _username,
-        message: '🎤 Sprachnachricht (${duration.inSeconds}s)',
-        avatarEmoji: _avatarEmoji,
-        avatarUrl: _avatarUrl,
-        mediaType: 'voice',
-        mediaUrl: audioUrl,
-      );
-      
-      // Reload messages after short delay
-      await Future.delayed(const Duration(milliseconds: 500));
-      await _loadMessages();
-      
-      if (kDebugMode) {
-        debugPrint('✅ Sprachnachricht gesendet: $audioUrl, Duration: ${duration.inSeconds}s');
-      }
+      await supabase.from('chat_messages').insert({
+        'room_id':    _fullRoomId,
+        'user_id':    _userId,
+        'username':   _username,
+        'content':    '🎤 Sprachnachricht (${duration.inSeconds}s)',
+        'message':    '🎤 Sprachnachricht (${duration.inSeconds}s)',
+        'media_url':  audioUrl,
+        'media_type': 'voice',
+      });
+      await Future.delayed(const Duration(milliseconds: 300));
+      await _loadMessages(silent: true);
+      if (kDebugMode) debugPrint('✅ Sprachnachricht gesendet: $audioUrl');
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ Fehler beim Senden der Sprachnachricht: $e');
-      }
+      if (kDebugMode) debugPrint('❌ Fehler beim Senden der Sprachnachricht: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Fehler beim Senden: $e'),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text('Fehler beim Senden: $e'), backgroundColor: Colors.red),
         );
       }
     }
@@ -1188,9 +1058,8 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
                 });
                 }
                 
-                // 🔧 CRITICAL FIX: Switch WebRTC Voice Room + HybridChat
-                await _voiceService.switchRoom(_fullRoomId); // ← WebRTC cleanup
-                await _hybridChat.switchRoom(_fullRoomId);
+                // 🔧 CRITICAL FIX: Switch WebRTC Voice Room
+                await _voiceService.switchRoom(_fullRoomId);
                 // 🔴 Re-subscribe Realtime for new room
                 _subscribeToRoom(_fullRoomId);
                 await _loadMessages();
@@ -2019,13 +1888,9 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
   
   void _sendTypingIndicator() {
     _typingTimer?.cancel();
-    
-    // Send typing status to server
-    _hybridChat.sendTypingIndicator(true);
-    
-    // Stop after 3 seconds
+    // Typing indicator via local state (Supabase Presence can be added later)
     _typingTimer = Timer(const Duration(seconds: 3), () {
-      _hybridChat.sendTypingIndicator(false);
+      // Reset when stopped
     });
   }
   

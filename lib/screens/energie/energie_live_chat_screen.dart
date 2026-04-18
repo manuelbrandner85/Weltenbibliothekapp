@@ -53,7 +53,7 @@ import '../../widgets/voice_message_player.dart' show ChatVoicePlayer; // 🎤 C
 import '../../widgets/mention_autocomplete.dart'; // @ Mentions
 // import '../../widgets/voice_record_button.dart'; // 🎤 Voice Recording (Android disabled)
 import '../../services/webrtc_voice_service.dart'; // 🎤 WEBRTC VOICE
-import '../../services/typing_indicator_service.dart'; // ⌨️ Typing Indicator
+// typing_indicator_service replaced by local state
 // REMOVED: import '../../widgets/voice_chat_banner.dart'; (unused)
 import '../../widgets/offline_indicator.dart'; // 📡 OFFLINE INDICATOR (NEW Phase 3)
 // 📷 Image Picker
@@ -72,7 +72,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   final CloudflareApiService _api = CloudflareApiService();
   final ScrollController _scrollController = ScrollController();
-  final TypingIndicatorService _typingService = TypingIndicatorService(); // ⌨️ NEW
+  // _typingService removed – using local _typingUsers Set instead
   
   late String _selectedRoom;
   
@@ -105,8 +105,6 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
   bool _isLoading = false;
   String? _errorMessage; // 🎨 NEW: Error state
   bool _isSending = false;
-  Timer? _refreshTimer;
-  
   // 🆕 MENTIONS & MEDIA
   List<String> _mentionSuggestions = [];
   bool _showMentionPicker = false;
@@ -225,12 +223,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
     // 🔴 SUPABASE REALTIME: Echtzeit-Subscription starten
     _subscribeToRoom(_fullRoomId);
     
-    // 🔄 Auto-Refresh alle 30 Sekunden als Fallback (Realtime ist primär)
-    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
-      _loadMessages(silent: true);
-      _loadUserData(); // 🆕 Profil-Sync
-      _loadPolls(silent: true); // 🆕 Polls-Sync
-    });
+    // 🔴 Supabase Realtime handles updates – no polling timer needed
   }
 
   // didChangeDependencies removed – profile loading happens once in initState.
@@ -285,54 +278,25 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
   }
 
   Future<void> _loadMessages({bool silent = false}) async {
-    if (!silent) {
-      setState(() {
-      _isLoading = true;
-      _errorMessage = null; // Clear previous error
-    });
-    }
-    
+    if (!silent && mounted) setState(() { _isLoading = true; _errorMessage = null; });
     try {
-      final messages = await _api.getChatMessages(
-        _fullRoomId, // 'energie-meditation' etc.
-        realm: 'energie',
-        limit: 100,
-      );
-      
-      // 🔧 DEBUG: Log message count
-      debugPrint('✅ ENERGIE Chat loaded: ${messages.length} messages for room $_selectedRoom');
-      if (messages.isNotEmpty) {
-        debugPrint('🔍 First message: ${messages.first}');
-      }
-      
+      final messages = await SupabaseChatService.instance.getMessages(_fullRoomId, limit: 100);
+      if (kDebugMode) debugPrint('✅ ENERGIE Chat geladen: ${messages.length} (Supabase)');
       if (mounted) {
-        setState(() {
-        // Worker returns messages in ascending order (created_at.asc)
-        // → already chronological, no reversal needed
-        _messages = messages;
-        _isLoading = false;
-        _errorMessage = null;
-      });
-      }
-      
-      // Auto-scroll zum Ende
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (_scrollController.hasClients) {
-          _scrollController.animateTo(
-            _scrollController.position.maxScrollExtent,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeOut,
-          );
-        }
-      });
-    } catch (e) {
-      debugPrint('❌ ENERGIE Chat Load Error: $e');
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _errorMessage = e.toString(); // Store error for ErrorDisplayWidget
+        setState(() { _messages = messages; _isLoading = false; _errorMessage = null; });
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (_scrollController.hasClients) {
+            _scrollController.animateTo(
+              _scrollController.position.maxScrollExtent,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOut,
+            );
+          }
         });
       }
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ ENERGIE Chat Load Error: $e');
+      if (mounted) setState(() { _isLoading = false; _errorMessage = e.toString(); });
     }
   }
   
@@ -475,20 +439,16 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
         return;
       }
       
-      // Online: Send directly
-      await _api.sendChatMessage(
-        roomId: _fullRoomId, // 'energie-meditation' etc.
-        realm: 'energie',
-        userId: _userId,
-        username: _username,
+      // Online: Send via Supabase
+      await SupabaseChatService.instance.sendMessage(
+        roomId: _fullRoomId,
         message: message,
-        avatarEmoji: _avatar,
-        avatarUrl: _avatarUrl,
       );
-      
+
       _messageController.clear();
-      
-      // Sofort neu laden
+
+      // Realtime-Subscription aktualisiert automatisch; kurz warten für UI
+      await Future.delayed(const Duration(milliseconds: 300));
       await _loadMessages(silent: true);
       
       if (mounted) {
@@ -517,18 +477,16 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
   /// 🎤 SEND VOICE MESSAGE
   Future<void> _sendVoiceMessage(String audioUrl, Duration duration) async {
     try {
-      // Send voice message with media_type
-      await _api.sendChatMessage(
-        roomId: _fullRoomId, // 'energie-meditation' etc.
-        realm: 'energie',
-        userId: _userId,
-        username: _username,
-        message: '🎤 Sprachnachricht (${duration.inSeconds}s)',
-        avatarEmoji: _avatar,
-        avatarUrl: _avatarUrl,
-        mediaType: 'voice',
-        mediaUrl: audioUrl,
-      );
+      // Send voice message via Supabase
+      await supabase.from('chat_messages').insert({
+        'room_id':   _fullRoomId,
+        'user_id':   _userId,
+        'username':  _username,
+        'content':   '🎤 Sprachnachricht (${duration.inSeconds}s)',
+        'message':   '🎤 Sprachnachricht (${duration.inSeconds}s)',
+        'media_url':  audioUrl,
+        'media_type': 'voice',
+      });
       
       // Reload messages after short delay
       await Future.delayed(const Duration(milliseconds: 500));
@@ -748,17 +706,16 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
       );
       
       if (result['success'] == true && result['url'] != null) {
-        // Send message with image URL
-        await _api.sendChatMessage(
-          roomId: _fullRoomId, // 'energie-meditation' etc.
-          realm: 'energie',
-          userId: _userId,
-          username: _username,
-          message: '📷 Bild', // Text for image message
-          avatarEmoji: _avatar,
-          mediaType: 'image',
-          mediaUrl: result['url'],
-        );
+        // Send image message via Supabase
+        await supabase.from('chat_messages').insert({
+          'room_id':   _fullRoomId,
+          'user_id':   _userId,
+          'username':  _username,
+          'content':   '📷 Bild',
+          'message':   '📷 Bild',
+          'media_url':  result['url'],
+          'media_type': 'image',
+        });
         
         // Reload messages
         await _loadMessages(silent: true);
@@ -1476,44 +1433,8 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 // ⌨️ TYPING INDICATOR
-                StreamBuilder<Map<String, Set<String>>>(
-                  stream: _typingService.typingStream,
-                  builder: (context, snapshot) {
-                    final typingText = _typingService.getTypingText(_selectedRoom, _username);
-                    if (typingText.isEmpty) return const SizedBox.shrink();
-                    
-                    return Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      margin: const EdgeInsets.only(bottom: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.3),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF9B51E0)),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            typingText,
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 12,
-                              fontStyle: FontStyle.italic,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
+                if (_typingUsers.isNotEmpty)
+                  _buildTypingIndicators(),
                 // 🆕 REPLY PREVIEW
                 _buildReplyPreview(),
                 // 🆕 MENTION AUTOCOMPLETE
@@ -1710,8 +1631,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
   void dispose() {
     _messageController.removeListener(_onInputChanged);
     _inputFocusNode.dispose();
-    _refreshTimer?.cancel();
-    _typingTimer?.cancel(); // 🆕
+    _typingTimer?.cancel();
     _messageController.dispose();
     _scrollController.dispose();
     _voiceParticipantsSub?.cancel(); // 🔧 Prevent memory leak
@@ -2130,17 +2050,8 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
   
   void _sendTypingIndicator() {
     _typingTimer?.cancel();
-    
-    // ⌨️ Start typing indicator
-    _typingService.startTyping(_selectedRoom, _username);
-    
-    if (kDebugMode) {
-      debugPrint('⌨️ User is typing in room: $_selectedRoom');
-    }
-    
-    // Stop after 3 seconds
     _typingTimer = Timer(const Duration(seconds: 3), () {
-      _typingService.stopTyping(_selectedRoom, _username);
+      // typing indicator auto-clears after 3 s
     });
   }
   

@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
- // OpenClaw v2.0
-import '../../services/group_tools_service.dart';
-import '../../services/supabase_service.dart';
+import '../../services/supabase_group_tools_service.dart';
 
 class ConspiracyNetworkScreen extends StatefulWidget {
   final String roomId;
@@ -11,7 +9,7 @@ class ConspiracyNetworkScreen extends StatefulWidget {
 }
 
 class _ConspiracyNetworkScreenState extends State<ConspiracyNetworkScreen> {
-  final _svc = GroupToolsService();
+  final _svc = SupabaseGroupToolsService();
   List<Map<String, dynamic>> _items = [];
   bool _loading = false;
   
@@ -54,7 +52,7 @@ class _ConspiracyNetworkScreenState extends State<ConspiracyNetworkScreen> {
             onPressed: () async {
               if (title.text.trim().isEmpty) return;
               Navigator.pop(ctx);
-              await _svc.createConspiracyConnection(roomId: widget.roomId, userId: supabase.auth.currentUser?.id ?? 'user_anonymous', username: supabase.auth.currentUser?.userMetadata?['username'] as String? ?? 'Anonym', connectionTitle: title.text.trim(), connectionDescription: desc.text.trim());
+              await _svc.createConspiracyConnection(roomId: widget.roomId, connectionTitle: title.text.trim(), connectionDescription: desc.text.trim());
               await _load();
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.purple),
