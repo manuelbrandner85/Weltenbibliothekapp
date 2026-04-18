@@ -1,25 +1,25 @@
 name: 🗄️ Supabase Reset & Rebuild (v16)
 
-# SICHERHEIT: Nur manuell per workflow_dispatch mit Pflicht-Bestätigung.
-# Führt DROP SCHEMA public CASCADE aus — alle Daten der Ziel-DB werden gelöscht.
+# SICHERHEIT: Führt DROP SCHEMA public CASCADE aus — alle Daten der Ziel-DB werden gelöscht.
 #
 # Setup (einmalig):
 #   GitHub → Settings → Secrets and variables → Actions → New repository secret
-#   Name : SUPABASE_DB_URL
-#   Value: postgresql://postgres.<ref>:<password>@<pooler-host>:6543/postgres
-#          (aus Supabase Dashboard → Project Settings → Database → Connection string → URI)
+#   Name : SUPABASE_DB_PASSWORD
+#   Value: <das DB-Passwort aus Supabase Dashboard → Project Settings → Database>
+#   (nur das Passwort, KEINE URL!)
 #
-# Ausführen:
-#   GitHub → Actions → "Supabase Reset & Rebuild (v16)" → Run workflow
-#   Input "confirm" auf exakt  RESET  setzen → Run.
+# Der Pooler-Host wird automatisch konstruiert (IPv4-fähig):
+#   postgresql://postgres.<PROJECT_REF>:<PW>@aws-0-<REGION>.pooler.supabase.com:6543/postgres
+#
+# Auslösen:
+#   - Automatisch: Commit auf supabase/migrations/**.sql mit "[apply-migration]"
+#   - Manuell: Actions → "Supabase Reset & Rebuild (v16)" → Run workflow → confirm=RESET
 
 on:
-  # Auto-Trigger: Push mit [apply-migration] im Commit-Message
   push:
     paths:
       - 'supabase/migrations/**.sql'
       - '.github/workflows/supabase-reset.yml'
-  # Manueller Trigger über Actions-UI
   workflow_dispatch:
     inputs:
       confirm:
@@ -30,9 +30,15 @@ on:
         description: 'Migrations-Datei (Pfad im Repo)'
         required: true
         default: 'supabase/migrations/20260418_v16_full_reset_rebuild.sql'
+      region:
+        description: 'Supabase-Region (eu-central-1 | eu-west-1 | us-east-1 | us-west-1 | ap-southeast-1)'
+        required: false
+        default: 'eu-central-1'
 
 env:
   DEFAULT_MIGRATION: supabase/migrations/20260418_v16_full_reset_rebuild.sql
+  PROJECT_REF: adtviduaftdquvfjpojb
+  DEFAULT_REGION: eu-central-1
 
 jobs:
   reset:
@@ -71,57 +77,86 @@ jobs:
           sudo apt-get install -y -qq postgresql-client
           psql --version
 
-      - name: 🔌 Verbindung testen (mit Diagnose)
+      - name: 🔌 Pooler-URL bauen + Verbindung mit Region-Fallback testen
+        id: conn
         env:
-          PGCONN: ${{ secrets.SUPABASE_DB_URL }}
+          PG_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          INPUT_REGION: ${{ inputs.region }}
         run: |
           set +e
-          if [ -z "$PGCONN" ]; then
-            echo "::error::Secret SUPABASE_DB_URL ist nicht gesetzt."
+          if [ -z "$PG_PASSWORD" ]; then
+            echo "::error::Secret SUPABASE_DB_PASSWORD ist nicht gesetzt."
+            echo "Füge es unter Settings → Secrets and variables → Actions hinzu."
             exit 1
           fi
-          # Host+Port aus URL extrahieren (ohne User/Pass), Rest redigieren
-          HOST=$(echo "$PGCONN" | sed -E 's|^[a-z]+://[^@]*@([^:/?]+).*|\1|')
-          PORT=$(echo "$PGCONN" | sed -E 's|^[a-z]+://[^@]*@[^:/?]+:([0-9]+).*|\1|')
-          echo "🎯 Ziel-Host: $HOST"
-          echo "🎯 Ziel-Port: $PORT"
-          echo ""
-          echo "--- DNS (IPv4) ---"
-          getent ahostsv4 "$HOST" | head -5 || echo "(keine IPv4!)"
-          echo "--- DNS (IPv6) ---"
-          getent ahostsv6 "$HOST" | head -5 || echo "(keine IPv6)"
-          echo ""
-          # TCP-Connectivity
-          echo "--- TCP-Check ---"
-          timeout 5 bash -c "</dev/tcp/$HOST/$PORT" \
-            && echo "✅ TCP erreichbar" \
-            || echo "❌ TCP nicht erreichbar"
-          echo ""
-          echo "--- psql-Login ---"
-          psql "$PGCONN" -c "SELECT current_database(), current_user;" 2>&1
-          RC=$?
-          if [ $RC -ne 0 ]; then
-            echo "::error::psql-Verbindung fehlgeschlagen (RC=$RC)."
-            echo "Häufige Ursachen:"
-            echo "  1. DB-URL ist db.<ref>.supabase.co (IPv6-only) — GitHub Runner haben kein IPv6."
-            echo "     → Nutze Pooler-URL: aws-0-<region>.pooler.supabase.com:6543"
-            echo "  2. Passwort falsch / abgelaufen"
-            echo "  3. Secret enthält noch [YOUR-PASSWORD] Platzhalter"
-            exit $RC
+          PRIMARY_REGION="${INPUT_REGION:-${DEFAULT_REGION}}"
+          # URL-encode des Passworts (Sonderzeichen wie @, :, /, +, =, % abfangen)
+          ENC_PW=$(python3 -c "import urllib.parse,os; print(urllib.parse.quote(os.environ['PG_PASSWORD'], safe=''))")
+
+          # Regionen in Probier-Reihenfolge (primäre zuerst, dann fallback)
+          REGIONS=("$PRIMARY_REGION" eu-central-1 eu-west-1 eu-west-2 us-east-1 us-east-2 us-west-1 ap-southeast-1 ap-southeast-2 ap-northeast-1)
+          # Duplikate entfernen, Reihenfolge beibehalten
+          SEEN=""
+          WINNER=""
+          for R in "${REGIONS[@]}"; do
+            case " $SEEN " in *" $R "*) continue;; esac
+            SEEN="$SEEN $R"
+            HOST="aws-0-${R}.pooler.supabase.com"
+            echo "--- Teste Region: $R ($HOST) ---"
+            # DNS (IPv4) ?
+            if ! getent ahostsv4 "$HOST" >/dev/null 2>&1; then
+              echo "  ↪ keine IPv4-DNS-Antwort — nächste Region"
+              continue
+            fi
+            # TCP 6543 ?
+            if ! timeout 5 bash -c "</dev/tcp/$HOST/6543" 2>/dev/null; then
+              echo "  ↪ TCP 6543 nicht erreichbar — nächste Region"
+              continue
+            fi
+            # psql-Login ?
+            URL="postgresql://postgres.${PROJECT_REF}:${ENC_PW}@${HOST}:6543/postgres"
+            if psql "$URL" -t -A -c "SELECT 1" >/dev/null 2>&1; then
+              echo "  ✅ Verbindung ok in Region $R"
+              WINNER="$R"
+              break
+            else
+              echo "  ↪ psql-Login fehlgeschlagen in $R"
+            fi
+          done
+
+          if [ -z "$WINNER" ]; then
+            echo "::error::Keine Region erlaubt Verbindung. Passwort falsch, oder Projekt pausiert?"
+            exit 1
           fi
+
+          WINNING_HOST="aws-0-${WINNER}.pooler.supabase.com"
+          WINNING_URL="postgresql://postgres.${PROJECT_REF}:${ENC_PW}@${WINNING_HOST}:6543/postgres"
+          echo "region=$WINNER" >> "$GITHUB_OUTPUT"
+          # URL als step-output zu speichern ist OK, GitHub maskiert Secrets im Log automatisch
+          # Stattdessen speichern wir nur die Komponenten — die URL wird in nächsten Steps neu gebaut
+          echo "host=$WINNING_HOST" >> "$GITHUB_OUTPUT"
+          echo "### ✅ Supabase-Verbindung ok" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Region: \`$WINNER\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Host: \`$WINNING_HOST\`" >> "$GITHUB_STEP_SUMMARY"
 
       - name: 📊 Zustand VORHER (zur Dokumentation)
         env:
-          PGCONN: ${{ secrets.SUPABASE_DB_URL }}
+          PG_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          PG_HOST: ${{ steps.conn.outputs.host }}
         run: |
+          ENC_PW=$(python3 -c "import urllib.parse,os; print(urllib.parse.quote(os.environ['PG_PASSWORD'], safe=''))")
+          PGCONN="postgresql://postgres.${PROJECT_REF}:${ENC_PW}@${PG_HOST}:6543/postgres"
           echo "--- Tabellen in public VOR dem Reset ---"
           psql "$PGCONN" -c "SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename;" || true
 
       - name: 🚀 Migration ausführen
         env:
-          PGCONN: ${{ secrets.SUPABASE_DB_URL }}
+          PG_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          PG_HOST: ${{ steps.conn.outputs.host }}
         run: |
           set -e
+          ENC_PW=$(python3 -c "import urllib.parse,os; print(urllib.parse.quote(os.environ['PG_PASSWORD'], safe=''))")
+          PGCONN="postgresql://postgres.${PROJECT_REF}:${ENC_PW}@${PG_HOST}:6543/postgres"
           FILE="${{ steps.mig.outputs.file }}"
           echo "::group::Running $FILE"
           psql "$PGCONN" \
@@ -132,8 +167,11 @@ jobs:
 
       - name: ✅ Zustand NACHHER (Verifikation)
         env:
-          PGCONN: ${{ secrets.SUPABASE_DB_URL }}
+          PG_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          PG_HOST: ${{ steps.conn.outputs.host }}
         run: |
+          ENC_PW=$(python3 -c "import urllib.parse,os; print(urllib.parse.quote(os.environ['PG_PASSWORD'], safe=''))")
+          PGCONN="postgresql://postgres.${PROJECT_REF}:${ENC_PW}@${PG_HOST}:6543/postgres"
           echo "--- Tabellen in public NACH dem Reset ---"
           psql "$PGCONN" -c "SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename;"
           echo ""
