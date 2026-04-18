@@ -807,13 +807,93 @@ class _NumBadge extends StatelessWidget {
 // Tab 2: Zahlen-Guide (Phase 5.2f füllt diesen Stub)
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _NumbersGuideTab extends StatelessWidget {
+class _NumbersGuideTab extends StatefulWidget {
   const _NumbersGuideTab();
   @override
+  State<_NumbersGuideTab> createState() => _NumbersGuideTabState();
+}
+
+class _NumbersGuideTabState extends State<_NumbersGuideTab> {
+  List<Map<String, dynamic>> _all = [];
+  bool _loading = true;
+  String _category = 'life_path';
+
+  static const _tabs = [
+    ('life_path', '🌟 Lebensweg'),
+    ('destiny', '🎯 Ausdruck'),
+    ('soul_urge', '💖 Seele'),
+    ('personality', '🎭 Person'),
+    ('karmic_debt', '⚖️ Karma'),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final rows = await _db
+          .from('soul_number_meanings')
+          .select()
+          .order('sort_order');
+      if (!mounted) return;
+      setState(() {
+        _all = List<Map<String, dynamic>>.from(rows);
+        _loading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loading = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Text('Zahlen – Phase 5.2f',
-          style: TextStyle(color: Colors.white38)),
+    if (_loading) {
+      return const Center(
+          child: CircularProgressIndicator(color: _kGold));
+    }
+    final filtered =
+        _all.where((m) => m['category'] == _category).toList();
+    return Column(
+      children: [
+        SizedBox(
+          height: 44,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(
+                horizontal: 12, vertical: 8),
+            itemCount: _tabs.length,
+            itemBuilder: (_, i) {
+              final t = _tabs[i];
+              final sel = _category == t.$1;
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: FilterChip(
+                  label: Text(t.$2,
+                      style: TextStyle(
+                          color: sel ? Colors.black : Colors.white54,
+                          fontSize: 12)),
+                  selected: sel,
+                  selectedColor: _kGold,
+                  backgroundColor: _kCardBg,
+                  side: const BorderSide(color: _kBorder),
+                  onSelected: (_) => setState(() => _category = t.$1),
+                ),
+              );
+            },
+          ),
+        ),
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
+            itemCount: filtered.length,
+            itemBuilder: (_, i) => _MeaningCard(meaning: filtered[i]),
+          ),
+        ),
+      ],
     );
   }
 }
