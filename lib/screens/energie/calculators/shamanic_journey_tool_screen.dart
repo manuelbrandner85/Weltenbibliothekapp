@@ -1413,17 +1413,360 @@ class _PowerAnimalEditorSheetState extends State<_PowerAnimalEditorSheet> {
 // Tab 2: Leitfäden  (Phase 2.2d)
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _GuidesTab extends StatelessWidget {
+const Map<String, String> _kGuideWorldLabels = {
+  'lower': 'Unterwelt',
+  'upper': 'Oberwelt',
+  'middle': 'Mittlere Welt',
+  'any': 'Alle Welten',
+};
+
+class _GuidesTab extends StatefulWidget {
   const _GuidesTab();
   @override
+  State<_GuidesTab> createState() => _GuidesTabState();
+}
+
+class _GuidesTabState extends State<_GuidesTab> {
+  List<Map<String, dynamic>> _rows = [];
+  bool _loading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final rows = await _db
+          .from('shamanic_journey_guides')
+          .select()
+          .order('sort_order', ascending: true);
+      if (!mounted) return;
+      setState(() {
+        _rows = List<Map<String, dynamic>>.from(rows);
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = '$e';
+      });
+    }
+  }
+
+  void _openDetail(Map<String, dynamic> g) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _GuideDetailSheet(guide: g),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Padding(
-        padding: EdgeInsets.all(24),
-        child: Text('Leitfäden-Tab folgt in Phase 2.2d',
-            style: TextStyle(color: Colors.white54),
-            textAlign: TextAlign.center),
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator(color: _kDeep));
+    }
+    if (_error != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Text(_error!, style: const TextStyle(color: Colors.white54)),
+            const SizedBox(height: 12),
+            TextButton(
+                onPressed: _load,
+                child: const Text('Erneut versuchen',
+                    style: TextStyle(color: _kDeep))),
+          ]),
+        ),
+      );
+    }
+    return RefreshIndicator(
+      color: _kDeep,
+      onRefresh: _load,
+      child: ListView.builder(
+        padding: const EdgeInsets.fromLTRB(12, 12, 12, 20),
+        itemCount: _rows.length,
+        itemBuilder: (_, i) {
+          final g = _rows[i];
+          final steps = (g['steps'] as List?)?.length ?? 0;
+          return Card(
+            color: _kCardBg,
+            margin: const EdgeInsets.only(bottom: 10),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+                side: BorderSide(color: _kDeep.withValues(alpha: 0.3))),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(14),
+              onTap: () => _openDetail(g),
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(children: [
+                      Text(g['emoji'] as String? ?? '🥁',
+                          style: const TextStyle(fontSize: 28)),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(g['title'] as String? ?? '—',
+                                style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600)),
+                            const SizedBox(height: 4),
+                            Row(children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                    color: _kDeep.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(10)),
+                                child: Text(
+                                    _kGuideWorldLabels[g['world']] ??
+                                        g['world'],
+                                    style: const TextStyle(
+                                        color: _kDeep,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w600)),
+                              ),
+                              const SizedBox(width: 6),
+                              const Icon(Icons.schedule,
+                                  color: Colors.white38, size: 12),
+                              const SizedBox(width: 3),
+                              Text('${g['duration_minutes']} Min',
+                                  style: const TextStyle(
+                                      color: Colors.white54,
+                                      fontSize: 11)),
+                              const SizedBox(width: 10),
+                              const Icon(Icons.format_list_numbered,
+                                  color: Colors.white38, size: 12),
+                              const SizedBox(width: 3),
+                              Text('$steps Schritte',
+                                  style: const TextStyle(
+                                      color: Colors.white54,
+                                      fontSize: 11)),
+                            ]),
+                          ],
+                        ),
+                      ),
+                    ]),
+                    const SizedBox(height: 10),
+                    Text(g['description'] as String? ?? '',
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 12,
+                            height: 1.4)),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
       ),
+    );
+  }
+}
+
+class _GuideDetailSheet extends StatelessWidget {
+  final Map<String, dynamic> guide;
+  const _GuideDetailSheet({required this.guide});
+
+  @override
+  Widget build(BuildContext context) {
+    final steps = List<String>.from((guide['steps'] as List?) ?? const []);
+    final intentions = List<String>.from(
+        (guide['sample_intentions'] as List?) ?? const []);
+    final preparation = guide['preparation'] as String?;
+    final safety = guide['safety_notes'] as String?;
+    return DraggableScrollableSheet(
+      expand: false,
+      initialChildSize: 0.92,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      builder: (_, scrollCtrl) => Container(
+        decoration: const BoxDecoration(
+          color: _kDarkBg,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(children: [
+          Container(
+            margin: const EdgeInsets.only(top: 8),
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+                color: Colors.white24,
+                borderRadius: BorderRadius.circular(2)),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+            child: Row(children: [
+              Text(guide['emoji'] as String? ?? '🥁',
+                  style: const TextStyle(fontSize: 32)),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(guide['title'] as String? ?? '—',
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 3),
+                    Text(
+                        '${_kGuideWorldLabels[guide['world']] ?? guide['world']}  •  ${guide['duration_minutes']} Minuten',
+                        style: const TextStyle(
+                            color: _kDeep,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600)),
+                  ],
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.close, color: Colors.white54),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ]),
+          ),
+          Expanded(
+            child: ListView(
+              controller: scrollCtrl,
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+              children: [
+                Text(guide['description'] as String? ?? '',
+                    style: const TextStyle(
+                        color: Colors.white70, fontSize: 14, height: 1.5)),
+                if (intentions.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  const Text('Beispiel-Intentionen',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  ...intentions.map((t) => Padding(
+                        padding: const EdgeInsets.only(bottom: 6),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(Icons.arrow_right,
+                                color: _kDeep, size: 18),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(t,
+                                  style: const TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 13,
+                                      fontStyle: FontStyle.italic)),
+                            ),
+                          ],
+                        ),
+                      )),
+                ],
+                if (preparation != null && preparation.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  _infoBox('Vorbereitung', preparation,
+                      Icons.checklist_outlined, _kDeep),
+                ],
+                if (safety != null && safety.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  _infoBox('Sicherheit', safety, Icons.shield_outlined,
+                      const Color(0xFFFFAB40)),
+                ],
+                if (steps.isNotEmpty) ...[
+                  const SizedBox(height: 20),
+                  const Text('Ablauf',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 10),
+                  for (int i = 0; i < steps.length; i++)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            width: 26,
+                            height: 26,
+                            decoration: const BoxDecoration(
+                                color: _kDeep, shape: BoxShape.circle),
+                            alignment: Alignment.center,
+                            child: Text('${i + 1}',
+                                style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold)),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.only(top: 3),
+                              child: Text(steps[i],
+                                  style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 13,
+                                      height: 1.5)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ],
+            ),
+          ),
+        ]),
+      ),
+    );
+  }
+
+  Widget _infoBox(String title, String body, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: color.withValues(alpha: 0.3))),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Icon(icon, color: color, size: 18),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title,
+                  style: TextStyle(
+                      color: color,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.1)),
+              const SizedBox(height: 4),
+              Text(body,
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      height: 1.4)),
+            ],
+          ),
+        ),
+      ]),
     );
   }
 }
