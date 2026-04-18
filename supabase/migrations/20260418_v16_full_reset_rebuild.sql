@@ -570,3 +570,91 @@ CREATE TRIGGER push_subscriptions_updated_at
 CREATE TRIGGER user_stats_updated_at
   BEFORE UPDATE ON user_stats
   FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+-- ============================================================
+-- PHASE J: RLS + POLICIES
+-- Strategie: anon darf lesen (wo sinnvoll) + chat schreiben.
+--           service_role bypasst RLS automatisch (Worker).
+-- ============================================================
+
+-- RLS auf allen Tabellen aktivieren
+ALTER TABLE profiles                ENABLE ROW LEVEL SECURITY;
+ALTER TABLE articles                ENABLE ROW LEVEL SECURITY;
+ALTER TABLE comments                ENABLE ROW LEVEL SECURITY;
+ALTER TABLE likes                   ENABLE ROW LEVEL SECURITY;
+ALTER TABLE bookmarks               ENABLE ROW LEVEL SECURITY;
+ALTER TABLE chat_rooms              ENABLE ROW LEVEL SECURITY;
+ALTER TABLE chat_messages           ENABLE ROW LEVEL SECURITY;
+ALTER TABLE message_reactions       ENABLE ROW LEVEL SECURITY;
+ALTER TABLE notifications           ENABLE ROW LEVEL SECURITY;
+ALTER TABLE push_subscriptions      ENABLE ROW LEVEL SECURITY;
+ALTER TABLE notification_queue      ENABLE ROW LEVEL SECURITY;
+ALTER TABLE voice_participants      ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_achievements       ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_stats              ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tool_meditation_sessions  ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tool_kristalle            ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tool_chakra_readings      ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tool_heilfrequenz         ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tool_traeume              ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tool_bewusstsein_journal  ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tool_group_meditation     ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tool_geopolitics_events   ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tool_history_events       ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tool_healing_methods      ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tool_network_connections  ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tool_research_documents   ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tool_ufo_sightings        ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tool_connections          ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tool_artefakte            ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tool_news                 ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tool_patente              ENABLE ROW LEVEL SECURITY;
+
+-- ── PUBLIC READ (anon + authenticated dürfen SELECT) ─────────
+CREATE POLICY "public_read" ON profiles          FOR SELECT USING (true);
+CREATE POLICY "public_read" ON articles          FOR SELECT USING (is_published = TRUE);
+CREATE POLICY "public_read" ON comments          FOR SELECT USING (is_deleted = FALSE);
+CREATE POLICY "public_read" ON likes             FOR SELECT USING (true);
+CREATE POLICY "public_read" ON chat_rooms        FOR SELECT USING (is_active = TRUE);
+CREATE POLICY "public_read" ON chat_messages     FOR SELECT USING (is_deleted = FALSE);
+CREATE POLICY "public_read" ON message_reactions FOR SELECT USING (true);
+CREATE POLICY "public_read" ON voice_participants FOR SELECT USING (true);
+CREATE POLICY "public_read" ON user_achievements FOR SELECT USING (true);
+CREATE POLICY "public_read" ON user_stats        FOR SELECT USING (true);
+
+-- Tools: alle public lesbar (Welt-interne Daten)
+CREATE POLICY "public_read" ON tool_meditation_sessions  FOR SELECT USING (true);
+CREATE POLICY "public_read" ON tool_kristalle            FOR SELECT USING (true);
+CREATE POLICY "public_read" ON tool_chakra_readings      FOR SELECT USING (true);
+CREATE POLICY "public_read" ON tool_heilfrequenz         FOR SELECT USING (true);
+CREATE POLICY "public_read" ON tool_traeume              FOR SELECT USING (true);
+CREATE POLICY "public_read" ON tool_bewusstsein_journal  FOR SELECT USING (true);
+CREATE POLICY "public_read" ON tool_group_meditation     FOR SELECT USING (true);
+CREATE POLICY "public_read" ON tool_geopolitics_events   FOR SELECT USING (true);
+CREATE POLICY "public_read" ON tool_history_events       FOR SELECT USING (true);
+CREATE POLICY "public_read" ON tool_healing_methods      FOR SELECT USING (true);
+CREATE POLICY "public_read" ON tool_network_connections  FOR SELECT USING (true);
+CREATE POLICY "public_read" ON tool_research_documents   FOR SELECT USING (true);
+CREATE POLICY "public_read" ON tool_ufo_sightings        FOR SELECT USING (true);
+CREATE POLICY "public_read" ON tool_connections          FOR SELECT USING (true);
+CREATE POLICY "public_read" ON tool_artefakte            FOR SELECT USING (true);
+CREATE POLICY "public_read" ON tool_news                 FOR SELECT USING (true);
+CREATE POLICY "public_read" ON tool_patente              FOR SELECT USING (true);
+
+-- ── PRIVATE (nur service_role) ───────────────────────────────
+-- bookmarks, notifications, push_subscriptions, notification_queue
+-- → KEINE public Policy → nur service_role (bypasst RLS) kommt dran
+
+-- ── ANON WRITE (Flutter direkt via anon-Key) ─────────────────
+-- chat_messages: Flutter schreibt direkt (Realtime-UX)
+CREATE POLICY "anon_insert" ON chat_messages FOR INSERT WITH CHECK (true);
+-- message_reactions: Flutter schreibt direkt (reagieren/unreagieren)
+CREATE POLICY "anon_insert" ON message_reactions FOR INSERT WITH CHECK (true);
+CREATE POLICY "anon_delete" ON message_reactions FOR DELETE USING (true);
+-- likes: Flutter toggled direkt
+CREATE POLICY "anon_insert" ON likes FOR INSERT WITH CHECK (true);
+CREATE POLICY "anon_delete" ON likes FOR DELETE USING (true);
+-- voice_participants: join/leave direkt
+CREATE POLICY "anon_insert" ON voice_participants FOR INSERT WITH CHECK (true);
+CREATE POLICY "anon_update" ON voice_participants FOR UPDATE USING (true);
+CREATE POLICY "anon_delete" ON voice_participants FOR DELETE USING (true);
