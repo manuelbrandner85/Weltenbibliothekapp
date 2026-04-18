@@ -333,6 +333,28 @@ class _ScanTabState extends State<_ScanTab> {
     return out;
   }
 
+  Future<void> _saveScan({
+    required Map<int, int> scores,
+    required int? primary,
+    required String notes,
+  }) async {
+    final user = _db.auth.currentUser;
+    if (user == null) {
+      throw Exception('Nicht angemeldet');
+    }
+    // chakra_scores JSONB erwartet String-Keys
+    final jsonScores = <String, int>{
+      for (final e in scores.entries) e.key.toString(): e.value,
+    };
+    await _db.from('body_scan_results').insert({
+      'user_id': user.id,
+      'selected_symptom_ids': _selected.toList(),
+      'chakra_scores': jsonScores,
+      'primary_blocked_chakra': primary,
+      'notes': notes.trim().isEmpty ? null : notes.trim(),
+    });
+  }
+
   void _showResult() {
     if (_selected.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
@@ -344,13 +366,18 @@ class _ScanTabState extends State<_ScanTab> {
     final maxScore =
         scores.values.isEmpty ? 1 : scores.values.reduce((a, b) => a > b ? a : b);
 
+    final notesCtrl = TextEditingController();
+    bool saving = false;
+    bool saved = false;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: _kCardBg,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (_) => DraggableScrollableSheet(
+      builder: (sheetCtx) => StatefulBuilder(
+        builder: (sheetCtx2, setSheet) => DraggableScrollableSheet(
         initialChildSize: 0.7,
         maxChildSize: 0.95,
         minChildSize: 0.4,
@@ -432,17 +459,81 @@ class _ScanTabState extends State<_ScanTab> {
               );
             }),
             const SizedBox(height: 24),
-            // Save button placeholder – Phase 7.2d füllt den Handler
+            // Freitext-Notiz
+            TextField(
+              controller: notesCtrl,
+              enabled: !saving && !saved,
+              maxLines: 3,
+              minLines: 2,
+              style: const TextStyle(color: Colors.white, fontSize: 13),
+              decoration: InputDecoration(
+                hintText: 'Optionale Notiz zu diesem Scan …',
+                hintStyle:
+                    const TextStyle(color: Colors.white38, fontSize: 13),
+                filled: true,
+                fillColor: _kDarkBg,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: _kBorder),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: _kBorder),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: _kPink),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed: null,
-                icon: const Icon(Icons.save),
-                label: const Text('Scan speichern (Phase 7.2d)'),
+                onPressed: (saving || saved)
+                    ? null
+                    : () async {
+                        setSheet(() => saving = true);
+                        try {
+                          await _saveScan(
+                            scores: scores,
+                            primary: primary,
+                            notes: notesCtrl.text,
+                          );
+                          if (!sheetCtx2.mounted) return;
+                          setSheet(() {
+                            saving = false;
+                            saved = true;
+                          });
+                          ScaffoldMessenger.of(sheetCtx2).showSnackBar(
+                              const SnackBar(
+                                  content:
+                                      Text('✅ Scan gespeichert')));
+                        } catch (e) {
+                          if (!sheetCtx2.mounted) return;
+                          setSheet(() => saving = false);
+                          ScaffoldMessenger.of(sheetCtx2).showSnackBar(
+                              SnackBar(
+                                  content: Text(
+                                      'Fehler beim Speichern: $e')));
+                        }
+                      },
+                icon: saving
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white))
+                    : Icon(saved ? Icons.check_circle : Icons.save),
+                label: Text(saving
+                    ? 'Speichern …'
+                    : (saved ? 'Gespeichert' : 'Scan speichern')),
                 style: ElevatedButton.styleFrom(
-                    backgroundColor: _kPink,
+                    backgroundColor: saved ? Colors.green : _kPink,
                     foregroundColor: Colors.white,
-                    disabledBackgroundColor: _kBorder,
+                    disabledBackgroundColor:
+                        saved ? Colors.green : _kBorder,
+                    disabledForegroundColor: Colors.white70,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12))),
@@ -451,7 +542,13 @@ class _ScanTabState extends State<_ScanTab> {
           ],
         ),
       ),
-    );
+      ),
+    ).whenComplete(() {
+      notesCtrl.dispose();
+      if (saved && mounted) {
+        setState(() => _selected.clear());
+      }
+    });
   }
 }
 
