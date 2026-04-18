@@ -549,13 +549,256 @@ class _ResultRow extends StatelessWidget {
 // Tab 1: Verlauf (Phase 5.2e füllt diesen Stub)
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _HistoryTab extends StatelessWidget {
+class _HistoryTab extends StatefulWidget {
   const _HistoryTab();
   @override
+  State<_HistoryTab> createState() => _HistoryTabState();
+}
+
+class _HistoryTabState extends State<_HistoryTab> {
+  List<Map<String, dynamic>> _rows = [];
+  bool _loading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final user = _db.auth.currentUser;
+      if (user == null) {
+        if (!mounted) return;
+        setState(() {
+          _loading = false;
+          _error = 'Bitte zuerst anmelden';
+        });
+        return;
+      }
+      final rows = await _db
+          .from('soul_contracts')
+          .select()
+          .eq('user_id', user.id)
+          .order('computed_at', ascending: false);
+      if (!mounted) return;
+      setState(() {
+        _rows = List<Map<String, dynamic>>.from(rows);
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = '$e';
+      });
+    }
+  }
+
+  Future<void> _delete(String id) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: _kCardBg,
+        title: const Text('Seelenvertrag löschen?',
+            style: TextStyle(color: Colors.white)),
+        content: const Text(
+            'Dieser Eintrag wird unwiderruflich gelöscht.',
+            style: TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Abbrechen',
+                  style: TextStyle(color: Colors.white54))),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Löschen',
+                  style: TextStyle(color: _kGold))),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    try {
+      await _db.from('soul_contracts').delete().eq('id', id);
+      if (!mounted) return;
+      setState(() => _rows.removeWhere((r) => r['id'] == id));
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Vertrag gelöscht')));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Fehler: $e')));
+    }
+  }
+
+  String _formatDate(String iso) {
+    final dt = DateTime.tryParse(iso)?.toLocal();
+    if (dt == null) return iso;
+    String two(int n) => n.toString().padLeft(2, '0');
+    return '${two(dt.day)}.${two(dt.month)}.${dt.year} ${two(dt.hour)}:${two(dt.minute)}';
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Text('Verlauf – Phase 5.2e',
-          style: TextStyle(color: Colors.white38)),
+    if (_loading) {
+      return const Center(
+          child: CircularProgressIndicator(color: _kGold));
+    }
+    if (_error != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(_error!,
+                  style: const TextStyle(color: Colors.white54),
+                  textAlign: TextAlign.center),
+              const SizedBox(height: 12),
+              TextButton(
+                  onPressed: _load,
+                  child: const Text('Erneut versuchen',
+                      style: TextStyle(color: _kGold))),
+            ],
+          ),
+        ),
+      );
+    }
+    if (_rows.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: Text(
+              'Noch keine Seelenverträge gespeichert.\nErstelle deinen ersten Vertrag im Neu-Tab.',
+              style: TextStyle(color: Colors.white54),
+              textAlign: TextAlign.center),
+        ),
+      );
+    }
+    return RefreshIndicator(
+      color: _kGold,
+      onRefresh: _load,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(12),
+        itemCount: _rows.length,
+        itemBuilder: (_, i) {
+          final r = _rows[i];
+          final karmic = (r['karmic_debts'] as List?) ?? const [];
+          final notes = r['notes'] as String?;
+          return Card(
+            color: _kCardBg,
+            margin: const EdgeInsets.only(bottom: 10),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+                side: BorderSide(color: _kGold.withValues(alpha: 0.3))),
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(children: [
+                    const Icon(Icons.auto_stories, color: _kGold),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(r['full_name'] as String? ?? '—',
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600)),
+                          const SizedBox(height: 2),
+                          Text(
+                              '★ ${r['birth_date']}  •  ${_formatDate(r['computed_at'] as String)}',
+                              style: const TextStyle(
+                                  color: Colors.white54, fontSize: 11)),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline,
+                          color: Colors.white38, size: 20),
+                      onPressed: () => _delete(r['id'] as String),
+                    ),
+                  ]),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 6,
+                    children: [
+                      _NumBadge(
+                          label: 'Lebensweg', value: r['life_path']),
+                      _NumBadge(
+                          label: 'Ausdruck', value: r['destiny']),
+                      _NumBadge(
+                          label: 'Seele', value: r['soul_urge']),
+                      _NumBadge(
+                          label: 'Persönl.', value: r['personality']),
+                      _NumBadge(
+                          label: 'Geburtstag', value: r['birth_day']),
+                    ],
+                  ),
+                  if (karmic.isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    Text('⚖️ Karmische Schulden: ${karmic.join(", ")}',
+                        style: const TextStyle(
+                            color: Colors.orangeAccent, fontSize: 12)),
+                  ],
+                  if (notes != null && notes.isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                          color: _kDarkBg,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: _kBorder)),
+                      child: Text(notes,
+                          style: const TextStyle(
+                              color: Colors.white70, fontSize: 12)),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _NumBadge extends StatelessWidget {
+  final String label;
+  final dynamic value;
+  const _NumBadge({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+          color: _kDarkBg,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: _kGold.withValues(alpha: 0.4))),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text('$label  ',
+              style: const TextStyle(
+                  color: Colors.white70, fontSize: 11)),
+          Text('$value',
+              style: const TextStyle(
+                  color: _kGold,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13)),
+        ],
+      ),
     );
   }
 }
