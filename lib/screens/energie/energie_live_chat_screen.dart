@@ -9,7 +9,7 @@ import 'package:supabase_flutter/supabase_flutter.dart' show RealtimeChannel;
 import 'package:image_picker/image_picker.dart'; // Image Picker
 import '../../services/cloudflare_api_service.dart';
 import '../../services/offline_sync_service.dart'; // 📡 OFFLINE SYNC (NEW Phase 3)
-import '../../services/user_service.dart';
+// user_service replaced by supabase_service.dart
 import '../../services/storage_service.dart'; // StorageService for profile access
 import '../../core/storage/unified_storage_service.dart'; // UnifiedStorageService
 import 'package:hive_flutter/hive_flutter.dart'; // Hive for box check
@@ -71,8 +71,6 @@ class EnergieLiveChatScreen extends StatefulWidget {
 class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   final CloudflareApiService _api = CloudflareApiService();
-  // ignore: unused_field
-  final UserService _userService = UserService();
   final ScrollController _scrollController = ScrollController();
   final TypingIndicatorService _typingService = TypingIndicatorService(); // ⌨️ NEW
   
@@ -199,7 +197,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
     super.initState();
     
     // 🔥 Initialize User ID from UserService
-    _userId = UserService.getCurrentUserId();
+    _userId = supabase.auth.currentUser?.id ?? 'user_anonymous';
     
     // 🔧 FIX 18: Set initial room from dashboard navigation
     _selectedRoom = widget.initialRoom ?? 'meditation';

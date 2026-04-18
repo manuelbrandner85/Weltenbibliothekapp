@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
  // OpenClaw v2.0
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import '../../services/group_tools_service.dart';
-import '../../services/user_service.dart';
+import '../../services/supabase_service.dart';
 
 /// 💫 Traum-Tagebuch Screen
 /// Träume dokumentieren & gemeinsam analysieren
@@ -20,7 +20,6 @@ class DreamJournalScreen extends StatefulWidget {
 
 class _DreamJournalScreenState extends State<DreamJournalScreen> {
   final GroupToolsService _toolsService = GroupToolsService();
-  final UserService _userService = UserService();
   
   List<Map<String, dynamic>> _dreams = [];
   bool _isLoading = false;
@@ -35,11 +34,16 @@ class _DreamJournalScreenState extends State<DreamJournalScreen> {
   }
   
   Future<void> _loadUserData() async {
-    final user = await _userService.getCurrentUser();
-    setState(() {
-      _username = user.username;
-      _userId = 'user_${user.username.toLowerCase()}';
-    });
+    final user = supabase.auth.currentUser;
+    if (user != null && mounted) {
+      final meta = user.userMetadata;
+      setState(() {
+        _username = meta?['username'] as String?
+            ?? user.email?.split('@').first
+            ?? 'Anonym';
+        _userId = user.id;
+      });
+    }
   }
   
   Future<void> _loadDreams() async {

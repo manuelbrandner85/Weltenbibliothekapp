@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
  // OpenClaw v2.0
 import '../../services/group_tools_service.dart';
-import '../../services/user_service.dart'; // 🆕 User Service für Auth
+import '../../services/supabase_service.dart';
 
 /// 🏛️ GESCHICHTE-ZEITLEISTE SCREEN
 /// Alternative Geschichte gemeinsam dokumentieren
@@ -209,8 +209,8 @@ class _HistoryTimelineScreenState extends State<HistoryTimelineScreen> {
     try {
       await _toolsService.createHistoryEvent(
         roomId: widget.roomId,
-        userId: UserService.getCurrentUserId(),
-        username: UserService.getCurrentUserId() != 'user_anonymous' ? UserService.getCurrentUserId() : 'Anonym',
+        userId: supabase.auth.currentUser?.id ?? 'user_anonymous',
+        username: supabase.auth.currentUser?.userMetadata?['username'] as String? ?? 'Anonym',
         title: title,
         description: description,
         eventYear: year,

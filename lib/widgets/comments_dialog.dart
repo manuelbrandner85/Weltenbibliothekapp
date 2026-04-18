@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/community_post.dart';
 import '../services/community_service.dart';
-import '../services/user_service.dart';
+import '../services/supabase_service.dart';
 
 /// 💬 ECHTES Kommentar-Dialog mit Backend-Integration
 class CommentsDialog extends StatefulWidget {
@@ -15,7 +15,6 @@ class CommentsDialog extends StatefulWidget {
 
 class _CommentsDialogState extends State<CommentsDialog> {
   final CommunityService _communityService = CommunityService();
-  final UserService _userService = UserService();
   final TextEditingController _commentController = TextEditingController();
   
   List<Map<String, dynamic>> _comments = [];
@@ -58,15 +57,16 @@ class _CommentsDialogState extends State<CommentsDialog> {
     try {
       setState(() => _isPosting = true);
       
-      final user = await _userService.getCurrentUser();
+      final authUser = supabase.auth.currentUser;
+      final uMeta = authUser?.userMetadata;
       final commentText = _commentController.text.trim();
-      
+
       // Backend call (ECHTE API!)
       await _communityService.commentOnPost(
         widget.post.id,
-        user.username,
+        uMeta?['username'] as String? ?? 'Anonym',
         commentText,
-        avatar: user.avatar,
+        avatar: uMeta?['avatar'] as String? ?? '👤',
       );
       
       // Reload comments

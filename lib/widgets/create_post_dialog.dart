@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:image_picker/image_picker.dart';
 import '../models/community_post.dart';
 import '../services/community_service.dart';
-import '../services/user_service.dart';
+import '../services/supabase_service.dart';
 import '../services/cloudflare_api_service.dart';
 
 /// Dialog zum Erstellen eines neuen Community-Posts mit Media-Upload
@@ -23,7 +23,6 @@ class _CreatePostDialogState extends State<CreatePostDialog> {
   final TextEditingController _contentController = TextEditingController();
   final TextEditingController _tagsController = TextEditingController();
   final CommunityService _communityService = CommunityService();
-  final UserService _userService = UserService();
   final CloudflareApiService _cloudflareService = CloudflareApiService();
   final ImagePicker _picker = ImagePicker();
   
@@ -72,13 +71,14 @@ class _CreatePostDialogState extends State<CreatePostDialog> {
           debugPrint('📤 Uploading media: $fileName (${bytes.length} bytes)');
         }
         
-        final user = await _userService.getCurrentUser();
+        final authUser = supabase.auth.currentUser;
+        final uMeta = authUser?.userMetadata;
         final result = await _cloudflareService.uploadMedia(
           fileBytes: bytes,
           fileName: fileName,
           mediaType: _mediaType!,
           worldType: widget.worldType.name,
-          username: user.username,
+          username: uMeta?['username'] as String? ?? 'Anonym',
         );
         
         setState(() {
@@ -219,8 +219,8 @@ class _CreatePostDialogState extends State<CreatePostDialog> {
     setState(() => _isPosting = true);
     
     try {
-      // Get current user
-      final user = await _userService.getCurrentUser();
+      final authUser = supabase.auth.currentUser;
+      final uMeta = authUser?.userMetadata;
       
       // Parse tags
       final tagsText = _tagsController.text.trim();
@@ -230,11 +230,11 @@ class _CreatePostDialogState extends State<CreatePostDialog> {
       
       // Create post (with optional media)
       await _communityService.createPost(
-        username: user.username,
+        username: uMeta?['username'] as String? ?? 'Anonym',
         content: content,
         tags: tags,
         worldType: widget.worldType,
-        authorAvatar: user.avatar,
+        authorAvatar: uMeta?['avatar'] as String? ?? '👤',
         mediaUrl: _uploadedMediaUrl,  // 🆕 R2 Storage URL
         mediaType: _mediaType,        // 🆕 'image' or 'video'
       );

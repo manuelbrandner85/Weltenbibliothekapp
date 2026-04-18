@@ -43,6 +43,8 @@ import 'widgets/achievement_unlock_dialog.dart';  // 🏆 Achievement UI
 import 'utils/error_boundary.dart';  // 🛡️ Error Boundary
 import 'services/supabase_service.dart';  // 🟢 SUPABASE: Auth + Chat + Community
 import 'services/profile_restore_service.dart'; // 🔄 PROFIL-WIEDERHERSTELLUNG
+import 'screens/auth/login_screen.dart'; // 🔐 SUPABASE AUTH: Login
+import 'package:supabase_flutter/supabase_flutter.dart';
 // import 'widgets/offline_indicator.dart';  // 📡 OFFLINE INDICATOR (DISABLED - BUILD ISSUE)
 // import 'services/push_notification_service.dart'; // Firebase -> Cloudflare
 
@@ -313,9 +315,17 @@ class _WeltenbibliothekAppState extends State<WeltenbibliothekApp> {
             Locale('en', 'US'), // Englisch als Fallback
           ],
           locale: const Locale('de', 'DE'),
-          // ✅ FIXED: DIREKT ZUM PORTAL - KEIN INTRO, KEINE CHECKS
-          home: const PortalHomeScreen(), // 🌀 Direkt zum Portal
+          // 🔐 AUTH GATE: Login wenn nicht authentifiziert
+          home: StreamBuilder<AuthState>(
+            stream: supabase.auth.onAuthStateChange,
+            builder: (context, snapshot) {
+              final user = supabase.auth.currentUser;
+              if (user != null) return const PortalHomeScreen();
+              return const LoginScreen();
+            },
+          ),
           routes: {
+            '/login': (context) => const LoginScreen(),
             '/home': (context) => const IntroImageScreen(),
             '/dashboard': (context) => const EnergieWorldScreen(), // ✅ FIXED
             '/achievements': (context) => const AchievementsScreen(),

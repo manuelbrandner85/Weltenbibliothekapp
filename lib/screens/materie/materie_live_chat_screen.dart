@@ -8,7 +8,7 @@ import '../../services/cloudflare_api_service.dart';
 import '../../services/websocket_chat_service.dart'; // 🌐 WEBSOCKET REAL-TIME (NEW)
 import '../../services/hybrid_chat_service.dart'; // 🔄 HYBRID WEBSOCKET+HTTP - STUB for now
 import '../../services/chat_notification_service.dart'; // 🔔 NOTIFICATIONS
-import '../../services/user_service.dart'; // 🆕 User Service für Auth
+// user_service replaced by supabase_service.dart
 import '../../widgets/mention_autocomplete.dart'; // @ MENTIONS
 import 'package:image_picker/image_picker.dart'; // 📷 Image Picker
 // 👤 PROFIL
@@ -208,7 +208,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
     super.initState();
     
     // 🔥 Initialize User ID from UserService
-    _userId = UserService.getCurrentUserId();
+    _userId = supabase.auth.currentUser?.id ?? 'user_anonymous';
     
     // 🔧 FIX 18: Set initial room from dashboard navigation
     _selectedRoom = widget.initialRoom ?? 'politik';

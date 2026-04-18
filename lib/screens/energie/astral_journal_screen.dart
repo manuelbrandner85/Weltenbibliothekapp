@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'dart:convert';
 import '../../services/group_tools_service.dart';
-import '../../services/user_service.dart';
+import '../../services/supabase_service.dart';
 
 /// 🌙 Astrales Tagebuch Screen
 /// Außerkörperliche Erfahrungen dokumentieren & teilen
@@ -21,7 +21,6 @@ class AstralJournalScreen extends StatefulWidget {
 
 class _AstralJournalScreenState extends State<AstralJournalScreen> {
   final GroupToolsService _toolsService = GroupToolsService();
-  final UserService _userService = UserService();
   
   List<Map<String, dynamic>> _entries = [];
   bool _isLoading = false;
@@ -37,11 +36,16 @@ class _AstralJournalScreenState extends State<AstralJournalScreen> {
   }
   
   Future<void> _loadUserData() async {
-    final user = await _userService.getCurrentUser();
-    setState(() {
-      _username = user.username;
-      _userId = 'user_${user.username.toLowerCase()}';
-    });
+    final user = supabase.auth.currentUser;
+    if (user != null && mounted) {
+      final meta = user.userMetadata;
+      setState(() {
+        _username = meta?['username'] as String?
+            ?? user.email?.split('@').first
+            ?? 'Anonym';
+        _userId = user.id;
+      });
+    }
   }
   
   Future<void> _loadEntries() async {

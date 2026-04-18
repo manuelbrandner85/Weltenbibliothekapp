@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
  // OpenClaw v2.0
 import '../../services/group_tools_service.dart';
-import '../../services/user_service.dart'; // 🆕 User Service für Auth
+import '../../services/supabase_service.dart';
 
 /// 🎭 GEOPOLITIK-KARTIERUNG SCREEN
 class GeopolitikMapScreen extends StatefulWidget {
@@ -84,8 +84,8 @@ class _GeopolitikMapScreenState extends State<GeopolitikMapScreen> {
               try {
                 await _toolsService.createGeopoliticsEvent(
                   roomId: widget.roomId,
-                  userId: UserService.getCurrentUserId(),
-                  username: UserService.getCurrentUserId() != 'user_anonymous' ? UserService.getCurrentUserId() : 'Anonym',
+                  userId: supabase.auth.currentUser?.id ?? 'user_anonymous',
+                  username: supabase.auth.currentUser?.userMetadata?['username'] as String? ?? 'Anonym',
                   title: titleCtrl.text.trim(),
                   description: descCtrl.text.trim(),
                 );

@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import '../services/cloudflare_api_service.dart';
 import '../services/haptic_feedback_service.dart';
 import '../services/community_interaction_service.dart';
-import '../services/user_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Like Button Widget mit Animation
@@ -39,9 +38,7 @@ class _ArticleLikeButtonState extends State<ArticleLikeButton> with SingleTicker
     super.initState();
     _isLiked = widget.initiallyLiked;
     _likeCount = widget.initialLikes;
-    // Echte User-ID: Supabase Auth > UserService
-    _realUserId = Supabase.instance.client.auth.currentUser?.id 
-        ?? UserService.getCurrentUserId();
+    _realUserId = Supabase.instance.client.auth.currentUser?.id ?? 'user_anonymous';
     
     // Animation setup
     _animationController = AnimationController(

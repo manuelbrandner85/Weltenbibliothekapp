@@ -14,7 +14,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'user_auth_service.dart';
-import 'user_service.dart';
+import 'supabase_service.dart';
 
 // =====================================================================
 // CONTENT STATUS
@@ -204,7 +204,7 @@ class UserContentService {
     try {
       _prefs = await SharedPreferences.getInstance();
       // Echten User laden statt Hardcode
-      _currentUserId = UserService.getCurrentUserId();
+      _currentUserId = supabase.auth.currentUser?.id ?? 'user_anonymous';
       _currentUserName = await UserAuthService.getUsername() ?? 'Anonym';
       await _loadNarratives();
       

@@ -6,7 +6,8 @@ import 'dart:async';
 import '../models/community_post.dart';
 import '../models/community_post_extended.dart';
 import '../services/community_service.dart';
-import '../services/user_service.dart';
+import '../services/supabase_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/cloudflare_api_service.dart';
 import '../services/post_creation_services.dart';
 import '../services/media_services.dart';
@@ -53,7 +54,6 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
   
   // Services
   final CommunityService _communityService = CommunityService();
-  final UserService _userService = UserService();
   final CloudflareApiService _cloudflareService = CloudflareApiService();
   final ImagePicker _picker = ImagePicker();
   
@@ -293,13 +293,14 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
       final bytes = await file.readAsBytes();
       final fileName = '${DateTime.now().millisecondsSinceEpoch}_${file.name}';
       
-      final user = await _userService.getCurrentUser();
+      final authUser = supabase.auth.currentUser;
+      final uMeta = authUser?.userMetadata;
       final result = await _cloudflareService.uploadMedia(
         fileBytes: bytes,
         fileName: fileName,
         mediaType: _mediaType!,
         worldType: widget.worldType.name,
-        username: user.username,
+        username: uMeta?['username'] as String? ?? 'Anonym',
       );
       
       setState(() {
@@ -419,7 +420,8 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
     setState(() => _isPosting = true);
     
     try {
-      final user = await _userService.getCurrentUser();
+      final authUser = supabase.auth.currentUser;
+      final uMeta = authUser?.userMetadata; // ignore: unused_local_variable
       final tags = _tagsController.text
           .split(',')
           .map((t) => t.trim())
@@ -430,9 +432,9 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
       
       // Check if scheduled
       if (_scheduledFor != null) {
-        await _schedulePost(user, content, tags, mentions);
+        await _schedulePost(authUser, content, tags, mentions);
       } else {
-        await _publishPost(user, content, tags, mentions);
+        await _publishPost(authUser, content, tags, mentions);
       }
       
       if (mounted) {
@@ -446,16 +448,17 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
   }
   
   Future<void> _publishPost(
-    dynamic user,
+    User? authUser,
     String content,
     List<String> tags,
     List<String> mentions,
   ) async {
+    final uMeta = authUser?.userMetadata;
     // Create extended post with all features
     final extendedPost = CommunityPostExtended( // ignore: unused_local_variable
       id: DateTime.now().millisecondsSinceEpoch.toString(),
-      authorUsername: user.username,
-      authorAvatar: user.avatar,
+      authorUsername: uMeta?['username'] as String? ?? 'Anonym',
+      authorAvatar: uMeta?['avatar'] as String? ?? '👤',
       content: content,
       tags: tags,
       createdAt: DateTime.now(),
@@ -471,11 +474,11 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
     
     // Save to Firestore/Hive
     await _communityService.createPost(
-      username: user.username,
+      username: uMeta?['username'] as String? ?? 'Anonym',
       content: content,
       tags: tags,
       worldType: widget.worldType,
-      authorAvatar: user.avatar,
+      authorAvatar: uMeta?['avatar'] as String? ?? '👤',
       mediaUrl: _uploadedMediaUrl,
       mediaType: _mediaType,
     );
@@ -485,14 +488,15 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
   }
   
   Future<void> _schedulePost(
-    dynamic user,
+    User? authUser,
     String content,
     List<String> tags,
     List<String> mentions,
   ) async {
+    final uMeta = authUser?.userMetadata;
     final postData = {
-      'authorUsername': user.username,
-      'authorAvatar': user.avatar,
+      'authorUsername': uMeta?['username'] as String? ?? 'Anonym',
+      'authorAvatar': uMeta?['avatar'] as String? ?? '👤',
       'content': content,
       'tags': tags,
       'worldType': widget.worldType.name,
