@@ -71,16 +71,44 @@ jobs:
           sudo apt-get install -y -qq postgresql-client
           psql --version
 
-      - name: 🔌 Verbindung testen
+      - name: 🔌 Verbindung testen (mit Diagnose)
         env:
           PGCONN: ${{ secrets.SUPABASE_DB_URL }}
         run: |
+          set +e
           if [ -z "$PGCONN" ]; then
             echo "::error::Secret SUPABASE_DB_URL ist nicht gesetzt."
-            echo "Anleitung: Supabase Dashboard → Project Settings → Database → Connection string → URI"
             exit 1
           fi
-          psql "$PGCONN" -c "SELECT current_database(), current_user, version();"
+          # Host+Port aus URL extrahieren (ohne User/Pass), Rest redigieren
+          HOST=$(echo "$PGCONN" | sed -E 's|^[a-z]+://[^@]*@([^:/?]+).*|\1|')
+          PORT=$(echo "$PGCONN" | sed -E 's|^[a-z]+://[^@]*@[^:/?]+:([0-9]+).*|\1|')
+          echo "🎯 Ziel-Host: $HOST"
+          echo "🎯 Ziel-Port: $PORT"
+          echo ""
+          echo "--- DNS (IPv4) ---"
+          getent ahostsv4 "$HOST" | head -5 || echo "(keine IPv4!)"
+          echo "--- DNS (IPv6) ---"
+          getent ahostsv6 "$HOST" | head -5 || echo "(keine IPv6)"
+          echo ""
+          # TCP-Connectivity
+          echo "--- TCP-Check ---"
+          timeout 5 bash -c "</dev/tcp/$HOST/$PORT" \
+            && echo "✅ TCP erreichbar" \
+            || echo "❌ TCP nicht erreichbar"
+          echo ""
+          echo "--- psql-Login ---"
+          psql "$PGCONN" -c "SELECT current_database(), current_user;" 2>&1
+          RC=$?
+          if [ $RC -ne 0 ]; then
+            echo "::error::psql-Verbindung fehlgeschlagen (RC=$RC)."
+            echo "Häufige Ursachen:"
+            echo "  1. DB-URL ist db.<ref>.supabase.co (IPv6-only) — GitHub Runner haben kein IPv6."
+            echo "     → Nutze Pooler-URL: aws-0-<region>.pooler.supabase.com:6543"
+            echo "  2. Passwort falsch / abgelaufen"
+            echo "  3. Secret enthält noch [YOUR-PASSWORD] Platzhalter"
+            exit $RC
+          fi
 
       - name: 📊 Zustand VORHER (zur Dokumentation)
         env:
