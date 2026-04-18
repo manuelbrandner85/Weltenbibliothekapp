@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../services/dream_symbol_matcher.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DreamInterpretationToolScreen – 4 Tabs
@@ -101,6 +102,7 @@ class _NewDreamTabState extends State<_NewDreamTab> {
   bool _recurring = false;
   bool _saving = false;
   List<String> _detectedTags = [];
+  List<Map<String, dynamic>> _detectedSymbolDetails = [];
 
   static const _moods = [
     ('neutral', '😐', 'Neutral'),
@@ -110,6 +112,12 @@ class _NewDreamTabState extends State<_NewDreamTab> {
     ('wut', '😠', 'Wut'),
     ('ekstatisch', '🤩', 'Ekstatisch'),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    DreamSymbolMatcher.instance.preload();
+  }
 
   @override
   void dispose() {
@@ -170,11 +178,17 @@ class _NewDreamTabState extends State<_NewDreamTab> {
     }
   }
 
-  // Auto-detect symbols from free text (client-side matching, Phase 6.3 fills this)
   void _detectSymbols(String text) {
-    // Phase 6.3 injects symbol matching here.
-    // For now keep detected tags empty — logic added in 6.3.
-    if (_detectedTags.isNotEmpty) setState(() => _detectedTags = []);
+    final tags = DreamSymbolMatcher.instance.match(text);
+    if (tags.toString() == _detectedTags.toString()) return;
+    setState(() => _detectedTags = tags);
+    if (tags.isNotEmpty) {
+      DreamSymbolMatcher.instance.symbolsForKeys(tags).then((details) {
+        if (mounted) setState(() => _detectedSymbolDetails = details);
+      });
+    } else {
+      setState(() => _detectedSymbolDetails = []);
+    }
   }
 
   @override
@@ -308,23 +322,51 @@ class _NewDreamTabState extends State<_NewDreamTab> {
           ),
           const SizedBox(height: 16),
 
-          // Erkannte Symbole (wird in 6.3 gefüllt)
+          // Erkannte Symbole mit Kurzinterpretation
           if (_detectedTags.isNotEmpty) ...[
             const Text('Erkannte Symbole',
-                style: TextStyle(color: Colors.white70, fontSize: 13)),
+                style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
-            Wrap(
-              spacing: 6,
-              children: _detectedTags
-                  .map((t) => Chip(
-                        label: Text(t,
-                            style: const TextStyle(
-                                color: Colors.white, fontSize: 12)),
-                        backgroundColor: const Color(0xFF37474F),
-                      ))
-                  .toList(),
-            ),
-            const SizedBox(height: 16),
+            ..._detectedSymbolDetails.map((sym) {
+              final meanings =
+                  Map<String, dynamic>.from(sym['meanings'] as Map? ?? {});
+              final preview = (meanings['jungian'] ??
+                      meanings['spiritual'] ??
+                      '') as String;
+              return Card(
+                color: const Color(0xFF1E1E3E),
+                margin: const EdgeInsets.only(bottom: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  side: const BorderSide(color: _kBorder),
+                ),
+                child: ListTile(
+                  leading: Text(sym['emoji'] as String? ?? '🔮',
+                      style: const TextStyle(fontSize: 24)),
+                  title: Text(sym['symbol_name'] as String? ?? '',
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14)),
+                  subtitle: preview.isNotEmpty
+                      ? Text(
+                          preview.length > 80
+                              ? '${preview.substring(0, 80)}…'
+                              : preview,
+                          style: const TextStyle(
+                              color: Colors.white54, fontSize: 12))
+                      : null,
+                  trailing: const Icon(Icons.info_outline,
+                      color: Colors.white38, size: 18),
+                  onTap: () => _SymbolListTile(symbol: sym)
+                      .showDetailFrom(context),
+                ),
+              );
+            }),
+            const SizedBox(height: 8),
           ],
 
           // Speichern
@@ -535,10 +577,12 @@ class _SymbolListTile extends StatelessWidget {
         subtitle: Text(symbol['category'] ?? '',
             style: const TextStyle(color: Colors.white38, fontSize: 12)),
         trailing: const Icon(Icons.chevron_right, color: Colors.white38),
-        onTap: () => _showDetail(context),
+        onTap: () => showDetailFrom(context),
       ),
     );
   }
+
+  void showDetailFrom(BuildContext context) => _showDetail(context);
 
   void _showDetail(BuildContext context) {
     final meanings =
