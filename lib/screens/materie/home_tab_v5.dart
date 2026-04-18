@@ -3,7 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../services/openclaw_dashboard_service.dart';
+import '../../services/dashboard_service.dart';
 import '../../services/storage_service.dart';
 import '../../models/materie_profile.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -33,7 +33,7 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
   late Animation<double> _entryAnim;
 
   // ── Services ───────────────────────────────────────────────────────────
-  final _dash = OpenClawDashboardService();
+  final _dash = DashboardService();
 
   // ── State ──────────────────────────────────────────────────────────────
   MaterieProfile? _profile;

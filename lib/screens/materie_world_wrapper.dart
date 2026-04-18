@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../services/openclaw_dashboard_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'materie_world_screen.dart';
 import '../services/achievement_service.dart';  // 🏆 Achievement System
-import '../services/storage_service.dart';  // 🔑 Storage for userId
 import 'shared/world_admin_dashboard.dart';  // 🛡️ Admin Dashboard
 
 /// Materie-Welt-Wrapper - SIMPLIFIED VERSION
@@ -21,7 +20,6 @@ class _MaterieWorldWrapperState extends State<MaterieWorldWrapper> {
   bool _showOnboarding = false; // ignore: unused_field
   bool _isLoading = true;
   bool _isAdmin = false; // 👑 Admin Status
-  final OpenClawDashboardService _dashboardService = OpenClawDashboardService(); // 🚀
 
   @override
   void initState() {
@@ -36,30 +34,27 @@ class _MaterieWorldWrapperState extends State<MaterieWorldWrapper> {
   /// 👑 Admin-Status prüfen
   Future<void> _checkAdminStatusAndLoad() async {
     try {
-      // User-ID holen
-      final userId = await StorageService().getUserId('materie');
-      
+      final userId = Supabase.instance.client.auth.currentUser?.id;
       if (userId != null) {
-        // Admin-Check via OpenClaw Dashboard Service
-        _isAdmin = await _dashboardService.isAdmin(userId, 'materie');
-        
+        final profile = await Supabase.instance.client
+            .from('user_profiles')
+            .select('is_admin')
+            .eq('id', userId)
+            .maybeSingle()
+            .timeout(const Duration(seconds: 4));
+        _isAdmin = profile?['is_admin'] == true;
         if (kDebugMode) {
           debugPrint('👑 MATERIE ADMIN-CHECK: $_isAdmin (userId: $userId)');
         }
       }
-      
-      // Welt anzeigen (mit oder ohne Admin-Status)
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _showOnboarding = false; // DIREKT ZUR WELT!
+          _showOnboarding = false;
         });
       }
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('⚠️ Admin-Check error: $e');
-      }
-      // Bei Fehler: Normal zur Welt
+      if (kDebugMode) debugPrint('⚠️ Admin-Check error: $e');
       if (mounted) {
         setState(() {
           _isLoading = false;

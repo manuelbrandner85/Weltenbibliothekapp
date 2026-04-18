@@ -1,196 +1,103 @@
-import '../config/api_config.dart';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
-import '../models/recherche_extended_models.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-/// Recherche Service für Cloudflare Worker Backend V16.0
-/// Worker-URL: https://weltenbibliothek-api-v2.brandy13062.workers.dev
-/// Features: 16 Analyse-Module inkl. Machtanalyse, Netzwerk, Timeline, Narrativ-Vergleich, Meta-System
+/// RechercheService – calls the Supabase Edge Function "recherche"
+/// and persists searches in the research_history table.
 class RechercheService {
-  static const String _workerUrl = '${ApiConfig.workerUrl}/recherche';
-  
-  /// Führt eine Recherche durch
-  Future<RechercheResult> recherchieren({
-    required String query,
-    String depth = 'medium', // 'low', 'medium', 'high'
-    List<String> perspectives = const ['mainstream', 'kritisch', 'alternativ'],
-    String language = 'de',
-  }) async {
+  static final RechercheService _instance = RechercheService._internal();
+  factory RechercheService() => _instance;
+  RechercheService._internal();
+
+  final _db = Supabase.instance.client;
+
+  // ── AI Search ─────────────────────────────────────────────────────────────
+
+  /// Calls the "recherche" Edge Function.
+  /// Returns a Map with keys: query, summary, sources, images, timestamp.
+  Future<Map<String, dynamic>> search(String query) async {
+    final q = query.trim();
+    if (q.isEmpty) throw ArgumentError('Query darf nicht leer sein');
+
+    if (kDebugMode) debugPrint('🔍 [Recherche] query: $q');
+
+    final response = await _db.functions.invoke('recherche', body: {'query': q});
+
+    if (response.status != 200) {
+      throw Exception('Edge Function Fehler: HTTP ${response.status}');
+    }
+
+    final data = response.data as Map<String, dynamic>? ?? {};
+
+    final result = {
+      'query':     q,
+      'summary':   data['summary'] as String? ?? data['answer'] as String? ?? '',
+      'sources':   _normalizeList(data['sources'] ?? data['results'] ?? []),
+      'images':    _normalizeList(data['images'] ?? []),
+      'timestamp': DateTime.now().toIso8601String(),
+    };
+
+    _saveToHistory(q);
+
+    return result;
+  }
+
+  // ── History ───────────────────────────────────────────────────────────────
+
+  Future<List<Map<String, dynamic>>> getHistory({int limit = 20}) async {
     try {
-      final response = await http.post(
-        Uri.parse(_workerUrl),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'tab_context': 'welt_materie_recherche',
-          'query': query,
-          'depth': depth,
-          'perspectives': perspectives,
-          'language': language,
-        }),
-      ).timeout(
-        const Duration(seconds: 120),
-        onTimeout: () => throw Exception('Recherche-Timeout'),
-      );
-      
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return RechercheResult.fromJson(data);
-      } else {
-        throw Exception('Recherche fehlgeschlagen: ${response.statusCode} - ${response.body}');
-      }
+      final userId = _db.auth.currentUser?.id;
+      if (userId == null) return [];
+      final rows = await _db
+          .from('research_history')
+          .select('id, query, created_at')
+          .eq('user_id', userId)
+          .order('created_at', ascending: false)
+          .limit(limit);
+      return (rows as List).map((r) => {
+        'id':        r['id'],
+        'query':     r['query'] as String? ?? '',
+        'timestamp': r['created_at'],
+      }).toList();
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('Recherche Error: $e');
-      }
-      rethrow;
+      if (kDebugMode) debugPrint('⚠️ [Recherche] getHistory error: $e');
+      return [];
     }
   }
-}
 
-/// Recherche-Ergebnis Model (V16.0 Extended)
-class RechercheResult {
-  final String scraperStatus; // "daten_gefunden" oder "keine_daten"
-  final List<RechercheQuelle> quellen;
-  final String? faktenZusammenfassung;
-  final AlternativeAnalyse? alternativeAnalyse;
-  
-  // V16.0 Erweiterte Module
-  final Machtanalyse? machtanalyse;
-  final NetzwerkAnalyse? netzwerk;
-  final TimelineAnalyse? timeline;
-  final NarrativVergleich? narrativVergleich;
-  final MetaSystemanalyse? metaSystem;
-  final NutzerDisplay? nutzerDisplay;
-  
-  RechercheResult({
-    required this.scraperStatus,
-    required this.quellen,
-    this.faktenZusammenfassung,
-    this.alternativeAnalyse,
-    this.machtanalyse,
-    this.netzwerk,
-    this.timeline,
-    this.narrativVergleich,
-    this.metaSystem,
-    this.nutzerDisplay,
-  });
-  
-  factory RechercheResult.fromJson(Map<String, dynamic> json) {
-    return RechercheResult(
-      scraperStatus: json['scraper_status'] ?? 'keine_daten',
-      quellen: (json['sources'] as List?)
-          ?.map((q) => RechercheQuelle.fromJson(q))
-          .toList() ?? [],
-      faktenZusammenfassung: json['fakten_zusammenfassung'],
-      alternativeAnalyse: json['alternative_analyse'] != null
-          ? AlternativeAnalyse.fromJson(json['alternative_analyse'])
-          : null,
-      
-      // V16.0 Module
-      machtanalyse: json['machtanalyse'] != null
-          ? Machtanalyse.fromJson(json['machtanalyse'])
-          : null,
-      netzwerk: json['netzwerk'] != null
-          ? NetzwerkAnalyse.fromJson(json['netzwerk'])
-          : null,
-      timeline: json['timeline'] != null
-          ? TimelineAnalyse.fromJson(json['timeline'])
-          : null,
-      narrativVergleich: json['narrativ_vergleich'] != null
-          ? NarrativVergleich.fromJson(json['narrativ_vergleich'])
-          : null,
-      metaSystem: json['meta_systemanalyse'] != null
-          ? MetaSystemanalyse.fromJson(json['meta_systemanalyse'])
-          : null,
-      nutzerDisplay: json['nutzer_display'] != null
-          ? NutzerDisplay.fromJson(json['nutzer_display'])
-          : null,
-    );
-  }
-  
-  bool get hatDaten => scraperStatus == 'daten_gefunden' && quellen.isNotEmpty;
-  bool get hatErweiterteAnalyse => machtanalyse != null || netzwerk != null || timeline != null;
-}
-
-/// Alternative Analyse Model
-class AlternativeAnalyse {
-  final String kennzeichnung;
-  final List<String> perspektiven;
-  final String analyse;
-  final String disclaimer;
-  
-  AlternativeAnalyse({
-    required this.kennzeichnung,
-    required this.perspektiven,
-    required this.analyse,
-    required this.disclaimer,
-  });
-  
-  factory AlternativeAnalyse.fromJson(Map<String, dynamic> json) {
-    return AlternativeAnalyse(
-      kennzeichnung: json['kennzeichnung'] ?? '⚠️ Alternative Analyse',
-      perspektiven: (json['perspektiven'] as List?)?.cast<String>() ?? [],
-      analyse: json['analyse'] ?? '',
-      disclaimer: json['disclaimer'] ?? '',
-    );
-  }
-}
-
-/// Einzelne Recherche-Quelle
-class RechercheQuelle {
-  final String titel;
-  final String? autor;
-  final String? datum;
-  final String typ; // "text", "pdf", "video", "audio"
-  final String url;
-  final String kurzinhalt;
-  
-  RechercheQuelle({
-    required this.titel,
-    this.autor,
-    this.datum,
-    required this.typ,
-    required this.url,
-    required this.kurzinhalt,
-  });
-  
-  factory RechercheQuelle.fromJson(Map<String, dynamic> json) {
-    return RechercheQuelle(
-      titel: json['title'] ?? json['titel'] ?? 'Ohne Titel',
-      autor: json['author'] ?? json['autor'],
-      datum: json['date'] ?? json['datum'],
-      typ: json['media_type'] ?? json['typ'] ?? 'text',
-      url: json['url'] ?? '',
-      kurzinhalt: json['description'] ?? json['kurzinhalt'] ?? '',
-    );
-  }
-  
-  /// Icon basierend auf Typ
-  String get typeIcon {
-    switch (typ.toLowerCase()) {
-      case 'pdf':
-        return '📄';
-      case 'video':
-        return '🎥';
-      case 'audio':
-        return '🎧';
-      default:
-        return '📝';
+  Future<void> deleteHistoryEntry(dynamic entryId) async {
+    try {
+      final userId = _db.auth.currentUser?.id;
+      if (userId == null) return;
+      await _db
+          .from('research_history')
+          .delete()
+          .eq('id', entryId)
+          .eq('user_id', userId);
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ [Recherche] deleteHistoryEntry error: $e');
     }
   }
-  
-  /// Farbe basierend auf Typ
-  int get typeColor {
-    switch (typ.toLowerCase()) {
-      case 'pdf':
-        return 0xFFF44336; // Rot
-      case 'video':
-        return 0xFF2196F3; // Blau
-      case 'audio':
-        return 0xFF9C27B0; // Lila
-      default:
-        return 0xFF4CAF50; // Grün
-    }
+
+  // ── Private ───────────────────────────────────────────────────────────────
+
+  void _saveToHistory(String query) {
+    final userId = _db.auth.currentUser?.id;
+    if (userId == null) return;
+    _db.from('research_history').insert({
+      'user_id': userId,
+      'query':   query,
+    }).catchError((e) {
+      if (kDebugMode) debugPrint('⚠️ [Recherche] saveToHistory error: $e');
+      return <String, dynamic>{};
+    });
+  }
+
+  List<Map<String, dynamic>> _normalizeList(dynamic raw) {
+    final list = raw as List? ?? [];
+    return list.map((item) {
+      if (item is Map<String, dynamic>) return item;
+      if (item is Map) return Map<String, dynamic>.from(item);
+      return <String, dynamic>{'value': item.toString()};
+    }).toList();
   }
 }

@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../services/openclaw_dashboard_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'energie_world_screen.dart';
 import '../services/achievement_service.dart';  // 🏆 Achievement System
-import '../services/storage_service.dart';  // 🔑 Storage for userId
 import 'shared/world_admin_dashboard.dart';  // 🛡️ Admin Dashboard
 
 /// Energie-Welt-Wrapper - SIMPLIFIED VERSION
@@ -15,50 +14,41 @@ class EnergieWorldWrapper extends StatefulWidget {
 }
 
 class _EnergieWorldWrapperState extends State<EnergieWorldWrapper> {
-  // UNUSED FIELD: final _storage = StorageService();
-  // UNUSED FIELD: EnergieProfile? _profile;
   bool _showOnboarding = false; // ignore: unused_field
   bool _isLoading = true;
   bool _isAdmin = false; // 👑 Admin Status
-  final OpenClawDashboardService _dashboardService = OpenClawDashboardService(); // 🚀
 
   @override
   void initState() {
     super.initState();
-    // ✅ ADMIN-CHECK VOR WORLD-ANZEIGE
     _checkAdminStatusAndLoad();
-    
-    // 🏆 Achievement Trigger: World Visit
     _trackWorldVisit();
   }
-  
+
   /// 👑 Admin-Status prüfen
   Future<void> _checkAdminStatusAndLoad() async {
     try {
-      // User-ID holen
-      final userId = await StorageService().getUserId('energie');
-      
+      final userId = Supabase.instance.client.auth.currentUser?.id;
       if (userId != null) {
-        // Admin-Check via OpenClaw Dashboard Service
-        _isAdmin = await _dashboardService.isAdmin(userId, 'energie');
-        
+        final profile = await Supabase.instance.client
+            .from('user_profiles')
+            .select('is_admin')
+            .eq('id', userId)
+            .maybeSingle()
+            .timeout(const Duration(seconds: 4));
+        _isAdmin = profile?['is_admin'] == true;
         if (kDebugMode) {
           debugPrint('👑 ENERGIE ADMIN-CHECK: $_isAdmin (userId: $userId)');
         }
       }
-      
-      // Welt anzeigen (mit oder ohne Admin-Status)
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _showOnboarding = false; // DIREKT ZUR WELT!
+          _showOnboarding = false;
         });
       }
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('⚠️ Admin-Check error: $e');
-      }
-      // Bei Fehler: Normal zur Welt
+      if (kDebugMode) debugPrint('⚠️ Admin-Check error: $e');
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -68,7 +58,7 @@ class _EnergieWorldWrapperState extends State<EnergieWorldWrapper> {
       }
     }
   }
-  
+
   /// Track world visit for achievements
   Future<void> _trackWorldVisit() async {
     try {
@@ -135,24 +125,12 @@ class _EnergieWorldWrapperState extends State<EnergieWorldWrapper> {
       );
     }
 
-    // Onboarding State (nicht mehr verwendet - direkt zur Welt)
-    // if (_showOnboarding) {
-    //   return ProfileOnboardingScreen(
-    //     worldType: 'energie',
-    //     onProfileCreated: _onProfileCreated,
-    //   );
-    // }
-
     // Main World State - ADMIN DASHBOARD ODER NORMALER SCREEN
     if (_isAdmin) {
-      // 🛡️ ADMIN: Zeige Admin-Dashboard
-      if (kDebugMode) {
-        debugPrint('👑 Navigiere zu ADMIN DASHBOARD (energie)');
-      }
+      if (kDebugMode) debugPrint('👑 Navigiere zu ADMIN DASHBOARD (energie)');
       return const WorldAdminDashboard(world: 'energie');
     }
-    
-    // 👤 NORMAL USER: Zeige normalen World Screen
+
     return const EnergieWorldScreen();
   }
 }
