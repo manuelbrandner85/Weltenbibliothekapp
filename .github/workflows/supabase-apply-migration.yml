@@ -107,24 +107,39 @@ jobs:
           set +e
           FILE="${{ steps.mig.outputs.file }}"
           LOG=/tmp/psql.log
-          # Password-Länge für Debug (Wert selbst bleibt maskiert)
-          echo "DEBUG: password length=${#PG_PASSWORD}"
+          # Diagnostik VOR jedem Schritt ins Log schreiben
+          {
+            echo "=== DIAGNOSTICS ==="
+            echo "HOST: ${PG_HOST}"
+            echo "USER: postgres.adtviduaftdquvfjpojb"
+            echo "PORT: 6543"
+            echo "PASSWORD_LENGTH: ${#PG_PASSWORD}"
+            if [ -z "$PG_PASSWORD" ]; then
+              echo "ERROR: PG_PASSWORD is EMPTY - Secret not set or empty value!"
+            fi
+            # Zeige nur ersten und letzten Char des Passworts (kein Secret-Leak)
+            if [ ${#PG_PASSWORD} -gt 2 ]; then
+              FIRST="${PG_PASSWORD:0:1}"
+              LAST="${PG_PASSWORD: -1}"
+              echo "PASSWORD_PATTERN: ${FIRST}...${LAST} (${#PG_PASSWORD} chars)"
+            fi
+            echo "===================="
+          } | tee "$LOG"
           # URL-encode des Passworts (Sonderzeichen-safe)
           ENC_PW=$(python3 -c "import urllib.parse,os; print(urllib.parse.quote(os.environ['PG_PASSWORD'], safe=''))")
-          # URL-Format (wie im reset-workflow, der funktioniert hat)
-          PGURL="postgresql://postgres.adtviduaftdquvfjpojb:${ENC_PW}@${PG_HOST}:6543/postgres?sslmode=require"
-          echo "DEBUG: host=${PG_HOST}, user=postgres.adtviduaftdquvfjpojb"
-          # Zuerst Verbindung testen
-          echo "::group::Connection test"
-          psql "$PGURL" -t -A -c "SELECT current_user, now();" 2>&1 | tee -a "$LOG"
+          PGURL="postgresql://postgres.adtviduaftdquvfjpojb:${ENC_PW}@${PG_HOST}:6543/postgres"
+          # Verbindungs-Test mit verbose Output
+          echo "::group::Connection test" | tee -a "$LOG"
+          psql "$PGURL" -t -A -c "SELECT current_user, inet_server_addr(), inet_server_port();" 2>&1 | tee -a "$LOG"
           TEST_RC=${PIPESTATUS[0]}
           echo "::endgroup::"
           if [ "$TEST_RC" -ne 0 ]; then
+            echo "CONNECTION_TEST_FAILED rc=$TEST_RC" | tee -a "$LOG"
             cp "$LOG" psql.log
-            echo "::error::Connection test failed (RC=$TEST_RC). Check SUPABASE_DB_PASSWORD secret."
             exit $TEST_RC
           fi
-          echo "::group::Applying $FILE → ${PG_HOST}:6543"
+          echo "CONNECTION_OK" | tee -a "$LOG"
+          echo "::group::Applying $FILE" | tee -a "$LOG"
           psql "$PGURL" \
             --set ON_ERROR_STOP=1 \
             -f "$FILE" 2>&1 | tee -a "$LOG"
