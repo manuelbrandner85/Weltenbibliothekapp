@@ -679,19 +679,731 @@ class _JourneyJournalScreenState extends State<_JourneyJournalScreen> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Tab 1: Verlauf  (Phase 2.2c)
+// Tab 1: Verlauf  (Phase 2.2c) – Sub-Tabs: Reisen + Krafttiere
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _JourneyHistoryTab extends StatelessWidget {
+class _JourneyHistoryTab extends StatefulWidget {
   const _JourneyHistoryTab();
   @override
+  State<_JourneyHistoryTab> createState() => _JourneyHistoryTabState();
+}
+
+class _JourneyHistoryTabState extends State<_JourneyHistoryTab>
+    with SingleTickerProviderStateMixin {
+  late final TabController _sub;
+  @override
+  void initState() {
+    super.initState();
+    _sub = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _sub.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Padding(
-        padding: EdgeInsets.all(24),
-        child: Text('Verlauf-Tab folgt in Phase 2.2c',
-            style: TextStyle(color: Colors.white54),
-            textAlign: TextAlign.center),
+    return Column(
+      children: [
+        Container(
+          color: _kCardBg,
+          child: TabBar(
+            controller: _sub,
+            indicatorColor: _kDeep,
+            labelColor: _kDeep,
+            unselectedLabelColor: Colors.white54,
+            tabs: const [
+              Tab(text: 'Reisen'),
+              Tab(text: 'Krafttiere'),
+            ],
+          ),
+        ),
+        Expanded(
+          child: TabBarView(
+            controller: _sub,
+            children: const [
+              _JourneysSubTab(),
+              _PowerAnimalsSubTab(),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _JourneysSubTab extends StatefulWidget {
+  const _JourneysSubTab();
+  @override
+  State<_JourneysSubTab> createState() => _JourneysSubTabState();
+}
+
+class _JourneysSubTabState extends State<_JourneysSubTab> {
+  List<Map<String, dynamic>> _rows = [];
+  bool _loading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final user = _db.auth.currentUser;
+      if (user == null) {
+        setState(() {
+          _loading = false;
+          _error = 'Bitte zuerst anmelden';
+        });
+        return;
+      }
+      final rows = await _db
+          .from('shamanic_journeys')
+          .select()
+          .eq('user_id', user.id)
+          .order('journeyed_at', ascending: false);
+      if (!mounted) return;
+      setState(() {
+        _rows = List<Map<String, dynamic>>.from(rows);
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = '$e';
+      });
+    }
+  }
+
+  Future<void> _delete(String id) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: _kCardBg,
+        title: const Text('Reise löschen?',
+            style: TextStyle(color: Colors.white)),
+        content: const Text('Dieser Eintrag wird unwiderruflich gelöscht.',
+            style: TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Abbrechen',
+                  style: TextStyle(color: Colors.white54))),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Löschen',
+                  style: TextStyle(color: _kDeep))),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    try {
+      await _db.from('shamanic_journeys').delete().eq('id', id);
+      if (!mounted) return;
+      setState(() => _rows.removeWhere((r) => r['id'] == id));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Fehler: $e')));
+    }
+  }
+
+  String _formatDate(String iso) {
+    final dt = DateTime.tryParse(iso)?.toLocal();
+    if (dt == null) return iso;
+    String two(int n) => n.toString().padLeft(2, '0');
+    return '${two(dt.day)}.${two(dt.month)}.${dt.year} ${two(dt.hour)}:${two(dt.minute)}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator(color: _kDeep));
+    }
+    if (_error != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Text(_error!, style: const TextStyle(color: Colors.white54)),
+            const SizedBox(height: 12),
+            TextButton(
+                onPressed: _load,
+                child: const Text('Erneut versuchen',
+                    style: TextStyle(color: _kDeep))),
+          ]),
+        ),
+      );
+    }
+    if (_rows.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Icon(Icons.nightlight_round, color: _kDeep, size: 48),
+            SizedBox(height: 12),
+            Text('Noch keine Reisen dokumentiert.\nStarte deine erste im Neu-Tab.',
+                style: TextStyle(color: Colors.white54),
+                textAlign: TextAlign.center),
+          ]),
+        ),
+      );
+    }
+    return RefreshIndicator(
+      color: _kDeep,
+      onRefresh: _load,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(12),
+        itemCount: _rows.length,
+        itemBuilder: (_, i) {
+          final r = _rows[i];
+          final beings = List<String>.from(
+              (r['encountered_beings'] as List?) ?? const []);
+          final symbols = List<String>.from(
+              (r['symbols_received'] as List?) ?? const []);
+          return Card(
+            color: _kCardBg,
+            margin: const EdgeInsets.only(bottom: 10),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+                side: BorderSide(color: _kDeep.withValues(alpha: 0.3))),
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(children: [
+                    const Icon(Icons.nightlight_round, color: _kDeep),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(r['intention'] as String? ?? '—',
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600)),
+                          const SizedBox(height: 2),
+                          Text(
+                              '${_kWorldLabels[r['world']] ?? r['world']}  •  ${_kMethodLabels[r['method']] ?? r['method']}  •  ${r['duration_minutes']} Min  •  ${_formatDate(r['journeyed_at'] as String)}',
+                              style: const TextStyle(
+                                  color: Colors.white54, fontSize: 11)),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline,
+                          color: Colors.white38, size: 20),
+                      onPressed: () => _delete(r['id'] as String),
+                    ),
+                  ]),
+                  if ((r['experience'] as String?)?.isNotEmpty ?? false) ...[
+                    const SizedBox(height: 10),
+                    Text(r['experience'] as String,
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 12,
+                            height: 1.4)),
+                  ],
+                  if (beings.isNotEmpty || symbols.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: [
+                        ...beings.map((b) => _chip('🐾 $b')),
+                        ...symbols.map((s) => _chip('✨ $s')),
+                      ],
+                    ),
+                  ],
+                  if ((r['message'] as String?)?.isNotEmpty ?? false) ...[
+                    const SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                          color: _kDeep.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                              color: _kDeep.withValues(alpha: 0.3))),
+                      child: Row(children: [
+                        const Icon(Icons.format_quote,
+                            color: _kDeep, size: 16),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(r['message'] as String,
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontStyle: FontStyle.italic)),
+                        ),
+                      ]),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _chip(String text) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+            color: _kBorder, borderRadius: BorderRadius.circular(10)),
+        child: Text(text,
+            style: const TextStyle(color: Colors.white70, fontSize: 11)),
+      );
+}
+
+class _PowerAnimalsSubTab extends StatefulWidget {
+  const _PowerAnimalsSubTab();
+  @override
+  State<_PowerAnimalsSubTab> createState() => _PowerAnimalsSubTabState();
+}
+
+class _PowerAnimalsSubTabState extends State<_PowerAnimalsSubTab> {
+  List<Map<String, dynamic>> _rows = [];
+  bool _loading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final user = _db.auth.currentUser;
+      if (user == null) {
+        setState(() {
+          _loading = false;
+          _error = 'Bitte zuerst anmelden';
+        });
+        return;
+      }
+      final rows = await _db
+          .from('shamanic_power_animals')
+          .select()
+          .eq('user_id', user.id)
+          .order('created_at', ascending: false);
+      if (!mounted) return;
+      setState(() {
+        _rows = List<Map<String, dynamic>>.from(rows);
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = '$e';
+      });
+    }
+  }
+
+  Future<void> _openEditor({Map<String, dynamic>? existing}) async {
+    final saved = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _PowerAnimalEditorSheet(existing: existing),
+    );
+    if (saved == true) _load();
+  }
+
+  Future<void> _delete(String id) async {
+    try {
+      await _db.from('shamanic_power_animals').delete().eq('id', id);
+      if (!mounted) return;
+      setState(() => _rows.removeWhere((r) => r['id'] == id));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Fehler: $e')));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      floatingActionButton: FloatingActionButton.extended(
+        backgroundColor: _kDeep,
+        foregroundColor: Colors.white,
+        icon: const Icon(Icons.add),
+        label: const Text('Krafttier'),
+        onPressed: () => _openEditor(),
+      ),
+      body: _buildBody(),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator(color: _kDeep));
+    }
+    if (_error != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Text(_error!, style: const TextStyle(color: Colors.white54)),
+            const SizedBox(height: 12),
+            TextButton(
+                onPressed: _load,
+                child: const Text('Erneut versuchen',
+                    style: TextStyle(color: _kDeep))),
+          ]),
+        ),
+      );
+    }
+    if (_rows.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Icon(Icons.pets, color: _kDeep, size: 48),
+            SizedBox(height: 12),
+            Text('Noch keine Krafttiere eingetragen.\nFüge dein erstes Krafttier hinzu.',
+                style: TextStyle(color: Colors.white54),
+                textAlign: TextAlign.center),
+          ]),
+        ),
+      );
+    }
+    return RefreshIndicator(
+      color: _kDeep,
+      onRefresh: _load,
+      child: ListView.builder(
+        padding: const EdgeInsets.fromLTRB(12, 12, 12, 88),
+        itemCount: _rows.length,
+        itemBuilder: (_, i) {
+          final r = _rows[i];
+          final qualities =
+              List<String>.from((r['qualities'] as List?) ?? const []);
+          final active = r['is_active'] as bool? ?? true;
+          return Card(
+            color: _kCardBg,
+            margin: const EdgeInsets.only(bottom: 10),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+                side: BorderSide(
+                    color: active
+                        ? _kDeep.withValues(alpha: 0.4)
+                        : _kBorder)),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(14),
+              onTap: () => _openEditor(existing: r),
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(children: [
+                      CircleAvatar(
+                        radius: 20,
+                        backgroundColor:
+                            active ? _kDeep : Colors.white24,
+                        child: const Text('🐾',
+                            style: TextStyle(fontSize: 20)),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(r['animal'] as String? ?? '—',
+                                style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700)),
+                            if (!active)
+                              const Text('(nicht mehr aktiv)',
+                                  style: TextStyle(
+                                      color: Colors.white38,
+                                      fontSize: 11)),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline,
+                            color: Colors.white38, size: 20),
+                        onPressed: () => _delete(r['id'] as String),
+                      ),
+                    ]),
+                    if (qualities.isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: qualities
+                            .map((q) => Chip(
+                                  label: Text(q,
+                                      style: const TextStyle(
+                                          color: Colors.white70,
+                                          fontSize: 11)),
+                                  backgroundColor: _kBorder,
+                                  materialTapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
+                                  visualDensity: VisualDensity.compact,
+                                ))
+                            .toList(),
+                      ),
+                    ],
+                    if ((r['message'] as String?)?.isNotEmpty ?? false) ...[
+                      const SizedBox(height: 10),
+                      Text(r['message'] as String,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                              color: Colors.white70, fontSize: 12)),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _PowerAnimalEditorSheet extends StatefulWidget {
+  final Map<String, dynamic>? existing;
+  const _PowerAnimalEditorSheet({this.existing});
+  @override
+  State<_PowerAnimalEditorSheet> createState() =>
+      _PowerAnimalEditorSheetState();
+}
+
+class _PowerAnimalEditorSheetState extends State<_PowerAnimalEditorSheet> {
+  final _animalCtrl = TextEditingController();
+  final _qualitiesCtrl = TextEditingController();
+  final _messageCtrl = TextEditingController();
+  final _giftsCtrl = TextEditingController();
+  bool _active = true;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final e = widget.existing;
+    if (e != null) {
+      _animalCtrl.text = e['animal'] as String? ?? '';
+      _qualitiesCtrl.text =
+          List<String>.from((e['qualities'] as List?) ?? const [])
+              .join(', ');
+      _messageCtrl.text = e['message'] as String? ?? '';
+      _giftsCtrl.text = e['gifts'] as String? ?? '';
+      _active = e['is_active'] as bool? ?? true;
+    }
+  }
+
+  @override
+  void dispose() {
+    _animalCtrl.dispose();
+    _qualitiesCtrl.dispose();
+    _messageCtrl.dispose();
+    _giftsCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    final animal = _animalCtrl.text.trim();
+    if (animal.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Name des Krafttiers fehlt')));
+      return;
+    }
+    final user = _db.auth.currentUser;
+    if (user == null) return;
+    setState(() => _saving = true);
+    try {
+      final qualities = _qualitiesCtrl.text
+          .split(RegExp(r'[,\n]'))
+          .map((s) => s.trim())
+          .where((s) => s.isNotEmpty)
+          .toList();
+      final payload = {
+        'animal': animal,
+        'qualities': qualities,
+        'message': _messageCtrl.text.trim().isEmpty
+            ? null
+            : _messageCtrl.text.trim(),
+        'gifts': _giftsCtrl.text.trim().isEmpty
+            ? null
+            : _giftsCtrl.text.trim(),
+        'is_active': _active,
+        'updated_at': DateTime.now().toIso8601String(),
+      };
+      if (widget.existing == null) {
+        await _db.from('shamanic_power_animals').insert({
+          ...payload,
+          'user_id': user.id,
+        });
+      } else {
+        await _db
+            .from('shamanic_power_animals')
+            .update(payload)
+            .eq('id', widget.existing!['id'] as String);
+      }
+      if (!mounted) return;
+      Navigator.pop(context, true);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _saving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Fehler: $e')));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottom = MediaQuery.of(context).viewInsets.bottom;
+    return Padding(
+      padding: EdgeInsets.only(bottom: bottom),
+      child: DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.85,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        builder: (_, scrollCtrl) => Container(
+          decoration: const BoxDecoration(
+            color: _kDarkBg,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(children: [
+            Container(
+              margin: const EdgeInsets.only(top: 8),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.circular(2)),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+              child: Row(children: [
+                const Icon(Icons.pets, color: _kDeep),
+                const SizedBox(width: 8),
+                Text(
+                    widget.existing == null
+                        ? 'Neues Krafttier'
+                        : 'Krafttier bearbeiten',
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16)),
+                const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white54),
+                  onPressed: () => Navigator.pop(context, false),
+                ),
+              ]),
+            ),
+            Expanded(
+              child: ListView(
+                controller: scrollCtrl,
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                children: [
+                  _field(_animalCtrl, 'Krafttier*', Icons.pets_outlined),
+                  const SizedBox(height: 12),
+                  _field(_qualitiesCtrl,
+                      'Qualitäten (kommagetrennt)',
+                      Icons.auto_awesome,
+                      maxLines: 2),
+                  const SizedBox(height: 12),
+                  _field(_messageCtrl, 'Botschaft', Icons.message_outlined,
+                      maxLines: 3),
+                  const SizedBox(height: 12),
+                  _field(_giftsCtrl, 'Gaben / Werkzeuge',
+                      Icons.card_giftcard_outlined,
+                      maxLines: 2),
+                  const SizedBox(height: 12),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    activeThumbColor: _kDeep,
+                    title: const Text('Aktiver Begleiter',
+                        style: TextStyle(color: Colors.white)),
+                    subtitle: const Text(
+                        'Noch in meinem Leben präsent',
+                        style: TextStyle(
+                            color: Colors.white54, fontSize: 12)),
+                    value: _active,
+                    onChanged: (v) => setState(() => _active = v),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    height: 48,
+                    child: ElevatedButton.icon(
+                      onPressed: _saving ? null : _save,
+                      icon: _saving
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: Colors.white))
+                          : const Icon(Icons.save_outlined),
+                      label: Text(widget.existing == null
+                          ? 'Speichern'
+                          : 'Aktualisieren'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _kDeep,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ]),
+        ),
+      ),
+    );
+  }
+
+  Widget _field(TextEditingController c, String label, IconData icon,
+      {int maxLines = 1}) {
+    return TextField(
+      controller: c,
+      maxLines: maxLines,
+      style: const TextStyle(color: Colors.white),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: const TextStyle(color: Colors.white54),
+        prefixIcon: Icon(icon, color: _kDeep),
+        filled: true,
+        fillColor: _kCardBg,
+        border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: _kBorder)),
+        enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: _kBorder)),
+        focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: _kDeep)),
       ),
     );
   }
