@@ -82,63 +82,35 @@ jobs:
           sudo apt-get install -y -qq postgresql-client
           psql --version
 
-      - name: 🔌 Verbindung testen (Session-Pooler Port 5432 für DDL)
+      - name: 🔌 Pooler-URL bauen (Port 6543, wie v16-Reset-Workflow)
         id: conn
         env:
           PG_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
           INPUT_REGION: ${{ inputs.region }}
         run: |
-          set +e
           if [ -z "$PG_PASSWORD" ]; then
             echo "::error::Secret SUPABASE_DB_PASSWORD ist nicht gesetzt."
             exit 1
           fi
+          REGION="${INPUT_REGION:-${DEFAULT_REGION}}"
           ENC_PW=$(python3 -c "import urllib.parse,os; print(urllib.parse.quote(os.environ['PG_PASSWORD'], safe=''))")
-          # DDL (GRANT) braucht Session-Pooler (Port 5432), nicht Transaction-Pooler (6543)
-          # Direkter Host hat keine IPv4-Adresse in GitHub Actions → Session-Pooler nutzen
-          REGIONS=("${INPUT_REGION:-${DEFAULT_REGION}}" eu-central-1 eu-west-1 us-east-1 us-west-1 ap-southeast-1)
-          SEEN=""
-          WINNER=""
-          WINNER_HOST=""
-          for R in "${REGIONS[@]}"; do
-            case " $SEEN " in *" $R "*) continue;; esac
-            SEEN="$SEEN $R"
-            # Session Pooler: gleicher Host, Port 5432
-            HOST="aws-0-${R}.pooler.supabase.com"
-            echo "--- Teste $R Port 5432 ---"
-            if ! getent ahostsv4 "$HOST" >/dev/null 2>&1; then echo "  kein DNS"; continue; fi
-            if ! timeout 8 bash -c "</dev/tcp/$HOST/5432" 2>/dev/null; then echo "  TCP 5432 blockiert"; continue; fi
-            URL="postgresql://postgres.${PROJECT_REF}:${ENC_PW}@${HOST}:5432/postgres?sslmode=require"
-            if psql "$URL" -t -A -c "SELECT current_user" 2>&1; then
-              echo "  ✅ Session-Pooler ok in Region $R"
-              WINNER="$R"
-              WINNER_HOST="$HOST"
-              break
-            else
-              echo "  ↪ Login fehlgeschlagen in $R"
-            fi
-          done
-          if [ -z "$WINNER" ]; then
-            echo "::error::Keine Region erlaubt Verbindung (Port 5432/Session-Pooler)."
-            exit 1
-          fi
-          echo "host=${WINNER_HOST}" >> "$GITHUB_OUTPUT"
-          echo "region=${WINNER}" >> "$GITHUB_OUTPUT"
-          echo "port=5432" >> "$GITHUB_OUTPUT"
+          HOST="aws-0-${REGION}.pooler.supabase.com"
+          echo "host=${HOST}" >> "$GITHUB_OUTPUT"
+          echo "region=${REGION}" >> "$GITHUB_OUTPUT"
+          echo "url=postgresql://postgres.${PROJECT_REF}:${ENC_PW}@${HOST}:6543/postgres" >> "$GITHUB_OUTPUT"
+          echo "✅ Pooler-URL gebaut: ${HOST}:6543"
 
       - name: 🚀 Migration additiv ausführen
         id: migrate
         env:
           PG_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-          PG_HOST: ${{ steps.conn.outputs.host }}
+          PG_URL: ${{ steps.conn.outputs.url }}
         run: |
           set +e
-          ENC_PW=$(python3 -c "import urllib.parse,os; print(urllib.parse.quote(os.environ['PG_PASSWORD'], safe=''))")
-          PGCONN="postgresql://postgres.${PROJECT_REF}:${ENC_PW}@${PG_HOST}:5432/postgres?sslmode=require"
           FILE="${{ steps.mig.outputs.file }}"
           LOG=/tmp/psql.log
-          echo "::group::Applying $FILE (additive)"
-          psql "$PGCONN" \
+          echo "::group::Applying $FILE via ${PG_URL%%:*@*}:6543"
+          psql "$PG_URL" \
             --set ON_ERROR_STOP=1 \
             -f "$FILE" 2>&1 | tee "$LOG"
           RC=${PIPESTATUS[0]}
@@ -161,16 +133,16 @@ jobs:
           script: |
             const fs = require('fs');
             let log = '';
-            try { log = fs.readFileSync('psql.log', 'utf8'); } catch(e) { log = '(Log unlesbar)'; }
-            const errLines = log.split('\n')
-              .filter(l => /^(psql:|ERROR:|DETAIL:|HINT:|CONTEXT:|LINE )/.test(l))
-              .slice(0, 80).join('\n');
+            try { log = fs.readFileSync('psql.log', 'utf8'); } catch(e) { log = '(Log unlesbar: ' + e.message + ')'; }
+            // Zeige alle Zeilen (nicht nur ERROR), damit wir die echte Fehlerursache sehen
+            const tail = log.split('\n').filter(Boolean).slice(-60).join('\n');
             const body = [
               '### ❌ Additive Supabase-Migration fehlgeschlagen',
               '**Run:** ' + context.runId,
               '**Commit:** ' + context.sha.slice(0,7),
               '',
-              '```', errLines || '(keine ERROR-Zeilen)', '```'
+              '#### psql Output (letzte 60 Zeilen)',
+              '```', tail || '(psql.log leer – Fehler war im Verbindungs-Step, siehe Actions-Log)', '```'
             ].join('\n');
             const prs = await github.rest.pulls.list({
               owner: context.repo.owner, repo: context.repo.repo,
