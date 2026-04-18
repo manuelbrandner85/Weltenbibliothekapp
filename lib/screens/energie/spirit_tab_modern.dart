@@ -15,6 +15,7 @@ import 'calculators/spirit_universal_tool_screen.dart';
 import 'calculators/new_spirit_tool_screens.dart';
 import 'calculators/moon_calendar_tool_screen.dart'; // 🌕 v19 Mondkalender
 import 'calculators/dream_interpretation_tool_screen.dart'; // 💭 v20 Traumdeutung
+import 'calculators/body_scan_tool_screen.dart'; // 🧘 v21 Körperscan
 import 'frequency_generator_screen.dart';  // 🎵 FREQUENCY GENERATOR
 import '../spirit/spirit_tools_mega_screen.dart'; // 🆕 V115 MEGA UPDATE TOOLS
 
@@ -426,6 +427,17 @@ class _SpiritTabModernState extends State<SpiritTabModern> {
         'color': const Color(0xFF1A237E),
         'category': 'new',
         'screen': const DreamInterpretationToolScreen(),
+      },
+
+      // 🧘 Körperscan (v21 – Chakra-Symptom-Scanner)
+      {
+        'icon': Icons.sensors,
+        'iconEmoji': '🧘',
+        'title': 'Körperscan',
+        'subtitle': 'Symptome → Chakra-Blockaden',
+        'color': const Color(0xFFE91E63),
+        'category': 'new',
+        'screen': const BodyScanToolScreen(),
       },
       
       // ᚱ Runen-Orakel (V115 Feature #20)
