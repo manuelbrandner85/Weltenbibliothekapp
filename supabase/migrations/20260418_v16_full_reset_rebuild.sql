@@ -336,3 +336,141 @@ CREATE TABLE tool_group_meditation (
   participants   INTEGER NOT NULL DEFAULT 1,
   created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- ============================================================
+-- PHASE G: TOOLS MATERIE (10)
+-- Endpunkte in Worker (workers/api-worker.js toolTableMap)
+-- ============================================================
+
+-- ── tool_geopolitics_events ── Endpunkt: materie/geopolitics
+CREATE TABLE tool_geopolitics_events (
+  id                 UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  room_id            TEXT NOT NULL,
+  user_id            UUID REFERENCES profiles(id) ON DELETE SET NULL,
+  username           TEXT NOT NULL DEFAULT 'Anonym',
+  event_title        TEXT NOT NULL,
+  event_description  TEXT,
+  tags               TEXT[] NOT NULL DEFAULT '{}',
+  created_at         TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- ── tool_history_events ── Endpunkt: materie/history
+CREATE TABLE tool_history_events (
+  id                 UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  room_id            TEXT NOT NULL,
+  user_id            UUID REFERENCES profiles(id) ON DELETE SET NULL,
+  username           TEXT NOT NULL DEFAULT 'Anonym',
+  event_title        TEXT NOT NULL,
+  event_description  TEXT,
+  event_year         INTEGER,
+  civilization       TEXT,
+  category           TEXT,
+  created_at         TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- ── tool_healing_methods ── Endpunkt: materie/healing
+CREATE TABLE tool_healing_methods (
+  id                  UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  room_id             TEXT NOT NULL,
+  user_id             UUID REFERENCES profiles(id) ON DELETE SET NULL,
+  username            TEXT NOT NULL DEFAULT 'Anonym',
+  method_name         TEXT NOT NULL,
+  method_description  TEXT,
+  category            TEXT NOT NULL DEFAULT 'alternative',
+  created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- ── tool_network_connections ── Endpunkt: materie/network
+CREATE TABLE tool_network_connections (
+  id                      UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  room_id                 TEXT NOT NULL,
+  user_id                 UUID REFERENCES profiles(id) ON DELETE SET NULL,
+  username                TEXT NOT NULL DEFAULT 'Anonym',
+  connection_title        TEXT NOT NULL,
+  connection_description  TEXT,
+  created_at              TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- ── tool_research_documents ── Endpunkt: materie/research
+CREATE TABLE tool_research_documents (
+  id                    UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  room_id               TEXT NOT NULL,
+  user_id               UUID REFERENCES profiles(id) ON DELETE SET NULL,
+  username              TEXT NOT NULL DEFAULT 'Anonym',
+  document_title        TEXT NOT NULL,
+  document_description  TEXT,
+  document_type         TEXT NOT NULL DEFAULT 'research',
+  created_at            TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- ── tool_ufo_sightings ── Endpunkt: materie/ufo
+CREATE TABLE tool_ufo_sightings (
+  id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  room_id       TEXT NOT NULL,
+  user_id       UUID REFERENCES profiles(id) ON DELETE SET NULL,
+  username      TEXT NOT NULL DEFAULT 'Anonym',
+  title         TEXT NOT NULL,
+  description   TEXT,
+  location      TEXT,
+  sighting_date TEXT,
+  latitude      DOUBLE PRECISION,
+  longitude     DOUBLE PRECISION,
+  object_type   TEXT,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- ── tool_connections ── Endpunkt: materie/connections
+CREATE TABLE tool_connections (
+  id                UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  room_id           TEXT NOT NULL,
+  user_id           UUID REFERENCES profiles(id) ON DELETE SET NULL,
+  username          TEXT NOT NULL DEFAULT 'Anonym',
+  connection_title  TEXT NOT NULL,
+  description       TEXT,
+  from_node         TEXT,
+  to_node           TEXT,
+  connection_type   TEXT NOT NULL DEFAULT 'related',
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- ── tool_artefakte ── Endpunkt: materie/artefakte
+CREATE TABLE tool_artefakte (
+  id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  room_id     TEXT NOT NULL,
+  user_id     UUID REFERENCES profiles(id) ON DELETE SET NULL,
+  username    TEXT NOT NULL DEFAULT 'Anonym',
+  name        TEXT NOT NULL,
+  description TEXT,
+  category    TEXT,
+  image_url   TEXT,
+  metadata    JSONB NOT NULL DEFAULT '{}',
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- ── tool_news ── Endpunkt: materie/news
+CREATE TABLE tool_news (
+  id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  room_id     TEXT NOT NULL,
+  user_id     UUID REFERENCES profiles(id) ON DELETE SET NULL,
+  username    TEXT NOT NULL DEFAULT 'Anonym',
+  headline    TEXT NOT NULL,
+  content     TEXT,
+  source_url  TEXT,
+  category    TEXT,
+  is_verified BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- ── tool_patente ── Endpunkt: materie/patente
+CREATE TABLE tool_patente (
+  id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  room_id       TEXT NOT NULL,
+  user_id       UUID REFERENCES profiles(id) ON DELETE SET NULL,
+  username      TEXT NOT NULL DEFAULT 'Anonym',
+  patent_number TEXT,
+  title         TEXT NOT NULL,
+  description   TEXT,
+  category      TEXT,
+  filed_date    TEXT,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
