@@ -2811,7 +2811,10 @@ Okkulte Zeremonie: "Cremation of Care" vor 12m hoher Moloch-Eule-Statue - Mensch
     category: LocationCategory.epstein,
     keywords: ['Ghislaine Maxwell', 'Epstein', 'Verhaftung', 'Sexhandel', 'New Hampshire'],
     date: DateTime(2020, 7, 2),
-    imageUrls: [],
+    imageUrls: [
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/Ghislaine_Maxwell_2013.jpg/800px-Ghislaine_Maxwell_2013.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e2/Bradford_New_Hampshire_Town_Hall.jpg/1200px-Bradford_New_Hampshire_Town_Hall.jpg',
+    ],
     videoUrls: ['B3zj27WOrWE'], // Netflix: Jeffrey Epstein - Stinkreich
     sources: [
       'Ghislaine Maxwell Trial Transcripts (2021)',
@@ -2845,8 +2848,11 @@ Okkulte Zeremonie: "Cremation of Care" vor 12m hoher Moloch-Eule-Statue - Mensch
     category: LocationCategory.epstein,
     keywords: ['Zorro Ranch', 'Epstein', 'New Mexico', 'Baby-Ranch', 'DNA'],
     date: DateTime(1993, 1, 1),
-    imageUrls: [],
-    videoUrls: [],
+    imageUrls: [
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f3/New_Mexico_desert_landscape.jpg/1200px-New_Mexico_desert_landscape.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a3/Stanley%2C_New_Mexico.jpg/1200px-Stanley%2C_New_Mexico.jpg',
+    ],
+    videoUrls: ['jgSjH8Kqhb8'], // Jeffrey Epstein: Filthy Rich (Netflix Doku)
     sources: [
       'Property Records Stanley, New Mexico (1993)',
       'Vanity Fair: "The Jeffrey Epstein Scandal" (2003)',

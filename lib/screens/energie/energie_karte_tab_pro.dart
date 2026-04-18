@@ -1217,30 +1217,6 @@ Die Große Pyramide war kein Grabmal, sondern ein Energiekonverter bzw. Kraftwer
       'Egyptian Ministry of Antiquities: Official Excavation Reports (1925-2020) - Archivierte Dokumentation',
     ],
   ),
-  
-  // CHAKRA-PUNKTE DER ERDE
-  EnergieLocationDetail(
-    name: 'Mount Kailash - Tibet',
-    description: 'Heiligster Berg & Welt-Chakra',
-    detailedInfo: '''Für Hindus, Buddhisten, Jains heilig. Niemand hat ihn je bestiegen. Perfekte Pyramidenform. Zentrum von 4 großen Flüssen. Gilt als Krone-Chakra der Erde. Intensive spirituelle Energie.''',
-    position: const LatLng(31.0666, 81.3111),
-    category: EnergieCategory.chakraPoints,
-    keywords: ['Kailash', 'Tibet', 'Heiliger Berg', 'Chakra', 'Shiva'],
-    energyLevel: 10,
-    imageUrls: [
-      'https://upload.wikimedia.org/wikipedia/commons/thumb/0/08/Kailash_south.JPG/1200px-Kailash_south.JPG',
-    ],
-    videoUrls: ['TwcCZ3vZ_yc'],
-    sources: [
-      'Swami Pranavananda: "Kailas-Manasarovar" (1949) - 312 Seiten, detaillierte Pilgerberichte',
-      'Lama Anagarika Govinda: "The Way of the White Clouds" (1966) - 368 Seiten, spirituelle Erfahrungen',
-      'Russian Geo-Magnetic Expedition Report (1999) - Magnetfeld-Anomalie-Messungen',
-      'Charles Allen: "A Mountain in Tibet" (1982) - 286 Seiten, historische Analyse',
-      'John Snelling: "The Sacred Mountain" (1990) - 272 Seiten, multireligi\u00f6se Perspektive',
-      'NASA Satellite Imagery Database - Hochaufl\u00f6sende Kailash-Topografie',
-    ],
-  ),
-  
   EnergieLocationDetail(
     name: 'Machu Picchu - Peru',
     description: 'Inka-Stadt & Herz-Chakra',
@@ -1263,41 +1239,6 @@ Die Große Pyramide war kein Grabmal, sondern ein Energiekonverter bzw. Kraftwer
       'Peter Frost: "Exploring Cusco" (2009) - 448 Seiten, detaillierte archäologische Analyse',
     ],
   ),
-  
-  // KRAFTORTE
-  EnergieLocationDetail(
-    name: 'Sedona Vortexes - Arizona',
-    description: 'Energiewirbel & Heilungsort',
-    detailedInfo: '''Sedona ist berühmt für seine Energie-Vortexe. Rote Felsen, magnetische Anomalien. Beliebter Ort für Meditation, Heilung, spirituelle Retreats. 4 Haupt-Vortexe: Airport Mesa, Cathedral Rock, Bell Rock, Boynton Canyon.''',
-    position: const LatLng(34.8697, -111.7610),
-    category: EnergieCategory.vortexPoints,
-    keywords: ['Sedona', 'Vortex', 'Arizona', 'Heilung', 'Rote Felsen'],
-    energyLevel: 9,
-    imageUrls: [
-      'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/Cathedral_Rock_Sedona_Arizona.jpg/1200px-Cathedral_Rock_Sedona_Arizona.jpg',
-      'https://upload.wikimedia.org/wikipedia/commons/thumb/6/68/Bell_Rock%2C_Sedona.jpg/1200px-Bell_Rock%2C_Sedona.jpg',
-    ],
-    videoUrls: ['hXczN-NNi3E'],
-    sources: [
-      'Pete Sanders: "You Are Psychic!" (1989) - 288 Seiten, inklusive Sedona Vortex-Messungen',
-      'USGS Geological Survey of Sedona Region (2010) - Offizielle geologische und magnetische Analyse',
-      'Dennis Andres: "Sedona: Beyond the Vortex" (2006) - 248 Seiten, spirituelle/wissenschaftliche Perspektive',
-      'Tom Dongo: "The Mysteries of Sedona" (1988) - 156 Seiten, frühe Vortex-Dokumentation',
-      'Sedona Metaphysical Spiritual Association: Healing Reports Database (1985-2020)',
-      'Arizona Geological Society: Magnetite Distribution Maps - Eisenoxid-Konzentrationskarten',
-    ],
-  ),
-  
-  EnergieLocationDetail(
-    name: 'Uluru (Ayers Rock) - Australien',
-    description: 'Heiliger Felsen der Aborigines',
-    detailedInfo: '''Riesiger Sandsteinfelsen. Für Aborigines heilig, spirituelles Zentrum. 348m hoch, 9,4km Umfang. Farbwechsel bei Sonnenauf-/untergang. Traumzeit-Geschichten. Starkes Erdchakra.''',
-    position: const LatLng(-25.3444, 131.0369),
-    category: EnergieCategory.kraftorte,
-    keywords: ['Uluru', 'Ayers Rock', 'Aborigines', 'Traumzeit', 'Australien'],
-    energyLevel: 9,
-  ),
-  
   // MEDITATIONS-ZENTREN
   EnergieLocationDetail(
     name: 'Bodh Gaya - Indien',
@@ -1371,18 +1312,6 @@ Die Große Pyramide war kein Grabmal, sondern ein Energiekonverter bzw. Kraftwer
     keywords: ['Teotihuacán', 'Mexiko', 'Pyramiden', 'Stadt der Götter', 'Azteken'],
     energyLevel: 9,
   ),
-  
-  // EUROPÄISCHE KRAFTORTE
-  EnergieLocationDetail(
-    name: 'Externsteine - Deutschland',
-    description: 'Mystische Felsformation',
-    detailedInfo: '''Bis zu 40m hohe Sandsteinfelsen im Teutoburger Wald. Germanisches Heiligtum. Astronomische Marker (Sonnenaufgang Sommersonnenwende). Kapelle im Fels. Kraftort mit starker Energie.''',
-    position: const LatLng(51.8697, 8.9172),
-    category: EnergieCategory.kraftorte,
-    keywords: ['Externsteine', 'Deutschland', 'Germanen', 'Teutoburger Wald', 'Felsen'],
-    energyLevel: 8,
-  ),
-  
   EnergieLocationDetail(
     name: 'Chartres Kathedrale - Frankreich',
     description: 'Gotisches Meisterwerk & Labyrinth',
@@ -1412,30 +1341,6 @@ Die Große Pyramide war kein Grabmal, sondern ein Energiekonverter bzw. Kraftwer
     category: EnergieCategory.chakraPoints,
     keywords: ['Mount Shasta', 'Wurzel-Chakra', 'Erdenergie', 'Vulkan', 'Native American'],
     energyLevel: 9,
-  ),
-  
-  EnergieLocationDetail(
-    name: 'Glastonbury Tor - Sakral-Chakra',
-    description: 'Sakral-Chakra der Erde',
-    detailedInfo: '''Glastonbury Tor (Hügel mit Turm) - zweites Erd-Chakra. Michael & Mary Ley-Lines. Avalon-Mythos. Chalice Well. Starke weibliche Energie. Fruchtbarkeit & Schöpfung.''',
-    position: const LatLng(51.1443, -2.6986),
-    category: EnergieCategory.chakraPoints,
-    keywords: ['Glastonbury Tor', 'Sakral-Chakra', 'Ley-Lines', 'Avalon', 'Weibliche Energie'],
-    energyLevel: 9,
-  ),
-  
-  // 🔥 20+ NEUE SPIRITUELLE & ESOTERISCHE KRAFTORTE
-  
-  EnergieLocationDetail(
-    name: 'Machu Picchu - Peru',
-    description: 'Inka-Stadt der Energie & kosmisches Portal',
-    detailedInfo: '''15. Jahrhundert Inka-Zitadelle auf 2.430m Höhe. Perfekte Astronomische Ausrichtung zum Sonnenauf- & -untergang. Intihuatana-Stein (Sonnenuhr) - spirituelles Zentrum. Starke tellurische Energien. Portal zu höheren Dimensionen.''',
-    position: const LatLng(-13.1631, -72.5450),
-    category: EnergieCategory.sacredSites,
-    keywords: ['Machu Picchu', 'Inka', 'Peru', 'Portal', 'Energie'],
-    imageUrls: ['https://upload.wikimedia.org/wikipedia/commons/thumb/e/eb/Machu_Picchu%2C_Peru.jpg/1200px-Machu_Picchu%2C_Peru.jpg'],
-    videoUrls: ['fmfFAw4NLc0'],
-    energyLevel: 10,
   ),
   
   EnergieLocationDetail(
