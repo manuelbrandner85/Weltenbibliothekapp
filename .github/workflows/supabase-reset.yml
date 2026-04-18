@@ -14,6 +14,12 @@ name: 🗄️ Supabase Reset & Rebuild (v16)
 #   Input "confirm" auf exakt  RESET  setzen → Run.
 
 on:
+  # Auto-Trigger: Push mit [apply-migration] im Commit-Message
+  push:
+    paths:
+      - 'supabase/migrations/**.sql'
+      - '.github/workflows/supabase-reset.yml'
+  # Manueller Trigger über Actions-UI
   workflow_dispatch:
     inputs:
       confirm:
@@ -25,29 +31,39 @@ on:
         required: true
         default: 'supabase/migrations/20260418_v16_full_reset_rebuild.sql'
 
+env:
+  DEFAULT_MIGRATION: supabase/migrations/20260418_v16_full_reset_rebuild.sql
+
 jobs:
   reset:
     name: 🔥 DROP + CREATE public schema
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # Gate: workflow_dispatch braucht confirm=RESET, push braucht [apply-migration] im Message
+    if: >
+      (github.event_name == 'workflow_dispatch' && inputs.confirm == 'RESET')
+      || (github.event_name == 'push' && contains(github.event.head_commit.message, '[apply-migration]'))
 
     steps:
-      - name: ✅ Bestätigung prüfen
-        if: ${{ inputs.confirm != 'RESET' }}
-        run: |
-          echo "::error::Bestätigung fehlt — Input 'confirm' muss exakt 'RESET' sein."
-          exit 1
-
       - name: 📥 Checkout
         uses: actions/checkout@v4
 
+      - name: 🧭 Auflösen: welche Migrations-Datei?
+        id: mig
+        run: |
+          FILE="${{ inputs.migration_file }}"
+          if [ -z "$FILE" ]; then FILE="${{ env.DEFAULT_MIGRATION }}"; fi
+          echo "file=$FILE" >> "$GITHUB_OUTPUT"
+          echo "Migration: $FILE"
+
       - name: 🔎 Migration existiert?
         run: |
-          if [ ! -f "${{ inputs.migration_file }}" ]; then
-            echo "::error::Migrations-Datei nicht gefunden: ${{ inputs.migration_file }}"
+          FILE="${{ steps.mig.outputs.file }}"
+          if [ ! -f "$FILE" ]; then
+            echo "::error::Migrations-Datei nicht gefunden: $FILE"
             exit 1
           fi
-          wc -l "${{ inputs.migration_file }}"
+          wc -l "$FILE"
 
       - name: 🐘 PostgreSQL Client installieren
         run: |
@@ -78,11 +94,12 @@ jobs:
           PGCONN: ${{ secrets.SUPABASE_DB_URL }}
         run: |
           set -e
-          echo "::group::Running ${{ inputs.migration_file }}"
+          FILE="${{ steps.mig.outputs.file }}"
+          echo "::group::Running $FILE"
           psql "$PGCONN" \
             --set ON_ERROR_STOP=1 \
             --single-transaction \
-            -f "${{ inputs.migration_file }}"
+            -f "$FILE"
           echo "::endgroup::"
 
       - name: ✅ Zustand NACHHER (Verifikation)
