@@ -103,6 +103,7 @@ class _MaterieResearchScreenState extends State<MaterieResearchScreen> {
   Future<void> _loadQuerySuggestions(String query) async {
     try {
       final suggestions = await _searchService.getQuerySuggestions(query);
+      if (!mounted) return;
       setState(() {
         _querySuggestions = suggestions;
         _showSuggestions = suggestions.isNotEmpty && _searchFocusNode.hasFocus;
@@ -236,17 +237,15 @@ class _MaterieResearchScreenState extends State<MaterieResearchScreen> {
         for (var fav in existing) {
           await FavoritesService.deleteFavorite(fav.id);
         }
-        
+
+        if (!mounted) return;
         setState(() => _isFavorite = false);
-        
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('❌ Aus Favoriten entfernt'),
-              duration: Duration(seconds: 2),
-            ),
-          );
-        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('❌ Aus Favoriten entfernt'),
+            duration: Duration(seconds: 2),
+          ),
+        );
       } else {
         // Add to favorites
         final favorite = Favorite(
@@ -317,13 +316,14 @@ class _MaterieResearchScreenState extends State<MaterieResearchScreen> {
 
   Future<void> _checkIfFavorite() async {
     if (_currentResult == null) return;
-    
+
     try {
       final favorites = FavoritesService.getAllFavorites();
-      final exists = favorites.any((f) => 
+      final exists = favorites.any((f) =>
         f.type == FavoriteType.research && f.title == _currentResult!.query
       );
-      
+
+      if (!mounted) return;
       setState(() => _isFavorite = exists);
     } catch (e) {
       debugPrint('Error checking favorite: $e');
