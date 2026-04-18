@@ -1219,18 +1219,416 @@ class _PatternEditorSheetState extends State<_PatternEditorSheet> {
 // Tab 2: Rituale  (Phase 4.2d)
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _RitualsTab extends StatelessWidget {
+const Map<String, String> _kTraditionLabels = {
+  'allgemein': 'Allgemein',
+  'schamanisch': 'Schamanisch',
+  'keltisch': 'Keltisch',
+  'familienaufstellung': 'Aufstellung',
+  'germanisch': 'Germanisch',
+  'afrikanisch': 'Afrikanisch',
+  'ostasiatisch': 'Ostasiatisch',
+  'buddhistisch': 'Buddhistisch',
+};
+
+class _RitualsTab extends StatefulWidget {
   const _RitualsTab();
+  @override
+  State<_RitualsTab> createState() => _RitualsTabState();
+}
+
+class _RitualsTabState extends State<_RitualsTab> {
+  List<Map<String, dynamic>> _rows = [];
+  bool _loading = true;
+  String? _error;
+  String _filter = 'all';
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final rows = await _db
+          .from('ancestral_rituals')
+          .select()
+          .order('sort_order', ascending: true);
+      if (!mounted) return;
+      setState(() {
+        _rows = List<Map<String, dynamic>>.from(rows);
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = '$e';
+      });
+    }
+  }
+
+  List<Map<String, dynamic>> get _filtered {
+    if (_filter == 'all') return _rows;
+    return _rows.where((r) => r['tradition'] == _filter).toList();
+  }
+
+  Set<String> get _traditions =>
+      _rows.map((r) => r['tradition'] as String).toSet();
+
+  void _openDetail(Map<String, dynamic> r) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _RitualDetailSheet(ritual: r),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Padding(
-        padding: EdgeInsets.all(24),
-        child: Text(
-          'Rituale-Tab folgt in Phase 4.2d',
-          style: TextStyle(color: Colors.white54, fontSize: 14),
-          textAlign: TextAlign.center,
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator(color: _kAmber));
+    }
+    if (_error != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(_error!,
+                  style: const TextStyle(color: Colors.white54),
+                  textAlign: TextAlign.center),
+              const SizedBox(height: 12),
+              TextButton(
+                  onPressed: _load,
+                  child: const Text('Erneut versuchen',
+                      style: TextStyle(color: _kAmber))),
+            ],
+          ),
+        ),
+      );
+    }
+    return RefreshIndicator(
+      color: _kAmber,
+      onRefresh: _load,
+      child: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(
+            child: SizedBox(
+              height: 52,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                children: [
+                  _chip('all', 'Alle'),
+                  ..._traditions.map((t) =>
+                      _chip(t, _kTraditionLabels[t] ?? t)),
+                ],
+              ),
+            ),
+          ),
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(12, 4, 12, 20),
+            sliver: SliverList.builder(
+              itemCount: _filtered.length,
+              itemBuilder: (_, i) {
+                final r = _filtered[i];
+                return _RitualCard(
+                  ritual: r,
+                  onTap: () => _openDetail(r),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _chip(String key, String label) {
+    final selected = _filter == key;
+    return Padding(
+      padding: const EdgeInsets.only(right: 8, top: 8, bottom: 8),
+      child: FilterChip(
+        label: Text(label,
+            style: TextStyle(
+                color: selected ? Colors.black : Colors.white70,
+                fontSize: 12,
+                fontWeight:
+                    selected ? FontWeight.w700 : FontWeight.w500)),
+        selected: selected,
+        backgroundColor: _kCardBg,
+        selectedColor: _kAmber,
+        checkmarkColor: Colors.black,
+        side: BorderSide(
+            color: selected ? _kAmber : _kBorder, width: 1),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20)),
+        onSelected: (_) => setState(() => _filter = key),
+      ),
+    );
+  }
+}
+
+class _RitualCard extends StatelessWidget {
+  final Map<String, dynamic> ritual;
+  final VoidCallback onTap;
+  const _RitualCard({required this.ritual, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final emoji = ritual['emoji'] as String? ?? '🕯️';
+    final tradition = ritual['tradition'] as String? ?? '';
+    final duration = ritual['duration_minutes'] as int? ?? 0;
+    final steps = (ritual['steps'] as List?)?.length ?? 0;
+    return Card(
+      color: _kCardBg,
+      margin: const EdgeInsets.only(bottom: 10),
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: BorderSide(color: _kAmber.withValues(alpha: 0.3))),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(children: [
+                Text(emoji, style: const TextStyle(fontSize: 28)),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(ritual['title'] as String? ?? '—',
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600)),
+                      const SizedBox(height: 4),
+                      Row(children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                              color: _kAmber.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(10)),
+                          child: Text(
+                              _kTraditionLabels[tradition] ?? tradition,
+                              style: const TextStyle(
+                                  color: _kAmber,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600)),
+                        ),
+                        const SizedBox(width: 6),
+                        const Icon(Icons.schedule,
+                            color: Colors.white38, size: 12),
+                        const SizedBox(width: 3),
+                        Text('$duration Min',
+                            style: const TextStyle(
+                                color: Colors.white54, fontSize: 11)),
+                        const SizedBox(width: 10),
+                        const Icon(Icons.format_list_numbered,
+                            color: Colors.white38, size: 12),
+                        const SizedBox(width: 3),
+                        Text('$steps Schritte',
+                            style: const TextStyle(
+                                color: Colors.white54, fontSize: 11)),
+                      ]),
+                    ],
+                  ),
+                ),
+              ]),
+              const SizedBox(height: 10),
+              Text(ritual['description'] as String? ?? '',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      color: Colors.white70, fontSize: 12, height: 1.4)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RitualDetailSheet extends StatelessWidget {
+  final Map<String, dynamic> ritual;
+  const _RitualDetailSheet({required this.ritual});
+
+  @override
+  Widget build(BuildContext context) {
+    final emoji = ritual['emoji'] as String? ?? '🕯️';
+    final tradition = ritual['tradition'] as String? ?? '';
+    final duration = ritual['duration_minutes'] as int? ?? 0;
+    final steps = List<String>.from((ritual['steps'] as List?) ?? const []);
+    final materials =
+        List<String>.from((ritual['materials'] as List?) ?? const []);
+    final bestTime = ritual['best_time'] as String?;
+    return DraggableScrollableSheet(
+      expand: false,
+      initialChildSize: 0.9,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      builder: (_, scrollCtrl) => Container(
+        decoration: const BoxDecoration(
+          color: _kDarkBg,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              margin: const EdgeInsets.only(top: 8),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.circular(2)),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+              child: Row(
+                children: [
+                  Text(emoji, style: const TextStyle(fontSize: 32)),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(ritual['title'] as String? ?? '—',
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 3),
+                        Text(
+                            '${_kTraditionLabels[tradition] ?? tradition}  •  $duration Minuten',
+                            style: const TextStyle(
+                                color: _kAmber,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600)),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white54),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: ListView(
+                controller: scrollCtrl,
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+                children: [
+                  Text(ritual['description'] as String? ?? '',
+                      style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 14,
+                          height: 1.5)),
+                  if (bestTime != null && bestTime.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                          color: _kAmber.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                              color: _kAmber.withValues(alpha: 0.3))),
+                      child: Row(children: [
+                        const Icon(Icons.calendar_month,
+                            color: _kAmber, size: 18),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                              'Bester Zeitpunkt: $bestTime',
+                              style: const TextStyle(
+                                  color: Colors.white, fontSize: 13)),
+                        ),
+                      ]),
+                    ),
+                  ],
+                  if (materials.isNotEmpty) ...[
+                    const SizedBox(height: 20),
+                    const Text('Materialien',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: materials
+                          .map((m) => Chip(
+                                label: Text(m,
+                                    style: const TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: 12)),
+                                backgroundColor: _kCardBg,
+                                side: const BorderSide(color: _kBorder),
+                                materialTapTargetSize:
+                                    MaterialTapTargetSize.shrinkWrap,
+                              ))
+                          .toList(),
+                    ),
+                  ],
+                  if (steps.isNotEmpty) ...[
+                    const SizedBox(height: 20),
+                    const Text('Ablauf',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 10),
+                    for (int i = 0; i < steps.length; i++)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              width: 26,
+                              height: 26,
+                              decoration: const BoxDecoration(
+                                  color: _kAmber,
+                                  shape: BoxShape.circle),
+                              alignment: Alignment.center,
+                              child: Text('${i + 1}',
+                                  style: const TextStyle(
+                                      color: Colors.black,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold)),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.only(top: 3),
+                                child: Text(steps[i],
+                                    style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 13,
+                                        height: 1.5)),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
