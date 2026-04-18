@@ -676,3 +676,41 @@ ALTER PUBLICATION supabase_realtime ADD TABLE message_reactions;
 ALTER PUBLICATION supabase_realtime ADD TABLE notifications;
 ALTER PUBLICATION supabase_realtime ADD TABLE voice_participants;
 ALTER PUBLICATION supabase_realtime ADD TABLE chat_rooms;
+
+-- ============================================================
+-- PHASE L: SEED-DATEN
+-- ============================================================
+
+-- ── 2 SYSTEM-PROFILE ─────────────────────────────────────────
+-- Diese Profile besitzen alle Daten. Keine User-Registration.
+INSERT INTO profiles (id, username, display_name, world, role, avatar_emoji) VALUES
+  ('00000000-0000-0000-0000-000000000001',
+   'Materie', 'Materie-Welt', 'materie', 'system', '🔴'),
+  ('00000000-0000-0000-0000-000000000002',
+   'Energie', 'Energie-Welt', 'energie', 'system', '🟣');
+
+-- user_stats-Zeilen für die beiden System-Profile
+INSERT INTO user_stats (user_id) VALUES
+  ('00000000-0000-0000-0000-000000000001'),
+  ('00000000-0000-0000-0000-000000000002');
+
+-- ── DEFAULT-CHAT-RÄUME (12) ──────────────────────────────────
+-- Kanonische room_ids aus Flutter-Code (lib/screens/*/tool_launcher.dart)
+
+-- Materie (6)
+INSERT INTO chat_rooms (id, name, description, world, icon, color) VALUES
+  ('politik',          'Politik',          'Geopolitik, Machtstrukturen, aktuelle Ereignisse',         'materie', '🏛️',  '#E53935'),
+  ('geschichte',       'Geschichte',       'Historische Ereignisse, Zeitleisten, Zivilisationen',       'materie', '📜',  '#E53935'),
+  ('ufos',             'UFOs',             'Sichtungen, Phänomene, unerklärliche Beobachtungen',        'materie', '🛸',  '#E53935'),
+  ('verschwoerungen',  'Verschwörungen',   'Netzwerke, Muster, alternative Erklärungen',                'materie', '🕸️',  '#E53935'),
+  ('wissenschaft',     'Forschung',        'Wissenschaftliche Studien, Patente, Entdeckungen',          'materie', '🔬',  '#E53935'),
+  ('heilmethoden',     'Heilmethoden',     'Alternative Heilung, traditionelle Medizin',                'materie', '🌿',  '#E53935');
+
+-- Energie (6)
+INSERT INTO chat_rooms (id, name, description, world, icon, color) VALUES
+  ('meditation',      'Meditation',      'Meditationspraktiken, Erfahrungen, Techniken',              'energie', '🧘',  '#7C4DFF'),
+  ('astralreisen',    'Astralreisen',    'Out-of-Body, luzide Träume, Bewusstseinsreisen',            'energie', '🌌',  '#7C4DFF'),
+  ('chakren',         'Chakren',         'Energiezentren, Ausgleich, Scans',                          'energie', '🌀',  '#7C4DFF'),
+  ('spiritualitaet',  'Spiritualität',   'Bewusstsein, Sinn, innere Erfahrungen',                     'energie', '✨',  '#7C4DFF'),
+  ('heilung',         'Heilung',         'Heilfrequenzen, Energieheilung, Selbsterkenntnis',          'energie', '💖',  '#7C4DFF'),
+  ('kristalle',       'Kristalle',       'Kristalle, Steine, Wirkungen und Anwendungen',              'energie', '💎',  '#7C4DFF');
