@@ -51,8 +51,12 @@ android {
             // TODO: Add your own signing config for the release build.
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
-            isMinifyEnabled = true // Enable code shrinking
-            isShrinkResources = true // Enable resource shrinking
+            // R8/ProGuard ausgeschaltet — verursachte CI-Builds-Fails wegen
+            // fehlender Keep-Regeln für syncfusion_flutter_pdf/just_audio.
+            // Kann wieder aktiviert werden, sobald die Regeln in
+            // proguard-rules.pro vollständig sind.
+            isMinifyEnabled = false
+            isShrinkResources = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
