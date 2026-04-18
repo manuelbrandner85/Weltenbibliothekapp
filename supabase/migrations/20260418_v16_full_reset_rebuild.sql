@@ -658,3 +658,21 @@ CREATE POLICY "anon_delete" ON likes FOR DELETE USING (true);
 CREATE POLICY "anon_insert" ON voice_participants FOR INSERT WITH CHECK (true);
 CREATE POLICY "anon_update" ON voice_participants FOR UPDATE USING (true);
 CREATE POLICY "anon_delete" ON voice_participants FOR DELETE USING (true);
+
+-- ============================================================
+-- PHASE K: REALTIME-PUBLIKATION
+-- Flutter SupabaseRealtime-Channels brauchen diese Tabellen in
+-- der supabase_realtime Publikation (sonst keine Live-Events).
+-- ============================================================
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') THEN
+    CREATE PUBLICATION supabase_realtime;
+  END IF;
+END $$;
+
+ALTER PUBLICATION supabase_realtime ADD TABLE chat_messages;
+ALTER PUBLICATION supabase_realtime ADD TABLE message_reactions;
+ALTER PUBLICATION supabase_realtime ADD TABLE notifications;
+ALTER PUBLICATION supabase_realtime ADD TABLE voice_participants;
+ALTER PUBLICATION supabase_realtime ADD TABLE chat_rooms;
