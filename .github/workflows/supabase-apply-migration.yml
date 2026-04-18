@@ -53,14 +53,20 @@ jobs:
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
 
       - name: "🧭 Migrations-Datei ermitteln"
         id: mig
         run: |
           FILE="${{ inputs.migration_file }}"
           if [ -z "$FILE" ]; then
-            # Bei push-Trigger: neueste .sql-Datei im Commit
-            FILE=$(git diff --name-only HEAD~1 HEAD -- 'supabase/migrations/*.sql' | tail -1)
+            # Bei push-Trigger: neueste geänderte .sql-Datei im Commit
+            FILE=$(git diff --name-only HEAD~1 HEAD -- 'supabase/migrations/*.sql' 2>/dev/null | tail -1 || true)
+          fi
+          if [ -z "$FILE" ]; then
+            # Fallback: neueste Datei in supabase/migrations/ (sortiert)
+            FILE=$(ls -1 supabase/migrations/*.sql 2>/dev/null | sort | tail -1)
           fi
           if [ -z "$FILE" ] || [ ! -f "$FILE" ]; then
             echo "::error::Keine gültige Migrations-Datei gefunden: '$FILE'"
