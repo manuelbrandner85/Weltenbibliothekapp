@@ -604,14 +604,228 @@ class _PrimaryChakraCard extends StatelessWidget {
 // Tab 1: Verlauf (Phase 7.2e füllt diesen Stub)
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _HistoryTab extends StatelessWidget {
+class _HistoryTab extends StatefulWidget {
   const _HistoryTab();
+  @override
+  State<_HistoryTab> createState() => _HistoryTabState();
+}
+
+class _HistoryTabState extends State<_HistoryTab> {
+  List<Map<String, dynamic>> _rows = [];
+  Map<int, Map<String, dynamic>> _chakraMeta = {};
+  bool _loading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final user = _db.auth.currentUser;
+      if (user == null) {
+        if (!mounted) return;
+        setState(() {
+          _loading = false;
+          _error = 'Bitte zuerst anmelden';
+        });
+        return;
+      }
+      // Chakra-Meta aus chakra_symptoms aggregieren (für Emoji/Farbe)
+      final metaRows = await _db
+          .from('chakra_symptoms')
+          .select('chakra_number, chakra_name, chakra_color, chakra_emoji');
+      final meta = <int, Map<String, dynamic>>{};
+      for (final m in metaRows) {
+        final n = m['chakra_number'] as int;
+        meta.putIfAbsent(n, () => Map<String, dynamic>.from(m));
+      }
+      final rows = await _db
+          .from('body_scan_results')
+          .select()
+          .eq('user_id', user.id)
+          .order('scanned_at', ascending: false);
+      if (!mounted) return;
+      setState(() {
+        _chakraMeta = meta;
+        _rows = List<Map<String, dynamic>>.from(rows);
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = '$e';
+      });
+    }
+  }
+
+  Future<void> _deleteScan(String id) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: _kCardBg,
+        title: const Text('Scan löschen?',
+            style: TextStyle(color: Colors.white)),
+        content: const Text('Dieser Scan wird unwiderruflich gelöscht.',
+            style: TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Abbrechen',
+                  style: TextStyle(color: Colors.white54))),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Löschen',
+                  style: TextStyle(color: _kPink))),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    try {
+      await _db.from('body_scan_results').delete().eq('id', id);
+      if (!mounted) return;
+      setState(() => _rows.removeWhere((r) => r['id'] == id));
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Scan gelöscht')));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Fehler: $e')));
+    }
+  }
+
+  Color _parseColor(String? hex) {
+    if (hex == null) return Colors.white;
+    final cleaned = hex.replaceAll('#', '');
+    return Color(int.parse('FF$cleaned', radix: 16));
+  }
+
+  String _formatDate(String iso) {
+    final dt = DateTime.tryParse(iso)?.toLocal();
+    if (dt == null) return iso;
+    String two(int n) => n.toString().padLeft(2, '0');
+    return '${two(dt.day)}.${two(dt.month)}.${dt.year} ${two(dt.hour)}:${two(dt.minute)}';
+  }
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Text('Verlauf – Phase 7.2e',
-          style: TextStyle(color: Colors.white38)),
+    if (_loading) return const Center(child: CircularProgressIndicator());
+    if (_error != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(_error!,
+                  style: const TextStyle(color: Colors.white54),
+                  textAlign: TextAlign.center),
+              const SizedBox(height: 12),
+              TextButton(
+                  onPressed: _load,
+                  child: const Text('Erneut versuchen',
+                      style: TextStyle(color: _kPink))),
+            ],
+          ),
+        ),
+      );
+    }
+    if (_rows.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: Text(
+              'Noch keine Scans gespeichert.\nFühre deinen ersten Körperscan durch.',
+              style: TextStyle(color: Colors.white54),
+              textAlign: TextAlign.center),
+        ),
+      );
+    }
+    return RefreshIndicator(
+      color: _kPink,
+      onRefresh: _load,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(12),
+        itemCount: _rows.length,
+        itemBuilder: (_, i) {
+          final r = _rows[i];
+          final primary = r['primary_blocked_chakra'] as int?;
+          final meta = primary != null ? _chakraMeta[primary] : null;
+          final color = _parseColor(meta?['chakra_color'] as String?);
+          final scoresRaw = r['chakra_scores'] as Map?;
+          final scores = <int, int>{
+            for (final e in (scoresRaw ?? const {}).entries)
+              int.parse(e.key.toString()): (e.value as num).toInt(),
+          };
+          final count = (r['selected_symptom_ids'] as List?)?.length ?? 0;
+          final notes = r['notes'] as String?;
+          return Card(
+            color: _kCardBg,
+            margin: const EdgeInsets.only(bottom: 8),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(color: color.withValues(alpha: 0.3))),
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(children: [
+                    Text(meta?['chakra_emoji'] as String? ?? '🌀',
+                        style: const TextStyle(fontSize: 28)),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(meta?['chakra_name'] as String? ?? 'Scan',
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600)),
+                          const SizedBox(height: 2),
+                          Text(_formatDate(r['scanned_at'] as String),
+                              style: const TextStyle(
+                                  color: Colors.white54, fontSize: 11)),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline,
+                          color: Colors.white38, size: 20),
+                      onPressed: () => _deleteScan(r['id'] as String),
+                    ),
+                  ]),
+                  const SizedBox(height: 8),
+                  Text('$count Symptom(e) • Scores: ${scores.entries.map((e) => '${e.key}:${e.value}').join(' ')}',
+                      style: const TextStyle(
+                          color: Colors.white54, fontSize: 11)),
+                  if (notes != null && notes.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                          color: _kDarkBg,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: _kBorder)),
+                      child: Text(notes,
+                          style: const TextStyle(
+                              color: Colors.white70, fontSize: 12)),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 }
