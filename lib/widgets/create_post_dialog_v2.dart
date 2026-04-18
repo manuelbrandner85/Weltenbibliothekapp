@@ -5,7 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:async';
 import '../models/community_post.dart';
 import '../models/community_post_extended.dart';
-import '../services/community_service.dart';
+import '../services/supabase_community_service.dart';
 import '../services/supabase_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/cloudflare_api_service.dart';
@@ -53,7 +53,7 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
   late TabController _tabController;
   
   // Services
-  final CommunityService _communityService = CommunityService();
+  final SupabaseCommunityService _communityService = SupabaseCommunityService();
   final CloudflareApiService _cloudflareService = CloudflareApiService();
   final ImagePicker _picker = ImagePicker();
   
@@ -472,13 +472,11 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
       isDraft: false,
     );
     
-    // Save to Firestore/Hive
+    // Save to Supabase
     await _communityService.createPost(
-      username: uMeta?['username'] as String? ?? 'Anonym',
       content: content,
-      tags: tags,
       worldType: widget.worldType,
-      authorAvatar: uMeta?['avatar'] as String? ?? '👤',
+      tags: tags,
       mediaUrl: _uploadedMediaUrl,
       mediaType: _mediaType,
     );

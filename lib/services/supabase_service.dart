@@ -198,11 +198,11 @@ class SupabaseProfileService {
 // COMMUNITY SERVICE (Artikel, Kommentare, Likes, Bookmarks)
 // ──────────────────────────────────────────────────────────────
 
-class SupabaseCommunityService {
-  static SupabaseCommunityService? _instance;
-  static SupabaseCommunityService get instance =>
-      _instance ??= SupabaseCommunityService._();
-  SupabaseCommunityService._();
+class SupabaseArticleService {
+  static SupabaseArticleService? _instance;
+  static SupabaseArticleService get instance =>
+      _instance ??= SupabaseArticleService._();
+  SupabaseArticleService._();
 
   // ── ARTIKEL ───────────────────────────────────────────────
 

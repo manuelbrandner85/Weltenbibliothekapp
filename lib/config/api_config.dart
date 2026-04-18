@@ -56,23 +56,6 @@ class ApiConfig {
   // static const String supabaseServiceRoleKey = '...'; // ← VERBOTEN
 
   // ──────────────────────────────────────────────────────────────
-  // 🦞 OPENCLAW AI GATEWAY (Hostinger VPS)
-  // ──────────────────────────────────────────────────────────────
-
-  /// Basis-URL des OpenClaw AI Gateways.
-  /// Sollte auf HTTPS migriert werden (aktuell HTTP).
-  static const String openClawGatewayUrl = String.fromEnvironment(
-    'OPENCLAW_GATEWAY_URL',
-    defaultValue: 'http://72.62.154.95:50074',
-  );
-
-  /// OpenClaw Gateway Token – aus dart-define, KEIN Hardcode.
-  static const String openClawGatewayToken = String.fromEnvironment(
-    'OPENCLAW_GATEWAY_TOKEN',
-    defaultValue: '', // Leer = Gateway-Calls schlagen graceful fehl
-  );
-
-  // ──────────────────────────────────────────────────────────────
   // 📡 API ENDPOINTS (Cloudflare Worker)
   // ──────────────────────────────────────────────────────────────
 

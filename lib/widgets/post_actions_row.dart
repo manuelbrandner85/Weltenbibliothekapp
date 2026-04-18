@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 import '../models/community_post.dart';
-import '../services/community_service.dart';
 import '../services/cloudflare_api_service.dart';
 import '../widgets/comments_dialog.dart';
 import '../utils/responsive_utils.dart';
@@ -27,7 +26,6 @@ class PostActionsRow extends StatefulWidget {
 }
 
 class _PostActionsRowState extends State<PostActionsRow> {
-  final CommunityService _communityService = CommunityService(); // ignore: unused_field
   final CloudflareApiService _cloudflareApi = CloudflareApiService();
   int _localLikes = 0;
   int _localComments = 0;
