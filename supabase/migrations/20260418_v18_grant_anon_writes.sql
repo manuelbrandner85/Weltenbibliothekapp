@@ -1,6 +1,6 @@
 -- ============================================================
 -- MIGRATION v18 – GRANT INSERT/UPDATE/DELETE für anon/authenticated
--- (idempotent — GRANTs sind re-applied-safe, 2. Versuch)
+-- (idempotent — GRANTs sind re-applied-safe, 3. Versuch via Session-Pooler Port 5432)
 -- ============================================================
 -- Fix für: PostgrestException "permission denied for table chat_messages"
 -- (code 42501).
