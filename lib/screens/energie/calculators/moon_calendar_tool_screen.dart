@@ -80,11 +80,7 @@ class _MoonCalendarToolScreenState extends State<MoonCalendarToolScreen>
         controller: _tabs,
         children: [
           _TodayTab(snapshot: _snapshot),
-          const _PlaceholderTab(
-            emoji: '📅',
-            title: 'Monatskalender',
-            hint: 'Kommt in Phase 8C.2',
-          ),
+          const _MonthTab(),
           const _PlaceholderTab(
             emoji: '🕯️',
             title: 'Rituale',
@@ -342,6 +338,304 @@ class _TipCard extends StatelessWidget {
       ),
     );
   }
+}
+
+// ═══════════════════════════════════════════════════════════
+// Tab 2: Monatskalender
+// ═══════════════════════════════════════════════════════════
+
+class _MonthTab extends StatefulWidget {
+  const _MonthTab();
+
+  @override
+  State<_MonthTab> createState() => _MonthTabState();
+}
+
+class _MonthTabState extends State<_MonthTab> {
+  /// Anzeigemonat (nur Jahr + Monat relevant).
+  DateTime _month = _firstOfMonth(DateTime.now());
+
+  /// Ausgewählter Tag im angezeigten Monat.
+  DateTime _selected = _stripTime(DateTime.now());
+
+  static DateTime _firstOfMonth(DateTime d) => DateTime(d.year, d.month, 1);
+  static DateTime _stripTime(DateTime d) => DateTime(d.year, d.month, d.day);
+
+  void _shiftMonth(int delta) {
+    setState(() {
+      _month = DateTime(_month.year, _month.month + delta, 1);
+    });
+  }
+
+  void _selectDay(DateTime day) {
+    setState(() => _selected = day);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final snapshot = calculateMoonSnapshot(
+      DateTime.utc(_selected.year, _selected.month, _selected.day, 12),
+    );
+
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        _MonthHeader(
+          month: _month,
+          onPrev: () => _shiftMonth(-1),
+          onNext: () => _shiftMonth(1),
+        ),
+        const SizedBox(height: 12),
+        _WeekdayRow(),
+        const SizedBox(height: 6),
+        _MonthGrid(
+          month: _month,
+          selected: _selected,
+          onTap: _selectDay,
+        ),
+        const SizedBox(height: 20),
+        _SelectedDayCard(day: _selected, snapshot: snapshot),
+      ],
+    );
+  }
+}
+
+class _MonthHeader extends StatelessWidget {
+  const _MonthHeader({
+    required this.month,
+    required this.onPrev,
+    required this.onNext,
+  });
+
+  final DateTime month;
+  final VoidCallback onPrev;
+  final VoidCallback onNext;
+
+  static const _names = [
+    'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
+    'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember',
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        IconButton(
+          onPressed: onPrev,
+          icon: const Icon(Icons.chevron_left, color: Colors.white),
+        ),
+        Text(
+          '${_names[month.month - 1]} ${month.year}',
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        IconButton(
+          onPressed: onNext,
+          icon: const Icon(Icons.chevron_right, color: Colors.white),
+        ),
+      ],
+    );
+  }
+}
+
+class _WeekdayRow extends StatelessWidget {
+  static const _labels = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        for (final l in _labels)
+          Expanded(
+            child: Center(
+              child: Text(
+                l,
+                style: const TextStyle(
+                  color: Colors.white54,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _MonthGrid extends StatelessWidget {
+  const _MonthGrid({
+    required this.month,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final DateTime month;
+  final DateTime selected;
+  final ValueChanged<DateTime> onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    // Monday=1, Sunday=7 → leading empty cells
+    final leading = month.weekday - 1;
+    final daysInMonth = DateTime(month.year, month.month + 1, 0).day;
+    final totalCells = ((leading + daysInMonth + 6) ~/ 7) * 7;
+    final today = _MonthTabState._stripTime(DateTime.now());
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 7,
+        mainAxisSpacing: 4,
+        crossAxisSpacing: 4,
+        childAspectRatio: 0.85,
+      ),
+      itemCount: totalCells,
+      itemBuilder: (_, i) {
+        final dayNum = i - leading + 1;
+        if (dayNum < 1 || dayNum > daysInMonth) {
+          return const SizedBox.shrink();
+        }
+        final day = DateTime(month.year, month.month, dayNum);
+        final snap = calculateMoonSnapshot(
+          DateTime.utc(day.year, day.month, day.day, 12),
+        );
+        final isSelected = day == selected;
+        final isToday = day == today;
+
+        return _DayCell(
+          day: dayNum,
+          emoji: snap.phaseEmoji,
+          isSelected: isSelected,
+          isToday: isToday,
+          onTap: () => onTap(day),
+        );
+      },
+    );
+  }
+}
+
+class _DayCell extends StatelessWidget {
+  const _DayCell({
+    required this.day,
+    required this.emoji,
+    required this.isSelected,
+    required this.isToday,
+    required this.onTap,
+  });
+
+  final int day;
+  final String emoji;
+  final bool isSelected;
+  final bool isToday;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final border = isSelected
+        ? Colors.amberAccent
+        : (isToday ? Colors.lightBlueAccent : Colors.white12);
+    final bg = isSelected
+        ? Colors.amberAccent.withValues(alpha: 0.18)
+        : Colors.white.withValues(alpha: 0.04);
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        decoration: BoxDecoration(
+          color: bg,
+          border: Border.all(color: border, width: isSelected ? 2 : 1),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              '$day',
+              style: TextStyle(
+                color: isSelected ? Colors.amberAccent : Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(emoji, style: const TextStyle(fontSize: 16)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SelectedDayCard extends StatelessWidget {
+  const _SelectedDayCard({required this.day, required this.snapshot});
+
+  final DateTime day;
+  final MoonSnapshot snapshot;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white12),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(snapshot.phaseEmoji, style: const TextStyle(fontSize: 44)),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _formatDate(day),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  buildMoonHeadline(snapshot),
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${snapshot.phaseLabel}  •  ${snapshot.illuminationPercent}  •  ${snapshot.moonElement}',
+                  style: const TextStyle(
+                    color: Colors.white54,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static const _monthNames = [
+    'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
+    'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember',
+  ];
+
+  static String _formatDate(DateTime d) =>
+      '${d.day}. ${_monthNames[d.month - 1]} ${d.year}';
 }
 
 // ═══════════════════════════════════════════════════════════
