@@ -16,6 +16,7 @@ import 'calculators/new_spirit_tool_screens.dart';
 import 'calculators/moon_calendar_tool_screen.dart'; // 🌕 v19 Mondkalender
 import 'calculators/dream_interpretation_tool_screen.dart'; // 💭 v20 Traumdeutung
 import 'calculators/body_scan_tool_screen.dart'; // 🧘 v21 Körperscan
+import 'calculators/soul_contract_tool_screen.dart'; // 📜 v22 Seelenvertrag
 import 'frequency_generator_screen.dart';  // 🎵 FREQUENCY GENERATOR
 import '../spirit/spirit_tools_mega_screen.dart'; // 🆕 V115 MEGA UPDATE TOOLS
 
@@ -438,6 +439,17 @@ class _SpiritTabModernState extends State<SpiritTabModern> {
         'color': const Color(0xFFE91E63),
         'category': 'new',
         'screen': const BodyScanToolScreen(),
+      },
+
+      // 📜 Seelenvertrag (v22 – Numerologie aus Name + Geburtsdatum)
+      {
+        'icon': Icons.auto_stories,
+        'iconEmoji': '📜',
+        'title': 'Seelenvertrag',
+        'subtitle': 'Numerologie deiner Lebensaufgabe',
+        'color': const Color(0xFFFFB300),
+        'category': 'new',
+        'screen': const SoulContractToolScreen(),
       },
       
       // ᚱ Runen-Orakel (V115 Feature #20)
