@@ -474,3 +474,99 @@ CREATE TABLE tool_patente (
   filed_date    TEXT,
   created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- ============================================================
+-- PHASE H: INDIZES
+-- ============================================================
+
+-- Core
+CREATE INDEX idx_profiles_username ON profiles(username);
+CREATE INDEX idx_profiles_world    ON profiles(world);
+CREATE INDEX idx_profiles_role     ON profiles(role);
+
+CREATE INDEX idx_articles_world       ON articles(world);
+CREATE INDEX idx_articles_category    ON articles(category);
+CREATE INDEX idx_articles_published   ON articles(is_published);
+CREATE INDEX idx_articles_created_at  ON articles(created_at DESC);
+CREATE INDEX idx_articles_user_id     ON articles(user_id);
+CREATE INDEX idx_articles_title_trgm  ON articles USING GIN (title gin_trgm_ops);
+
+CREATE INDEX idx_comments_article_id  ON comments(article_id);
+CREATE INDEX idx_comments_user_id     ON comments(user_id);
+
+CREATE INDEX idx_likes_article_id  ON likes(article_id);
+CREATE INDEX idx_likes_user_id     ON likes(user_id);
+
+CREATE INDEX idx_bookmarks_user_id     ON bookmarks(user_id);
+CREATE INDEX idx_bookmarks_article_id  ON bookmarks(article_id);
+
+CREATE INDEX idx_chat_rooms_world  ON chat_rooms(world);
+CREATE INDEX idx_chat_rooms_active ON chat_rooms(is_active);
+
+CREATE INDEX idx_chat_messages_room_id     ON chat_messages(room_id);
+CREATE INDEX idx_chat_messages_created_at  ON chat_messages(created_at DESC);
+CREATE INDEX idx_chat_messages_is_deleted  ON chat_messages(is_deleted);
+CREATE INDEX idx_chat_messages_user_id     ON chat_messages(user_id);
+CREATE INDEX idx_chat_messages_reply_to    ON chat_messages(reply_to_id);
+CREATE INDEX idx_chat_messages_read_by     ON chat_messages USING GIN (read_by);
+
+CREATE INDEX idx_message_reactions_message_id ON message_reactions(message_id);
+
+CREATE INDEX idx_notifications_user_id  ON notifications(user_id, is_read);
+CREATE INDEX idx_notifications_created  ON notifications(created_at DESC);
+
+-- Push / Voice / Gamification
+CREATE INDEX idx_push_subscriptions_user_id ON push_subscriptions(user_id);
+CREATE INDEX idx_push_subscriptions_active  ON push_subscriptions(is_active) WHERE is_active = TRUE;
+
+CREATE INDEX idx_notification_queue_pending
+  ON notification_queue(status, created_at) WHERE status = 'pending';
+
+CREATE INDEX idx_voice_participants_room    ON voice_participants(room_id, is_active);
+CREATE INDEX idx_voice_participants_user    ON voice_participants(user_id);
+
+CREATE INDEX idx_user_achievements_user_id  ON user_achievements(user_id);
+
+-- Tools (alle: room_id + created_at DESC)
+CREATE INDEX idx_tool_meditation_sessions_room   ON tool_meditation_sessions(room_id, created_at DESC);
+CREATE INDEX idx_tool_kristalle_room             ON tool_kristalle(room_id, created_at DESC);
+CREATE INDEX idx_tool_chakra_readings_room       ON tool_chakra_readings(room_id, created_at DESC);
+CREATE INDEX idx_tool_heilfrequenz_room          ON tool_heilfrequenz(room_id, created_at DESC);
+CREATE INDEX idx_tool_traeume_room               ON tool_traeume(room_id, created_at DESC);
+CREATE INDEX idx_tool_bewusstsein_journal_room   ON tool_bewusstsein_journal(room_id, created_at DESC);
+CREATE INDEX idx_tool_group_meditation_room      ON tool_group_meditation(room_id, created_at DESC);
+
+CREATE INDEX idx_tool_geopolitics_events_room    ON tool_geopolitics_events(room_id, created_at DESC);
+CREATE INDEX idx_tool_history_events_room        ON tool_history_events(room_id, created_at DESC);
+CREATE INDEX idx_tool_history_events_year        ON tool_history_events(event_year);
+CREATE INDEX idx_tool_healing_methods_room       ON tool_healing_methods(room_id, created_at DESC);
+CREATE INDEX idx_tool_network_connections_room   ON tool_network_connections(room_id, created_at DESC);
+CREATE INDEX idx_tool_research_documents_room    ON tool_research_documents(room_id, created_at DESC);
+CREATE INDEX idx_tool_ufo_sightings_room         ON tool_ufo_sightings(room_id, created_at DESC);
+CREATE INDEX idx_tool_connections_room           ON tool_connections(room_id, created_at DESC);
+CREATE INDEX idx_tool_artefakte_room             ON tool_artefakte(room_id, created_at DESC);
+CREATE INDEX idx_tool_news_room                  ON tool_news(room_id, created_at DESC);
+CREATE INDEX idx_tool_patente_room               ON tool_patente(room_id, created_at DESC);
+
+-- ============================================================
+-- PHASE I: UPDATED_AT TRIGGER
+-- ============================================================
+CREATE TRIGGER profiles_updated_at
+  BEFORE UPDATE ON profiles
+  FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+CREATE TRIGGER articles_updated_at
+  BEFORE UPDATE ON articles
+  FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+CREATE TRIGGER comments_updated_at
+  BEFORE UPDATE ON comments
+  FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+CREATE TRIGGER push_subscriptions_updated_at
+  BEFORE UPDATE ON push_subscriptions
+  FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+CREATE TRIGGER user_stats_updated_at
+  BEFORE UPDATE ON user_stats
+  FOR EACH ROW EXECUTE FUNCTION set_updated_at();
