@@ -757,7 +757,8 @@ CREATE POLICY "media_public_write"
 -- FERTIG
 -- Verifikation:
 --   SELECT COUNT(*) FROM information_schema.tables
---     WHERE table_schema='public';  -- erwartet: 23
+--     WHERE table_schema='public';  -- erwartet: 31
+--     (9 Core + 5 Push/Voice/Game + 7 Tools Energie + 10 Tools Materie)
 --   SELECT username, world FROM profiles;                            -- erwartet: 2
 --   SELECT id, world FROM chat_rooms ORDER BY world, id;             -- erwartet: 12
 --   SELECT name FROM storage.buckets ORDER BY name;                  -- erwartet: 2
