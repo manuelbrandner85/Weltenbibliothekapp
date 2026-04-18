@@ -40,6 +40,11 @@ env:
   PROJECT_REF: adtviduaftdquvfjpojb
   DEFAULT_REGION: eu-central-1
 
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
 jobs:
   reset:
     name: 🔥 DROP + CREATE public schema
