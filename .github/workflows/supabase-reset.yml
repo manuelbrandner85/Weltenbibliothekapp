@@ -1,0 +1,118 @@
+name: 🗄️ Supabase Reset & Rebuild (v16)
+
+# SICHERHEIT: Nur manuell per workflow_dispatch mit Pflicht-Bestätigung.
+# Führt DROP SCHEMA public CASCADE aus — alle Daten der Ziel-DB werden gelöscht.
+#
+# Setup (einmalig):
+#   GitHub → Settings → Secrets and variables → Actions → New repository secret
+#   Name : SUPABASE_DB_URL
+#   Value: postgresql://postgres.<ref>:<password>@<pooler-host>:6543/postgres
+#          (aus Supabase Dashboard → Project Settings → Database → Connection string → URI)
+#
+# Ausführen:
+#   GitHub → Actions → "Supabase Reset & Rebuild (v16)" → Run workflow
+#   Input "confirm" auf exakt  RESET  setzen → Run.
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Tippe RESET um alle Daten zu löschen und neu anzulegen'
+        required: true
+        default: ''
+      migration_file:
+        description: 'Migrations-Datei (Pfad im Repo)'
+        required: true
+        default: 'supabase/migrations/20260418_v16_full_reset_rebuild.sql'
+
+jobs:
+  reset:
+    name: 🔥 DROP + CREATE public schema
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: ✅ Bestätigung prüfen
+        if: ${{ inputs.confirm != 'RESET' }}
+        run: |
+          echo "::error::Bestätigung fehlt — Input 'confirm' muss exakt 'RESET' sein."
+          exit 1
+
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🔎 Migration existiert?
+        run: |
+          if [ ! -f "${{ inputs.migration_file }}" ]; then
+            echo "::error::Migrations-Datei nicht gefunden: ${{ inputs.migration_file }}"
+            exit 1
+          fi
+          wc -l "${{ inputs.migration_file }}"
+
+      - name: 🐘 PostgreSQL Client installieren
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client
+          psql --version
+
+      - name: 🔌 Verbindung testen
+        env:
+          PGCONN: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          if [ -z "$PGCONN" ]; then
+            echo "::error::Secret SUPABASE_DB_URL ist nicht gesetzt."
+            echo "Anleitung: Supabase Dashboard → Project Settings → Database → Connection string → URI"
+            exit 1
+          fi
+          psql "$PGCONN" -c "SELECT current_database(), current_user, version();"
+
+      - name: 📊 Zustand VORHER (zur Dokumentation)
+        env:
+          PGCONN: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          echo "--- Tabellen in public VOR dem Reset ---"
+          psql "$PGCONN" -c "SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename;" || true
+
+      - name: 🚀 Migration ausführen
+        env:
+          PGCONN: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -e
+          echo "::group::Running ${{ inputs.migration_file }}"
+          psql "$PGCONN" \
+            --set ON_ERROR_STOP=1 \
+            --single-transaction \
+            -f "${{ inputs.migration_file }}"
+          echo "::endgroup::"
+
+      - name: ✅ Zustand NACHHER (Verifikation)
+        env:
+          PGCONN: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          echo "--- Tabellen in public NACH dem Reset ---"
+          psql "$PGCONN" -c "SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename;"
+          echo ""
+          echo "--- Anzahl Tabellen (erwartet: 31) ---"
+          psql "$PGCONN" -c "SELECT count(*) AS tabellen FROM pg_tables WHERE schemaname = 'public';"
+          echo ""
+          echo "--- System-Profile (erwartet: 2 – Materie + Energie) ---"
+          psql "$PGCONN" -c "SELECT username, world, role FROM public.profiles ORDER BY world;"
+          echo ""
+          echo "--- Chat-Räume (erwartet: 12 – 6 pro Welt) ---"
+          psql "$PGCONN" -c "SELECT world, count(*) AS raeume FROM public.chat_rooms GROUP BY world ORDER BY world;"
+          echo ""
+          echo "--- Storage-Buckets (erwartet: avatars, media) ---"
+          psql "$PGCONN" -c "SELECT id, public FROM storage.buckets ORDER BY id;"
+          echo ""
+          echo "--- Realtime-Publikation ---"
+          psql "$PGCONN" -c "SELECT tablename FROM pg_publication_tables WHERE pubname = 'supabase_realtime' ORDER BY tablename;"
+
+      - name: 🎉 Summary
+        run: |
+          echo "### ✅ Supabase Reset erfolgreich" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- 31 Tabellen in public" >> $GITHUB_STEP_SUMMARY
+          echo "- 2 System-Profile (Materie + Energie)" >> $GITHUB_STEP_SUMMARY
+          echo "- 12 Chat-Räume (6 pro Welt)" >> $GITHUB_STEP_SUMMARY
+          echo "- 2 Storage-Buckets (avatars, media)" >> $GITHUB_STEP_SUMMARY
+          echo "- Realtime-Publikation aktiv" >> $GITHUB_STEP_SUMMARY
