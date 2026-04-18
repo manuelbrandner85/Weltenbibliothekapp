@@ -1,0 +1,179 @@
+name: 🗄️ Supabase Apply Migration (additive)
+
+# Additives Anwenden einzelner Migrations-Dateien OHNE destructive Reset.
+# Für GRANT-/POLICY-Fixes, neue Tabellen, Indizes etc. geeignet.
+#
+# Setup (einmalig):
+#   GitHub → Settings → Secrets and variables → Actions → New repository secret
+#   Name : SUPABASE_DB_PASSWORD
+#   Value: <das DB-Passwort aus Supabase Dashboard → Project Settings → Database>
+#
+# Auslösen:
+#   - Manuell: Actions → "Supabase Apply Migration (additive)" → Run workflow
+#     → migration_file angeben (default: neueste v18-GRANT-Migration)
+#   - Automatisch: Commit auf supabase/migrations/**.sql mit "[apply-migration-additive]"
+#     im Commit-Message (NICHT "[apply-migration]" — das triggert den destruktiven Reset!)
+
+on:
+  push:
+    paths:
+      - 'supabase/migrations/**.sql'
+  workflow_dispatch:
+    inputs:
+      migration_file:
+        description: 'Pfad zur Migrations-Datei (additiv, kein Schema-Reset)'
+        required: true
+        default: 'supabase/migrations/20260418_v18_grant_anon_writes.sql'
+      region:
+        description: 'Supabase-Region (eu-central-1 | eu-west-1 | us-east-1 | us-west-1 | ap-southeast-1)'
+        required: false
+        default: 'eu-central-1'
+
+env:
+  PROJECT_REF: adtviduaftdquvfjpojb
+  DEFAULT_REGION: eu-central-1
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  apply:
+    name: 🚀 Additive Migration anwenden
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Gate: workflow_dispatch immer; push nur wenn [apply-migration-additive] im Message
+    # UND nicht [apply-migration] (das ist für den destruktiven Reset reserviert)
+    if: >
+      github.event_name == 'workflow_dispatch'
+      || (github.event_name == 'push'
+          && contains(github.event.head_commit.message, '[apply-migration-additive]')
+          && !contains(github.event.head_commit.message, '[apply-migration]'))
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: "🧭 Migrations-Datei ermitteln"
+        id: mig
+        run: |
+          FILE="${{ inputs.migration_file }}"
+          if [ -z "$FILE" ]; then
+            # Bei push-Trigger: neueste .sql-Datei im Commit
+            FILE=$(git diff --name-only HEAD~1 HEAD -- 'supabase/migrations/*.sql' | tail -1)
+          fi
+          if [ -z "$FILE" ] || [ ! -f "$FILE" ]; then
+            echo "::error::Keine gültige Migrations-Datei gefunden: '$FILE'"
+            exit 1
+          fi
+          echo "file=$FILE" >> "$GITHUB_OUTPUT"
+          echo "Migration: $FILE"
+          wc -l "$FILE"
+
+      - name: 🐘 PostgreSQL Client installieren
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client
+          psql --version
+
+      - name: 🔌 Pooler-URL bauen + Verbindung testen
+        id: conn
+        env:
+          PG_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          INPUT_REGION: ${{ inputs.region }}
+        run: |
+          set +e
+          if [ -z "$PG_PASSWORD" ]; then
+            echo "::error::Secret SUPABASE_DB_PASSWORD ist nicht gesetzt."
+            exit 1
+          fi
+          PRIMARY_REGION="${INPUT_REGION:-${DEFAULT_REGION}}"
+          ENC_PW=$(python3 -c "import urllib.parse,os; print(urllib.parse.quote(os.environ['PG_PASSWORD'], safe=''))")
+          REGIONS=("$PRIMARY_REGION" eu-central-1 eu-west-1 us-east-1 us-west-1 ap-southeast-1)
+          SEEN=""
+          WINNER=""
+          for R in "${REGIONS[@]}"; do
+            case " $SEEN " in *" $R "*) continue;; esac
+            SEEN="$SEEN $R"
+            HOST="aws-0-${R}.pooler.supabase.com"
+            if ! getent ahostsv4 "$HOST" >/dev/null 2>&1; then continue; fi
+            if ! timeout 5 bash -c "</dev/tcp/$HOST/6543" 2>/dev/null; then continue; fi
+            URL="postgresql://postgres.${PROJECT_REF}:${ENC_PW}@${HOST}:6543/postgres"
+            if psql "$URL" -t -A -c "SELECT 1" >/dev/null 2>&1; then
+              echo "✅ Verbindung ok in Region $R"
+              WINNER="$R"
+              break
+            fi
+          done
+          if [ -z "$WINNER" ]; then
+            echo "::error::Keine Region erlaubt Verbindung."
+            exit 1
+          fi
+          echo "host=aws-0-${WINNER}.pooler.supabase.com" >> "$GITHUB_OUTPUT"
+          echo "region=$WINNER" >> "$GITHUB_OUTPUT"
+
+      - name: 🚀 Migration additiv ausführen
+        id: migrate
+        env:
+          PG_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          PG_HOST: ${{ steps.conn.outputs.host }}
+        run: |
+          set +e
+          ENC_PW=$(python3 -c "import urllib.parse,os; print(urllib.parse.quote(os.environ['PG_PASSWORD'], safe=''))")
+          PGCONN="postgresql://postgres.${PROJECT_REF}:${ENC_PW}@${PG_HOST}:6543/postgres"
+          FILE="${{ steps.mig.outputs.file }}"
+          LOG=/tmp/psql.log
+          echo "::group::Applying $FILE (additive)"
+          psql "$PGCONN" \
+            --set ON_ERROR_STOP=1 \
+            --single-transaction \
+            -f "$FILE" 2>&1 | tee "$LOG"
+          RC=${PIPESTATUS[0]}
+          echo "::endgroup::"
+          cp "$LOG" psql.log
+          exit $RC
+
+      - name: 📤 psql Log als Artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: psql-apply-log
+          path: psql.log
+          retention-days: 7
+
+      - name: 💬 Fehler als PR-Kommentar
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let log = '';
+            try { log = fs.readFileSync('psql.log', 'utf8'); } catch(e) { log = '(Log unlesbar)'; }
+            const errLines = log.split('\n')
+              .filter(l => /^(psql:|ERROR:|DETAIL:|HINT:|CONTEXT:|LINE )/.test(l))
+              .slice(0, 80).join('\n');
+            const body = [
+              '### ❌ Additive Supabase-Migration fehlgeschlagen',
+              '**Run:** ' + context.runId,
+              '**Commit:** ' + context.sha.slice(0,7),
+              '',
+              '```', errLines || '(keine ERROR-Zeilen)', '```'
+            ].join('\n');
+            const prs = await github.rest.pulls.list({
+              owner: context.repo.owner, repo: context.repo.repo,
+              state: 'open', head: context.repo.owner + ':' + context.ref.replace('refs/heads/', '')
+            });
+            if (prs.data.length > 0) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: prs.data[0].number, body
+              });
+            }
+
+      - name: ✅ Summary
+        if: success()
+        run: |
+          echo "### ✅ Migration erfolgreich angewendet" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- Datei: \`${{ steps.mig.outputs.file }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Region: \`${{ steps.conn.outputs.region }}\`" >> $GITHUB_STEP_SUMMARY
