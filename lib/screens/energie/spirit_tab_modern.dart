@@ -13,6 +13,7 @@ import 'calculators/hermetic_calculator_screen.dart';
 import 'calculators/gematria_calculator_screen.dart';
 import 'calculators/spirit_universal_tool_screen.dart';
 import 'calculators/new_spirit_tool_screens.dart';
+import 'calculators/moon_calendar_tool_screen.dart'; // 🌕 v19 Mondkalender
 import 'frequency_generator_screen.dart';  // 🎵 FREQUENCY GENERATOR
 import '../spirit/spirit_tools_mega_screen.dart'; // 🆕 V115 MEGA UPDATE TOOLS
 
@@ -245,15 +246,15 @@ class _SpiritTabModernState extends State<SpiritTabModern> {
       // 🆕 15 NEUE SPIRIT-TOOLS (v44) - IM GRID WIE ORIGINAL-TOOLS
       // ═══════════════════════════════════════════════════════════
       
-      // 🌙 Mondphasen-Tracker
+      // 🌕 Mondkalender (v19 – echte Ephemeriden + Rituale + Tagebuch)
       {
         'icon': Icons.nightlight_round,
-        'iconEmoji': '🌙',
-        'title': 'Mondphasen',
-        'subtitle': 'Mond-Zyklus & Rituale',
-        'color': const Color(0xFF1A237E),
+        'iconEmoji': '🌕',
+        'title': 'Mondkalender',
+        'subtitle': 'Lebe im Einklang mit dem Mond',
+        'color': const Color(0xFF37474F),
         'category': 'new',
-        'screen': const MoonPhaseTrackerScreen(),
+        'screen': const MoonCalendarToolScreen(),
       },
       
       // 🔮 Tarot-Tagesziehung
