@@ -112,6 +112,7 @@ class AdminStateNotifier extends StateNotifier<AdminState> {
   final Ref ref;
   final String world;
   final _storage = UnifiedStorageService();
+  bool _isLoading = false; // Guard gegen Race Condition (initState + App-Resume)
 
   AdminStateNotifier(this.ref, this.world) : super(AdminState.empty(world)) {
     // Auto-Load beim Erstellen
@@ -120,6 +121,8 @@ class AdminStateNotifier extends StateNotifier<AdminState> {
 
   /// Admin-Status laden (Offline-First)
   Future<void> load() async {
+    if (_isLoading) return; // Verhindert parallele Ladevorgänge
+    _isLoading = true;
     if (kDebugMode) {
       debugPrint('🔐 AdminStateNotifier: Lade Status ($world)...');
     }
@@ -183,6 +186,7 @@ class AdminStateNotifier extends StateNotifier<AdminState> {
         debugPrint('⚠️ AdminStateNotifier: Kein Profil gefunden ($world)');
       }
       state = AdminState.empty(world);
+      _isLoading = false;
       return;
     }
 
@@ -194,7 +198,8 @@ class AdminStateNotifier extends StateNotifier<AdminState> {
       debugPrint('   $state');
     }
 
-    // SCHRITT 3: Backend-Check (non-blocking)
+    // SCHRITT 3: Backend-Check (non-blocking, unawaited)
+    _isLoading = false; // Guard zurücksetzen bevor der non-blocking Call startet
     _verifyWithBackend(username);
   }
 

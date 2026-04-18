@@ -243,6 +243,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
     
     // 🔄 AUTO-REFRESH: Profil-Updates alle 30 Sekunden als Fallback (Realtime ist primär)
     _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (!mounted) return;
       _loadMessages(silent: true); // ✅ Silent refresh - kein Flickering
       _loadPolls(silent: true); // ✅ Silent refresh - kein Flickering
       _loadUsernameFromProfile(); // Profil-Sync für Avatar-Updates
@@ -354,6 +355,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
     _inputFocusNode.dispose();
     _refreshTimer?.cancel();
     _messageSubscription?.cancel(); // 🎧 Cancel WebSocket stream
+    _wsOnlineSubscription?.cancel(); // 🌐 Cancel online users stream
     _hybridChat.disconnect(); // 🔌 Disconnect WebSocket
     _typingService.dispose(); // ⌨️ Dispose typing service
     _voiceParticipantsSub?.cancel(); // 🔧 Prevent memory leak
