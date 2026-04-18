@@ -25,9 +25,19 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.x'
+          flutter-version: '3.35.5'
           channel: 'stable'
           cache: true
+
+      - name: Cache Gradle dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
 
       - name: Flutter Pub Get
         run: flutter pub get
@@ -42,7 +52,7 @@ jobs:
           echo "Building Weltenbibliothek v${VERSION}"
 
       - name: Build Release APK (arm64)
-        run: flutter build apk --release
+        run: flutter build apk --release --target-platform android-arm64
 
       - name: Rename APK
         run: |
