@@ -165,3 +165,76 @@ CREATE TABLE notifications (
   is_read     BOOLEAN NOT NULL DEFAULT FALSE,
   created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- ============================================================
+-- PHASE E: PUSH + VOICE + GAMIFICATION (5)
+-- ============================================================
+
+-- ── PUSH SUBSCRIPTIONS ───────────────────────────────────────
+-- user_id als UUID, KEIN FK (auth.users existiert nicht in dieser App)
+CREATE TABLE push_subscriptions (
+  id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id     UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  endpoint    TEXT NOT NULL,
+  p256dh      TEXT NOT NULL DEFAULT '',
+  auth_key    TEXT NOT NULL DEFAULT '',
+  platform    TEXT NOT NULL DEFAULT 'web' CHECK (platform IN ('web','android','ios')),
+  fcm_token   TEXT,
+  device_info JSONB NOT NULL DEFAULT '{}',
+  is_active   BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(user_id, endpoint)
+);
+
+-- ── NOTIFICATION QUEUE ───────────────────────────────────────
+CREATE TABLE notification_queue (
+  id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id       UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  title         TEXT NOT NULL,
+  body          TEXT NOT NULL,
+  data          JSONB NOT NULL DEFAULT '{}',
+  status        TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','sent','failed')),
+  attempts      INTEGER NOT NULL DEFAULT 0,
+  last_error    TEXT,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  processed_at  TIMESTAMPTZ
+);
+
+-- ── VOICE PARTICIPANTS ───────────────────────────────────────
+CREATE TABLE voice_participants (
+  id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  room_id     TEXT NOT NULL REFERENCES chat_rooms(id) ON DELETE CASCADE,
+  user_id     UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  username    TEXT NOT NULL DEFAULT 'Anonym',
+  avatar_url  TEXT,
+  is_active   BOOLEAN NOT NULL DEFAULT TRUE,
+  is_muted    BOOLEAN NOT NULL DEFAULT FALSE,
+  joined_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  left_at     TIMESTAMPTZ,
+  UNIQUE(room_id, user_id)
+);
+
+-- ── USER ACHIEVEMENTS ────────────────────────────────────────
+CREATE TABLE user_achievements (
+  id                UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id           UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  achievement_id    TEXT NOT NULL,
+  achievement_name  TEXT NOT NULL,
+  xp_earned         INTEGER NOT NULL DEFAULT 0,
+  unlocked_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(user_id, achievement_id)
+);
+
+-- ── USER STATS ───────────────────────────────────────────────
+CREATE TABLE user_stats (
+  user_id           UUID PRIMARY KEY REFERENCES profiles(id) ON DELETE CASCADE,
+  total_xp          INTEGER NOT NULL DEFAULT 0,
+  level             INTEGER NOT NULL DEFAULT 1,
+  articles_read     INTEGER NOT NULL DEFAULT 0,
+  articles_written  INTEGER NOT NULL DEFAULT 0,
+  chat_messages     INTEGER NOT NULL DEFAULT 0,
+  login_streak      INTEGER NOT NULL DEFAULT 0,
+  last_active       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
