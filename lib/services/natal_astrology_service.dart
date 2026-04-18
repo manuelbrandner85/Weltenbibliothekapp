@@ -14,9 +14,9 @@ import 'dart:math' as math;
 /// Ergebnis einer Natal-Chart-Berechnung.
 class NatalChartResult {
   /// Zeichen (0=Widder ... 11=Fische) und Grad (0–30) im Zeichen
-  final Map<String, _PlanetPos> planets;
-  final _PlanetPos? ascendant;
-  final _PlanetPos? mc;
+  final Map<String, PlanetPosition> planets;
+  final PlanetPosition? ascendant;
+  final PlanetPosition? mc;
   final Map<String, dynamic> computation;
 
   NatalChartResult({
@@ -27,11 +27,11 @@ class NatalChartResult {
   });
 }
 
-class _PlanetPos {
+class PlanetPosition {
   final int sign;       // 0..11
   final double degree;  // 0..30 innerhalb des Zeichens
   final double longitude; // 0..360 absolut
-  const _PlanetPos(this.sign, this.degree, this.longitude);
+  const PlanetPosition(this.sign, this.degree, this.longitude);
 
   Map<String, dynamic> toJson() => {
         'sign': sign,
@@ -61,8 +61,8 @@ class NatalAstrology {
     final neptuneLon = _normalizeDeg(_planetLongitude('neptune', t));
     final plutoLon = _normalizeDeg(_plutoLongitude(t));
 
-    _PlanetPos? asc;
-    _PlanetPos? mc;
+    PlanetPosition? asc;
+    PlanetPosition? mc;
     if (latitude != null && longitude != null) {
       final gmst = _greenwichSiderealTime(jd); // hours
       final lst = (gmst + longitude / 15.0) * 15.0; // degrees east
@@ -111,10 +111,10 @@ class NatalAstrology {
 
   // ── helpers ─────────────────────────────────────────────────────
 
-  static _PlanetPos _toPos(double lon) {
+  static PlanetPosition _toPos(double lon) {
     final sign = (lon ~/ 30) % 12;
     final deg = lon - sign * 30;
-    return _PlanetPos(sign, deg, lon);
+    return PlanetPosition(sign, deg, lon);
   }
 
   static double _normalizeDeg(double d) {
