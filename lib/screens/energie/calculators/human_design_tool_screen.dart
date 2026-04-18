@@ -495,16 +495,351 @@ class _HdResultCard extends StatelessWidget {
   }
 }
 
-class _HdHistoryTab extends StatelessWidget {
+class _HdHistoryTab extends StatefulWidget {
   const _HdHistoryTab();
   @override
+  State<_HdHistoryTab> createState() => _HdHistoryTabState();
+}
+
+class _HdHistoryTabState extends State<_HdHistoryTab> {
+  late Future<List<Map<String, dynamic>>> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = _load();
+  }
+
+  Future<List<Map<String, dynamic>>> _load() async {
+    final user = _db.auth.currentUser;
+    if (user == null) return [];
+    final res = await _db
+        .from('human_design_charts')
+        .select()
+        .eq('user_id', user.id)
+        .order('computed_at', ascending: false);
+    return (res as List).cast<Map<String, dynamic>>();
+  }
+
+  Future<void> _refresh() async {
+    setState(() => _future = _load());
+    await _future;
+  }
+
+  Future<void> _delete(String id) async {
+    try {
+      await _db.from('human_design_charts').delete().eq('id', id);
+      await _refresh();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Löschen fehlgeschlagen: $e'),
+        backgroundColor: Colors.red,
+      ));
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Text('Gespeicherte HD-Charts…\n(Phase 3.2d)',
-          textAlign: TextAlign.center,
-          style: TextStyle(color: Colors.white70, fontSize: 16)),
+    return RefreshIndicator(
+      onRefresh: _refresh,
+      color: _kTeal,
+      backgroundColor: _kCardBg,
+      child: FutureBuilder<List<Map<String, dynamic>>>(
+        future: _future,
+        builder: (ctx, snap) {
+          if (snap.connectionState != ConnectionState.done) {
+            return const Center(
+                child: CircularProgressIndicator(color: _kTeal));
+          }
+          if (snap.hasError) {
+            return ListView(children: [
+              const SizedBox(height: 120),
+              Center(
+                child: Text('Fehler: ${snap.error}',
+                    style: const TextStyle(color: Colors.white70)),
+              ),
+            ]);
+          }
+          final items = snap.data ?? [];
+          if (items.isEmpty) {
+            return ListView(children: const [
+              SizedBox(height: 120),
+              Center(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 32),
+                  child: Text(
+                    'Noch keine HD-Charts gespeichert.\nGehe zu "Neu", um dein Design zu berechnen.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.white54),
+                  ),
+                ),
+              ),
+            ]);
+          }
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: items.length,
+            itemBuilder: (_, i) => _HdHistoryCard(
+              data: items[i],
+              onDelete: () => _delete(items[i]['id'] as String),
+            ),
+          );
+        },
+      ),
     );
   }
+}
+
+class _HdHistoryCard extends StatelessWidget {
+  final Map<String, dynamic> data;
+  final VoidCallback onDelete;
+  const _HdHistoryCard({required this.data, required this.onDelete});
+
+  @override
+  Widget build(BuildContext context) {
+    final label = (data['label'] as String?) ?? 'Chart';
+    final date = (data['birth_date'] as String?) ?? '';
+    final type = (data['type'] as String?) ?? '';
+    final profile = (data['profile'] as String?) ?? '';
+    final auth = (data['authority'] as String?) ?? '';
+
+    return InkWell(
+      onTap: () => _showDetail(context),
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: _kCardBg,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: _kBorder),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(label,
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16)),
+                ),
+                IconButton(
+                  onPressed: () => _confirmDelete(context),
+                  icon: const Icon(Icons.delete_outline, color: Colors.white54),
+                  tooltip: 'Löschen',
+                ),
+              ],
+            ),
+            Text(date,
+                style: const TextStyle(color: Colors.white54, fontSize: 12)),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 6,
+              children: [
+                if (type.isNotEmpty)
+                  _chip(kHdTypeLabels[type] ?? type),
+                if (profile.isNotEmpty) _chip('Profil $profile'),
+                if (auth.isNotEmpty)
+                  _chip(kHdAuthorityLabels[auth] ?? auth),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _chip(String s) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: _kTeal.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: _kTeal.withValues(alpha: 0.4)),
+        ),
+        child: Text(s,
+            style: const TextStyle(color: Colors.white, fontSize: 11)),
+      );
+
+  void _confirmDelete(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: _kCardBg,
+        title: const Text('Chart löschen?',
+            style: TextStyle(color: Colors.white)),
+        content: Text(
+            'Möchtest du "${data['label']}" wirklich entfernen?',
+            style: const TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Abbrechen',
+                style: TextStyle(color: Colors.white54)),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              onDelete();
+            },
+            child: const Text('Löschen',
+                style: TextStyle(color: Colors.redAccent)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDetail(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: _kDarkBg,
+      isScrollControlled: true,
+      builder: (_) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.85,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        builder: (_, ctrl) => _HdChartDetailView(data: data, scroll: ctrl),
+      ),
+    );
+  }
+}
+
+class _HdChartDetailView extends StatelessWidget {
+  final Map<String, dynamic> data;
+  final ScrollController scroll;
+  const _HdChartDetailView({required this.data, required this.scroll});
+
+  @override
+  Widget build(BuildContext context) {
+    final definedCenters = ((data['defined_centers'] as List?)?.cast<String>() ?? const [])
+        .toSet();
+    final definedGates = ((data['defined_gates'] as List?)?.cast<int>() ?? const []);
+    final type = (data['type'] as String?) ?? '';
+    final profile = (data['profile'] as String?) ?? '';
+    final auth = (data['authority'] as String?) ?? '';
+    final strategy = (data['strategy'] as String?) ?? '';
+
+    return Container(
+      decoration: const BoxDecoration(
+        color: _kDarkBg,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: ListView(
+        controller: scroll,
+        padding: const EdgeInsets.all(20),
+        children: [
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.white24,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            data['label'] as String? ?? 'HD-Chart',
+            style: const TextStyle(
+                color: Colors.white,
+                fontSize: 22,
+                fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            '${data['birth_date'] ?? ''}'
+            '${data['birth_time'] != null ? "  ·  ${data['birth_time']}" : ""}'
+            '${(data['birth_place'] as String?)?.isNotEmpty == true ? "\n${data['birth_place']}" : ""}',
+            style: const TextStyle(color: Colors.white54, fontSize: 13),
+          ),
+          const SizedBox(height: 20),
+          _row('Typ', kHdTypeLabels[type] ?? type),
+          _row('Profil', profile),
+          _row('Strategie', kHdStrategyLabels[strategy] ?? strategy),
+          _row('Autorität', kHdAuthorityLabels[auth] ?? auth),
+          const SizedBox(height: 20),
+          const Text('Zentren',
+              style: TextStyle(
+                  color: _kTeal, fontWeight: FontWeight.bold, fontSize: 14)),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: kCenters.map((c) {
+              final def = definedCenters.contains(c);
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: def ? _kTeal : _kCardBg,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                      color: def ? _kTeal : Colors.white24, width: 1),
+                ),
+                child: Text(
+                  kHdCenterLabels[c] ?? c,
+                  style: TextStyle(
+                    color: def ? Colors.black : Colors.white54,
+                    fontWeight: def ? FontWeight.bold : FontWeight.normal,
+                    fontSize: 12,
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 20),
+          const Text('Aktivierte Tore',
+              style: TextStyle(
+                  color: _kTeal, fontWeight: FontWeight.bold, fontSize: 14)),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 5,
+            runSpacing: 5,
+            children: (definedGates.toList()..sort())
+                .map((g) => Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: _kTeal.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text('$g',
+                          style: const TextStyle(
+                              color: Colors.white, fontSize: 12)),
+                    ))
+                .toList(),
+          ),
+          const SizedBox(height: 40),
+        ],
+      ),
+    );
+  }
+
+  Widget _row(String k, String v) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 100,
+              child: Text(k,
+                  style: const TextStyle(color: Colors.white54, fontSize: 13)),
+            ),
+            Expanded(
+              child: Text(v,
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600)),
+            ),
+          ],
+        ),
+      );
 }
 
 class _HdLexiconTab extends StatelessWidget {
