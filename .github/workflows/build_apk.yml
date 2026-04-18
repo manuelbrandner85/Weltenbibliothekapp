@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - genspark_ai_developer
+      - 'claude/**'
     paths:
       - 'pubspec.yaml'
       - 'lib/**'
@@ -24,7 +25,7 @@ jobs:
       - name: 📥 Checkout
         uses: actions/checkout@v4
         with:
-          ref: genspark_ai_developer
+          ref: ${{ github.ref }}
 
       - name: ☕ Java 17
         uses: actions/setup-java@v4
