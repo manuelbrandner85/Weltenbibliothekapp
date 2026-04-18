@@ -91,13 +91,6 @@ const Map<String, String> _kMethodLabels = {
   'guided': 'Geführt',
 };
 
-const Map<String, String> _kGuideWorldToJourney = {
-  'lower': 'lower_world',
-  'upper': 'upper_world',
-  'middle': 'middle_world',
-  'any': 'lower_world',
-};
-
 class _NewJourneyTab extends StatefulWidget {
   const _NewJourneyTab();
   @override
