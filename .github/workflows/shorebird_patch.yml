@@ -42,10 +42,21 @@ jobs:
       - name: 🐦 Shorebird
         uses: shorebirdtech/setup-shorebird@v1
 
+      - name: 📋 Version lesen
+        id: version
+        run: |
+          VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: //' | sed 's/+.*//')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
       - name: 📡 Patch veröffentlichen
         run: |
           shorebird patch android \
             --release-version=${{ github.event.inputs.release_version || 'latest' }} \
-            -- --target-platform=android-arm64
+            -- \
+            --target-platform=android-arm64 \
+            --dart-define=APP_VERSION=${{ steps.version.outputs.version }} \
+            --dart-define=SUPABASE_URL=https://adtviduaftdquvfjpojb.supabase.co \
+            --dart-define=SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkdHZpZHVhZnRkcXV2Zmpwb2piIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxMzY3OTcsImV4cCI6MjA5MDcxMjc5N30.LPtmnjukb6o2CA16RDjoStqYb_1bipNULD4tgOfuD98 \
+            --dart-define=CLOUDFLARE_WORKER_URL=https://weltenbibliothek-api.brandy13062.workers.dev
         env:
           SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}

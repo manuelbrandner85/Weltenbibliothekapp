@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 5.30.1+20260419
+version: 5.31.0+20260419
 
 environment:
   sdk: '>=3.5.0 <4.0.0'
@@ -58,6 +58,7 @@ dependencies:
   xml: ^6.5.0  # RSS Feed parsing
   crypto: ^3.0.3  # Hashing for image consistency
   url_launcher: ^6.3.1  # URL Launcher (Web-kompatibel)
+  shorebird_code_push: ^2.0.5  # 🔔 OTA-Patch-Status (Patch-Ready-Dialog)
   cached_network_image: ^3.4.1  # 🆕 Image Caching für bessere Performance
   
   # Sensors (v5.37 - for gyroscope parallax)

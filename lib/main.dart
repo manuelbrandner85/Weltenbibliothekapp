@@ -43,6 +43,7 @@ import 'widgets/achievement_unlock_dialog.dart';  // 🏆 Achievement UI
 import 'utils/error_boundary.dart';  // 🛡️ Error Boundary
 import 'services/supabase_service.dart';  // 🟢 SUPABASE: Auth + Chat + Community
 import 'services/profile_restore_service.dart'; // 🔄 PROFIL-WIEDERHERSTELLUNG
+import 'widgets/update_gate.dart'; // 🔔 In-App Update-Meldungen (Release + OTA-Patch)
 // import 'services/push_notification_service.dart'; // Firebase -> Cloudflare
 
 void main() async {
@@ -339,7 +340,9 @@ class _WeltenbibliothekAppState extends State<WeltenbibliothekApp> {
           ],
           locale: const Locale('de', 'DE'),
           // ✅ FIXED: DIREKT ZUM PORTAL - KEIN INTRO, KEINE CHECKS
-          home: const PortalHomeScreen(), // 🌀 Direkt zum Portal
+          // UpdateGate zeigt beim ersten Frame + bei App-Resume Update-Meldungen
+          // (Release-Update-Dialog / OTA-Patch-Bereit-Banner)
+          home: const UpdateGate(child: PortalHomeScreen()), // 🌀 Portal + Update-Check
           routes: {
             '/home': (context) => const IntroImageScreen(),
             '/dashboard': (context) => const EnergieWorldScreen(), // ✅ FIXED
