@@ -85,6 +85,33 @@ void main() async {
     'numerology_data',
     'spirit_calculations',
     'user_data', // ✅ FIX: UnifiedStorageService benötigt diese Box (Admin Dashboard)
+    // 🔮 SPIRIT-TAB: Alle Tool-Boxen vorab öffnen (verhindert "HiveError: Box not found")
+    'spirit_entries',
+    'spirit_progress',
+    'synchronicity_entries',
+    'journal_entries',
+    'partner_profiles',
+    'compatibility_analyses',
+    'weekly_horoscope',
+    'chakra_journal',
+    'chakra_daily_scores',
+    'chakra_meditation_sessions',
+    'chakra_affirmations',
+    'numerology_year_journey',
+    'numerology_journal',
+    'numerology_milestones',
+    'meditation_sessions_enhanced',
+    'meditation_presets',
+    'tarot_readings',
+    'tarot_daily_cards',
+    'tarot_spreads',
+    'moon_journal',
+    'crystal_collection',
+    'mantra_challenges',
+    'achievements',
+    'tool_streaks',
+    'post_drafts',
+    'scheduled_posts',
   ];
   for (final box in hiveBoxes) {
     try {
