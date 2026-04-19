@@ -48,9 +48,6 @@ jobs:
           echo "=== shorebird --version ==="
           shorebird --version
           echo ""
-          echo "=== flutter --version ==="
-          flutter --version
-          echo ""
           echo "=== shorebird.yaml ==="
           cat shorebird.yaml
           echo ""
