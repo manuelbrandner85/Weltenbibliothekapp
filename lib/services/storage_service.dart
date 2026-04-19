@@ -297,8 +297,31 @@ class StorageService {
     );
   }
 
+  /// Async-Variante von [getEnergieProfile] — wartet, bis die Hive-Box
+  /// geöffnet ist. Vermeidet die Race-Condition auf langsamen Geräten,
+  /// bei denen die Box beim initState() noch nicht offen ist (und
+  /// `_boxOrNull` null zurückgibt → Screen fällt in den leeren Zustand).
   Future<EnergieProfile?> loadEnergieProfile() async {
-    return getEnergieProfile();
+    final box = await _ensureBox(_energieProfileBox);
+    final data = box.get('current_profile') as Map?;
+    if (data == null) return null;
+    return EnergieProfile.fromJson(Map<String, dynamic>.from(data));
+  }
+
+  /// Async-Variante für den Materie-Profile-Load mit garantiert geöffneter Box.
+  Future<MaterieProfile?> loadMaterieProfile() async {
+    final box = await _ensureBox(_materieProfileBox);
+    final data = box.get('current_profile') as Map?;
+    if (data == null) return null;
+    return MaterieProfile.fromJson(Map<String, dynamic>.from(data));
+  }
+
+  /// Async-Variante für den Spirit-Profile-Load mit garantiert geöffneter Box.
+  Future<SpiritProfile?> loadSpiritProfile() async {
+    final box = await _ensureBox(_energieProfileBox);
+    final data = box.get('current_profile') as Map?;
+    if (data == null) return null;
+    return SpiritProfile.fromJson(Map<String, dynamic>.from(data));
   }
 
   /// Energie-Profil löschen
