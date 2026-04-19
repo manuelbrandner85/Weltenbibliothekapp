@@ -43,6 +43,19 @@ jobs:
         with:
           cache: true
 
+      - name: 🔍 Diagnose
+        run: |
+          echo "=== shorebird version ==="
+          shorebird --version
+          echo "=== flutter version ==="
+          flutter --version
+          echo "=== shorebird.yaml ==="
+          cat shorebird.yaml
+          echo "=== pubspec version ==="
+          grep '^version:' pubspec.yaml
+        env:
+          SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
+
       - name: 📦 pub get
         run: flutter pub get
 
@@ -60,7 +73,8 @@ jobs:
             --target-platform=android-arm64 \
             --dart-define=SUPABASE_URL=https://adtviduaftdquvfjpojb.supabase.co \
             --dart-define=SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkdHZpZHVhZnRkcXV2Zmpwb2piIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxMzY3OTcsImV4cCI6MjA5MDcxMjc5N30.LPtmnjukb6o2CA16RDjoStqYb_1bipNULD4tgOfuD98 \
-            --dart-define=CLOUDFLARE_WORKER_URL=https://weltenbibliothek-api.brandy13062.workers.dev
+            --dart-define=CLOUDFLARE_WORKER_URL=https://weltenbibliothek-api.brandy13062.workers.dev \
+            2>&1 | tee /tmp/shorebird_release.log ; exit ${PIPESTATUS[0]}
         env:
           SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
 
@@ -85,3 +99,11 @@ jobs:
           make_latest: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 📋 Shorebird Log hochladen (bei Fehler)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: shorebird-debug-log
+          path: /tmp/shorebird_release.log
+          retention-days: 7
