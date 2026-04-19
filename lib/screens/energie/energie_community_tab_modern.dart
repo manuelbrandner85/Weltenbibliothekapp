@@ -9,6 +9,9 @@ import '../../widgets/post_actions_row.dart'; // ✅ POST ACTIONS
 import '../../widgets/loading_skeletons.dart'; // 💀 LOADING SKELETONS
 // 👍 NEW: Like Button
 // 💬 NEW: Comments Widget
+import 'energie_live_chat_screen.dart'; // 💬 LIVE-CHAT INTEGRATION
+import '../../services/chat_notification_service.dart'; // 🔔 NOTIFICATION SERVICE
+
 /// Moderner Energie-Community-Tab - Spiritueller Feed-Style
 class EnergieCommunityTabModern extends StatefulWidget {
   const EnergieCommunityTabModern({super.key});
@@ -29,10 +32,13 @@ const _kTeal    = Color(0xFF26C6DA);
 const _kPink    = Color(0xFFEC407A);
 const _kGreen   = Color(0xFF66BB6A);
 
-class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern> {
+class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern> with SingleTickerProviderStateMixin {
   bool _isLoading = true;
   String _selectedView = 'trending'; // 'trending', 'sacred', 'experiences'
-
+  
+  // 💬 TAB CONTROLLER für Posts vs Chat
+  late TabController _tabController;
+  final ChatNotificationService _notificationService = ChatNotificationService();
   final CommunityService _communityService = CommunityService();
   
   // ✅ Echte Posts von Cloudflare API
@@ -41,6 +47,15 @@ class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern> {
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+    
+    // ✅ Listener für Tab-Wechsel (FAB nur in Posts-Tab zeigen)
+    _tabController.addListener(() {
+      setState(() {}); // Rebuild für FAB Visibility
+    });
+    if (kDebugMode) {
+      debugPrint('🟣 ENERGIE Community Tab Modern mit Chat initialisiert');
+    }
     _loadData();
   }
   
@@ -85,11 +100,108 @@ class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern> {
   }
   
   @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: _kBg,
-      body: _buildPostsView(),
-      floatingActionButton: Container(
+      body: Column(
+        children: [
+        // 💬 TAB BAR: Posts vs Live Chat
+        Container(
+          color: _kBg,
+          child: TabBar(
+            controller: _tabController,
+            indicatorColor: _kPurple,
+            indicatorWeight: 2,
+            indicatorSize: TabBarIndicatorSize.label,
+            labelColor: Colors.white,
+            unselectedLabelColor: Colors.white38,
+            labelStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+            unselectedLabelStyle: const TextStyle(fontSize: 14),
+            dividerColor: Colors.white.withValues(alpha: 0.06),
+            tabs: [
+              const Tab(
+                icon: Icon(Icons.article),
+                text: 'Posts',
+              ),
+              Tab(
+                icon: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    const Icon(Icons.chat_bubble),
+                    // 🔔 UNREAD BADGE
+                    Positioned(
+                      right: -6,
+                      top: -6,
+                      child: ListenableBuilder(
+                        listenable: _notificationService,
+                        builder: (context, _) {
+                          final count = _notificationService.getTotalUnreadCount();
+                          if (count == 0) return const SizedBox.shrink();
+                          
+                          return Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.red.withValues(alpha: 0.5),
+                                  blurRadius: 4,
+                                ),
+                              ],
+                            ),
+                            constraints: const BoxConstraints(
+                              minWidth: 16,
+                              minHeight: 16,
+                            ),
+                            child: Center(
+                              child: Text(
+                                count > 9 ? '9+' : count.toString(),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                text: 'Live Chat',
+              ),
+            ],
+          ),
+        ),
+        
+        // 💬 TAB VIEW: Posts oder Chat
+        Expanded(
+          child: TabBarView(
+            controller: _tabController,
+            children: [
+              // TAB 1: Community Posts (Original)
+              _buildPostsView(),
+              
+              // TAB 2: Live Chat (ACTIVATED!)
+              const EnergieLiveChatScreen(),
+              // const EnergieLiveChatScreen(), // Temporarily disabled
+            ],
+          ),
+        ),
+      ],
+    ),
+      // ✅ Post-Button NUR im Posts-Tab anzeigen (nicht im Chat)
+      floatingActionButton: _tabController.index == 0
+          ? Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16),
                 gradient: const LinearGradient(
@@ -119,7 +231,8 @@ class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern> {
                   ),
                 ),
               ),
-            ),
+            )
+          : null, // Kein Button im Chat-Tab
     );
   }
   

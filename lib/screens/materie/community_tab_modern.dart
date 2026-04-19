@@ -7,6 +7,8 @@ import '../../widgets/create_post_dialog_v2.dart'; // ✅ POST-DIALOG
 import '../../widgets/loading_skeletons.dart'; // 💀 LOADING SKELETONS
 import '../../widgets/article_like_button.dart'; // 👍 NEW: Like Button
 import '../../widgets/article_comments_widget.dart'; // 💬 NEW: Comments Widget
+import 'materie_live_chat_screen.dart'; // 💬 LIVE-CHAT INTEGRATION
+import '../../services/chat_notification_service.dart'; // 🔔 NOTIFICATION SERVICE
 import 'package:share_plus/share_plus.dart';
 
 /// Modernes Community-Tab für MATERIE-Welt - Social-Media-Style
@@ -28,11 +30,16 @@ const _mAmber = Color(0xFFFFAB00);
 const _mGreen = Color(0xFF00E676);
 const _mRed   = Color(0xFFFF1744);
 
-class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> {
+class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> with SingleTickerProviderStateMixin {
   bool _isLoading = false;
-  String _selectedView = 'all';
-
-  final CommunityService _communityService = CommunityService();
+  // ignore: unused_field
+  String? _errorMessage; // ✅ FIX #7: Error state
+  String _selectedView = 'all'; // ✅ FIX #8: View state variable
+  
+  // 💬 TAB CONTROLLER für Posts vs Chat
+  late TabController _tabController;
+  final ChatNotificationService _notificationService = ChatNotificationService();
+  final CommunityService _communityService = CommunityService(); // 🌐 ECHTE API
   
   // 🌐 ECHTE Community-Posts von Cloudflare API
   List<CommunityPost> _posts = [];
@@ -40,22 +47,50 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> {
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+    
+    // ✅ Listener für Tab-Wechsel (FAB nur in Posts-Tab zeigen)
+    _tabController.addListener(() {
+      setState(() {}); // Rebuild für FAB Visibility
+    });
+    
+    if (kDebugMode) {
+      debugPrint('🔵 MATERIE Community Tab Modern mit Chat initialisiert');
+    }
     _loadData();
   }
+  
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
 
+  /// 🌐 Lade echte Community-Posts von Cloudflare API
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
+    
     try {
       final posts = await _communityService.fetchPosts(worldType: WorldType.materie);
-      if (mounted) {
-        setState(() {
-          _posts = posts;
-          _isLoading = false;
-        });
+      
+      if (kDebugMode) {
+        debugPrint('🔵 MATERIE Community (AKTIV): ${posts.length} posts loaded');
       }
+      
+      setState(() {
+        _posts = posts;
+        _errorMessage = null; // ✅ FIX #7: Clear error
+        _isLoading = false;
+      });
     } catch (e) {
-      if (kDebugMode) debugPrint('🔵 MATERIE Community: Error loading posts: $e');
-      if (mounted) setState(() => _isLoading = false);
+      if (kDebugMode) {
+        debugPrint('🔵 MATERIE Community (AKTIV): Error loading posts: $e');
+      }
+      
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Fehler beim Laden der Posts. Bitte erneut versuchen.'; // ✅ FIX #7
+      });
     }
   }
   
@@ -75,38 +110,129 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: _mBg,
-      body: _buildPostsView(),
-      floatingActionButton: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          gradient: const LinearGradient(
-            colors: [Color(0xFF1565C0), Color(0xFF2979FF)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+      body: Column(
+        children: [
+        // 💬 TAB BAR: Posts vs Live Chat
+        Container(
+          color: _mBg,
+          child: TabBar(
+            controller: _tabController,
+            indicatorColor: _mBlue,
+            indicatorWeight: 2,
+            indicatorSize: TabBarIndicatorSize.label,
+            labelColor: Colors.white,
+            unselectedLabelColor: Colors.white38,
+            labelStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+            unselectedLabelStyle: const TextStyle(fontSize: 14),
+            dividerColor: Colors.white.withValues(alpha: 0.06),
+            tabs: [
+              const Tab(
+                icon: Icon(Icons.article),
+                text: 'Posts',
+              ),
+              Tab(
+                icon: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    const Icon(Icons.chat_bubble),
+                    // 🔔 UNREAD BADGE
+                    Positioned(
+                      right: -6,
+                      top: -6,
+                      child: ListenableBuilder(
+                        listenable: _notificationService,
+                        builder: (context, _) {
+                          final count = _notificationService.getTotalUnreadCount();
+                          if (count == 0) return const SizedBox.shrink();
+                          
+                          return Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.red.withValues(alpha: 0.5),
+                                  blurRadius: 4,
+                                ),
+                              ],
+                            ),
+                            constraints: const BoxConstraints(
+                              minWidth: 16,
+                              minHeight: 16,
+                            ),
+                            child: Center(
+                              child: Text(
+                                count > 9 ? '9+' : count.toString(),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                text: 'Live Chat',
+              ),
+            ],
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Color(0xFF2979FF).withValues(alpha: 0.35),
-              blurRadius: 16,
-              offset: const Offset(0, 4),
-            ),
-          ],
         ),
-        child: FloatingActionButton.extended(
-          onPressed: _showCreatePostDialogV2,
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          icon: const Icon(Icons.edit, color: Colors.white, size: 24),
-          label: const Text(
-            'Post erstellen',
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w600,
-              fontSize: 16,
-            ),
+        
+        // 💬 TAB VIEW: Posts oder Chat
+        Expanded(
+          child: TabBarView(
+            controller: _tabController,
+            children: [
+              // TAB 1: Community Posts (Original)
+              _buildPostsView(),
+              
+              // TAB 2: Live Chat (ACTIVATED!)
+              const MaterieLiveChatScreen(),
+            ],
           ),
         ),
+      ],
       ),
+      // ✅ Post-Button NUR im Posts-Tab anzeigen (nicht im Chat)
+      floatingActionButton: _tabController.index == 0
+          ? Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF1565C0), Color(0xFF2979FF)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Color(0xFF2979FF).withValues(alpha: 0.35),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: FloatingActionButton.extended(
+                onPressed: _showCreatePostDialogV2,
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                icon: const Icon(Icons.edit, color: Colors.white, size: 24),
+                label: const Text(
+                  'Post erstellen',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+            )
+          : null, // Kein Button im Chat-Tab
     );
   }
   
