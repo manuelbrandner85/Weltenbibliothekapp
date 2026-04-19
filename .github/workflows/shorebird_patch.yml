@@ -11,9 +11,13 @@ on:
   workflow_dispatch:
     inputs:
       release_version:
-        description: 'Ziel-Release (z.B. 5.11.0). Leer = neuester Release'
+        description: 'Ziel-Release (z.B. 5.30.0). Standard: neuester Release'
         required: false
-        default: ''
+        default: 'latest'
+      source_branch:
+        description: 'Branch mit dem zu patchenden Code'
+        required: false
+        default: 'main'
 
 permissions:
   contents: read
@@ -26,6 +30,8 @@ jobs:
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.source_branch || 'main' }}
 
       - name: ☕ Java 17
         uses: actions/setup-java@v4
@@ -38,10 +44,8 @@ jobs:
 
       - name: 📡 Patch veröffentlichen
         run: |
-          if [ -n "${{ github.event.inputs.release_version }}" ]; then
-            shorebird patch android --release-version=${{ github.event.inputs.release_version }} -- --target-platform=android-arm64
-          else
-            shorebird patch android --release-version=latest -- --target-platform=android-arm64
-          fi
+          shorebird patch android \
+            --release-version=${{ github.event.inputs.release_version || 'latest' }} \
+            -- --target-platform=android-arm64
         env:
           SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
