@@ -99,15 +99,18 @@ jobs:
             ## Weltenbibliothek v${{ steps.version.outputs.version }}
 
             ### Was ist neu
-            - Chat-System konsolidiert auf Supabase (stabiler, schneller)
-            - Anonyme Session beim Start → kein Login nötig zum Chatten
-            - Nachrichten-Duplikate behoben
+            - Update-Benachrichtigung erscheint jetzt sofort nach Download (kein App-Neustart nötig)
+            - Alle Geräte werden zuverlässig über verfügbare Updates informiert
+            - Chat: Nachrichten senden für alle Nutzer (kein Login nötig)
             - Kompatibilität für alle Android-Geräte (arm64 + arm32)
             - Android 5.0+ (API 21) unterstützt
+            - Automatische anonyme Session beim App-Start
 
             ### Installation
             APK herunterladen und auf dem Gerät installieren (Sideloading).
             Updates danach automatisch via Shorebird OTA.
+
+            ### Wichtig: APK direkt über die alte Version installieren (kein Löschen nötig)
           files: build/app/outputs/flutter-apk/${{ steps.version.outputs.apk_name }}
           make_latest: true
         env:
