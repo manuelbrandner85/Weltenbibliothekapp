@@ -547,13 +547,11 @@ class _MobileOptimierterRechercheTabState extends State<MobileOptimierterRecherc
               },
             ),
           ),
-          ],
-        ),
+        ],
       ),
-      // Bookmark FAB removed per user request
     );
   }
-  
+
   /// Fehlerbildschirm
   Widget _buildErrorScreen(String error) {
     return Center(
