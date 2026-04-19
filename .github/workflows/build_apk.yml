@@ -17,6 +17,9 @@ on:
         required: false
         default: 'Manueller Build'
 
+permissions:
+  contents: write
+
 jobs:
   build-apk:
     name: 🔨 Flutter APK Build (arm64)
