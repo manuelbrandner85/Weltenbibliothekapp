@@ -11,6 +11,7 @@ import '../models/community_post.dart';
 import '../models/spirit_extended_models.dart';
 import '../models/app_data.dart'; // 🆕 NEUE DATENMODELLE
 import '../core/exceptions/exception_guard.dart'; // 🛡️ EXCEPTION GUARD
+import 'cloud_tool_data_service.dart'; // ☁️ SUPABASE CLOUD-SYNC (Phase A)
 
 /// Lokaler Storage Service mit Hive
 /// Für offline-first Funktionalität
@@ -209,7 +210,30 @@ class StorageService {
     }));
     return null;
   }
-  
+
+  // ═══════════════════════════════════════════════════════════════════
+  // ☁️ CLOUD-SYNC (Phase A) – Fire-and-forget Supabase-Mirror
+  // ═══════════════════════════════════════════════════════════════════
+  // Dual-Write: jeder Hive-Save ruft optional _cloudSync/_cloudDelete.
+  // Nicht eingeloggte User: Calls werden intern verworfen (no-op).
+  // Netzwerkfehler: geloggt, nicht geworfen – Hive bleibt Source of Truth.
+
+  void _cloudSync(String toolKey, String itemId, Map<String, dynamic> data) {
+    unawaited(
+      CloudToolDataService.instance.upsert(
+        toolKey: toolKey,
+        itemId: itemId,
+        data: data,
+      ),
+    );
+  }
+
+  void _cloudDelete(String toolKey, String itemId) {
+    unawaited(
+      CloudToolDataService.instance.delete(toolKey: toolKey, itemId: itemId),
+    );
+  }
+
   // ============================================
   // MATERIE PROFILE
   // ============================================
@@ -312,6 +336,7 @@ class StorageService {
   Future<void> saveSpiritEntry(SpiritEntry entry) async {
     final box = await _ensureBox(_spiritEntriesBox);
     await box.put(entry.id, entry.toJson());
+    _cloudSync(_spiritEntriesBox, entry.id, entry.toJson());
   }
 
   List<SpiritEntry> getSpiritEntries() {
@@ -390,6 +415,7 @@ class StorageService {
   Future<void> saveSynchronicity(SynchronicityEntry entry) async {
     final box = await _ensureBox(_synchronicityBox);
     await box.put(entry.id, entry.toJson());
+    _cloudSync(_synchronicityBox, entry.id, entry.toJson());
   }
 
   List<SynchronicityEntry> getSynchronicities({int? lastDays}) {
@@ -427,6 +453,7 @@ class StorageService {
   Future<void> saveJournalEntry(SpiritJournalEntry entry) async {
     final box = await _ensureBox(_journalEntriesBox);
     await box.put(entry.id, entry.toJson());
+    _cloudSync(_journalEntriesBox, entry.id, entry.toJson());
   }
 
   List<SpiritJournalEntry> getJournalEntries({String? category, int? lastDays}) {
@@ -455,6 +482,7 @@ class StorageService {
   Future<void> savePartnerProfile(PartnerProfile partner) async {
     final box = await _ensureBox(_partnerProfilesBox);
     await box.put(partner.id, partner.toJson());
+    _cloudSync(_partnerProfilesBox, partner.id, partner.toJson());
   }
 
   List<PartnerProfile> getPartnerProfiles() {
@@ -469,6 +497,7 @@ class StorageService {
     final box = await _ensureBox(_compatibilityBox);
     final key = '${analysis.userId}_${analysis.partnerId}';
     await box.put(key, analysis.toJson());
+    _cloudSync(_compatibilityBox, key, analysis.toJson());
   }
 
   CompatibilityAnalysis? getCompatibilityAnalysis(String userId, String partnerId) {
@@ -511,6 +540,7 @@ class StorageService {
   Future<void> saveSpiritProgress(SpiritProgress progress) async {
     final box = await _ensureBox(_spiritProgressBox);
     await box.put('current_progress', progress.toJson());
+    _cloudSync(_spiritProgressBox, 'current_progress', progress.toJson());
   }
 
   SpiritProgress getSpiritProgress() {
@@ -628,6 +658,7 @@ class StorageService {
   Future<void> addCrystalToCollection(CrystalCollection crystal) async {
     final box = await _ensureBox(_crystalCollectionBox);
     await box.put(crystal.crystalName, crystal.toJson());
+    _cloudSync(_crystalCollectionBox, crystal.crystalName, crystal.toJson());
   }
 
   List<CrystalCollection> getMyCrystalCollection() {
@@ -648,6 +679,7 @@ class StorageService {
   Future<void> removeCrystalFromCollection(String crystalName) async {
     final box = await _ensureBox(_crystalCollectionBox);
     await box.delete(crystalName);
+    _cloudDelete(_crystalCollectionBox, crystalName);
   }
 
   // ─────────────────────────────────────────────────────────
@@ -657,6 +689,7 @@ class StorageService {
   Future<void> saveMantraChallenge(MantraChallenge challenge) async {
     final box = await _ensureBox(_mantraChallengesBox);
     await box.put(challenge.id, challenge.toJson());
+    _cloudSync(_mantraChallengesBox, challenge.id, challenge.toJson());
   }
 
   List<MantraChallenge> getAllMantraChallenges() {
@@ -727,6 +760,7 @@ class StorageService {
   Future<void> saveToolStreak(ToolStreak streak) async {
     final box = await _ensureBox(_toolStreaksBox);
     await box.put(streak.toolId, streak.toJson());
+    _cloudSync(_toolStreaksBox, streak.toolId, streak.toJson());
   }
 
   ToolStreak? getToolStreak(String toolId) {
@@ -922,6 +956,7 @@ class StorageService {
     final box = await _ensureBox(_numerologyYearJourneyBox);
     final year = journey['year'] as int;
     await box.put(year, journey);
+    _cloudSync(_numerologyYearJourneyBox, year.toString(), journey);
   }
 
   /// Personal Year Journey für ein bestimmtes Jahr laden
@@ -937,6 +972,7 @@ class StorageService {
     final box = await _ensureBox(_numerologyJournalBox);
     final id = entry['id'] ?? DateTime.now().millisecondsSinceEpoch.toString();
     await box.put(id, entry);
+    _cloudSync(_numerologyJournalBox, id.toString(), entry);
   }
 
   /// Alle Numerologie Journal Einträge laden
@@ -954,6 +990,7 @@ class StorageService {
     final box = await _ensureBox(_numerologyMilestonesBox);
     final id = milestone['id'] ?? DateTime.now().millisecondsSinceEpoch.toString();
     await box.put(id, milestone);
+    _cloudSync(_numerologyMilestonesBox, id.toString(), milestone);
   }
 
   /// Alle Numerologie Meilensteine laden
@@ -975,6 +1012,7 @@ class StorageService {
     final box = await _ensureBox(_chakraDailyScoresBox);
     final date = scores['date'] as String;
     await box.put(date, scores);
+    _cloudSync(_chakraDailyScoresBox, date, scores);
   }
 
   /// Chakra Scores für ein bestimmtes Datum laden
@@ -1008,6 +1046,7 @@ class StorageService {
     final box = await _ensureBox(_chakraMeditationSessionsBox);
     final id = session['id'] ?? DateTime.now().millisecondsSinceEpoch.toString();
     await box.put(id, session);
+    _cloudSync(_chakraMeditationSessionsBox, id.toString(), session);
   }
 
   /// Alle Chakra Meditation Sessions laden
@@ -1025,6 +1064,7 @@ class StorageService {
     final box = await _ensureBox(_chakraAffirmationsBox);
     final id = affirmation['id'] ?? DateTime.now().millisecondsSinceEpoch.toString();
     await box.put(id, affirmation);
+    _cloudSync(_chakraAffirmationsBox, id.toString(), affirmation);
   }
 
   /// Alle Chakra Affirmationen laden
@@ -1045,6 +1085,7 @@ class StorageService {
     final box = await _ensureBox(_meditationSessionsEnhancedBox);
     final id = session['id'] ?? DateTime.now().millisecondsSinceEpoch.toString();
     await box.put(id, session);
+    _cloudSync(_meditationSessionsEnhancedBox, id.toString(), session);
   }
 
   /// Alle Enhanced Meditation Sessions laden
@@ -1062,6 +1103,7 @@ class StorageService {
     final box = await _ensureBox(_meditationPresetsBox);
     final id = preset['id'] ?? preset['name'] as String;
     await box.put(id, preset);
+    _cloudSync(_meditationPresetsBox, id.toString(), preset);
   }
 
   /// Alle Meditation Presets laden
@@ -1111,6 +1153,7 @@ class StorageService {
     final box = await _ensureBox(_tarotDailyCardsBox);
     final date = card['date'] as String;
     await box.put(date, card);
+    _cloudSync(_tarotDailyCardsBox, date, card);
   }
 
   /// Daily Tarot Card für heute laden
@@ -1127,6 +1170,7 @@ class StorageService {
     final box = await _ensureBox(_tarotSpreadsBox);
     final id = spread['id'] ?? DateTime.now().millisecondsSinceEpoch.toString();
     await box.put(id, spread);
+    _cloudSync(_tarotSpreadsBox, id.toString(), spread);
   }
 
   /// Alle Tarot Spreads laden
@@ -1143,6 +1187,7 @@ class StorageService {
   Future<void> deleteTarotSpread(String id) async {
     final box = await _ensureBox(_tarotSpreadsBox);
     await box.delete(id);
+    _cloudDelete(_tarotSpreadsBox, id);
   }
   
   // ────────────────────────────────────────────────────────────────
