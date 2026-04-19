@@ -477,8 +477,8 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
         return;
       }
       
-      // Online: Send directly
-      await _api.sendChatMessage(
+      // Online: Send directly via Supabase
+      final serverMsg = await _api.sendChatMessage(
         roomId: _fullRoomId, // 'energie-meditation' etc.
         realm: 'energie',
         userId: _userId,
@@ -487,32 +487,32 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
         avatarEmoji: _avatar,
         avatarUrl: _avatarUrl,
       );
-      
+
       _messageController.clear();
-      
-      // Sofort neu laden
-      await _loadMessages(silent: true);
-      
+
+      // 🔴 Optimistic add – Realtime-Subscription deduplicated via ID.
+      //    Verhindert Flicker durch redundanten Full-Reload.
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✅ Nachricht gesendet!'),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 1),
-          ),
-        );
+        setState(() {
+          final exists = _messages.any((m) => m['id'] == serverMsg['id']);
+          if (!exists) _messages.add(serverMsg);
+        });
+        WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
       }
     } catch (e) {
       if (mounted) {
+        final msg = e.toString().contains('Nicht eingeloggt')
+            ? 'Bitte einloggen, um Nachrichten zu senden.'
+            : 'Fehler beim Senden: $e';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Fehler: $e'),
+            content: Text('❌ $msg'),
             backgroundColor: Colors.red,
           ),
         );
       }
     } finally {
-      setState(() => _isSending = false);
+      if (mounted) setState(() => _isSending = false);
     }
   }
 
@@ -520,7 +520,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
   Future<void> _sendVoiceMessage(String audioUrl, Duration duration) async {
     try {
       // Send voice message with media_type
-      await _api.sendChatMessage(
+      final serverMsg = await _api.sendChatMessage(
         roomId: _fullRoomId, // 'energie-meditation' etc.
         realm: 'energie',
         userId: _userId,
@@ -531,10 +531,15 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
         mediaType: 'voice',
         mediaUrl: audioUrl,
       );
-      
-      // Reload messages after short delay
-      await Future.delayed(const Duration(milliseconds: 500));
-      await _loadMessages(silent: true);
+
+      // 🔴 Optimistic add (dedup in Realtime-Callback).
+      if (mounted) {
+        setState(() {
+          final exists = _messages.any((m) => m['id'] == serverMsg['id']);
+          if (!exists) _messages.add(serverMsg);
+        });
+        WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+      }
       
       if (kDebugMode) {
         debugPrint('✅ Voice message sent: $audioUrl');

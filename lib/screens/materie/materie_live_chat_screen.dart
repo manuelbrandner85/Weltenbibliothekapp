@@ -5,8 +5,6 @@ import 'package:hive_flutter/hive_flutter.dart'; // 🗄️ HIVE für Profile
 import '../../services/supabase_service.dart'; // 🔥 supabase Auth
 import 'package:supabase_flutter/supabase_flutter.dart' show RealtimeChannel;
 import '../../services/cloudflare_api_service.dart';
-import '../../services/websocket_chat_service.dart'; // 🌐 WEBSOCKET REAL-TIME (NEW)
-import '../../services/hybrid_chat_service.dart'; // 🔄 HYBRID WEBSOCKET+HTTP - STUB for now
 import '../../services/chat_notification_service.dart'; // 🔔 NOTIFICATIONS
 import '../../services/user_service.dart'; // 🆕 User Service für Auth
 import '../../widgets/mention_autocomplete.dart'; // @ MENTIONS
@@ -18,7 +16,6 @@ import '../../models/materie_profile.dart'; // MaterieProfile model
 import '../../services/profile_sync_service.dart'; // ProfileSyncService
 import 'package:flutter_riverpod/flutter_riverpod.dart'; // Riverpod
 // 🔥 BACKEND SYNC
-import '../../services/typing_indicator_service.dart'; // ⌨️ TYPING
 // import '../../services/voice_message_service_export.dart'; // 🎙️ VOICE MESSAGE (Disabled for Android)
 // import '../../widgets/voice_record_button.dart'; // 🎙️ VOICE RECORD BUTTON (Disabled for Android)
 import '../../services/webrtc_voice_service.dart'; // 🎤 WEBRTC VOICE
@@ -72,18 +69,8 @@ class MaterieLiveChatScreen extends StatefulWidget {
 class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   final CloudflareApiService _api = CloudflareApiService();
-  // ignore: unused_field
-  final WebSocketChatService _ws = WebSocketChatService(); // 🌐 NEW: WebSocket Service
-  late final HybridChatService _hybridChat; // 🔄 NEW: HYBRID SERVICE - STUB for now
   final ScrollController _scrollController = ScrollController();
   final ChatNotificationService _notificationService = ChatNotificationService(); // 🔔 NEW
-  final TypingIndicatorService _typingService = TypingIndicatorService(); // ⌨️ NEW
-  // UNUSED FIELD: final AudioRecordingService _audioService = AudioRecordingService(); // 🎙️ NEW
-  // UNUSED FIELD: final ReadReceiptsService _readReceiptsService = ReadReceiptsService(); // ✅ NEW
-  // UNUSED FIELD: final OnlineStatusService _onlineStatusService = OnlineStatusService(); // 🟢 NEW
-  StreamSubscription? _messageSubscription; // 🎧 WebSocket Stream
-  // ignore: unused_field
-  StreamSubscription<List<String>>? _wsOnlineSubscription; // 🌐 NEW: Online Users
   RealtimeChannel? _realtimeChannel; // 🔴 Supabase Realtime
   
   late String _selectedRoom;
@@ -140,13 +127,8 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
   
   // 🆕 ADMIN ACTION SERVICE
   
-  // 🆕 FEATURE 2: TYPING INDICATORS
+  // 🆕 FEATURE 2: TYPING INDICATORS (local state only — broadcast TBD via Supabase)
   final Set<String> _typingUsers = {};
-  Timer? _typingTimer;
-  // ignore: unused_field
-  String? _currentTypingUser; // 🌐 NEW: Current typing user from WebSocket
-  // ignore: unused_field
-  final List<String> _onlineUsers = []; // 🌐 NEW: Online users list
   
   // 🆕 FEATURE 3: SWIPE TO REPLY
   Map<String, dynamic>? _replyingTo;
@@ -212,10 +194,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
     
     // 🔧 FIX 18: Set initial room from dashboard navigation
     _selectedRoom = widget.initialRoom ?? 'politik';
-    
-    // 🔄 Initialize Hybrid Chat Service
-    _hybridChat = HybridChatService(); // STUB for now
-    
+
     // 🎤 Initialize WebRTC Voice Service
     _initializeWebRTC();
     
@@ -248,50 +227,11 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
       _loadUsernameFromProfile(); // Profil-Sync für Avatar-Updates
     });
     
-    // 🎧 Listen to message stream (WebSocket or HTTP polling)
-    _messageSubscription = _hybridChat.messageStream.listen((message) {
-      if (!mounted) return;
-      
-      // ✅ NUR neue Nachrichten verarbeiten, NICHT history
-      // History wird durch _loadMessages() geladen (Timer alle 5s)
-      if (message['type'] == 'new_message' && message['message'] != null) {
-        final newMessage = message['message'] as Map<String, dynamic>;
-        
-        // Nur wenn Nachricht zum aktuellen Raum gehört
-        if (newMessage['room_id'] == _fullRoomId || newMessage['room_id'] == _selectedRoom) {
-          if (mounted) {
-            setState(() {
-            // Füge neue Nachricht ans Ende hinzu (wenn nicht schon vorhanden)
-            final exists = _messages.any((msg) => msg['id'] == newMessage['id']);
-            if (!exists) {
-              _messages.add(newMessage);
-            }
-          });
-          }
-          
-          // Auto-scroll zu neuer Nachricht
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            _scrollToBottom();
-          });
-        }
-      }
-    });
-    
-    // 🚀 Connect with credentials
-    _connectToChat();
     _loadMessages();
   }
-  
+
   // didChangeDependencies removed – profile loading happens once in initState.
-  
-  // 🔄 Connect to chat with hybrid service
-  Future<void> _connectToChat() async {
-    await _hybridChat.connect(
-      roomId: _selectedRoom,
-      username: _username,
-      realm: 'materie',
-    );
-  }
+
   Future<void> _loadUsernameFromProfile() async {
     MaterieProfile? profile;
     try {
@@ -353,9 +293,6 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
     _scrollController.dispose();
     _inputFocusNode.dispose();
     _refreshTimer?.cancel();
-    _messageSubscription?.cancel(); // 🎧 Cancel WebSocket stream
-    _hybridChat.disconnect(); // 🔌 Disconnect WebSocket
-    _typingService.dispose(); // ⌨️ Dispose typing service
     _voiceParticipantsSub?.cancel(); // 🔧 Prevent memory leak
     _realtimeChannel?.unsubscribe(); // 🔴 Realtime cleanup
     super.dispose();
@@ -499,34 +436,37 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
     }
 
     try {
-      // Sende Nachricht
-      await _api.sendChatMessage(
+      // 🟢 Sende Nachricht via Supabase (CloudflareApiService delegiert intern)
+      final serverMsg = await _api.sendChatMessage(
         roomId: _fullRoomId, // 'materie-politik' etc.
         realm: 'materie',
         userId: _userId,
         username: _username,
         message: text,
-        avatarEmoji: _avatarEmoji, // 🆕 Send avatar emoji
-        avatarUrl: _avatarUrl, // 🆕 Send avatar URL
+        avatarEmoji: _avatarEmoji,
+        avatarUrl: _avatarUrl,
       );
-      
+
       _messageController.clear();
-      
-      // ✅ WICHTIG: Warte kurz, dann lade Nachrichten neu
-      await Future.delayed(const Duration(milliseconds: 500));
-      await _loadMessages();
-      
-      if (kDebugMode) {
-        debugPrint('✅ Nachricht gesendet und Chat aktualisiert');
+
+      // 🔴 Optimistic add (Realtime-Sub dedup'd via ID → kein Duplikat,
+      //    kein Full-Reload nötig).
+      if (mounted) {
+        setState(() {
+          final exists = _messages.any((m) => m['id'] == serverMsg['id']);
+          if (!exists) _messages.add(serverMsg);
+        });
+        WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
       }
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ Fehler beim Senden: $e');
-      }
+      if (kDebugMode) debugPrint('❌ Fehler beim Senden: $e');
       if (mounted) {
+        final msg = e.toString().contains('Nicht eingeloggt')
+            ? 'Bitte einloggen, um Nachrichten zu senden.'
+            : 'Fehler beim Senden: $e';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Fehler beim Senden: $e'),
+            content: Text(msg),
             backgroundColor: Colors.red,
           ),
         );
@@ -538,7 +478,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
   Future<void> _sendVoiceMessage(String audioUrl, Duration duration) async {
     try {
       // Send voice message with media_type
-      await _api.sendChatMessage(
+      final serverMsg = await _api.sendChatMessage(
         roomId: _fullRoomId, // 'materie-politik' etc.
         realm: 'materie',
         userId: _userId,
@@ -549,10 +489,15 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
         mediaType: 'voice',
         mediaUrl: audioUrl,
       );
-      
-      // Reload messages after short delay
-      await Future.delayed(const Duration(milliseconds: 500));
-      await _loadMessages();
+
+      // 🔴 Optimistic add (dedup in Realtime-Callback).
+      if (mounted) {
+        setState(() {
+          final exists = _messages.any((m) => m['id'] == serverMsg['id']);
+          if (!exists) _messages.add(serverMsg);
+        });
+        WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+      }
       
       if (kDebugMode) {
         debugPrint('✅ Sprachnachricht gesendet: $audioUrl, Duration: ${duration.inSeconds}s');
@@ -810,11 +755,6 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
       setState(() {
       _hasText = text.trim().isNotEmpty;
     });
-    }
-    
-    // 🆕 SEND TYPING INDICATOR
-    if (text.trim().isNotEmpty) {
-      _sendTypingIndicator();
     }
     
     // Check if user is typing @mention
@@ -1186,9 +1126,8 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
                 });
                 }
                 
-                // 🔧 CRITICAL FIX: Switch WebRTC Voice Room + HybridChat
+                // 🔧 Switch WebRTC Voice Room
                 await _voiceService.switchRoom(_fullRoomId); // ← WebRTC cleanup
-                await _hybridChat.switchRoom(_fullRoomId);
                 // 🔴 Re-subscribe Realtime for new room
                 _subscribeToRoom(_fullRoomId);
                 await _loadMessages();
@@ -2015,19 +1954,6 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
     );
   }
   
-  void _sendTypingIndicator() {
-    _typingTimer?.cancel();
-    
-    // Send typing status to server
-    _hybridChat.sendTypingIndicator(true);
-    
-    // Stop after 3 seconds
-    _typingTimer = Timer(const Duration(seconds: 3), () {
-      _hybridChat.sendTypingIndicator(false);
-    });
-  }
-  
-  // 😀 EMOJI REACTIONS
   // 😀 EMOJI REACTIONS
   void _showReactionPicker(Map<String, dynamic> msg) {
     showModalBottomSheet(

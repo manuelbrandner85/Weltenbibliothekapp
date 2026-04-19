@@ -417,27 +417,87 @@ class SupabaseChatService {
   }
 
   /// Nachricht senden.
+  /// Erfordert eingeloggten User. Tool-Bots können via [allowAnonymous] posten.
   Future<Map<String, dynamic>> sendMessage({
     required String roomId,
     required String message,
+    String? username,
+    String? avatarUrl,
+    String? messageType,
+    bool allowAnonymous = false,
   }) async {
     final user = supabase.auth.currentUser;
-    if (user == null) throw Exception('Nicht eingeloggt');
+    if (user == null && !allowAnonymous) {
+      throw Exception('Nicht eingeloggt – bitte anmelden, um Nachrichten zu senden.');
+    }
 
-    final profile = await SupabaseProfileService.instance.getMyProfile();
-    final username = profile?['username'] ?? 'Anonym';
-    final avatarUrl = profile?['avatar_url'];
+    // Username/Avatar aus Profil holen wenn nicht explizit gesetzt
+    String effectiveUsername = username ?? 'Anonym';
+    String? effectiveAvatar = avatarUrl;
+    if (user != null && username == null) {
+      final profile = await SupabaseProfileService.instance.getMyProfile();
+      effectiveUsername = profile?['username'] ?? user.email?.split('@').first ?? 'Anonym';
+      effectiveAvatar ??= profile?['avatar_url'] as String?;
+    }
 
-    final response = await supabase.from('chat_messages').insert({
+    final insertData = <String, dynamic>{
       'room_id': roomId,
-      'user_id': user.id,
-      'username': username,
-      'avatar_url': avatarUrl,
-      'content': message,  // DB-Spalte heißt 'content' (NOT NULL)
-      'message': message,  // Extra-Spalte für Kompatibilität
-    }).select().single();
+      'username': effectiveUsername,
+      'content': message, // NOT NULL
+      'message': message, // Kompat-Spalte
+    };
+    if (user != null) insertData['user_id'] = user.id;
+    if (effectiveAvatar != null) insertData['avatar_url'] = effectiveAvatar;
+    if (messageType != null) insertData['message_type'] = messageType;
+
+    final response = await supabase
+        .from('chat_messages')
+        .insert(insertData)
+        .select()
+        .single();
 
     return response;
+  }
+
+  /// Eigene Nachricht bearbeiten (RLS prüft Ownership).
+  /// [isAdmin] = true: versucht auch fremde Nachrichten zu bearbeiten (admin-policy).
+  Future<Map<String, dynamic>> editMessage({
+    required String messageId,
+    required String newMessage,
+    bool isAdmin = false,
+  }) async {
+    final user = supabase.auth.currentUser;
+    if (user == null) {
+      throw Exception('Nicht eingeloggt – Bearbeiten nicht möglich.');
+    }
+
+    final updateData = <String, dynamic>{
+      'message': newMessage,
+      'content': newMessage,
+      'edited_at': DateTime.now().toUtc().toIso8601String(),
+    };
+
+    final query = supabase.from('chat_messages').update(updateData);
+    // Ownership-Check via RLS – kein .eq('user_id', user.id) nötig wenn Policy sauber.
+    // Für Admin: RLS-Policy für Admins sollte greifen.
+    final result = await query.eq('id', messageId).select().single();
+    return result;
+  }
+
+  /// Nachricht löschen (Soft-Delete, is_deleted=true).
+  Future<void> deleteMessage({
+    required String messageId,
+    bool isAdmin = false,
+  }) async {
+    final user = supabase.auth.currentUser;
+    if (user == null) {
+      throw Exception('Nicht eingeloggt – Löschen nicht möglich.');
+    }
+
+    await supabase.from('chat_messages').update({
+      'is_deleted': true,
+      'deleted_at': DateTime.now().toUtc().toIso8601String(),
+    }).eq('id', messageId);
   }
 
   /// Echtzeit-Subscription auf Chat-Nachrichten.
