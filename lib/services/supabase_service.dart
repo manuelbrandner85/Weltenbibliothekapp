@@ -417,14 +417,15 @@ class SupabaseChatService {
   }
 
   /// Nachricht senden.
-  /// Erfordert eingeloggten User. Tool-Bots können via [allowAnonymous] posten.
+  /// Anonyme Posts sind erlaubt (user_id bleibt null) — konsistent mit
+  /// vorherigem Worker-Verhalten. RLS erlaubt anon-INSERT (v18 migration).
   Future<Map<String, dynamic>> sendMessage({
     required String roomId,
     required String message,
     String? username,
     String? avatarUrl,
     String? messageType,
-    bool allowAnonymous = false,
+    bool allowAnonymous = true,
   }) async {
     final user = supabase.auth.currentUser;
     if (user == null && !allowAnonymous) {
