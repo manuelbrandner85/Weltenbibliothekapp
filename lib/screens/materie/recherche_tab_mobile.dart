@@ -1423,11 +1423,17 @@ class _MobileOptimierterRechercheTabState extends State<MobileOptimierterRecherc
   }
   
   Widget _buildQuelleCard(RechercheQuelle quelle) {
-    final (statusIcon, statusColor) = switch (quelle.status) {
-      QuellenStatus.success => (Icons.check_circle, _green),
-      QuellenStatus.loading => (Icons.hourglass_empty, _amber),
-      QuellenStatus.failed  => (Icons.error, _red),
-      _                     => (Icons.pending, Colors.grey),
+    final statusIcon = switch (quelle.status) {
+      QuellenStatus.success => Icons.check_circle,
+      QuellenStatus.loading => Icons.hourglass_empty,
+      QuellenStatus.failed  => Icons.error,
+      _                     => Icons.pending,
+    };
+    final statusColor = switch (quelle.status) {
+      QuellenStatus.success => _green,
+      QuellenStatus.loading => _amber,
+      QuellenStatus.failed  => _red,
+      _                     => Colors.grey,
     };
 
     return Container(
