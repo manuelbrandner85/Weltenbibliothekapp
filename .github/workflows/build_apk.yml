@@ -23,7 +23,7 @@ permissions:
 
 jobs:
   build-apk:
-    name: 🔨 Flutter APK Build (arm64)
+    name: 🔨 Shorebird Release Build (arm64)
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -38,15 +38,32 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: 🐦 Flutter
-        uses: subosito/flutter-action@v2
+      - name: 🐦 Shorebird
+        uses: shorebirdtech/setup-shorebird@v1
         with:
-          flutter-version: '3.41.6'
-          channel: 'stable'
           cache: true
 
-      - name: 📦 pub get
-        run: flutter pub get
+      - name: 🔍 Pre-flight Diagnose
+        run: |
+          echo "=== shorebird --version ==="
+          shorebird --version
+          echo ""
+          echo "=== flutter --version ==="
+          flutter --version
+          echo ""
+          echo "=== shorebird.yaml ==="
+          cat shorebird.yaml
+          echo ""
+          echo "=== pubspec version ==="
+          grep '^version:' pubspec.yaml
+          echo ""
+          echo "=== Token-Test (App-Liste vom Shorebird API) ==="
+          curl -sS -w "\nHTTP %{http_code}\n" \
+            -H "Authorization: Bearer $SHOREBIRD_TOKEN" \
+            -H "x-version: 0.9.0+1" \
+            https://api.shorebird.dev/api/v1/apps | head -50
+        env:
+          SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
 
       - name: 📋 Version lesen
         id: version
@@ -55,20 +72,38 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "apk_name=weltenbibliothek-v${VERSION}-arm64.apk" >> $GITHUB_OUTPUT
 
-      - name: 🏗️ APK bauen
+      - name: 🏗️ Shorebird Release (verbose)
         run: |
-          flutter build apk --release \
-            --target-platform android-arm64 \
+          set -o pipefail
+          shorebird release android \
+            --verbose \
+            --artifact=apk \
+            --target-platform=android-arm64 \
             --dart-define=SUPABASE_URL=https://adtviduaftdquvfjpojb.supabase.co \
             --dart-define=SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkdHZpZHVhZnRkcXV2Zmpwb2piIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxMzY3OTcsImV4cCI6MjA5MDcxMjc5N30.LPtmnjukb6o2CA16RDjoStqYb_1bipNULD4tgOfuD98 \
-            --dart-define=CLOUDFLARE_WORKER_URL=https://weltenbibliothek-api.brandy13062.workers.dev
+            --dart-define=CLOUDFLARE_WORKER_URL=https://weltenbibliothek-api.brandy13062.workers.dev \
+            2>&1 | tee /tmp/shorebird_release.log
+        env:
+          SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
+
+      - name: 📋 Shorebird Log hochladen (immer)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: shorebird-debug-log
+          path: |
+            /tmp/shorebird_release.log
+            /root/.config/shorebird/logs/
+          retention-days: 7
 
       - name: 📝 APK umbenennen
+        if: success()
         run: |
           mv build/app/outputs/flutter-apk/app-release.apk \
              build/app/outputs/flutter-apk/${{ steps.version.outputs.apk_name }}
 
-      - name: 📤 Artefakt speichern
+      - name: 📤 APK Artefakt
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.version.outputs.apk_name }}
@@ -76,6 +111,7 @@ jobs:
           retention-days: 30
 
       - name: 🚀 GitHub Release
+        if: success()
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.version.outputs.version }}
