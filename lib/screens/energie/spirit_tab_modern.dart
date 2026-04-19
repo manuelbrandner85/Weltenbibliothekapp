@@ -1,9 +1,9 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
- // OpenClaw v2.0
 import '../../services/storage_service.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import '../../widgets/favorite_button.dart';
-import '../../models/favorite.dart';  // 🆕 For FavoriteType
+import '../../models/favorite.dart';
 import '../../models/energie_profile.dart';
 import 'calculators/numerology_calculator_screen.dart';
 import 'calculators/archetype_calculator_screen.dart';
@@ -32,21 +32,57 @@ class SpiritTabModern extends StatefulWidget {
   State<SpiritTabModern> createState() => _SpiritTabModernState();
 }
 
-class _SpiritTabModernState extends State<SpiritTabModern> {
+class _SpiritTabModernState extends State<SpiritTabModern>
+    with TickerProviderStateMixin {
+
+  // ── Animations ─────────────────────────────────────────────────────────
+  late AnimationController _auraCtrl;
+  late AnimationController _entryCtrl;
+  late AnimationController _orbitCtrl;
+  late Animation<double> _entryAnim;
+
+  // ── Colors (identical to home dashboard) ───────────────────────────────
+  static const _bg      = Color(0xFF06040F);
+  static const _card    = Color(0xFF100B1E);
+  static const _cardB   = Color(0xFF150E25);
+  static const _purple  = Color(0xFFAB47BC);
+  static const _purpleD = Color(0xFF4A148C);
+  static const _purpleL = Color(0xFFCE93D8);
+  static const _gold    = Color(0xFFFFD54F);
+  static const _teal    = Color(0xFF26C6DA);
+  static const _pink    = Color(0xFFEC407A);
+  static const _green   = Color(0xFF66BB6A);
+
+  // ── State ──────────────────────────────────────────────────────────────
   final _storage = StorageService();
   EnergieProfile? _profile;
   bool _isLoading = true;
   String? _error;
-  String _selectedCategory = 'all'; // 'all', 'core', 'advanced', 'meta', 'new'
-  
-  // 16 ORIGINAL + 15 NEUE = 31 SPIRIT-TOOLS
+  String _selectedCategory = 'all';
+
   late final List<Map<String, dynamic>> _allTools;
 
   @override
   void initState() {
     super.initState();
+    _auraCtrl = AnimationController(vsync: this,
+        duration: const Duration(seconds: 3))..repeat(reverse: true);
+    _entryCtrl = AnimationController(vsync: this,
+        duration: const Duration(milliseconds: 900));
+    _orbitCtrl = AnimationController(vsync: this,
+        duration: const Duration(seconds: 12))..repeat();
+    _entryAnim = CurvedAnimation(parent: _entryCtrl, curve: Curves.easeOutCubic);
+    _entryCtrl.forward();
     _initializeTools();
     _loadProfile();
+  }
+
+  @override
+  void dispose() {
+    _auraCtrl.dispose();
+    _entryCtrl.dispose();
+    _orbitCtrl.dispose();
+    super.dispose();
   }
 
   void _initializeTools() {
@@ -581,461 +617,560 @@ class _SpiritTabModernState extends State<SpiritTabModern> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            const Color(0xFF4A148C).withValues(alpha: 0.1),
-            Colors.black,
-          ],
+    return DefaultTextStyle.merge(
+      style: const TextStyle(
+        decoration: TextDecoration.none,
+        decorationColor: Colors.transparent,
+        fontFamily: 'Roboto',
+        letterSpacing: 0.1,
+        height: 1.25,
+      ),
+      child: Scaffold(
+        backgroundColor: _bg,
+        body: _isLoading
+            ? _buildLoadingState()
+            : _error != null
+                ? _buildErrorState()
+                : RefreshIndicator(
+                    onRefresh: _loadProfile,
+                    color: _purple,
+                    backgroundColor: _cardB,
+                    displacement: 60,
+                    child: CustomScrollView(
+                      physics: const BouncingScrollPhysics(
+                          parent: AlwaysScrollableScrollPhysics()),
+                      slivers: [
+                        _buildHeroHeader(),
+                        _buildCategoryFilterSliver(),
+                        _buildDailyInspirationSliver(),
+                        _buildToolsGrid(),
+                        const SliverPadding(padding: EdgeInsets.only(bottom: 120)),
+                      ],
+                    ),
+                  ),
+      ),
+    );
+  }
+
+  // ── HERO HEADER ────────────────────────────────────────────────────────
+  Widget _buildHeroHeader() {
+    return SliverToBoxAdapter(
+      child: FadeTransition(
+        opacity: _entryAnim,
+        child: SizedBox(
+          height: 200,
+          child: Stack(
+            children: [
+              // Animated aura background
+              AnimatedBuilder(
+                animation: _orbitCtrl,
+                builder: (_, __) => CustomPaint(
+                  painter: _SpiritAuraPainter(
+                    orbitProgress: _orbitCtrl.value,
+                    auraProgress: _auraCtrl.value,
+                    color: _purple,
+                  ),
+                  child: const SizedBox.expand(),
+                ),
+              ),
+              // Fade to bg
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Colors.transparent, _bg],
+                    stops: const [0.45, 1.0],
+                  ),
+                ),
+              ),
+              // Content
+              SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          _buildAuraOrb(),
+                          const SizedBox(width: 14),
+                          Expanded(child: _buildHeaderText()),
+                          _buildToolCount(),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
-      child: _isLoading
-          ? _buildLoadingState()
-          : _error != null
-              ? _buildErrorState()
-              : CustomScrollView(
-                  slivers: [
-                    // Header
-                    SliverToBoxAdapter(
-                      child: _buildHeader(),
-                    ),
-                    
-                    // Kategorien-Filter
-                    SliverToBoxAdapter(
-                      child: _buildCategoryFilter(),
-                    ),
-                    
-                    // Tägliche Inspiration
-                    SliverToBoxAdapter(
-                      child: _buildDailyInspiration(),
-                    ),
-                    
-                    // Tools-Grid (31 TOOLS: 16 ORIGINAL + 15 NEUE)
-                    SliverPadding(
-                      padding: const EdgeInsets.all(16),
-                      sliver: SliverGrid(
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          childAspectRatio: 0.85,
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 12,
-                        ),
-                        delegate: SliverChildBuilderDelegate(
-                          (context, index) => _buildToolCard(_filteredTools[index]),
-                          childCount: _filteredTools.length,
-                        ),
-                      ),
-                    ),
-                    
-                    // Bottom-Padding
-                    const SliverToBoxAdapter(
-                      child: SizedBox(height: 100),
-                    ),
-                  ],
-                ),
+    );
+  }
+
+  Widget _buildAuraOrb() {
+    return AnimatedBuilder(
+      animation: _auraCtrl,
+      builder: (_, __) => Container(
+        width: 54, height: 54,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: RadialGradient(
+            colors: [
+              _purple.withValues(alpha: 0.45 + _auraCtrl.value * 0.2),
+              _purpleD.withValues(alpha: 0.1),
+            ],
+          ),
+          border: Border.all(
+              color: _purpleL.withValues(alpha: 0.4 + _auraCtrl.value * 0.3),
+              width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: _purple.withValues(alpha: 0.25 + _auraCtrl.value * 0.2),
+              blurRadius: 18, spreadRadius: 3,
+            ),
+          ],
+        ),
+        child: Center(
+          child: Text(
+            _profile?.avatarEmoji ?? '🔮',
+            style: const TextStyle(fontSize: 24),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeaderText() {
+    final name = (_profile?.firstName.isNotEmpty == true)
+        ? _profile!.firstName
+        : _profile?.username ?? 'Suchende/r';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('✨ Spirit Tools',
+            style: TextStyle(color: Colors.white54, fontSize: 12,
+                fontWeight: FontWeight.w500)),
+        const SizedBox(height: 2),
+        Text(name,
+            style: const TextStyle(color: Colors.white, fontSize: 20,
+                fontWeight: FontWeight.bold, letterSpacing: -0.3),
+            overflow: TextOverflow.ellipsis),
+        const SizedBox(height: 3),
+        Row(children: [
+          AnimatedBuilder(
+            animation: _auraCtrl,
+            builder: (_, __) => Container(
+              width: 6, height: 6,
+              decoration: BoxDecoration(
+                color: _purple.withValues(alpha: 0.5 + _auraCtrl.value * 0.5),
+                shape: BoxShape.circle,
+                boxShadow: [BoxShadow(color: _purple.withValues(alpha: 0.5), blurRadius: 4)],
+              ),
+            ),
+          ),
+          const SizedBox(width: 6),
+          const Text('Welt der ENERGIE',
+              style: TextStyle(color: Colors.white38, fontSize: 11)),
+        ]),
+      ],
+    );
+  }
+
+  Widget _buildToolCount() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+      ),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Text('${_allTools.length}',
+            style: const TextStyle(color: _purpleL, fontSize: 18,
+                fontWeight: FontWeight.bold)),
+        const Text('Tools',
+            style: TextStyle(color: Colors.white38, fontSize: 9,
+                fontWeight: FontWeight.w500)),
+      ]),
     );
   }
 
   Widget _buildLoadingState() {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
+    return Container(
+      color: _bg,
+      child: const Center(
+        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
           CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF9C27B0)),
-          ),
+              valueColor: AlwaysStoppedAnimation<Color>(_purple)),
           SizedBox(height: 20),
-          Text(
-            'Lade Spirit-Tools...',
-            style: TextStyle(fontSize: 16, color: Colors.white70),
-          ),
-        ],
+          Text('Lade Spirit-Tools…',
+              style: TextStyle(fontSize: 15, color: Colors.white54)),
+        ]),
       ),
     );
   }
 
   Widget _buildErrorState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.error_outline, size: 64, color: Colors.red),
-          const SizedBox(height: 20),
-          Text(
-            _error!,
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 14, color: Colors.white70),
-          ),
-          const SizedBox(height: 20),
-          ElevatedButton(
-            onPressed: _loadProfile,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF9C27B0),
-            ),
-            child: const Text('Erneut versuchen'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Text(
-                '🔮',
-                style: TextStyle(fontSize: 40),
-              ),
-              const SizedBox(width: 12),
-              const Text(
-                'Spirit Tools',
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          if (_profile != null)
-            Text(
-              'Für ${_profile!.firstName} ${_profile!.lastName}',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.white.withValues(alpha: 0.7),
-              ),
-            ),
-          const SizedBox(height: 4),
-          Text(
-            '${_allTools.length} Spirituelle Werkzeuge',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.white.withValues(alpha: 0.5),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCategoryFilter() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: [
-            _buildCategoryChip(
-              'all',
-              '✨ Alle (${_getCategoryCount('all')})',
-              Colors.purple,
+      color: _bg,
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+            Icon(Icons.error_outline, size: 56,
+                color: _pink.withValues(alpha: 0.7)),
+            const SizedBox(height: 16),
+            Text(_error!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 14, color: Colors.white54)),
+            const SizedBox(height: 20),
+            GestureDetector(
+              onTap: _loadProfile,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                      colors: [Color(0xFF6A1B9A), _purple]),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Text('Erneut versuchen',
+                    style: TextStyle(color: Colors.white,
+                        fontWeight: FontWeight.bold)),
+              ),
             ),
-            const SizedBox(width: 12),
-            _buildCategoryChip(
-              'core',
-              '⭐ Kern (${_getCategoryCount('core')})',
-              Colors.blue,
-            ),
-            const SizedBox(width: 12),
-            _buildCategoryChip(
-              'advanced',
-              '🚀 Erweitert (${_getCategoryCount('advanced')})',
-              Colors.cyan,
-            ),
-            const SizedBox(width: 12),
-            _buildCategoryChip(
-              'meta',
-              '🌌 Meta (${_getCategoryCount('meta')})',
-              Colors.pink,
-            ),
-          ],
+          ]),
         ),
       ),
     );
   }
 
-  Widget _buildCategoryChip(String category, String label, Color color) {
+
+  Widget _buildCategoryFilterSliver() {
+    return SliverToBoxAdapter(
+      child: SlideTransition(
+        position: Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero)
+            .animate(_entryAnim),
+        child: FadeTransition(
+          opacity: _entryAnim,
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              child: Row(children: [
+                _buildCategoryChip('all',      '✨ Alle',      _purple, _getCategoryCount('all')),
+                const SizedBox(width: 10),
+                _buildCategoryChip('core',     '⭐ Kern',      _teal,   _getCategoryCount('core')),
+                const SizedBox(width: 10),
+                _buildCategoryChip('advanced', '🚀 Erweitert', _pink,   _getCategoryCount('advanced')),
+                const SizedBox(width: 10),
+                _buildCategoryChip('meta',     '🌌 Meta',      _gold,   _getCategoryCount('meta')),
+                const SizedBox(width: 10),
+                _buildCategoryChip('new',      '🆕 Neu',       _green,  _getCategoryCount('new')),
+              ]),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCategoryChip(String category, String label, Color color, int count) {
     final isSelected = _selectedCategory == category;
     return GestureDetector(
       onTap: () => setState(() => _selectedCategory = category),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
           gradient: isSelected
-              ? LinearGradient(
-                  colors: [
-                    color.withValues(alpha: 0.7),
-                    color.withValues(alpha: 0.3),
-                  ],
-                )
+              ? LinearGradient(colors: [
+                  color.withValues(alpha: 0.7),
+                  color.withValues(alpha: 0.3),
+                ])
               : null,
           color: isSelected ? null : Colors.white.withValues(alpha: 0.05),
-          borderRadius: BorderRadius.circular(25),
+          borderRadius: BorderRadius.circular(22),
           border: Border.all(
-            color: isSelected ? color : Colors.white.withValues(alpha: 0.2),
+            color: isSelected ? color : Colors.white.withValues(alpha: 0.15),
             width: isSelected ? 2 : 1,
           ),
           boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: color.withValues(alpha: 0.3),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ]
+              ? [BoxShadow(color: color.withValues(alpha: 0.3),
+                  blurRadius: 12, offset: const Offset(0, 4))]
               : null,
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 14,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Text(label,
+              style: TextStyle(color: Colors.white, fontSize: 13,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+          const SizedBox(width: 6),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? Colors.white.withValues(alpha: 0.25)
+                  : Colors.white.withValues(alpha: 0.07),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text('$count',
+                style: TextStyle(color: isSelected ? Colors.white : Colors.white54,
+                    fontSize: 10, fontWeight: FontWeight.bold)),
+          ),
+        ]),
+      ),
+    );
+  }
+
+  Widget _buildDailyInspirationSliver() {
+    final quotes = [
+      '"Deine Energie zieht an, was du ausstrahlst."',
+      '"Stille ist die Sprache Gottes, alles andere ist schlechte Übersetzung."',
+      '"Du bist nicht ein Mensch auf einer spirituellen Reise, sondern ein Geist auf einer menschlichen Erfahrung."',
+      '"Wahres Erwachen beginnt mit der Stille in dir."',
+      '"Dein Licht kann die Dunkelheit der Welt erhellen."',
+    ];
+    final quote = quotes[DateTime.now().day % quotes.length];
+
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+        child: AnimatedBuilder(
+          animation: _auraCtrl,
+          builder: (_, __) => Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  _purpleD.withValues(alpha: 0.8),
+                  _purple.withValues(alpha: 0.3 + _auraCtrl.value * 0.1),
+                  _gold.withValues(alpha: 0.06),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                  color: _purpleL.withValues(alpha: 0.2 + _auraCtrl.value * 0.1)),
+              boxShadow: [
+                BoxShadow(
+                  color: _purple.withValues(alpha: 0.12 + _auraCtrl.value * 0.08),
+                  blurRadius: 20, offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: Row(children: [
+              AnimatedBuilder(
+                animation: _orbitCtrl,
+                builder: (_, __) => Transform.rotate(
+                  angle: _orbitCtrl.value * math.pi * 2 * 0.08,
+                  child: Text('💫',
+                      style: TextStyle(fontSize: 32 + _auraCtrl.value * 3)),
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  const Text('Tägliche Inspiration',
+                      style: TextStyle(color: Colors.white, fontSize: 13,
+                          fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 4),
+                  Text(quote,
+                      style: TextStyle(color: _purpleL.withValues(alpha: 0.85),
+                          fontSize: 11, fontStyle: FontStyle.italic, height: 1.4)),
+                ]),
+              ),
+            ]),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildDailyInspiration() {
-    return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Colors.deepPurple.withValues(alpha: 0.3),
-            Colors.purple.withValues(alpha: 0.2),
-          ],
+  Widget _buildToolsGrid() {
+    final tools = _filteredTools;
+    return SliverPadding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      sliver: SliverGrid(
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          childAspectRatio: 0.82,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
         ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: Colors.purple.withValues(alpha: 0.5),
-          width: 2,
+        delegate: SliverChildBuilderDelegate(
+          (context, index) => _buildToolCard(tools[index]),
+          childCount: tools.length,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.purple.withValues(alpha: 0.2),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Text(
-                '💫',
-                style: TextStyle(fontSize: 32),
-              ),
-              const SizedBox(width: 12),
-              const Text(
-                'Tägliche Inspiration',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            '"Deine Energie zieht an, was du ausstrahlst. Nutze diese Tools, um deine spirituelle Reise zu vertiefen."',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.white.withValues(alpha: 0.9),
-              height: 1.5,
-              fontStyle: FontStyle.italic,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              Text(
-                '— Spirit-Weisheit',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.purple.withValues(alpha: 0.8, red: 0.8, green: 0.5, blue: 0.9),
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ],
       ),
     );
   }
 
   Widget _buildToolCard(Map<String, dynamic> tool) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            (tool['color'] as Color).withValues(alpha: 0.2),
-            (tool['color'] as Color).withValues(alpha: 0.05),
+    final color = tool['color'] as Color;
+    return GestureDetector(
+      onTap: () {
+        final screen = tool['screen'] as Widget?;
+        final builder = tool['screenBuilder'] as Widget Function()?;
+        if (screen != null) {
+          Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
+        } else if (builder != null) {
+          Navigator.push(context, MaterialPageRoute(builder: (_) => builder()));
+        }
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: _card,
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              color.withValues(alpha: 0.18),
+              _card,
+            ],
+          ),
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
+          boxShadow: [
+            BoxShadow(color: color.withValues(alpha: 0.15),
+                blurRadius: 16, offset: const Offset(0, 6)),
           ],
         ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: (tool['color'] as Color).withValues(alpha: 0.4),
-          width: 2,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: (tool['color'] as Color).withValues(alpha: 0.2),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(20),
-          onTap: () {
-            final screen = tool['screen'] as Widget?;
-            final screenBuilder = tool['screenBuilder'] as Widget Function()?;
-            
-            if (screen != null) {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => screen),
-              );
-            } else if (screenBuilder != null) {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => screenBuilder()),
-              );
-            }
-          },
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Icon, Favorite-Button und Emoji
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Container(
-                      width: 60,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        gradient: RadialGradient(
-                          colors: [
-                            (tool['color'] as Color).withValues(alpha: 0.4),
-                            (tool['color'] as Color).withValues(alpha: 0.1),
-                          ],
-                        ),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: (tool['color'] as Color).withValues(alpha: 0.6),
-                          width: 2,
-                        ),
-                      ),
-                      child: Center(
-                        child: Text(
-                          tool['iconEmoji'] as String,
-                          style: const TextStyle(fontSize: 28),
-                        ),
-                      ),
-                    ),
-                    // Favorite-Button für Spirit-Tool
-                    FavoriteButton(
-                      itemId: 'spirit_tool_${tool['title']}',
-                      itemType: FavoriteType.narrative,
-                      itemTitle: tool['title'] as String,
-                      itemDescription: tool['description'] as String?,
-                      size: 22,
-                    ),
-                  ],
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(22),
+          child: Stack(children: [
+            // Decorative circle (like home action tiles)
+            Positioned(
+              right: -18, bottom: -18,
+              child: Container(
+                width: 70, height: 70,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: color.withValues(alpha: 0.08),
                 ),
-                const SizedBox(height: 16),
-                
-                // Tool-Name
-                Text(
-                  tool['title'] as String,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 8),
-                
-                // Beschreibung
-                Expanded(
-                  child: Text(
-                    tool['subtitle'] as String,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.white.withValues(alpha: 0.7),
-                      height: 1.3,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                
-                // Start-Button
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        (tool['color'] as Color).withValues(alpha: 0.6),
-                        (tool['color'] as Color).withValues(alpha: 0.3),
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: (tool['color'] as Color).withValues(alpha: 0.7),
-                      width: 1.5,
-                    ),
-                  ),
-                  child: const Center(
-                    child: Text(
-                      'Öffnen',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
+            Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Top row: icon orb + favorite
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        width: 52, height: 52,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: RadialGradient(colors: [
+                            color.withValues(alpha: 0.45),
+                            color.withValues(alpha: 0.1),
+                          ]),
+                          border: Border.all(color: color.withValues(alpha: 0.5), width: 1.5),
+                        ),
+                        child: Center(
+                          child: Text(tool['iconEmoji'] as String,
+                              style: const TextStyle(fontSize: 24)),
+                        ),
+                      ),
+                      FavoriteButton(
+                        itemId: 'spirit_tool_${tool['title']}',
+                        itemType: FavoriteType.narrative,
+                        itemTitle: tool['title'] as String,
+                        itemDescription: tool['subtitle'] as String?,
+                        size: 20,
+                      ),
+                    ],
+                  ),
+                  const Spacer(),
+                  // Title
+                  Text(tool['title'] as String,
+                      style: const TextStyle(color: Colors.white, fontSize: 15,
+                          fontWeight: FontWeight.bold),
+                      maxLines: 1, overflow: TextOverflow.ellipsis),
+                  const SizedBox(height: 3),
+                  // Subtitle
+                  Text(tool['subtitle'] as String,
+                      style: TextStyle(color: Colors.white.withValues(alpha: 0.6),
+                          fontSize: 11),
+                      maxLines: 1, overflow: TextOverflow.ellipsis),
+                  const SizedBox(height: 10),
+                  // Open button (matching home tile style)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                          colors: [color.withValues(alpha: 0.55),
+                                   color.withValues(alpha: 0.25)]),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: color.withValues(alpha: 0.5)),
+                    ),
+                    child: const Center(
+                      child: Text('Öffnen',
+                          style: TextStyle(color: Colors.white, fontSize: 12,
+                              fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ]),
         ),
       ),
     );
   }
+}
 
-  // ═══════════════════════════════════════════════════════════
-  // 🆕 15 NEUE SPIRIT-TOOLS SECTION
-  // ═══════════════════════════════════════════════════════════
-  
+// ═══════════════════════════════════════════════════════════════════════════
+// SPIRIT AURA PAINTER (simplified version of home dashboard painter)
+// ═══════════════════════════════════════════════════════════════════════════
+class _SpiritAuraPainter extends CustomPainter {
+  final double orbitProgress;
+  final double auraProgress;
+  final Color color;
+
+  _SpiritAuraPainter({
+    required this.orbitProgress,
+    required this.auraProgress,
+    required this.color,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final cx = size.width * 0.5;
+    final cy = size.height * 0.45;
+
+    // Pulsing aura
+    for (int i = 3; i >= 0; i--) {
+      final radius = 60.0 + i * 28 + auraProgress * 14;
+      final alpha = (0.06 - i * 0.012) + auraProgress * 0.02;
+      canvas.drawCircle(
+        Offset(cx, cy),
+        radius,
+        Paint()..color = color.withValues(alpha: alpha.clamp(0.0, 1.0)),
+      );
+    }
+
+    // Orbiting particles
+    for (int i = 0; i < 5; i++) {
+      final angle = orbitProgress * math.pi * 2 + i * math.pi * 2 / 5;
+      final r = 80.0 + i * 6.0;
+      final px = cx + math.cos(angle) * r;
+      final py = cy + math.sin(angle) * r * 0.4;
+      canvas.drawCircle(
+        Offset(px, py),
+        2.5,
+        Paint()..color = color.withValues(alpha: 0.25 + auraProgress * 0.15),
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_SpiritAuraPainter old) => true;
 }
