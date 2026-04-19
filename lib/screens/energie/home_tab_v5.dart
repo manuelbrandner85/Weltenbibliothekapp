@@ -20,7 +20,14 @@ import 'calculators/chakra_calculator_screen.dart';
 // ═══════════════════════════════════════════════════════════════════════════
 
 class EnergieHomeTabV5 extends StatefulWidget {
-  const EnergieHomeTabV5({super.key});
+  /// Callback zum Umschalten der Bottom-Tab-Navigation des Parents.
+  /// Wenn gesetzt: Home-Buttons wie "Spirit" schalten den Tab um,
+  /// statt einen neuen Screen zu pushen → identische Darstellung
+  /// wie beim direkten Tab-Klick.
+  final ValueChanged<int>? onSwitchTab;
+
+  const EnergieHomeTabV5({super.key, this.onSwitchTab});
+
   @override
   State<EnergieHomeTabV5> createState() => _EnergieHomeTabV5State();
 }
@@ -147,6 +154,18 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
   // ── Navigation ─────────────────────────────────────────────────────────
   void _go(Widget screen) => Navigator.push(
       context, MaterialPageRoute(builder: (_) => screen));
+
+  /// Zum Spirit-Tab wechseln: bevorzugt via Parent-Tab-Switch
+  /// (identisches Look & State wie Bottom-Nav-Klick); fällt auf
+  /// Navigator.push zurück, wenn kein Callback vorhanden ist.
+  void _openSpiritTab() {
+    final cb = widget.onSwitchTab;
+    if (cb != null) {
+      cb(1); // Spirit = Tab-Index 1 in EnergieWorldScreen
+    } else {
+      _go(const SpiritTabModern());
+    }
+  }
 
   void _goArticle(Map<String, dynamic> a) {
     final url = a['url'] as String?;
@@ -453,7 +472,7 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
         child: GestureDetector(
-          onTap: () => _go(const SpiritTabModern()),
+          onTap: _openSpiritTab,
           child: AnimatedBuilder(
             animation: _auraCtrl,
             builder: (_, __) => Container(
@@ -616,7 +635,7 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
         sub: 'Seele & Bewusstsein',
         gradient: [const Color(0xFF3E0D6B), const Color(0xFF6A1B9A), const Color(0xFFAB47BC)],
         badge: 0,
-        onTap: () => _go(const SpiritTabModern()),
+        onTap: _openSpiritTab,
       ),
       _TileDef(
         icon: Icons.forum_rounded,
@@ -814,7 +833,7 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
             final topic = topics[i];
             final c = chipColors[i % chipColors.length];
             return GestureDetector(
-              onTap: () => _go(const SpiritTabModern()),
+              onTap: _openSpiritTab,
               child: Container(
                 margin: const EdgeInsets.only(right: 10),
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -853,7 +872,7 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
     if (_latestArticles.isEmpty) {
       return SliverToBoxAdapter(
         child: GestureDetector(
-          onTap: () => _go(const SpiritTabModern()),
+          onTap: _openSpiritTab,
           child: Container(
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             padding: const EdgeInsets.all(28),

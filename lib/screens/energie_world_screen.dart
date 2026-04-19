@@ -83,7 +83,12 @@ class _EnergieWorldScreenState extends ConsumerState<EnergieWorldScreen>
 
     // 🔥 CRITICAL: Tabs mit Key erstellen, damit sie neu gebaut werden wenn Admin-Status sich ändert
     final tabs = [
-      EnergieHomeTabV5(key: ValueKey('home_${adminState.username}_${adminState.role}')),
+      EnergieHomeTabV5(
+        key: ValueKey('home_${adminState.username}_${adminState.role}'),
+        // Home-Buttons wie "Spirit" schalten jetzt den Tab um →
+        // identische Darstellung wie der direkte Bottom-Nav-Klick.
+        onSwitchTab: (idx) => setState(() => _currentIndex = idx),
+      ),
       const SpiritTabModern(),
       const EnergieCommunityTabModern(),
       const EnergieKarteTabPro(),
