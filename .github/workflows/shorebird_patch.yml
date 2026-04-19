@@ -1,0 +1,47 @@
+name: 🚀 Shorebird OTA Patch
+
+# OTA-Updates (Dart-only Änderungen) ohne Store / ohne APK-Reinstall.
+# Sendet den aktuellen Dart-Code als Patch an das laufende Shorebird-Release.
+#
+# Wann benutzen:
+#   • Nach Dart-Code-Änderungen (lib/**) die KEINE neue native Lib brauchen
+#   • Dependencies/Plugins dürfen NICHT geändert werden (= neuer Release nötig)
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: 'Ziel-Release (z.B. 5.11.0). Leer = neuester Release'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  patch:
+    name: 📡 Shorebird Patch android
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: ☕ Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: 🐦 Shorebird
+        uses: shorebirdtech/setup-shorebird@v1
+
+      - name: 📡 Patch veröffentlichen
+        run: |
+          if [ -n "${{ github.event.inputs.release_version }}" ]; then
+            shorebird patch android --release-version=${{ github.event.inputs.release_version }} --target-platform=android-arm64
+          else
+            shorebird patch android --target-platform=android-arm64
+          fi
+        env:
+          SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}

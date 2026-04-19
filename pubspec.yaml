@@ -145,6 +145,7 @@ flutter:
 
   # Assets
   assets:
+    - shorebird.yaml  # Shorebird OTA code push config
     - assets/icons/
     - assets/images/
     - assets/sounds/  # ✅ PRODUCTION-READY: Real audio assets

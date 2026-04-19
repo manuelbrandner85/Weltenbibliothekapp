@@ -9,6 +9,7 @@ on:
       - 'pubspec.yaml'
       - 'lib/**'
       - 'android/**'
+      - 'shorebird.yaml'
       - '.github/workflows/build_apk.yml'
   workflow_dispatch:
     inputs:
@@ -22,7 +23,7 @@ permissions:
 
 jobs:
   build-apk:
-    name: 🔨 Flutter APK Build (arm64)
+    name: 🔨 Shorebird Release Build (arm64)
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -37,18 +38,8 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: 🐦 Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.41.6'
-          channel: 'stable'
-          cache: true
-
-      - name: 📦 pub get
-        run: flutter pub get
-
-      - name: 🔍 analyze
-        run: flutter analyze --no-fatal-infos || true
+      - name: 🐦 Shorebird
+        uses: shorebirdtech/setup-shorebird@v1
 
       - name: 📋 Version lesen
         id: version
@@ -57,8 +48,10 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "apk_name=weltenbibliothek-v${VERSION}-arm64.apk" >> $GITHUB_OUTPUT
 
-      - name: 🏗️ APK bauen
-        run: flutter build apk --release --target-platform android-arm64
+      - name: 🏗️ Shorebird Release
+        run: shorebird release android --flutter-version=3.41.6 --artifact=apk --target-platform=android-arm64
+        env:
+          SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
 
       - name: 📝 APK umbenennen
         run: |
@@ -81,4 +74,3 @@ jobs:
           make_latest: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-

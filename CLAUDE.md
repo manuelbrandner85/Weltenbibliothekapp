@@ -458,8 +458,16 @@ gh pr edit <NR> --body "Neue Beschreibung"
 
 *Letzte Aktualisierung: 2026-04-02 – GenSpark Claw Instruktionsdatei v1.0*
 
-## APK-Build
-- Builds laufen via GitHub Actions (`.github/workflows/build_apk.yml`)
-- Automatisch bei Push auf `genspark_ai_developer` wenn `lib/**` oder `pubspec.yaml` geändert
-- Manuell: GitHub → Actions → "Build & Release APK" → "Run workflow"
-- Download: GitHub Releases → neueste Version
+## APK-Build + OTA (Shorebird)
+- Builds laufen via GitHub Actions über **Shorebird** (Code Push / OTA)
+- `shorebird.yaml` enthält `app_id` (public, in VCS); Secret nur in GitHub Actions (`SHOREBIRD_TOKEN`)
+- **Neuer Release (neue APK, Store-Re-Install nötig bei nativen Änderungen):**
+  - Workflow: `.github/workflows/build_apk.yml`
+  - Trigger: Push auf `genspark_ai_developer` / `claude/**` mit Änderung an `lib/**`, `pubspec.yaml`, `android/**`, `shorebird.yaml`
+  - Läuft `shorebird release android --artifact=apk` → registriert Release auf Shorebird-Server + erstellt GitHub Release mit APK
+- **OTA-Patch (nur Dart-Code, ohne Re-Install):**
+  - Workflow: `.github/workflows/shorebird_patch.yml`
+  - Trigger: Nur manuell (workflow_dispatch)
+  - Läuft `shorebird patch android` → sendet Dart-AOT-Diff an Shorebird, User bekommt Update beim nächsten App-Start automatisch
+  - Einschränkung: KEINE neuen Dart-Dependencies, KEINE nativen Änderungen (dann neuer Release nötig)
+- Download (volle APK): GitHub Releases → neueste Version
