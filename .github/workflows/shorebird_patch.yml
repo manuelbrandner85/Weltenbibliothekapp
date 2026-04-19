@@ -53,7 +53,7 @@ jobs:
           shorebird patch android \
             --release-version=${{ github.event.inputs.release_version || 'latest' }} \
             -- \
-            --target-platform=android-arm64 \
+            --target-platform=android-arm64,android-arm \
             --dart-define=APP_VERSION=${{ steps.version.outputs.version }} \
             --dart-define=SUPABASE_URL=https://adtviduaftdquvfjpojb.supabase.co \
             --dart-define=SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkdHZpZHVhZnRkcXV2Zmpwb2piIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxMzY3OTcsImV4cCI6MjA5MDcxMjc5N30.LPtmnjukb6o2CA16RDjoStqYb_1bipNULD4tgOfuD98 \
