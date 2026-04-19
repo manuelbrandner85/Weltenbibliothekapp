@@ -459,15 +459,27 @@ gh pr edit <NR> --body "Neue Beschreibung"
 *Letzte Aktualisierung: 2026-04-02 – GenSpark Claw Instruktionsdatei v1.0*
 
 ## APK-Build + OTA (Shorebird)
+
+> **PATCH-FIRST REGEL (verbindlich):**
+> Die App wird **nicht** über den Play Store verteilt, sondern als APK direkt an User (Sideloading).
+> User behalten ihre installierte APK. Shorebird-Patches funktionieren nur gegen die **exakte
+> Release-Version**, die auf dem Gerät liegt. Daher:
+> 1. **`version:` in `pubspec.yaml` NIEMALS bei reinen Dart-Änderungen bumpen.**
+>    Neue Build-Nummer = User muss neue APK manuell installieren → zu vermeiden.
+> 2. **Standard-Deployment für alle Dart-/UI-/Logik-/Bugfix-Änderungen = OTA-Patch.**
+> 3. Neuen Release NUR nach expliziter Absprache und nur bei unvermeidbaren
+>    nativen Änderungen (neues Plugin, Android-Permissions, Kotlin/Java, Flutter-Upgrade).
+> 4. Bei Commit-Zusammenfassung immer angeben: **"Patch-kompatibel ✓"** oder **"Neuer Release nötig ⚠️"**.
+
 - Builds laufen via GitHub Actions über **Shorebird** (Code Push / OTA)
 - `shorebird.yaml` enthält `app_id` (public, in VCS); Secret nur in GitHub Actions (`SHOREBIRD_TOKEN`)
-- **Neuer Release (neue APK, Store-Re-Install nötig bei nativen Änderungen):**
-  - Workflow: `.github/workflows/build_apk.yml`
-  - Trigger: Push auf `genspark_ai_developer` / `claude/**` mit Änderung an `lib/**`, `pubspec.yaml`, `android/**`, `shorebird.yaml`
-  - Läuft `shorebird release android --artifact=apk` → registriert Release auf Shorebird-Server + erstellt GitHub Release mit APK
-- **OTA-Patch (nur Dart-Code, ohne Re-Install):**
+- **OTA-Patch (Standard — reine Dart-Änderungen):**
   - Workflow: `.github/workflows/shorebird_patch.yml`
-  - Trigger: Nur manuell (workflow_dispatch)
+  - Trigger: Nur manuell (workflow_dispatch); `release_version: latest` per Default
   - Läuft `shorebird patch android` → sendet Dart-AOT-Diff an Shorebird, User bekommt Update beim nächsten App-Start automatisch
   - Einschränkung: KEINE neuen Dart-Dependencies, KEINE nativen Änderungen (dann neuer Release nötig)
+- **Neuer Release (nur bei nativen Änderungen, nach Absprache):**
+  - Workflow: `.github/workflows/build_apk.yml`
+  - Trigger: Nur manuell (`workflow_dispatch`) — Push-Trigger ist abgeschaltet, damit Dart-only Commits keinen fehlschlagenden Release-Build auslösen
+  - Läuft `shorebird release android --artifact=apk` → registriert Release auf Shorebird-Server + erstellt GitHub Release mit APK
 - Download (volle APK): GitHub Releases → neueste Version

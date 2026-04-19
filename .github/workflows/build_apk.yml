@@ -1,15 +1,9 @@
 name: 🏗️ Build & Release APK
 
 on:
-  push:
-    branches:
-      - genspark_ai_developer
-      - 'claude/**'
-    paths:
-      - 'pubspec.yaml'
-      - 'lib/**'
-      - 'android/**'
-      - 'shorebird.yaml'
+  # Release-Build nur MANUELL triggern — nötig bei nativen Änderungen
+  # (neue Plugins, Android-Permissions, Kotlin/Java, Flutter-Upgrade, pubspec-Version-Bump).
+  # Für reine Dart-Änderungen bitte "🚀 Shorebird OTA Patch" verwenden, nicht diesen Workflow.
   workflow_dispatch:
     inputs:
       version_note:
