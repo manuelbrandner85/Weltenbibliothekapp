@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
     inputs:
       release_version:
-        description: 'Ziel-Release (z.B. 5.30.0). Standard: neuester Release'
+        description: 'Ziel-Release INKL. Build-Nummer (z.B. 5.31.0+20260419). Standard: latest'
         required: false
         default: 'latest'
       source_branch:
