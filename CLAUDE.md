@@ -5,6 +5,140 @@
 
 ---
 
+# PROJEKTKONTEXT: Weltenbibliothek App
+
+## Überblick
+Du baust und wartest eine Flutter-App namens "Weltenbibliothek".
+Die App wird NICHT über den Google Play Store verteilt, sondern als APK direkt an User weitergegeben (Sideloading).
+Over-the-Air Updates laufen über Shorebird Code Push.
+
+## Tech Stack
+- **Framework:** Flutter (Dart)
+- **Backend/Datenbank:** Supabase (PostgreSQL, Auth, Storage, Realtime)
+- **OTA Updates:** Shorebird Code Push
+- **CI/CD:** GitHub Actions (Repository: manuelbrandner85/Weltenbibliothekapp)
+- **Verteilung:** Direkte APK-Weitergabe (kein Play Store)
+
+---
+
+## KRITISCHE REGELN FÜR SHOREBIRD & BUILD-NUMMERN
+
+### Build-Nummer NIEMALS unnötig ändern!
+- Die Build-Nummer in `pubspec.yaml` (z.B. `version: 1.0.0+1`) darf NUR geändert werden,
+  wenn NATIVE Änderungen vorliegen (neues Plugin, Android-Permissions, Kotlin/Java-Code,
+  Flutter-Version-Upgrade).
+- Bei reinen Dart-Code-Änderungen (UI, Logik, Bugfixes, Features) bleibt die
+  Build-Nummer IMMER gleich.
+- Grund: Unsere User behalten ihre APK. Shorebird-Patches funktionieren nur gegen die
+  exakte Release-Version. Neue Build-Nummer = User muss neue APK manuell installieren.
+
+### Patch vs. Release Entscheidung
+- **`shorebird patch`** → Standard für ALLE reinen Dart-Änderungen.
+  User kriegt Update automatisch beim nächsten App-Start.
+- **`shorebird release`** → NUR wenn native Änderungen unvermeidbar sind.
+  Erfordert neue APK-Verteilung an alle User.
+
+### Wenn du eine Änderung vorschlägst oder umsetzt:
+1. Prüfe IMMER ob die Änderung rein Dart ist oder native Teile betrifft.
+2. Wenn rein Dart → KEINE Änderung an `version:` in pubspec.yaml.
+3. Wenn nativ nötig → WARNE MICH EXPLIZIT bevor du die Build-Nummer änderst,
+   mit der Begründung warum ein neuer Release nötig ist.
+4. Schlage immer den Weg vor, der KEINEN neuen Release erfordert, wenn möglich.
+
+---
+
+## SHOREBIRD WORKFLOW (GitHub Actions)
+
+### Patch-Workflow (`shorebird_patch.yml`)
+- Wird getriggert wenn Dart-Code sich ändert
+- Führt `shorebird patch android --release-version <aktuelle-version>` aus
+- Die `--release-version` muss IMMER mit der Version übereinstimmen,
+  die die User aktuell auf ihren Geräten haben
+- NIEMALS eine neue Release-Version im Patch-Workflow verwenden
+
+### Release-Workflow (nur wenn nötig)
+- Nur manuell triggern nach expliziter Absprache mit mir
+- Erstellt neue APK mit `shorebird release android`
+- Danach müssen BEIDE Versionen gepatcht werden (alte + neue),
+  bis alle User die neue APK haben
+
+---
+
+## SUPABASE INTEGRATION
+
+### Sicherheitsregeln
+- API-Keys, Secrets, Passwörter NIEMALS hardcoden
+- Alle sensiblen Werte gehören in Environment-Variablen oder `.env` Dateien
+- `.env` Dateien MÜSSEN in `.gitignore` stehen
+- Supabase `service_role` Key NIEMALS im Client-Code verwenden,
+  nur `anon` Key + Row Level Security (RLS)
+
+### Verbindung
+- Supabase URL und anon Key werden über Dart Defines oder .env geladen
+- Beispiel: `--dart-define=SUPABASE_URL=... --dart-define=SUPABASE_ANON_KEY=...`
+
+---
+
+## APP-INTERNES UPDATE-SYSTEM
+
+### Shorebird Auto-Update
+- `shorebird_code_push` Package ist integriert
+- In `shorebird.yaml`: auto_update bleibt auf `true` (Standard)
+- Patches werden automatisch im Hintergrund geladen und beim nächsten Start aktiviert
+
+### Versions-Check für neue APK (wenn neuer Release nötig war)
+- In Supabase existiert eine Tabelle `app_config` mit Feld `min_version`
+- Beim App-Start wird geprüft ob die aktuelle App-Version >= min_version ist
+- Falls nicht → User bekommt Dialog mit Download-Link für neue APK
+- Download-Link wird ebenfalls aus `app_config` gelesen
+
+---
+
+## CODE-QUALITÄT & STIL
+
+### Allgemein
+- Sauberer, gut kommentierter Dart-Code
+- Deutsche Kommentare für Geschäftslogik, Englisch für technische Kommentare
+- Fehlerbehandlung mit try/catch und User-freundlichen Fehlermeldungen (Deutsch)
+- Responsive Design für verschiedene Bildschirmgrößen
+
+### Architektur
+- Feature-basierte Ordnerstruktur
+- State Management: [Riverpod/Bloc/Provider – was im Projekt bereits verwendet wird]
+- Repository Pattern für Supabase-Zugriffe
+- Separation of Concerns: UI ↔ Business Logic ↔ Data Layer
+
+### Vor jedem Commit prüfen:
+1. `flutter analyze` → keine Warnings
+2. `dart format .` → Code formatiert
+3. Keine hardcodierten Strings für User-facing Text
+4. Keine sensiblen Daten im Code
+
+---
+
+## WORKFLOW BEI ÄNDERUNGEN
+
+### Bevor du Code änderst:
+1. Erkläre mir kurz was du ändern willst und warum
+2. Sage mir ob es ein Patch oder Release wird
+3. Warte auf mein OK bei größeren Änderungen
+
+### Nach der Änderung:
+1. Fasse zusammen was geändert wurde
+2. Bestätige: "Patch-kompatibel ✓" oder "Neuer Release nötig ⚠️"
+3. Wenn Patch: Sage mir den Befehl zum Auslösen des Patch-Workflows
+4. Wenn Release: Erkläre mir die Schritte für die neue APK-Verteilung
+
+---
+
+## ZUSAMMENFASSUNG DER PRIORITÄTEN
+1. **Build-Nummer stabil halten** → User soll nie neue APK brauchen wenn vermeidbar
+2. **Sicherheit** → Keine Secrets im Code, RLS aktiv, .env geschützt
+3. **OTA-first Denken** → Jede Lösung bevorzugt Patch über Release
+4. **User-Erlebnis** → Updates unsichtbar, App läuft flüssig, deutsche UI
+
+---
+
 ## 📌 Projektüberblick
 
 **Weltenbibliothek** ist eine Flutter-App (Android/iOS/Web) – eine alternative Wissens- und
