@@ -453,14 +453,25 @@ class SupabaseChatService {
       throw Exception('Nicht eingeloggt – bitte anmelden, um Nachrichten zu senden.');
     }
 
-    // Username/Avatar aus Profil holen wenn nicht explizit gesetzt
-    String effectiveUsername = username ?? 'Anonym';
+    // Username/Avatar: explizit gesetzt > Profil > Email-Prefix > 'Anonym'
+    String effectiveUsername =
+        (username != null && username.trim().isNotEmpty) ? username.trim() : '';
     String? effectiveAvatar = avatarUrl;
-    if (user != null && username == null) {
-      final profile = await SupabaseProfileService.instance.getMyProfile();
-      effectiveUsername = profile?['username'] ?? user.email?.split('@').first ?? 'Anonym';
-      effectiveAvatar ??= profile?['avatar_url'] as String?;
+    if (user != null && effectiveUsername.isEmpty) {
+      try {
+        final profile = await SupabaseProfileService.instance.getMyProfile();
+        final profileUsername = (profile?['username'] as String?)?.trim();
+        if (profileUsername != null && profileUsername.isNotEmpty) {
+          effectiveUsername = profileUsername;
+        } else if (user.email != null && user.email!.isNotEmpty) {
+          effectiveUsername = user.email!.split('@').first;
+        }
+        effectiveAvatar ??= profile?['avatar_url'] as String?;
+      } catch (_) {
+        // Profil-Fetch fehlgeschlagen – fallen unten auf 'Anonym' zurück.
+      }
     }
+    if (effectiveUsername.isEmpty) effectiveUsername = 'Anonym';
 
     final insertData = <String, dynamic>{
       'room_id': roomId,

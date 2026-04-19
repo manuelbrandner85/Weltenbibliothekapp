@@ -268,7 +268,6 @@ class CloudflareApiService {
   }) async {
     if (kDebugMode) debugPrint('💬 [Chat] Send: $username → $roomId');
 
-    final isBot = userId == 'tool_bot';
     final messageType = switch (mediaType) {
       'audio' => 'voice',
       'image' => 'image',
@@ -283,7 +282,7 @@ class CloudflareApiService {
         username: username,
         avatarUrl: avatarUrl,
         messageType: messageType,
-        allowAnonymous: isBot,
+        allowAnonymous: true,
       );
       if (kDebugMode) debugPrint('✅ [Chat] Supabase insert OK: ${result['id']}');
       return Map<String, dynamic>.from(result);
