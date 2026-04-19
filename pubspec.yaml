@@ -59,6 +59,8 @@ dependencies:
   crypto: ^3.0.3  # Hashing for image consistency
   url_launcher: ^6.3.1  # URL Launcher (Web-kompatibel)
   shorebird_code_push: ^2.0.5  # 🔔 OTA-Patch-Status (Patch-Ready-Dialog)
+  dio: ^5.7.0                  # 📥 HTTP-Download mit Progress (In-App APK-Download)
+  open_filex: ^4.5.0           # 📲 Android PackageInstaller öffnen (APK installieren)
   cached_network_image: ^3.4.1  # 🆕 Image Caching für bessere Performance
   
   # Sensors (v5.37 - for gyroscope parallax)

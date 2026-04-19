@@ -7,6 +7,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import '../screens/release_update_screen.dart';
 import '../services/update_service.dart';
 import 'update_dialogs.dart';
 
@@ -19,7 +20,7 @@ class UpdateGate extends StatefulWidget {
 }
 
 class _UpdateGateState extends State<UpdateGate> with WidgetsBindingObserver {
-  bool _releaseDialogShown = false;
+  bool _releaseGateOpen = false;
   bool _patchBannerShown = false;
 
   @override
@@ -46,12 +47,28 @@ class _UpdateGateState extends State<UpdateGate> with WidgetsBindingObserver {
     if (!mounted) return;
 
     // 1) Release-Update? (Supabase app_config vs. APP_VERSION)
-    if (!_releaseDialogShown) {
+    //    Bei Update: Fullscreen-Gate öffnen, das die App komplett sperrt.
+    //    User muss neue APK downloaden & installieren (In-App-Download).
+    if (!_releaseGateOpen) {
       final result = await UpdateService.instance.checkReleaseUpdate();
       if (!mounted) return;
       if (result.releaseUpdateAvailable) {
-        _releaseDialogShown = true;
-        await ReleaseUpdateDialog.show(context, result);
+        _releaseGateOpen = true;
+        await Navigator.of(context, rootNavigator: true).push(
+          PageRouteBuilder(
+            opaque: true,
+            fullscreenDialog: true,
+            barrierDismissible: false,
+            transitionDuration: const Duration(milliseconds: 280),
+            pageBuilder: (_, __, ___) => ReleaseUpdateScreen(info: result),
+            transitionsBuilder: (_, anim, __, child) =>
+                FadeTransition(opacity: anim, child: child),
+          ),
+        );
+        // Wenn der User den Screen schließt (zB. App beendet und neu startet
+        // ohne Update zu installieren), checken wir beim nächsten Resume
+        // erneut.
+        _releaseGateOpen = false;
       }
     }
 
