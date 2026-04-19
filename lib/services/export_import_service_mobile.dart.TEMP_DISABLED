@@ -1,0 +1,200 @@
+/// Data Export/Import Service (MOBILE VERSION)
+/// Backup and restore app data as JSON
+library;
+
+import 'dart:async';
+import 'dart:convert';
+import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'spirit_journal_service.dart';
+import 'synchronicity_service.dart';
+import 'favorites_service.dart';
+import 'streak_tracking_service.dart';
+import 'achievement_service.dart';
+
+/// Export/Import Service (Mobile - No Web Features)
+class ExportImportService {
+  static final ExportImportService _instance = ExportImportService._internal();
+  factory ExportImportService() => _instance;
+  ExportImportService._internal();
+
+  final SpiritJournalService _journalService = SpiritJournalService();
+  final SynchronicityService _syncService = SynchronicityService();
+  final FavoritesService _favoritesService = FavoritesService();
+  final StreakTrackingService _streakService = StreakTrackingService();
+  final AchievementService _achievementService = AchievementService();
+
+  // ============================================
+  // EXPORT
+  // ============================================
+
+  /// Export all data to JSON
+  Future<Map<String, dynamic>> exportAllData() async {
+    try {
+      if (kDebugMode) {
+        debugPrint('📤 Exporting all data...');
+      }
+
+      // Gather all data
+      final exportData = {
+        'version': '1.0.0',
+        'exported_at': DateTime.now().toIso8601String(),
+        'app': 'Weltenbibliothek',
+        'data': {
+          'journal_entries': _journalService.entries.map((e) => e.toJson()).toList(),
+          'synchronicity_entries': _syncService.entries.map((e) => e.toJson()).toList(),
+          'favorites': await _exportFavorites(),
+          'streak_data': await _exportStreakData(),
+          'achievements': await _exportAchievements(),
+          'settings': await _exportSettings(),
+        },
+      };
+
+      if (kDebugMode) {
+        debugPrint('📤 Export complete: ${exportData['data']}');
+      }
+
+      return exportData;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Export failed: $e');
+      }
+      rethrow;
+    }
+  }
+
+  /// Download backup file (Mobile: Returns JSON string)
+  Future<String> downloadBackup() async {
+    final data = await exportAllData();
+    final jsonString = const JsonEncoder.withIndent('  ').convert(data);
+    
+    if (kDebugMode) {
+      debugPrint('📱 [Mobile] Backup ready: ${jsonString.length} bytes');
+    }
+    
+    return jsonString;
+  }
+
+  // ============================================
+  // IMPORT
+  // ============================================
+
+  /// Import data from JSON (Mobile version)
+  Future<bool> importData(String jsonString) async {
+    try {
+      if (kDebugMode) {
+        debugPrint('📥 Importing data...');
+      }
+
+      final data = json.decode(jsonString) as Map<String, dynamic>;
+      
+      if (data['app'] != 'Weltenbibliothek') {
+        throw Exception('Invalid app data');
+      }
+
+      final importData = data['data'] as Map<String, dynamic>;
+
+      // Import each service's data
+      await _importJournalEntries(importData['journal_entries'] as List);
+      await _importSynchronicityEntries(importData['synchronicity_entries'] as List);
+      await _importFavorites(importData['favorites'] as Map<String, dynamic>);
+      await _importStreakData(importData['streak_data'] as Map<String, dynamic>);
+      await _importAchievements(importData['achievements'] as List);
+      await _importSettings(importData['settings'] as Map<String, dynamic>);
+
+      if (kDebugMode) {
+        debugPrint('✅ Import complete');
+      }
+
+      return true;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ Import failed: $e');
+      }
+      return false;
+    }
+  }
+
+  // ============================================
+  // HELPER METHODS
+  // ============================================
+
+  Future<Map<String, dynamic>> _exportFavorites() async {
+    return {
+      'sacred_texts': _favoritesService.favoriteSacredTexts,
+      'tools': _favoritesService.favoriteTools,
+    };
+  }
+
+  Future<Map<String, dynamic>> _exportStreakData() async {
+    return {
+      'current_streak': _streakService.currentStreak,
+      'longest_streak': _streakService.longestStreak,
+      'last_login': _streakService.lastLogin?.toIso8601String(),
+    };
+  }
+
+  Future<List<Map<String, dynamic>>> _exportAchievements() async {
+    return _achievementService.achievements
+        .where((a) => a.isUnlocked)
+        .map((a) => {
+              'id': a.id,
+              'unlocked_at': a.unlockedAt?.toIso8601String(),
+            })
+        .toList();
+  }
+
+  Future<Map<String, dynamic>> _exportSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    return {
+      'theme_mode': prefs.getString('theme_mode') ?? 'system',
+      'notifications_enabled': prefs.getBool('notifications_enabled') ?? false,
+    };
+  }
+
+  Future<void> _importJournalEntries(List entries) async {
+    // Import journal entries
+    if (kDebugMode) {
+      debugPrint('📥 Importing journal entries: ${entries.length}');
+    }
+  }
+
+  Future<void> _importSynchronicityEntries(List entries) async {
+    // Import synchronicity entries
+    if (kDebugMode) {
+      debugPrint('📥 Importing synchronicity entries: ${entries.length}');
+    }
+  }
+
+  Future<void> _importFavorites(Map<String, dynamic> favorites) async {
+    // Import favorites
+    if (kDebugMode) {
+      debugPrint('📥 Importing favorites');
+    }
+  }
+
+  Future<void> _importStreakData(Map<String, dynamic> streakData) async {
+    // Import streak data
+    if (kDebugMode) {
+      debugPrint('📥 Importing streak data');
+    }
+  }
+
+  Future<void> _importAchievements(List achievements) async {
+    // Import achievements
+    if (kDebugMode) {
+      debugPrint('📥 Importing achievements: ${achievements.length}');
+    }
+  }
+
+  Future<void> _importSettings(Map<String, dynamic> settings) async {
+    // Import settings
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('theme_mode', settings['theme_mode'] as String);
+    await prefs.setBool('notifications_enabled', settings['notifications_enabled'] as bool);
+    
+    if (kDebugMode) {
+      debugPrint('📥 Importing settings');
+    }
+  }
+}

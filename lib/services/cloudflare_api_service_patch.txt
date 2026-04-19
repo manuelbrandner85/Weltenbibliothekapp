@@ -1,0 +1,38 @@
+New sendChatMessage method signature:
+
+  /// Send chat message with optional avatar
+  Future<Map<String, dynamic>> sendChatMessage({
+    required String roomId,
+    required String realm,
+    required String userId,
+    required String username,
+    required String message,
+    String? avatarEmoji,
+    String? avatarUrl,
+  }) async {
+    final body = {
+      'username': username,
+      'message': message,
+    };
+    
+    // Add optional avatar fields
+    if (avatarEmoji != null) {
+      body['avatar_emoji'] = avatarEmoji;
+    }
+    if (avatarUrl != null) {
+      body['avatar_url'] = avatarUrl;
+    }
+    
+    final response = await http.post(
+      Uri.parse('$baseUrl/api/chat/$roomId'),
+      headers: _headers,
+      body: json.encode(body),
+    ).timeout(const Duration(seconds: 10));
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      print('❌ Send Message Error ${response.statusCode}: ${response.body}');
+      throw Exception('Failed to send message: ${response.statusCode}');
+    }
+  }
