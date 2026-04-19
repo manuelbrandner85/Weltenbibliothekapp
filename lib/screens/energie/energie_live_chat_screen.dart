@@ -62,6 +62,9 @@ import '../../widgets/chat/chat_emoji_picker_button.dart';
 import '../../widgets/chat/chat_status_banner.dart';
 import '../../widgets/chat/chat_new_messages_fab.dart';
 import '../../widgets/chat/chat_unread_badge.dart';
+import '../../widgets/chat/chat_online_indicator.dart';
+import '../../widgets/chat/chat_room_info_sheet.dart';
+import '../../services/chat/presence_service.dart';
 import '../../services/chat/user_block_service.dart';
 import '../../services/chat/unread_tracker_service.dart';
 // 📷 Image Picker
@@ -255,6 +258,8 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
     // addPostFrameCallback stellt sicher dass der erste Frame gebaut ist.
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await _loadUserData();
+      // ✨ Batch-2: Presence aktivieren, sobald der Username bekannt ist.
+      await _refreshPresence();
       await _loadMessages();
       _loadPolls();
     });
@@ -1235,7 +1240,23 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
       backgroundColor: const Color(0xFF0A0A0F),
       appBar: AppBar(
         backgroundColor: const Color(0xFF1A1A2E),
-        title: const Text('💬 ENERGIE LIVE-CHAT'),
+        title: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: _showRoomInfoSheet,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(
+                child: Text(
+                  '💬 ${_rooms[_selectedRoom]?['name'] ?? 'ENERGIE LIVE-CHAT'}',
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 10),
+              const ChatOnlineIndicator(),
+            ],
+          ),
+        ),
         actions: [
           // 🎥 VIDEO + VOICE CHAT BUTTON (Telegram-Style)
           IconButton(
@@ -1381,6 +1402,8 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
 
                       // 🔧 CRITICAL FIX: Switch WebRTC Voice Room
                       await _voiceService.switchRoom(_fullRoomId);
+                      // ✨ Batch-2: Presence auf den neuen Raum umziehen.
+                      await _refreshPresence();
                       // 🔴 Re-subscribe Realtime for new room
                       _subscribeToRoom(_fullRoomId);
                       await _loadMessages();
@@ -1817,7 +1840,35 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
     _voiceParticipantsSub?.cancel(); // 🔧 Prevent memory leak
     _voiceService.dispose(); // 🆕
     _realtimeChannel?.unsubscribe(); // 🔴 Realtime cleanup
+    // ✨ Batch-2: Presence sauber verlassen, damit der User nicht als online
+    // in dem Raum hängen bleibt.
+    PresenceService.instance.leave();
     super.dispose();
+  }
+
+  // ✨ Batch-2: Presence-Join/Re-Join für den aktuellen Raum.
+  Future<void> _refreshPresence() async {
+    if (_userId.isEmpty || _username.isEmpty) return;
+    await PresenceService.instance.join(
+      roomId: _fullRoomId,
+      userId: _userId,
+      username: _username,
+      avatar: _avatar.isNotEmpty ? _avatar : '🔮',
+    );
+  }
+
+  // ✨ Batch-2: Raum-Info-Sheet mit Beschreibung + Online-Counter.
+  void _showRoomInfoSheet() {
+    final room = _rooms[_selectedRoom];
+    if (room == null) return;
+    ChatRoomInfoSheet.show(
+      context,
+      roomName: (room['name'] as String?) ?? _selectedRoom,
+      roomIcon: (room['icon'] as String?) ?? '💬',
+      description:
+          (room['description'] as String?) ?? 'Live-Chat in diesem Raum.',
+      worldColor: const Color(0xFF9B51E0),
+    );
   }
   
   // ✨ Batch-1: Emoji-Insert an aktueller Caret-Position.
