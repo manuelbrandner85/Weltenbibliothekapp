@@ -1,4 +1,5 @@
 name: 🏗️ Build & Release APK
+# Retrigger after SHOREBIRD_TOKEN secret update
 
 on:
   push:
