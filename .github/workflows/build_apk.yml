@@ -93,7 +93,6 @@ jobs:
           name: shorebird-debug-log
           path: |
             /tmp/shorebird_release.log
-            /root/.config/shorebird/logs/
           retention-days: 7
 
       - name: 📝 APK umbenennen
