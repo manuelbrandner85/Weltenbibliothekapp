@@ -1,25 +1,14 @@
-import 'dart:convert';
-import 'package:weltenbibliothek/config/api_config.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:http/http.dart' as http;
 import '../../../core/storage/unified_storage_service.dart';
 import '../../../core/constants/roles.dart';
-import '../../../services/world_admin_service.dart';
+import '../../../services/supabase_service.dart';
 
-/// 🔐 ADMIN STATE - SINGLE SOURCE OF TRUTH
+/// 🔐 ADMIN STATE – Single Source of Truth
 ///
-/// Dieser State repräsentiert den Admin-Status für eine bestimmte Welt.
-/// Er ist die einzige Wahrheitsquelle für Admin-Berechtigungen.
-///
-/// PROPERTIES:
-/// - isAdmin: Hat User Admin-Rechte?
-/// - isRootAdmin: Hat User Root-Admin-Rechte?
-/// - world: Für welche Welt gilt dieser Status?
-/// - backendVerified: Wurde der Status vom Backend bestätigt?
-/// - username: Aktueller Username (für Debug)
-/// - role: Aktuelle Rolle (für Debug)
+/// Rolle kommt immer aus Supabase profiles.role (backend-verifiziert).
+/// Hive wird nur als Offline-Cache genutzt – NIEMALS als Rollenbasis ohne Backend-Check.
 
 class AdminState {
   final bool isAdmin;
@@ -38,7 +27,6 @@ class AdminState {
     this.role,
   });
 
-  /// Factory: Leerer State (kein Admin)
   static AdminState empty(String world) => AdminState(
         isAdmin: false,
         isRootAdmin: false,
@@ -48,16 +36,12 @@ class AdminState {
         role: null,
       );
 
-  /// Factory: Local State (ohne Backend-Verifizierung)
-  factory AdminState.fromLocal(String world, String? username, String? role) {
-    // Offline-Fallback für Root-Admin
-    final isRootByUsername = AppRoles.isRootAdminByUsername(username);
-    final isRootByRole = AppRoles.isRootAdmin(role);
-    final isAdminByRole = AppRoles.isAdmin(role);
-
+  /// Offline-Cache: Rolle kommt aus Hive (gesetzt beim letzten Supabase-Load).
+  /// Kein Username-basierter Admin-Bypass mehr.
+  factory AdminState.fromCache(String world, String? username, String? role) {
     return AdminState(
-      isAdmin: isRootByUsername || isAdminByRole,
-      isRootAdmin: isRootByUsername || isRootByRole,
+      isAdmin: AppRoles.isAdmin(role),
+      isRootAdmin: AppRoles.isRootAdmin(role),
       world: world,
       backendVerified: false,
       username: username,
@@ -65,7 +49,6 @@ class AdminState {
     );
   }
 
-  /// CopyWith für Updates
   AdminState copyWith({
     bool? isAdmin,
     bool? isRootAdmin,
@@ -84,29 +67,23 @@ class AdminState {
   }
 
   @override
-  String toString() {
-    return 'AdminState('
-        'world: $world, '
-        'isAdmin: $isAdmin, '
-        'isRootAdmin: $isRootAdmin, '
-        'backendVerified: $backendVerified, '
-        'username: $username, '
-        'role: $role'
-        ')';
-  }
+  String toString() => 'AdminState('
+      'world: $world, '
+      'isAdmin: $isAdmin, '
+      'isRootAdmin: $isRootAdmin, '
+      'backendVerified: $backendVerified, '
+      'username: $username, '
+      'role: $role'
+      ')';
 }
 
 /// 🔐 ADMIN STATE NOTIFIER
 ///
-/// Verwaltet den Admin-Status für eine Welt.
-/// Nutzt Offline-First-Architektur mit Backend-Sync.
-///
-/// WORKFLOW:
-/// 1. Lokales Profil laden (instant)
-/// 2. Admin-Status aus Profil berechnen
-/// 3. Backend-Check im Hintergrund (non-blocking)
-/// 4. State aktualisieren wenn Backend antwortet
-/// 5. Bei Timeout: Lokaler State bleibt gültig
+/// Workflow:
+/// 1. Supabase-Session prüfen (primary – backend-verifiziert)
+///    → profiles.role ist die einzige Wahrheitsquelle
+/// 2. Ergebnis in Hive cachen für nächsten Cold-Start
+/// 3. Kein Netz: Hive-Cache verwenden (backendVerified = false)
 
 class AdminStateNotifier extends StateNotifier<AdminState> {
   final Ref ref;
@@ -114,217 +91,98 @@ class AdminStateNotifier extends StateNotifier<AdminState> {
   final _storage = UnifiedStorageService();
 
   AdminStateNotifier(this.ref, this.world) : super(AdminState.empty(world)) {
-    // Auto-Load beim Erstellen
     load();
   }
 
-  /// Admin-Status laden (Offline-First)
   Future<void> load() async {
-    if (kDebugMode) {
-      debugPrint('🔐 AdminStateNotifier: Lade Status ($world)...');
+    if (kDebugMode) debugPrint('🔐 AdminState: load() für $world');
+
+    // ──────────────────────────────────────────────────────────────
+    // SCHRITT 1: Supabase-Session als primäre Quelle
+    // ──────────────────────────────────────────────────────────────
+    try {
+      final user = supabase.auth.currentUser;
+      if (user != null) {
+        final profile = await supabase
+            .from('profiles')
+            .select('username, role, display_name')
+            .eq('id', user.id)
+            .maybeSingle();
+
+        if (profile != null) {
+          final username = profile['username'] as String? ?? '';
+          final role = profile['role'] as String? ?? AppRoles.user;
+
+          // In Hive cachen für Offline-Nutzung
+          await _storage.saveProfile(world, {
+            'username': username,
+            'role': role,
+            'user_id': user.id,
+            'display_name': profile['display_name'],
+          });
+
+          state = AdminState(
+            isAdmin: AppRoles.isAdmin(role),
+            isRootAdmin: AppRoles.isRootAdmin(role),
+            world: world,
+            backendVerified: true,
+            username: username,
+            role: role,
+          );
+
+          if (kDebugMode) {
+            debugPrint('✅ AdminState: Supabase verifiziert – $state');
+          }
+          return;
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ AdminState: Supabase-Load fehlgeschlagen: $e');
     }
 
-    // SCHRITT 1: Lokales Profil laden – primär aus user_data, Fallback aus Profile-Box
+    // ──────────────────────────────────────────────────────────────
+    // SCHRITT 2: Hive-Cache als Offline-Fallback
+    // ──────────────────────────────────────────────────────────────
     String? username = _storage.getUsername(world);
     String? role = _storage.getRole(world);
 
-    // FALLBACK: Falls user_data-Box leer, aus nativer Profile-Box lesen
     if (username == null || username.isEmpty) {
       try {
         final boxName = world == 'materie' ? 'materie_profiles' : 'energie_profiles';
-        // Box öffnen falls noch nicht geöffnet
-        if (!Hive.isBoxOpen(boxName)) {
-          await Hive.openBox(boxName);
-        }
+        if (!Hive.isBoxOpen(boxName)) await Hive.openBox(boxName);
         final box = Hive.box(boxName);
         final raw = box.get('current_profile');
         if (raw != null) {
           final data = Map<String, dynamic>.from(raw as Map);
           username = data['username'] as String?;
           role = data['role'] as String?;
-          if (kDebugMode) {
-            debugPrint('🔁 AdminStateNotifier: Profil aus $boxName geladen (username=$username, role=$role)');
-          }
-          // Sync back to user_data for next time
           if (username != null && username.isNotEmpty) {
             await _storage.saveProfile(world, data);
           }
         }
       } catch (e) {
-        if (kDebugMode) debugPrint('⚠️ AdminStateNotifier: Fallback-Load fehlgeschlagen: $e');
-      }
-    }
-    
-    // LETZTER FALLBACK: SharedPreferences prüfen
-    if (username == null || username.isEmpty) {
-      try {
-        final boxName = 'user_data';
-        if (!Hive.isBoxOpen(boxName)) {
-          await Hive.openBox(boxName);
-        }
-        final box = Hive.box(boxName);
-        // Versuche alle möglichen Keys
-        username = box.get('username_$world') as String? 
-            ?? box.get('username') as String?;
-        role = box.get('role_$world') as String? 
-            ?? box.get('role') as String?;
-        if (username != null && username.isNotEmpty) {
-          if (kDebugMode) {
-            debugPrint('🔁 AdminStateNotifier: Username aus user_data (key fallback): $username');
-          }
-        }
-      } catch (e) {
-        if (kDebugMode) debugPrint('⚠️ AdminStateNotifier: user_data Fallback fehlgeschlagen: $e');
+        if (kDebugMode) debugPrint('⚠️ AdminState: Profil-Box Fallback: $e');
       }
     }
 
     if (username == null || username.isEmpty) {
-      if (kDebugMode) {
-        debugPrint('⚠️ AdminStateNotifier: Kein Profil gefunden ($world)');
-      }
+      if (kDebugMode) debugPrint('⚠️ AdminState: Kein Profil gefunden ($world)');
       state = AdminState.empty(world);
       return;
     }
 
-    // SCHRITT 2: Lokalen State setzen (instant)
-    state = AdminState.fromLocal(world, username, role);
-
-    if (kDebugMode) {
-      debugPrint('✅ AdminStateNotifier: Lokaler Status geladen');
-      debugPrint('   $state');
-    }
-
-    // SCHRITT 3: Backend-Check (non-blocking)
-    _verifyWithBackend(username);
+    state = AdminState.fromCache(world, username, role);
+    if (kDebugMode) debugPrint('📦 AdminState: Offline-Cache geladen – $state');
   }
 
-  /// Backend-Verifizierung (non-blocking)
-  Future<void> _verifyWithBackend(String username) async {
-    try {
-      if (kDebugMode) {
-        debugPrint('🌐 AdminStateNotifier: Backend-Check starten ($world)...');
-      }
+  void refresh() => load();
 
-      final response = await WorldAdminService.checkAdminStatus(
-        world,
-        username,
-      ).timeout(
-        const Duration(seconds: 3),
-        onTimeout: () {
-          if (kDebugMode) {
-            debugPrint('⏱️ AdminStateNotifier: Backend-Timeout (lokaler State bleibt)');
-          }
-          return {
-            'success': false,
-            'isAdmin': state.isAdmin,
-            'isRootAdmin': state.isRootAdmin,
-          };
-        },
-      );
-
-      if (response['success'] == true) {
-        // Backend hat geantwortet - State aktualisieren
-        state = state.copyWith(
-          isAdmin: response['isAdmin'] ?? state.isAdmin,
-          isRootAdmin: response['isRootAdmin'] ?? state.isRootAdmin,
-          backendVerified: true,
-        );
-
-        if (kDebugMode) {
-          debugPrint('✅ AdminStateNotifier: Backend-Verifizierung erfolgreich');
-          debugPrint('   $state');
-        }
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ AdminStateNotifier: Backend-Fehler: $e');
-        debugPrint('   Verwende lokalen State (Offline-First)');
-      }
-      // State bleibt unverändert (Offline-First)
-    }
-  }
-
-  /// Admin-Status neu laden (z.B. nach Profil-Update)
-  void refresh() {
-    if (kDebugMode) {
-      debugPrint('🔄 AdminStateNotifier: Refresh ($world)');
-    }
-    load();
-  }
-  
-  /// Admin-Status refresh (Alias für refresh) + Backend-Sync
-  Future<void> refreshAdminStatus() async {
-    if (kDebugMode) {
-      debugPrint('🔄 AdminStateNotifier: refreshAdminStatus ($world)');
-      debugPrint('   Synchronisiere Profil mit Backend...');
-    }
-    
-    // CRITICAL: Lade Profil vom Backend um aktuelle Role zu bekommen
-    try {
-      final username = _storage.getUsername(world);
-      if (username != null && username.isNotEmpty) {
-        final response = await http.get(
-          Uri.parse('${ApiConfig.workerUrl}/api/profile/$world/$username'),
-          headers: {'Authorization': 'Bearer sync_token'},
-        ).timeout(const Duration(seconds: 5));
-        
-        if (response.statusCode == 200) {
-          final data = jsonDecode(response.body);
-          if (data['success'] == true && data['profile'] != null) {
-            final profile = data['profile'];
-            final newRole = profile['role'] as String?;
-            
-            if (kDebugMode) {
-              debugPrint('✅ Backend-Profil geladen: role=$newRole');
-            }
-            
-            // Aktualisiere lokales Profil mit neuer Role
-            if (newRole != null) {
-              // Lade aktuelles Profil
-              final currentProfile = _storage.getProfile(world);
-              if (currentProfile != null) {
-                // Update role im Profil
-                if (world == 'materie') {
-                  currentProfile['role'] = newRole;
-                } else if (world == 'energie') {
-                  currentProfile['role'] = newRole;
-                }
-                
-                // Speichere aktualisiertes Profil
-                await _storage.saveProfile(world, currentProfile);
-                
-                if (kDebugMode) {
-                  debugPrint('✅ Lokales Profil aktualisiert mit role=$newRole');
-                }
-              }
-            }
-          }
-        }
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('⚠️ Backend-Sync fehlgeschlagen: $e');
-      }
-    }
-    
-    // Dann normalen Load durchführen
-    await load();
-  }
+  /// Alias für explizites Re-Sync mit Supabase.
+  Future<void> refreshAdminStatus() => load();
 }
 
-/// 🔐 RIVERPOD PROVIDER - FAMILY (pro Welt)
-///
-/// Dieser Provider erstellt einen separaten AdminStateNotifier
-/// für jede Welt (materie, energie).
-///
-/// USAGE:
-/// ```dart
-/// final adminState = ref.watch(adminStateProvider('materie'));
-/// if (adminState.isAdmin) {
-///   // Show admin button
-/// }
-/// ```
-
-final adminStateProvider = StateNotifierProvider.family<AdminStateNotifier, AdminState, String>(
+/// Provider (pro Welt)
+final adminStateProvider =
+    StateNotifierProvider.family<AdminStateNotifier, AdminState, String>(
   (ref, world) => AdminStateNotifier(ref, world),
 );

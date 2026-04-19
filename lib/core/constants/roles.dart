@@ -20,20 +20,16 @@ class AppRoles {
   // ============================================================================
   // ADMIN ACCOUNTS
   // ============================================================================
-  
+
   /// Root-Admin (VOLLZUGRIFF auf alles)
-  /// - User Management
-  /// - Content Management
-  /// - System Administration
+  /// Login: Supabase Email + Passwort – Passwort NIEMALS im Client-Code!
+  /// Rolle wird in Supabase profiles.role = 'root_admin' gesetzt.
   static const String rootAdminUsername = 'Weltenbibliothek';
-  static const String rootAdminPassword = 'Jolene2305';
-  
+
   /// Content-Editor Admin (NUR Content-Management)
-  /// - Alle Inhalte bearbeiten (Tabs, Tools, Marker, Medien)
-  /// - KEIN User Management
-  /// - KEINE System-Administration
+  /// Login: Supabase Email + Passwort – Passwort NIEMALS im Client-Code!
+  /// Rolle wird in Supabase profiles.role = 'content_editor' gesetzt.
   static const String contentEditorUsername = 'Weltenbibliothekedit';
-  static const String contentEditorPassword = 'Jolene2305';
 
   // ============================================================================
   // BERECHTIGUNGS-CHECKS - USER MANAGEMENT
@@ -150,20 +146,6 @@ class AppRoles {
     }
     
     return user;  // Fallback für normale User
-  }
-
-  /// Validate Password for Admin Accounts
-  static bool validateAdminPassword(String username, String password) {
-    final lower = username.toLowerCase();
-    
-    if (lower == rootAdminUsername.toLowerCase()) {
-      return password == rootAdminPassword;
-    }
-    if (lower == contentEditorUsername.toLowerCase()) {
-      return password == contentEditorPassword;
-    }
-    
-    return false;  // Normale User haben kein hardcoded Password
   }
 
   /// Get User Role Name (für UI)

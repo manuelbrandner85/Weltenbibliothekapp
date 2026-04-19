@@ -10,7 +10,6 @@ on:
       - 'lib/**'
       - 'android/**'
       - 'shorebird.yaml'
-      - '.github/workflows/build_apk.yml'
   workflow_dispatch:
     inputs:
       version_note:

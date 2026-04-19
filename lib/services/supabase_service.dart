@@ -13,6 +13,7 @@ library;
 
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../config/api_config.dart';
 
@@ -104,6 +105,26 @@ class SupabaseAuthService {
   Future<void> signOut() async {
     if (kDebugMode) debugPrint('🚪 [Auth] SignOut');
     await supabase.auth.signOut();
+    await _clearLocalData();
+  }
+
+  /// Löscht alle lokalen Auth- und Profil-Caches nach Logout.
+  Future<void> _clearLocalData() async {
+    for (final boxName in [
+      'user_data',
+      'materie_profiles',
+      'energie_profiles',
+      'auth_storage',
+    ]) {
+      try {
+        if (Hive.isBoxOpen(boxName)) {
+          await Hive.box(boxName).clear();
+          if (kDebugMode) debugPrint('🗑️ [Auth] Cleared: $boxName');
+        }
+      } catch (e) {
+        if (kDebugMode) debugPrint('⚠️ [Auth] Clear $boxName failed: $e');
+      }
+    }
   }
 
   // ── PASSWORT RESET ────────────────────────────────────────

@@ -6,6 +6,7 @@ import '../../services/world_admin_service.dart';
 import '../../services/cloudflare_api_service.dart';
 import '../../services/health_check_service.dart';
 import '../../features/admin/state/admin_state.dart';
+import '../../services/supabase_service.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // WORLD ADMIN DASHBOARD – V2 PREMIUM
@@ -59,6 +60,10 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
   Widget build(BuildContext context) {
     final admin = ref.watch(adminStateProvider(widget.world));
 
+    // Supabase-Session ist Pflicht für Admin-Zugriff
+    if (supabase.auth.currentUser == null) {
+      return _accessDeniedScaffold(reason: 'Bitte melde dich zuerst an.');
+    }
     if (admin.username == null || admin.username!.isEmpty) {
       return _loadingScaffold();
     }
@@ -95,6 +100,37 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
           ]),
         ]),
         actions: [
+          // Backend-Verifikations-Badge
+          Container(
+            margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 2),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: admin.backendVerified
+                  ? Colors.green.withValues(alpha: 0.15)
+                  : Colors.orange.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: admin.backendVerified
+                    ? Colors.green.withValues(alpha: 0.5)
+                    : Colors.orange.withValues(alpha: 0.5),
+              ),
+            ),
+            child: Row(children: [
+              Icon(
+                admin.backendVerified ? Icons.verified_rounded : Icons.sync_rounded,
+                size: 11,
+                color: admin.backendVerified ? Colors.green : Colors.orange,
+              ),
+              const SizedBox(width: 3),
+              Text(
+                admin.backendVerified ? 'Live' : 'Offline',
+                style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                    color: admin.backendVerified ? Colors.green : Colors.orange),
+              ),
+            ]),
+          ),
           if (admin.isRootAdmin)
             Container(
               margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
@@ -178,7 +214,7 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
         ),
       );
 
-  Widget _accessDeniedScaffold() => Scaffold(
+  Widget _accessDeniedScaffold({String? reason}) => Scaffold(
         backgroundColor: const Color(0xFF08080F),
         appBar: AppBar(
           backgroundColor: const Color(0xFF0D0D1A),
@@ -204,8 +240,11 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
             const Text('Kein Zugriff',
                 style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
             const SizedBox(height: 8),
-            const Text('Dieser Bereich ist nur für Admins zugänglich.',
-                style: TextStyle(color: Colors.white54, fontSize: 14)),
+            Text(
+              reason ?? 'Dieser Bereich ist nur für Admins zugänglich.',
+              style: const TextStyle(color: Colors.white54, fontSize: 14),
+              textAlign: TextAlign.center,
+            ),
           ]),
         ),
       );
