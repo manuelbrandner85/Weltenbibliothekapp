@@ -22,6 +22,8 @@ import '../config/api_config.dart';
 // ──────────────────────────────────────────────────────────────
 
 /// Supabase einmalig initialisieren – in main() aufrufen.
+/// Erstellt automatisch eine anonyme Session wenn kein User eingeloggt ist,
+/// damit RLS-Policies und Chat-Funktionen ohne E-Mail-Login funktionieren.
 Future<void> initSupabase() async {
   await Supabase.initialize(
     url: ApiConfig.supabaseUrl,
@@ -30,6 +32,25 @@ Future<void> initSupabase() async {
   );
   if (kDebugMode) {
     debugPrint('✅ [Supabase] Initialisiert: ${ApiConfig.supabaseUrl}');
+  }
+
+  // Automatisch anonyme Auth-Session erstellen wenn kein User eingeloggt.
+  // Voraussetzung: Authentication → Providers → Anonymous Sign-ins im
+  // Supabase-Dashboard aktiviert. Bei Fehler: stiller Fallback (allowAnonymous=true).
+  final client = Supabase.instance.client;
+  if (client.auth.currentUser == null) {
+    try {
+      await client.auth.signInAnonymously();
+      if (kDebugMode) {
+        debugPrint('✅ [Supabase] Anonyme Session erstellt: ${client.auth.currentUser?.id}');
+      }
+    } catch (e) {
+      // Tritt auf wenn Anonymous Sign-ins im Dashboard nicht aktiviert.
+      // App funktioniert trotzdem via allowAnonymous=true in sendMessage.
+      if (kDebugMode) {
+        debugPrint('⚠️ [Supabase] signInAnonymously fehlgeschlagen (Dashboard-Setting?): $e');
+      }
+    }
   }
 }
 

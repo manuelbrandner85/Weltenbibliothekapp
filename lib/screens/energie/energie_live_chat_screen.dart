@@ -206,11 +206,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
     
     // 🎤 Initialize WebRTC Voice Service
     _initializeWebRTC();
-    
-    _loadUserData();
-    _loadMessages();
-    _loadPolls(); // 🆕 Load polls
-    
+
     // 🆕 Listen for @ mentions
     _messageController.addListener(_onInputChanged);
     
@@ -224,14 +220,22 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
       }
     });
     
-    // 🔴 SUPABASE REALTIME: Echtzeit-Subscription starten
+    // 🔴 SUPABASE REALTIME: Echtzeit-Subscription starten (sofort, parallel zu Profil-Load)
     _subscribeToRoom(_fullRoomId);
-    
+
     // 🔄 Auto-Refresh alle 30 Sekunden als Fallback (Realtime ist primär)
     _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
       _loadMessages(silent: true);
       _loadUserData(); // 🆕 Profil-Sync
       _loadPolls(silent: true); // 🆕 Polls-Sync
+    });
+
+    // Profil VOR Nachrichten laden → Username ist garantiert gesetzt wenn User schreibt.
+    // addPostFrameCallback stellt sicher dass der erste Frame gebaut ist.
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _loadUserData();
+      await _loadMessages();
+      _loadPolls();
     });
   }
 
@@ -500,14 +504,24 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
         WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
       }
     } catch (e) {
+      if (kDebugMode) debugPrint('❌ [Energie Chat] Senden fehlgeschlagen: $e');
       if (mounted) {
-        final msg = e.toString().contains('Nicht eingeloggt')
-            ? 'Bitte einloggen, um Nachrichten zu senden.'
-            : 'Fehler beim Senden: $e';
+        String msg;
+        final err = e.toString();
+        if (err.contains('Nicht eingeloggt')) {
+          msg = 'Bitte Profil anlegen oder erneut versuchen.';
+        } else if (err.contains('permission denied') || err.contains('42501')) {
+          msg = 'Keine Berechtigung – bitte App neu starten.';
+        } else if (err.contains('violates row-level security')) {
+          msg = 'Datenbank-Fehler – bitte App neu starten.';
+        } else {
+          msg = 'Nachricht konnte nicht gesendet werden.';
+        }
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('❌ $msg'),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
           ),
         );
       }

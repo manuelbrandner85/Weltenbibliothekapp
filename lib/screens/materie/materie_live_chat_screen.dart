@@ -197,37 +197,37 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
 
     // 🎤 Initialize WebRTC Voice Service
     _initializeWebRTC();
-    
-    // 👤 Username aus Profil laden
-    _loadUsernameFromProfile();
-    
-    // 🔔 Set username in notification service
-    _notificationService.setCurrentUsername(_username);
-    
+
     // 📝 Listen to input changes for @ mentions
     _messageController.addListener(_onInputChanged);
-    
+
     // 🔧 FIX 10: Listen for input focus changes with explicit state
     _inputFocusNode.addListener(() {
       if (mounted) {
         setState(() {
-        _isInputFocused = _inputFocusNode.hasFocus;
-        debugPrint('🎯 [MATERIE INPUT] focused: $_isInputFocused');
-      });
+          _isInputFocused = _inputFocusNode.hasFocus;
+          debugPrint('🎯 [MATERIE INPUT] focused: $_isInputFocused');
+        });
       }
     });
-    
-    // 🔴 SUPABASE REALTIME: Echtzeit-Subscription starten
+
+    // 🔴 SUPABASE REALTIME: Echtzeit-Subscription starten (sofort, parallel zu Profil-Load)
     _subscribeToRoom(_fullRoomId);
-    
+
     // 🔄 AUTO-REFRESH: Profil-Updates alle 30 Sekunden als Fallback (Realtime ist primär)
     _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
       _loadMessages(silent: true); // ✅ Silent refresh - kein Flickering
       _loadPolls(silent: true); // ✅ Silent refresh - kein Flickering
       _loadUsernameFromProfile(); // Profil-Sync für Avatar-Updates
     });
-    
-    _loadMessages();
+
+    // Profil VOR Nachrichten laden → Username garantiert gesetzt wenn User schreibt.
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _loadUsernameFromProfile();
+      _notificationService.setCurrentUsername(_username);
+      await _loadMessages();
+      _loadPolls();
+    });
   }
 
   // didChangeDependencies removed – profile loading happens once in initState.
@@ -459,21 +459,30 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
         WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
       }
     } catch (e) {
-      if (kDebugMode) debugPrint('❌ Fehler beim Senden: $e');
+      if (kDebugMode) debugPrint('❌ [Materie Chat] Senden fehlgeschlagen: $e');
       if (mounted) {
-        final msg = e.toString().contains('Nicht eingeloggt')
-            ? 'Bitte einloggen, um Nachrichten zu senden.'
-            : 'Fehler beim Senden: $e';
+        String msg;
+        final err = e.toString();
+        if (err.contains('Nicht eingeloggt')) {
+          msg = 'Bitte Profil anlegen oder erneut versuchen.';
+        } else if (err.contains('permission denied') || err.contains('42501')) {
+          msg = 'Keine Berechtigung – bitte App neu starten.';
+        } else if (err.contains('violates row-level security')) {
+          msg = 'Datenbank-Fehler – bitte App neu starten.';
+        } else {
+          msg = 'Nachricht konnte nicht gesendet werden.';
+        }
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(msg),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
           ),
         );
       }
     }
   }
-  
+
   /// 🎤 VOICE MESSAGE SEND
   Future<void> _sendVoiceMessage(String audioUrl, Duration duration) async {
     try {
