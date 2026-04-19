@@ -39,9 +39,9 @@ jobs:
       - name: 📡 Patch veröffentlichen
         run: |
           if [ -n "${{ github.event.inputs.release_version }}" ]; then
-            shorebird patch android --release-version=${{ github.event.inputs.release_version }} --target-platform=android-arm64
+            shorebird patch android --release-version=${{ github.event.inputs.release_version }} -- --target-platform=android-arm64
           else
-            shorebird patch android --target-platform=android-arm64
+            shorebird patch android --release-version=latest -- --target-platform=android-arm64
           fi
         env:
           SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
