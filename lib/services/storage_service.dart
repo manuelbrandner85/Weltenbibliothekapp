@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:hive_flutter/hive_flutter.dart';
@@ -10,7 +11,6 @@ import '../models/community_post.dart';
 import '../models/spirit_extended_models.dart';
 import '../models/app_data.dart'; // 🆕 NEUE DATENMODELLE
 import '../core/exceptions/exception_guard.dart'; // 🛡️ EXCEPTION GUARD
-import '../core/exceptions/specialized_exceptions.dart'; // 🚨 STORAGE EXCEPTIONS
 
 /// Lokaler Storage Service mit Hive
 /// Für offline-first Funktionalität
@@ -177,50 +177,59 @@ class StorageService {
     }
     return Hive.box(boxName);
   }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // LAZY-OPEN SAFETY NET (Phase B)
+  // ───────────────────────────────────────────────────────────────────
+  // Ersetzt direkten Hive.box()-Zugriff durch zwei Helper:
+  //   _ensureBox(name)  → async, garantiert geöffnete Box (opens lazy)
+  //   _boxOrNull(name)  → sync, null wenn Box nicht offen
+  //                       + triggert Async-Open im Hintergrund
+  //
+  // Damit verschwindet die ganze Klasse "HiveError: Box not found"
+  // unabhängig von der Init-Reihenfolge in main.dart.
+  // ═══════════════════════════════════════════════════════════════════
+
+  /// Async: Öffnet die Box wenn nötig und gibt sie zurück.
+  /// Idempotent, sicher bei parallelen Aufrufen.
+  Future<Box> _ensureBox(String name) async {
+    if (Hive.isBoxOpen(name)) return Hive.box(name);
+    return await Hive.openBox(name);
+  }
+
+  /// Sync: Gibt Box zurück wenn offen, sonst null.
+  /// Öffnet die Box im Hintergrund fire-and-forget, damit der nächste
+  /// Aufruf erfolgreich ist. Caller muss null-Fall gracefully behandeln
+  /// (meist: leere Liste oder null zurückgeben).
+  Box? _boxOrNull(String name) {
+    if (Hive.isBoxOpen(name)) return Hive.box(name);
+    unawaited(Hive.openBox(name).catchError((e) {
+      if (kDebugMode) debugPrint('⚠️ Lazy openBox($name) fehlgeschlagen: $e');
+      return Hive.box(name);
+    }));
+    return null;
+  }
   
   // ============================================
   // MATERIE PROFILE
   // ============================================
   
   Future<void> saveMaterieProfile(MaterieProfile profile) async {
-    final box = Hive.box(_materieProfileBox);
+    final box = await _ensureBox(_materieProfileBox);
     await box.put('current_profile', profile.toJson());
   }
-  
+
   MaterieProfile? getMaterieProfile() {
-    try {
-      // ✅ WEB-FIX: Box öffnen falls geschlossen (SYNC fallback)
-      if (!Hive.isBoxOpen(_materieProfileBox)) {
-        if (kDebugMode) {
-          debugPrint('⚠️ MaterieProfile Box not open! Call init() first.');
-        }
-        throw StorageException(
-          'MaterieProfile box not initialized',
-          operation: 'getMaterieProfile',
-        );
-      }
-      final box = Hive.box(_materieProfileBox);
-      final data = box.get('current_profile') as Map?;
-      if (data != null) {
-        return MaterieProfile.fromJson(Map<String, dynamic>.from(data));
-      }
-      return null;
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ Error loading materie profile: $e');
-      }
-      if (e is StorageException) rethrow;
-      throw StorageException(
-        'Failed to load materie profile',
-        operation: 'getMaterieProfile',
-        cause: e,
-      );
-    }
+    final box = _boxOrNull(_materieProfileBox);
+    if (box == null) return null;
+    final data = box.get('current_profile') as Map?;
+    if (data == null) return null;
+    return MaterieProfile.fromJson(Map<String, dynamic>.from(data));
   }
-  
+
   /// Materie-Profil löschen
   Future<void> deleteMaterieProfile() async {
-    final box = Hive.box(_materieProfileBox);
+    final box = await _ensureBox(_materieProfileBox);
     await box.delete('current_profile');
   }
   
@@ -229,76 +238,31 @@ class StorageService {
   // ============================================
   
   Future<void> saveEnergieProfile(EnergieProfile profile) async {
-    final box = Hive.box(_energieProfileBox);
+    final box = await _ensureBox(_energieProfileBox);
     await box.put('current_profile', profile.toJson());
   }
-  
+
   EnergieProfile? getEnergieProfile() {
-    try {
-      // ✅ WEB-FIX: Box öffnen falls geschlossen (SYNC fallback)
-      if (!Hive.isBoxOpen(_energieProfileBox)) {
-        if (kDebugMode) {
-          debugPrint('⚠️ EnergieProfile Box not open! Call init() first.');
-        }
-        throw StorageException(
-          'EnergieProfile box not initialized',
-          operation: 'getEnergieProfile',
-        );
-      }
-      final box = Hive.box(_energieProfileBox);
-      final data = box.get('current_profile') as Map?;
-      if (data != null) {
-        return EnergieProfile.fromJson(Map<String, dynamic>.from(data));
-      }
-      return null;
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ Error loading energie profile: $e');
-      }
-      if (e is StorageException) rethrow;
-      throw StorageException(
-        'Failed to load energie profile',
-        operation: 'getEnergieProfile',
-        cause: e,
-      );
-    }
+    final box = _boxOrNull(_energieProfileBox);
+    if (box == null) return null;
+    final data = box.get('current_profile') as Map?;
+    if (data == null) return null;
+    return EnergieProfile.fromJson(Map<String, dynamic>.from(data));
   }
 
   // 🔮 SPIRIT PROFILE METHODS
   SpiritProfile? getSpiritProfile() {
-    try {
-      if (!Hive.isBoxOpen(_energieProfileBox)) {
-        if (kDebugMode) {
-          debugPrint('⚠️ SpiritProfile Box not open!');
-        }
-        throw StorageException(
-          'SpiritProfile box not initialized',
-          operation: 'getSpiritProfile',
-        );
-      }
-      final box = Hive.box(_energieProfileBox);
-      final data = box.get('current_profile') as Map?;
-      if (data != null) {
-        return SpiritProfile.fromJson(Map<String, dynamic>.from(data));
-      }
-      return null;
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ Error loading spirit profile: $e');
-      }
-      if (e is StorageException) rethrow;
-      throw StorageException(
-        'Failed to load spirit profile',
-        operation: 'getSpiritProfile',
-        cause: e,
-      );
-    }
+    final box = _boxOrNull(_energieProfileBox);
+    if (box == null) return null;
+    final data = box.get('current_profile') as Map?;
+    if (data == null) return null;
+    return SpiritProfile.fromJson(Map<String, dynamic>.from(data));
   }
 
   Future<void> saveSpiritProfile(SpiritProfile profile) async {
     await guardStorage(
       () async {
-        final box = Hive.box(_energieProfileBox);
+        final box = await _ensureBox(_energieProfileBox);
         await box.put('current_profile', profile.toJson());
         if (kDebugMode) {
           debugPrint('✅ Spirit profile saved');
@@ -310,13 +274,12 @@ class StorageService {
   }
 
   Future<EnergieProfile?> loadEnergieProfile() async {
-    final profile = getEnergieProfile();
-    return profile; // Null wenn kein Profil gespeichert
+    return getEnergieProfile();
   }
-  
+
   /// Energie-Profil löschen
   Future<void> deleteEnergieProfile() async {
-    final box = Hive.box(_energieProfileBox);
+    final box = await _ensureBox(_energieProfileBox);
     await box.delete('current_profile');
   }
   
@@ -325,38 +288,16 @@ class StorageService {
   // ============================================
   
   Future<void> saveResearchTopic(ResearchTopic topic) async {
-    final box = Hive.box(_researchTopicsBox);
+    final box = await _ensureBox(_researchTopicsBox);
     await box.put(topic.id, topic.toJson());
   }
-  
+
   List<ResearchTopic> getResearchTopics() {
-    try {
-      // SAFE: Prüfe ob Box offen ist
-      if (!Hive.isBoxOpen(_researchTopicsBox)) {
-        if (kDebugMode) {
-          debugPrint('⚠️ ResearchTopics Box not open yet!');
-        }
-        throw StorageException(
-          'ResearchTopics box not initialized',
-          operation: 'getResearchTopics',
-        );
-      }
-      
-      final box = Hive.box(_researchTopicsBox);
-      return box.values
-          .map((e) => ResearchTopic.fromJson(Map<String, dynamic>.from(e as Map)))
-          .toList();
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ Error loading research topics: $e');
-      }
-      if (e is StorageException) rethrow;
-      throw StorageException(
-        'Failed to load research topics',
-        operation: 'getResearchTopics',
-        cause: e,
-      );
-    }
+    final box = _boxOrNull(_researchTopicsBox);
+    if (box == null) return [];
+    return box.values
+        .map((e) => ResearchTopic.fromJson(Map<String, dynamic>.from(e as Map)))
+        .toList();
   }
   
   // Async wrapper für Research Topics
@@ -369,12 +310,13 @@ class StorageService {
   // ============================================
   
   Future<void> saveSpiritEntry(SpiritEntry entry) async {
-    final box = Hive.box(_spiritEntriesBox);
+    final box = await _ensureBox(_spiritEntriesBox);
     await box.put(entry.id, entry.toJson());
   }
-  
+
   List<SpiritEntry> getSpiritEntries() {
-    final box = Hive.box(_spiritEntriesBox);
+    final box = _boxOrNull(_spiritEntriesBox);
+    if (box == null) return [];
     return box.values
         .map((e) => SpiritEntry.fromJson(Map<String, dynamic>.from(e as Map)))
         .toList();
@@ -390,28 +332,29 @@ class StorageService {
   // ============================================
   
   Future<void> saveCommunityPost(CommunityPost post) async {
-    final box = Hive.box(_communityPostsBox);
+    final box = await _ensureBox(_communityPostsBox);
     await box.put(post.id, post.toJson());
   }
-  
+
   List<CommunityPost> getCommunityPosts(WorldType worldType) {
-    final box = Hive.box(_communityPostsBox);
+    final box = _boxOrNull(_communityPostsBox);
+    if (box == null) return [];
     return box.values
         .map((e) => CommunityPost.fromJson(Map<String, dynamic>.from(e as Map)))
         .where((post) => post.worldType == worldType)
         .toList();
   }
-  
+
   // ============================================
   // UTILITY
   // ============================================
-  
+
   Future<void> clearAll() async {
-    await Hive.box(_materieProfileBox).clear();
-    await Hive.box(_energieProfileBox).clear();
-    await Hive.box(_researchTopicsBox).clear();
-    await Hive.box(_spiritEntriesBox).clear();
-    await Hive.box(_communityPostsBox).clear();
+    await (await _ensureBox(_materieProfileBox)).clear();
+    await (await _ensureBox(_energieProfileBox)).clear();
+    await (await _ensureBox(_researchTopicsBox)).clear();
+    await (await _ensureBox(_spiritEntriesBox)).clear();
+    await (await _ensureBox(_communityPostsBox)).clear();
   }
   
   // ============================================
@@ -419,46 +362,25 @@ class StorageService {
   // ============================================
   
   Future<void> saveDailyPractice(DailySpiritPractice practice) async {
-    final box = Hive.box(_dailyPracticesBox);
+    final box = await _ensureBox(_dailyPracticesBox);
     await box.put(practice.id, practice.toJson());
   }
-  
+
   List<DailySpiritPractice> getDailyPractices({DateTime? forDate}) {
-    try {
-      if (!Hive.isBoxOpen(_dailyPracticesBox)) {
-        if (kDebugMode) {
-          debugPrint('⚠️ DailyPractices Box not open!');
-        }
-        throw StorageException(
-          'DailyPractices box not initialized',
-          operation: 'getDailyPractices',
-        );
-      }
-      
-      final box = Hive.box(_dailyPracticesBox);
-      final practices = box.values
-          .map((e) => DailySpiritPractice.fromJson(Map<String, dynamic>.from(e as Map)))
-          .toList();
-      
-      if (forDate != null) {
-        return practices.where((p) => 
-          p.recommendedDate.year == forDate.year &&
-          p.recommendedDate.month == forDate.month &&
-          p.recommendedDate.day == forDate.day
-        ).toList();
-      }
-      return practices;
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ Error loading daily practices: $e');
-      }
-      if (e is StorageException) rethrow;
-      throw StorageException(
-        'Failed to load daily practices',
-        operation: 'getDailyPractices',
-        cause: e,
-      );
+    final box = _boxOrNull(_dailyPracticesBox);
+    if (box == null) return [];
+    final practices = box.values
+        .map((e) => DailySpiritPractice.fromJson(Map<String, dynamic>.from(e as Map)))
+        .toList();
+
+    if (forDate != null) {
+      return practices.where((p) =>
+        p.recommendedDate.year == forDate.year &&
+        p.recommendedDate.month == forDate.month &&
+        p.recommendedDate.day == forDate.day
+      ).toList();
     }
+    return practices;
   }
   
   // ============================================
@@ -466,16 +388,17 @@ class StorageService {
   // ============================================
   
   Future<void> saveSynchronicity(SynchronicityEntry entry) async {
-    final box = Hive.box(_synchronicityBox);
+    final box = await _ensureBox(_synchronicityBox);
     await box.put(entry.id, entry.toJson());
   }
-  
+
   List<SynchronicityEntry> getSynchronicities({int? lastDays}) {
-    final box = Hive.box(_synchronicityBox);
+    final box = _boxOrNull(_synchronicityBox);
+    if (box == null) return [];
     final entries = box.values
         .map((e) => SynchronicityEntry.fromJson(Map<String, dynamic>.from(e as Map)))
         .toList();
-    
+
     if (lastDays != null) {
       final cutoffDate = DateTime.now().subtract(Duration(days: lastDays));
       return entries.where((e) => e.timestamp.isAfter(cutoffDate)).toList();
@@ -502,25 +425,26 @@ class StorageService {
   // ============================================
   
   Future<void> saveJournalEntry(SpiritJournalEntry entry) async {
-    final box = Hive.box(_journalEntriesBox);
+    final box = await _ensureBox(_journalEntriesBox);
     await box.put(entry.id, entry.toJson());
   }
-  
+
   List<SpiritJournalEntry> getJournalEntries({String? category, int? lastDays}) {
-    final box = Hive.box(_journalEntriesBox);
+    final box = _boxOrNull(_journalEntriesBox);
+    if (box == null) return [];
     var entries = box.values
         .map((e) => SpiritJournalEntry.fromJson(Map<String, dynamic>.from(e as Map)))
         .toList();
-    
+
     if (category != null) {
       entries = entries.where((e) => e.category == category).toList();
     }
-    
+
     if (lastDays != null) {
       final cutoffDate = DateTime.now().subtract(Duration(days: lastDays));
       entries = entries.where((e) => e.timestamp.isAfter(cutoffDate)).toList();
     }
-    
+
     return entries..sort((a, b) => b.timestamp.compareTo(a.timestamp));
   }
   
@@ -529,31 +453,31 @@ class StorageService {
   // ============================================
   
   Future<void> savePartnerProfile(PartnerProfile partner) async {
-    final box = Hive.box(_partnerProfilesBox);
+    final box = await _ensureBox(_partnerProfilesBox);
     await box.put(partner.id, partner.toJson());
   }
-  
+
   List<PartnerProfile> getPartnerProfiles() {
-    final box = Hive.box(_partnerProfilesBox);
+    final box = _boxOrNull(_partnerProfilesBox);
+    if (box == null) return [];
     return box.values
         .map((e) => PartnerProfile.fromJson(Map<String, dynamic>.from(e as Map)))
         .toList();
   }
-  
+
   Future<void> saveCompatibilityAnalysis(CompatibilityAnalysis analysis) async {
-    final box = Hive.box(_compatibilityBox);
+    final box = await _ensureBox(_compatibilityBox);
     final key = '${analysis.userId}_${analysis.partnerId}';
     await box.put(key, analysis.toJson());
   }
-  
+
   CompatibilityAnalysis? getCompatibilityAnalysis(String userId, String partnerId) {
-    final box = Hive.box(_compatibilityBox);
+    final box = _boxOrNull(_compatibilityBox);
+    if (box == null) return null;
     final key = '${userId}_$partnerId';
     final data = box.get(key) as Map?;
-    if (data != null) {
-      return CompatibilityAnalysis.fromJson(Map<String, dynamic>.from(data));
-    }
-    return null;
+    if (data == null) return null;
+    return CompatibilityAnalysis.fromJson(Map<String, dynamic>.from(data));
   }
   
   // ============================================
@@ -561,16 +485,16 @@ class StorageService {
   // ============================================
   
   Future<void> saveWeeklyHoroscope(WeeklyHoroscope horoscope) async {
-    final box = Hive.box(_weeklyHoroscopeBox);
+    final box = await _ensureBox(_weeklyHoroscopeBox);
     final key = horoscope.weekStart.toIso8601String();
     await box.put(key, horoscope.toJson());
   }
-  
+
   WeeklyHoroscope? getCurrentWeekHoroscope() {
-    final box = Hive.box(_weeklyHoroscopeBox);
+    final box = _boxOrNull(_weeklyHoroscopeBox);
+    if (box == null) return null;
     final now = DateTime.now();
-    
-    // Suche nach Horoskop für aktuelle Woche
+
     for (var entry in box.values) {
       final horoscope = WeeklyHoroscope.fromJson(Map<String, dynamic>.from(entry as Map));
       if (now.isAfter(horoscope.weekStart) && now.isBefore(horoscope.weekEnd)) {
@@ -585,17 +509,16 @@ class StorageService {
   // ============================================
   
   Future<void> saveSpiritProgress(SpiritProgress progress) async {
-    final box = Hive.box(_spiritProgressBox);
+    final box = await _ensureBox(_spiritProgressBox);
     await box.put('current_progress', progress.toJson());
   }
-  
+
   SpiritProgress getSpiritProgress() {
-    final box = Hive.box(_spiritProgressBox);
+    final box = _boxOrNull(_spiritProgressBox);
+    if (box == null) return SpiritProgress.empty();
     final data = box.get('current_progress') as Map?;
-    if (data != null) {
-      return SpiritProgress.fromJson(Map<String, dynamic>.from(data));
-    }
-    return SpiritProgress.empty();
+    if (data == null) return SpiritProgress.empty();
+    return SpiritProgress.fromJson(Map<String, dynamic>.from(data));
   }
   
   // Punkte hinzufügen und Progress aktualisieren
@@ -656,20 +579,21 @@ class StorageService {
   // ─────────────────────────────────────────────────────────
   
   Future<void> saveTarotReading(TarotReading reading) async {
-    final box = Hive.box(_tarotReadingsBox);
+    final box = await _ensureBox(_tarotReadingsBox);
     await box.put(reading.id, reading.toJson());
   }
-  
+
   List<TarotReading> getAllTarotReadings() {
-    final box = Hive.box(_tarotReadingsBox);
+    final box = _boxOrNull(_tarotReadingsBox);
+    if (box == null) return [];
     return box.values
         .map((e) => TarotReading.fromJson(Map<String, dynamic>.from(e as Map)))
         .toList()
       ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
   }
-  
+
   Future<void> deleteTarotReading(String id) async {
-    final box = Hive.box(_tarotReadingsBox);
+    final box = await _ensureBox(_tarotReadingsBox);
     await box.delete(id);
   }
   
@@ -678,12 +602,13 @@ class StorageService {
   // ─────────────────────────────────────────────────────────
   
   Future<void> saveMoonJournalEntry(MoonJournalEntry entry) async {
-    final box = Hive.box(_moonJournalBox);
+    final box = await _ensureBox(_moonJournalBox);
     await box.put(entry.id, entry.toJson());
   }
-  
+
   List<MoonJournalEntry> getAllMoonJournalEntries() {
-    final box = Hive.box(_moonJournalBox);
+    final box = _boxOrNull(_moonJournalBox);
+    if (box == null) return [];
     return box.values
         .map((e) => MoonJournalEntry.fromJson(Map<String, dynamic>.from(e as Map)))
         .toList()
@@ -701,39 +626,42 @@ class StorageService {
   // ─────────────────────────────────────────────────────────
   
   Future<void> addCrystalToCollection(CrystalCollection crystal) async {
-    final box = Hive.box(_crystalCollectionBox);
+    final box = await _ensureBox(_crystalCollectionBox);
     await box.put(crystal.crystalName, crystal.toJson());
   }
-  
+
   List<CrystalCollection> getMyCrystalCollection() {
-    final box = Hive.box(_crystalCollectionBox);
+    final box = _boxOrNull(_crystalCollectionBox);
+    if (box == null) return [];
     return box.values
         .map((e) => CrystalCollection.fromJson(Map<String, dynamic>.from(e as Map)))
         .toList()
       ..sort((a, b) => b.addedDate.compareTo(a.addedDate));
   }
-  
+
   bool isCrystalInCollection(String crystalName) {
-    final box = Hive.box(_crystalCollectionBox);
+    final box = _boxOrNull(_crystalCollectionBox);
+    if (box == null) return false;
     return box.containsKey(crystalName);
   }
   
   Future<void> removeCrystalFromCollection(String crystalName) async {
-    final box = Hive.box(_crystalCollectionBox);
+    final box = await _ensureBox(_crystalCollectionBox);
     await box.delete(crystalName);
   }
-  
+
   // ─────────────────────────────────────────────────────────
   // MANTRA CHALLENGE METHODS
   // ─────────────────────────────────────────────────────────
-  
+
   Future<void> saveMantraChallenge(MantraChallenge challenge) async {
-    final box = Hive.box(_mantraChallengesBox);
+    final box = await _ensureBox(_mantraChallengesBox);
     await box.put(challenge.id, challenge.toJson());
   }
-  
+
   List<MantraChallenge> getAllMantraChallenges() {
-    final box = Hive.box(_mantraChallengesBox);
+    final box = _boxOrNull(_mantraChallengesBox);
+    if (box == null) return [];
     return box.values
         .map((e) => MantraChallenge.fromJson(Map<String, dynamic>.from(e as Map)))
         .toList();
@@ -750,64 +678,68 @@ class StorageService {
   // ─────────────────────────────────────────────────────────
   
   Future<void> saveMeditationSession(MeditationSession session) async {
-    final box = Hive.box(_meditationSessionsBox);
+    final box = await _ensureBox(_meditationSessionsBox);
     await box.put(session.id, session.toJson());
   }
-  
+
   List<MeditationSession> getAllMeditationSessions() {
-    final box = Hive.box(_meditationSessionsBox);
+    final box = _boxOrNull(_meditationSessionsBox);
+    if (box == null) return [];
     return box.values
         .map((e) => MeditationSession.fromJson(Map<String, dynamic>.from(e as Map)))
         .toList()
       ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
   }
-  
+
   int getTotalMeditationMinutes() {
     return getAllMeditationSessions()
         .fold<int>(0, (sum, session) => sum + session.durationMinutes);
   }
-  
+
   // ─────────────────────────────────────────────────────────
   // ACHIEVEMENT METHODS
   // ─────────────────────────────────────────────────────────
-  
+
   Future<void> saveAppAchievement(AppAchievement achievement) async {
-    final box = Hive.box(_achievementsBox);
+    final box = await _ensureBox(_achievementsBox);
     await box.put(achievement.id, achievement.toJson());
   }
-  
+
   List<AppAchievement> getAllAppAchievements() {
-    final box = Hive.box(_achievementsBox);
+    final box = _boxOrNull(_achievementsBox);
+    if (box == null) return [];
     return box.values
         .map((e) => AppAchievement.fromJson(Map<String, dynamic>.from(e as Map)))
         .toList();
   }
-  
+
   List<AppAchievement> getUnlockedAppAchievements() {
     return getAllAppAchievements()
         .where((a) => a.isUnlocked)
         .toList()
       ..sort((a, b) => b.unlockedAt!.compareTo(a.unlockedAt!));
   }
-  
+
   // ─────────────────────────────────────────────────────────
   // STREAK METHODS
   // ─────────────────────────────────────────────────────────
-  
+
   Future<void> saveToolStreak(ToolStreak streak) async {
-    final box = Hive.box(_toolStreaksBox);
+    final box = await _ensureBox(_toolStreaksBox);
     await box.put(streak.toolId, streak.toJson());
   }
-  
+
   ToolStreak? getToolStreak(String toolId) {
-    final box = Hive.box(_toolStreaksBox);
+    final box = _boxOrNull(_toolStreaksBox);
+    if (box == null) return null;
     final data = box.get(toolId);
     if (data == null) return null;
     return ToolStreak.fromJson(Map<String, dynamic>.from(data as Map));
   }
-  
+
   List<ToolStreak> getAllToolStreaks() {
-    final box = Hive.box(_toolStreaksBox);
+    final box = _boxOrNull(_toolStreaksBox);
+    if (box == null) return [];
     return box.values
         .map((e) => ToolStreak.fromJson(Map<String, dynamic>.from(e as Map)))
         .toList();
@@ -987,44 +919,47 @@ class StorageService {
   
   /// Personal Year Journey speichern
   Future<void> savePersonalYearJourney(Map<String, dynamic> journey) async {
-    final box = Hive.box(_numerologyYearJourneyBox);
+    final box = await _ensureBox(_numerologyYearJourneyBox);
     final year = journey['year'] as int;
     await box.put(year, journey);
   }
-  
+
   /// Personal Year Journey für ein bestimmtes Jahr laden
   Map<String, dynamic>? getPersonalYearJourney(int year) {
-    final box = Hive.box(_numerologyYearJourneyBox);
+    final box = _boxOrNull(_numerologyYearJourneyBox);
+    if (box == null) return null;
     final data = box.get(year);
     return data != null ? Map<String, dynamic>.from(data as Map) : null;
   }
-  
+
   /// Numerologie Journal Eintrag speichern
   Future<void> saveNumerologyJournalEntry(Map<String, dynamic> entry) async {
-    final box = Hive.box(_numerologyJournalBox);
+    final box = await _ensureBox(_numerologyJournalBox);
     final id = entry['id'] ?? DateTime.now().millisecondsSinceEpoch.toString();
     await box.put(id, entry);
   }
-  
+
   /// Alle Numerologie Journal Einträge laden
   List<Map<String, dynamic>> getNumerologyJournalEntries() {
-    final box = Hive.box(_numerologyJournalBox);
+    final box = _boxOrNull(_numerologyJournalBox);
+    if (box == null) return [];
     return box.values
         .map((e) => Map<String, dynamic>.from(e as Map))
         .toList()
       ..sort((a, b) => (b['timestamp'] as String).compareTo(a['timestamp'] as String));
   }
-  
+
   /// Numerologie Meilenstein speichern
   Future<void> saveNumerologyMilestone(Map<String, dynamic> milestone) async {
-    final box = Hive.box(_numerologyMilestonesBox);
+    final box = await _ensureBox(_numerologyMilestonesBox);
     final id = milestone['id'] ?? DateTime.now().millisecondsSinceEpoch.toString();
     await box.put(id, milestone);
   }
-  
+
   /// Alle Numerologie Meilensteine laden
   List<Map<String, dynamic>> getNumerologyMilestones() {
-    final box = Hive.box(_numerologyMilestonesBox);
+    final box = _boxOrNull(_numerologyMilestonesBox);
+    if (box == null) return [];
     return box.values
         .map((e) => Map<String, dynamic>.from(e as Map))
         .toList()
@@ -1037,25 +972,27 @@ class StorageService {
   
   /// Tägliche Chakra Scores speichern
   Future<void> saveChakraDailyScores(Map<String, dynamic> scores) async {
-    final box = Hive.box(_chakraDailyScoresBox);
+    final box = await _ensureBox(_chakraDailyScoresBox);
     final date = scores['date'] as String;
     await box.put(date, scores);
   }
-  
+
   /// Chakra Scores für ein bestimmtes Datum laden
   Map<String, dynamic>? getChakraDailyScores(DateTime date) {
-    final box = Hive.box(_chakraDailyScoresBox);
+    final box = _boxOrNull(_chakraDailyScoresBox);
+    if (box == null) return null;
     final dateStr = date.toIso8601String().split('T')[0];
     final data = box.get(dateStr);
     return data != null ? Map<String, dynamic>.from(data as Map) : null;
   }
-  
+
   /// Letzte 30 Tage Chakra History laden
   List<Map<String, dynamic>> getChakraHistory(int days) {
-    final box = Hive.box(_chakraDailyScoresBox);
+    final box = _boxOrNull(_chakraDailyScoresBox);
+    if (box == null) return [];
     final now = DateTime.now();
     final cutoff = now.subtract(Duration(days: days));
-    
+
     return box.values
         .map((e) => Map<String, dynamic>.from(e as Map))
         .where((entry) {
@@ -1065,33 +1002,35 @@ class StorageService {
         .toList()
       ..sort((a, b) => (a['date'] as String).compareTo(b['date'] as String));
   }
-  
+
   /// Chakra Meditation Session speichern
   Future<void> saveChakraMeditationSession(Map<String, dynamic> session) async {
-    final box = Hive.box(_chakraMeditationSessionsBox);
+    final box = await _ensureBox(_chakraMeditationSessionsBox);
     final id = session['id'] ?? DateTime.now().millisecondsSinceEpoch.toString();
     await box.put(id, session);
   }
-  
+
   /// Alle Chakra Meditation Sessions laden
   List<Map<String, dynamic>> getChakraMeditationSessions() {
-    final box = Hive.box(_chakraMeditationSessionsBox);
+    final box = _boxOrNull(_chakraMeditationSessionsBox);
+    if (box == null) return [];
     return box.values
         .map((e) => Map<String, dynamic>.from(e as Map))
         .toList()
       ..sort((a, b) => (b['timestamp'] as String).compareTo(a['timestamp'] as String));
   }
-  
+
   /// Chakra Affirmation speichern
   Future<void> saveChakraAffirmation(Map<String, dynamic> affirmation) async {
-    final box = Hive.box(_chakraAffirmationsBox);
+    final box = await _ensureBox(_chakraAffirmationsBox);
     final id = affirmation['id'] ?? DateTime.now().millisecondsSinceEpoch.toString();
     await box.put(id, affirmation);
   }
-  
+
   /// Alle Chakra Affirmationen laden
   List<Map<String, dynamic>> getChakraAffirmations() {
-    final box = Hive.box(_chakraAffirmationsBox);
+    final box = _boxOrNull(_chakraAffirmationsBox);
+    if (box == null) return [];
     return box.values
         .map((e) => Map<String, dynamic>.from(e as Map))
         .toList();
@@ -1103,30 +1042,32 @@ class StorageService {
   
   /// Enhanced Meditation Session speichern
   Future<void> saveEnhancedMeditationSession(Map<String, dynamic> session) async {
-    final box = Hive.box(_meditationSessionsEnhancedBox);
+    final box = await _ensureBox(_meditationSessionsEnhancedBox);
     final id = session['id'] ?? DateTime.now().millisecondsSinceEpoch.toString();
     await box.put(id, session);
   }
-  
+
   /// Alle Enhanced Meditation Sessions laden
   List<Map<String, dynamic>> getEnhancedMeditationSessions() {
-    final box = Hive.box(_meditationSessionsEnhancedBox);
+    final box = _boxOrNull(_meditationSessionsEnhancedBox);
+    if (box == null) return [];
     return box.values
         .map((e) => Map<String, dynamic>.from(e as Map))
         .toList()
       ..sort((a, b) => (b['timestamp'] as String).compareTo(a['timestamp'] as String));
   }
-  
+
   /// Meditation Preset speichern
   Future<void> saveMeditationPreset(Map<String, dynamic> preset) async {
-    final box = Hive.box(_meditationPresetsBox);
+    final box = await _ensureBox(_meditationPresetsBox);
     final id = preset['id'] ?? preset['name'] as String;
     await box.put(id, preset);
   }
-  
+
   /// Alle Meditation Presets laden
   List<Map<String, dynamic>> getMeditationPresets() {
-    final box = Hive.box(_meditationPresetsBox);
+    final box = _boxOrNull(_meditationPresetsBox);
+    if (box == null) return [];
     return box.values
         .map((e) => Map<String, dynamic>.from(e as Map))
         .toList();
@@ -1167,38 +1108,40 @@ class StorageService {
   
   /// Daily Tarot Card speichern
   Future<void> saveTarotDailyCard(Map<String, dynamic> card) async {
-    final box = Hive.box(_tarotDailyCardsBox);
+    final box = await _ensureBox(_tarotDailyCardsBox);
     final date = card['date'] as String;
     await box.put(date, card);
   }
-  
+
   /// Daily Tarot Card für heute laden
   Map<String, dynamic>? getTodaysTarotCard() {
-    final box = Hive.box(_tarotDailyCardsBox);
+    final box = _boxOrNull(_tarotDailyCardsBox);
+    if (box == null) return null;
     final today = DateTime.now().toIso8601String().split('T')[0];
     final data = box.get(today);
     return data != null ? Map<String, dynamic>.from(data as Map) : null;
   }
-  
+
   /// Tarot Spread speichern
   Future<void> saveTarotSpread(Map<String, dynamic> spread) async {
-    final box = Hive.box(_tarotSpreadsBox);
+    final box = await _ensureBox(_tarotSpreadsBox);
     final id = spread['id'] ?? DateTime.now().millisecondsSinceEpoch.toString();
     await box.put(id, spread);
   }
-  
+
   /// Alle Tarot Spreads laden
   List<Map<String, dynamic>> getTarotSpreads() {
-    final box = Hive.box(_tarotSpreadsBox);
+    final box = _boxOrNull(_tarotSpreadsBox);
+    if (box == null) return [];
     return box.values
         .map((e) => Map<String, dynamic>.from(e as Map))
         .toList()
       ..sort((a, b) => (b['timestamp'] as String).compareTo(a['timestamp'] as String));
   }
-  
+
   /// Tarot Spread löschen
   Future<void> deleteTarotSpread(String id) async {
-    final box = Hive.box(_tarotSpreadsBox);
+    final box = await _ensureBox(_tarotSpreadsBox);
     await box.delete(id);
   }
   
