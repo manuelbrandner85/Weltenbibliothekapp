@@ -8,6 +8,7 @@ import '../services/file_upload_service.dart';
 import 'voice_message_player.dart' show ChatVoicePlayer;  // 🎵 CHAT VOICE PLAYER
 // 🎤 TELEGRAM VOICE PLAYER (Backup)
 import 'read_receipts_indicator.dart'; // 📖 READ RECEIPTS
+import 'chat/chat_markdown_text.dart'; // ✨ Markdown-Light
 
 /// 💬 ENHANCED MESSAGE BUBBLE
 /// Mit Reactions, Reply, Media, Read Receipts
@@ -278,14 +279,15 @@ class _EnhancedMessageBubbleState extends State<EnhancedMessageBubble> {
                     if (mediaType != null && mediaUrl != null)
                       _buildMediaContent(mediaType, mediaUrl),
                     
-                    // Text message
-                    if (message['message'] != null && 
+                    // Text message (mit Markdown-Light + klickbaren Links)
+                    if (message['message'] != null &&
                         (message['message'] as String).isNotEmpty)
-                      Text(
-                        message['message'] ?? '',
+                      ChatMarkdownText(
+                        message['message'] as String,
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 14,
+                          height: 1.35,
                         ),
                       ),
                     

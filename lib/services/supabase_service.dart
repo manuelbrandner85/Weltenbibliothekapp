@@ -437,6 +437,24 @@ class SupabaseChatService {
     return List<Map<String, dynamic>>.from(response.reversed.toList());
   }
 
+  /// Pagination: Nachrichten älter als [before] (ISO-String) laden.
+  /// Rückgabe in aufsteigender Reihenfolge (ältere zuerst).
+  Future<List<Map<String, dynamic>>> getMessagesBefore(
+    String roomId, {
+    required String before,
+    int limit = 50,
+  }) async {
+    final response = await supabase
+        .from('chat_messages')
+        .select()
+        .eq('room_id', roomId)
+        .eq('is_deleted', false)
+        .lt('created_at', before)
+        .order('created_at', ascending: false)
+        .limit(limit);
+    return List<Map<String, dynamic>>.from(response.reversed.toList());
+  }
+
   /// Nachricht senden.
   /// Anonyme Posts sind erlaubt (user_id bleibt null) — konsistent mit
   /// vorherigem Worker-Verhalten. RLS erlaubt anon-INSERT (v18 migration).

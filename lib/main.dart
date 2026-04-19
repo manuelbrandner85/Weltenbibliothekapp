@@ -113,6 +113,9 @@ void main() async {
     'tool_streaks',
     'post_drafts',
     'scheduled_posts',
+    'chat_blocked_users',
+    'chat_unread',
+    'chat_last_seen',
   ];
   for (final box in hiveBoxes) {
     try {

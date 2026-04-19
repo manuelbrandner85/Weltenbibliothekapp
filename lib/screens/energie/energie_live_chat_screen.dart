@@ -56,6 +56,14 @@ import '../../services/webrtc_voice_service.dart'; // 🎤 WEBRTC VOICE
 import '../../services/typing_indicator_service.dart'; // ⌨️ Typing Indicator
 // REMOVED: import '../../widgets/voice_chat_banner.dart'; (unused)
 import '../../widgets/offline_indicator.dart'; // 📡 OFFLINE INDICATOR (NEW Phase 3)
+// ✨ Batch-1 Chat-Erweiterungen
+import '../../widgets/chat/chat_markdown_text.dart';
+import '../../widgets/chat/chat_emoji_picker_button.dart';
+import '../../widgets/chat/chat_status_banner.dart';
+import '../../widgets/chat/chat_new_messages_fab.dart';
+import '../../widgets/chat/chat_unread_badge.dart';
+import '../../services/chat/user_block_service.dart';
+import '../../services/chat/unread_tracker_service.dart';
 // 📷 Image Picker
 
 /// ✅ EINFACHER ENERGIE LIVE CHAT - MIT ALLEN 11 FEATURES!
@@ -153,6 +161,13 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
   
   // 🔴 SUPABASE REALTIME: Live-Subscription für neue Nachrichten
   RealtimeChannel? _realtimeChannel;
+
+  // ✨ Batch-1: Smart autoscroll + pagination + reconnect-state
+  bool _isAtBottom = true;
+  int _newMessagesCount = 0;
+  bool _loadingOlder = false;
+  bool _hasMoreOlder = true;
+  bool _reconnecting = false;
   
   // 🔧 FIX 13: ENERGIE Räume reduziert auf 5 (Option C - Ausgewogen)
   // 🔧 FIX 17: ENERGIE Räume - API-kompatible IDs
@@ -220,6 +235,12 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
       }
     });
     
+    // ✨ Batch-1: Scroll-Listener für at-bottom Detection + Pagination
+    _scrollController.addListener(_onScroll);
+
+    // ✨ Batch-1: Beim ersten Öffnen Raum als gesehen markieren.
+    UnreadTrackerService.instance.markSeen(_fullRoomId);
+
     // 🔴 SUPABASE REALTIME: Echtzeit-Subscription starten (sofort, parallel zu Profil-Load)
     _subscribeToRoom(_fullRoomId);
 
@@ -1274,6 +1295,11 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
               },
               child: Column(
                 children: [
+                  // ✨ Batch-1: Status-Banner (Offline / Reconnecting / Pending-Queue)
+                  ChatStatusBanner(
+                    reconnecting: _reconnecting,
+                    worldColor: const Color(0xFF9B51E0),
+                  ),
                   // 🔍 SEARCH MODE
                   if (_showSearch)
                     Expanded(
@@ -1336,6 +1362,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
                 final room = _rooms[roomId]!;
                 final isSelected = roomId == _selectedRoom;
                 
+                final chipFullRoomId = _roomIdMap[roomId] ?? 'energie-$roomId';
                 return GestureDetector(
                   onTap: () async {
                     if (roomId != _selectedRoom) {
@@ -1344,9 +1371,14 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
                         _selectedRoom = roomId;
                         _messages.clear(); // ← Clear old messages
                         _isLoading = true;
+                        _hasMoreOlder = true;
+                        _newMessagesCount = 0;
+                        _isAtBottom = true;
                       });
                       }
-                      
+                      // ✨ Batch-1: Unread für neuen Raum auf 0 setzen.
+                      UnreadTrackerService.instance.markSeen(_fullRoomId);
+
                       // 🔧 CRITICAL FIX: Switch WebRTC Voice Room
                       await _voiceService.switchRoom(_fullRoomId);
                       // 🔴 Re-subscribe Realtime for new room
@@ -1369,12 +1401,22 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        // 🔧 FIX 14: Icon nur einmal anzeigen
-                        Text(
-                          room['icon'] ?? '💬',
-                          style: TextStyle(
-                            fontSize: isSelected ? 22 : 20, // Größer für bessere Sichtbarkeit
-                          ),
+                        // 🔧 FIX 14: Icon nur einmal anzeigen (+ Unread-Badge)
+                        Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            Text(
+                              room['icon'] ?? '💬',
+                              style: TextStyle(
+                                fontSize: isSelected ? 22 : 20,
+                              ),
+                            ),
+                            Positioned(
+                              top: -4,
+                              right: -10,
+                              child: ChatUnreadBadge(roomId: chipFullRoomId),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 4), // Mehr Abstand
                         // 🔧 FIX 14: Label OHNE Icon, größer & lesbarer
@@ -1421,25 +1463,45 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
                             message: 'Sei der Erste in ${_rooms[_selectedRoom]!['name']}!',
                             icon: Icons.chat_bubble_outline,
                           )
-                        : ListView.builder(
-                            reverse: false,  // Normal order: Alte Nachrichten oben, neue unten
-                            controller: _scrollController,
-                            padding: const EdgeInsets.all(16),
-                        itemCount: _messages.length,
-                        cacheExtent: 500, // 🚀 PERFORMANCE: Pre-render 500px ahead
-                        addAutomaticKeepAlives: false, // 🚀 PHASE B: Don't keep off-screen (Memory optimization)
-                        addRepaintBoundaries: true, // 🚀 PHASE B: Isolate repaints per item
-                        itemBuilder: (context, index) {
-                          // Direct index: messages are already in chronological order
-                          final msg = _messages[index];
-                          // 🆕 USE SWIPEABLE MESSAGE WITH REACTIONS
-                          // 🚀 PHASE B: RepaintBoundary + ValueKey for performance
-                          return RepaintBoundary(
-                            key: ValueKey(msg['message_id']),
-                            child: _buildSwipeableMessage(msg),
-                          );
-                        },
-                      ),
+                        : AnimatedBuilder(
+                            animation: UserBlockService.instance,
+                            builder: (_, __) {
+                              final visible = UserBlockService.instance
+                                  .filterMessages(_messages)
+                                  .toList(growable: false);
+                              return ListView.builder(
+                                reverse: false,
+                                controller: _scrollController,
+                                padding: const EdgeInsets.all(16),
+                                itemCount: visible.length + (_loadingOlder ? 1 : 0),
+                                cacheExtent: 500,
+                                addAutomaticKeepAlives: false,
+                                addRepaintBoundaries: true,
+                                itemBuilder: (context, index) {
+                                  if (_loadingOlder && index == 0) {
+                                    return const Padding(
+                                      padding: EdgeInsets.all(12),
+                                      child: Center(
+                                        child: SizedBox(
+                                          height: 20,
+                                          width: 20,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: Color(0xFF9B51E0),
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                  final msg = visible[index - (_loadingOlder ? 1 : 0)];
+                                  return RepaintBoundary(
+                                    key: ValueKey(msg['message_id'] ?? msg['id']),
+                                    child: _buildSwipeableMessage(msg),
+                                  );
+                                },
+                              );
+                            },
+                          ),
           ),
           
           // 🗳️ ACTIVE POLLS
@@ -1600,7 +1662,13 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                
+
+                // ✨ Batch-1: Emoji-Picker-Button
+                ChatEmojiPickerButton(
+                  onSelected: _insertEmoji,
+                  color: const Color(0xFFBB86FC),
+                ),
+
                 // Input Field
                 Expanded(
                   child: TextField(
@@ -1699,6 +1767,16 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
               right: 0,
               child: OfflineIndicator(),
             ),
+            // ✨ Batch-1: Floating "X neue Nachrichten" Button
+            Positioned(
+              right: 16,
+              bottom: 90,
+              child: ChatNewMessagesFab(
+                visible: !_isAtBottom && _newMessagesCount > 0,
+                count: _newMessagesCount,
+                onTap: _scrollToBottom,
+              ),
+            ),
           ],
         ), // End Stack
       ), // End SafeArea
@@ -1734,6 +1812,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
     _refreshTimer?.cancel();
     _typingTimer?.cancel(); // 🆕
     _messageController.dispose();
+    _scrollController.removeListener(_onScroll); // ✨ Batch-1
     _scrollController.dispose();
     _voiceParticipantsSub?.cancel(); // 🔧 Prevent memory leak
     _voiceService.dispose(); // 🆕
@@ -1741,7 +1820,19 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
     super.dispose();
   }
   
-  // 📜 Scroll to bottom helper
+  // ✨ Batch-1: Emoji-Insert an aktueller Caret-Position.
+  void _insertEmoji(String emoji) {
+    final text = _messageController.text;
+    final sel = _messageController.selection;
+    final insertAt = sel.isValid ? sel.start : text.length;
+    final newText = text.replaceRange(insertAt, sel.isValid ? sel.end : text.length, emoji);
+    _messageController.value = TextEditingValue(
+      text: newText,
+      selection: TextSelection.collapsed(offset: insertAt + emoji.length),
+    );
+  }
+
+  // 📜 Scroll to bottom helper (unconditional — für Send-Action & Room-Wechsel)
   void _scrollToBottom() {
     if (_scrollController.hasClients) {
       _scrollController.animateTo(
@@ -1750,26 +1841,113 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
         curve: Curves.easeOut,
       );
     }
+    if (mounted) {
+      setState(() {
+        _isAtBottom = true;
+        _newMessagesCount = 0;
+      });
+    }
   }
-  
+
+  // ✨ Batch-1: Nur scrollen wenn User ohnehin am Ende ist, sonst Counter erhöhen.
+  void _scrollToBottomIfAtEnd() {
+    if (_isAtBottom) {
+      _scrollToBottom();
+    }
+  }
+
+  // ✨ Batch-1: Scroll-Listener — trackt at-bottom + triggert Pagination oben.
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    final pos = _scrollController.position;
+    final distFromBottom = pos.maxScrollExtent - pos.pixels;
+    final nowAtBottom = distFromBottom < 80;
+    if (nowAtBottom != _isAtBottom) {
+      setState(() {
+        _isAtBottom = nowAtBottom;
+        if (nowAtBottom) _newMessagesCount = 0;
+      });
+    }
+    // Am oberen Ende → ältere Nachrichten laden (Pagination).
+    if (pos.pixels <= 120 && _hasMoreOlder && !_loadingOlder && _messages.isNotEmpty) {
+      _loadOlderMessages();
+    }
+  }
+
+  // ✨ Batch-1: Pagination — lädt Nachrichten vor dem ältesten bekannten Timestamp.
+  Future<void> _loadOlderMessages() async {
+    if (_loadingOlder) return;
+    setState(() => _loadingOlder = true);
+    try {
+      final oldest = _messages.first;
+      final cursor = (oldest['created_at'] ?? oldest['timestamp'])?.toString();
+      if (cursor == null || cursor.isEmpty) return;
+      final older = await SupabaseChatService.instance.getMessagesBefore(
+        _fullRoomId,
+        before: cursor,
+        limit: 50,
+      );
+      if (!mounted) return;
+      if (older.isEmpty) {
+        setState(() => _hasMoreOlder = false);
+        return;
+      }
+      final priorExtent =
+          _scrollController.hasClients ? _scrollController.position.maxScrollExtent : 0.0;
+      final priorOffset =
+          _scrollController.hasClients ? _scrollController.position.pixels : 0.0;
+      final existingIds = _messages.map((m) => m['id']).toSet();
+      final merged = <Map<String, dynamic>>[
+        ...older.where((m) => !existingIds.contains(m['id'])),
+        ..._messages,
+      ];
+      setState(() => _messages = merged);
+      // Scroll-Position erhalten: nach Layout-Pass wieder an gleiche Inhalts-Stelle.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!_scrollController.hasClients) return;
+        final delta =
+            _scrollController.position.maxScrollExtent - priorExtent;
+        _scrollController.jumpTo(priorOffset + delta);
+      });
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ loadOlder failed: $e');
+    } finally {
+      if (mounted) setState(() => _loadingOlder = false);
+    }
+  }
+
   // 🔴 SUPABASE REALTIME: Subscribe to live chat updates
   void _subscribeToRoom(String roomId) {
     _realtimeChannel?.unsubscribe();
+    _reconnecting = true;
     _realtimeChannel = SupabaseChatService.instance.subscribeToRoom(
       roomId,
       onMessage: (newMsg) {
         if (!mounted) return;
-        // Prüfe ob Nachricht bereits vorhanden (Deduplication)
+        if (_reconnecting) {
+          setState(() => _reconnecting = false);
+        }
+        // Deduplication: nur hinzufügen wenn unbekannte ID.
         final exists = _messages.any((m) => m['id'] == newMsg['id']);
         if (!exists) {
+          final isOwn = (newMsg['username']?.toString() == _username) ||
+              (newMsg['user_id']?.toString() == _userId);
           setState(() {
             _messages.add(newMsg);
+            if (!_isAtBottom && !isOwn) _newMessagesCount++;
           });
-          WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+          // ✨ Unread-Tracker: wenn Raum aktuell NICHT aktiv (Screen im BG), zählen.
+          // Hier sind wir im aktiven Screen — nichts tun. bump() passiert
+          // serverseitig nicht; globale App-Notifications übernehmen das später.
+          _scrollToBottomIfAtEnd();
         }
       },
     );
     if (kDebugMode) debugPrint('🔴 [Energie Realtime] Subscribed to room: $roomId');
+    // Reconnect-Flag nach kurzer Zeit auf false fallen lassen (optimistisch).
+    Future<void>.delayed(const Duration(seconds: 2), () {
+      if (mounted && _reconnecting) setState(() => _reconnecting = false);
+    });
   }
   
   // ✅ PROFIL-WARNUNG als Popup mit Navigation
@@ -2842,12 +3020,13 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
                       ),
                     )
                   else
-                    // Regular Text Message
-                    Text(
+                    // Regular Text Message (Markdown-Light + klickbare Links)
+                    ChatMarkdownText(
                       msg['message']?.toString() ?? '',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 15,
+                        height: 1.35,
                       ),
                     ),
                   

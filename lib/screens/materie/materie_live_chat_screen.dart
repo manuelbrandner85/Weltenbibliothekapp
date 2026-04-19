@@ -55,6 +55,14 @@ import 'geopolitik_map_screen.dart'; // 🎭 Geopolitik-Kartierung
 import 'conspiracy_network_screen.dart'; // 👁️ Verbindungsnetz
 import 'research_archive_screen.dart'; // 🔬 Forschungs-Archiv
 import 'alternative_healing_screen.dart'; // 💚 Alternative Gesundheit
+// ✨ Batch-1 Chat-Erweiterungen
+import '../../widgets/chat/chat_markdown_text.dart';
+import '../../widgets/chat/chat_emoji_picker_button.dart';
+import '../../widgets/chat/chat_status_banner.dart';
+import '../../widgets/chat/chat_new_messages_fab.dart';
+import '../../widgets/chat/chat_unread_badge.dart';
+import '../../services/chat/user_block_service.dart';
+import '../../services/chat/unread_tracker_service.dart';
 
 /// MATERIE-WELT LIVE-CHAT - Cloudflare Edition
 class MaterieLiveChatScreen extends StatefulWidget {
@@ -141,6 +149,13 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
   // ignore: unused_field
   final Map<String, Map<String, List<String>>> _messageReactions = {}; // messageId -> emoji -> userIds
 
+  // ✨ Batch-1: Smart autoscroll + pagination + reconnect-state
+  bool _isAtBottom = true;
+  int _newMessagesCount = 0;
+  bool _loadingOlder = false;
+  bool _hasMoreOlder = true;
+  bool _reconnecting = false;
+
   // 🔧 FIX 16: MATERIE Räume - API-kompatible IDs (Verschwörungstheorien-Themen)
   final Map<String, Map<String, dynamic>> _materieRooms = {
     'politik': {
@@ -210,6 +225,12 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
         });
       }
     });
+
+    // ✨ Batch-1: Scroll-Listener für at-bottom Detection + Pagination
+    _scrollController.addListener(_onScroll);
+
+    // ✨ Batch-1: Beim ersten Öffnen Raum als gesehen markieren.
+    UnreadTrackerService.instance.markSeen(_fullRoomId);
 
     // 🔴 SUPABASE REALTIME: Echtzeit-Subscription starten (sofort, parallel zu Profil-Load)
     _subscribeToRoom(_fullRoomId);
@@ -290,6 +311,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
   void dispose() {
     _messageController.removeListener(_onInputChanged);
     _messageController.dispose();
+    _scrollController.removeListener(_onScroll); // ✨ Batch-1
     _scrollController.dispose();
     _inputFocusNode.dispose();
     _refreshTimer?.cancel();
@@ -297,24 +319,113 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
     _realtimeChannel?.unsubscribe(); // 🔴 Realtime cleanup
     super.dispose();
   }
-  
+
+  // ✨ Batch-1: Emoji-Insert an aktueller Caret-Position.
+  void _insertEmoji(String emoji) {
+    final text = _messageController.text;
+    final sel = _messageController.selection;
+    final insertAt = sel.isValid ? sel.start : text.length;
+    final newText = text.replaceRange(
+        insertAt, sel.isValid ? sel.end : text.length, emoji);
+    _messageController.value = TextEditingValue(
+      text: newText,
+      selection: TextSelection.collapsed(offset: insertAt + emoji.length),
+    );
+  }
+
+  // ✨ Batch-1: Scroll-Listener — trackt at-bottom + triggert Pagination oben.
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    final pos = _scrollController.position;
+    final distFromBottom = pos.maxScrollExtent - pos.pixels;
+    final nowAtBottom = distFromBottom < 80;
+    if (nowAtBottom != _isAtBottom) {
+      setState(() {
+        _isAtBottom = nowAtBottom;
+        if (nowAtBottom) _newMessagesCount = 0;
+      });
+    }
+    if (pos.pixels <= 120 &&
+        _hasMoreOlder &&
+        !_loadingOlder &&
+        _messages.isNotEmpty) {
+      _loadOlderMessages();
+    }
+  }
+
+  // ✨ Batch-1: Pagination — ältere Nachrichten laden.
+  Future<void> _loadOlderMessages() async {
+    if (_loadingOlder) return;
+    setState(() => _loadingOlder = true);
+    try {
+      final oldest = _messages.first;
+      final cursor = (oldest['created_at'] ?? oldest['timestamp'])?.toString();
+      if (cursor == null || cursor.isEmpty) return;
+      final older = await SupabaseChatService.instance.getMessagesBefore(
+        _fullRoomId,
+        before: cursor,
+        limit: 50,
+      );
+      if (!mounted) return;
+      if (older.isEmpty) {
+        setState(() => _hasMoreOlder = false);
+        return;
+      }
+      final priorExtent = _scrollController.hasClients
+          ? _scrollController.position.maxScrollExtent
+          : 0.0;
+      final priorOffset = _scrollController.hasClients
+          ? _scrollController.position.pixels
+          : 0.0;
+      final existingIds = _messages.map((m) => m['id']).toSet();
+      final merged = <Map<String, dynamic>>[
+        ...older.where((m) => !existingIds.contains(m['id'])),
+        ..._messages,
+      ];
+      setState(() => _messages = merged);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!_scrollController.hasClients) return;
+        final delta =
+            _scrollController.position.maxScrollExtent - priorExtent;
+        _scrollController.jumpTo(priorOffset + delta);
+      });
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ Materie loadOlder failed: $e');
+    } finally {
+      if (mounted) setState(() => _loadingOlder = false);
+    }
+  }
+
+  // ✨ Batch-1: Smart autoscroll — nur wenn User am Ende.
+  void _scrollToBottomIfAtEnd() {
+    if (_isAtBottom) _scrollToBottom();
+  }
+
   // 🔴 SUPABASE REALTIME: Subscribe to live chat updates
   void _subscribeToRoom(String roomId) {
     _realtimeChannel?.unsubscribe();
+    _reconnecting = true;
     _realtimeChannel = SupabaseChatService.instance.subscribeToRoom(
       roomId,
       onMessage: (newMsg) {
         if (!mounted) return;
+        if (_reconnecting) setState(() => _reconnecting = false);
         final exists = _messages.any((m) => m['id'] == newMsg['id']);
         if (!exists) {
+          final isOwn = (newMsg['username']?.toString() == _username) ||
+              (newMsg['user_id']?.toString() == _userId);
           setState(() {
             _messages.add(newMsg);
+            if (!_isAtBottom && !isOwn) _newMessagesCount++;
           });
-          WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+          _scrollToBottomIfAtEnd();
         }
       },
     );
     if (kDebugMode) debugPrint('🔴 [Materie Realtime] Subscribed to room: $roomId');
+    Future<void>.delayed(const Duration(seconds: 2), () {
+      if (mounted && _reconnecting) setState(() => _reconnecting = false);
+    });
   }
   
   // 🛠️ TOOL NAVIGATION
@@ -862,6 +973,12 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
         }
       });
     }
+    if (mounted) {
+      setState(() {
+        _isAtBottom = true;
+        _newMessagesCount = 0;
+      });
+    }
   }
 
   @override
@@ -938,6 +1055,11 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
               },
               child: Column(
                 children: [
+                  // ✨ Batch-1: Status-Banner (Offline / Reconnecting / Pending-Queue)
+                  ChatStatusBanner(
+                    reconnecting: _reconnecting,
+                    worldColor: Colors.red,
+                  ),
                   // 🔍 SEARCH MODE
                   if (_showSearch)
                     Expanded(
@@ -1028,6 +1150,18 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
               left: 0,
               right: 0,
               child: OfflineIndicator(),
+            ),
+
+            // ✨ Batch-1: Floating "X neue Nachrichten" Button
+            Positioned(
+              right: 16,
+              bottom: 90,
+              child: ChatNewMessagesFab(
+                visible: !_isAtBottom && _newMessagesCount > 0,
+                count: _newMessagesCount,
+                onTap: _scrollToBottom,
+                color: Colors.red,
+              ),
             ),
           ],
         ), // End Stack
@@ -1123,7 +1257,8 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
         children: _materieRooms.entries.map((entry) {
           final isSelected = _selectedRoom == entry.key;
           final roomData = entry.value;
-          
+          final chipFullRoomId = 'materie-${entry.key}';
+
           return GestureDetector(
             onTap: () async {
               if (entry.key != _selectedRoom) {
@@ -1132,9 +1267,14 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
                   _selectedRoom = entry.key;
                   _messages.clear();
                   _isLoading = true;
+                  _hasMoreOlder = true;
+                  _newMessagesCount = 0;
+                  _isAtBottom = true;
                 });
                 }
-                
+                // ✨ Batch-1: Unread für neuen Raum zurücksetzen.
+                UnreadTrackerService.instance.markSeen(_fullRoomId);
+
                 // 🔧 Switch WebRTC Voice Room
                 await _voiceService.switchRoom(_fullRoomId); // ← WebRTC cleanup
                 // 🔴 Re-subscribe Realtime for new room
@@ -1157,12 +1297,22 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // 🔧 FIX 14: Icon nur einmal anzeigen
-                  Text(
-                    roomData['icon'] ?? '💬',
-                    style: TextStyle(
-                      fontSize: isSelected ? 22 : 20, // Größer für bessere Sichtbarkeit
-                    ),
+                  // 🔧 FIX 14: Icon + ✨ Batch-1: Unread-Badge
+                  Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Text(
+                        roomData['icon'] ?? '💬',
+                        style: TextStyle(
+                          fontSize: isSelected ? 22 : 20,
+                        ),
+                      ),
+                      Positioned(
+                        top: -4,
+                        right: -10,
+                        child: ChatUnreadBadge(roomId: chipFullRoomId),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 4), // Mehr Abstand
                   // 🔧 FIX 14: Label OHNE Icon, größer & lesbarer
@@ -1217,23 +1367,44 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
       );
     }
 
-    return ListView.builder(
-      controller: _scrollController,
-      padding: const EdgeInsets.all(16),
-      reverse: false, // Normal order: Alte Nachrichten oben, neue unten
-      itemCount: _messages.length,
-      cacheExtent: 500, // 🚀 PERFORMANCE: Pre-render 500px ahead
-      addAutomaticKeepAlives: false, // 🚀 PHASE B: Don't keep off-screen (Memory optimization)
-      addRepaintBoundaries: true, // 🚀 PHASE B: Isolate repaints per item
-      itemBuilder: (context, index) {
-        // Direct index: messages are already in chronological order
-        final message = _messages[index];
-        
-        // 🆕 USE SWIPEABLE MESSAGE WITH REACTIONS
-        // 🚀 PHASE B: RepaintBoundary + ValueKey for performance
-        return RepaintBoundary(
-          key: ValueKey(message['message_id']),
-          child: _buildSwipeableMessage(message),
+    return AnimatedBuilder(
+      animation: UserBlockService.instance,
+      builder: (_, __) {
+        final visible = UserBlockService.instance
+            .filterMessages(_messages)
+            .toList(growable: false);
+        return ListView.builder(
+          controller: _scrollController,
+          padding: const EdgeInsets.all(16),
+          reverse: false, // Normal order: Alte Nachrichten oben, neue unten
+          itemCount: visible.length + (_loadingOlder ? 1 : 0),
+          cacheExtent: 500, // 🚀 PERFORMANCE: Pre-render 500px ahead
+          addAutomaticKeepAlives: false, // 🚀 PHASE B
+          addRepaintBoundaries: true, // 🚀 PHASE B: Isolate repaints per item
+          itemBuilder: (context, index) {
+            // ✨ Batch-1: Pagination-Spinner an Position 0 beim Nachladen.
+            if (_loadingOlder && index == 0) {
+              return const Padding(
+                padding: EdgeInsets.all(12),
+                child: Center(
+                  child: SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.red,
+                    ),
+                  ),
+                ),
+              );
+            }
+            final message = visible[index - (_loadingOlder ? 1 : 0)];
+            // 🚀 PHASE B: RepaintBoundary + ValueKey for performance
+            return RepaintBoundary(
+              key: ValueKey(message['message_id'] ?? message['id']),
+              child: _buildSwipeableMessage(message),
+            );
+          },
         );
       },
     );
@@ -1328,6 +1499,13 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
                 ),
               ),
               const SizedBox(width: 12),
+
+              // ✨ Batch-1: Emoji-Picker-Button
+              ChatEmojiPickerButton(
+                onSelected: _insertEmoji,
+                color: Colors.red,
+              ),
+
               Expanded(
                 child: TextField(
                   controller: _messageController,
@@ -2606,12 +2784,13 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
                       ),
                     )
                   else
-                    // Regular Text Message
-                    Text(
+                    // Regular Text Message (Markdown-Light + klickbare Links)
+                    ChatMarkdownText(
                       msg['message']?.toString() ?? '',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 15,
+                        height: 1.35,
                       ),
                     ),
                   
