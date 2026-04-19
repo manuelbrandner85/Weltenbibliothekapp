@@ -1,7 +1,7 @@
 name: 🏗️ Build & Release APK
 
 on:
-  # Release-Build triggert bei Version-Tag-Push (v5.31.0, v5.32.0, ...) ODER manuell.
+  # Release-Build triggert bei Version-Tag-Push (v5.32.0, v5.33.0, ...) ODER manuell.
   # Tag-Push ist der saubere Weg: Tag = expliziter "ich will einen neuen Release"-Commit.
   # Für reine Dart-Änderungen bitte "🚀 Shorebird OTA Patch" verwenden, nicht diesen Workflow.
   push:
@@ -19,9 +19,9 @@ permissions:
 
 jobs:
   build-apk:
-    name: 🔨 Shorebird Release Build (arm64)
+    name: 🔨 Shorebird Release Build (arm64 + arm32)
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v4
@@ -44,13 +44,13 @@ jobs:
         run: |
           VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: //' | sed 's/+.*//')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "apk_name=weltenbibliothek-v${VERSION}-arm64.apk" >> $GITHUB_OUTPUT
+          echo "apk_name=weltenbibliothek-v${VERSION}-universal.apk" >> $GITHUB_OUTPUT
 
-      - name: 🏗️ Shorebird Release
+      - name: 🏗️ Shorebird Release (arm64 + arm32)
         run: |
           shorebird release android \
             --artifact=apk \
-            --target-platform=android-arm64 \
+            --target-platform=android-arm64,android-arm \
             --dart-define=APP_VERSION=${{ steps.version.outputs.version }} \
             --dart-define=SUPABASE_URL=https://adtviduaftdquvfjpojb.supabase.co \
             --dart-define=SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkdHZpZHVhZnRkcXV2Zmpwb2piIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxMzY3OTcsImV4cCI6MjA5MDcxMjc5N30.LPtmnjukb6o2CA16RDjoStqYb_1bipNULD4tgOfuD98 \
@@ -75,6 +75,19 @@ jobs:
         with:
           tag_name: v${{ steps.version.outputs.version }}
           name: v${{ steps.version.outputs.version }} – Weltenbibliothek
+          body: |
+            ## Weltenbibliothek v${{ steps.version.outputs.version }}
+
+            ### Was ist neu
+            - Chat-System konsolidiert auf Supabase (stabiler, schneller)
+            - Anonyme Session beim Start → kein Login nötig zum Chatten
+            - Nachrichten-Duplikate behoben
+            - Kompatibilität für alle Android-Geräte (arm64 + arm32)
+            - Android 5.0+ (API 21) unterstützt
+
+            ### Installation
+            APK herunterladen und auf dem Gerät installieren (Sideloading).
+            Updates danach automatisch via Shorebird OTA.
           files: build/app/outputs/flutter-apk/${{ steps.version.outputs.apk_name }}
           make_latest: true
         env:

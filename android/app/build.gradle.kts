@@ -31,18 +31,17 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.myapp.mobile"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
+        // Android 5.0+ (API 21) – deckt >99% aller aktiven Android-Geräte ab
+        minSdk = 21
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
-        
-        // 🔧 OPTIMIZATION: Only build for ARM64 (modern devices)
+
+        // ARM64 (moderne Geräte) + ARM32 (ältere/32-bit Geräte)
+        // x86_64 wird weggelassen – Shorebird unterstützt es nicht im Prod-Release
         ndk {
-            abiFilters.addAll(listOf("arm64-v8a"))
+            abiFilters.addAll(listOf("arm64-v8a", "armeabi-v7a"))
         }
     }
 
