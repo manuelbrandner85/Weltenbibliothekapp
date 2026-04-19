@@ -60,10 +60,11 @@ class ApiConfig {
   // ──────────────────────────────────────────────────────────────
 
   /// Basis-URL des OpenClaw AI Gateways.
-  /// Sollte auf HTTPS migriert werden (aktuell HTTP).
+  /// Muss via --dart-define=OPENCLAW_GATEWAY_URL=https://... gesetzt werden.
+  /// Leer = Gateway-Calls werden übersprungen / graceful fehlschlagen.
   static const String openClawGatewayUrl = String.fromEnvironment(
     'OPENCLAW_GATEWAY_URL',
-    defaultValue: 'http://72.62.154.95:50074',
+    defaultValue: '',
   );
 
   /// OpenClaw Gateway Token – aus dart-define, KEIN Hardcode.

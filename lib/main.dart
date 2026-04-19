@@ -43,7 +43,6 @@ import 'widgets/achievement_unlock_dialog.dart';  // 🏆 Achievement UI
 import 'utils/error_boundary.dart';  // 🛡️ Error Boundary
 import 'services/supabase_service.dart';  // 🟢 SUPABASE: Auth + Chat + Community
 import 'services/profile_restore_service.dart'; // 🔄 PROFIL-WIEDERHERSTELLUNG
-// import 'widgets/offline_indicator.dart';  // 📡 OFFLINE INDICATOR (DISABLED - BUILD ISSUE)
 // import 'services/push_notification_service.dart'; // Firebase -> Cloudflare
 
 void main() async {
@@ -286,7 +285,6 @@ class _WeltenbibliothekAppState extends State<WeltenbibliothekApp> {
   Widget build(BuildContext context) {
     return provider.Consumer<ThemeService>(
       builder: (context, themeService, child) {
-        // DISABLED: OfflineIndicator (build issue)
         return MaterialApp(
           title: 'Dual Realms - Deep Research',
           debugShowCheckedModeBanner: false,
