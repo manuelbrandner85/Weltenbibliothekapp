@@ -617,3 +617,64 @@ gh pr edit <NR> --body "Neue Beschreibung"
   - Trigger: Nur manuell (`workflow_dispatch`) — Push-Trigger ist abgeschaltet, damit Dart-only Commits keinen fehlschlagenden Release-Build auslösen
   - Läuft `shorebird release android --artifact=apk` → registriert Release auf Shorebird-Server + erstellt GitHub Release mit APK
 - Download (volle APK): GitHub Releases → neueste Version
+
+---
+
+## 🔐 Signing-Keystore & APK-Update-Kompatibilität (verbindlich)
+
+> **PROBLEM, das diese Regel verhindert:**
+> Wenn der Release-Build mit dem Android-**Debug-Key** signiert wird, erzeugt jeder
+> CI-Runner einen neuen Key → zwei APKs mit gleicher applicationId, aber verschiedenen
+> Signaturen. Android blockiert das Update dann mit **"App nicht installiert"**.
+> Der einzige "Ausweg" wäre Deinstallation — aber dadurch verliert der User alle lokalen
+> Daten UND die App, aus der er hätte updaten sollen.
+
+### Regel 1 — Release-Builds IMMER mit persistentem Keystore signieren
+
+- Der Keystore `android/app/weltenbibliothek.jks` liegt **NIEMALS im Repo** (`.gitignore`).
+- CI holt ihn aus GitHub-Secrets (base64-dekodiert in `build_apk.yml`).
+- `android/app/build.gradle.kts` lädt `key.properties` und nutzt den Release-Signing-Config.
+  Fällt der Keystore (lokal) weg, bleibt der Build debug-signiert — das darf nur auf
+  Entwickler-Maschinen passieren, **nie in CI**.
+- Nötige GitHub-Secrets (einmalig einzurichten):
+  - `ANDROID_KEYSTORE_BASE64` — base64-Encode des `.jks`
+  - `ANDROID_KEYSTORE_PASSWORD`
+  - `ANDROID_KEY_ALIAS` (z.B. `weltenbibliothek`)
+  - `ANDROID_KEY_PASSWORD`
+- Keystore erzeugen: `./scripts/generate_release_keystore.sh`
+  → gibt die 4 Secrets am Ende für Copy&Paste aus.
+
+### Regel 2 — Keystore darf NIE verloren gehen
+
+- Ohne den Original-Keystore kannst du nie wieder Over-the-Top-Updates über eine installierte
+  APK ausrollen. Alle User müssten die App deinstallieren, bevor sie die neue Version
+  installieren.
+- Backup-Pflicht: Keystore + Passwörter in Passwort-Manager **und** Offline-Kopie.
+
+### Regel 3 — Bei Signing-Key-Mismatch (Legacy-APK im Feld)
+
+Wenn eine bereits verteilte APK mit dem falschen Key signiert ist (z.B. alte Debug-Builds),
+und die neue APK ist mit dem persistenten Release-Key signiert → User auf der alten Version
+**können nicht per APK-Update migrieren**. Workaround:
+
+1. Alte User per **Shorebird-OTA-Patch** auf dem alten Release halten und neue Dart-Fixes so
+   ausliefern (kein APK-Install, kein Signing-Problem).
+2. `app_config` in Supabase auf `latest_version = <installierte alte Version>` setzen, damit
+   kein "App nicht installiert"-Loop durch den Update-Dialog entsteht.
+3. Neue APK-Releases laufen ab sofort sauber, weil ab jetzt alle mit dem gleichen Release-Key
+   signiert sind → zukünftige User können problemlos upgraden.
+4. Alte User, die wirklich auf die neue APK müssen, bekommen eine Anleitung: Deinstallieren
+   → Neuinstall der neuen APK (Datenverlust akzeptiert, Einmal-Wechsel).
+
+### Regel 4 — Release-Flow-Checkliste (jedes Mal durchgehen)
+
+Bevor ein neuer `shorebird release` ausgerollt wird:
+
+- [ ] GitHub-Secrets (`ANDROID_KEYSTORE_BASE64` etc.) sind im Repo aktiv — sonst wird wieder
+      mit Debug-Key gebaut und alle neuen User sind vom alten Key getrennt.
+- [ ] `shorebird release android` läuft durch, APK in GitHub Releases ist mit dem persistenten
+      Key signiert (lokal verifizierbar: `apksigner verify --print-certs <apk>`).
+- [ ] `app_config` in Supabase wird NUR dann auf die neue Version angehoben, wenn klar ist,
+      dass alle Ziel-User die APK auch installieren können (gleicher Signing-Key wie zuvor).
+- [ ] Im Zweifelsfall: erst `shorebird patch` gegen die aktuell installierte Version rollen,
+      `app_config` unverändert lassen.

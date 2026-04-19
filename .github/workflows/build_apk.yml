@@ -39,6 +39,26 @@ jobs:
         with:
           cache: true
 
+      - name: 🔐 Release-Keystore aus Secrets dekodieren
+        # Secrets (einmalig in GitHub Repo → Settings → Secrets einrichten):
+        #   ANDROID_KEYSTORE_BASE64   — base64 der weltenbibliothek.jks
+        #   ANDROID_KEYSTORE_PASSWORD — store-password
+        #   ANDROID_KEY_ALIAS         — Alias (z.B. "weltenbibliothek")
+        #   ANDROID_KEY_PASSWORD      — key-password
+        # Ohne Secrets → Step überspringt, Build nutzt Debug-Key (nicht update-kompatibel).
+        if: ${{ env.ANDROID_KEYSTORE_BASE64 != '' }}
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/weltenbibliothek.jks
+          cat > android/key.properties <<EOF
+          storeFile=app/weltenbibliothek.jks
+          storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
+          keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
+          EOF
+          echo "✅ Release-Keystore + key.properties erstellt"
+
       - name: 📋 Version lesen
         id: version
         run: |

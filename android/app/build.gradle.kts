@@ -9,6 +9,17 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+// 🔐 Release-Keystore laden (persistenter Key für APK-Over-the-Top-Updates).
+// Quelle: android/key.properties → wird in CI aus GitHub-Secrets erzeugt.
+// Ohne key.properties (lokale Dev-Umgebung) bleibt der Release-Build debug-signiert.
+val keystorePropsFile = rootProject.file("key.properties")
+val keystoreProps = Properties().apply {
+    if (keystorePropsFile.exists()) {
+        load(FileInputStream(keystorePropsFile))
+    }
+}
+val hasReleaseKeystore = keystoreProps.getProperty("storeFile")?.isNotBlank() == true
+
 android {
     namespace = "com.myapp.mobile"
     compileSdk = flutter.compileSdkVersion
@@ -45,11 +56,29 @@ android {
         }
     }
 
+    signingConfigs {
+        // 🔐 Persistenter Release-Key (nur wenn key.properties vorhanden).
+        // Damit sind alle zukünftigen APKs mit dem gleichen Key signiert →
+        // User können Updates ohne Deinstallation installieren.
+        if (hasReleaseKeystore) {
+            create("release") {
+                storeFile = rootProject.file(keystoreProps.getProperty("storeFile"))
+                storePassword = keystoreProps.getProperty("storePassword")
+                keyAlias = keystoreProps.getProperty("keyAlias")
+                keyPassword = keystoreProps.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = if (hasReleaseKeystore) {
+                signingConfigs.getByName("release")
+            } else {
+                // Fallback: Debug-Key (nur Dev / lokaler `flutter run --release`).
+                // CI setzt IMMER key.properties aus den Secrets.
+                signingConfigs.getByName("debug")
+            }
             isMinifyEnabled = true // Enable code shrinking
             isShrinkResources = true // Enable resource shrinking
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
