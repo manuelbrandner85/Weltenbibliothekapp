@@ -9,6 +9,7 @@ import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../services/webrtc_signaling_service.dart'; // ✅ FIXED: Dedicated WebRTC signaling
 import '../services/error_reporting_service.dart';
+import '../services/admin_action_service.dart';
 import '../services/voice_session_tracker.dart'; // 🆕 Session Tracking
 import '../models/webrtc_call_state.dart'; // RoomFullException
 
@@ -96,6 +97,9 @@ class WebRTCVoiceService with ChangeNotifier {
   // und ist speziell für WebRTC SDP/ICE Austausch konzipiert
   final WebRTCSignalingService _signaling = WebRTCSignalingService();
   
+  // Admin Action Service
+  final AdminActionService _adminService = AdminActionService();
+  
   // 🆕 Voice Session Tracker
   final VoiceSessionTracker _sessionTracker = VoiceSessionTracker();
   
@@ -148,6 +152,7 @@ class WebRTCVoiceService with ChangeNotifier {
   List<VoiceParticipant> get participants => _participants.values.toList();
   String? get currentRoomId => _currentRoomId; // ✅ ADD: Public getter
   MediaStream? get localStream => _localStream; // ✅ ADD: Public getter
+  AdminActionService get adminService => _adminService;  // 🆕 Admin Service Access
   
   // 🔧 NEW: Additional getters for widgets
   bool get isInCall => _currentRoomId != null && isConnected;
