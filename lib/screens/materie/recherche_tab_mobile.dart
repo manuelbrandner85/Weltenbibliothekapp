@@ -14,18 +14,14 @@ import 'package:flutter/foundation.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../utils/performance_helper.dart';  // ⚡ PERFORMANCE HELPER
+import '../../utils/performance_helper.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:video_player/video_player.dart';
-import 'package:cached_network_image/cached_network_image.dart';  // 🆕 Image Caching
-// 🔖 BOOKMARK SERVICE
-// 🔖 BOOKMARKS SCREEN
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../models/recherche_models.dart';
 import '../../models/analyse_models.dart';
-import '../../services/backend_recherche_service.dart';
 import '../../services/analyse_service.dart';
-import '../../services/cloudflare_api_service.dart';
 import '../../services/openclaw_comprehensive_service.dart';
 import '../../widgets/visualisierung/visualisierungen.dart';
 import '../../widgets/media_grid_widget.dart';
@@ -42,31 +38,47 @@ class MobileOptimierterRechercheTab extends StatefulWidget {
 }
 
 class _MobileOptimierterRechercheTabState extends State<MobileOptimierterRechercheTab>
-    with SingleTickerProviderStateMixin {
-  
+    with TickerProviderStateMixin {
+
+  // ─── THEME COLORS (Materie = Cosmos/Blue) ───────────────────────────────────
+  static const _bg     = Color(0xFF04080F);
+  static const _card   = Color(0xFF0A1020);
+  static const _cardB  = Color(0xFF0D1528);
+  static const _blue   = Color(0xFF2979FF);
+  static const _blueL  = Color(0xFF82B1FF);
+  static const _blueD  = Color(0xFF1A237E);
+  static const _cyan   = Color(0xFF00E5FF);
+  static const _green  = Color(0xFF00E676);
+  static const _amber  = Color(0xFFFFAB00);
+  static const _red    = Color(0xFFFF1744);
+  static const _purple = Color(0xFF7C4DFF);
+
+  // ─── ANIMATIONS ─────────────────────────────────────────────────────────────
+  late AnimationController _cosmosCtrl;
+  late AnimationController _entryCtrl;
+  late AnimationController _pulseCtrl;
+  late Animation<double> _entryAnim;
+
   // Services
-  late final BackendRechercheService _rechercheService; // ignore: unused_field
   late final AnalyseService _analyseService;
-  final CloudflareApiService _cloudflareApi = CloudflareApiService(); // ignore: unused_field
   final OpenClawComprehensiveService _openClawService = OpenClawComprehensiveService();
-  
+
   // State
   final TextEditingController _suchController = TextEditingController();
   RechercheErgebnis? _recherche;
   AnalyseErgebnis? _analyse;
-  Map<String, dynamic>? _media; // MULTI-MEDIA: Videos, PDFs, Bilder, Audios
-  
+  Map<String, dynamic>? _media;
+
   // UI State
-  bool _isSearching = false; // ignore: unused_field
-  bool _showFallback = false; // Fallback-UI bei leeren Ergebnissen
-  int _currentStep = 0; // 0: Start, 1: Recherche, 2: Analyse
+  bool _showFallback = false;
+  int _currentStep = 0;
   late TabController _tabController;
-  
+
   // Subscriptions
   StreamSubscription? _rechercheSub;
   StreamSubscription? _analyseSub;
-  Timer? _debounceTimer;  // ⚡ DEBOUNCE TIMER
-  
+  Timer? _debounceTimer;
+
   // Multimedia-Controller
   final Map<String, VideoPlayerController> _videoControllers = {};
 
@@ -80,14 +92,15 @@ class _MobileOptimierterRechercheTabState extends State<MobileOptimierterRecherc
   void initState() {
     super.initState();
 
-    // Initialize services
-    _rechercheService = BackendRechercheService();
     _analyseService = AnalyseService();
 
-    // Initialize TabController (11 Tabs: +MULTIMEDIA +EPSTEIN FILES +QUELLEN +NOTIZEN)
     _tabController = TabController(length: 11, vsync: this);
 
-    // Notizen laden
+    _cosmosCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 20))..repeat();
+    _pulseCtrl  = AnimationController(vsync: this, duration: const Duration(milliseconds: 2000))..repeat(reverse: true);
+    _entryCtrl  = AnimationController(vsync: this, duration: const Duration(milliseconds: 900))..forward();
+    _entryAnim  = CurvedAnimation(parent: _entryCtrl, curve: Curves.easeOutCubic);
+
     _ladeNotizen();
   }
   
@@ -98,11 +111,12 @@ class _MobileOptimierterRechercheTabState extends State<MobileOptimierterRecherc
     _tabController.dispose();
     _rechercheSub?.cancel();
     _analyseSub?.cancel();
-    _debounceTimer?.cancel();  // ⚡ CANCEL DEBOUNCE TIMER
-    // Backend Service has no dispose method
+    _debounceTimer?.cancel();
     _analyseService.dispose();
+    _cosmosCtrl.dispose();
+    _pulseCtrl.dispose();
+    _entryCtrl.dispose();
 
-    // Video-Controller freigeben
     for (var controller in _videoControllers.values) {
       controller.dispose();
     }
@@ -128,7 +142,7 @@ class _MobileOptimierterRechercheTabState extends State<MobileOptimierterRecherc
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ Notizen laden fehlgeschlagen: $e');
     } finally {
-      setState(() => _notizenLoading = false);
+      if (mounted) setState(() => _notizenLoading = false);
     }
   }
 
@@ -288,7 +302,6 @@ class _MobileOptimierterRechercheTabState extends State<MobileOptimierterRecherc
     }
     
     setState(() {
-      _isSearching = true;
       _showFallback = false;
       _currentStep = 1;
       _recherche = null;
@@ -452,6 +465,7 @@ class _MobileOptimierterRechercheTabState extends State<MobileOptimierterRecherc
           debugPrint('⚠️ [ANALYSE] Nutze lokalen Analyse-Service (kann langsam sein)');
         }
         
+        _analyseSub?.cancel();
         _analyseSub = _analyseService.analyseStream.listen((analyse) {
           if (mounted) {
             setState(() {
@@ -507,46 +521,32 @@ class _MobileOptimierterRechercheTabState extends State<MobileOptimierterRecherc
         });
       }
     } finally {
-      // WICHTIG: _isSearching IMMER zurücksetzen
-      if (mounted) {
-        setState(() {
-          _isSearching = false;
-        });
-        
-        if (kDebugMode) {
-          debugPrint('🔄 [CLEANUP] Recherche abgeschlossen/beendet');
-        }
-      }
+      if (kDebugMode) debugPrint('🔄 [CLEANUP] Recherche abgeschlossen/beendet');
     }
   }
   
   @override
   Widget build(BuildContext context) {
-    // CRITICAL: Catch ALL errors and show user-friendly message
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0A),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Header mit Suchfeld
-            _buildHeader(),
-            
-            // Content with error boundary
-            Expanded(
-              child: Builder(
-                builder: (context) {
-                  try {
-                    return _buildContent();
-                  } catch (e, stackTrace) {
-                    if (kDebugMode) {
-                      debugPrint('❌ [ERROR] Build-Fehler: $e');
-                      debugPrint('StackTrace: $stackTrace');
-                    }
-                    return _buildErrorScreen('Build-Fehler: $e');
+      backgroundColor: _bg,
+      body: Column(
+        children: [
+          _buildHeroHeader(),
+          Expanded(
+            child: Builder(
+              builder: (context) {
+                try {
+                  return _buildContent();
+                } catch (e, stackTrace) {
+                  if (kDebugMode) {
+                    debugPrint('❌ [ERROR] Build-Fehler: $e');
+                    debugPrint('StackTrace: $stackTrace');
                   }
-                },
-              ),
+                  return _buildErrorScreen('Build-Fehler: $e');
+                }
+              },
             ),
+          ),
           ],
         ),
       ),
@@ -557,42 +557,42 @@ class _MobileOptimierterRechercheTabState extends State<MobileOptimierterRecherc
   /// Fehlerbildschirm
   Widget _buildErrorScreen(String error) {
     return Center(
-      child: Container(
+      child: Padding(
         padding: const EdgeInsets.all(32),
-        color: Colors.red.withValues(alpha: 0.2),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error, color: Colors.red, size: 64),
-            const SizedBox(height: 16),
-            const Text(
-              'FEHLER AUFGETRETEN',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: _red.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+                border: Border.all(color: _red.withValues(alpha: 0.4)),
               ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              error,
-              style: const TextStyle(color: Colors.white70, fontSize: 14),
-              textAlign: TextAlign.center,
+              child: const Icon(Icons.error_outline, color: _red, size: 48),
             ),
             const SizedBox(height: 24),
+            const Text('Fehler aufgetreten',
+                style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+            Text(error,
+                style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 13),
+                textAlign: TextAlign.center),
+            const SizedBox(height: 28),
             ElevatedButton(
-              onPressed: () {
-                setState(() {
-                  _currentStep = 0;
-                  _recherche = null;
-                  _analyse = null;
-                  _media = null;
-                });
-              },
+              onPressed: () => setState(() {
+                _currentStep = 0;
+                _recherche = null;
+                _analyse = null;
+                _media = null;
+              }),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
+                backgroundColor: _red,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              child: const Text('ZURÜCKSETZEN'),
+              child: const Text('Zurücksetzen'),
             ),
           ],
         ),
@@ -601,103 +601,189 @@ class _MobileOptimierterRechercheTabState extends State<MobileOptimierterRecherc
   }
   
   /// ═══════════════════════════════════════════════════════════
-  /// HEADER - Internet Research Only
+  /// HERO HEADER — Home-Dashboard Stil
   /// ═══════════════════════════════════════════════════════════
-  Widget _buildHeader() {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            const Color(0xFF1976D2).withValues(alpha: 0.3),
-            const Color(0xFF0D47A1).withValues(alpha: 0.2),
-          ],
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          // Icon
-          Icon(
-            Icons.travel_explore,
-            size: 64,
-            color: Colors.white.withValues(alpha: 0.9),
+  Widget _buildHeroHeader() {
+    return AnimatedBuilder(
+      animation: _cosmosCtrl,
+      builder: (context, child) {
+        return Container(
+          decoration: BoxDecoration(
+            color: _bg,
+            boxShadow: [BoxShadow(color: _blue.withValues(alpha: 0.08), blurRadius: 24, offset: const Offset(0, 8))],
           ),
-          const SizedBox(height: 16),
-          
-          // Title
-          const Text(
-            'INTERNET-RECHERCHE',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.5,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 8),
-          
-          // Subtitle
-          const Text(
-            'Alternative Quellen • Mainstream-Medien • Unabhängige Recherche',
-            style: TextStyle(
-              color: Colors.white70,
-              fontSize: 13,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          
-          const SizedBox(height: 24),
-          
-          // Internet Research Button
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const MaterieResearchScreen(),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.search, color: Colors.white, size: 24),
-              label: const Text(
-                'RECHERCHE STARTEN',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1,
-                ),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFD32F2F),
-                padding: const EdgeInsets.symmetric(vertical: 18),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 4,
-              ),
-            ),
-          ),
-          
-          const SizedBox(height: 16),
-          
-          // Features
-          Wrap(
-            spacing: 12,
-            runSpacing: 8,
-            alignment: WrapAlignment.center,
+          child: Stack(
             children: [
-              _buildFeatureChip('🔍 KI-Analyse', Colors.blue),
-              _buildFeatureChip('🌐 Web-Scraping', Colors.green),
-              _buildFeatureChip('📊 Quellen-Vergleich', Colors.orange),
-              _buildFeatureChip('🎯 Alternative Medien', Colors.purple),
+              // Cosmos background
+              Positioned.fill(
+                child: CustomPaint(painter: _CosmosBackgroundPainter(_cosmosCtrl.value)),
+              ),
+              // Gradient fade at bottom
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [Colors.transparent, _bg.withValues(alpha: 0.9)],
+                      stops: const [0.5, 1.0],
+                    ),
+                  ),
+                ),
+              ),
+              SafeArea(
+                bottom: false,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Row: Orb + Title + Icon
+                      Row(
+                        children: [
+                          // Pulsing blue orb
+                          AnimatedBuilder(
+                            animation: _pulseCtrl,
+                            builder: (_, __) => Container(
+                              width: 48,
+                              height: 48,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: RadialGradient(colors: [_cyan, _blue, _blueD]),
+                                boxShadow: [BoxShadow(color: _cyan.withValues(alpha: 0.3 + 0.2 * _pulseCtrl.value), blurRadius: 16 + 8 * _pulseCtrl.value, spreadRadius: 2)],
+                              ),
+                              child: const Icon(Icons.travel_explore, color: Colors.white, size: 24),
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('INTERNET-RECHERCHE',
+                                    style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+                                Text('KI • Web-Scraping • Alternative Medien',
+                                    style: TextStyle(color: _blueL.withValues(alpha: 0.8), fontSize: 11)),
+                              ],
+                            ),
+                          ),
+                          // Deep Research button
+                          GestureDetector(
+                            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MaterieResearchScreen())),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(colors: [_blue, _blueD]),
+                                borderRadius: BorderRadius.circular(20),
+                                boxShadow: [BoxShadow(color: _blue.withValues(alpha: 0.4), blurRadius: 8)],
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.open_in_new, color: Colors.white, size: 14),
+                                  const SizedBox(width: 4),
+                                  const Text('Deep', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      // Search field
+                      Container(
+                        decoration: BoxDecoration(
+                          color: _card.withValues(alpha: 0.9),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: _blue.withValues(alpha: 0.3)),
+                          boxShadow: [BoxShadow(color: _blue.withValues(alpha: 0.1), blurRadius: 12)],
+                        ),
+                        child: Row(
+                          children: [
+                            const SizedBox(width: 14),
+                            Icon(Icons.search, color: _blueL.withValues(alpha: 0.7), size: 20),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: TextField(
+                                controller: _suchController,
+                                style: const TextStyle(color: Colors.white, fontSize: 15),
+                                decoration: InputDecoration(
+                                  hintText: 'Suche recherchieren...',
+                                  hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.35), fontSize: 14),
+                                  border: InputBorder.none,
+                                  isDense: true,
+                                  contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                                ),
+                                textInputAction: TextInputAction.search,
+                                onSubmitted: (_) => _starteRecherche(),
+                              ),
+                            ),
+                            if (_suchController.text.isNotEmpty)
+                              IconButton(
+                                icon: Icon(Icons.close, color: Colors.white.withValues(alpha: 0.5), size: 18),
+                                onPressed: () => setState(() => _suchController.clear()),
+                              ),
+                            GestureDetector(
+                              onTap: _starteRecherche,
+                              child: Container(
+                                margin: const EdgeInsets.all(6),
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(colors: [_blue, _blueD]),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Text('Suchen', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      // Trending chips
+                      SizedBox(
+                        height: 32,
+                        child: ListView(
+                          scrollDirection: Axis.horizontal,
+                          children: [
+                            _buildTrendingChip('🌍 Geopolitik', _blue),
+                            _buildTrendingChip('🛸 UFOs', _purple),
+                            _buildTrendingChip('📜 Geschichte', _amber),
+                            _buildTrendingChip('💊 Heilmethoden', _green),
+                            _buildTrendingChip('🔬 Wissenschaft', _cyan),
+                            _buildTrendingChip('🏛️ Politik', _red),
+                            _buildTrendingChip('💡 Technologie', _blueL),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
-        ],
+        );
+      },
+    );
+  }
+
+  Widget _buildTrendingChip(String label, Color color) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: GestureDetector(
+        onTap: () {
+          final text = label.replaceAll(RegExp(r'[^\w\s]', unicode: true), '').trim();
+          _suchController.text = text;
+          _starteRecherche();
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: color.withValues(alpha: 0.4)),
+          ),
+          child: Text(label, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w600)),
+        ),
       ),
     );
   }
@@ -718,6 +804,7 @@ class _MobileOptimierterRechercheTabState extends State<MobileOptimierterRecherc
     );
   }
   
+  // ignore: unused_element
   Widget _buildFeatureChip(String label, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -1061,228 +1148,75 @@ class _MobileOptimierterRechercheTabState extends State<MobileOptimierterRecherc
     );
   }
   
-  /// Start Screen
+  /// Start Screen — Home-Dashboard Stil
   Widget _buildStartScreen() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          const SizedBox(height: 20),
-          
-          // === KI-ANALYSE-TOOLS SEKTION (OBEN FÜR SOFORTIGE SICHTBARKEIT) ===
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  const Color(0xFF1E88E5).withValues(alpha: 0.2),
-                  const Color(0xFF9C27B0).withValues(alpha: 0.2),
+    return FadeTransition(
+      opacity: _entryAnim,
+      child: SlideTransition(
+        position: Tween<Offset>(begin: const Offset(0, 0.05), end: Offset.zero).animate(_entryAnim),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Section title
+              Padding(
+                padding: const EdgeInsets.only(bottom: 14),
+                child: Row(
+                  children: [
+                    Container(width: 4, height: 20, decoration: BoxDecoration(color: _blue, borderRadius: BorderRadius.circular(2))),
+                    const SizedBox(width: 10),
+                    const Text('KI-ANALYSE-TOOLS', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold, letterSpacing: 1.1)),
+                    const SizedBox(width: 8),
+                    Text('5 Tools', style: TextStyle(color: _blueL.withValues(alpha: 0.6), fontSize: 12)),
+                  ],
+                ),
+              ),
+
+              // KI-Tool Grid
+              GridView.count(
+                crossAxisCount: 2,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                childAspectRatio: 0.9,
+                children: [
+                  _buildKIToolCard(context,
+                      icon: Icons.visibility, title: 'Propaganda\nDetector',
+                      color: _red, description: 'Manipulation\nerkennen',
+                      onTap: () => Navigator.of(context).pushNamed('/propaganda-detector')),
+                  _buildKIToolCard(context,
+                      icon: Icons.image_search, title: 'Image\nForensics',
+                      color: _blue, description: 'Bild-Manipulation\nanalysieren',
+                      onTap: () => Navigator.of(context).pushNamed('/image-forensics')),
+                  _buildKIToolCard(context,
+                      icon: Icons.device_hub, title: 'Power\nNetwork',
+                      color: _purple, description: 'Machtnetzwerke\nvisualisieren',
+                      onTap: () => Navigator.of(context).pushNamed('/power-network-mapper')),
+                  _buildKIToolCard(context,
+                      icon: Icons.analytics, title: 'Event\nPredictor',
+                      color: _amber, description: 'Zukunfts-Szenarien\nanalysieren',
+                      onTap: () => Navigator.of(context).pushNamed('/event-predictor')),
+                  _buildKIToolCard(context,
+                      icon: Icons.folder_special, title: 'Epstein\nFiles',
+                      color: _red, description: 'Justice.gov PDF\nLesen & Übersetzen',
+                      onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const EpsteinFilesSimpleScreen()))),
                 ],
               ),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.2),
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+
+              const SizedBox(height: 28),
+
+              // Hint
+              Center(
+                child: Column(
                   children: [
-                    const Icon(Icons.psychology, color: Color(0xFF4CAF50), size: 28),
-                    const SizedBox(width: 12),
-                    const Text(
-                      'KI-ANALYSE-TOOLS',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1.2,
-                      ),
-                    ),
+                    Icon(Icons.keyboard_arrow_up, color: _blue.withValues(alpha: 0.5), size: 28),
+                    const SizedBox(height: 4),
+                    Text('Suchfeld oben nutzen oder Tool antippen',
+                        style: TextStyle(color: Colors.white.withValues(alpha: 0.35), fontSize: 12)),
                   ],
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  'Professionelle Werkzeuge für kritische Recherche',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.7),
-                    fontSize: 12,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                
-                // Grid mit KI-Tools
-                GridView.count(
-                  crossAxisCount: 2,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  childAspectRatio: 1.1,
-                  children: [
-                    _buildKIToolCard(
-                      context,
-                      icon: Icons.visibility,
-                      title: 'Propaganda\nDetector',
-                      color: const Color(0xFFE91E63),
-                      description: 'Erkenne Manipulation\nin Texten',
-                      onTap: () {
-                        Navigator.of(context).pushNamed('/propaganda-detector');
-                      },
-                    ),
-                    _buildKIToolCard(
-                      context,
-                      icon: Icons.image_search,
-                      title: 'Image\nForensics',
-                      color: const Color(0xFF2196F3),
-                      description: 'Bild-Manipulation\nerkennen',
-                      onTap: () {
-                        Navigator.of(context).pushNamed('/image-forensics');
-                      },
-                    ),
-                    _buildKIToolCard(
-                      context,
-                      icon: Icons.device_hub,
-                      title: 'Power\nNetwork',
-                      color: const Color(0xFF9C27B0),
-                      description: 'Machtnetzwerke\nvisualisieren',
-                      onTap: () {
-                        Navigator.of(context).pushNamed('/power-network-mapper');
-                      },
-                    ),
-                    _buildKIToolCard(
-                      context,
-                      icon: Icons.analytics,
-                      title: 'Event\nPredictor',
-                      color: const Color(0xFFFF9800),
-                      description: 'Zukunfts-Szenarien\nanalysieren',
-                      onTap: () {
-                        Navigator.of(context).pushNamed('/event-predictor');
-                      },
-                    ),
-                    // 📁 EPSTEIN FILES TOOL (KORREKT!)
-                    _buildKIToolCard(
-                      context,
-                      icon: Icons.folder_special,
-                      title: 'Epstein\nFiles',
-                      color: const Color(0xFFD32F2F),
-                      description: 'Justice.gov PDF\nLesen & Übersetzen',
-                      onTap: () {
-                        // Direkter Aufruf des WebView Epstein Files Tools
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) => const EpsteinFilesSimpleScreen(),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          
-          const SizedBox(height: 32),
-          
-          // Recherche Icon & Text (jetzt unten)
-          Icon(
-            Icons.search,
-            size: 60,
-            color: Colors.white.withValues(alpha: 0.2),
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'Bereit für Deep Research',
-            style: TextStyle(
-              color: Colors.white70,
-              fontSize: 16,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Gib einen Suchbegriff ein oder nutze die KI-Tools oben',
-            style: TextStyle(
-              color: Colors.white54,
-              fontSize: 13,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          
-          const SizedBox(height: 40),
-        ],
-      ),
-    );
-  }
-  
-  /// KI-Tool Card Widget
-  Widget _buildKIToolCard(
-    BuildContext context, {
-    required IconData icon,
-    required String title,
-    required Color color,
-    required String description,
-    required VoidCallback onTap,
-  }) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                color.withValues(alpha: 0.3),
-                color.withValues(alpha: 0.1),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: color.withValues(alpha: 0.5),
-              width: 1.5,
-            ),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.2),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  icon,
-                  color: color,
-                  size: 28,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                title,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                  height: 1.2,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                description,
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.6),
-                  fontSize: 9,
-                  height: 1.2,
-                ),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
@@ -1291,70 +1225,163 @@ class _MobileOptimierterRechercheTabState extends State<MobileOptimierterRecherc
     );
   }
   
-  /// Recherche Progress
+  /// KI-Tool Card — Home-Dashboard Stil
+  Widget _buildKIToolCard(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required Color color,
+    required String description,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [_card, _cardB],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color.withValues(alpha: 0.35), width: 1.5),
+          boxShadow: [BoxShadow(color: color.withValues(alpha: 0.12), blurRadius: 12, offset: const Offset(0, 4))],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Decorative circle background
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(colors: [color.withValues(alpha: 0.25), Colors.transparent]),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(shape: BoxShape.circle, color: color.withValues(alpha: 0.15)),
+                  child: Icon(icon, color: color, size: 24),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text(title,
+                style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold, height: 1.2),
+                textAlign: TextAlign.center),
+            const SizedBox(height: 4),
+            Text(description,
+                style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 10, height: 1.3),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text('Öffnen', style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  
+  /// Recherche Progress — Cosmos Stil
   Widget _buildRechercheProgress() {
     if (_recherche == null) {
-      return const Center(
-        child: CircularProgressIndicator(),
+      return Center(
+        child: AnimatedBuilder(
+          animation: _pulseCtrl,
+          builder: (_, __) => Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(colors: [_cyan, _blue, _blueD]),
+                  boxShadow: [BoxShadow(color: _cyan.withValues(alpha: 0.3 + 0.25 * _pulseCtrl.value), blurRadius: 24 + 12 * _pulseCtrl.value, spreadRadius: 4)],
+                ),
+                child: const Icon(Icons.travel_explore, color: Colors.white, size: 36),
+              ),
+              const SizedBox(height: 24),
+              Text('Recherche läuft...', style: TextStyle(color: _blueL, fontSize: 16, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              Text('Quellen werden analysiert', style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 12)),
+            ],
+          ),
+        ),
       );
     }
-    
+
     final progress = _recherche!.fortschritt;
     final erfolgsRate = _recherche!.erfolgsRate;
-    
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Progress Header
-          const Text(
-            'STEP 1: DEEP RECHERCHE',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
+          // Pulsing header orb
+          Center(
+            child: AnimatedBuilder(
+              animation: _pulseCtrl,
+              builder: (_, __) => Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(colors: [_cyan, _blue, _blueD]),
+                  boxShadow: [BoxShadow(color: _cyan.withValues(alpha: 0.25 + 0.2 * _pulseCtrl.value), blurRadius: 20 + 10 * _pulseCtrl.value)],
+                ),
+                child: const Icon(Icons.travel_explore, color: Colors.white, size: 28),
+              ),
             ),
           ),
           const SizedBox(height: 16),
-          
+          Center(child: Text('DEEP RECHERCHE', style: TextStyle(color: _blueL, fontSize: 13, fontWeight: FontWeight.bold, letterSpacing: 1.5))),
+          const SizedBox(height: 20),
+
           // Progress Bar
-          LinearProgressIndicator(
-            value: progress,
-            backgroundColor: Colors.white.withValues(alpha: 0.1),
-            valueColor: const AlwaysStoppedAnimation(Color(0xFF4CAF50)),
+          Container(
+            height: 6,
+            decoration: BoxDecoration(color: _card, borderRadius: BorderRadius.circular(3)),
+            child: FractionallySizedBox(
+              alignment: Alignment.centerLeft,
+              widthFactor: progress,
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(3),
+                  gradient: LinearGradient(colors: [_cyan, _blue]),
+                ),
+              ),
+            ),
           ),
           const SizedBox(height: 8),
-          Text(
-            '${(progress * 100).toInt()}% abgeschlossen',
-            style: const TextStyle(color: Colors.white70),
-          ),
-          
-          const SizedBox(height: 24),
-          
-          // Statistik
+          Text('${(progress * 100).toInt()}% abgeschlossen',
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 12)),
+          const SizedBox(height: 20),
+
+          // Stats Row
           Row(
             children: [
-              _buildStatCard(
-                'Quellen',
-                '${_recherche!.erfolgreicheQuellen}/${_recherche!.gesamtQuellen}',
-                Colors.blue,
-              ),
+              _buildStatCard('Quellen', '${_recherche!.erfolgreicheQuellen}/${_recherche!.gesamtQuellen}', _blue),
               const SizedBox(width: 12),
-              _buildStatCard(
-                'Erfolg',
-                '${(erfolgsRate * 100).toInt()}%',
-                Colors.green,
-              ),
+              _buildStatCard('Erfolg', '${(erfolgsRate * 100).toInt()}%', _green),
               const SizedBox(width: 12),
-              _buildStatCard(
-                'Dauer',
-                '${_recherche!.dauer.inSeconds}s',
-                Colors.orange,
-              ),
+              _buildStatCard('Dauer', '${_recherche!.dauer.inSeconds}s', _amber),
             ],
           ),
-          
           const SizedBox(height: 24),
           
           // Quellen-Liste
@@ -1379,30 +1406,16 @@ class _MobileOptimierterRechercheTabState extends State<MobileOptimierterRecherc
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.05),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: color.withValues(alpha: 0.3),
-          ),
+          color: _card,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
+          boxShadow: [BoxShadow(color: color.withValues(alpha: 0.08), blurRadius: 8)],
         ),
         child: Column(
           children: [
-            Text(
-              value,
-              style: TextStyle(
-                color: color,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            Text(value, style: TextStyle(color: color, fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 4),
-            Text(
-              label,
-              style: const TextStyle(
-                color: Colors.white70,
-                fontSize: 12,
-              ),
-            ),
+            Text(label, style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 11)),
           ],
         ),
       ),
@@ -1410,45 +1423,41 @@ class _MobileOptimierterRechercheTabState extends State<MobileOptimierterRecherc
   }
   
   Widget _buildQuelleCard(RechercheQuelle quelle) {
-    IconData statusIcon;
-    Color statusColor;
-    
-    switch (quelle.status) {
-      case QuellenStatus.success:
-        statusIcon = Icons.check_circle;
-        statusColor = Colors.green;
-        break;
-      case QuellenStatus.loading:
-        statusIcon = Icons.hourglass_empty;
-        statusColor = Colors.orange;
-        break;
-      case QuellenStatus.failed:
-        statusIcon = Icons.error;
-        statusColor = Colors.red;
-        break;
-      default:
-        statusIcon = Icons.pending;
-        statusColor = Colors.grey;
-    }
-    
-    return Card(
+    final (statusIcon, statusColor) = switch (quelle.status) {
+      QuellenStatus.success => (Icons.check_circle, _green),
+      QuellenStatus.loading => (Icons.hourglass_empty, _amber),
+      QuellenStatus.failed  => (Icons.error, _red),
+      _                     => (Icons.pending, Colors.grey),
+    };
+
+    return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      color: Colors.white.withValues(alpha: 0.05),
-      child: ListTile(
-        leading: Icon(statusIcon, color: statusColor),
-        title: Text(
-          quelle.titel,
-          style: const TextStyle(color: Colors.white, fontSize: 14),
-        ),
-        subtitle: Text(
-          quelle.url,
-          style: const TextStyle(color: Colors.white54, fontSize: 12),
-          overflow: TextOverflow.ellipsis,
-        ),
-        trailing: Text(
-          quelle.typ.label,
-          style: const TextStyle(color: Colors.white70, fontSize: 11),
-        ),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: _card,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: statusColor.withValues(alpha: 0.2)),
+      ),
+      child: Row(
+        children: [
+          Icon(statusIcon, color: statusColor, size: 18),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(quelle.titel, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis),
+                const SizedBox(height: 2),
+                Text(quelle.url, style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 11), maxLines: 1, overflow: TextOverflow.ellipsis),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(color: _blue.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(8)),
+            child: Text(quelle.typ.label, style: TextStyle(color: _blueL, fontSize: 10)),
+          ),
+        ],
       ),
     );
   }
@@ -1463,18 +1472,18 @@ class _MobileOptimierterRechercheTabState extends State<MobileOptimierterRecherc
     }
     
     return Container(
-      color: const Color(0xFF0A0A0A), // CRITICAL: Expliziter Hintergrund
+      color: _bg,
       child: Column(
         children: [
-          // Tabs mit sichtbarem Hintergrund
           Container(
-            color: Colors.black.withValues(alpha: 0.3),
+            color: _card,
             child: TabBar(
               controller: _tabController,
               isScrollable: true,
-              indicatorColor: const Color(0xFF2196F3),
+              indicatorColor: _cyan,
+              indicatorWeight: 3,
               labelColor: Colors.white,
-              unselectedLabelColor: Colors.white54,
+              unselectedLabelColor: Colors.white38,
               labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
               tabs: const [
                 Tab(text: 'ÜBERSICHT'),
@@ -2322,29 +2331,22 @@ class _MobileOptimierterRechercheTabState extends State<MobileOptimierterRecherc
   
   /// URL öffnen
   Future<void> _openUrl(String url, {String? title}) async {
-    // PDF-Erkennung: In new tab öffnen (einfacher für Web)
-    if (url.toLowerCase().endsWith('.pdf') || url.toLowerCase().contains('.pdf?')) {
+    try {
       final uri = Uri.parse(url);
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Kann PDF nicht öffnen: $url')),
+            SnackBar(content: Text('Kann URL nicht öffnen: $url')),
           );
         }
       }
-      return;
-    }
-    
-    // Alle anderen URLs: Externer Browser
-    final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } else {
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ URL öffnen fehlgeschlagen: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Kann URL nicht öffnen: $url')),
+          SnackBar(content: Text('Fehler beim Öffnen: $e')),
         );
       }
     }
@@ -2659,12 +2661,47 @@ class _MobileOptimierterRechercheTabState extends State<MobileOptimierterRecherc
       padding: const EdgeInsets.only(bottom: 12),
       child: Text(
         title,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
-        ),
+        style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
       ),
     );
   }
+}
+
+// ─── COSMOS BACKGROUND PAINTER ───────────────────────────────────────────────
+class _CosmosBackgroundPainter extends CustomPainter {
+  final double t;
+  _CosmosBackgroundPainter(this.t);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..style = PaintingStyle.fill;
+
+    // Nebula glow top-left
+    paint.shader = RadialGradient(
+      colors: [const Color(0xFF2979FF).withValues(alpha: 0.12), Colors.transparent],
+    ).createShader(Rect.fromCircle(center: Offset(size.width * 0.2, size.height * 0.3), radius: size.width * 0.5));
+    canvas.drawCircle(Offset(size.width * 0.2, size.height * 0.3), size.width * 0.5, paint);
+
+    // Nebula glow right
+    paint.shader = RadialGradient(
+      colors: [const Color(0xFF7C4DFF).withValues(alpha: 0.08), Colors.transparent],
+    ).createShader(Rect.fromCircle(center: Offset(size.width * 0.85, size.height * 0.6), radius: size.width * 0.4));
+    canvas.drawCircle(Offset(size.width * 0.85, size.height * 0.6), size.width * 0.4, paint);
+
+    // Stars
+    final starPaint = Paint()..color = Colors.white.withValues(alpha: 0.6);
+    final stars = [
+      [0.1, 0.15, 1.2], [0.3, 0.08, 0.9], [0.6, 0.2, 1.0], [0.8, 0.1, 0.8],
+      [0.15, 0.7, 1.1], [0.5, 0.5, 0.7], [0.9, 0.4, 1.3], [0.4, 0.85, 0.9],
+      [0.7, 0.75, 0.8], [0.25, 0.4, 1.0],
+    ];
+    for (final s in stars) {
+      final twinkle = 0.4 + 0.6 * ((t * 3 + s[0] * 7) % 1.0);
+      starPaint.color = Colors.white.withValues(alpha: 0.3 + 0.5 * twinkle);
+      canvas.drawCircle(Offset(size.width * s[0], size.height * s[1]), s[2], starPaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_CosmosBackgroundPainter old) => old.t != t;
 }
