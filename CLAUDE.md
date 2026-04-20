@@ -265,7 +265,8 @@ Weltenbibliothekapp/
 │   │   ├── hybrid_chat_service.dart     # Chat-Koordination (Supabase RT + Cloudflare)
 │   │   ├── webrtc_voice_service.dart    # Voice/WebRTC
 │   │   ├── offline_sync_service.dart    # Offline-Warteschlange
-│   │   ├── storage_service.dart         # Hive lokaler Speicher
+│   │   ├── storage_service.dart         # SQLite lokaler Speicher (via SqliteStorageService)
+│   │   ├── sqlite_storage_service.dart  # ⭐ SQLite KV-Store + in-memory cache (Hive-Ersatz)
 │   │   ├── profile_sync_service.dart    # Profil-Backend-Sync
 │   │   └── ...
 │   ├── screens/
@@ -473,6 +474,13 @@ chore(deps): Dependencies aktualisiert
       `sync_app_config.yml` überspringt UPSERT wenn APK-Release noch nicht existiert.
 - [x] **Auto-Patch bei JEDEM main-Push**: `shorebird_patch.yml` feuert bei JEDEM Push auf `main`
       (kein paths-Filter). Kein manuelles Triggern nötig. Doppelte Patches sind harmlos.
+- [x] **Hive→sqflite Migration (vollständig)**: Hive komplett entfernt. Alle lokalen Daten
+      laufen über `SqliteStorageService` (single `kv_store` table + in-memory cache für sync reads).
+      Betrifft: `storage_service.dart`, `spirit_journal_service.dart`, `synchronicity_service.dart`,
+      `daily_spirit_practice_service.dart`, `unified_knowledge_service.dart`,
+      `unified_storage_service.dart` (×2), `supabase_service.dart`, `admin_state.dart`,
+      `materie_live_chat_screen.dart`. Alle 6 Model-Dateien (@HiveType/@HiveField entfernt),
+      alle 5 `.g.dart`-Dateien gelöscht. pubspec.yaml: hive/hive_flutter/hive_generator entfernt.
 
 ### ⚠️ Noch ausstehend / bekannte Probleme
 
@@ -631,7 +639,8 @@ const user_id = isUUID ? rawUserId : null;
 | `hybrid_chat_service.dart` | Chat-Koordination (Cloudflare Primary, Supabase Fallback) |
 | `webrtc_voice_service.dart` | WebRTC Voice-Rooms |
 | `offline_sync_service.dart` | Offline-Queue für Nachrichten |
-| `storage_service.dart` | Hive lokaler Speicher (Profile, Favoriten) |
+| `storage_service.dart` | SQLite lokaler Speicher (Profile, Favoriten) — via SqliteStorageService |
+| `sqlite_storage_service.dart` | SQLite KV-Store + in-memory cache — Hive-Ersatz (box/key/value) |
 | `profile_sync_service.dart` | Profile mit Backend synchronisieren |
 | `avatar_upload_service.dart` | Avatar-Upload zu Supabase Storage |
 | `favorites_service.dart` | Lokale Favoriten (Hive) |
