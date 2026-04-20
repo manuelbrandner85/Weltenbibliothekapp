@@ -81,7 +81,24 @@ jobs:
           } >> $GITHUB_OUTPUT
           echo "✅ version=$VERSION min_version=$PREV_VERSION"
 
+      - name: 🔎 GitHub Release prüfen
+        id: release_check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.read.outputs.version }}
+        run: |
+          set -euo pipefail
+          if gh release view "v${VERSION}" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "✅ Release v${VERSION} existiert → UPSERT wird ausgeführt"
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "⏭️  Release v${VERSION} existiert noch nicht — sync übersprungen"
+            echo "   build_apk.yml aktualisiert app_config nach erfolgreichem Release-Build."
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: 📢 UPSERT Supabase app_config
+        if: steps.release_check.outputs.exists == 'true'
         env:
           SUPABASE_URL: https://adtviduaftdquvfjpojb.supabase.co
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
