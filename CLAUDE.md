@@ -759,10 +759,25 @@ gh pr edit <NR> --body "Neue Beschreibung"
    - `--allow-native-diffs` **maskiert** Engine-Drift (CLI-Mismatch) statt ihn zu fixen:
      Shorebird nimmt den Patch an, Gerät lehnt ihn später still ab. NIEMALS setzen.
 
-3. **`--release-version="latest"` direkt an Shorebird geben, keinen eigenen Resolver bauen.**
-   Shorebird löst "latest" korrekt gegen die jüngste registrierte Release-Version auf.
-   Custom-Resolver (parsen von `shorebird releases list`) hat in der Vergangenheit auf
-   nicht-existente Versionen gezeigt.
+3. **Release-Version MUSS inklusive Build-Nummer angegeben werden** — also
+   `5.37.0+20260421`, NICHT `5.37.0`. Shorebird registriert Releases intern
+   als `<semver>+<buildNumber>` (genau das Format aus `pubspec.yaml` zur
+   Build-Zeit). Wird nur der Semver-Teil übergeben, antwortet Shorebird mit
+   `Release not found: "5.37.0"` und der Patch failt (exit 70).
+
+   Die einzige zuverlässige Quelle für dieses Format: **pubspec-Version am
+   jeweiligen GitHub-Release-Tag** (`git show v5.37.0:pubspec.yaml`).
+   - Shorebird CLI 1.6.92 hat KEIN `releases list` Kommando (nur
+     `releases get-apks`) — kein CLI-Listing möglich.
+   - `--release-version=latest` wäre die Shorebird-interne Auflösung auf die
+     neueste Version, patcht aber nur die aktuelle APK. User auf älteren
+     APKs bekommen dann NICHTS. Deshalb verboten.
+   - Der Workflow iteriert über `gh release list`, liest pro Tag die
+     pubspec-Version aus der Git-History und dedupliziert (mehrere alte
+     Tags können dieselbe pubspec-Version teilen, z.B. `5.29.1+20260404`
+     für v5.29.1–v5.34.0).
+   - **`fetch-depth: 0`** im Checkout-Step ist PFLICHT, sonst fehlen die
+     historischen pubspec-Stände.
 
 4. **Kein `pubspec.yaml` mit der Release-Version synchronisieren.**
    Die App-Version im Patch-Build ist unerheblich — Shorebird matcht am Engine-Snapshot-Hash,

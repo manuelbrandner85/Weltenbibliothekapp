@@ -48,6 +48,7 @@ jobs:
           # Bei workflow_dispatch: expliziter source_branch (oder 'main').
           # Bei push: der gepushte Commit (github.sha).
           ref: ${{ github.event.inputs.source_branch || github.sha }}
+          fetch-depth: 0  # vollständige History + Tags nötig für pubspec-Extraktion pro Release
 
       - name: ☕ Java 17
         uses: actions/setup-java@v4
@@ -89,42 +90,52 @@ jobs:
         # bekommen die neuen Dart-Änderungen nie. Deshalb: Schleife über alle Versionen.
         #
         # Eine einzelne Version kann via workflow_dispatch `release_version` gezielt
-        # gepatcht werden (z.B. "5.36.0"). "all" = alle Versionen patchen.
+        # gepatcht werden (z.B. "5.36.0+20260421"). "all" = alle Versionen patchen.
         #
-        # Version-Liste kommt aus `shorebird releases list` (einzige zuverlässige
-        # Quelle für die EXAKTEN Shorebird-Release-IDs inkl. Build-Nummer).
-        # Shorebird registriert Releases als `<semver>+<buildNumber>` (z.B.
-        # `5.37.0+20260421`). `--release-version=5.37.0` ohne Build-Nummer
-        # schlägt mit "Release not found" fehl — deshalb ist GitHub-Tag-Parsing
-        # hier falsch (Tags sind nur `v5.37.0`).
+        # ⚠️ Shorebird CLI 1.6.92 hat KEIN `releases list` Kommando (nur `get-apks`).
+        # Daher lesen wir die Release-Version (Format: <semver>+<buildNumber>) direkt
+        # aus der `pubspec.yaml` am jeweiligen GitHub-Release-Tag. Das ist exakt
+        # das, was `shorebird release android` zur Registrierungszeit als
+        # Release-Identifier nutzt → 1:1 gültig für `--release-version=`.
+        # Duplikate (mehrere Tags mit derselben pubspec-Version, z.B. v5.29.1–v5.34.0
+        # teilen `5.29.1+20260404`) werden via sort -u zusammengefasst.
         #
         # --allow-asset-diffs bleibt weil MaterialIcons.otf bei jedem Build anders
         # tree-geshaked wird sobald neue Icons im Dart-Code stehen.
         env:
           SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -uo pipefail
 
           REQUESTED="${{ github.event.inputs.release_version || 'all' }}"
 
-          # Registrierte Shorebird-Releases extrahieren (Format: <semver>+<buildNumber>).
-          # Die CLI gibt eine ASCII-Table aus; wir greppen Zeilen mit semver+build
-          # und dedupen. Keine GitHub-Tag-Fallbacks — nur was Shorebird wirklich kennt.
-          ALL_VERSIONS=$(shorebird releases list --platforms=android 2>/dev/null \
-            | grep -oE '[0-9]+\.[0-9]+\.[0-9]+\+[0-9]+' \
-            | sort -V -u)
+          # Alle Release-Tags holen (limit 20 reicht) und für jeden Tag die pubspec-Version
+          # aus der Git-History extrahieren. sort -u dedupliziert identische Versionen.
+          TAGS=$(gh release list --repo "$GITHUB_REPOSITORY" --limit 20 \
+            --json tagName --jq '.[].tagName' 2>/dev/null || true)
+
+          ALL_VERSIONS=""
+          for T in $TAGS; do
+            V=$(git show "$T:pubspec.yaml" 2>/dev/null \
+              | grep '^version:' | awk '{print $2}' || true)
+            if [ -n "$V" ] && echo "$V" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+\+[0-9]+$'; then
+              ALL_VERSIONS="${ALL_VERSIONS}${V}"$'\n'
+            fi
+          done
+          ALL_VERSIONS=$(echo "$ALL_VERSIONS" | sort -V -u | sed '/^$/d')
 
           if [ -z "$ALL_VERSIONS" ]; then
-            echo "❌ Keine Shorebird-Releases gefunden — Patch abgebrochen"
-            echo "→ Debug: Raw-Ausgabe von shorebird releases list:"
-            shorebird releases list --platforms=android 2>&1 || true
+            echo "❌ Keine gültigen Release-Versionen aus pubspec.yaml extrahierbar — Patch abgebrochen"
+            echo "→ Debug: GitHub-Tags:"
+            echo "$TAGS"
             exit 1
           fi
 
           # Ziel-Liste bestimmen:
-          # - "all" (Standard): alle registrierten Shorebird-Releases
+          # - "all" (Standard): alle aus pubspec extrahierten Versionen
           # - "latest": nur neueste Version
-          # - konkrete Version: Substring-Match (z.B. "5.36.0" matcht "5.36.0+20260420")
+          # - konkrete Version: Substring-Match (z.B. "5.36.0" matcht "5.36.0+20260421")
           if [ "$REQUESTED" = "all" ]; then
             TARGETS="$ALL_VERSIONS"
           elif [ "$REQUESTED" = "latest" ]; then
