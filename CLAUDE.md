@@ -51,35 +51,58 @@ Over-the-Air Updates laufen über Shorebird Code Push.
 
 ### Patch-Workflow (`shorebird_patch.yml`)
 - **Vollautomatisch**: Feuert bei JEDEM Push auf `main`. Kein manuelles Triggern nötig.
-- Zusätzlich manuell triggerbar via `workflow_dispatch` (Eingabe `release_version`:
-  `all` / `latest` / konkrete Version wie `5.36.0`).
-- **Patcht standardmäßig ALLE aktiven Release-Versionen** (nicht nur `latest`!).
-  Schleife liest `shorebird releases list --platforms=android` und ruft für jede
-  gefundene Version `shorebird patch android --release-version=<ver>` auf.
+- Zusätzlich manuell triggerbar via `workflow_dispatch` (Eingabe `source_branch`).
+- **Patcht IMMER nur die neueste Release-Version** (`--release-version=latest`).
+  Ein einziger `shorebird patch android`-Aufruf, keine Schleife, kein Resolver.
 - Schreibt Patch-Changelog automatisch in `app_config.patch_changelog` (Supabase)
 - Legt Eintrag in `update_history` (type=patch) an
 - NIEMALS neue Dart-Dependencies oder native Änderungen patchen → dann neuer Release nötig
 
-### ⚠️ WICHTIG — `--release-version=latest` ist FALSCH (verbindlich)
+### ⚠️ STRATEGIE: Patches nur an `latest`, ältere APKs via ReleaseUpdateScreen (verbindlich)
 
-Früher hat der Patch-Workflow nur `--release-version=latest` genutzt. Das hat
-dazu geführt, dass **ausschließlich User auf der neuesten APK** die Dart-Updates
-bekommen haben. User auf älteren Versionen (z.B. v5.34, v5.35, v5.36) haben die
-Patches nie gesehen, weil der Shorebird-Client auf dem Gerät nur Patches für
-die EXAKT installierte Release-Version akzeptiert.
+Seit v5.37+ gilt das **"latest-only"-Modell**:
 
-Neue Regel (seit v5.37+):
-- `shorebird_patch.yml` patcht **JEDE registrierte Release-Version**
-- Einzelne Fehler (z.B. Engine-Drift bei sehr alten Versionen) lassen den Job
-  nicht fehlschlagen — nur wenn 0 Patches erfolgreich waren
-- Kein manuelles Eingreifen nötig — User auf jeder APK-Version bekommen
-  automatisch die neuesten Dart-Änderungen
+1. **Shorebird OTA-Patches gehen ausschließlich an die neueste Release-Version.**
+   `shorebird_patch.yml` nutzt `--release-version=latest` — kein Multi-Version-Loop,
+   kein Parsing von `shorebird releases list`, kein `gh release list`-Fallback.
+2. **User auf älteren APKs werden über den in-App `ReleaseUpdateScreen` zum
+   APK-Download geleitet** — gesteuert über `app_config.min_version` in Supabase.
+   Bei jedem neuen Release setzt `build_apk.yml` `min_version` auf die vorher
+   installierte Version, sodass ältere User spätestens beim nächsten App-Start den
+   Fullscreen-Update-Gate sehen und die neue APK in der App downloaden können.
+   - **≥ v5.36.0**: vollautomatisch (Dialog → PackageInstaller in der App).
+   - **v5.34.0–v5.35.x**: Keystore passt, aber pre-v5.36 UI-Infrastruktur fehlt →
+     User kommen manuell über GitHub Releases. Für Power-User akzeptabel;
+     die meisten User sollten inzwischen auf v5.36+ sein.
+   - **< v5.34.0**: alter Debug-Keystore → Signatur-Mismatch. In-App-Install
+     schlägt nach 2 Versuchen fehl, Notausgang-Anleitung (Deinstall + Neuinstall)
+     greift. Für diese User bleibt nur der manuelle Einmal-Wechsel.
+3. **Build-Nummer MUSS strikt aufsteigend sein** (`pubspec.yaml`: `5.X.Y+<buildNumber>`).
+   Android lehnt Installs mit gleichem oder niedrigerem `versionCode` ab.
+   `build_apk.yml` enthält einen Pre-Check der `pubspec.yaml`-Build-Nummer gegen den
+   letzten Release-Tag vergleicht und fehlschlägt wenn die Nummer nicht steigt.
+
+Warum das funktioniert:
+- Seit v5.34.0 teilen alle APKs denselben persistenten Release-Keystore → APK-Updates
+  laufen ohne Deinstallation (kein Signatur-Mismatch mehr, siehe Regel 3 unten).
+- Der `ReleaseUpdateScreen` kann die neue APK direkt via `PackageInstaller` ausrollen —
+  für den User gleicher Aufwand wie ein OTA-Patch, nur ein Tap mehr.
+- Keine Fragilität mehr durch Shorebird-CLI-Versions-Drift, Release-ID-Formate
+  (`<semver>+<buildNumber>`) oder Engine-Snapshot-Kompatibilität bei alten Releases.
+
+Warum das alte Multi-Version-Patching verworfen wurde (kurz):
+- `shorebird releases list` existiert in CLI 1.6.92 nicht (nur `get-apks`-Subcommand)
+- Shorebird erwartet Release-IDs als `<semver>+<buildNumber>`, GitHub-Tags sind nur `vX.Y.Z`
+- Engine-Drift bei alten Releases lässt Patches silent auf dem Gerät verworfen werden
+- Mehrere fehlgeschlagene Runs zeigten: der Debug-Aufwand rechtfertigt nicht den Nutzen,
+  wenn der `ReleaseUpdateScreen` dasselbe Ziel zuverlässig erreicht
 
 ### Release-Workflow (nur wenn nötig)
 - Nur manuell triggern nach expliziter Absprache mit mir
 - Erstellt neue APK mit `shorebird release android`
-- Danach müssen BEIDE Versionen gepatcht werden (alte + neue),
-  bis alle User die neue APK haben
+- Patch geht danach automatisch an die NEUE Release-Version (latest)
+- User auf der alten APK kriegen über `min_version`-Bump den `ReleaseUpdateScreen` und
+  laden die neue APK in der App herunter — kein paralleles Patchen der alten Version nötig
 
 ---
 

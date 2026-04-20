@@ -51,6 +51,7 @@ jobs:
         run: |
           set -euo pipefail
           VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: //' | sed 's/+.*//')
+          BUILD_NUMBER=$(grep '^version:' pubspec.yaml | sed 's/.*+//')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
           # Bei Tag-Push IMMER bauen (expliziter Release-Wunsch).
@@ -68,6 +69,29 @@ jobs:
             fi
           fi
           echo "should_build=$SHOULD_BUILD" >> $GITHUB_OUTPUT
+
+          # GUARD: Build-Nummer (= Android versionCode) MUSS strikt steigen.
+          # Android blockiert Installs wenn versionCode nicht größer ist als auf dem
+          # Gerät — sonst können User nicht upgraden. Vergleich gegen den letzten
+          # released Tag (dessen pubspec.yaml-Build-Nummer), nur wenn wir tatsächlich
+          # bauen und einen Vorgänger haben.
+          if [ "$SHOULD_BUILD" = "true" ]; then
+            LAST_RELEASED_TAG=$(gh release list --repo "$GITHUB_REPOSITORY" --limit 1 \
+              --json tagName --jq '.[0].tagName // empty' 2>/dev/null || true)
+            if [ -n "$LAST_RELEASED_TAG" ]; then
+              LAST_BUILD=$(git show "$LAST_RELEASED_TAG:pubspec.yaml" 2>/dev/null \
+                | grep '^version:' | sed 's/.*+//' || echo "")
+              if [ -n "$LAST_BUILD" ]; then
+                if [ "$BUILD_NUMBER" -le "$LAST_BUILD" ]; then
+                  echo "❌ Build-Nummer $BUILD_NUMBER ist nicht größer als $LAST_BUILD (aus $LAST_RELEASED_TAG)."
+                  echo "   Android versionCode MUSS strikt steigen, sonst können User nicht upgraden."
+                  echo "   Fix: pubspec.yaml version: $VERSION+<größer als $LAST_BUILD>"
+                  exit 1
+                fi
+                echo "✅ Build-Nummer-Guard: $BUILD_NUMBER > $LAST_BUILD ($LAST_RELEASED_TAG)"
+              fi
+            fi
+          fi
 
           # AUTO min_version: letzte veröffentlichte GitHub-Release-Version.
           # User unter dieser Version sehen den Force-Update-Screen.
