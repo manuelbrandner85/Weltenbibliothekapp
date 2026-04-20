@@ -128,3 +128,35 @@ class SqliteStorageService {
     await _database.delete('kv_store', where: 'box = ?', whereArgs: [box]);
   }
 }
+
+/// Hive-Box-kompatibler Shim über SqliteStorageService.
+///
+/// Bildet die von Legacy-Callern genutzte Hive-Box-API ab
+/// (put/get/delete/values/length/isEmpty/isNotEmpty/keys), damit nach der
+/// Hive→sqflite-Migration bestehender Code weiterläuft ohne Call-Site-Rewrite.
+class BoxShim {
+  BoxShim(this._boxName);
+  final String _boxName;
+  SqliteStorageService get _db => SqliteStorageService.instance;
+
+  Future<void> put(dynamic key, dynamic value) =>
+      _db.put(_boxName, key.toString(), value);
+
+  dynamic get(dynamic key) => _db.getSync(_boxName, key.toString());
+
+  Future<void> delete(dynamic key) => _db.delete(_boxName, key.toString());
+
+  Iterable<dynamic> get values => _db.getAllSync(_boxName);
+
+  int get length => _db.getAllSync(_boxName).length;
+
+  bool get isEmpty => length == 0;
+  bool get isNotEmpty => length > 0;
+
+  Iterable<String> get keys {
+    final prefix = '$_boxName\x00';
+    return _db._cache.keys
+        .where((k) => k.startsWith(prefix))
+        .map((k) => k.substring(prefix.length));
+  }
+}
