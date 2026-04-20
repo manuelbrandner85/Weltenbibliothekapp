@@ -91,58 +91,46 @@ jobs:
         # Eine einzelne Version kann via workflow_dispatch `release_version` gezielt
         # gepatcht werden (z.B. "5.36.0"). "all" = alle Versionen patchen.
         #
-        # Version-Liste kommt aus GitHub Releases (zuverlässiger als Shorebird-CLI-
-        # Table-Parsing). GitHub-Release + Shorebird-Release werden in build_apk.yml
-        # immer zusammen erstellt → identische Version-Liste.
+        # Version-Liste kommt aus `shorebird releases list` (einzige zuverlässige
+        # Quelle für die EXAKTEN Shorebird-Release-IDs inkl. Build-Nummer).
+        # Shorebird registriert Releases als `<semver>+<buildNumber>` (z.B.
+        # `5.37.0+20260421`). `--release-version=5.37.0` ohne Build-Nummer
+        # schlägt mit "Release not found" fehl — deshalb ist GitHub-Tag-Parsing
+        # hier falsch (Tags sind nur `v5.37.0`).
         #
         # --allow-asset-diffs bleibt weil MaterialIcons.otf bei jedem Build anders
         # tree-geshaked wird sobald neue Icons im Dart-Code stehen.
         env:
           SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -uo pipefail
 
           REQUESTED="${{ github.event.inputs.release_version || 'all' }}"
 
-          # Min-Version-Floor: Releases vor v5.34.0 haben einen anderen (Debug-)Keystore
-          # und sind NICHT auf Shorebird registriert → "Release not found"-Spam.
-          # Ab v5.34.0 läuft der persistente Release-Keystore + Shorebird-Registrierung.
-          MIN_VERSION="5.34.0"
-
-          # Versionen aus GitHub Releases lesen (ohne "v"-Prefix), Min-Floor anwenden.
-          # Limit 20 reicht locker — wir patchen in der Regel die letzten 4–8 Versionen.
-          ALL_VERSIONS=$(gh release list --repo "$GITHUB_REPOSITORY" --limit 20 \
-            --json tagName --jq '.[].tagName' 2>/dev/null \
-            | sed 's/^v//' \
-            | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' \
-            | awk -v min="$MIN_VERSION" '
-                {
-                  split($0, a, ".");
-                  split(min, b, ".");
-                  if (a[1] > b[1] \
-                      || (a[1] == b[1] && a[2] > b[2]) \
-                      || (a[1] == b[1] && a[2] == b[2] && a[3] >= b[3])) print
-                }' \
+          # Registrierte Shorebird-Releases extrahieren (Format: <semver>+<buildNumber>).
+          # Die CLI gibt eine ASCII-Table aus; wir greppen Zeilen mit semver+build
+          # und dedupen. Keine GitHub-Tag-Fallbacks — nur was Shorebird wirklich kennt.
+          ALL_VERSIONS=$(shorebird releases list --platforms=android 2>/dev/null \
+            | grep -oE '[0-9]+\.[0-9]+\.[0-9]+\+[0-9]+' \
             | sort -V -u)
 
           if [ -z "$ALL_VERSIONS" ]; then
-            echo "❌ Konnte keine GitHub-Releases finden — Patch abgebrochen"
-            echo "→ Debug: Liste aller Tags via gh:"
-            gh release list --repo "$GITHUB_REPOSITORY" --limit 20 || true
+            echo "❌ Keine Shorebird-Releases gefunden — Patch abgebrochen"
+            echo "→ Debug: Raw-Ausgabe von shorebird releases list:"
+            shorebird releases list --platforms=android 2>&1 || true
             exit 1
           fi
 
           # Ziel-Liste bestimmen:
-          # - "all" (Standard): alle Versionen
+          # - "all" (Standard): alle registrierten Shorebird-Releases
           # - "latest": nur neueste Version
-          # - konkrete Version: nur diese
+          # - konkrete Version: Substring-Match (z.B. "5.36.0" matcht "5.36.0+20260420")
           if [ "$REQUESTED" = "all" ]; then
             TARGETS="$ALL_VERSIONS"
           elif [ "$REQUESTED" = "latest" ]; then
             TARGETS=$(echo "$ALL_VERSIONS" | tail -n1)
           else
-            TARGETS="$REQUESTED"
+            TARGETS=$(echo "$ALL_VERSIONS" | grep -F "$REQUESTED" || echo "$REQUESTED")
           fi
 
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
