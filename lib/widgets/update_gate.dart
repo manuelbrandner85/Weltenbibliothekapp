@@ -16,9 +16,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../screens/release_update_screen.dart';
+import '../services/update_confirmation_service.dart';
 import '../services/update_service.dart';
 import 'patch_download_indicator.dart';
 import 'patch_ready_dialog.dart';
+import 'update_success_banner.dart';
 
 class UpdateGate extends StatefulWidget {
   final Widget child;
@@ -33,6 +35,7 @@ class _UpdateGateState extends State<UpdateGate> with WidgetsBindingObserver {
   bool _patchDialogShown = false;
   Timer? _periodicTimer;
   StreamSubscription<PatchCheckResult>? _patchSub;
+  UpdateConfirmationResult? _confirmationResult;
 
   @override
   void initState() {
@@ -46,7 +49,10 @@ class _UpdateGateState extends State<UpdateGate> with WidgetsBindingObserver {
       _showPatchDialog(result);
     });
 
-    WidgetsBinding.instance.addPostFrameCallback((_) => _runChecks());
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _checkUpdateConfirmation();
+      _runChecks();
+    });
 
     // Alle 3 Minuten prüfen ob ein Patch inzwischen heruntergeladen wurde
     // (Fallback falls der Stream aus irgendeinem Grund nichts liefert).
@@ -68,6 +74,12 @@ class _UpdateGateState extends State<UpdateGate> with WidgetsBindingObserver {
     if (state == AppLifecycleState.resumed) {
       _runChecks();
     }
+  }
+
+  Future<void> _checkUpdateConfirmation() async {
+    final result = await UpdateConfirmationService.instance.checkAndConfirm();
+    if (!mounted || !result.wasUpdated) return;
+    setState(() => _confirmationResult = result);
   }
 
   Future<void> _checkPatchReady() async {
@@ -124,6 +136,8 @@ class _UpdateGateState extends State<UpdateGate> with WidgetsBindingObserver {
       children: [
         widget.child,
         const PatchDownloadIndicator(),
+        if (_confirmationResult != null)
+          UpdateSuccessBanner(result: _confirmationResult!),
       ],
     );
   }
