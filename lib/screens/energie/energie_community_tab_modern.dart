@@ -33,7 +33,7 @@ const _kTeal    = Color(0xFF26C6DA);
 const _kPink    = Color(0xFFEC407A);
 const _kGreen   = Color(0xFF66BB6A);
 
-class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern> with SingleTickerProviderStateMixin {
+class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern> with TickerProviderStateMixin {
   bool _isLoading = true;
   String _selectedView = 'alle'; // 'alle', 'trending', 'fotos', 'diskussion', 'gespeichert'
 
@@ -47,6 +47,14 @@ class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern> w
   final ChatNotificationService _notificationService = ChatNotificationService();
   final CommunityService _communityService = CommunityService();
 
+  // ── Hero-header animations (mirror home dashboard) ────────────────────
+  late AnimationController _auraCtrl;
+  late AnimationController _entryCtrl;
+  late AnimationController _orbitCtrl;
+  late Animation<double> _entryAnim;
+  final ScrollController _scrollCtrl = ScrollController();
+  double _scrollOffset = 0;
+
   // ✅ Echte Posts von Cloudflare API
   List<CommunityPost> _posts = [];
 
@@ -55,6 +63,17 @@ class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern> w
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _tabController.addListener(() => setState(() {}));
+    _auraCtrl = AnimationController(vsync: this,
+        duration: const Duration(seconds: 3))..repeat(reverse: true);
+    _entryCtrl = AnimationController(vsync: this,
+        duration: const Duration(milliseconds: 900));
+    _orbitCtrl = AnimationController(vsync: this,
+        duration: const Duration(seconds: 12))..repeat();
+    _entryAnim = CurvedAnimation(parent: _entryCtrl, curve: Curves.easeOutCubic);
+    _entryCtrl.forward();
+    _scrollCtrl.addListener(() {
+      if (mounted) setState(() => _scrollOffset = _scrollCtrl.offset);
+    });
     _loadBookmarks();
     _loadData();
   }
@@ -137,6 +156,10 @@ class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern> w
   @override
   void dispose() {
     _tabController.dispose();
+    _auraCtrl.dispose();
+    _entryCtrl.dispose();
+    _orbitCtrl.dispose();
+    _scrollCtrl.dispose();
     super.dispose();
   }
 
@@ -301,9 +324,11 @@ class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern> w
         backgroundColor: Colors.black87,
         onRefresh: _loadData,
         child: CustomScrollView(
+          controller: _scrollCtrl,
           physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
           slivers: [
-            SliverToBoxAdapter(child: _buildHeader()),
+            _buildHeroHeader(),
+            SliverToBoxAdapter(child: _buildFilterRow()),
             // Feature 7 — Live-Counter
             SliverToBoxAdapter(child: _buildLiveCounter()),
             SliverToBoxAdapter(child: _buildStatBanner()),
@@ -359,79 +384,134 @@ class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern> w
     );
   }
 
-  Widget _buildHeader() {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // ── Title row ─────────────────────────────────────────────────
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
+  // Animated hero header — mirrors home dashboard `_buildHeroHeader`
+  Widget _buildHeroHeader() {
+    return SliverToBoxAdapter(
+      child: FadeTransition(
+        opacity: _entryAnim,
+        child: SizedBox(
+          height: 180,
+          child: Stack(
             children: [
-              // Aura orb
-              Container(
-                width: 50, height: 50,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: const RadialGradient(
-                    colors: [Color(0x66AB47BC), Color(0x1A4A148C)],
+              AnimatedBuilder(
+                animation: Listenable.merge([_orbitCtrl, _auraCtrl]),
+                builder: (_, __) => CustomPaint(
+                  painter: _CommunityAuraPainter(
+                    orbitProgress: _orbitCtrl.value,
+                    auraProgress: _auraCtrl.value,
+                    scrollOffset: _scrollOffset,
+                    color: _kPurple,
                   ),
-                  border: Border.all(color: _kPurpleL.withValues(alpha: 0.45), width: 1.5),
-                  boxShadow: [
-                    BoxShadow(color: _kPurple.withValues(alpha: 0.3), blurRadius: 16, spreadRadius: 2),
-                  ],
+                  child: const SizedBox.expand(),
                 ),
-                child: const Center(child: Text('🌟', style: TextStyle(fontSize: 22))),
               ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Spirituelle Community',
-                        style: TextStyle(color: Colors.white, fontSize: 19,
-                            fontWeight: FontWeight.bold, letterSpacing: -0.3)),
-                    const SizedBox(height: 3),
-                    Row(children: [
-                      Container(
-                        width: 6, height: 6,
-                        decoration: BoxDecoration(
-                          color: _kPurple,
-                          shape: BoxShape.circle,
-                          boxShadow: [BoxShadow(color: _kPurple.withValues(alpha: 0.6), blurRadius: 4)],
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Colors.transparent, _kBg],
+                    stops: const [0.45, 1.0],
+                  ),
+                ),
+              ),
+              SafeArea(
+                bottom: false,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      AnimatedBuilder(
+                        animation: _auraCtrl,
+                        builder: (_, __) => Container(
+                          width: 54, height: 54,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: RadialGradient(
+                              colors: [
+                                _kPurple.withValues(alpha: 0.45 + _auraCtrl.value * 0.2),
+                                _kPurpleD.withValues(alpha: 0.1),
+                              ],
+                            ),
+                            border: Border.all(
+                                color: _kPurpleL.withValues(alpha: 0.4 + _auraCtrl.value * 0.3),
+                                width: 1.5),
+                            boxShadow: [
+                              BoxShadow(
+                                color: _kPurple.withValues(alpha: 0.25 + _auraCtrl.value * 0.2),
+                                blurRadius: 18, spreadRadius: 3,
+                              ),
+                            ],
+                          ),
+                          child: const Center(
+                            child: Text('🌟', style: TextStyle(fontSize: 24)),
+                          ),
                         ),
                       ),
-                      const SizedBox(width: 6),
-                      Text('Teile Erfahrungen & Erkenntnisse',
-                          style: TextStyle(color: Colors.white.withValues(alpha: 0.45), fontSize: 11)),
-                    ]),
-                  ],
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('✨ Spirituelle Community',
+                                style: TextStyle(color: Colors.white54, fontSize: 12,
+                                    fontWeight: FontWeight.w500)),
+                            const SizedBox(height: 2),
+                            const Text('Community',
+                                style: TextStyle(color: Colors.white, fontSize: 20,
+                                    fontWeight: FontWeight.bold, letterSpacing: -0.3),
+                                overflow: TextOverflow.ellipsis),
+                            const SizedBox(height: 3),
+                            Row(children: [
+                              AnimatedBuilder(
+                                animation: _auraCtrl,
+                                builder: (_, __) => Container(
+                                  width: 6, height: 6,
+                                  decoration: BoxDecoration(
+                                    color: _kPurple.withValues(alpha: 0.5 + _auraCtrl.value * 0.5),
+                                    shape: BoxShape.circle,
+                                    boxShadow: [BoxShadow(color: _kPurple.withValues(alpha: 0.5), blurRadius: 4)],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Text('${_posts.length} Beiträge · Welt der ENERGIE',
+                                  style: const TextStyle(color: Colors.white38, fontSize: 11)),
+                            ]),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 18),
+        ),
+      ),
+    );
+  }
 
-          // Feature 8 — Filter-Chips
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                _buildViewTab('alle', '✨ Alle', _kPurpleL),
-                const SizedBox(width: 8),
-                _buildViewTab('trending', '🔥 Trending', Colors.orange),
-                const SizedBox(width: 8),
-                _buildViewTab('fotos', '📸 Fotos', _kTeal),
-                const SizedBox(width: 8),
-                _buildViewTab('diskussion', '💬 Diskussion', _kPink),
-                const SizedBox(width: 8),
-                _buildViewTab('gespeichert', '🔖 Gespeichert', _kGold),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-        ],
+  Widget _buildFilterRow() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        child: Row(
+          children: [
+            _buildViewTab('alle', '✨ Alle', _kPurpleL),
+            const SizedBox(width: 8),
+            _buildViewTab('trending', '🔥 Trending', Colors.orange),
+            const SizedBox(width: 8),
+            _buildViewTab('fotos', '📸 Fotos', _kTeal),
+            const SizedBox(width: 8),
+            _buildViewTab('diskussion', '💬 Diskussion', _kPink),
+            const SizedBox(width: 8),
+            _buildViewTab('gespeichert', '🔖 Gespeichert', _kGold),
+          ],
+        ),
       ),
     );
   }
@@ -1255,4 +1335,71 @@ class _CommStat {
   final int value;
   final Color color;
   const _CommStat({required this.icon, required this.label, required this.value, required this.color});
+}
+
+class _CommunityAuraPainter extends CustomPainter {
+  final double orbitProgress;
+  final double auraProgress;
+  final double scrollOffset;
+  final Color color;
+
+  _CommunityAuraPainter({
+    required this.orbitProgress,
+    required this.auraProgress,
+    required this.scrollOffset,
+    required this.color,
+  });
+
+  static final List<Offset> _stars = List.generate(28, (i) {
+    final rng = math.Random(i * 11 + 7);
+    return Offset(rng.nextDouble(), rng.nextDouble());
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final bgPaint = Paint()
+      ..shader = const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [Color(0xFF08040F), Color(0xFF0D061A), Color(0xFF080410)],
+      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), bgPaint);
+
+    final glow1 = Paint()
+      ..color = color.withValues(alpha: 0.06 + math.sin(auraProgress * math.pi) * 0.04)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 70);
+    canvas.drawCircle(Offset(size.width * 0.4, size.height * 0.3), size.width * 0.55, glow1);
+
+    final glow2 = Paint()
+      ..color = const Color(0xFFFFD54F).withValues(alpha: 0.03 + auraProgress * 0.02)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 50);
+    canvas.drawCircle(Offset(size.width * 0.75, size.height * 0.6), size.width * 0.3, glow2);
+
+    final particlePaint = Paint()..color = color.withValues(alpha: 0.25);
+    for (int p = 0; p < 3; p++) {
+      final angle = orbitProgress * math.pi * 2 + p * (math.pi * 2 / 3);
+      final radius = 26.0 + p * 12;
+      final cx = size.width * 0.75 + math.cos(angle) * radius;
+      final cy = size.height * 0.3 + math.sin(angle) * radius * 0.6;
+      canvas.drawCircle(Offset(cx, cy - scrollOffset * 0.1), 2.0 + p * 0.5, particlePaint);
+    }
+
+    final starPaint = Paint();
+    for (var i = 0; i < _stars.length; i++) {
+      final s = _stars[i];
+      final twinkle = math.sin(auraProgress * math.pi * 2 + i * 0.9);
+      final alpha = (0.15 + twinkle * 0.12).clamp(0.03, 0.35);
+      starPaint.color = Colors.white.withValues(alpha: alpha);
+      canvas.drawCircle(
+        Offset(s.dx * size.width, s.dy * size.height - scrollOffset * 0.12),
+        1.0 + (i % 3) * 0.4, starPaint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_CommunityAuraPainter old) =>
+      old.orbitProgress != orbitProgress ||
+      old.auraProgress != auraProgress ||
+      old.scrollOffset != scrollOffset;
 }
