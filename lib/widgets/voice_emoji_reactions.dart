@@ -1,0 +1,230 @@
+/// 😊 VOICE EMOJI REACTIONS
+/// Emoji reactions during voice chat
+library;
+
+import 'package:flutter/material.dart';
+import 'dart:math' as math;
+
+class VoiceEmojiReaction {
+  final String emoji;
+  final String userId;
+  final DateTime timestamp;
+
+  VoiceEmojiReaction({
+    required this.emoji,
+    required this.userId,
+    required this.timestamp,
+  });
+}
+
+class VoiceEmojiReactionsWidget extends StatefulWidget {
+  final List<VoiceEmojiReaction> reactions;
+
+  const VoiceEmojiReactionsWidget({
+    super.key,
+    required this.reactions,
+  });
+
+  @override
+  State<VoiceEmojiReactionsWidget> createState() =>
+      _VoiceEmojiReactionsWidgetState();
+}
+
+class _VoiceEmojiReactionsWidgetState extends State<VoiceEmojiReactionsWidget>
+    with TickerProviderStateMixin {
+  final Map<String, AnimationController> _controllers = {};
+  final Map<String, Animation<double>> _fadeAnimations = {};
+  final Map<String, Animation<Offset>> _slideAnimations = {};
+
+  @override
+  void didUpdateWidget(VoiceEmojiReactionsWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    // Check for new reactions
+    for (var reaction in widget.reactions) {
+      final key = '${reaction.userId}_${reaction.timestamp.millisecondsSinceEpoch}';
+      if (!_controllers.containsKey(key)) {
+        _addReaction(key);
+      }
+    }
+  }
+
+  void _addReaction(String key) {
+    final controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2000),
+    );
+
+    _controllers[key] = controller;
+
+    _fadeAnimations[key] = Tween<double>(begin: 1.0, end: 0.0).animate(
+      CurvedAnimation(
+        parent: controller,
+        curve: const Interval(0.7, 1.0, curve: Curves.easeOut),
+      ),
+    );
+
+    _slideAnimations[key] = Tween<Offset>(
+      begin: Offset.zero,
+      end: const Offset(0, -3.0),
+    ).animate(
+      CurvedAnimation(
+        parent: controller,
+        curve: Curves.easeOut,
+      ),
+    );
+
+    controller.forward().then((_) {
+      _controllers.remove(key);
+      _fadeAnimations.remove(key);
+      _slideAnimations.remove(key);
+      controller.dispose();
+    });
+  }
+
+  @override
+  void dispose() {
+    for (var controller in _controllers.values) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.reactions.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Stack(
+      children: widget.reactions.map((reaction) {
+        final key = '${reaction.userId}_${reaction.timestamp.millisecondsSinceEpoch}';
+        final controller = _controllers[key];
+
+        if (controller == null) return const SizedBox.shrink();
+
+        return AnimatedBuilder(
+          animation: controller,
+          builder: (context, child) {
+            return Positioned(
+              left: _getRandomX(),
+              bottom: _getRandomY(),
+              child: Opacity(
+                opacity: _fadeAnimations[key]?.value ?? 1.0,
+                child: SlideTransition(
+                  position: _slideAnimations[key]!,
+                  child: Transform.scale(
+                    scale: 1.0 + (controller.value * 0.5),
+                    child: Text(
+                      reaction.emoji,
+                      style: const TextStyle(fontSize: 40),
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      }).toList(),
+    );
+  }
+
+  double _getRandomX() {
+    return (math.Random().nextDouble() * 300) + 20;
+  }
+
+  double _getRandomY() {
+    return (math.Random().nextDouble() * 100) + 50;
+  }
+}
+
+/// 😊 Emoji Reaction Picker for Voice Chat
+class VoiceEmojiReactionPicker extends StatelessWidget {
+  final Function(String emoji) onEmojiSelected;
+
+  const VoiceEmojiReactionPicker({
+    super.key,
+    required this.onEmojiSelected,
+  });
+
+  static const List<String> _quickEmojis = [
+    '👍', '❤️', '😂', '🎉', '👏',
+    '🔥', '✨', '💯', '🙌', '💪',
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF16213E),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.3),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text(
+            '😊 Reaktion senden',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: _quickEmojis.map((emoji) {
+              return GestureDetector(
+                onTap: () {
+                  onEmojiSelected(emoji);
+                  Navigator.of(context).pop();
+                },
+                child: Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      width: 1,
+                    ),
+                  ),
+                  child: Center(
+                    child: Text(
+                      emoji,
+                      style: const TextStyle(fontSize: 28),
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Show Emoji Picker
+  static Future<void> show(
+    BuildContext context,
+    Function(String emoji) onEmojiSelected,
+  ) async {
+    await showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => VoiceEmojiReactionPicker(
+        onEmojiSelected: onEmojiSelected,
+      ),
+    );
+  }
+}
