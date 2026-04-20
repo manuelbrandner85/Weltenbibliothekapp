@@ -1,4 +1,7 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../services/storage_service.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import '../../models/community_post.dart';
@@ -7,8 +10,6 @@ import '../../services/community_service.dart'; // ✅ Cloudflare API
 import '../../widgets/create_post_dialog_v2.dart'; // ✅ Post-Dialog
 import '../../widgets/post_actions_row.dart'; // ✅ POST ACTIONS
 import '../../widgets/loading_skeletons.dart'; // 💀 LOADING SKELETONS
-// 👍 NEW: Like Button
-// 💬 NEW: Comments Widget
 import 'energie_live_chat_screen.dart'; // 💬 LIVE-CHAT INTEGRATION
 import '../../services/chat_notification_service.dart'; // 🔔 NOTIFICATION SERVICE
 
@@ -34,13 +35,18 @@ const _kGreen   = Color(0xFF66BB6A);
 
 class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern> with SingleTickerProviderStateMixin {
   bool _isLoading = true;
-  String _selectedView = 'trending'; // 'trending', 'sacred', 'experiences'
-  
+  String _selectedView = 'alle'; // 'alle', 'trending', 'fotos', 'diskussion', 'gespeichert'
+
+  // Bookmarks (Feature 9) — persisted in SharedPreferences
+  Set<String> _bookmarkedIds = {};
+  // Reactions (Feature 2) — emoji → set of reaction-usernames (in-memory)
+  final Map<String, Map<String, int>> _reactions = {};
+
   // 💬 TAB CONTROLLER für Posts vs Chat
   late TabController _tabController;
   final ChatNotificationService _notificationService = ChatNotificationService();
   final CommunityService _communityService = CommunityService();
-  
+
   // ✅ Echte Posts von Cloudflare API
   List<CommunityPost> _posts = [];
 
@@ -48,17 +54,38 @@ class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern> w
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    
-    // ✅ Listener für Tab-Wechsel (FAB nur in Posts-Tab zeigen)
-    _tabController.addListener(() {
-      setState(() {}); // Rebuild für FAB Visibility
-    });
-    if (kDebugMode) {
-      debugPrint('🟣 ENERGIE Community Tab Modern mit Chat initialisiert');
-    }
+    _tabController.addListener(() => setState(() {}));
+    _loadBookmarks();
     _loadData();
   }
-  
+
+  Future<void> _loadBookmarks() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getStringList('energie_bookmarks') ?? [];
+    if (mounted) setState(() => _bookmarkedIds = saved.toSet());
+  }
+
+  Future<void> _toggleBookmark(String postId) async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      if (_bookmarkedIds.contains(postId)) {
+        _bookmarkedIds.remove(postId);
+      } else {
+        _bookmarkedIds.add(postId);
+        HapticFeedback.lightImpact();
+      }
+    });
+    await prefs.setStringList('energie_bookmarks', _bookmarkedIds.toList());
+  }
+
+  void _toggleReaction(String postId, String emoji) {
+    HapticFeedback.selectionClick();
+    setState(() {
+      _reactions[postId] ??= {};
+      _reactions[postId]![emoji] = (_reactions[postId]![emoji] ?? 0) + 1;
+    });
+  }
+
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
     try {
@@ -87,16 +114,24 @@ class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern> w
     }
   }
   
+  // Feature 6 — Inline Bottom-Sheet statt Dialog
   Future<void> _showCreatePostDialog() async {
-    final result = await showDialog<bool>(
+    final result = await showModalBottomSheet<bool>(
       context: context,
-      builder: (context) => CreatePostDialogV2(
-        worldType: WorldType.energie,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.92,
+        minChildSize: 0.6,
+        maxChildSize: 0.97,
+        expand: false,
+        builder: (_, controller) => ClipRRect(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          child: CreatePostDialogV2(worldType: WorldType.energie),
+        ),
       ),
     );
-    if (result == true) {
-      _loadData(); // ✅ Reload posts after success
-    }
+    if (result == true) _loadData();
   }
   
   @override
@@ -236,8 +271,29 @@ class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern> w
     );
   }
   
-  // Original Posts View
+  List<CommunityPost> get _filteredPosts {
+    switch (_selectedView) {
+      case 'fotos':
+        return _posts.where((p) => p.mediaUrl != null && p.mediaUrl!.isNotEmpty).toList();
+      case 'trending':
+        final sorted = List<CommunityPost>.from(_posts)..sort((a, b) => b.likes.compareTo(a.likes));
+        return sorted;
+      case 'diskussion':
+        final sorted = List<CommunityPost>.from(_posts)..sort((a, b) => b.comments.compareTo(a.comments));
+        return sorted;
+      case 'gespeichert':
+        return _posts.where((p) => _bookmarkedIds.contains(p.id)).toList();
+      default:
+        return _posts;
+    }
+  }
+
   Widget _buildPostsView() {
+    final filtered = _filteredPosts;
+    final hero = _posts.isNotEmpty
+        ? (List<CommunityPost>.from(_posts)..sort((a, b) => b.likes.compareTo(a.likes))).first
+        : null;
+
     return Container(
       color: _kBg,
       child: RefreshIndicator(
@@ -247,66 +303,56 @@ class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern> w
         child: CustomScrollView(
           physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
           slivers: [
-          SliverToBoxAdapter(child: _buildHeader()),
-          SliverToBoxAdapter(child: _buildStatBanner()),
+            SliverToBoxAdapter(child: _buildHeader()),
+            // Feature 7 — Live-Counter
+            SliverToBoxAdapter(child: _buildLiveCounter()),
+            SliverToBoxAdapter(child: _buildStatBanner()),
+            // Feature 5 — Story-Bubbles
+            if (_posts.isNotEmpty) SliverToBoxAdapter(child: _buildStoryBubbles()),
 
-          // Trending Energie-Tags
-          if (_selectedView == 'trending')
+            if (_selectedView == 'trending')
+              SliverToBoxAdapter(child: _buildTrendingSection()),
+
+            // Feature 4 — Hero-Post
+            if (hero != null && _selectedView == 'alle')
+              SliverToBoxAdapter(child: _buildHeroPost(hero)),
+
             SliverToBoxAdapter(
-              child: _buildTrendingSection(),
+              child: _buildSectionTitle('✨ Neueste Beiträge', subtitle: 'Spiritueller Austausch'),
             ),
-          
-          SliverToBoxAdapter(
-            child: _buildSectionTitle('✨ Neueste Beiträge', subtitle: 'Spiritueller Austausch'),
-          ),
 
-          // Community-Posts
-          _isLoading
-              ? SliverPadding(
-                  padding: const EdgeInsets.all(16),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) => LoadingSkeletons.postCard(),
-                      childCount: 3, // Show 3 skeleton posts
-                    ),
-                  ),
-                )
-              : _posts.isEmpty
-                ? SliverFillRemaining(
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.forum_outlined, size: 64, color: Colors.white.withValues(alpha: 0.3)),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Noch keine Posts vorhanden',
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.7),
-                              fontSize: 16,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Sei der Erste und erstelle einen Post!',
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.5),
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
+            _isLoading
+                ? SliverPadding(
+                    padding: const EdgeInsets.all(16),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (_, __) => LoadingSkeletons.postCard(),
+                        childCount: 3,
                       ),
                     ),
                   )
-                : SliverPadding(
-                  padding: const EdgeInsets.all(16),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) => _buildPostCard(_posts[index]),
-                      childCount: _posts.length,
-                    ),
-                  ),
-                ),
+                : filtered.isEmpty
+                    ? SliverFillRemaining(
+                        child: Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.forum_outlined, size: 64, color: Colors.white.withValues(alpha: 0.3)),
+                              const SizedBox(height: 16),
+                              Text('Keine Beiträge',
+                                  style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 16)),
+                              const SizedBox(height: 8),
+                              Text('Sei der Erste und erstelle einen Post!',
+                                  style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 14)),
+                            ],
+                          ),
+                        ),
+                      )
+                    // Feature 1 — Masonry-Grid (2 Spalten)
+                    : SliverPadding(
+                        padding: const EdgeInsets.fromLTRB(12, 0, 12, 80),
+                        sliver: SliverToBoxAdapter(child: _buildMasonryGrid(filtered)),
+                      ),
           ],
         ),
       ),
@@ -367,16 +413,20 @@ class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern> w
           ),
           const SizedBox(height: 18),
 
-          // ── View-Chips ─────────────────────────────────────────────────
+          // Feature 8 — Filter-Chips
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
+                _buildViewTab('alle', '✨ Alle', _kPurpleL),
+                const SizedBox(width: 8),
                 _buildViewTab('trending', '🔥 Trending', Colors.orange),
-                const SizedBox(width: 10),
-                _buildViewTab('sacred', '🕉️ Heilig', _kPurple),
-                const SizedBox(width: 10),
-                _buildViewTab('experiences', '✨ Erfahrungen', _kPink),
+                const SizedBox(width: 8),
+                _buildViewTab('fotos', '📸 Fotos', _kTeal),
+                const SizedBox(width: 8),
+                _buildViewTab('diskussion', '💬 Diskussion', _kPink),
+                const SizedBox(width: 8),
+                _buildViewTab('gespeichert', '🔖 Gespeichert', _kGold),
               ],
             ),
           ),
@@ -500,6 +550,10 @@ class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern> w
   }
 
   Widget _buildPostCard(CommunityPost post) {
+    final isBookmarked = _bookmarkedIds.contains(post.id);
+    final badge = _postBadge(post);
+    final postReactions = _reactions[post.id] ?? {};
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -513,12 +567,11 @@ class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern> w
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Header ──────────────────────────────────────────────────────
+          // ── Header ────────────────────────────────────────────────────
           Padding(
             padding: const EdgeInsets.fromLTRB(14, 14, 8, 0),
             child: Row(
               children: [
-                // Avatar
                 Container(
                   width: 44, height: 44,
                   decoration: BoxDecoration(
@@ -532,32 +585,35 @@ class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern> w
                   child: Center(child: Text(post.authorAvatar ?? '🌟', style: const TextStyle(fontSize: 20))),
                 ),
                 const SizedBox(width: 10),
-                // Name + time
                 Expanded(
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Row(children: [
                       Flexible(
                         child: Text(post.authorUsername,
-                            style: const TextStyle(color: Colors.white, fontSize: 14,
-                                fontWeight: FontWeight.bold),
+                            style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
                             overflow: TextOverflow.ellipsis),
                       ),
-                      const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: _kPurple.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: _kPurple.withValues(alpha: 0.3)),
-                        ),
-                        child: const Text('⚡ Energie',
-                            style: TextStyle(fontSize: 9, color: _kPurpleL, fontWeight: FontWeight.bold)),
-                      ),
+                      // Feature 3 — Post-Badge
+                      if (badge != null) ...[
+                        const SizedBox(width: 6),
+                        badge,
+                      ],
                     ]),
                     const SizedBox(height: 2),
                     Text(_formatTimestamp(post.createdAt),
                         style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 11)),
                   ]),
+                ),
+                // Feature 9 — Bookmark-Icon
+                IconButton(
+                  icon: Icon(
+                    isBookmarked ? Icons.bookmark : Icons.bookmark_border,
+                    color: isBookmarked ? _kGold : Colors.white38,
+                    size: 22,
+                  ),
+                  onPressed: () => _toggleBookmark(post.id),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
                 ),
                 IconButton(
                   icon: Icon(Icons.more_vert, color: Colors.white.withValues(alpha: 0.5), size: 20),
@@ -569,22 +625,21 @@ class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern> w
             ),
           ),
 
-          // ── Content ──────────────────────────────────────────────────────
+          // ── Content ───────────────────────────────────────────────────
           Padding(
             padding: const EdgeInsets.fromLTRB(14, 10, 14, 0),
             child: Text(post.content,
                 style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.5)),
           ),
 
-          // ── Tags ─────────────────────────────────────────────────────────
+          // ── Tags ──────────────────────────────────────────────────────
           if (post.tags.isNotEmpty)
             Padding(
               padding: const EdgeInsets.fromLTRB(14, 10, 14, 0),
-              child: Wrap(spacing: 6, runSpacing: 6,
-                  children: post.tags.map(_buildPostTag).toList()),
+              child: Wrap(spacing: 6, runSpacing: 6, children: post.tags.map(_buildPostTag).toList()),
             ),
 
-          // ── Media ────────────────────────────────────────────────────────
+          // ── Media ─────────────────────────────────────────────────────
           if (post.mediaUrl != null && post.mediaUrl!.isNotEmpty)
             Container(
               margin: const EdgeInsets.fromLTRB(14, 10, 14, 0),
@@ -595,20 +650,22 @@ class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern> w
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(12),
                 child: Image.network(post.mediaUrl!, fit: BoxFit.cover,
-                    loadingBuilder: (_, child, prog) => prog == null ? child
+                    loadingBuilder: (_, child, prog) => prog == null
+                        ? child
                         : Container(height: 180, color: _kPurple.withValues(alpha: 0.08),
-                            child: Center(child: CircularProgressIndicator(color: _kPurple,
-                                value: prog.expectedTotalBytes != null
-                                    ? prog.cumulativeBytesLoaded / prog.expectedTotalBytes! : null))),
+                            child: Center(child: CircularProgressIndicator(color: _kPurple))),
                     errorBuilder: (_, __, ___) => Container(height: 180,
-                        decoration: BoxDecoration(color: _kCard),
-                        child: Icon(Icons.broken_image, color: Colors.white24, size: 40))),
+                        color: _kCard,
+                        child: const Icon(Icons.broken_image, color: Colors.white24, size: 40))),
               ),
             ),
 
-          // ── Actions ──────────────────────────────────────────────────────
+          // Feature 2 — Emoji-Reactions
+          _buildReactionsRow(post.id, postReactions),
+
+          // ── Actions ───────────────────────────────────────────────────
           Container(
-            margin: const EdgeInsets.only(top: 10),
+            margin: const EdgeInsets.only(top: 8),
             decoration: BoxDecoration(
               border: Border(top: BorderSide(color: _kPurple.withValues(alpha: 0.12))),
             ),
@@ -617,6 +674,213 @@ class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern> w
           ),
         ],
       ),
+    );
+  }
+
+  Widget? _postBadge(CommunityPost post) {
+    final age = DateTime.now().difference(post.createdAt);
+    if (post.mediaUrl != null && post.mediaUrl!.isNotEmpty) {
+      return _badge('📸 Foto', _kTeal);
+    }
+    if (age.inHours < 2) return _badge('✨ Neu', _kGreen);
+    if (post.likes > 20) return _badge('🔥 Trending', Colors.orange);
+    if (post.comments > 10) return _badge('💬 Diskussion', _kPink);
+    return null;
+  }
+
+  Widget _badge(String label, Color color) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+    decoration: BoxDecoration(
+      color: color.withValues(alpha: 0.15),
+      borderRadius: BorderRadius.circular(6),
+      border: Border.all(color: color.withValues(alpha: 0.4)),
+    ),
+    child: Text(label, style: TextStyle(fontSize: 9, color: color, fontWeight: FontWeight.bold)),
+  );
+
+  Widget _buildReactionsRow(String postId, Map<String, int> reactions) {
+    const emojis = ['❤️', '🔥', '✨', '💭', '🙏'];
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 10, 14, 0),
+      child: Row(
+        children: emojis.map((e) {
+          final count = reactions[e] ?? 0;
+          return GestureDetector(
+            onTap: () => _toggleReaction(postId, e),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              margin: const EdgeInsets.only(right: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: count > 0 ? _kPurple.withValues(alpha: 0.18) : Colors.white.withValues(alpha: 0.04),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: count > 0 ? _kPurple.withValues(alpha: 0.45) : Colors.white.withValues(alpha: 0.08),
+                ),
+              ),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Text(e, style: const TextStyle(fontSize: 14)),
+                if (count > 0) ...[
+                  const SizedBox(width: 3),
+                  Text('$count', style: TextStyle(color: _kPurpleL, fontSize: 11, fontWeight: FontWeight.bold)),
+                ],
+              ]),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  // Feature 1 — Masonry-Grid (2 Spalten, abwechselnd links/rechts)
+  Widget _buildMasonryGrid(List<CommunityPost> posts) {
+    final left = <CommunityPost>[];
+    final right = <CommunityPost>[];
+    for (var i = 0; i < posts.length; i++) {
+      (i.isEven ? left : right).add(posts[i]);
+    }
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(child: Column(children: left.map(_buildPostCard).toList())),
+        const SizedBox(width: 8),
+        Expanded(child: Column(children: right.map(_buildPostCard).toList())),
+      ],
+    );
+  }
+
+  // Feature 4 — Hero-Post (Top-liked Post mit Glow)
+  Widget _buildHeroPost(CommunityPost post) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [_kPurpleD.withValues(alpha: 0.6), _kPurple.withValues(alpha: 0.2)],
+          begin: Alignment.topLeft, end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: _kPurple.withValues(alpha: 0.5), width: 1.5),
+        boxShadow: [BoxShadow(color: _kPurple.withValues(alpha: 0.25), blurRadius: 20, spreadRadius: 2)],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: Colors.orange.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.orange.withValues(alpha: 0.5)),
+              ),
+              child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                Text('🏆', style: TextStyle(fontSize: 11)),
+                SizedBox(width: 4),
+                Text('Top Post der Woche', style: TextStyle(color: Colors.orange, fontSize: 10, fontWeight: FontWeight.bold)),
+              ]),
+            ),
+          ]),
+          const SizedBox(height: 10),
+          Row(children: [
+            Text(post.authorAvatar ?? '🌟', style: const TextStyle(fontSize: 18)),
+            const SizedBox(width: 8),
+            Text(post.authorUsername, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ]),
+          const SizedBox(height: 8),
+          Text(post.content,
+              maxLines: 3, overflow: TextOverflow.ellipsis,
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 14, height: 1.4)),
+          const SizedBox(height: 10),
+          Row(children: [
+            Icon(Icons.favorite, color: _kPink, size: 14),
+            const SizedBox(width: 4),
+            Text('${post.likes}', style: TextStyle(color: _kPink, fontSize: 12, fontWeight: FontWeight.bold)),
+            const SizedBox(width: 12),
+            Icon(Icons.comment_outlined, color: _kTeal, size: 14),
+            const SizedBox(width: 4),
+            Text('${post.comments}', style: TextStyle(color: _kTeal, fontSize: 12)),
+          ]),
+        ]),
+      ),
+    );
+  }
+
+  // Feature 5 — Story-Bubbles (Aktive Poster der letzten 24h)
+  Widget _buildStoryBubbles() {
+    final recentPosters = <String, String>{};
+    final cutoff = DateTime.now().subtract(const Duration(hours: 24));
+    for (final p in _posts) {
+      if (p.createdAt.isAfter(cutoff) && !recentPosters.containsKey(p.authorUsername)) {
+        recentPosters[p.authorUsername] = p.authorAvatar ?? '🌟';
+      }
+    }
+    if (recentPosters.isEmpty) return const SizedBox.shrink();
+    return SizedBox(
+      height: 82,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        physics: const BouncingScrollPhysics(),
+        itemCount: math.min(recentPosters.length, 10),
+        itemBuilder: (_, i) {
+          final name = recentPosters.keys.elementAt(i);
+          final avatar = recentPosters.values.elementAt(i);
+          return Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: Column(children: [
+              Container(
+                width: 52, height: 52,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: const SweepGradient(
+                    colors: [Color(0xFFAB47BC), Color(0xFF26C6DA), Color(0xFFAB47BC)],
+                  ),
+                  boxShadow: [BoxShadow(color: _kPurple.withValues(alpha: 0.4), blurRadius: 8)],
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(2.5),
+                  child: Container(
+                    decoration: const BoxDecoration(shape: BoxShape.circle, color: _kCard),
+                    child: Center(child: Text(avatar, style: const TextStyle(fontSize: 22))),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 4),
+              SizedBox(
+                width: 52,
+                child: Text(name,
+                    textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 9)),
+              ),
+            ]),
+          );
+        },
+      ),
+    );
+  }
+
+  // Feature 7 — Live-Counter (Aktivität basierend auf Post-Frequenz)
+  Widget _buildLiveCounter() {
+    final recent = _posts.where((p) => DateTime.now().difference(p.createdAt).inHours < 24).length;
+    final isActive = recent > 0;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+      child: Row(children: [
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 600),
+          width: 8, height: 8,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: isActive ? _kGreen : Colors.grey,
+            boxShadow: isActive ? [BoxShadow(color: _kGreen.withValues(alpha: 0.6), blurRadius: 6)] : null,
+          ),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          isActive ? '$recent neue Posts heute · Community aktiv' : 'Sei der Erste heute!',
+          style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 11),
+        ),
+      ]),
     );
   }
 
