@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../screens/release_update_screen.dart';
 import '../services/update_service.dart';
+import 'ota_debug_banner.dart';
 import 'update_dialogs.dart';
 
 class UpdateGate extends StatefulWidget {
@@ -93,5 +94,12 @@ class _UpdateGateState extends State<UpdateGate> with WidgetsBindingObserver {
   }
 
   @override
-  Widget build(BuildContext context) => widget.child;
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        widget.child,
+        const OtaDebugBanner(),
+      ],
+    );
+  }
 }
