@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'dart:async';
 import 'package:hive_flutter/hive_flutter.dart'; // 🗄️ HIVE für Profile
@@ -66,6 +67,7 @@ import '../../widgets/chat/chat_room_info_sheet.dart';
 import '../../widgets/chat/chat_read_receipt_indicator.dart';
 import '../../widgets/chat/chat_link_preview_card.dart';
 import '../../widgets/chat/bouncing_dots_bubble.dart';
+import '../../widgets/chat/chat_image_viewer.dart';
 import '../../services/chat/presence_service.dart';
 import '../../services/chat/read_receipt_service.dart';
 import '../../services/chat/link_preview_service.dart';
@@ -153,6 +155,9 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
   
   // 🆕 FEATURE 2: TYPING INDICATORS (local state only — broadcast TBD via Supabase)
   final Set<String> _typingUsers = {};
+
+  // Feature #17: Smart replies
+  List<String> _smartReplies = [];
   
   // 🆕 FEATURE 3: SWIPE TO REPLY
   Map<String, dynamic>? _replyingTo;
@@ -510,6 +515,8 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
                 snippet: text.length > 80 ? '${text.substring(0, 77)}…' : text,
               );
             }
+            // Feature #17: generate smart reply suggestions
+            if (mounted) setState(() => _smartReplies = _generateSmartReplies(text));
           }
           _scrollToBottomIfAtEnd();
         }
@@ -1301,7 +1308,21 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
                   if (_typingUsers.isNotEmpty) _buildTypingIndicators(),
                   _buildRoomSelector(),
                 ], // End keyboard-hidden headers
-          Expanded(child: _buildMessageList()),
+          // Feature #21: swipe left/right between rooms
+          Expanded(
+            child: GestureDetector(
+              onHorizontalDragEnd: (details) {
+                final v = details.primaryVelocity ?? 0;
+                if (v.abs() < 350) return;
+                final keys = _materieRooms.keys.toList();
+                final idx = keys.indexOf(_selectedRoom);
+                if (v < 0 && idx < keys.length - 1) _switchToRoom(keys[idx + 1]);
+                if (v > 0 && idx > 0) _switchToRoom(keys[idx - 1]);
+              },
+              behavior: HitTestBehavior.translucent,
+              child: _buildMessageList(),
+            ),
+          ),
           // 🗳️ ACTIVE POLLS
           if (_polls.isNotEmpty)
             Container(
@@ -1462,6 +1483,8 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
           final chipFullRoomId = 'materie-${entry.key}';
 
           return GestureDetector(
+            // Feature #22: room preview on long-press
+            onLongPress: () => _showRoomPreview(entry.key, entry.value),
             onTap: () async {
               if (entry.key != _selectedRoom) {
                 // ✨ Batch-5: Draft des alten Raums sichern
@@ -1664,6 +1687,8 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          // Feature #17: Smart replies
+          _buildSmartRepliesRow(const Color(0xFFE53935)),
           // 🆕 REPLY PREVIEW
           _buildReplyPreview(),
           // 🆕 MENTION AUTO-COMPLETE
@@ -2829,9 +2854,131 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
     }
   }
   
+  // Feature #21: programmatic room switch (also called from swipe gesture)
+  Future<void> _switchToRoom(String roomId) async {
+    if (roomId == _selectedRoom || !mounted) return;
+    HapticFeedback.selectionClick();
+    ChatDraftService.instance.set(_fullRoomId, _messageController.text);
+    RecentRoomsService.instance.touch('materie', roomId);
+    setState(() {
+      _selectedRoom = roomId;
+      _messages.clear();
+      _isLoading = true;
+      _hasMoreOlder = true;
+      _newMessagesCount = 0;
+      _isAtBottom = true;
+    });
+    _messageController.text = ChatDraftService.instance.get(_fullRoomId);
+    UnreadTrackerService.instance.markSeen(_fullRoomId);
+    await _voiceService.switchRoom(_fullRoomId);
+    await _refreshPresence();
+    await ReadReceiptService.instance.watchRoom(_fullRoomId);
+    await _markRoomRead();
+    _subscribeToRoom(_fullRoomId);
+    await _loadMessages();
+  }
+
+  // Feature #22: room info preview on long-press room chip
+  void _showRoomPreview(String roomId, Map roomData) {
+    HapticFeedback.mediumImpact();
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF0A1020),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (_) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(roomData['icon'] ?? '💬', style: const TextStyle(fontSize: 48)),
+              const SizedBox(height: 10),
+              Text(
+                roomData['name'] ?? roomId,
+                style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
+              if (roomData['description'] != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  roomData['description'].toString(),
+                  style: TextStyle(color: Colors.grey[400], fontSize: 14),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+              const SizedBox(height: 20),
+              if (roomId != _selectedRoom)
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFE53935),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _switchToRoom(roomId);
+                    },
+                    child: const Text('Zu diesem Raum wechseln'),
+                  ),
+                )
+              else
+                Text('Du bist bereits in diesem Raum', style: TextStyle(color: Colors.grey[500])),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Feature #17: smart reply suggestions based on last received message
+  static List<String> _generateSmartReplies(String msg) {
+    final lower = msg.toLowerCase();
+    if (msg.trim().endsWith('?')) return ['Ja', 'Nein', 'Vielleicht', 'Weiß nicht'];
+    if (lower.contains('danke') || lower.contains('thanks')) return ['Gerne!', 'Kein Problem', '👍', '😊'];
+    if (lower.contains('hallo') || lower.contains('hey') || lower.contains('hi')) return ['Hey! 👋', 'Wie geht\'s?', '😊', 'Hi!'];
+    if (lower.contains('interessant') || lower.contains('spannend') || lower.contains('krass')) return ['Wirklich? 😮', 'Mehr davon!', 'Quelle?', '🔥'];
+    if (lower.contains('ok') || lower.contains('alles klar') || lower.contains('verstanden')) return ['👍', 'Super', '✅', 'Danke'];
+    return ['Ok', 'Verstanden', '👍', '❤️'];
+  }
+
+  Widget _buildSmartRepliesRow(Color accentColor) {
+    if (_smartReplies.isEmpty || _messageController.text.isNotEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: _smartReplies.map((reply) => Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: GestureDetector(
+              onTap: () {
+                HapticFeedback.selectionClick();
+                _messageController.text = reply;
+                setState(() => _smartReplies = []);
+                _sendMessage();
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                decoration: BoxDecoration(
+                  color: accentColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: accentColor.withValues(alpha: 0.4)),
+                ),
+                child: Text(reply, style: TextStyle(color: accentColor, fontSize: 13, fontWeight: FontWeight.w500)),
+              ),
+            ),
+          )).toList(),
+        ),
+      ),
+    );
+  }
+
   Widget _buildReplyPreview() {
     if (_replyingTo == null) return const SizedBox.shrink();
-    
+
     return Container(
       padding: const EdgeInsets.all(12),
       margin: const EdgeInsets.only(bottom: 8, left: 16, right: 16),
@@ -3021,21 +3168,32 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
                       accentColor: const Color(0xFF2196F3),
                     )
                   else if (msg['mediaType'] == 'image' && msg['mediaUrl'] != null)
-                    // Image Message
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.network(
-                        msg['mediaUrl'],
-                        width: 200,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
+                    // Feature #15: Tappable image with hero → fullscreen viewer
+                    GestureDetector(
+                      onTap: () => ChatImageViewer.open(
+                        context,
+                        imageUrl: msg['mediaUrl']!,
+                        heroTag: 'chat-img-${msg['id'] ?? msg['timestamp']}',
+                        accentColor: const Color(0xFFE53935),
+                      ),
+                      child: Hero(
+                        tag: 'chat-img-${msg['id'] ?? msg['timestamp']}',
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.network(
+                            msg['mediaUrl']!,
                             width: 200,
-                            height: 150,
-                            color: Colors.grey[700],
-                            child: const Icon(Icons.broken_image, size: 48),
-                          );
-                        },
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                width: 200,
+                                height: 150,
+                                color: Colors.grey[700],
+                                child: const Icon(Icons.broken_image, size: 48),
+                              );
+                            },
+                          ),
+                        ),
                       ),
                     )
                   else
