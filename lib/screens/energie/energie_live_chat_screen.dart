@@ -805,9 +805,9 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
       final ImagePicker picker = ImagePicker();
       final XFile? image = await picker.pickImage(
         source: ImageSource.gallery,
-        maxWidth: 1920,
-        maxHeight: 1080,
-        imageQuality: 85,
+        maxWidth: 1280,
+        maxHeight: 1280,
+        imageQuality: 75,
       );
       
       if (image == null) return;

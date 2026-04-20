@@ -177,9 +177,9 @@ class MultiImageService {
     final picker = ImagePicker();
     try {
       final images = await picker.pickMultiImage(
-        maxWidth: 2048,
-        maxHeight: 2048,
-        imageQuality: 85,
+        maxWidth: 1600,
+        maxHeight: 1600,
+        imageQuality: 80,
       );
       
       if (images.length > maxImages) {
@@ -223,9 +223,9 @@ class MultiImageService {
     try {
       final image = await picker.pickImage(
         source: ImageSource.gallery,
-        maxWidth: 2048,
-        maxHeight: 2048,
-        imageQuality: 85,
+        maxWidth: 1600,
+        maxHeight: 1600,
+        imageQuality: 80,
       );
       
       if (image != null) {
@@ -255,9 +255,9 @@ class MultiImageService {
     try {
       final image = await picker.pickImage(
         source: ImageSource.camera,
-        maxWidth: 2048,
-        maxHeight: 2048,
-        imageQuality: 85,
+        maxWidth: 1600,
+        maxHeight: 1600,
+        imageQuality: 80,
       );
       return image;
     } catch (e) {

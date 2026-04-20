@@ -240,9 +240,9 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
       if (mediaType == 'Bild') {
         file = await _picker.pickImage(
           source: ImageSource.gallery,
-          maxWidth: 2048,
-          maxHeight: 2048,
-          imageQuality: 85,
+          maxWidth: 1600,
+          maxHeight: 1600,
+          imageQuality: 80,
         );
         _mediaType = 'image';
       } else if (mediaType == 'Video') {
