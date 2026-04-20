@@ -1302,9 +1302,9 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       resizeToAvoidBottomInset: true, // 📱 Mobile: Keyboard doesn't cover input
-      backgroundColor: const Color(0xFF0A0A0F),
+      backgroundColor: const Color(0xFF06040F), // home-dashboard bg
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1A1A2E),
+        backgroundColor: const Color(0xFF100B1E), // home-dashboard card
         title: GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: _showRoomInfoSheet,
@@ -1424,7 +1424,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
                   Container(
                     height: 32, // 🔧 FIX: 42 → 32px (Room Selector kompakt!)
             decoration: BoxDecoration(
-              color: const Color(0xFF1A1A2E),
+              color: const Color(0xFF100B1E), // home-dashboard card
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.2),
@@ -1638,7 +1638,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFF1A1A2E),
+              color: const Color(0xFF100B1E), // home-dashboard card
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.3),

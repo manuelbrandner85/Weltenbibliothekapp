@@ -1101,9 +1101,9 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       resizeToAvoidBottomInset: true, // 📱 Mobile: Keyboard doesn't cover input
-      backgroundColor: const Color(0xFF0A0A0A),
+      backgroundColor: const Color(0xFF04080F), // home-dashboard bg
       appBar: AppBar(
-        backgroundColor: const Color(0xFF121212),
+        backgroundColor: const Color(0xFF0A1020), // home-dashboard card
         title: GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: _showRoomInfoSheet,
@@ -1167,17 +1167,12 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
               builder: (context) {
             // 🔧 FIX 10: Hide headers using explicit focus state
             final keyboardVisible = MediaQuery.of(context).viewInsets.bottom > 0;
-            final hideHeaders = keyboardVisible || _isInputFocused; // Use explicit boolean!
-            
-            debugPrint('🎯 [MATERIE BUILD] keyboard: $keyboardVisible, focused: $_isInputFocused, hide: $hideHeaders');
-            
-            // 🔧 FIX 11: GestureDetector um tap-outside zu detecten
+            final hideHeaders = keyboardVisible || _isInputFocused;
+
             return GestureDetector(
               onTap: () {
-                // Tap outside input → Headers wieder anzeigen
                 if (_isInputFocused) {
-                  debugPrint('👆 [TAP OUTSIDE] Unfocus input → Headers wieder anzeigen');
-                  FocusScope.of(context).unfocus(); // Unfocus TextField
+                  FocusScope.of(context).unfocus();
                   if (mounted) {
                     setState(() {
                     _isInputFocused = false;
@@ -1374,7 +1369,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
     return Container(
       height: 32, // 🔧 FIX: 42 → 32px (Room Selector kompakt!)
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1A1A),
+        color: const Color(0xFF0A1020), // home-dashboard card
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.2),
@@ -1555,7 +1550,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1A1A),
+        color: const Color(0xFF0A1020), // home-dashboard card
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.2),
