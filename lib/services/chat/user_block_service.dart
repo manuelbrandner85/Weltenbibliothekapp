@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
-import 'package:hive_flutter/hive_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-/// Lokale Liste geblockter User (in Hive, gerätebasiert).
+/// Lokale Liste geblockter User (SharedPreferences, gerätebasiert).
 ///
 /// Geblockte User werden in den Chat-Screens ausgefiltert, ihre
 /// Nachrichten tauchen nicht mehr auf. Kein Server-Roundtrip – reine
@@ -10,21 +10,16 @@ class UserBlockService extends ChangeNotifier {
   UserBlockService._();
   static final UserBlockService instance = UserBlockService._();
 
-  static const _boxName = 'chat_blocked_users';
-  static const _key = 'blocked';
+  static const _key = 'chat_blocked_users';
 
   Set<String> _blocked = <String>{};
   bool _loaded = false;
 
   Future<void> _ensureLoaded() async {
     if (_loaded) return;
-    final box = Hive.isBoxOpen(_boxName)
-        ? Hive.box(_boxName)
-        : await Hive.openBox(_boxName);
-    final raw = box.get(_key);
-    if (raw is List) {
-      _blocked = raw.whereType<String>().toSet();
-    }
+    final prefs = await SharedPreferences.getInstance();
+    final list = prefs.getStringList(_key);
+    if (list != null) _blocked = list.toSet();
     _loaded = true;
   }
 
@@ -60,10 +55,8 @@ class UserBlockService extends ChangeNotifier {
   }
 
   Future<void> _persist() async {
-    final box = Hive.isBoxOpen(_boxName)
-        ? Hive.box(_boxName)
-        : await Hive.openBox(_boxName);
-    await box.put(_key, _blocked.toList());
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_key, _blocked.toList());
   }
 
   /// Filter-Helper: gibt nur Nachrichten zurück, deren username/user_id
@@ -72,8 +65,8 @@ class UserBlockService extends ChangeNotifier {
       Iterable<Map<String, dynamic>> messages) {
     if (_blocked.isEmpty) return messages;
     return messages.where((m) {
-      final u = (m['username'] as String?)?.toLowerCase() ?? '';
-      final id = (m['user_id'] as String?)?.toLowerCase() ?? '';
+      final u  = (m['username'] as String?)?.toLowerCase() ?? '';
+      final id = (m['user_id']  as String?)?.toLowerCase() ?? '';
       return !_blocked.contains(u) && !_blocked.contains(id);
     });
   }

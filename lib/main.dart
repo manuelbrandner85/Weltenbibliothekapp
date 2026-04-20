@@ -57,8 +57,6 @@ void main() async {
   // Alle Hive-Boxen die in der App verwendet werden vorab öffnen
   // (verhindert HiveError: Box not found)
   const hiveBoxes = [
-    'materie_profiles',
-    'energie_profiles',
     'research_topics',
     'community_posts',
     'achievement_progress',
@@ -78,7 +76,6 @@ void main() async {
     'chat_rooms_local',
     'chat_presence',
     'pending_sync',
-    'auth_box',
     'likes_cache',
     'comments_cache',
     'like_cache',
@@ -112,9 +109,6 @@ void main() async {
     'tool_streaks',
     'post_drafts',
     'scheduled_posts',
-    'chat_blocked_users',
-    'chat_unread',
-    'chat_last_seen',
   ];
   for (final box in hiveBoxes) {
     try {
