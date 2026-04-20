@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'dart:async';
+import 'dart:math' as math;
 
 /// Chat Voice Message Player Widget
 /// Displays and plays voice messages in chat
@@ -166,15 +167,11 @@ class _ChatVoicePlayerState extends State<ChatVoicePlayer> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Progress Bar
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: LinearProgressIndicator(
-                    value: progress.clamp(0.0, 1.0),
-                    backgroundColor: Colors.grey.shade300,
-                    valueColor: AlwaysStoppedAnimation(widget.accentColor),
-                    minHeight: 4,
-                  ),
+                // Feature #13: Waveform visualization
+                _WaveformBar(
+                  progress: progress.clamp(0.0, 1.0),
+                  isPlaying: _isPlaying,
+                  accentColor: widget.accentColor,
                 ),
                 
                 const SizedBox(height: 4),
@@ -213,6 +210,81 @@ class _ChatVoicePlayerState extends State<ChatVoicePlayer> {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Feature #13: Animated waveform bar visualization for voice messages.
+/// Uses a seeded pseudo-random bar height profile. Played bars are accent-colored,
+/// unplayed bars are dimmed. While playing, near-cursor bars animate with a subtle
+/// breathing effect.
+class _WaveformBar extends StatefulWidget {
+  final double progress; // 0.0–1.0
+  final bool isPlaying;
+  final Color accentColor;
+
+  const _WaveformBar({required this.progress, required this.isPlaying, required this.accentColor});
+
+  @override
+  State<_WaveformBar> createState() => _WaveformBarState();
+}
+
+class _WaveformBarState extends State<_WaveformBar> with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  // Fixed waveform profile (36 bars) — seeded so it looks consistent
+  static final List<double> _profile = List.generate(36, (i) {
+    final r = math.Random(i * 7 + 13);
+    return 0.2 + r.nextDouble() * 0.8;
+  });
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 800))
+      ..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _ctrl,
+      builder: (_, __) {
+        return SizedBox(
+          height: 28,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: List.generate(_profile.length, (i) {
+              final fraction = i / _profile.length;
+              final played = fraction <= widget.progress;
+              final nearCursor = widget.isPlaying && (fraction - widget.progress).abs() < 0.08;
+              final breathe = nearCursor ? (1.0 + _ctrl.value * 0.3) : 1.0;
+              final height = (_profile[i] * 24 * breathe).clamp(4.0, 28.0);
+              return Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 1),
+                  child: Center(
+                    child: Container(
+                      height: height,
+                      decoration: BoxDecoration(
+                        color: played
+                            ? widget.accentColor
+                            : widget.accentColor.withValues(alpha: 0.25),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ),
+        );
+      },
     );
   }
 }

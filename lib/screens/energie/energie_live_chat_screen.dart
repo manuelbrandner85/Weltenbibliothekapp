@@ -156,6 +156,10 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
 
   // Feature #17: Smart replies
   List<String> _smartReplies = [];
+
+  // Feature #16: Message scheduler
+  final List<(DateTime, String)> _scheduledMessages = [];
+  final List<Timer> _scheduledTimers = [];
   
   // 🆕 FEATURE 3: SWIPE TO REPLY
   Map<String, dynamic>? _replyingTo;
@@ -1386,6 +1390,13 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
             },
             tooltip: 'Video / Voice Chat',
           ),
+          // Feature #24: Mentions inbox
+          if (_username.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.alternate_email, color: Colors.white),
+              tooltip: 'Erwähnungen',
+              onPressed: _showMentionsInbox,
+            ),
           // 🔍 SEARCH BUTTON
           IconButton(
             icon: Icon(
@@ -1900,9 +1911,11 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
                     child: Material(
                       color: Colors.transparent,
                       child: InkWell(
-                        onTap: _isSending 
-                            ? null 
+                        onTap: _isSending
+                            ? null
                             : (_hasText ? _sendMessage : _openVoiceRecorder),
+                        // Feature #16: long-press on send → schedule message
+                        onLongPress: _hasText ? _showScheduleMessageDialog : null,
                         borderRadius: BorderRadius.circular(20),
                         child: Container(
                           width: 40,
@@ -2000,6 +2013,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
     PresenceService.instance.leave();
     // ✨ Batch-2.3: Read-Receipt-Stream schließen.
     ReadReceiptService.instance.leave();
+    for (final t in _scheduledTimers) { t.cancel(); }
     super.dispose();
   }
 
@@ -3199,6 +3213,151 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
                 Text('Du bist bereits in diesem Raum', style: TextStyle(color: Colors.grey[500])),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  // Feature #16: message scheduler — long-press send button
+  void _showScheduleMessageDialog() {
+    HapticFeedback.mediumImpact();
+    final text = _messageController.text.trim();
+    if (text.isEmpty) return;
+    final delays = [
+      const Duration(minutes: 5),
+      const Duration(minutes: 15),
+      const Duration(minutes: 30),
+      const Duration(hours: 1),
+      const Duration(hours: 2),
+    ];
+    final labels = ['5 Min', '15 Min', '30 Min', '1 Std', '2 Std'];
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF1A1A2E),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (_) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Nachricht planen', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 4),
+              Text('"${text.length > 50 ? '${text.substring(0, 47)}…' : text}"', style: TextStyle(color: Colors.grey[400], fontSize: 12)),
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: List.generate(delays.length, (i) => GestureDetector(
+                  onTap: () {
+                    Navigator.pop(context);
+                    final sendAt = DateTime.now().add(delays[i]);
+                    setState(() {
+                      _scheduledMessages.add((sendAt, text));
+                      _messageController.clear();
+                    });
+                    final t = Timer(delays[i], () {
+                      if (mounted) {
+                        _messageController.text = text;
+                        _sendMessage();
+                      }
+                    });
+                    _scheduledTimers.add(t);
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content: Text('✅ Geplant für ${labels[i]}'),
+                      backgroundColor: const Color(0xFF9B51E0),
+                      duration: const Duration(seconds: 2),
+                    ));
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF9B51E0).withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: const Color(0xFF9B51E0).withValues(alpha: 0.4)),
+                    ),
+                    child: Text(labels[i], style: const TextStyle(color: Color(0xFF9B51E0), fontWeight: FontWeight.w600)),
+                  ),
+                )),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Feature #24: Mentions inbox — all session messages containing @username
+  void _showMentionsInbox() {
+    final mentions = _messages.where((m) {
+      final text = (m['message'] ?? m['content'] ?? '').toString();
+      return MentionNotificationService.containsMention(text, _username);
+    }).toList();
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF1A1A2E),
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (_) => DraggableScrollableSheet(
+        initialChildSize: 0.55,
+        maxChildSize: 0.9,
+        minChildSize: 0.3,
+        expand: false,
+        builder: (_, ctrl) => Column(
+          children: [
+            const SizedBox(height: 12),
+            Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2))),
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                children: [
+                  const Icon(Icons.alternate_email, color: Color(0xFF9B51E0), size: 20),
+                  const SizedBox(width: 8),
+                  Text('Erwähnungen (${mentions.length})', style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Divider(color: Colors.white12),
+            Expanded(
+              child: mentions.isEmpty
+                ? const Center(child: Text('Keine Erwähnungen in dieser Sitzung', style: TextStyle(color: Colors.grey)))
+                : ListView.builder(
+                    controller: ctrl,
+                    padding: const EdgeInsets.all(12),
+                    itemCount: mentions.length,
+                    itemBuilder: (_, i) {
+                      final m = mentions[mentions.length - 1 - i]; // newest first
+                      final text = (m['message'] ?? m['content'] ?? '').toString();
+                      final sender = m['username']?.toString() ?? '?';
+                      final ts = _formatTime(m['timestamp'] ?? m['created_at']);
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF9B51E0).withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFF9B51E0).withValues(alpha: 0.3)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(children: [
+                              Text(sender, style: const TextStyle(color: Color(0xFF9B51E0), fontWeight: FontWeight.bold, fontSize: 13)),
+                              const Spacer(),
+                              Text(ts, style: const TextStyle(color: Colors.grey, fontSize: 11)),
+                            ]),
+                            const SizedBox(height: 4),
+                            Text(text, style: const TextStyle(color: Colors.white, fontSize: 13), maxLines: 3, overflow: TextOverflow.ellipsis),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+            ),
+          ],
         ),
       ),
     );
