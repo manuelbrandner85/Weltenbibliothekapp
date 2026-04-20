@@ -61,28 +61,56 @@ jobs:
           VERSION="${FULL%+*}"
           echo "full=$FULL" >> $GITHUB_OUTPUT
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "--- Versions-Info ---"
-          echo "full    = $FULL"
-          echo "version = $VERSION"
+          echo "pubspec full = $FULL"
+          echo "pubspec version = $VERSION"
+
+      - name: 🔎 Shorebird-Release-Version auflösen
+        id: release
+        env:
+          SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
+        run: |
+          # Wenn der User manuell eine Version angibt, nimm die.
+          INPUT_VERSION="${{ github.event.inputs.release_version }}"
+          if [ -n "$INPUT_VERSION" ] && [ "$INPUT_VERSION" != "latest" ]; then
+            echo "target=$INPUT_VERSION" >> $GITHUB_OUTPUT
+            echo "Verwende User-Input: $INPUT_VERSION"
+            exit 0
+          fi
+
+          # Sonst: 'shorebird releases list' parsen und die neueste Release-
+          # Version finden, die zum pubspec-Prefix passt (z.B. "5.34.0").
+          # Das verhindert, dass CI gegen eine nicht-registrierte Version
+          # (= pubspec-Build-Nummer > letzter Release-Build) patcht.
+          echo "--- shorebird releases list ---"
+          shorebird releases list --platforms=android || true
+          RAW=$(shorebird releases list --platforms=android 2>/dev/null || true)
+
+          PREFIX="${{ steps.version.outputs.version }}"
+          # Akzeptiert Zeilen wie "5.34.0+20260419" oder "| 5.34.0+20260419 |"
+          MATCH=$(echo "$RAW" \
+            | grep -oE "${PREFIX//./\\.}\+[0-9]+" \
+            | sort -u -V \
+            | tail -n 1 || true)
+
+          if [ -z "$MATCH" ]; then
+            # Fallback: pubspec-volle-Version (kann schief gehen, siehe oben)
+            MATCH="${{ steps.version.outputs.full }}"
+            echo "⚠️  Kein passender Release gefunden, Fallback auf pubspec: $MATCH"
+          else
+            echo "✅ Aufgelöst: $MATCH"
+          fi
+          echo "target=$MATCH" >> $GITHUB_OUTPUT
 
       - name: 📡 Patch veröffentlichen
         run: |
-          # Auf push-Trigger nehmen wir IMMER die volle Version inkl. Build-Nummer
-          # aus pubspec.yaml (z.B. "5.34.0+20260421"). Bei workflow_dispatch kann
-          # der User explizit eine andere angeben.
-          TARGET="${{ github.event.inputs.release_version }}"
-          if [ -z "$TARGET" ] || [ "$TARGET" = "latest" ]; then
-            TARGET="${{ steps.version.outputs.full }}"
-          fi
-          echo "--- Patch-Ziel ---"
-          echo "release-version = $TARGET"
+          echo "Patch-Ziel: ${{ steps.release.outputs.target }}"
           shorebird patch android \
-            --release-version="$TARGET" \
+            --release-version="${{ steps.release.outputs.target }}" \
             -- \
             --target-platform=android-arm64,android-arm \
             --dart-define=APP_VERSION=${{ steps.version.outputs.version }} \
             --dart-define=SUPABASE_URL=https://adtviduaftdquvfjpojb.supabase.co \
-            --dart-define=SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkdHZpZHVhZnRkcXV2Zmpwb2piIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxMzY3OTcsImV4cCI6MjA5MDcxMjc5N30.LPtmnjukb6o2CA16RDjoStqYb_1bipNULD4tgOfuD98 \
+            --dart-define=SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFub24iLCJpYXQiOjE3NzUxMzY3OTcsImV4cCI6MjA5MDcxMjc5N30.LPtmnjukb6o2CA16RDjoStqYb_1bipNULD4tgOfuD98 \
             --dart-define=CLOUDFLARE_WORKER_URL=https://weltenbibliothek-api.brandy13062.workers.dev
         env:
           SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
