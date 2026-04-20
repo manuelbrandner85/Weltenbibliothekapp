@@ -90,6 +90,27 @@ jobs:
           path: build/app/outputs/flutter-apk/${{ steps.version.outputs.apk_name }}
           retention-days: 30
 
+      - name: 📖 Release-Manifest lesen
+        # Liest supabase/release/current.json (min_version + changelog).
+        # Pflicht pro Release vor Tag-Push. Fehlen Felder → Step bricht ab.
+        id: manifest
+        run: |
+          set -euo pipefail
+          MANIFEST=supabase/release/current.json
+          if [ ! -f "$MANIFEST" ]; then
+            echo "❌ $MANIFEST fehlt — bitte anlegen mit {min_version, changelog}"
+            exit 1
+          fi
+          MIN_VERSION=$(jq -er '.min_version' "$MANIFEST")
+          CHANGELOG=$(jq -er '.changelog' "$MANIFEST")
+          {
+            echo "min_version=$MIN_VERSION"
+            echo "changelog<<EOF_CHANGELOG"
+            echo "$CHANGELOG"
+            echo "EOF_CHANGELOG"
+          } >> $GITHUB_OUTPUT
+          echo "✅ min_version=$MIN_VERSION"
+
       - name: 🚀 GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -99,19 +120,60 @@ jobs:
             ## Weltenbibliothek v${{ steps.version.outputs.version }}
 
             ### Was ist neu
-            - Update-Benachrichtigung erscheint jetzt sofort nach Download (kein App-Neustart nötig)
-            - Alle Geräte werden zuverlässig über verfügbare Updates informiert
-            - Chat: Nachrichten senden für alle Nutzer (kein Login nötig)
-            - Kompatibilität für alle Android-Geräte (arm64 + arm32)
-            - Android 5.0+ (API 21) unterstützt
-            - Automatische anonyme Session beim App-Start
+            ${{ steps.manifest.outputs.changelog }}
 
             ### Installation
             APK herunterladen und auf dem Gerät installieren (Sideloading).
-            Updates danach automatisch via Shorebird OTA.
+            Installiert sich direkt über die vorherige Version — kein Deinstallieren nötig
+            (identischer Signing-Key ab v5.34.0).
 
-            ### Wichtig: APK direkt über die alte Version installieren (kein Löschen nötig)
+            OTA-Updates danach automatisch via Shorebird (nur Dart-Änderungen).
           files: build/app/outputs/flutter-apk/${{ steps.version.outputs.apk_name }}
           make_latest: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 📢 Supabase app_config updaten (In-App-Update-Dialog)
+        # Hebt public.app_config auf die neue Version. Erst NACH erfolgreichem
+        # GitHub-Release — sonst würden User einen 404 beim APK-Download sehen.
+        # Nutzt SUPABASE_SERVICE_ROLE_KEY (umgeht RLS).
+        env:
+          SUPABASE_URL: https://adtviduaftdquvfjpojb.supabase.co
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          VERSION: ${{ steps.version.outputs.version }}
+          MIN_VERSION: ${{ steps.manifest.outputs.min_version }}
+          CHANGELOG: ${{ steps.manifest.outputs.changelog }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SUPABASE_SERVICE_ROLE_KEY:-}" ]; then
+            echo "❌ SUPABASE_SERVICE_ROLE_KEY Secret fehlt — app_config wurde NICHT aktualisiert"
+            exit 1
+          fi
+
+          APK_URL="https://github.com/manuelbrandner85/Weltenbibliothekapp/releases/download/v${VERSION}/weltenbibliothek-v${VERSION}-universal.apk"
+          NOTES_URL="https://github.com/manuelbrandner85/Weltenbibliothekapp/releases/tag/v${VERSION}"
+
+          BODY=$(jq -n \
+            --arg lv "$VERSION" \
+            --arg mv "$MIN_VERSION" \
+            --arg url "$APK_URL" \
+            --arg cl "$CHANGELOG" \
+            --arg notes "$NOTES_URL" \
+            '{latest_version:$lv, min_version:$mv, apk_download_url:$url, changelog:$cl, release_notes_url:$notes}')
+
+          echo "→ PATCH app_config: latest=$VERSION min=$MIN_VERSION"
+          HTTP_CODE=$(curl -sS -o /tmp/resp.json -w "%{http_code}" \
+            -X PATCH "${SUPABASE_URL}/rest/v1/app_config?platform=eq.android" \
+            -H "apikey: ${SUPABASE_SERVICE_ROLE_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: return=representation" \
+            -d "$BODY")
+
+          if [ "$HTTP_CODE" != "200" ] && [ "$HTTP_CODE" != "204" ]; then
+            echo "❌ Supabase-Update fehlgeschlagen (HTTP $HTTP_CODE)"
+            cat /tmp/resp.json
+            exit 1
+          fi
+          echo "✅ app_config aktualisiert — User auf v${MIN_VERSION}+ sehen Update-Dialog"
+          cat /tmp/resp.json | jq '.'

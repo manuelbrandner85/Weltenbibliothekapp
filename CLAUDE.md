@@ -736,15 +736,59 @@ und die neue APK ist mit dem persistenten Release-Key signiert → User auf der 
 4. Alte User, die wirklich auf die neue APK müssen, bekommen eine Anleitung: Deinstallieren
    → Neuinstall der neuen APK (Datenverlust akzeptiert, Einmal-Wechsel).
 
-### Regel 4 — Release-Flow-Checkliste (jedes Mal durchgehen)
+### Regel 4 — Release-Flow (vollautomatisch ab v5.35.0)
 
-Bevor ein neuer `shorebird release` ausgerollt wird:
+Der Release-Flow ist vollständig automatisiert. Der Entwickler macht NUR drei Dinge:
 
-- [ ] GitHub-Secrets (`ANDROID_KEYSTORE_BASE64` etc.) sind im Repo aktiv — sonst wird wieder
-      mit Debug-Key gebaut und alle neuen User sind vom alten Key getrennt.
-- [ ] `shorebird release android` läuft durch, APK in GitHub Releases ist mit dem persistenten
-      Key signiert (lokal verifizierbar: `apksigner verify --print-certs <apk>`).
-- [ ] `app_config` in Supabase wird NUR dann auf die neue Version angehoben, wenn klar ist,
-      dass alle Ziel-User die APK auch installieren können (gleicher Signing-Key wie zuvor).
-- [ ] Im Zweifelsfall: erst `shorebird patch` gegen die aktuell installierte Version rollen,
-      `app_config` unverändert lassen.
+1. **`pubspec.yaml` Version bumpen** (z.B. `5.34.0+20260419` → `5.35.0+20260420`).
+2. **`supabase/release/current.json` pflegen** — Pflichtfelder:
+   ```json
+   {
+     "min_version": "5.34.0",
+     "changelog": "• Bullet 1\n• Bullet 2"
+   }
+   ```
+   `min_version` = unter dieser Version wird das Update als forced gemeldet (User kann App
+   nicht weiter nutzen bis Download). In der Regel die vorherige Version.
+3. **Tag pushen**: `git tag -a v5.35.0 -m "..." && git push origin v5.35.0`
+
+Danach läuft `.github/workflows/build_apk.yml` vollautomatisch:
+
+1. Keystore aus Secrets dekodieren (`ANDROID_KEYSTORE_*`) → persistent-signierte APK.
+2. `shorebird release android --artifact=apk` → registriert Release auf Shorebird-Server.
+3. APK in GitHub Release veröffentlichen unter fixem URL-Schema
+   `.../releases/download/vX.Y.Z/weltenbibliothek-vX.Y.Z-universal.apk`.
+4. Release-Notes kommen aus `current.json::changelog`.
+5. **`public.app_config` in Supabase wird per PostgREST-PATCH gesetzt** (nutzt
+   `SUPABASE_SERVICE_ROLE_KEY`, umgeht RLS). Felder:
+   - `latest_version` = Tag-Version (ohne `v`)
+   - `min_version`, `changelog` aus `current.json`
+   - `apk_download_url`, `release_notes_url` aus Tag abgeleitet
+6. User auf älterer Version sehen beim nächsten App-Start den `ReleaseUpdateScreen` und
+   können direkt in der App herunterladen + installieren (Android `PackageInstaller`).
+
+**Erforderliche GitHub-Secrets (einmalig einzurichten):**
+- `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`,
+  `ANDROID_KEY_PASSWORD` (persistenter Keystore, siehe Regel 1)
+- `SHOREBIRD_TOKEN`
+- `SUPABASE_SERVICE_ROLE_KEY` (Service-Role für PostgREST-PATCH auf `app_config`)
+
+**Warum `app_config` dennoch automatisch safe ist:**
+Seit v5.34.0 wird jede APK mit demselben persistenten Release-Keystore signiert
+(siehe Regel 1). Damit ist die "Signing-Key-Mismatch"-Gefahr (siehe Regel 3), die früher
+ein manuelles Gate erforderlich hat, systematisch ausgeschlossen. Der automatische
+`app_config`-Update ist nur dann gefährlich, wenn ein Release den Keystore WECHSELT —
+in diesem Fall muss der Workflow temporär deaktiviert werden und `app_config` bleibt auf
+der alten Version, bis alle User migriert sind.
+
+**Checkliste bei Keystore-Wechsel (Ausnahmefall):**
+
+- [ ] Step `📢 Supabase app_config updaten` im `build_apk.yml` temporär auskommentieren
+      bevor Tag gepusht wird.
+- [ ] Neue APK via alternativer Distribution an Power-User geben, Feedback einholen.
+- [ ] Erst wenn verifiziert: manuell per Supabase-SQL-Editor `app_config` updaten.
+- [ ] Step wieder aktivieren.
+
+**Im Zweifelsfall (Dart-only Änderung):** Statt Release besser `shorebird patch` nehmen —
+kein APK-Reinstall nötig, keine `app_config`-Änderung, User kriegen Patch beim nächsten
+App-Start automatisch.

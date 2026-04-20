@@ -1,0 +1,5 @@
+{
+  "_comment": "Wird vom Release-Workflow ausgelesen. Pflege VOR jedem Tag-Push: min_version + changelog. latest_version + apk_download_url + release_notes_url werden aus dem Tag abgeleitet.",
+  "min_version": "5.34.0",
+  "changelog": "• Storage komplett migriert: SharedPreferences + SQLite (statt Hive)\n• Stabilere Chat-Persistenz (keine \"Box not found\"-Fehler mehr)\n• Schnellere App-Starts\n• Diverse Bugfixes"
+}
