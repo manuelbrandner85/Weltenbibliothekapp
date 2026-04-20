@@ -69,6 +69,8 @@ import '../../widgets/chat/chat_link_preview_card.dart';
 import '../../services/chat/presence_service.dart';
 import '../../services/chat/read_receipt_service.dart';
 import '../../services/chat/link_preview_service.dart';
+import '../../services/chat/chat_rate_limit_service.dart';
+import '../../services/chat/chat_word_filter_service.dart';
 import '../../services/chat/user_block_service.dart';
 import '../../services/chat/unread_tracker_service.dart';
 // 📷 Image Picker
@@ -479,7 +481,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
   Future<void> _sendMessage() async {
     final message = _messageController.text.trim();
     if (message.isEmpty || _isSending) return;
-    
+
     // 🚨 USERNAME-CHECK: Verhindere Senden ohne Profil
     if (_username.isEmpty) {
       if (mounted) {
@@ -487,7 +489,41 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
       }
       return;
     }
-    
+
+    // 🛑 Batch-4: Word-Filter (Client-Side)
+    final badWord = ChatWordFilterService.instance.firstHit(message);
+    if (badWord != null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Nachricht enthält ein blockiertes Wort: "${badWord.trim()}"',
+            ),
+            backgroundColor: const Color(0xFF7C4DFF),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+      return;
+    }
+
+    // 🛑 Batch-4: Rate-Limit + Slow-Mode (Client-Side Spambremse)
+    if (!ChatRateLimitService.instance.canSend(_selectedRoom)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              ChatRateLimitService.instance.cooldownMessage(_selectedRoom),
+            ),
+            backgroundColor: const Color(0xFF7C4DFF),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+      return;
+    }
+    ChatRateLimitService.instance.recordSend(_selectedRoom);
+
     setState(() => _isSending = true);
     
     try {

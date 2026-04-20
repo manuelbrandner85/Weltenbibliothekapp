@@ -68,6 +68,8 @@ import '../../widgets/chat/chat_link_preview_card.dart';
 import '../../services/chat/presence_service.dart';
 import '../../services/chat/read_receipt_service.dart';
 import '../../services/chat/link_preview_service.dart';
+import '../../services/chat/chat_rate_limit_service.dart';
+import '../../services/chat/chat_word_filter_service.dart';
 import '../../services/chat/user_block_service.dart';
 import '../../services/chat/unread_tracker_service.dart';
 
@@ -586,7 +588,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
   Future<void> _sendMessage() async {
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
-    
+
     // 🚨 USERNAME-CHECK: Verhindere Senden ohne Profil
     if (_username.isEmpty) {
       if (mounted && !_profileDialogShown) {
@@ -595,6 +597,40 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
       }
       return;
     }
+
+    // 🛑 Batch-4: Word-Filter (Client-Side)
+    final badWord = ChatWordFilterService.instance.firstHit(text);
+    if (badWord != null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Nachricht enthält ein blockiertes Wort: "${badWord.trim()}"',
+            ),
+            backgroundColor: const Color(0xFFE53935),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+      return;
+    }
+
+    // 🛑 Batch-4: Rate-Limit + Slow-Mode (Client-Side Spambremse)
+    if (!ChatRateLimitService.instance.canSend(_fullRoomId)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              ChatRateLimitService.instance.cooldownMessage(_fullRoomId),
+            ),
+            backgroundColor: const Color(0xFFE53935),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+      return;
+    }
+    ChatRateLimitService.instance.recordSend(_fullRoomId);
 
     try {
       // 🟢 Sende Nachricht via Supabase (CloudflareApiService delegiert intern)
