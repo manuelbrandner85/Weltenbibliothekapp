@@ -91,22 +91,32 @@ jobs:
         # Eine einzelne Version kann via workflow_dispatch `release_version` gezielt
         # gepatcht werden (z.B. "5.36.0"). "all" = alle Versionen patchen.
         #
+        # Version-Liste kommt aus GitHub Releases (zuverlässiger als Shorebird-CLI-
+        # Table-Parsing). GitHub-Release + Shorebird-Release werden in build_apk.yml
+        # immer zusammen erstellt → identische Version-Liste.
+        #
         # --allow-asset-diffs bleibt weil MaterialIcons.otf bei jedem Build anders
         # tree-geshaked wird sobald neue Icons im Dart-Code stehen.
+        env:
+          SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -uo pipefail
 
           REQUESTED="${{ github.event.inputs.release_version || 'all' }}"
 
-          # Liste aller registrierten Release-Versionen aus Shorebird extrahieren.
-          # Output enthält z.B. Zeilen wie "│ 5.34.0      │" oder "│ 5.34.0+1 │".
-          # Wir matchen Semver am Zeilenanfang (Whitespace erlaubt) und dedupen.
-          ALL_VERSIONS=$(shorebird releases list --platforms=android 2>/dev/null \
-            | grep -oE '[0-9]+\.[0-9]+\.[0-9]+(\+[0-9]+)?' \
+          # Versionen aus GitHub Releases lesen (ohne "v"-Prefix).
+          # Limit 20 reicht locker — wir patchen in der Regel die letzten 4–8 Versionen.
+          ALL_VERSIONS=$(gh release list --repo "$GITHUB_REPOSITORY" --limit 20 \
+            --json tagName --jq '.[].tagName' 2>/dev/null \
+            | sed 's/^v//' \
+            | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' \
             | sort -V -u)
 
           if [ -z "$ALL_VERSIONS" ]; then
-            echo "❌ Konnte keine Shorebird-Releases finden — Patch abgebrochen"
+            echo "❌ Konnte keine GitHub-Releases finden — Patch abgebrochen"
+            echo "→ Debug: Liste aller Tags via gh:"
+            gh release list --repo "$GITHUB_REPOSITORY" --limit 20 || true
             exit 1
           fi
 
@@ -170,8 +180,6 @@ jobs:
             echo "❌ Kein einziger Patch hat funktioniert"
             exit 1
           fi
-        env:
-          SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
 
       - name: 📝 Patch-Changelog in Supabase schreiben
         env:
