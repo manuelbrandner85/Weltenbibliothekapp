@@ -1,10 +1,16 @@
 name: 🏗️ Build & Release APK
 
 on:
-  # Release-Build triggert bei Version-Tag-Push (v5.32.0, v5.33.0, ...) ODER manuell.
-  # Tag-Push ist der saubere Weg: Tag = expliziter "ich will einen neuen Release"-Commit.
+  # Release-Build triggert auf drei Wegen:
+  #   1. Push auf main mit geänderter pubspec.yaml (neue Version) — VOLLAUTOMATISCH,
+  #      Tag wird vom Workflow selbst via softprops/action-gh-release erstellt.
+  #   2. Explizit gepushter Version-Tag (v5.32.0, ...) — Legacy/manueller Weg,
+  #      funktioniert weiterhin falls jemand manuell taggen will.
+  #   3. workflow_dispatch — manuelles Triggern aus der UI (auch für Feature-Branches).
   # Für reine Dart-Änderungen bitte "🚀 Shorebird OTA Patch" verwenden, nicht diesen Workflow.
   push:
+    branches:
+      - main
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+'
   workflow_dispatch:
@@ -18,8 +24,43 @@ permissions:
   contents: write
 
 jobs:
+  # Pre-Check: Release nur bauen wenn noch keiner mit dieser Version existiert.
+  # Verhindert Doppel-Builds bei pubspec.yaml-Edits die die Version NICHT ändern
+  # (z.B. Dependency-Updates, Kommentare).
+  check:
+    name: 🔎 Release-Bedarf prüfen
+    runs-on: ubuntu-latest
+    outputs:
+      version:      ${{ steps.v.outputs.version }}
+      should_build: ${{ steps.v.outputs.should_build }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: v
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: //' | sed 's/+.*//')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          # Bei Tag-Push IMMER bauen (expliziter Release-Wunsch).
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            echo "✅ Tag-Push → bauen"
+            echo "should_build=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          # Bei main-Push / workflow_dispatch: nur bauen wenn GitHub-Release noch fehlt.
+          if gh release view "v$VERSION" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "⏭️  Release v$VERSION existiert bereits — skip"
+            echo "should_build=false" >> $GITHUB_OUTPUT
+          else
+            echo "✅ Kein Release für v$VERSION → bauen"
+            echo "should_build=true" >> $GITHUB_OUTPUT
+          fi
+
   build-apk:
     name: 🔨 Shorebird Release Build (arm64 + arm32)
+    needs: check
+    if: needs.check.outputs.should_build == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:

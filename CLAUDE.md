@@ -738,7 +738,7 @@ und die neue APK ist mit dem persistenten Release-Key signiert → User auf der 
 
 ### Regel 4 — Release-Flow (vollautomatisch ab v5.35.0)
 
-Der Release-Flow ist vollständig automatisiert. Der Entwickler macht NUR drei Dinge:
+Der Release-Flow ist vollständig automatisiert. Der Entwickler macht NUR zwei Dinge:
 
 1. **`pubspec.yaml` Version bumpen** (z.B. `5.34.0+20260419` → `5.35.0+20260420`).
 2. **`supabase/release/current.json` pflegen** — Pflichtfelder:
@@ -750,7 +750,19 @@ Der Release-Flow ist vollständig automatisiert. Der Entwickler macht NUR drei D
    ```
    `min_version` = unter dieser Version wird das Update als forced gemeldet (User kann App
    nicht weiter nutzen bis Download). In der Regel die vorherige Version.
-3. **Tag pushen**: `git tag -a v5.35.0 -m "..." && git push origin v5.35.0`
+
+Beides wird per normalem PR auf `main` gemerged. **Kein Tag-Push nötig** — der Workflow
+erstellt den Tag `vX.Y.Z` selbst via `softprops/action-gh-release@v2`, sobald er merkt
+dass für die aktuelle `pubspec.yaml`-Version noch kein Release existiert.
+
+**Trigger-Wege** (alle drei funktionieren):
+- **Merge auf `main` mit pubspec.yaml-Bump** (Standard): Pre-Check-Job vergleicht Version
+  mit bestehenden GitHub-Releases, baut automatisch wenn noch keiner existiert. Kein
+  manueller Tag-Push erforderlich.
+- **Manuell getaggter Commit**: `git tag -a vX.Y.Z && git push origin vX.Y.Z` —
+  funktioniert weiterhin, falls ein spezifischer Commit released werden soll.
+- **workflow_dispatch**: Actions-UI → "Build & Release APK" → Run workflow (auch auf
+  Feature-Branches nutzbar).
 
 Danach läuft `.github/workflows/build_apk.yml` vollautomatisch:
 
