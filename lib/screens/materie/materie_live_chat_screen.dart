@@ -70,6 +70,7 @@ import '../../services/chat/read_receipt_service.dart';
 import '../../services/chat/link_preview_service.dart';
 import '../../services/chat/chat_rate_limit_service.dart';
 import '../../services/haptic_feedback_service.dart';
+import '../../services/offline_sync_service.dart';
 import '../../services/chat/chat_word_filter_service.dart';
 import '../../services/chat/chat_draft_service.dart';
 import '../../services/chat/user_block_service.dart';
@@ -124,6 +125,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
   String? _errorMessage; // 🎨 NEW: Error state
   bool _profileDialogShown = false; // 🚨 Flag: Verhindert mehrfaches Popup
   Timer? _refreshTimer;
+  StreamSubscription<int>? _pendingSub;
   
   // 🆕 ENHANCED FEATURES
   List<String> _mentionSuggestions = []; // @ Auto-Complete
@@ -246,6 +248,24 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
     // 🔴 SUPABASE REALTIME: Echtzeit-Subscription starten (sofort, parallel zu Profil-Load)
     _subscribeToRoom(_fullRoomId);
 
+    // 📡 Pending-Cleanup: Queue-Empty → lokale Pending-Platzhalter entfernen,
+    //    echte Nachrichten kommen via Realtime rein (oder per Reload).
+    _pendingSub = OfflineSyncService().pendingActionsStream.listen((count) {
+      if (count == 0 && mounted) {
+        final hadPending = _messages.any(
+          (m) => m['id']?.toString().startsWith('pending_') == true,
+        );
+        if (hadPending) {
+          setState(() {
+            _messages.removeWhere(
+              (m) => m['id']?.toString().startsWith('pending_') == true,
+            );
+          });
+          _loadMessages(silent: true);
+        }
+      }
+    });
+
     // 🔄 AUTO-REFRESH: Profil-Updates alle 30 Sekunden als Fallback (Realtime ist primär)
     _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
       _loadMessages(silent: true); // ✅ Silent refresh - kein Flickering
@@ -365,6 +385,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
     _scrollController.dispose();
     _inputFocusNode.dispose();
     _refreshTimer?.cancel();
+    _pendingSub?.cancel();
     _voiceParticipantsSub?.cancel(); // 🔧 Prevent memory leak
     _realtimeChannel?.unsubscribe(); // 🔴 Realtime cleanup
     // ✨ Batch-2: Presence sauber verlassen.
@@ -652,6 +673,47 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
     }
     ChatRateLimitService.instance.recordSend(_fullRoomId);
     HapticFeedbackService().messageSent();
+
+    // 📡 OFFLINE-FIRST: Bei fehlender Verbindung Nachricht queuen + optimistisch
+    //    mit Pending-Flag in die Liste einfügen.
+    final offlineService = OfflineSyncService();
+    if (!offlineService.isOnline) {
+      final queueId = await offlineService.queueAction(
+        type: OfflineActionType.sendMessage,
+        data: {
+          'roomId': _selectedRoom,
+          'realm': 'materie',
+          'userId': _userId,
+          'username': _username,
+          'message': text,
+          'avatarEmoji': _avatarEmoji,
+        },
+        userId: _userId,
+      );
+      final pendingMsg = {
+        'id': 'pending_$queueId',
+        'room_id': _fullRoomId,
+        'user_id': _userId,
+        'username': _username,
+        'message': text,
+        'content': text,
+        'avatar_emoji': _avatarEmoji,
+        'avatar_url': _avatarUrl,
+        'timestamp': DateTime.now().toIso8601String(),
+        'created_at': DateTime.now().toIso8601String(),
+        'is_pending': true,
+      };
+      if (mounted) {
+        setState(() {
+          _messages.add(pendingMsg);
+          _replyingTo = null;
+        });
+        WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+      }
+      _messageController.clear();
+      ChatDraftService.instance.clear(_fullRoomId);
+      return;
+    }
 
     try {
       // 🟢 Sende Nachricht via Supabase (CloudflareApiService delegiert intern)

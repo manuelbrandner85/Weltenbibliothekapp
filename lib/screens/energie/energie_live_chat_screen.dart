@@ -127,6 +127,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
   String? _errorMessage; // 🎨 NEW: Error state
   bool _isSending = false;
   Timer? _refreshTimer;
+  StreamSubscription<int>? _pendingSub;
   
   // 🆕 MENTIONS & MEDIA
   List<String> _mentionSuggestions = [];
@@ -253,6 +254,25 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
 
     // 🔴 SUPABASE REALTIME: Echtzeit-Subscription starten (sofort, parallel zu Profil-Load)
     _subscribeToRoom(_fullRoomId);
+
+    // 📡 Pending-Cleanup: Wenn alle Queue-Einträge synced sind, entferne
+    //    die lokalen Pending-Platzhalter — echte Server-Nachrichten kommen
+    //    via Realtime rein.
+    _pendingSub = OfflineSyncService().pendingActionsStream.listen((count) {
+      if (count == 0 && mounted) {
+        final hadPending = _messages.any(
+          (m) => m['id']?.toString().startsWith('pending_') == true,
+        );
+        if (hadPending) {
+          setState(() {
+            _messages.removeWhere(
+              (m) => m['id']?.toString().startsWith('pending_') == true,
+            );
+          });
+          _loadMessages(silent: true);
+        }
+      }
+    });
 
     // 🔄 Auto-Refresh alle 30 Sekunden als Fallback (Realtime ist primär)
     _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
@@ -538,7 +558,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
       
       if (!isOnline) {
         // Queue message for later
-        await offlineService.queueAction(
+        final queueId = await offlineService.queueAction(
           type: OfflineActionType.sendMessage,
           data: {
             'roomId': _selectedRoom,
@@ -550,19 +570,32 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
           },
           userId: _userId,
         );
-        
+
+        // Optimistisches Einfügen mit Pending-Flag → User sieht seine Nachricht
+        // mit Clock-Icon. Cleanup passiert wenn pendingActionsStream auf 0 geht.
+        final pendingMsg = {
+          'id': 'pending_$queueId',
+          'room_id': _fullRoomId,
+          'user_id': _userId,
+          'username': _username,
+          'message': message,
+          'content': message,
+          'avatar_emoji': _avatar,
+          'avatar_url': _avatarUrl,
+          'timestamp': DateTime.now().toIso8601String(),
+          'created_at': DateTime.now().toIso8601String(),
+          'is_pending': true,
+        };
+        if (mounted) {
+          setState(() {
+            _messages.add(pendingMsg);
+            _replyingTo = null;
+          });
+          WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+        }
+
         _messageController.clear();
         ChatDraftService.instance.clear(_selectedRoom);
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('📡 Nachricht in Warteschlange (Offline)'),
-              backgroundColor: Colors.orange,
-              duration: Duration(seconds: 2),
-            ),
-          );
-        }
         return;
       }
       
@@ -1901,6 +1934,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
     _messageController.removeListener(_onInputChanged);
     _inputFocusNode.dispose();
     _refreshTimer?.cancel();
+    _pendingSub?.cancel();
     _typingTimer?.cancel(); // 🆕
     _messageController.dispose();
     _scrollController.removeListener(_onScroll); // ✨ Batch-1

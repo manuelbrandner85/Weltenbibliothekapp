@@ -298,16 +298,31 @@ class _EnhancedMessageBubbleState extends State<EnhancedMessageBubble> {
                         ),
                       ),
                     
-                    // Timestamp
+                    // Timestamp + Pending-Indicator
                     const SizedBox(height: 4),
-                    Text(
-                      _formatTimestamp(message['timestamp'] ?? ''),
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: widget.isMyMessage 
-                            ? Colors.white60 
-                            : Colors.grey[500],
-                      ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _formatTimestamp(message['timestamp'] ?? ''),
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: widget.isMyMessage
+                                ? Colors.white60
+                                : Colors.grey[500],
+                          ),
+                        ),
+                        if (message['is_pending'] == true) ...[
+                          const SizedBox(width: 4),
+                          Icon(
+                            Icons.schedule,
+                            size: 12,
+                            color: widget.isMyMessage
+                                ? Colors.white60
+                                : Colors.grey[500],
+                          ),
+                        ],
+                      ],
                     ),
                   ],
                 ),
