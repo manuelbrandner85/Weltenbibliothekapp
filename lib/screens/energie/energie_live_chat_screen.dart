@@ -370,7 +370,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
       final messages = await _api.getChatMessages(
         _fullRoomId, // 'energie-meditation' etc.
         realm: 'energie',
-        limit: 100,
+        limit: 50,
       );
       
       // 🔧 DEBUG: Log message count
