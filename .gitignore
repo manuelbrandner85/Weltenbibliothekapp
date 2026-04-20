@@ -100,3 +100,6 @@ SOURCE_CODE_README.md
 .env.local
 .env.production
 .env.staging
+
+# Supabase CLI local state
+supabase/.temp/linked-project.json

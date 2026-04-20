@@ -2,7 +2,7 @@ name: Build APK
 
 on:
   push:
-    branches: [ main, genspark_ai_developer ]
+    branches: [ main, genspark_ai_developer, 'claude/**' ]
   pull_request:
     branches: [ main ]
   workflow_dispatch:  # Manueller Trigger

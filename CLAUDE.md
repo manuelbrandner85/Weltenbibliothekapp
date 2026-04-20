@@ -5,6 +5,140 @@
 
 ---
 
+# PROJEKTKONTEXT: Weltenbibliothek App
+
+## Überblick
+Du baust und wartest eine Flutter-App namens "Weltenbibliothek".
+Die App wird NICHT über den Google Play Store verteilt, sondern als APK direkt an User weitergegeben (Sideloading).
+Over-the-Air Updates laufen über Shorebird Code Push.
+
+## Tech Stack
+- **Framework:** Flutter (Dart)
+- **Backend/Datenbank:** Supabase (PostgreSQL, Auth, Storage, Realtime)
+- **OTA Updates:** Shorebird Code Push
+- **CI/CD:** GitHub Actions (Repository: manuelbrandner85/Weltenbibliothekapp)
+- **Verteilung:** Direkte APK-Weitergabe (kein Play Store)
+
+---
+
+## KRITISCHE REGELN FÜR SHOREBIRD & BUILD-NUMMERN
+
+### Build-Nummer NIEMALS unnötig ändern!
+- Die Build-Nummer in `pubspec.yaml` (z.B. `version: 1.0.0+1`) darf NUR geändert werden,
+  wenn NATIVE Änderungen vorliegen (neues Plugin, Android-Permissions, Kotlin/Java-Code,
+  Flutter-Version-Upgrade).
+- Bei reinen Dart-Code-Änderungen (UI, Logik, Bugfixes, Features) bleibt die
+  Build-Nummer IMMER gleich.
+- Grund: Unsere User behalten ihre APK. Shorebird-Patches funktionieren nur gegen die
+  exakte Release-Version. Neue Build-Nummer = User muss neue APK manuell installieren.
+
+### Patch vs. Release Entscheidung
+- **`shorebird patch`** → Standard für ALLE reinen Dart-Änderungen.
+  User kriegt Update automatisch beim nächsten App-Start.
+- **`shorebird release`** → NUR wenn native Änderungen unvermeidbar sind.
+  Erfordert neue APK-Verteilung an alle User.
+
+### Wenn du eine Änderung vorschlägst oder umsetzt:
+1. Prüfe IMMER ob die Änderung rein Dart ist oder native Teile betrifft.
+2. Wenn rein Dart → KEINE Änderung an `version:` in pubspec.yaml.
+3. Wenn nativ nötig → WARNE MICH EXPLIZIT bevor du die Build-Nummer änderst,
+   mit der Begründung warum ein neuer Release nötig ist.
+4. Schlage immer den Weg vor, der KEINEN neuen Release erfordert, wenn möglich.
+
+---
+
+## SHOREBIRD WORKFLOW (GitHub Actions)
+
+### Patch-Workflow (`shorebird_patch.yml`)
+- Wird getriggert wenn Dart-Code sich ändert
+- Führt `shorebird patch android --release-version <aktuelle-version>` aus
+- Die `--release-version` muss IMMER mit der Version übereinstimmen,
+  die die User aktuell auf ihren Geräten haben
+- NIEMALS eine neue Release-Version im Patch-Workflow verwenden
+
+### Release-Workflow (nur wenn nötig)
+- Nur manuell triggern nach expliziter Absprache mit mir
+- Erstellt neue APK mit `shorebird release android`
+- Danach müssen BEIDE Versionen gepatcht werden (alte + neue),
+  bis alle User die neue APK haben
+
+---
+
+## SUPABASE INTEGRATION
+
+### Sicherheitsregeln
+- API-Keys, Secrets, Passwörter NIEMALS hardcoden
+- Alle sensiblen Werte gehören in Environment-Variablen oder `.env` Dateien
+- `.env` Dateien MÜSSEN in `.gitignore` stehen
+- Supabase `service_role` Key NIEMALS im Client-Code verwenden,
+  nur `anon` Key + Row Level Security (RLS)
+
+### Verbindung
+- Supabase URL und anon Key werden über Dart Defines oder .env geladen
+- Beispiel: `--dart-define=SUPABASE_URL=... --dart-define=SUPABASE_ANON_KEY=...`
+
+---
+
+## APP-INTERNES UPDATE-SYSTEM
+
+### Shorebird Auto-Update
+- `shorebird_code_push` Package ist integriert
+- In `shorebird.yaml`: auto_update bleibt auf `true` (Standard)
+- Patches werden automatisch im Hintergrund geladen und beim nächsten Start aktiviert
+
+### Versions-Check für neue APK (wenn neuer Release nötig war)
+- In Supabase existiert eine Tabelle `app_config` mit Feld `min_version`
+- Beim App-Start wird geprüft ob die aktuelle App-Version >= min_version ist
+- Falls nicht → User bekommt Dialog mit Download-Link für neue APK
+- Download-Link wird ebenfalls aus `app_config` gelesen
+
+---
+
+## CODE-QUALITÄT & STIL
+
+### Allgemein
+- Sauberer, gut kommentierter Dart-Code
+- Deutsche Kommentare für Geschäftslogik, Englisch für technische Kommentare
+- Fehlerbehandlung mit try/catch und User-freundlichen Fehlermeldungen (Deutsch)
+- Responsive Design für verschiedene Bildschirmgrößen
+
+### Architektur
+- Feature-basierte Ordnerstruktur
+- State Management: [Riverpod/Bloc/Provider – was im Projekt bereits verwendet wird]
+- Repository Pattern für Supabase-Zugriffe
+- Separation of Concerns: UI ↔ Business Logic ↔ Data Layer
+
+### Vor jedem Commit prüfen:
+1. `flutter analyze` → keine Warnings
+2. `dart format .` → Code formatiert
+3. Keine hardcodierten Strings für User-facing Text
+4. Keine sensiblen Daten im Code
+
+---
+
+## WORKFLOW BEI ÄNDERUNGEN
+
+### Bevor du Code änderst:
+1. Erkläre mir kurz was du ändern willst und warum
+2. Sage mir ob es ein Patch oder Release wird
+3. Warte auf mein OK bei größeren Änderungen
+
+### Nach der Änderung:
+1. Fasse zusammen was geändert wurde
+2. Bestätige: "Patch-kompatibel ✓" oder "Neuer Release nötig ⚠️"
+3. Wenn Patch: Sage mir den Befehl zum Auslösen des Patch-Workflows
+4. Wenn Release: Erkläre mir die Schritte für die neue APK-Verteilung
+
+---
+
+## ZUSAMMENFASSUNG DER PRIORITÄTEN
+1. **Build-Nummer stabil halten** → User soll nie neue APK brauchen wenn vermeidbar
+2. **Sicherheit** → Keine Secrets im Code, RLS aktiv, .env geschützt
+3. **OTA-first Denken** → Jede Lösung bevorzugt Patch über Release
+4. **User-Erlebnis** → Updates unsichtbar, App läuft flüssig, deutsche UI
+
+---
+
 ## 📌 Projektüberblick
 
 **Weltenbibliothek** ist eine Flutter-App (Android/iOS/Web) – eine alternative Wissens- und
@@ -458,8 +592,230 @@ gh pr edit <NR> --body "Neue Beschreibung"
 
 *Letzte Aktualisierung: 2026-04-02 – GenSpark Claw Instruktionsdatei v1.0*
 
-## APK-Build
-- Builds laufen via GitHub Actions (`.github/workflows/build_apk.yml`)
-- Automatisch bei Push auf `genspark_ai_developer` wenn `lib/**` oder `pubspec.yaml` geändert
-- Manuell: GitHub → Actions → "Build & Release APK" → "Run workflow"
-- Download: GitHub Releases → neueste Version
+## APK-Build + OTA (Shorebird)
+
+> **PATCH-FIRST REGEL (verbindlich):**
+> Die App wird **nicht** über den Play Store verteilt, sondern als APK direkt an User (Sideloading).
+> User behalten ihre installierte APK. Shorebird-Patches funktionieren nur gegen die **exakte
+> Release-Version**, die auf dem Gerät liegt. Daher:
+> 1. **`version:` in `pubspec.yaml` NIEMALS bei reinen Dart-Änderungen bumpen.**
+>    Neue Build-Nummer = User muss neue APK manuell installieren → zu vermeiden.
+> 2. **Standard-Deployment für alle Dart-/UI-/Logik-/Bugfix-Änderungen = OTA-Patch.**
+> 3. Neuen Release NUR nach expliziter Absprache und nur bei unvermeidbaren
+>    nativen Änderungen (neues Plugin, Android-Permissions, Kotlin/Java, Flutter-Upgrade).
+> 4. Bei Commit-Zusammenfassung immer angeben: **"Patch-kompatibel ✓"** oder **"Neuer Release nötig ⚠️"**.
+
+- Builds laufen via GitHub Actions über **Shorebird** (Code Push / OTA)
+- `shorebird.yaml` enthält `app_id` (public, in VCS); Secret nur in GitHub Actions (`SHOREBIRD_TOKEN`)
+- **OTA-Patch (Standard — reine Dart-Änderungen):**
+  - Workflow: `.github/workflows/shorebird_patch.yml`
+  - Trigger: Nur manuell (workflow_dispatch); `release_version: latest` per Default
+  - Läuft `shorebird patch android` → sendet Dart-AOT-Diff an Shorebird, User bekommt Update beim nächsten App-Start automatisch
+  - Einschränkung: KEINE neuen Dart-Dependencies, KEINE nativen Änderungen (dann neuer Release nötig)
+
+### ⚠️ Shorebird OTA-Patch Konfiguration — NICHT ÄNDERN (verbindlich)
+
+> Diese Konfiguration ist das Ergebnis eines stundenlangen Debuggings nach "Patch uploaded,
+> aber auf Gerät nicht aktiv"-Problem. Jede Abweichung davon hat den Patch silent kaputt
+> gemacht. Bevor du auch nur EIN Flag hinzufügst/entfernst: lies diesen Abschnitt.
+>
+> Letzter funktionierender Patch: Run #15 auf Commit `fe09bad` (Shorebird CLI 1.6.92,
+> Flutter 3.41.6 rev `76ca3dff01`). Aktuell funktionierender Patch: v5.34.0 auf dem Gerät
+> zeigte `cur=2 nxt=2 chk=upToDate` nach Fix.
+
+**PFLICHT-Einstellungen in `.github/workflows/shorebird_patch.yml`:**
+
+1. **Shorebird CLI pinnen auf exakt die Version, mit der der Release gebaut wurde:**
+   ```yaml
+   - uses: shorebirdtech/setup-shorebird@v1
+     with:
+       shorebird-version: 1.6.92
+   ```
+   Ohne Pin driftet `setup-shorebird@v1` auf die neueste CLI und damit auf einen anderen
+   Flutter-Engine-Snapshot. Patch wird dann zwar uploaded, aber vom Client auf dem Gerät
+   still verworfen, weil die Engine-Bytes nicht zum registrierten Release passen.
+   → Wenn ein neuer Release mit neuerer Shorebird-CLI gebaut wird, MUSS dieser Pin
+   mitgezogen werden.
+
+2. **Nur `--allow-asset-diffs`, niemals `--allow-native-diffs`:**
+   ```bash
+   shorebird patch android --allow-asset-diffs --release-version="latest" -- \
+     --target-platform=android-arm64,android-arm \
+     --dart-define=APP_VERSION=... \
+     --dart-define=SUPABASE_URL=... \
+     --dart-define=SUPABASE_ANON_KEY=... \
+     --dart-define=CLOUDFLARE_WORKER_URL=...
+   ```
+   - `--allow-asset-diffs` ist nötig weil MaterialIcons.otf bei jedem Build neu
+     tree-geshaked wird sobald neue Icons im Dart-Code stehen.
+   - `--allow-native-diffs` **maskiert** Engine-Drift (CLI-Mismatch) statt ihn zu fixen:
+     Shorebird nimmt den Patch an, Gerät lehnt ihn später still ab. NIEMALS setzen.
+
+3. **`--release-version="latest"` direkt an Shorebird geben, keinen eigenen Resolver bauen.**
+   Shorebird löst "latest" korrekt gegen die jüngste registrierte Release-Version auf.
+   Custom-Resolver (parsen von `shorebird releases list`) hat in der Vergangenheit auf
+   nicht-existente Versionen gezeigt.
+
+4. **Kein `pubspec.yaml` mit der Release-Version synchronisieren.**
+   Die App-Version im Patch-Build ist unerheblich — Shorebird matcht am Engine-Snapshot-Hash,
+   nicht am `version:` Feld.
+
+5. **Kein `--verbose | tee`.** Verschluckt manchmal Exit-Codes und hat in der Vergangenheit
+   grüne Runs produziert, die in Wahrheit gefailt sind.
+
+6. **Concurrency-Gruppe mit `cancel-in-progress: true`:** Shorebird nimmt den zuletzt
+   hochgeladenen Patch als aktiv — ältere laufende Jobs würden neuere überschreiben wenn
+   sie später fertig werden.
+   ```yaml
+   concurrency:
+     group: shorebird-patch-${{ github.ref }}
+     cancel-in-progress: true
+   ```
+
+7. **`SUPABASE_ANON_KEY` ist ein echter JWT mit Payload
+   `{"iss":"supabase","ref":"adtviduaftdquvfjpojb","role":"anon",...}`.**
+   Nicht kürzen, nicht "verkürzen", nicht durch Platzhalter ersetzen — sonst bootet die App
+   nicht mehr gegen Supabase.
+
+**Debug-Banner (`lib/widgets/ota_debug_banner.dart`):**
+Falls je wieder ein Patch "silent fail" verhält, temporär wieder in `update_gate.dart`
+einsetzen — zeigt `v=<APP_VERSION> sb=<ON|OFF> cur=<N> nxt=<N> chk=<status>` oben rechts
+und macht sichtbar ob Shorebird den Patch installiert hat. Nach erfolgreichem Test WIEDER
+ENTFERNEN (user-facing Diagnose-Overlay).
+- **Neuer Release (nur bei nativen Änderungen, nach Absprache):**
+  - Workflow: `.github/workflows/build_apk.yml`
+  - Trigger: Nur manuell (`workflow_dispatch`) — Push-Trigger ist abgeschaltet, damit Dart-only Commits keinen fehlschlagenden Release-Build auslösen
+  - Läuft `shorebird release android --artifact=apk` → registriert Release auf Shorebird-Server + erstellt GitHub Release mit APK
+- Download (volle APK): GitHub Releases → neueste Version
+
+---
+
+## 🔐 Signing-Keystore & APK-Update-Kompatibilität (verbindlich)
+
+> **PROBLEM, das diese Regel verhindert:**
+> Wenn der Release-Build mit dem Android-**Debug-Key** signiert wird, erzeugt jeder
+> CI-Runner einen neuen Key → zwei APKs mit gleicher applicationId, aber verschiedenen
+> Signaturen. Android blockiert das Update dann mit **"App nicht installiert"**.
+> Der einzige "Ausweg" wäre Deinstallation — aber dadurch verliert der User alle lokalen
+> Daten UND die App, aus der er hätte updaten sollen.
+
+### Regel 1 — Release-Builds IMMER mit persistentem Keystore signieren
+
+- Der Keystore `android/app/weltenbibliothek.jks` liegt **NIEMALS im Repo** (`.gitignore`).
+- CI holt ihn aus GitHub-Secrets (base64-dekodiert in `build_apk.yml`).
+- `android/app/build.gradle.kts` lädt `key.properties` und nutzt den Release-Signing-Config.
+  Fällt der Keystore (lokal) weg, bleibt der Build debug-signiert — das darf nur auf
+  Entwickler-Maschinen passieren, **nie in CI**.
+- Nötige GitHub-Secrets (einmalig einzurichten):
+  - `ANDROID_KEYSTORE_BASE64` — base64-Encode des `.jks`
+  - `ANDROID_KEYSTORE_PASSWORD`
+  - `ANDROID_KEY_ALIAS` (z.B. `weltenbibliothek`)
+  - `ANDROID_KEY_PASSWORD`
+- Keystore erzeugen: `./scripts/generate_release_keystore.sh`
+  → gibt die 4 Secrets am Ende für Copy&Paste aus.
+
+### Regel 2 — Keystore darf NIE verloren gehen
+
+- Ohne den Original-Keystore kannst du nie wieder Over-the-Top-Updates über eine installierte
+  APK ausrollen. Alle User müssten die App deinstallieren, bevor sie die neue Version
+  installieren.
+- Backup-Pflicht: Keystore + Passwörter in Passwort-Manager **und** Offline-Kopie.
+
+### Regel 3 — Bei Signing-Key-Mismatch (Legacy-APK im Feld)
+
+Wenn eine bereits verteilte APK mit dem falschen Key signiert ist (z.B. alte Debug-Builds),
+und die neue APK ist mit dem persistenten Release-Key signiert → User auf der alten Version
+**können nicht per APK-Update migrieren**. Workaround:
+
+1. Alte User per **Shorebird-OTA-Patch** auf dem alten Release halten und neue Dart-Fixes so
+   ausliefern (kein APK-Install, kein Signing-Problem).
+2. `app_config` in Supabase auf `latest_version = <installierte alte Version>` setzen, damit
+   kein "App nicht installiert"-Loop durch den Update-Dialog entsteht.
+3. Neue APK-Releases laufen ab sofort sauber, weil ab jetzt alle mit dem gleichen Release-Key
+   signiert sind → zukünftige User können problemlos upgraden.
+4. Alte User, die wirklich auf die neue APK müssen, bekommen eine Anleitung: Deinstallieren
+   → Neuinstall der neuen APK (Datenverlust akzeptiert, Einmal-Wechsel).
+
+### Regel 4 — Release-Flow (vollautomatisch ab v5.35.0)
+
+Der Release-Flow ist vollständig automatisiert. Der Entwickler macht NUR zwei Dinge:
+
+1. **`pubspec.yaml` Version bumpen** (z.B. `5.34.0+20260419` → `5.35.0+20260420`).
+2. **`supabase/release/current.json` pflegen** — Pflichtfelder:
+   ```json
+   {
+     "min_version": "5.34.0",
+     "changelog": "• Bullet 1\n• Bullet 2"
+   }
+   ```
+   `min_version` = unter dieser Version wird das Update als forced gemeldet (User kann App
+   nicht weiter nutzen bis Download). In der Regel die vorherige Version.
+
+Beides wird per normalem PR auf `main` gemerged. **Kein Tag-Push nötig** — der Workflow
+erstellt den Tag `vX.Y.Z` selbst via `softprops/action-gh-release@v2`, sobald er merkt
+dass für die aktuelle `pubspec.yaml`-Version noch kein Release existiert.
+
+**Trigger-Wege** (alle drei funktionieren):
+- **Merge auf `main` mit pubspec.yaml-Bump** (Standard): Pre-Check-Job vergleicht Version
+  mit bestehenden GitHub-Releases, baut automatisch wenn noch keiner existiert. Kein
+  manueller Tag-Push erforderlich.
+- **Manuell getaggter Commit**: `git tag -a vX.Y.Z && git push origin vX.Y.Z` —
+  funktioniert weiterhin, falls ein spezifischer Commit released werden soll.
+- **workflow_dispatch**: Actions-UI → "Build & Release APK" → Run workflow (auch auf
+  Feature-Branches nutzbar).
+
+**Auto-Merge durch Claude** (ab v5.35.0):
+Wenn ich einen Release-PR vorbereitet habe (pubspec.yaml gebumpt, `current.json` gepflegt,
+Workflow grün), MERGE ich den PR selbst auf `main` via `mcp__github__merge_pull_request`
+(Squash-Merge), sobald die CI-Checks grün sind. Anschließend feuert der Auto-Trigger den
+Release-Workflow. Kein manueller Eingriff vom Entwickler nötig — außer Review/Approval
+falls der PR inhaltlich geprüft werden soll.
+
+Regeln für Auto-Merge:
+- Nur wenn alle required CI-Checks auf `success` / `neutral` stehen (nicht `in_progress`
+  oder `failure`).
+- Nur bei Release-PRs (pubspec.yaml-Bump + `current.json`-Update), nicht bei beliebigen
+  Feature-PRs.
+- Niemals force-mergen wenn CI rot ist — dann Ursache fixen, pushen, warten, dann mergen.
+- Draft-PRs werden vorher via `update_pull_request(draft:false)` ready-for-review gesetzt.
+
+Danach läuft `.github/workflows/build_apk.yml` vollautomatisch:
+
+1. Keystore aus Secrets dekodieren (`ANDROID_KEYSTORE_*`) → persistent-signierte APK.
+2. `shorebird release android --artifact=apk` → registriert Release auf Shorebird-Server.
+3. APK in GitHub Release veröffentlichen unter fixem URL-Schema
+   `.../releases/download/vX.Y.Z/weltenbibliothek-vX.Y.Z-universal.apk`.
+4. Release-Notes kommen aus `current.json::changelog`.
+5. **`public.app_config` in Supabase wird per PostgREST-PATCH gesetzt** (nutzt
+   `SUPABASE_SERVICE_ROLE_KEY`, umgeht RLS). Felder:
+   - `latest_version` = Tag-Version (ohne `v`)
+   - `min_version`, `changelog` aus `current.json`
+   - `apk_download_url`, `release_notes_url` aus Tag abgeleitet
+6. User auf älterer Version sehen beim nächsten App-Start den `ReleaseUpdateScreen` und
+   können direkt in der App herunterladen + installieren (Android `PackageInstaller`).
+
+**Erforderliche GitHub-Secrets (einmalig einzurichten):**
+- `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`,
+  `ANDROID_KEY_PASSWORD` (persistenter Keystore, siehe Regel 1)
+- `SHOREBIRD_TOKEN`
+- `SUPABASE_SERVICE_ROLE_KEY` (Service-Role für PostgREST-PATCH auf `app_config`)
+
+**Warum `app_config` dennoch automatisch safe ist:**
+Seit v5.34.0 wird jede APK mit demselben persistenten Release-Keystore signiert
+(siehe Regel 1). Damit ist die "Signing-Key-Mismatch"-Gefahr (siehe Regel 3), die früher
+ein manuelles Gate erforderlich hat, systematisch ausgeschlossen. Der automatische
+`app_config`-Update ist nur dann gefährlich, wenn ein Release den Keystore WECHSELT —
+in diesem Fall muss der Workflow temporär deaktiviert werden und `app_config` bleibt auf
+der alten Version, bis alle User migriert sind.
+
+**Checkliste bei Keystore-Wechsel (Ausnahmefall):**
+
+- [ ] Step `📢 Supabase app_config updaten` im `build_apk.yml` temporär auskommentieren
+      bevor Tag gepusht wird.
+- [ ] Neue APK via alternativer Distribution an Power-User geben, Feedback einholen.
+- [ ] Erst wenn verifiziert: manuell per Supabase-SQL-Editor `app_config` updaten.
+- [ ] Step wieder aktivieren.
+
+**Im Zweifelsfall (Dart-only Änderung):** Statt Release besser `shorebird patch` nehmen —
+kein APK-Reinstall nötig, keine `app_config`-Änderung, User kriegen Patch beim nächsten
+App-Start automatisch.

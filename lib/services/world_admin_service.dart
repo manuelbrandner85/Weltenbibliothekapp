@@ -30,12 +30,27 @@ import 'supabase_service.dart'; // 🔥 Supabase Direct Access
 /// - Root-Admin in Materie ≠ Root-Admin in Energie
 /// - Admin kann nur User in seiner Welt verwalten
 class WorldAdminService {
-  // Cloudflare Worker URL (API v2 - World-Based Multi-Profile System)
   static const String _baseUrl = ApiConfig.workerUrl;
   static const Duration _timeout = Duration(seconds: 10);
-  
-  // ✅ AUTH SERVICE
+
   static final InvisibleAuthService _auth = InvisibleAuthService();
+
+  /// Supabase JWT des aktuell eingeloggten Admins.
+  /// Wird für alle Admin-API-Aufrufe als Bearer-Token genutzt.
+  static String get _jwt =>
+      supabase.auth.currentSession?.accessToken ?? '';
+
+  /// Supabase UUID des aktuell eingeloggten Admins.
+  static String get _adminId =>
+      supabase.auth.currentUser?.id ?? '';
+
+  /// Standard-Auth-Header für Admin-Requests (JWT + UUID).
+  static Map<String, String> _adminHeaders({String? role}) => {
+        'Authorization': 'Bearer $_jwt',
+        'X-Admin-ID': _adminId,
+        if (role != null) 'X-Role': role,
+        'Content-Type': 'application/json',
+      };
 
   // ════════════════════════════════════════════════════════════
   // ADMIN STATUS CHECK
@@ -270,47 +285,20 @@ class WorldAdminService {
   // ROLE MANAGEMENT
   // ════════════════════════════════════════════════════════════
 
-  /// Promote user to admin
-  /// ✅ FIXED AUTH: Uses simple Bearer token (username)
   static Future<bool> promoteUser(String world, String userId, {String? role}) async {
     try {
       final url = Uri.parse('$_baseUrl/api/admin/promote/$world/$userId');
-      
-      // ✅ FIX: Get username from storage
-      final storage = UnifiedStorageService();
-      final username = storage.getUsername(world);
-      
-      if (username == null || username.isEmpty) {
-        if (kDebugMode) {
-          debugPrint('❌ No username found for world: $world');
-        }
-        return false;
-      }
-      
-      if (kDebugMode) {
-        debugPrint('⬆️  Promoting user: $world/$userId (by: $username)');
-      }
-      
+      if (kDebugMode) debugPrint('⬆️ Promoting user: $world/$userId');
       final response = await http.post(
         url,
-        headers: {
-          'Authorization': 'Bearer $username',
-          'Content-Type': 'application/json',
-        },
+        headers: _adminHeaders(role: role ?? 'root_admin'),
       ).timeout(_timeout);
-      
+
       if (response.statusCode == 200) {
-        if (kDebugMode) {
-          debugPrint('✅ User promoted successfully');
-          debugPrint('   Response: ${response.body}');
-        }
+        if (kDebugMode) debugPrint('✅ User promoted successfully');
         return true;
       } else {
-        if (kDebugMode) {
-          debugPrint('⚠️  Promotion failed: ${response.statusCode}');
-          debugPrint('   Response: ${response.body}');
-          debugPrint('   Headers sent: ${_auth.authHeaders(world: world, role: role)}');
-        }
+        if (kDebugMode) debugPrint('⚠️ Promotion failed: ${response.statusCode} – ${response.body}');
         return false;
       }
     } on SocketException {
@@ -332,62 +320,26 @@ class WorldAdminService {
   }
 
   /// Demote admin to user
-  /// ✅ FIXED AUTH: Uses simple Bearer token (username)
   static Future<bool> demoteUser(String world, String userId, {String? role}) async {
     try {
       final url = Uri.parse('$_baseUrl/api/admin/demote/$world/$userId');
-      
-      // ✅ FIX: Get username from storage
-      final storage = UnifiedStorageService();
-      final username = storage.getUsername(world);
-      
-      if (username == null || username.isEmpty) {
-        if (kDebugMode) {
-          debugPrint('❌ No username found for world: $world');
-        }
-        return false;
-      }
-      
-      if (kDebugMode) {
-        debugPrint('⬇️  Demoting user: $world/$userId (by: $username)');
-      }
-      
+      if (kDebugMode) debugPrint('⬇️ Demoting user: $world/$userId');
       final response = await http.post(
         url,
-        headers: {
-          'Authorization': 'Bearer $username',
-          'Content-Type': 'application/json',
-        },
+        headers: _adminHeaders(role: role ?? 'root_admin'),
       ).timeout(_timeout);
-      
       if (response.statusCode == 200) {
-        if (kDebugMode) {
-          debugPrint('✅ User demoted successfully');
-          debugPrint('   Response: ${response.body}');
-        }
+        if (kDebugMode) debugPrint('✅ User demoted');
         return true;
-      } else {
-        if (kDebugMode) {
-          debugPrint('⚠️  Demotion failed: ${response.statusCode}');
-          debugPrint('   Response: ${response.body}');
-          debugPrint('   Headers sent: ${_auth.authHeaders(world: world, role: role)}');
-        }
-        return false;
       }
-    } on SocketException {
-      if (kDebugMode) {
-        debugPrint('❌ Network: Keine Internetverbindung');
-      }
+      if (kDebugMode) debugPrint('⚠️ Demotion failed: ${response.statusCode} – ${response.body}');
       return false;
-    } on TimeoutException catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ Timeout: $e');
-      }
+    } on SocketException {
+      return false;
+    } on TimeoutException {
       return false;
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ Demotion error: $e $e');
-      }
+      if (kDebugMode) debugPrint('❌ Demotion error: $e');
       return false;
     }
   }
@@ -401,60 +353,23 @@ class WorldAdminService {
   static Future<bool> deleteUser(String world, String userId, {String? role}) async {
     try {
       final url = Uri.parse('$_baseUrl/api/admin/delete/$world/$userId');
-      
-      // ✅ FIX: Get username from storage
-      final storage = UnifiedStorageService();
-      final username = storage.getUsername(world);
-      
-      if (username == null || username.isEmpty) {
-        if (kDebugMode) {
-          debugPrint('❌ No username found for world: $world');
-        }
-        return false;
-      }
-      
-      if (kDebugMode) {
-        debugPrint('🗑️  Deleting user: $world/$userId (by root_admin: $username)');
-      }
-      
+      if (kDebugMode) debugPrint('🗑️ Deleting user: $world/$userId');
       final response = await http.delete(
         url,
-        headers: {
-          'Authorization': 'Bearer ${ApiConfig.adminToken}', // 🆕 Use admin-specific token
-          'X-Role': 'root_admin',
-          'X-User-ID': username,
-          'Content-Type': 'application/json',
-        },
+        headers: _adminHeaders(role: 'root_admin'),
       ).timeout(_timeout);
-      
       if (response.statusCode == 200) {
-        if (kDebugMode) {
-          debugPrint('✅ User deleted successfully');
-          debugPrint('   Response: ${response.body}');
-        }
+        if (kDebugMode) debugPrint('✅ User deleted');
         return true;
-      } else {
-        if (kDebugMode) {
-          debugPrint('⚠️  Deletion failed: ${response.statusCode}');
-          debugPrint('   Response: ${response.body}');
-          debugPrint('   Headers sent: ${_auth.authHeaders(world: world, role: role)}');
-        }
-        return false;
       }
-    } on SocketException {
-      if (kDebugMode) {
-        debugPrint('❌ Network: Keine Internetverbindung');
-      }
+      if (kDebugMode) debugPrint('⚠️ Deletion failed: ${response.statusCode} – ${response.body}');
       return false;
-    } on TimeoutException catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ Timeout: $e');
-      }
+    } on SocketException {
+      return false;
+    } on TimeoutException {
       return false;
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ Deletion error: $e $e');
-      }
+      if (kDebugMode) debugPrint('❌ Deletion error: $e');
       return false;
     }
   }
@@ -477,7 +392,7 @@ class WorldAdminService {
 
       final response = await http.get(
         url,
-        headers: _auth.authHeaders(world: world, role: role),
+        headers: _adminHeaders(role: role),
       ).timeout(_timeout);
 
       if (response.statusCode == 200) {
@@ -674,8 +589,8 @@ class AuditLogEntry {
 /// }
 /// ```
 extension WorldAdminServiceV162 on WorldAdminService {
-  /// 🆕 Ban User (V16.2)
-  /// ⚠️ REQUIRES: Root Admin (AdminPermissions.canManageAdmins)
+  static Map<String, String> get _h => WorldAdminService._adminHeaders(role: 'root_admin');
+
   static Future<bool> banUser({
     required String userId,
     required String reason,
@@ -684,73 +599,32 @@ extension WorldAdminServiceV162 on WorldAdminService {
   }) async {
     try {
       final url = Uri.parse('${WorldAdminService._baseUrl}/api/admin/users/$userId/ban');
-      final storage = UnifiedStorageService();
-      final adminUser = adminUserId ?? storage.getUsername('materie') ?? 'admin';
-      
       final response = await http.post(
         url,
-        headers: {
-          'Authorization': 'Bearer ${ApiConfig.adminToken}', // 🆕 Use admin-specific token
-          'X-Role': 'root_admin',
-          'X-User-ID': adminUser,
-          'Content-Type': 'application/json',
-        },
+        headers: _h,
         body: jsonEncode({'reason': reason, 'durationHours': durationHours}),
       ).timeout(WorldAdminService._timeout);
-      
-      // ✅ ENHANCED: Response validation with body parsing
       if (response.statusCode == 200) {
-        try {
-          final data = jsonDecode(response.body) as Map<String, dynamic>;
-          final success = data['success'] as bool? ?? true;
-          if (kDebugMode) {
-            debugPrint(success ? '✅ Ban successful' : '⚠️ Ban failed: ${data['error'] ?? 'Unknown'}');
-          }
-          return success;
-        } catch (e) {
-          // Fallback: HTTP 200 without valid JSON = success
-          if (kDebugMode) {
-            debugPrint('✅ Ban successful (legacy response)');
-          }
-          return true;
-        }
-      } else {
-        if (kDebugMode) {
-          debugPrint('❌ Ban failed: HTTP ${response.statusCode}');
-          debugPrint('   Response: ${response.body}');
-        }
-        return false;
+        final data = jsonDecode(response.body) as Map<String, dynamic>? ?? {};
+        return data['success'] as bool? ?? true;
       }
+      if (kDebugMode) debugPrint('❌ Ban failed: HTTP ${response.statusCode}');
+      return false;
     } catch (e) {
       return false;
     }
   }
 
-  /// 🆕 Unban User (V16.2)
-  /// ⚠️ REQUIRES: Root Admin (AdminPermissions.canManageAdmins)
   static Future<bool> unbanUser({required String userId, String? adminUserId}) async {
     try {
       final url = Uri.parse('${WorldAdminService._baseUrl}/api/admin/users/$userId/unban');
-      final storage = UnifiedStorageService();
-      final adminUser = adminUserId ?? storage.getUsername('materie') ?? 'admin';
-      
-      final response = await http.post(
-        url,
-        headers: {
-          'Authorization': 'Bearer ${ApiConfig.adminToken}', // 🆕 Use admin-specific token
-          'X-Role': 'root_admin',
-          'X-User-ID': adminUser,
-          'Content-Type': 'application/json',
-        },
-      ).timeout(WorldAdminService._timeout);
-      
+      final response = await http.post(url, headers: _h).timeout(WorldAdminService._timeout);
       return response.statusCode == 200;
     } catch (e) {
       return false;
     }
   }
 
-  /// 🆕 Mute User (V16.2)
   static Future<bool> muteUser({
     required String userId,
     required String reason,
@@ -759,46 +633,21 @@ extension WorldAdminServiceV162 on WorldAdminService {
   }) async {
     try {
       final url = Uri.parse('${WorldAdminService._baseUrl}/api/admin/users/$userId/mute');
-      final storage = UnifiedStorageService();
-      final adminUser = adminUserId ?? storage.getUsername('materie') ?? 'admin';
-      
       final response = await http.post(
         url,
-        headers: {
-          'Authorization': 'Bearer ${ApiConfig.adminToken}', // 🆕 Use admin-specific token
-          'X-Role': 'root_admin',
-          'X-User-ID': adminUser,
-          'Content-Type': 'application/json',
-        },
+        headers: _h,
         body: jsonEncode({'reason': reason, 'durationMinutes': durationMinutes}),
       ).timeout(WorldAdminService._timeout);
-      
       return response.statusCode == 200;
     } catch (e) {
       return false;
     }
   }
 
-  /// 🆕 Unmute User (V16.2)
-  static Future<bool> unmuteUser({
-    required String userId,
-    String? adminUserId,
-  }) async {
+  static Future<bool> unmuteUser({required String userId, String? adminUserId}) async {
     try {
       final url = Uri.parse('${WorldAdminService._baseUrl}/api/admin/users/$userId/unmute');
-      final storage = UnifiedStorageService();
-      final adminUser = adminUserId ?? storage.getUsername('materie') ?? 'admin';
-      
-      final response = await http.post(
-        url,
-        headers: {
-          'Authorization': 'Bearer ${ApiConfig.adminToken}', // 🆕 Use admin-specific token
-          'X-Role': 'root_admin',
-          'X-User-ID': adminUser,
-          'Content-Type': 'application/json',
-        },
-      ).timeout(WorldAdminService._timeout);
-      
+      final response = await http.post(url, headers: _h).timeout(WorldAdminService._timeout);
       return response.statusCode == 200;
     } catch (e) {
       return false;
@@ -903,8 +752,6 @@ extension WorldAdminServiceV162 on WorldAdminService {
   static Future<List<Map<String, dynamic>>> getActiveVoiceCalls(String world) async {
     try {
       // Use API token from ApiConfig
-      const token = 'y-Xiv3kKeiybDm2CV0yLFu7TSd22co6NBw3udn5Y';
-      
       final url = Uri.parse('${WorldAdminService._baseUrl}/api/admin/voice-calls/$world');
       
       if (kDebugMode) {
@@ -914,8 +761,7 @@ extension WorldAdminServiceV162 on WorldAdminService {
       final response = await http.get(
         url,
         headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
+          ...WorldAdminService._adminHeaders(),
         },
       ).timeout(WorldAdminService._timeout);
       
@@ -976,8 +822,6 @@ extension WorldAdminServiceV162 on WorldAdminService {
     int limit = 50,
   }) async {
     try {
-      const token = 'y-Xiv3kKeiybDm2CV0yLFu7TSd22co6NBw3udn5Y';
-      
       final url = Uri.parse('${WorldAdminService._baseUrl}/api/admin/call-history/$world?limit=$limit');
       
       if (kDebugMode) {
@@ -987,8 +831,7 @@ extension WorldAdminServiceV162 on WorldAdminService {
       final response = await http.get(
         url,
         headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
+          ...WorldAdminService._adminHeaders(),
         },
       ).timeout(WorldAdminService._timeout);
       
@@ -1049,8 +892,6 @@ extension WorldAdminServiceV162 on WorldAdminService {
   /// ```
   static Future<Map<String, dynamic>> getUserProfile(String userId) async {
     try {
-      const token = 'y-Xiv3kKeiybDm2CV0yLFu7TSd22co6NBw3udn5Y';
-      
       final url = Uri.parse('${WorldAdminService._baseUrl}/api/admin/user-profile/$userId');
       
       if (kDebugMode) {
@@ -1060,8 +901,7 @@ extension WorldAdminServiceV162 on WorldAdminService {
       final response = await http.get(
         url,
         headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
+          ...WorldAdminService._adminHeaders(),
         },
       ).timeout(WorldAdminService._timeout);
       

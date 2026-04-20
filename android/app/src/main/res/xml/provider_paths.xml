@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- FileProvider-Pfade für In-App APK-Install.
+     Bezieht sich auf den App-internen Cache-Ordner, wo die APK beim Update
+     abgelegt wird. Android (N+) verbietet file:// URIs in Intents — deshalb
+     content:// via FileProvider. -->
+<paths>
+    <cache-path name="cache" path="." />
+    <external-cache-path name="ext_cache" path="." />
+    <files-path name="files" path="." />
+</paths>

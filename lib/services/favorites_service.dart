@@ -1,49 +1,55 @@
-import 'package:hive_flutter/hive_flutter.dart';
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/favorite.dart';
-import 'achievement_service.dart';  // 🏆 Achievement System
+import 'achievement_service.dart';
 
-/// Favorites Service v8.0
-/// 
-/// Verwaltet Lesezeichen & Favoriten mit Hive Local Storage
+/// Favorites Service v9.0 (SharedPreferences)
+///
+/// Verwaltet Lesezeichen & Favoriten lokal – in-memory + SharedPreferences.
 class FavoritesService {
-  static const String _boxName = 'favorites';
-  static Box<Favorite>? _box;
+  static const String _kFavorites = 'favorites_list';
 
-  /// Initialize Hive & open box
+  static List<Favorite> _favorites = [];
+  static bool _loaded = false;
+
   static Future<void> init() async {
-    await Hive.initFlutter();
-    
-    // Register adapters
-    if (!Hive.isAdapterRegistered(0)) {
-      Hive.registerAdapter(FavoriteAdapter());
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_kFavorites);
+    if (raw != null) {
+      try {
+        final list = jsonDecode(raw) as List;
+        _favorites = list
+            .map((e) => Favorite.fromJson(e as Map<String, dynamic>))
+            .toList();
+      } catch (_) {
+        _favorites = [];
+      }
     }
-    if (!Hive.isAdapterRegistered(1)) {
-      Hive.registerAdapter(FavoriteTypeAdapter());
-    }
-    
-    // Open box
-    _box = await Hive.openBox<Favorite>(_boxName);
+    _loaded = true;
   }
 
-  /// Get box instance
-  static Box<Favorite> get box {
-    if (_box == null || !_box!.isOpen) {
-      throw Exception('Favorites box not initialized. Call FavoritesService.init() first.');
-    }
-    return _box!;
+  static Future<void> _persist() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      _kFavorites,
+      jsonEncode(_favorites.map((f) => f.toJson()).toList()),
+    );
+  }
+
+  static Future<void> _ensureLoaded() async {
+    if (!_loaded) await init();
   }
 
   // ==================== CREATE ====================
 
-  /// Add favorite
   static Future<void> addFavorite(Favorite favorite) async {
-    await box.put(favorite.id, favorite);
-    
-    // 🏆 Achievement Trigger: Bookmark
+    await _ensureLoaded();
+    _favorites.removeWhere((f) => f.id == favorite.id);
+    _favorites.add(favorite);
+    await _persist();
     _trackBookmarkAchievement();
   }
 
-  /// Quick add favorite
   static Future<Favorite> addQuickFavorite({
     required FavoriteType type,
     required String title,
@@ -62,128 +68,110 @@ class FavoritesService {
       metadata: metadata,
       tags: tags,
     );
-    
     await addFavorite(favorite);
     return favorite;
   }
 
   // ==================== READ ====================
 
-  /// Get all favorites
   static List<Favorite> getAllFavorites() {
-    return box.values.toList()
+    return List.of(_favorites)
       ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
   }
 
-  /// Get favorites by type
   static List<Favorite> getFavoritesByType(FavoriteType type) {
-    return box.values
+    return _favorites
         .where((f) => f.type == type)
         .toList()
       ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
   }
 
-  /// Get favorite by ID
   static Favorite? getFavoriteById(String id) {
-    return box.get(id);
+    try {
+      return _favorites.firstWhere((f) => f.id == id);
+    } catch (_) {
+      return null;
+    }
   }
 
-  /// Check if favorite exists
-  static bool isFavorite(String id) {
-    return box.containsKey(id);
-  }
+  static bool isFavorite(String id) => _favorites.any((f) => f.id == id);
 
-  /// Search favorites
   static List<Favorite> searchFavorites(String query) {
-    final queryLower = query.toLowerCase();
-    return box.values
+    final q = query.toLowerCase();
+    return _favorites
         .where((f) =>
-            f.title.toLowerCase().contains(queryLower) ||
-            (f.description?.toLowerCase().contains(queryLower) ?? false) ||
-            (f.tags?.any((tag) => tag.toLowerCase().contains(queryLower)) ?? false))
+            f.title.toLowerCase().contains(q) ||
+            (f.description?.toLowerCase().contains(q) ?? false) ||
+            (f.tags?.any((tag) => tag.toLowerCase().contains(q)) ?? false))
         .toList()
       ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
   }
 
-  /// Get favorites count
-  static int getFavoritesCount() {
-    return box.length;
-  }
+  static int getFavoritesCount() => _favorites.length;
 
-  /// Get favorites count by type
-  static int getFavoritesCountByType(FavoriteType type) {
-    return box.values.where((f) => f.type == type).length;
-  }
+  static int getFavoritesCountByType(FavoriteType type) =>
+      _favorites.where((f) => f.type == type).length;
 
   // ==================== UPDATE ====================
 
-  /// Update favorite
   static Future<void> updateFavorite(Favorite favorite) async {
-    await box.put(favorite.id, favorite);
+    await _ensureLoaded();
+    final idx = _favorites.indexWhere((f) => f.id == favorite.id);
+    if (idx != -1) _favorites[idx] = favorite;
+    await _persist();
   }
 
-  /// Add tag to favorite
   static Future<void> addTag(String favoriteId, String tag) async {
-    final favorite = box.get(favoriteId);
-    if (favorite != null) {
-      favorite.tags ??= [];
-      if (!favorite.tags!.contains(tag)) {
-        favorite.tags!.add(tag);
-        await box.put(favoriteId, favorite);
-      }
+    await _ensureLoaded();
+    final idx = _favorites.indexWhere((f) => f.id == favoriteId);
+    if (idx == -1) return;
+    final f = _favorites[idx];
+    f.tags ??= [];
+    if (!f.tags!.contains(tag)) {
+      f.tags!.add(tag);
+      await _persist();
     }
   }
 
-  /// Remove tag from favorite
   static Future<void> removeTag(String favoriteId, String tag) async {
-    final favorite = box.get(favoriteId);
-    if (favorite != null && favorite.tags != null) {
-      favorite.tags!.remove(tag);
-      await box.put(favoriteId, favorite);
-    }
+    await _ensureLoaded();
+    final idx = _favorites.indexWhere((f) => f.id == favoriteId);
+    if (idx == -1) return;
+    _favorites[idx].tags?.remove(tag);
+    await _persist();
   }
 
   // ==================== DELETE ====================
 
-  /// Delete favorite
   static Future<void> deleteFavorite(String id) async {
-    await box.delete(id);
+    await _ensureLoaded();
+    _favorites.removeWhere((f) => f.id == id);
+    await _persist();
   }
 
-  /// Delete favorites by type
   static Future<void> deleteFavoritesByType(FavoriteType type) async {
-    final idsToDelete = box.values
-        .where((f) => f.type == type)
-        .map((f) => f.id)
-        .toList();
-    
-    for (final id in idsToDelete) {
-      await box.delete(id);
-    }
+    await _ensureLoaded();
+    _favorites.removeWhere((f) => f.type == type);
+    await _persist();
   }
 
-  /// Clear all favorites
   static Future<void> clearAllFavorites() async {
-    await box.clear();
+    _favorites.clear();
+    await _persist();
   }
 
   // ==================== IMPORT/EXPORT ====================
 
-  /// Export favorites to JSON
-  static List<Map<String, dynamic>> exportToJson() {
-    return box.values.map((f) => f.toJson()).toList();
-  }
+  static List<Map<String, dynamic>> exportToJson() =>
+      _favorites.map((f) => f.toJson()).toList();
 
-  /// Import favorites from JSON
   static Future<int> importFromJson(List<Map<String, dynamic>> jsonList) async {
     int imported = 0;
     for (final json in jsonList) {
       try {
-        final favorite = Favorite.fromJson(json);
-        await addFavorite(favorite);
+        await addFavorite(Favorite.fromJson(json));
         imported++;
-      } catch (e) {
-        // Skip invalid entries
+      } catch (_) {
         continue;
       }
     }
@@ -192,37 +180,31 @@ class FavoritesService {
 
   // ==================== STATISTICS ====================
 
-  /// Get statistics
   static Map<String, dynamic> getStatistics() {
-    final favorites = box.values.toList();
-    
     return {
-      'total': favorites.length,
+      'total': _favorites.length,
       'byType': {
         for (var type in FavoriteType.values)
-          type.label: favorites.where((f) => f.type == type).length,
+          type.label: _favorites.where((f) => f.type == type).length,
       },
-      'oldestDate': favorites.isEmpty
+      'oldestDate': _favorites.isEmpty
           ? null
-          : favorites
+          : _favorites
               .reduce((a, b) => a.createdAt.isBefore(b.createdAt) ? a : b)
               .createdAt,
-      'newestDate': favorites.isEmpty
+      'newestDate': _favorites.isEmpty
           ? null
-          : favorites
+          : _favorites
               .reduce((a, b) => a.createdAt.isAfter(b.createdAt) ? a : b)
               .createdAt,
     };
   }
-  
-  /// 🏆 Achievement Tracking Helper
+
   static void _trackBookmarkAchievement() {
     try {
       AchievementService().incrementProgress('first_bookmark');
       AchievementService().incrementProgress('curator');
       AchievementService().incrementProgress('knowledge_seeker');
-    } catch (e) {
-      // Silent fail - achievements are non-critical
-    }
+    } catch (_) {}
   }
 }

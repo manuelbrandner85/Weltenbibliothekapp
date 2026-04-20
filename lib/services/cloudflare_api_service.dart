@@ -151,7 +151,7 @@ class CloudflareApiService {
       final supaResult = await supabase
           .from('chat_messages')
           .select(
-              'id,room_id,user_id,username,avatar_url,content,message,message_type,created_at,is_deleted')
+              'id,room_id,user_id,username,avatar_url,content,message,message_type,created_at,edited_at,is_deleted,reply_to_id,reply_to_content,reply_to_sender_name')
           .eq('room_id', roomId)
           .eq('is_deleted', false)
           .order('created_at', ascending: true)
@@ -159,7 +159,6 @@ class CloudflareApiService {
 
       final supaMessages = (supaResult as List<dynamic>)
           .map((e) => Map<String, dynamic>.from(e as Map))
-          .where((m) => m['is_deleted'] != true)
           .map((m) => {
                 ...m,
                 'id': m['id'],             // ✅ immer vorhanden für Edit/Delete
@@ -252,7 +251,12 @@ class CloudflareApiService {
     }
   }
 
-  /// Send chat message with optional avatar
+  /// Send chat message – 🟢 Supabase-only (gem. Zielarchitektur v2.0).
+  /// Erfordert eingeloggten User (SupabaseAuth). Tool-Bot-Posts (userId == 'tool_bot')
+  /// sind als einzige Ausnahme anonym erlaubt.
+  ///
+  /// Reply-Support (v36): [replyToId] + optionale Snapshot-Felder für
+  /// Telegram-Style Inline-Quote.
   Future<Map<String, dynamic>> sendChatMessage({
     required String roomId,
     required String realm,
@@ -263,94 +267,36 @@ class CloudflareApiService {
     String? avatarUrl,
     String? mediaType,
     String? mediaUrl,
+    String? replyToId,
+    String? replyToContent,
+    String? replyToSenderName,
   }) async {
-    if (kDebugMode) debugPrint('💬 Sende Nachricht: $username → $roomId');
+    if (kDebugMode) debugPrint('💬 [Chat] Send: $username → $roomId');
 
-    // ── Versuch 1: Worker → Supabase ──────────────────────────
+    final messageType = switch (mediaType) {
+      'audio' => 'voice',
+      'image' => 'image',
+      'file'  => 'file',
+      _       => null,
+    };
+
     try {
-      final response = await http.post(
-        Uri.parse('$mainApiUrl/api/chat/messages'),
-        headers: _headers,
-        body: json.encode({
-          'roomId':     roomId,
-          'realm':      realm,
-          'userId':     userId,
-          'username':   username,
-          'message':    message,
-          'avatarEmoji': avatarEmoji ?? '👤',
-          'avatarUrl':  avatarUrl,
-          'mediaType':  mediaType,
-          'mediaUrl':   mediaUrl,
-        }),
-      ).timeout(const Duration(seconds: 12));
-
-      if (kDebugMode) {
-        debugPrint('📡 Worker Response: ${response.statusCode} – ${response.body.substring(0, response.body.length.clamp(0, 200))}');
-      }
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final data = json.decode(response.body);
-        // Worker gibt {success:true, message:{...}} zurück
-        if (data['success'] == true && data['message'] != null) {
-          if (kDebugMode) debugPrint('✅ Nachricht via Worker gespeichert');
-          return Map<String, dynamic>.from(data['message'] as Map);
-        }
-        // Supabase-Fehler surfacen
-        if (data['success'] == false) {
-          throw Exception('Supabase-Fehler: ${data['error']}');
-        }
-      }
-      throw Exception('Worker HTTP ${response.statusCode}');
-    } catch (workerError) {
-      if (kDebugMode) debugPrint('⚠️ Worker fehlgeschlagen: $workerError – versuche Supabase direkt');
-    }
-
-    // ── Versuch 2: Supabase direkt ────────────────────────────
-    try {
-      final supaClient = supabase;
-      final Map<String, dynamic> insertData = {
-        'room_id':  roomId,
-        'username': username,
-        'content':  message,
-        'message':  message,
-        if (mediaType == 'audio') 'message_type': 'voice'
-        else if (mediaType == 'image') 'message_type': 'image',
-      };
-      // user_id nur setzen wenn eingeloggt
-      final user = supaClient.auth.currentUser;
-      if (user != null) insertData['user_id'] = user.id;
-
-      final result = await supaClient
-          .from('chat_messages')
-          .insert(insertData)
-          .select()
-          .single();
-
-      if (kDebugMode) debugPrint('✅ Nachricht direkt via Supabase gespeichert');
-      return Map<String, dynamic>.from(result);
-    } catch (supaError) {
-      if (kDebugMode) debugPrint('⚠️ Supabase direkt fehlgeschlagen: $supaError – lokaler Fallback');
-    }
-
-    // ── Fallback: Lokal speichern ──────────────────────────────
-    try {
-      final result = await _localChat.sendMessage(
+      final result = await SupabaseChatService.instance.sendMessage(
         roomId: roomId,
-        realm: realm,
-        userId: userId,
-        username: username,
         message: message,
-        avatarEmoji: avatarEmoji,
+        username: username,
         avatarUrl: avatarUrl,
-        mediaType: mediaType,
-        mediaUrl: mediaUrl,
+        messageType: messageType,
+        allowAnonymous: true,
+        replyToId: replyToId,
+        replyToContent: replyToContent,
+        replyToSenderName: replyToSenderName,
       );
-      await _localChat.updatePresence(realm, roomId, userId, username, avatarEmoji ?? '👤');
-      if (kDebugMode) debugPrint('✅ Nachricht lokal gespeichert (Offline-Modus)');
-      return result;
-    } catch (localError) {
-      if (kDebugMode) debugPrint('❌ Alle Versuche fehlgeschlagen: $localError');
-      throw Exception('Nachricht konnte nicht gesendet werden: $localError');
+      if (kDebugMode) debugPrint('✅ [Chat] Supabase insert OK: ${result['id']}');
+      return Map<String, dynamic>.from(result);
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ [Chat] Send failed: $e');
+      rethrow;
     }
   }
 
@@ -394,9 +340,7 @@ class CloudflareApiService {
     }
   }
 
-  /// Edit chat message (only own messages)
-  /// ✅ PRIMARY: Cloudflare Worker (hat Service-Role-Key, übergeht RLS)
-  /// Supabase Anon-Key blockiert PATCH via RLS – daher Worker als einzige Write-Quelle
+  /// Edit chat message – 🟢 Supabase-only (RLS prüft Ownership / Admin).
   Future<Map<String, dynamic>> editChatMessage({
     required String roomId,
     required String messageId,
@@ -406,85 +350,21 @@ class CloudflareApiService {
     String? realm,
     bool? isAdmin,
   }) async {
-    if (kDebugMode) {
-      debugPrint('🔧 editChatMessage: messageId=$messageId, userId=$userId, realm=$realm');
-    }
-
-    // ✅ PRIMARY: Worker API (verwendet Service-Role-Key, übergeht RLS korrekt)
-    // WICHTIG: username wird mitgesendet damit Worker Besitzer prüfen kann
-    // (user_id in DB ist null weil App InvisibleAuth nutzt, kein Supabase Auth)
+    if (kDebugMode) debugPrint('🔧 [Chat] Edit: $messageId');
     try {
-      final body = <String, dynamic>{
-        'roomId': roomId,
-        'userId': userId,
-        'username': username, // ← NEU: für Ownership-Check im Worker
-        'message': newMessage,
-        if (realm != null) 'realm': realm,
-        if (isAdmin == true) 'isAdmin': true,
-      };
-
-      final response = await http.put(
-        Uri.parse('$mainApiUrl/api/chat/messages/$messageId'),
-        headers: _headers,
-        body: json.encode(body),
-      ).timeout(const Duration(seconds: 15));
-
-      if (kDebugMode) debugPrint('🔧 Worker edit response: ${response.statusCode} ${response.body}');
-
-      if (response.statusCode == 200) {
-        final result = json.decode(response.body);
-        if (result['success'] == true) return result;
-      }
-      // Worker-Fehler loggen aber nicht werfen – Supabase-Fallback versuchen
-      if (kDebugMode) debugPrint('⚠️ Worker edit failed (${response.statusCode}): ${response.body}');
+      final result = await SupabaseChatService.instance.editMessage(
+        messageId: messageId,
+        newMessage: newMessage,
+        isAdmin: isAdmin ?? false,
+      );
+      return {'success': true, 'message': result};
     } catch (e) {
-      if (kDebugMode) debugPrint('⚠️ Worker edit error: $e – trying Supabase...');
+      if (kDebugMode) debugPrint('❌ [Chat] Edit failed: $e');
+      rethrow;
     }
-
-    // 🔄 FALLBACK: Supabase direkt mit Service-Role-Key (aus dart-define)
-    // HINWEIS: Der Anon-Key kann nicht schreiben (RLS).
-    // Der Service-Role-Key wird nur verwendet wenn er via --dart-define=SUPABASE_SERVICE_ROLE_KEY=... gesetzt wird.
-    // OHNE gesetzten Key → optimistischer Fallback (lokal bereits aktualisiert im UI)
-    final serviceKey = const String.fromEnvironment(
-      'SUPABASE_SERVICE_ROLE_KEY',
-      defaultValue: '',
-    );
-    if (serviceKey.isNotEmpty) {
-      try {
-        final supabaseUrl = ApiConfig.supabaseUrl;
-        final response = await http.patch(
-          Uri.parse('$supabaseUrl/rest/v1/chat_messages?id=eq.$messageId'),
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': serviceKey,
-            'Authorization': 'Bearer $serviceKey',
-            'Prefer': 'return=representation',
-          },
-          body: json.encode({
-            'message': newMessage,
-            'content': newMessage,
-            'edited_at': DateTime.now().toUtc().toIso8601String(),
-          }),
-        ).timeout(const Duration(seconds: 15));
-        if (kDebugMode) debugPrint('🔧 Supabase direct edit: ${response.statusCode}');
-        if (response.statusCode == 200) {
-          return {'success': true, 'message': 'Nachricht bearbeitet'};
-        }
-      } catch (supaErr) {
-        if (kDebugMode) debugPrint('⚠️ Supabase direct edit error: $supaErr');
-      }
-    } else {
-      // Kein Service-Role-Key → Worker war primärer Pfad, UI wurde optimistisch aktualisiert
-      if (kDebugMode) debugPrint('⚠️ Worker edit fehlgeschlagen, kein Service-Role-Key → optimistischer Fallback');
-      // Im Screen wird die Nachricht lokal bereits bearbeitet
-      return {'success': true, 'message': 'Nachricht bearbeitet (lokal)'};
-    }
-
-    throw Exception('Nachricht konnte nicht bearbeitet werden');
   }
 
-  /// Delete chat message – Soft-delete (is_deleted = true)
-  /// ✅ PRIMARY: Cloudflare Worker (hat Service-Role-Key, übergeht RLS)
+  /// Delete chat message – 🟢 Supabase-only, soft-delete (is_deleted = true).
   Future<Map<String, dynamic>> deleteChatMessage({
     required String roomId,
     required String messageId,
@@ -493,77 +373,17 @@ class CloudflareApiService {
     String? realm,
     bool? isAdmin,
   }) async {
-    if (kDebugMode) {
-      debugPrint('🗑️ deleteChatMessage: messageId=$messageId, userId=$userId, isAdmin=$isAdmin');
-    }
-
-    // ✅ PRIMARY: Worker API (Service-Role-Key übergeht RLS)
-    // WICHTIG: username mitschicken damit Worker Ownership prüfen kann
+    if (kDebugMode) debugPrint('🗑️ [Chat] Delete: $messageId');
     try {
-      final body = <String, dynamic>{
-        'roomId': roomId,
-        'userId': userId,
-        'username': username, // ← NEU: für Ownership-Check im Worker
-        if (realm != null) 'realm': realm,
-        if (isAdmin == true) 'isAdmin': true,
-      };
-
-      final request = http.Request(
-        'DELETE',
-        Uri.parse('$mainApiUrl/api/chat/messages/$messageId'),
+      await SupabaseChatService.instance.deleteMessage(
+        messageId: messageId,
+        isAdmin: isAdmin ?? false,
       );
-      request.headers.addAll(_headers);
-      request.body = json.encode(body);
-
-      final streamed = await request.send().timeout(const Duration(seconds: 15));
-      final response = await http.Response.fromStream(streamed);
-
-      if (kDebugMode) debugPrint('🗑️ Worker delete response: ${response.statusCode} ${response.body}');
-
-      if (response.statusCode == 200) {
-        final result = json.decode(response.body);
-        if (result['success'] == true) return result;
-      }
-      if (kDebugMode) debugPrint('⚠️ Worker delete failed (${response.statusCode}): ${response.body}');
+      return {'success': true, 'message': 'Nachricht gelöscht'};
     } catch (e) {
-      if (kDebugMode) debugPrint('⚠️ Worker delete error: $e – trying Supabase...');
+      if (kDebugMode) debugPrint('❌ [Chat] Delete failed: $e');
+      rethrow;
     }
-
-    // 🔄 FALLBACK: Supabase direkt mit Service-Role-Key (aus dart-define)
-    final serviceKeyDel = const String.fromEnvironment(
-      'SUPABASE_SERVICE_ROLE_KEY',
-      defaultValue: '',
-    );
-    if (serviceKeyDel.isNotEmpty) {
-      try {
-        final supabaseUrl = ApiConfig.supabaseUrl;
-        final response = await http.patch(
-          Uri.parse('$supabaseUrl/rest/v1/chat_messages?id=eq.$messageId'),
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': serviceKeyDel,
-            'Authorization': 'Bearer $serviceKeyDel',
-            'Prefer': 'return=representation',
-          },
-          body: json.encode({
-            'is_deleted': true,
-            'deleted_at': DateTime.now().toUtc().toIso8601String(),
-          }),
-        ).timeout(const Duration(seconds: 15));
-        if (kDebugMode) debugPrint('🗑️ Supabase direct delete: ${response.statusCode}');
-        if (response.statusCode == 200) {
-          return {'success': true, 'message': 'Nachricht gelöscht'};
-        }
-      } catch (supaErr) {
-        if (kDebugMode) debugPrint('⚠️ Supabase direct delete error: $supaErr');
-      }
-    } else {
-      // Kein Service-Role-Key → optimistischer Fallback (UI wurde lokal aktualisiert)
-      if (kDebugMode) debugPrint('⚠️ Worker delete fehlgeschlagen, kein Service-Role-Key → optimistischer Fallback');
-      return {'success': true, 'message': 'Nachricht gelöscht (lokal)'};
-    }
-
-    throw Exception('Nachricht konnte nicht gelöscht werden');
   }
 
 

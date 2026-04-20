@@ -43,8 +43,7 @@ import 'widgets/achievement_unlock_dialog.dart';  // 🏆 Achievement UI
 import 'utils/error_boundary.dart';  // 🛡️ Error Boundary
 import 'services/supabase_service.dart';  // 🟢 SUPABASE: Auth + Chat + Community
 import 'services/profile_restore_service.dart'; // 🔄 PROFIL-WIEDERHERSTELLUNG
-// import 'widgets/offline_indicator.dart';  // 📡 OFFLINE INDICATOR (DISABLED - BUILD ISSUE)
-// import 'services/push_notification_service.dart'; // Firebase -> Cloudflare
+import 'widgets/update_gate.dart'; // 🔔 In-App Update-Meldungen (Release + OTA-Patch)
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -58,34 +57,39 @@ void main() async {
   // Alle Hive-Boxen die in der App verwendet werden vorab öffnen
   // (verhindert HiveError: Box not found)
   const hiveBoxes = [
-    'materie_profiles',
-    'energie_profiles',
     'research_topics',
     'community_posts',
-    'achievement_progress',
-    'user_progress',
     'meditation_sessions',
     'daily_practices',
     'complete_content_cache',
-    'offline_articles',
-    'offline_metadata',
-    'sync_queue',
-    'offline_messages',
-    'sync_state',
-    'recherche_bookmarks',
-    'recherche_cache',
-    'research_history',
-    'chat_messages_local',
-    'chat_rooms_local',
-    'chat_presence',
-    'pending_sync',
-    'auth_box',
-    'likes_cache',
-    'comments_cache',
-    'like_cache',
     'numerology_data',
     'spirit_calculations',
     'user_data', // ✅ FIX: UnifiedStorageService benötigt diese Box (Admin Dashboard)
+    // 🔮 SPIRIT-TAB: Alle Tool-Boxen vorab öffnen (verhindert "HiveError: Box not found")
+    'spirit_entries',
+    'spirit_progress',
+    'synchronicity_entries',
+    'journal_entries',
+    'partner_profiles',
+    'compatibility_analyses',
+    'weekly_horoscope',
+    'chakra_journal',
+    'chakra_daily_scores',
+    'chakra_meditation_sessions',
+    'chakra_affirmations',
+    'numerology_year_journey',
+    'numerology_journal',
+    'numerology_milestones',
+    'meditation_sessions_enhanced',
+    'meditation_presets',
+    'tarot_readings',
+    'tarot_daily_cards',
+    'tarot_spreads',
+    'moon_journal',
+    'crystal_collection',
+    'mantra_challenges',
+    'post_drafts',
+    'scheduled_posts',
   ];
   for (final box in hiveBoxes) {
     try {
@@ -286,7 +290,6 @@ class _WeltenbibliothekAppState extends State<WeltenbibliothekApp> {
   Widget build(BuildContext context) {
     return provider.Consumer<ThemeService>(
       builder: (context, themeService, child) {
-        // DISABLED: OfflineIndicator (build issue)
         return MaterialApp(
           title: 'Dual Realms - Deep Research',
           debugShowCheckedModeBanner: false,
@@ -314,7 +317,9 @@ class _WeltenbibliothekAppState extends State<WeltenbibliothekApp> {
           ],
           locale: const Locale('de', 'DE'),
           // ✅ FIXED: DIREKT ZUM PORTAL - KEIN INTRO, KEINE CHECKS
-          home: const PortalHomeScreen(), // 🌀 Direkt zum Portal
+          // UpdateGate zeigt beim ersten Frame + bei App-Resume Update-Meldungen
+          // (Release-Update-Dialog / OTA-Patch-Bereit-Banner)
+          home: const UpdateGate(child: PortalHomeScreen()), // 🌀 Portal + Update-Check
           routes: {
             '/home': (context) => const IntroImageScreen(),
             '/dashboard': (context) => const EnergieWorldScreen(), // ✅ FIXED

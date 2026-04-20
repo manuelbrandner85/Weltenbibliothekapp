@@ -87,6 +87,7 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFF04080F),
       body: Stack(
         children: [
           // Map
@@ -126,7 +127,7 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro> {
                     ),
                   );
                 }).toList(),
-                clusterColor: const Color(0xFF2196F3),
+                clusterColor: const Color(0xFF2979FF),
                 maxClusterRadius: MapClusteringHelper.calculateOptimalClusterRadius(
                   _filteredLocations.length,
                 ),
@@ -199,11 +200,19 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro> {
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.8),
-        borderRadius: BorderRadius.circular(12),
+        color: const Color(0xFF0A1020),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.2),
+          color: const Color(0xFF2979FF).withValues(alpha: 0.35),
+          width: 1.5,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF2979FF).withValues(alpha: 0.1),
+            blurRadius: 16,
+            spreadRadius: 1,
+          ),
+        ],
       ),
       child: Row(
         children: [
@@ -230,7 +239,7 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro> {
           IconButton(
             icon: Icon(
               _showTimeline ? Icons.timeline : Icons.timeline_outlined,
-              color: _showTimeline ? Colors.blue.shade300 : Colors.white,
+              color: _showTimeline ? const Color(0xFF2979FF) : Colors.white,
               size: 24,
             ),
             onPressed: () => setState(() => _showTimeline = !_showTimeline),
@@ -283,7 +292,7 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro> {
                     _selectedCategory = null; // "Alle" auswählen
                   });
                 },
-                backgroundColor: Colors.black.withValues(alpha: 0.6),
+                backgroundColor: const Color(0xFF0A1020).withValues(alpha: 0.9),
                 selectedColor: Colors.white.withValues(alpha: 0.3),
                 labelStyle: TextStyle(
                   color: Colors.white,
@@ -342,19 +351,17 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro> {
       constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.6),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
           colors: [
-            Colors.black.withValues(alpha: 0.95),
-            Colors.black,
+            const Color(0xFF0A1020).withValues(alpha: 0.99),
+            const Color(0xFF04080F).withValues(alpha: 0.99),
           ],
         ),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        border: Border(
-          top: BorderSide(
-            color: _getCategoryColor(location.category),
-            width: 3,
-          ),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        border: Border.all(
+          color: _getCategoryColor(location.category).withValues(alpha: 0.4),
+          width: 1.5,
         ),
       ),
       child: Column(
@@ -924,14 +931,16 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
           colors: [
-            Colors.black.withValues(alpha: 0.8),
-            Colors.black.withValues(alpha: 0.9),
+            const Color(0xFF0A1020).withValues(alpha: 0.98),
+            const Color(0xFF04080F).withValues(alpha: 0.98),
           ],
         ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Colors.blue.withValues(alpha: 0.5),
+          color: const Color(0xFF2979FF).withValues(alpha: 0.4),
           width: 1.5,
         ),
         boxShadow: [
@@ -952,7 +961,7 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro> {
             children: [
               Row(
                 children: [
-                  Icon(Icons.timeline, color: Colors.blue.shade300, size: 24),
+                  const Icon(Icons.timeline, color: Color(0xFF2979FF), size: 24),
                   const SizedBox(width: 12),
                   Text(
                     'Zeitleiste',
@@ -978,9 +987,9 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               decoration: BoxDecoration(
-                color: Colors.blue.withValues(alpha: 0.3),
+                color: const Color(0xFF2979FF).withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.blue.shade400, width: 2),
+                border: Border.all(color: const Color(0xFF2979FF), width: 2),
               ),
               child: Text(
                 _selectedYear >= 0 
@@ -1001,10 +1010,10 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro> {
           // SLIDER
           SliderTheme(
             data: SliderThemeData(
-              activeTrackColor: Colors.blue.shade400,
-              inactiveTrackColor: Colors.grey.shade700,
-              thumbColor: Colors.blue.shade300,
-              overlayColor: Colors.blue.withValues(alpha: 0.3),
+              activeTrackColor: const Color(0xFF2979FF),
+              inactiveTrackColor: Colors.white.withValues(alpha: 0.15),
+              thumbColor: const Color(0xFF2979FF),
+              overlayColor: const Color(0xFF2979FF).withValues(alpha: 0.2),
               trackHeight: 6,
               thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 12),
             ),
@@ -1056,10 +1065,10 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: Colors.blue.withValues(alpha: 0.2),
+          color: const Color(0xFF2979FF).withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: Colors.blue.withValues(alpha: 0.4),
+            color: const Color(0xFF2979FF).withValues(alpha: 0.4),
             width: 1,
           ),
         ),
@@ -1154,16 +1163,18 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro> {
   }
   
   Widget _buildMapLayerSwitcher() {
+    const accent = Color(0xFF2979FF);
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF0A1020),
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: accent.withValues(alpha: 0.35), width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.3),
-            blurRadius: 12,
+            color: Colors.black.withValues(alpha: 0.5),
+            blurRadius: 14,
             offset: const Offset(0, 4),
           ),
         ],
@@ -1177,39 +1188,29 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro> {
               setState(() => _isLayerSwitcherExpanded = !_isLayerSwitcherExpanded);
             },
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    Icons.layers,
-                    size: 28,
-                    color: Colors.blue.shade700,
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    'Karte',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.blue.shade700,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.3,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
+                  const Icon(Icons.layers, size: 24, color: accent),
+                  const SizedBox(width: 10),
+                  const Text('Karte',
+                      style: TextStyle(
+                          fontSize: 14, color: accent,
+                          fontWeight: FontWeight.bold, letterSpacing: 0.3)),
+                  const SizedBox(width: 6),
                   Icon(
                     _isLayerSwitcherExpanded ? Icons.expand_less : Icons.expand_more,
-                    size: 24,
-                    color: Colors.blue.shade700,
+                    size: 20, color: accent,
                   ),
                 ],
               ),
             ),
           ),
-          
+
           // LAYER OPTIONEN (nur wenn ausgeklappt)
           if (_isLayerSwitcherExpanded) ...[
-            Divider(height: 1, color: Colors.grey.withValues(alpha: 0.3)),
+            Divider(height: 1, color: Colors.white.withValues(alpha: 0.1)),
             _buildLayerOption('street', Icons.map, 'Straße'),
             _buildLayerOption('satellite', Icons.satellite, 'Satellit'),
             _buildLayerOption('terrain', Icons.terrain, 'Gelände'),
@@ -1219,24 +1220,25 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro> {
       ),
     );
   }
-  
+
   Widget _buildLayerOption(String layerType, IconData icon, String label) {
+    const accent = Color(0xFF2979FF);
     final isSelected = _currentMapLayer == layerType;
-    
+
     return InkWell(
       onTap: () {
         setState(() {
           _currentMapLayer = layerType;
-          _isLayerSwitcherExpanded = false; // Automatisch einklappen nach Auswahl
+          _isLayerSwitcherExpanded = false;
         });
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.blue.withValues(alpha: 0.15) : Colors.transparent,
+          color: isSelected ? accent.withValues(alpha: 0.15) : Colors.transparent,
           border: Border(
             bottom: BorderSide(
-              color: Colors.grey.withValues(alpha: 0.2),
+              color: Colors.white.withValues(alpha: 0.08),
               width: 0.5,
             ),
           ),
@@ -1244,17 +1246,14 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              size: 28,
-              color: isSelected ? Colors.blue.shade700 : Colors.grey.shade600,
-            ),
-            const SizedBox(width: 12),
+            Icon(icon, size: 22,
+                color: isSelected ? accent : Colors.white.withValues(alpha: 0.5)),
+            const SizedBox(width: 10),
             Text(
               label,
               style: TextStyle(
-                fontSize: 16,
-                color: isSelected ? Colors.blue.shade700 : Colors.grey.shade800,
+                fontSize: 14,
+                color: isSelected ? accent : Colors.white.withValues(alpha: 0.7),
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                 letterSpacing: 0.3,
               ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart'; // kDebugMode
 import 'dart:async';
 import 'dart:io'; // File for uploads
@@ -12,7 +13,6 @@ import '../../services/offline_sync_service.dart'; // 📡 OFFLINE SYNC (NEW Pha
 import '../../services/user_service.dart';
 import '../../services/storage_service.dart'; // StorageService for profile access
 import '../../core/storage/unified_storage_service.dart'; // UnifiedStorageService
-import 'package:hive_flutter/hive_flutter.dart'; // Hive for box check
 import 'package:flutter_riverpod/flutter_riverpod.dart'; // Riverpod
 import '../../services/profile_sync_service.dart'; // 🔥 BACKEND SYNC
 import '../../models/energie_profile.dart';
@@ -56,6 +56,28 @@ import '../../services/webrtc_voice_service.dart'; // 🎤 WEBRTC VOICE
 import '../../services/typing_indicator_service.dart'; // ⌨️ Typing Indicator
 // REMOVED: import '../../widgets/voice_chat_banner.dart'; (unused)
 import '../../widgets/offline_indicator.dart'; // 📡 OFFLINE INDICATOR (NEW Phase 3)
+// ✨ Batch-1 Chat-Erweiterungen
+import '../../widgets/chat/chat_markdown_text.dart';
+import '../../widgets/chat/chat_emoji_picker_button.dart';
+import '../../widgets/chat/chat_status_banner.dart';
+import '../../widgets/chat/chat_new_messages_fab.dart';
+import '../../widgets/chat/chat_unread_badge.dart';
+import '../../widgets/chat/chat_room_info_sheet.dart';
+import '../../widgets/chat/chat_read_receipt_indicator.dart';
+import '../../widgets/chat/chat_link_preview_card.dart';
+import '../../widgets/chat/bouncing_dots_bubble.dart';
+import '../../widgets/chat/chat_image_viewer.dart';
+import '../../services/chat/presence_service.dart';
+import '../../services/chat/read_receipt_service.dart';
+import '../../services/chat/link_preview_service.dart';
+import '../../services/chat/chat_rate_limit_service.dart';
+import '../../services/haptic_feedback_service.dart';
+import '../../services/chat/chat_word_filter_service.dart';
+import '../../services/chat/chat_draft_service.dart';
+import '../../services/chat/recent_rooms_service.dart';
+import '../../services/chat/mention_notification_service.dart';
+import '../../services/chat/user_block_service.dart';
+import '../../services/chat/unread_tracker_service.dart';
 // 📷 Image Picker
 
 /// ✅ EINFACHER ENERGIE LIVE CHAT - MIT ALLEN 11 FEATURES!
@@ -68,7 +90,7 @@ class EnergieLiveChatScreen extends StatefulWidget {
   State<EnergieLiveChatScreen> createState() => _EnergieLiveChatScreenState();
 }
 
-class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
+class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with TickerProviderStateMixin {
   final TextEditingController _messageController = TextEditingController();
   final CloudflareApiService _api = CloudflareApiService();
   // ignore: unused_field
@@ -108,6 +130,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
   String? _errorMessage; // 🎨 NEW: Error state
   bool _isSending = false;
   Timer? _refreshTimer;
+  StreamSubscription<int>? _pendingSub;
   
   // 🆕 MENTIONS & MEDIA
   List<String> _mentionSuggestions = [];
@@ -128,6 +151,13 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
   // 🆕 FEATURE 2: TYPING INDICATORS
   final Set<String> _typingUsers = {};
   Timer? _typingTimer;
+
+  // Feature #17: Smart replies
+  List<String> _smartReplies = [];
+
+  // Feature #16: Message scheduler
+  final List<(DateTime, String)> _scheduledMessages = [];
+  final List<Timer> _scheduledTimers = [];
   
   // 🆕 FEATURE 3: SWIPE TO REPLY
   Map<String, dynamic>? _replyingTo;
@@ -153,6 +183,22 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
   
   // 🔴 SUPABASE REALTIME: Live-Subscription für neue Nachrichten
   RealtimeChannel? _realtimeChannel;
+
+  // ✨ Batch-1: Smart autoscroll + pagination + reconnect-state
+  bool _isAtBottom = true;
+  int _newMessagesCount = 0;
+  bool _loadingOlder = false;
+  bool _hasMoreOlder = true;
+  bool _reconnecting = false;
+
+  // ✨ Chat UX Redesign: Animationen + Mood + Sync-Timer
+  late AnimationController _headerAuraCtrl;
+  late AnimationController _headerOrbitCtrl;
+  String _myMood = '';
+  bool _showMoodPicker = false;
+  bool _meditationSyncActive = false;
+  int _meditationSyncSeconds = 0;
+  Timer? _meditationSyncTimer;
   
   // 🔧 FIX 13: ENERGIE Räume reduziert auf 5 (Option C - Ausgewogen)
   // 🔧 FIX 17: ENERGIE Räume - API-kompatible IDs
@@ -197,20 +243,21 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
   @override
   void initState() {
     super.initState();
-    
+
+    // ✨ Chat UX Redesign: Header-Animationen starten
+    _headerAuraCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 4))..repeat(reverse: true);
+    _headerOrbitCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 15))..repeat();
+
     // 🔥 Initialize User ID from UserService
     _userId = UserService.getCurrentUserId();
-    
+
     // 🔧 FIX 18: Set initial room from dashboard navigation
     _selectedRoom = widget.initialRoom ?? 'meditation';
-    
+    RecentRoomsService.instance.touch('energie', _selectedRoom);
+
     // 🎤 Initialize WebRTC Voice Service
     _initializeWebRTC();
-    
-    _loadUserData();
-    _loadMessages();
-    _loadPolls(); // 🆕 Load polls
-    
+
     // 🆕 Listen for @ mentions
     _messageController.addListener(_onInputChanged);
     
@@ -218,21 +265,68 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
     _inputFocusNode.addListener(() {
       if (mounted) {
         setState(() {
-        _isInputFocused = _inputFocusNode.hasFocus; // Update explicit state
-        debugPrint('🎯 [INPUT FOCUS] hasFocus: $_isInputFocused'); // Debug log
+        _isInputFocused = _inputFocusNode.hasFocus;
       });
       }
     });
     
-    // 🔴 SUPABASE REALTIME: Echtzeit-Subscription starten
+    // ✨ Batch-1: Scroll-Listener für at-bottom Detection + Pagination
+    _scrollController.addListener(_onScroll);
+
+    // ✨ Batch-1: Beim ersten Öffnen Raum als gesehen markieren.
+    UnreadTrackerService.instance.markSeen(_fullRoomId);
+
+    // 🔴 SUPABASE REALTIME: Echtzeit-Subscription starten (sofort, parallel zu Profil-Load)
     _subscribeToRoom(_fullRoomId);
-    
+
+    // 📡 Pending-Cleanup: Wenn alle Queue-Einträge synced sind, entferne
+    //    die lokalen Pending-Platzhalter — echte Server-Nachrichten kommen
+    //    via Realtime rein.
+    _pendingSub = OfflineSyncService().pendingActionsStream.listen((count) {
+      if (count == 0 && mounted) {
+        final hadPending = _messages.any(
+          (m) => m['id']?.toString().startsWith('pending_') == true,
+        );
+        if (hadPending) {
+          setState(() {
+            _messages.removeWhere(
+              (m) => m['id']?.toString().startsWith('pending_') == true,
+            );
+          });
+          _loadMessages(silent: true);
+        }
+      }
+    });
+
     // 🔄 Auto-Refresh alle 30 Sekunden als Fallback (Realtime ist primär)
     _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
       _loadMessages(silent: true);
       _loadUserData(); // 🆕 Profil-Sync
       _loadPolls(silent: true); // 🆕 Polls-Sync
     });
+
+    // Profil VOR Nachrichten laden → Username ist garantiert gesetzt wenn User schreibt.
+    // addPostFrameCallback stellt sicher dass der erste Frame gebaut ist.
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _loadUserData();
+      // ✨ Batch-2: Presence aktivieren, sobald der Username bekannt ist.
+      await _refreshPresence();
+      // ✨ Batch-2.3: Read-Receipts für den Raum streamen + markieren.
+      await ReadReceiptService.instance.watchRoom(_fullRoomId);
+      await _markRoomRead();
+      await _loadMessages();
+      _loadPolls();
+    });
+  }
+
+  // ✨ Batch-2.3: Eigenen Receipt für aktuellen Raum bumpen.
+  Future<void> _markRoomRead() async {
+    if (_userId.isEmpty) return;
+    // Server-Call nur sinnvoll mit echter Session (RLS auth.uid()=user_id).
+    await ReadReceiptService.instance.markRead(
+      roomId: _fullRoomId,
+      userId: _userId,
+    );
   }
 
   // didChangeDependencies removed – profile loading happens once in initState.
@@ -240,10 +334,6 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
   Future<void> _loadUserData() async {
     EnergieProfile? energieProfile;
     try {
-      // Ensure box is open – main.dart opens it, but guard for safety
-      if (!Hive.isBoxOpen('energie_profiles')) {
-        await Hive.openBox('energie_profiles');
-      }
       final storage = StorageService();
       energieProfile = storage.getEnergieProfile();
     } catch (e) {
@@ -298,7 +388,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
       final messages = await _api.getChatMessages(
         _fullRoomId, // 'energie-meditation' etc.
         realm: 'energie',
-        limit: 100,
+        limit: 50,
       );
       
       // 🔧 DEBUG: Log message count
@@ -356,7 +446,10 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
   void _onInputChanged() {
     final text = _messageController.text;
     final cursorPos = _messageController.selection.baseOffset;
-    
+
+    // ✨ Batch-5: Draft persistieren
+    ChatDraftService.instance.set(_selectedRoom, text);
+
     // 🎤➤ UPDATE BUTTON STATE: Voice/Send
     if (mounted) {
       setState(() {
@@ -432,7 +525,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
   Future<void> _sendMessage() async {
     final message = _messageController.text.trim();
     if (message.isEmpty || _isSending) return;
-    
+
     // 🚨 USERNAME-CHECK: Verhindere Senden ohne Profil
     if (_username.isEmpty) {
       if (mounted) {
@@ -440,7 +533,42 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
       }
       return;
     }
-    
+
+    // 🛑 Batch-4: Word-Filter (Client-Side)
+    final badWord = ChatWordFilterService.instance.firstHit(message);
+    if (badWord != null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Nachricht enthält ein blockiertes Wort: "${badWord.trim()}"',
+            ),
+            backgroundColor: const Color(0xFF7C4DFF),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+      return;
+    }
+
+    // 🛑 Batch-4: Rate-Limit + Slow-Mode (Client-Side Spambremse)
+    if (!ChatRateLimitService.instance.canSend(_selectedRoom)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              ChatRateLimitService.instance.cooldownMessage(_selectedRoom),
+            ),
+            backgroundColor: const Color(0xFF7C4DFF),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+      return;
+    }
+    ChatRateLimitService.instance.recordSend(_selectedRoom);
+    HapticFeedbackService().messageSent();
+
     setState(() => _isSending = true);
     
     try {
@@ -450,7 +578,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
       
       if (!isOnline) {
         // Queue message for later
-        await offlineService.queueAction(
+        final queueId = await offlineService.queueAction(
           type: OfflineActionType.sendMessage,
           data: {
             'roomId': _selectedRoom,
@@ -462,23 +590,38 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
           },
           userId: _userId,
         );
-        
-        _messageController.clear();
-        
+
+        // Optimistisches Einfügen mit Pending-Flag → User sieht seine Nachricht
+        // mit Clock-Icon. Cleanup passiert wenn pendingActionsStream auf 0 geht.
+        final pendingMsg = {
+          'id': 'pending_$queueId',
+          'room_id': _fullRoomId,
+          'user_id': _userId,
+          'username': _username,
+          'message': message,
+          'content': message,
+          'avatar_emoji': _avatar,
+          'avatar_url': _avatarUrl,
+          'timestamp': DateTime.now().toIso8601String(),
+          'created_at': DateTime.now().toIso8601String(),
+          'is_pending': true,
+        };
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('📡 Nachricht in Warteschlange (Offline)'),
-              backgroundColor: Colors.orange,
-              duration: Duration(seconds: 2),
-            ),
-          );
+          setState(() {
+            _messages.add(pendingMsg);
+            _replyingTo = null;
+          });
+          WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
         }
+
+        _messageController.clear();
+        ChatDraftService.instance.clear(_selectedRoom);
         return;
       }
       
-      // Online: Send directly
-      await _api.sendChatMessage(
+      // Online: Send directly via Supabase
+      final replyData = _replyingTo;
+      final serverMsg = await _api.sendChatMessage(
         roomId: _fullRoomId, // 'energie-meditation' etc.
         realm: 'energie',
         userId: _userId,
@@ -486,33 +629,50 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
         message: message,
         avatarEmoji: _avatar,
         avatarUrl: _avatarUrl,
+        replyToId: replyData?['id']?.toString(),
+        replyToContent: replyData?['message']?.toString()
+            ?? replyData?['content']?.toString(),
+        replyToSenderName: replyData?['username']?.toString(),
       );
-      
+
       _messageController.clear();
-      
-      // Sofort neu laden
-      await _loadMessages(silent: true);
-      
+      ChatDraftService.instance.clear(_selectedRoom);
+
+      // 🔴 Optimistic add – Realtime-Subscription deduplicated via ID.
+      //    Verhindert Flicker durch redundanten Full-Reload.
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✅ Nachricht gesendet!'),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 1),
-          ),
-        );
+        setState(() {
+          final exists = _messages.any((m) => m['id'] == serverMsg['id']);
+          if (!exists) _messages.add(serverMsg);
+          // Reply-Kontext nach erfolgreichem Senden schließen.
+          _replyingTo = null;
+        });
+        WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
       }
     } catch (e) {
+      if (kDebugMode) debugPrint('❌ [Energie Chat] Senden fehlgeschlagen: $e');
       if (mounted) {
+        String msg;
+        final err = e.toString();
+        if (err.contains('Nicht eingeloggt')) {
+          msg = 'Bitte Profil anlegen oder erneut versuchen.';
+        } else if (err.contains('permission denied') || err.contains('42501')) {
+          msg = 'Keine Berechtigung – bitte App neu starten.';
+        } else if (err.contains('violates row-level security')) {
+          msg = 'Datenbank-Fehler – bitte App neu starten.';
+        } else {
+          msg = 'Nachricht konnte nicht gesendet werden.';
+        }
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Fehler: $e'),
+            content: Text('❌ $msg'),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
           ),
         );
       }
     } finally {
-      setState(() => _isSending = false);
+      if (mounted) setState(() => _isSending = false);
     }
   }
 
@@ -520,7 +680,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
   Future<void> _sendVoiceMessage(String audioUrl, Duration duration) async {
     try {
       // Send voice message with media_type
-      await _api.sendChatMessage(
+      final serverMsg = await _api.sendChatMessage(
         roomId: _fullRoomId, // 'energie-meditation' etc.
         realm: 'energie',
         userId: _userId,
@@ -531,10 +691,15 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
         mediaType: 'voice',
         mediaUrl: audioUrl,
       );
-      
-      // Reload messages after short delay
-      await Future.delayed(const Duration(milliseconds: 500));
-      await _loadMessages(silent: true);
+
+      // 🔴 Optimistic add (dedup in Realtime-Callback).
+      if (mounted) {
+        setState(() {
+          final exists = _messages.any((m) => m['id'] == serverMsg['id']);
+          if (!exists) _messages.add(serverMsg);
+        });
+        WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+      }
       
       if (kDebugMode) {
         debugPrint('✅ Voice message sent: $audioUrl');
@@ -660,9 +825,9 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
       final ImagePicker picker = ImagePicker();
       final XFile? image = await picker.pickImage(
         source: ImageSource.gallery,
-        maxWidth: 1920,
-        maxHeight: 1080,
-        imageQuality: 85,
+        maxWidth: 1280,
+        maxHeight: 1280,
+        imageQuality: 75,
       );
       
       if (image == null) return;
@@ -1192,12 +1357,106 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       resizeToAvoidBottomInset: true, // 📱 Mobile: Keyboard doesn't cover input
-      backgroundColor: const Color(0xFF0A0A0F),
+      backgroundColor: const Color(0xFF06040F), // home-dashboard bg
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1A1A2E),
-        title: const Text('💬 ENERGIE LIVE-CHAT'),
+        flexibleSpace: AnimatedBuilder(
+          animation: _headerAuraCtrl,
+          builder: (_, __) => Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  const Color(0xFF1A0A2E),
+                  Color.lerp(const Color(0xFF100B1E), const Color(0xFF1E0A3A), _headerAuraCtrl.value)!,
+                  const Color(0xFF0D0820),
+                ],
+              ),
+            ),
+          ),
+        ),
+        backgroundColor: Colors.transparent,
+        title: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: _showRoomInfoSheet,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    _rooms[_selectedRoom]?['icon'] ?? '💬',
+                    style: const TextStyle(fontSize: 18),
+                  ),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      (_rooms[_selectedRoom]?['name'] as String? ?? 'ENERGIE LIVE-CHAT')
+                          .replaceAll(RegExp(r'^\S+\s'), ''),
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+              ListenableBuilder(
+                listenable: PresenceService.instance,
+                builder: (_, __) {
+                  final count = PresenceService.instance.onlineCount;
+                  return Text(
+                    count > 0 ? '$count online · Energie-Welt' : 'Energie-Welt',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: count > 0 ? const Color(0xFF9B51E0) : Colors.grey[500],
+                      fontWeight: FontWeight.w500,
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
         actions: [
-          // 🎥 VIDEO + VOICE CHAT BUTTON (Telegram-Style)
+          // Meditation Sync FAB (nur im Meditation-Raum)
+          if (_selectedRoom == 'meditation')
+            AnimatedBuilder(
+              animation: _headerAuraCtrl,
+              builder: (_, __) => GestureDetector(
+                onTap: _toggleMeditationSync,
+                child: Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: _meditationSyncActive
+                          ? [const Color(0xFF7C4DFF), const Color(0xFF9B51E0)]
+                          : [const Color(0xFF2A1A4A), const Color(0xFF1E1230)],
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: const Color(0xFF9B51E0).withValues(alpha: 0.5 + _headerAuraCtrl.value * 0.3),
+                    ),
+                    boxShadow: _meditationSyncActive ? [
+                      BoxShadow(color: const Color(0xFF9B51E0).withValues(alpha: 0.4), blurRadius: 8),
+                    ] : null,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(_meditationSyncActive ? '🔴' : '🧘', style: const TextStyle(fontSize: 14)),
+                      const SizedBox(width: 4),
+                      Text(
+                        _meditationSyncActive ? _formatSync(_meditationSyncSeconds) : 'Sync',
+                        style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          // 🎥 VIDEO + VOICE CHAT BUTTON
           IconButton(
             icon: const Icon(Icons.video_call, color: Colors.white),
             onPressed: () {
@@ -1216,7 +1475,12 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
             },
             tooltip: 'Video / Voice Chat',
           ),
-          // 🔍 SEARCH BUTTON
+          if (_username.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.alternate_email, color: Colors.white),
+              tooltip: 'Erwähnungen',
+              onPressed: _showMentionsInbox,
+            ),
           IconButton(
             icon: Icon(
               _showSearch ? Icons.close : Icons.search,
@@ -1233,19 +1497,13 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
             // Main content
             Builder(
               builder: (context) {
-            // 🔧 FIX 10: Hide headers when input focused OR keyboard visible (using explicit state)
             final keyboardVisible = MediaQuery.of(context).viewInsets.bottom > 0;
-            final hideHeaders = keyboardVisible || _isInputFocused; // Use explicit boolean!
-            
-            debugPrint('🎯 [BUILD] keyboard: $keyboardVisible, focused: $_isInputFocused, hide: $hideHeaders'); // Debug
-            
-            // 🔧 FIX 11: GestureDetector um tap-outside zu detecten
+            final hideHeaders = keyboardVisible || _isInputFocused;
+
             return GestureDetector(
               onTap: () {
-                // Tap outside input → Headers wieder anzeigen
                 if (_isInputFocused) {
-                  debugPrint('👆 [TAP OUTSIDE] Unfocus input → Headers wieder anzeigen');
-                  FocusScope.of(context).unfocus(); // Unfocus TextField
+                  FocusScope.of(context).unfocus();
                   if (mounted) {
                     setState(() {
                     _isInputFocused = false;
@@ -1255,6 +1513,11 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
               },
               child: Column(
                 children: [
+                  // ✨ Batch-1: Status-Banner (Offline / Reconnecting / Pending-Queue)
+                  ChatStatusBanner(
+                    reconnecting: _reconnecting,
+                    worldColor: const Color(0xFF9B51E0),
+                  ),
                   // 🔍 SEARCH MODE
                   if (_showSearch)
                     Expanded(
@@ -1267,9 +1530,11 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
                   else ...[
                   // 🔧 HIDE WHEN INPUT FOCUSED OR KEYBOARD OPEN
                   if (!hideHeaders) ...[
+                    // ✨ STORIES BAR — Online-User als glühende Avatar-Kreise
+                    _buildStoriesBar(),
                     // 📌 PINNED MESSAGE BANNER (Kompakt für mehr Chat-Platz)
                     SizedBox(
-                      height: 44, // 🔧 Reduziert: 56 → 44px
+                      height: 44,
                       child: PinnedMessageBanner(
                         room: _selectedRoom,
                         onRefresh: () {
@@ -1295,99 +1560,25 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
                   // ⌨️ TYPING INDICATORS
                   if (_typingUsers.isNotEmpty) _buildTypingIndicators(),
                   
-                  // 🆕 MODERN TABBED ROOM SELECTOR (Telegram-Style)
-                  Container(
-                    height: 32, // 🔧 FIX: 42 → 32px (Room Selector kompakt!)
-            decoration: BoxDecoration(
-              color: const Color(0xFF1A1A2E),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.2),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              itemCount: _rooms.length,
-              itemBuilder: (context, index) {
-                final roomId = _rooms.keys.elementAt(index);
-                final room = _rooms[roomId]!;
-                final isSelected = roomId == _selectedRoom;
-                
-                return GestureDetector(
-                  onTap: () async {
-                    if (roomId != _selectedRoom) {
-                      if (mounted) {
-                        setState(() {
-                        _selectedRoom = roomId;
-                        _messages.clear(); // ← Clear old messages
-                        _isLoading = true;
-                      });
-                      }
-                      
-                      // 🔧 CRITICAL FIX: Switch WebRTC Voice Room
-                      await _voiceService.switchRoom(_fullRoomId);
-                      // 🔴 Re-subscribe Realtime for new room
-                      _subscribeToRoom(_fullRoomId);
-                      await _loadMessages();
-                    }
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6), // 🔧 FIX 6: Mehr spacing (16→20), weniger vertical (8→6)
-                    decoration: BoxDecoration(
-                      border: Border(
-                        bottom: BorderSide(
-                          color: isSelected 
-                              ? const Color(0xFF9B51E0)
-                              : Colors.transparent,
-                          width: 3,
-                        ),
-                      ),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // 🔧 FIX 14: Icon nur einmal anzeigen
-                        Text(
-                          room['icon'] ?? '💬',
-                          style: TextStyle(
-                            fontSize: isSelected ? 22 : 20, // Größer für bessere Sichtbarkeit
-                          ),
-                        ),
-                        const SizedBox(height: 4), // Mehr Abstand
-                        // 🔧 FIX 14: Label OHNE Icon, größer & lesbarer
-                        Text(
-                          (room['name'] as String)
-                              .replaceAll('🧘 ', '')
-                              .replaceAll('🌌 ', '')
-                              .replaceAll('🔥 ', '')
-                              .replaceAll('🔮 ', '')
-                              .replaceAll('🪄 ', '')
-                              .split('&')[0] // Vor & schneiden
-                              .trim(),
-                          style: TextStyle(
-                            color: isSelected ? Colors.white : Colors.grey[400],
-                            fontSize: 11, // Größer für Lesbarkeit
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 1,
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-        ], // 🔧 FIX 3: End of keyboard-hidden headers
+                  // ✨ UPGRADED ROOM SELECTOR — Glassmorphism Chips mit Glow
+                  _buildRoomSelector(),
+                  // ✨ ROOM VIBE BANNER — Stimmungs-Emojis der aktiven User
+                  _buildRoomVibeBanner(),
+                ], // End of keyboard-hidden headers
           
-          // Messages List
+          // Messages List — Feature #21: swipe left/right between rooms
           Expanded(
-            child: _errorMessage != null && _messages.isEmpty
+            child: GestureDetector(
+              onHorizontalDragEnd: (details) {
+                final v = details.primaryVelocity ?? 0;
+                if (v.abs() < 350) return;
+                final keys = _rooms.keys.toList();
+                final idx = keys.indexOf(_selectedRoom);
+                if (v < 0 && idx < keys.length - 1) _switchToRoom(keys[idx + 1]);
+                if (v > 0 && idx > 0) _switchToRoom(keys[idx - 1]);
+              },
+              behavior: HitTestBehavior.translucent,
+              child: _errorMessage != null && _messages.isEmpty
                 ? ErrorDisplayWidget(
                     error: _errorMessage!,
                     onRetry: _loadMessages,
@@ -1402,27 +1593,76 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
                             message: 'Sei der Erste in ${_rooms[_selectedRoom]!['name']}!',
                             icon: Icons.chat_bubble_outline,
                           )
-                        : ListView.builder(
-                            reverse: false,  // Normal order: Alte Nachrichten oben, neue unten
-                            controller: _scrollController,
-                            padding: const EdgeInsets.all(16),
-                        itemCount: _messages.length,
-                        cacheExtent: 500, // 🚀 PERFORMANCE: Pre-render 500px ahead
-                        addAutomaticKeepAlives: false, // 🚀 PHASE B: Don't keep off-screen (Memory optimization)
-                        addRepaintBoundaries: true, // 🚀 PHASE B: Isolate repaints per item
-                        itemBuilder: (context, index) {
-                          // Direct index: messages are already in chronological order
-                          final msg = _messages[index];
-                          // 🆕 USE SWIPEABLE MESSAGE WITH REACTIONS
-                          // 🚀 PHASE B: RepaintBoundary + ValueKey for performance
-                          return RepaintBoundary(
-                            key: ValueKey(msg['message_id']),
-                            child: _buildSwipeableMessage(msg),
-                          );
-                        },
-                      ),
-          ),
-          
+                        : AnimatedBuilder(
+                            animation: UserBlockService.instance,
+                            builder: (_, __) {
+                              final visible = UserBlockService.instance
+                                  .filterMessages(_messages)
+                                  .toList(growable: false);
+                              // Feature #10/#11: pre-compute flat items with grouping + separators
+                              final chatItems = <Map<String, dynamic>>[];
+                              {
+                                DateTime? prevDate;
+                                String? prevSender;
+                                DateTime? prevTs;
+                                for (final msg in visible) {
+                                  final ts = _parseMessageTimestamp(msg['timestamp'] ?? msg['created_at']);
+                                  final msgDay = ts != null ? DateTime(ts.year, ts.month, ts.day) : null;
+                                  if (msgDay != null && msgDay != prevDate) {
+                                    chatItems.add({'type': 'separator', 'date': ts});
+                                    prevDate = msgDay;
+                                    prevSender = null;
+                                    prevTs = null;
+                                  }
+                                  final isGrouped = prevSender != null &&
+                                      prevSender == msg['username']?.toString() &&
+                                      ts != null && prevTs != null &&
+                                      ts.difference(prevTs).inSeconds.abs() <= 120;
+                                  chatItems.add({'type': 'message', 'msg': Map<String, dynamic>.from(msg)..['_isGrouped'] = isGrouped});
+                                  prevSender = msg['username']?.toString();
+                                  prevTs = ts;
+                                }
+                              }
+                              return ListView.builder(
+                                reverse: false,
+                                controller: _scrollController,
+                                padding: const EdgeInsets.all(16),
+                                itemCount: chatItems.length + (_loadingOlder ? 1 : 0),
+                                cacheExtent: 500,
+                                addAutomaticKeepAlives: false,
+                                addRepaintBoundaries: true,
+                                itemBuilder: (context, index) {
+                                  if (_loadingOlder && index == 0) {
+                                    return const Padding(
+                                      padding: EdgeInsets.all(12),
+                                      child: Center(
+                                        child: SizedBox(
+                                          height: 20,
+                                          width: 20,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: Color(0xFF9B51E0),
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                  final item = chatItems[index - (_loadingOlder ? 1 : 0)];
+                                  if (item['type'] == 'separator') {
+                                    return _buildDateSeparator(item['date'] as DateTime, const Color(0xFF9B51E0));
+                                  }
+                                  final msg = item['msg'] as Map<String, dynamic>;
+                                  return RepaintBoundary(
+                                    key: ValueKey(msg['message_id'] ?? msg['id']),
+                                    child: _buildSwipeableMessage(msg),
+                                  );
+                                },
+                              );
+                            },
+                          ),
+            ), // GestureDetector
+          ),  // Expanded
+
           // 🗳️ ACTIVE POLLS
           if (_polls.isNotEmpty)
             Container(
@@ -1465,7 +1705,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFF1A1A2E),
+              color: const Color(0xFF100B1E), // home-dashboard card
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.3),
@@ -1516,6 +1756,10 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
                     );
                   },
                 ),
+                // ✨ MOOD PICKER
+                if (_showMoodPicker) _buildMoodPickerRow(),
+                // Feature #17: Smart replies
+                _buildSmartRepliesRow(const Color(0xFF9B51E0)),
                 // 🆕 REPLY PREVIEW
                 _buildReplyPreview(),
                 // 🆕 MENTION AUTOCOMPLETE
@@ -1532,8 +1776,32 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
                 // 📷 IMAGE UPLOAD BUTTON
                 IconButton(
                   icon: const Icon(Icons.image, color: Color(0xFF9B51E0)),
-                  onPressed: _pickAndUploadImage, // ✅ Verwende neue Methode
+                  onPressed: _pickAndUploadImage,
                   tooltip: 'Bild hochladen',
+                ),
+                // ✨ MOOD BUTTON
+                GestureDetector(
+                  onTap: () => setState(() => _showMoodPicker = !_showMoodPicker),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    margin: const EdgeInsets.only(right: 4),
+                    decoration: BoxDecoration(
+                      color: _myMood.isNotEmpty || _showMoodPicker
+                          ? const Color(0xFF9B51E0).withValues(alpha: 0.2)
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: _myMood.isNotEmpty
+                            ? const Color(0xFF9B51E0).withValues(alpha: 0.5)
+                            : Colors.transparent,
+                      ),
+                    ),
+                    child: Text(
+                      _myMood.isNotEmpty ? _myMood : '🌟',
+                      style: const TextStyle(fontSize: 18),
+                    ),
+                  ),
                 ),
                 // Avatar - KLICKBAR zum Ändern
                 GestureDetector(
@@ -1581,7 +1849,13 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                
+
+                // ✨ Batch-1: Emoji-Picker-Button
+                ChatEmojiPickerButton(
+                  onSelected: _insertEmoji,
+                  color: const Color(0xFFBB86FC),
+                ),
+
                 // Input Field
                 Expanded(
                   child: TextField(
@@ -1589,14 +1863,11 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
                     focusNode: _inputFocusNode,
                     // ✅ FIX: TextField immer aktiviert - nur Send-Button während Senden deaktivieren
                     enabled: true,  // ✅ ALWAYS ENABLED
-                    // 🔧 FIX 11: DIREKTER onTap Handler um Headers SOFORT zu verstecken!
                     onTap: () {
-                      debugPrint('🎯 [DIREKTER TAP] Input angeklickt!');
                       if (!_isInputFocused) {
                         if (mounted) {
                           setState(() {
                           _isInputFocused = true;
-                          debugPrint('🔥 [DIREKTER TAP] _isInputFocused = true');
                         });
                         }
                       }
@@ -1636,9 +1907,11 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
                     child: Material(
                       color: Colors.transparent,
                       child: InkWell(
-                        onTap: _isSending 
-                            ? null 
+                        onTap: _isSending
+                            ? null
                             : (_hasText ? _sendMessage : _openVoiceRecorder),
+                        // Feature #16: long-press on send → schedule message
+                        onLongPress: _hasText ? _showScheduleMessageDialog : null,
                         borderRadius: BorderRadius.circular(20),
                         child: Container(
                           width: 40,
@@ -1680,6 +1953,16 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
               right: 0,
               child: OfflineIndicator(),
             ),
+            // ✨ Batch-1: Floating "X neue Nachrichten" Button
+            Positioned(
+              right: 16,
+              bottom: 90,
+              child: ChatNewMessagesFab(
+                visible: !_isAtBottom && _newMessagesCount > 0,
+                count: _newMessagesCount,
+                onTap: _scrollToBottom,
+              ),
+            ),
           ],
         ), // End Stack
       ), // End SafeArea
@@ -1710,19 +1993,64 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
 
   @override
   void dispose() {
+    _headerAuraCtrl.dispose();
+    _headerOrbitCtrl.dispose();
+    _meditationSyncTimer?.cancel();
     _messageController.removeListener(_onInputChanged);
     _inputFocusNode.dispose();
     _refreshTimer?.cancel();
+    _pendingSub?.cancel();
     _typingTimer?.cancel(); // 🆕
     _messageController.dispose();
+    _scrollController.removeListener(_onScroll); // ✨ Batch-1
     _scrollController.dispose();
     _voiceParticipantsSub?.cancel(); // 🔧 Prevent memory leak
     _voiceService.dispose(); // 🆕
     _realtimeChannel?.unsubscribe(); // 🔴 Realtime cleanup
+    PresenceService.instance.leave();
+    ReadReceiptService.instance.leave();
+    for (final t in _scheduledTimers) { t.cancel(); }
     super.dispose();
   }
+
+  // ✨ Batch-2: Presence-Join/Re-Join für den aktuellen Raum.
+  Future<void> _refreshPresence() async {
+    if (_userId.isEmpty || _username.isEmpty) return;
+    await PresenceService.instance.join(
+      roomId: _fullRoomId,
+      userId: _userId,
+      username: _username,
+      avatar: _avatar.isNotEmpty ? _avatar : '🔮',
+    );
+  }
+
+  // ✨ Batch-2: Raum-Info-Sheet mit Beschreibung + Online-Counter.
+  void _showRoomInfoSheet() {
+    final room = _rooms[_selectedRoom];
+    if (room == null) return;
+    ChatRoomInfoSheet.show(
+      context,
+      roomName: (room['name'] as String?) ?? _selectedRoom,
+      roomIcon: (room['icon'] as String?) ?? '💬',
+      description:
+          (room['description'] as String?) ?? 'Live-Chat in diesem Raum.',
+      worldColor: const Color(0xFF9B51E0),
+    );
+  }
   
-  // 📜 Scroll to bottom helper
+  // ✨ Batch-1: Emoji-Insert an aktueller Caret-Position.
+  void _insertEmoji(String emoji) {
+    final text = _messageController.text;
+    final sel = _messageController.selection;
+    final insertAt = sel.isValid ? sel.start : text.length;
+    final newText = text.replaceRange(insertAt, sel.isValid ? sel.end : text.length, emoji);
+    _messageController.value = TextEditingValue(
+      text: newText,
+      selection: TextSelection.collapsed(offset: insertAt + emoji.length),
+    );
+  }
+
+  // 📜 Scroll to bottom helper (unconditional — für Send-Action & Room-Wechsel)
   void _scrollToBottom() {
     if (_scrollController.hasClients) {
       _scrollController.animateTo(
@@ -1731,26 +2059,144 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
         curve: Curves.easeOut,
       );
     }
+    if (mounted) {
+      setState(() {
+        _isAtBottom = true;
+        _newMessagesCount = 0;
+      });
+    }
+    // ✨ Batch-2.3: User sieht das Ende → Receipt bumpen.
+    _markRoomRead();
   }
-  
+
+  // ✨ Batch-1: Nur scrollen wenn User ohnehin am Ende ist, sonst Counter erhöhen.
+  void _scrollToBottomIfAtEnd() {
+    if (_isAtBottom) {
+      _scrollToBottom();
+    }
+  }
+
+  // ✨ Batch-1: Scroll-Listener — trackt at-bottom + triggert Pagination oben.
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    final pos = _scrollController.position;
+    final distFromBottom = pos.maxScrollExtent - pos.pixels;
+    final nowAtBottom = distFromBottom < 80;
+    if (nowAtBottom != _isAtBottom) {
+      setState(() {
+        _isAtBottom = nowAtBottom;
+        if (nowAtBottom) _newMessagesCount = 0;
+      });
+    }
+    // Am oberen Ende → ältere Nachrichten laden (Pagination).
+    if (pos.pixels <= 120 && _hasMoreOlder && !_loadingOlder && _messages.isNotEmpty) {
+      _loadOlderMessages();
+    }
+  }
+
+  // ✨ Batch-1: Pagination — lädt Nachrichten vor dem ältesten bekannten Timestamp.
+  Future<void> _loadOlderMessages() async {
+    if (_loadingOlder) return;
+    setState(() => _loadingOlder = true);
+    try {
+      final oldest = _messages.first;
+      final cursor = (oldest['created_at'] ?? oldest['timestamp'])?.toString();
+      if (cursor == null || cursor.isEmpty) return;
+      final older = await SupabaseChatService.instance.getMessagesBefore(
+        _fullRoomId,
+        before: cursor,
+        limit: 50,
+      );
+      if (!mounted) return;
+      if (older.isEmpty) {
+        setState(() => _hasMoreOlder = false);
+        return;
+      }
+      final priorExtent =
+          _scrollController.hasClients ? _scrollController.position.maxScrollExtent : 0.0;
+      final priorOffset =
+          _scrollController.hasClients ? _scrollController.position.pixels : 0.0;
+      final existingIds = _messages.map((m) => m['id']).toSet();
+      final merged = <Map<String, dynamic>>[
+        ...older.where((m) => !existingIds.contains(m['id'])),
+        ..._messages,
+      ];
+      setState(() => _messages = merged);
+      // Scroll-Position erhalten: nach Layout-Pass wieder an gleiche Inhalts-Stelle.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!_scrollController.hasClients) return;
+        final delta =
+            _scrollController.position.maxScrollExtent - priorExtent;
+        _scrollController.jumpTo(priorOffset + delta);
+      });
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ loadOlder failed: $e');
+    } finally {
+      if (mounted) setState(() => _loadingOlder = false);
+    }
+  }
+
   // 🔴 SUPABASE REALTIME: Subscribe to live chat updates
   void _subscribeToRoom(String roomId) {
     _realtimeChannel?.unsubscribe();
+    _reconnecting = true;
     _realtimeChannel = SupabaseChatService.instance.subscribeToRoom(
       roomId,
       onMessage: (newMsg) {
         if (!mounted) return;
-        // Prüfe ob Nachricht bereits vorhanden (Deduplication)
+        if (_reconnecting) {
+          setState(() => _reconnecting = false);
+        }
+        // Deduplication: nur hinzufügen wenn unbekannte ID.
         final exists = _messages.any((m) => m['id'] == newMsg['id']);
         if (!exists) {
+          final isOwn = (newMsg['username']?.toString() == _username) ||
+              (newMsg['user_id']?.toString() == _userId);
           setState(() {
             _messages.add(newMsg);
+            if (!_isAtBottom && !isOwn) _newMessagesCount++;
           });
-          WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+          if (!isOwn) {
+            HapticFeedbackService().messageReceived();
+            final text = (newMsg['message'] ?? newMsg['content'] ?? '').toString();
+            if (_username.isNotEmpty &&
+                MentionNotificationService.containsMention(text, _username)) {
+              MentionNotificationService.instance.notifyMention(
+                fromUsername:
+                    (newMsg['username'] ?? 'Unbekannt').toString(),
+                roomLabel: _rooms[_selectedRoom]?['name']?.toString() ?? 'Chat',
+                snippet: text.length > 80 ? '${text.substring(0, 77)}…' : text,
+              );
+            }
+            // Feature #17: generate smart reply suggestions
+            if (mounted) setState(() => _smartReplies = _generateSmartReplies(text));
+          }
+          _scrollToBottomIfAtEnd();
         }
+      },
+      onUpdate: (updatedMsg) {
+        if (!mounted) return;
+        final id = updatedMsg['id']?.toString();
+        if (id == null) return;
+        final idx = _messages.indexWhere((m) => m['id']?.toString() == id);
+        if (idx >= 0) {
+          setState(() {
+            _messages[idx] = {..._messages[idx], ...updatedMsg};
+          });
+        }
+      },
+      onDelete: (messageId) {
+        if (!mounted) return;
+        setState(() {
+          _messages.removeWhere((m) => m['id']?.toString() == messageId);
+        });
       },
     );
     if (kDebugMode) debugPrint('🔴 [Energie Realtime] Subscribed to room: $roomId');
+    // Reconnect-Flag nach kurzer Zeit auf false fallen lassen (optimistisch).
+    Future<void>.delayed(const Duration(seconds: 2), () {
+      if (mounted && _reconnecting) setState(() => _reconnecting = false);
+    });
   }
   
   // ✅ PROFIL-WARNUNG als Popup mit Navigation
@@ -2073,57 +2519,56 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
   }
   
   // ⌨️ TYPING INDICATORS
+  // Feature #12: improved typing indicator with avatars + bouncing dots
   Widget _buildTypingIndicators() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      color: const Color(0xFF1A1A2E),
+    if (_typingUsers.isEmpty) return const SizedBox.shrink();
+    final users = _typingUsers.take(3).toList();
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          // Animated Dots
+          // Avatar stack
           SizedBox(
-            width: 30,
-            height: 20,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: List.generate(3, (index) {
-                return TweenAnimationBuilder(
-                  tween: Tween<double>(begin: 0.0, end: 1.0),
-                  duration: const Duration(milliseconds: 600),
-                  curve: Curves.easeInOut,
-                  builder: (context, double value, child) {
-                    final delay = index * 0.2;
-                    final animValue = ((value + delay) % 1.0);
-                    final opacity = (0.3 + (0.7 * (1 - (animValue - 0.5).abs() * 2)))
-                        .clamp(0.3, 1.0);
-                    
-                    return Container(
-                      width: 6,
-                      height: 6,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.withValues(alpha: opacity),
-                        shape: BoxShape.circle,
+            width: 28.0 + (users.length - 1) * 14.0,
+            height: 28,
+            child: Stack(
+              children: [
+                for (int i = 0; i < users.length; i++)
+                  Positioned(
+                    left: i * 14.0,
+                    child: CircleAvatar(
+                      radius: 14,
+                      backgroundColor: const Color(0xFF9B51E0).withValues(alpha: 0.25),
+                      child: Text(
+                        users[i].isNotEmpty ? users[i][0].toUpperCase() : '?',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Color(0xFF9B51E0),
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    );
-                  },
-                );
-              }),
+                    ),
+                  ),
+              ],
             ),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              _typingUsers.length == 1
-                  ? '${_typingUsers.first} tippt...'
-                  : _typingUsers.length == 2
-                      ? '${_typingUsers.elementAt(0)} und ${_typingUsers.elementAt(1)} tippen...'
-                      : '${_typingUsers.length} Personen tippen...',
-              style: TextStyle(
-                color: Colors.grey[500],
-                fontSize: 13,
-                fontStyle: FontStyle.italic,
+          const SizedBox(width: 8),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const BouncingDotsBubble(color: Color(0xFF9B51E0)),
+              const SizedBox(height: 3),
+              Text(
+                users.length == 1
+                    ? '${users[0]} tippt...'
+                    : users.length == 2
+                        ? '${users[0]} & ${users[1]} tippen...'
+                        : '${_typingUsers.length} Personen tippen...',
+                style: TextStyle(color: Colors.grey[500], fontSize: 11, fontStyle: FontStyle.italic),
               ),
-              overflow: TextOverflow.ellipsis,
-            ),
+            ],
           ),
         ],
       ),
@@ -2440,7 +2885,46 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
               currentUsername: _username,
             ),
           ),
+        // ✨ Batch-3.1: Link-Preview-Karte unter Nachrichten mit URL
+        if (!isEditing) _buildLinkPreviewRow(msg),
+        // ✨ Batch-2.3: „Gelesen von N" Haken nur für eigene Nachrichten
+        if (!isEditing) _buildReadReceiptRow(msg),
       ],
+    );
+  }
+
+  Widget _buildLinkPreviewRow(Map<String, dynamic> msg) {
+    final text = (msg['message'] ?? msg['content'] ?? '').toString();
+    if (text.isEmpty) return const SizedBox.shrink();
+    final url = LinkPreviewService.firstUrl(text);
+    if (url == null) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(left: 60, right: 16, top: 4),
+      child: ChatLinkPreviewCard(
+        url: url,
+        accent: const Color(0xFF7C4DFF),
+      ),
+    );
+  }
+
+  Widget _buildReadReceiptRow(Map<String, dynamic> msg) {
+    final msgUserId = msg['userId']?.toString() ?? msg['user_id']?.toString() ?? '';
+    final isOwn = (msgUserId.isNotEmpty && msgUserId == _userId) ||
+        (msg['username']?.toString() == _username && _username.isNotEmpty);
+    if (!isOwn) return const SizedBox.shrink();
+    final ts = DateTime.tryParse(
+          (msg['created_at'] ?? msg['timestamp'] ?? '').toString(),
+        ) ??
+        DateTime.now().toUtc();
+    return Padding(
+      padding: const EdgeInsets.only(right: 16, top: 2),
+      child: Align(
+        alignment: Alignment.centerRight,
+        child: ChatReadReceiptIndicator(
+          messageCreatedAt: ts.toUtc(),
+          ownUserId: _userId,
+        ),
+      ),
     );
   }
   
@@ -2536,16 +3020,35 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
     );
     
     if (newText != null && newText.trim().isNotEmpty && newText != msg['message']) {
+      final msgId = (msg['message_id'] ?? msg['id']).toString();
+      final trimmed = newText.trim();
+      final original = Map<String, dynamic>.from(msg);
+
+      // Optimistic local update (Realtime UPDATE bestätigt später).
+      if (mounted) {
+        setState(() {
+          final idx = _messages.indexWhere(
+              (m) => (m['id']?.toString() ?? m['message_id']?.toString()) == msgId);
+          if (idx >= 0) {
+            _messages[idx] = {
+              ..._messages[idx],
+              'message': trimmed,
+              'content': trimmed,
+              'edited_at': DateTime.now().toUtc().toIso8601String(),
+            };
+          }
+        });
+      }
+
       try {
         await _api.editChatMessage(
-          messageId: msg['message_id'] ?? msg['id'],
+          messageId: msgId,
           roomId: _fullRoomId,
           realm: 'energie',
-          newMessage: newText.trim(),
+          newMessage: trimmed,
           userId: _userId,
           username: _username,
         );
-        
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -2554,15 +3057,20 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
               duration: Duration(seconds: 2),
             ),
           );
-          await _loadMessages(silent: true);
         }
       } catch (e) {
+        // Rollback bei Fehler.
         if (mounted) {
+          setState(() {
+            final idx = _messages.indexWhere(
+                (m) => (m['id']?.toString() ?? m['message_id']?.toString()) == msgId);
+            if (idx >= 0) _messages[idx] = original;
+          });
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('❌ Fehler: $e'),
               backgroundColor: Colors.red,
-              duration: Duration(seconds: 3),
+              duration: const Duration(seconds: 3),
             ),
           );
         }
@@ -2627,6 +3135,273 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
     }
   }
   
+  // Feature #21: programmatic room switch (also called from swipe gesture)
+  Future<void> _switchToRoom(String roomId) async {
+    if (roomId == _selectedRoom || !mounted) return;
+    HapticFeedback.selectionClick();
+    ChatDraftService.instance.set(_selectedRoom, _messageController.text);
+    RecentRoomsService.instance.touch('energie', roomId);
+    setState(() {
+      _selectedRoom = roomId;
+      _messages.clear();
+      _isLoading = true;
+      _hasMoreOlder = true;
+      _newMessagesCount = 0;
+      _isAtBottom = true;
+    });
+    _messageController.text = ChatDraftService.instance.get(_selectedRoom);
+    UnreadTrackerService.instance.markSeen(_fullRoomId);
+    await _voiceService.switchRoom(_fullRoomId);
+    await _refreshPresence();
+    await ReadReceiptService.instance.watchRoom(_fullRoomId);
+    await _markRoomRead();
+    _subscribeToRoom(_fullRoomId);
+    await _loadMessages();
+  }
+
+  // Feature #22: room info preview on long-press room chip
+  void _showRoomPreview(String roomId, Map room) {
+    HapticFeedback.mediumImpact();
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF1A1A2E),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (_) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(room['icon'] ?? '💬', style: const TextStyle(fontSize: 48)),
+              const SizedBox(height: 10),
+              Text(
+                room['name'] ?? roomId,
+                style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
+              if (room['description'] != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  room['description'].toString(),
+                  style: TextStyle(color: Colors.grey[400], fontSize: 14),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+              const SizedBox(height: 20),
+              if (roomId != _selectedRoom)
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF9B51E0),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _switchToRoom(roomId);
+                    },
+                    child: const Text('Zu diesem Raum wechseln'),
+                  ),
+                )
+              else
+                Text('Du bist bereits in diesem Raum', style: TextStyle(color: Colors.grey[500])),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Feature #16: message scheduler — long-press send button
+  void _showScheduleMessageDialog() {
+    HapticFeedback.mediumImpact();
+    final text = _messageController.text.trim();
+    if (text.isEmpty) return;
+    final delays = [
+      const Duration(minutes: 5),
+      const Duration(minutes: 15),
+      const Duration(minutes: 30),
+      const Duration(hours: 1),
+      const Duration(hours: 2),
+    ];
+    final labels = ['5 Min', '15 Min', '30 Min', '1 Std', '2 Std'];
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF1A1A2E),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (_) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Nachricht planen', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 4),
+              Text('"${text.length > 50 ? '${text.substring(0, 47)}…' : text}"', style: TextStyle(color: Colors.grey[400], fontSize: 12)),
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: List.generate(delays.length, (i) => GestureDetector(
+                  onTap: () {
+                    Navigator.pop(context);
+                    final sendAt = DateTime.now().add(delays[i]);
+                    setState(() {
+                      _scheduledMessages.add((sendAt, text));
+                      _messageController.clear();
+                    });
+                    final t = Timer(delays[i], () {
+                      if (mounted) {
+                        _messageController.text = text;
+                        _sendMessage();
+                      }
+                    });
+                    _scheduledTimers.add(t);
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content: Text('✅ Geplant für ${labels[i]}'),
+                      backgroundColor: const Color(0xFF9B51E0),
+                      duration: const Duration(seconds: 2),
+                    ));
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF9B51E0).withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: const Color(0xFF9B51E0).withValues(alpha: 0.4)),
+                    ),
+                    child: Text(labels[i], style: const TextStyle(color: Color(0xFF9B51E0), fontWeight: FontWeight.w600)),
+                  ),
+                )),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Feature #24: Mentions inbox — all session messages containing @username
+  void _showMentionsInbox() {
+    final mentions = _messages.where((m) {
+      final text = (m['message'] ?? m['content'] ?? '').toString();
+      return MentionNotificationService.containsMention(text, _username);
+    }).toList();
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF1A1A2E),
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (_) => DraggableScrollableSheet(
+        initialChildSize: 0.55,
+        maxChildSize: 0.9,
+        minChildSize: 0.3,
+        expand: false,
+        builder: (_, ctrl) => Column(
+          children: [
+            const SizedBox(height: 12),
+            Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2))),
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                children: [
+                  const Icon(Icons.alternate_email, color: Color(0xFF9B51E0), size: 20),
+                  const SizedBox(width: 8),
+                  Text('Erwähnungen (${mentions.length})', style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Divider(color: Colors.white12),
+            Expanded(
+              child: mentions.isEmpty
+                ? const Center(child: Text('Keine Erwähnungen in dieser Sitzung', style: TextStyle(color: Colors.grey)))
+                : ListView.builder(
+                    controller: ctrl,
+                    padding: const EdgeInsets.all(12),
+                    itemCount: mentions.length,
+                    itemBuilder: (_, i) {
+                      final m = mentions[mentions.length - 1 - i]; // newest first
+                      final text = (m['message'] ?? m['content'] ?? '').toString();
+                      final sender = m['username']?.toString() ?? '?';
+                      final ts = _formatTime(m['timestamp'] ?? m['created_at']);
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF9B51E0).withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFF9B51E0).withValues(alpha: 0.3)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(children: [
+                              Text(sender, style: const TextStyle(color: Color(0xFF9B51E0), fontWeight: FontWeight.bold, fontSize: 13)),
+                              const Spacer(),
+                              Text(ts, style: const TextStyle(color: Colors.grey, fontSize: 11)),
+                            ]),
+                            const SizedBox(height: 4),
+                            Text(text, style: const TextStyle(color: Colors.white, fontSize: 13), maxLines: 3, overflow: TextOverflow.ellipsis),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Feature #17: smart reply suggestions based on last received message
+  static List<String> _generateSmartReplies(String msg) {
+    final lower = msg.toLowerCase();
+    if (msg.trim().endsWith('?')) return ['Ja', 'Nein', 'Vielleicht', 'Weiß nicht'];
+    if (lower.contains('danke') || lower.contains('thanks')) return ['Gerne!', 'Kein Problem', '👍', '😊'];
+    if (lower.contains('hallo') || lower.contains('hey') || lower.contains('hi')) return ['Hey! 👋', 'Wie geht\'s?', '😊', 'Hi!'];
+    if (lower.contains('interessant') || lower.contains('spannend') || lower.contains('krass')) return ['Wirklich? 😮', 'Mehr davon!', 'Quelle?', '🔥'];
+    if (lower.contains('ok') || lower.contains('alles klar') || lower.contains('verstanden')) return ['👍', 'Super', '✅', 'Danke'];
+    return ['Ok', 'Verstanden', '👍', '❤️'];
+  }
+
+  Widget _buildSmartRepliesRow(Color accentColor) {
+    if (_smartReplies.isEmpty || _messageController.text.isNotEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: _smartReplies.map((reply) => Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: GestureDetector(
+              onTap: () {
+                HapticFeedback.selectionClick();
+                _messageController.text = reply;
+                setState(() => _smartReplies = []);
+                _sendMessage();
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                decoration: BoxDecoration(
+                  color: accentColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: accentColor.withValues(alpha: 0.4)),
+                ),
+                child: Text(reply, style: TextStyle(color: accentColor, fontSize: 13, fontWeight: FontWeight.w500)),
+              ),
+            ),
+          )).toList(),
+        ),
+      ),
+    );
+  }
+
   Widget _buildReplyPreview() {
     if (_replyingTo == null) return const SizedBox.shrink();
     
@@ -2727,30 +3502,36 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
     final msgUserId = msg['userId']?.toString() ?? msg['user_id']?.toString() ?? '';
     final isOwn = (msgUserId.isNotEmpty && msgUserId == _userId) ||
         (msg['username']?.toString() == _username && _username.isNotEmpty);
-    
+    // Feature #10: iMessage-style grouping
+    final isGrouped = msg['_isGrouped'] == true;
+
     return Padding(
       padding: EdgeInsets.only(
         left: isOwn ? 60 : 12,
         right: isOwn ? 12 : 60,
-        bottom: 8,
+        bottom: isGrouped ? 2 : 8,
+        top: isGrouped ? 0 : 2,
       ),
       child: Row(
         mainAxisAlignment: isOwn ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          // Avatar (nur bei anderen)
+          // Avatar placeholder keeps alignment; hidden when grouped
           if (!isOwn) ...[
-            CircleAvatar(
-              radius: 18,
-              backgroundColor: const Color(0xFF9B51E0).withValues(alpha: 0.2),
-              child: Text(
-                msg['avatar']?.toString() ?? '👤',
-                style: const TextStyle(fontSize: 16),
-              ),
-            ),
+            if (!isGrouped)
+              CircleAvatar(
+                radius: 18,
+                backgroundColor: const Color(0xFF9B51E0).withValues(alpha: 0.2),
+                child: Text(
+                  msg['avatar']?.toString() ?? '👤',
+                  style: const TextStyle(fontSize: 16),
+                ),
+              )
+            else
+              const SizedBox(width: 36),
             const SizedBox(width: 8),
           ],
-          
+
           // Bubble mit Tail
           Flexible(
             child: InkWell(
@@ -2761,8 +3542,8 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
                 decoration: BoxDecoration(
                   color: isOwn ? const Color(0xFF9B51E0) : const Color(0xFF2A2A3E),
                   borderRadius: BorderRadius.only(
-                    topLeft: const Radius.circular(16),
-                    topRight: const Radius.circular(16),
+                    topLeft: Radius.circular(isGrouped && !isOwn ? 4 : 16),
+                    topRight: Radius.circular(isGrouped && isOwn ? 4 : 16),
                     bottomLeft: isOwn ? const Radius.circular(16) : const Radius.circular(4),
                     bottomRight: isOwn ? const Radius.circular(4) : const Radius.circular(16),
                   ),
@@ -2777,8 +3558,8 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Username (nur bei anderen)
-                  if (!isOwn)
+                  // Username (nur bei anderen, nicht wenn gruppiert)
+                  if (!isOwn && !isGrouped)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 4),
                       child: Text(
@@ -2790,7 +3571,15 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
                         ),
                       ),
                     ),
-                  
+
+                  // Feature #14: Reply chain visualization
+                  if ((msg['reply_to_id']?.toString().isNotEmpty ?? false))
+                    _buildInlineReplyQuote(
+                      senderName: msg['reply_to_sender_name']?.toString(),
+                      content: msg['reply_to_content']?.toString(),
+                      color: const Color(0xFF9B51E0),
+                    ),
+
                   // 🎤 VOICE MESSAGE or 📷 IMAGE or 💬 TEXT
                   if (msg['mediaType'] == 'voice' || (msg['message']?.toString().startsWith('🎤 Sprachnachricht') == true && msg['mediaUrl'] != null))
                     // 🎵 VOICE MESSAGE PLAYER
@@ -2805,30 +3594,42 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
                       accentColor: const Color(0xFF9B51E0),
                     )
                   else if (msg['mediaType'] == 'image' && msg['mediaUrl'] != null)
-                    // Image Message
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.network(
-                        msg['mediaUrl'],
-                        width: 200,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
+                    // Feature #15: Tappable image with hero → fullscreen viewer
+                    GestureDetector(
+                      onTap: () => ChatImageViewer.open(
+                        context,
+                        imageUrl: msg['mediaUrl']!,
+                        heroTag: 'chat-img-${msg['id'] ?? msg['timestamp']}',
+                        accentColor: const Color(0xFF9B51E0),
+                      ),
+                      child: Hero(
+                        tag: 'chat-img-${msg['id'] ?? msg['timestamp']}',
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.network(
+                            msg['mediaUrl']!,
                             width: 200,
-                            height: 150,
-                            color: const Color(0xFF2A2A3E),
-                            child: const Icon(Icons.broken_image, size: 48),
-                          );
-                        },
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                width: 200,
+                                height: 150,
+                                color: const Color(0xFF2A2A3E),
+                                child: const Icon(Icons.broken_image, size: 48),
+                              );
+                            },
+                          ),
+                        ),
                       ),
                     )
                   else
-                    // Regular Text Message
-                    Text(
+                    // Regular Text Message (Markdown-Light + klickbare Links)
+                    ChatMarkdownText(
                       msg['message']?.toString() ?? '',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 15,
+                        height: 1.35,
                       ),
                     ),
                   
@@ -2867,10 +3668,91 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
     );
   }
   
+  // Feature #14: inline reply quote block inside bubble
+  Widget _buildInlineReplyQuote({String? senderName, String? content, required Color color}) {
+    final name = (senderName ?? '').trim().isEmpty ? 'Nachricht' : senderName!.trim();
+    final snippet = (content ?? '').trim();
+    return Container(
+      margin: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.fromLTRB(8, 5, 8, 5),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(8),
+        border: Border(left: BorderSide(color: color, width: 3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(name, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: color)),
+          if (snippet.isNotEmpty) ...[
+            const SizedBox(height: 2),
+            Text(
+              snippet,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.65)),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // Feature #11: parse message timestamp from any format
+  static DateTime? _parseMessageTimestamp(dynamic raw) {
+    if (raw == null) return null;
+    if (raw is DateTime) return raw;
+    if (raw is String && raw.isNotEmpty) return DateTime.tryParse(raw);
+    if (raw is int) return DateTime.fromMillisecondsSinceEpoch(raw);
+    return null;
+  }
+
+  // Feature #11: date separator chip between days
+  Widget _buildDateSeparator(DateTime date, Color color) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+    final msgDay = DateTime(date.year, date.month, date.day);
+    String label;
+    if (msgDay == today) {
+      label = 'Heute';
+    } else if (msgDay == yesterday) {
+      label = 'Gestern';
+    } else {
+      const wd = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+      const mo = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
+      label = '${wd[date.weekday - 1]}, ${date.day}. ${mo[date.month - 1]}.';
+    }
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Row(
+        children: [
+          Expanded(child: Divider(color: Colors.white.withValues(alpha: 0.1))),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: color.withValues(alpha: 0.3)),
+            ),
+            child: Text(
+              label,
+              style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 0.4),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(child: Divider(color: Colors.white.withValues(alpha: 0.1))),
+        ],
+      ),
+    );
+  }
+
   String _formatTime(dynamic timestamp) {
     try {
       if (timestamp == null) return '';
-      
+
       DateTime dt;
       if (timestamp is int) {
         dt = DateTime.fromMillisecondsSinceEpoch(timestamp);
@@ -2879,10 +3761,10 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
       } else {
         return '';
       }
-      
+
       final now = DateTime.now();
       final diff = now.difference(dt);
-      
+
       if (diff.inMinutes < 1) return 'Jetzt';
       if (diff.inHours < 1) return '${diff.inMinutes}m';
       if (diff.inDays < 1) return '${diff.inHours}h';
@@ -3136,6 +4018,262 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
         ),
       ),
     );
+  }
+
+  // ✨ STORIES BAR — Online-User als glühende Avatar-Kreise
+  Widget _buildStoriesBar() {
+    return ListenableBuilder(
+      listenable: PresenceService.instance,
+      builder: (_, __) {
+        final members = PresenceService.instance.members;
+        if (members.isEmpty) return const SizedBox.shrink();
+        return Container(
+          height: 72,
+          color: const Color(0xFF0A0618),
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            itemCount: members.length,
+            itemBuilder: (_, i) {
+              final m = members[i];
+              final isMe = m.userId == _userId;
+              return Padding(
+                padding: const EdgeInsets.only(right: 12),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    AnimatedBuilder(
+                      animation: _headerAuraCtrl,
+                      builder: (_, __) => Container(
+                        width: 42, height: 42,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: RadialGradient(colors: [
+                            const Color(0xFF9B51E0).withValues(alpha: isMe ? 0.9 : 0.5),
+                            const Color(0xFF4A148C).withValues(alpha: isMe ? 0.7 : 0.3),
+                          ]),
+                          border: Border.all(
+                            color: const Color(0xFF9B51E0).withValues(alpha: 0.5 + _headerAuraCtrl.value * 0.4),
+                            width: isMe ? 2.5 : 1.5,
+                          ),
+                          boxShadow: [BoxShadow(
+                            color: const Color(0xFF9B51E0).withValues(alpha: 0.3 + _headerAuraCtrl.value * 0.2),
+                            blurRadius: 8,
+                          )],
+                        ),
+                        child: Center(
+                          child: Text(m.avatar.isNotEmpty ? m.avatar : '👤', style: const TextStyle(fontSize: 20)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      isMe ? 'Du' : m.username.length > 6 ? '${m.username.substring(0, 5)}…' : m.username,
+                      style: TextStyle(
+                        color: isMe ? const Color(0xFF9B51E0) : Colors.grey[400],
+                        fontSize: 9,
+                        fontWeight: isMe ? FontWeight.bold : FontWeight.normal,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  // ✨ UPGRADED ROOM SELECTOR — Glassmorphism Chips mit Glow
+  Widget _buildRoomSelector() {
+    return AnimatedBuilder(
+      animation: _headerAuraCtrl,
+      builder: (_, __) => Container(
+        height: 56,
+        decoration: BoxDecoration(
+          color: const Color(0xFF0D0820),
+          border: Border(
+            bottom: BorderSide(
+              color: const Color(0xFF9B51E0).withValues(alpha: 0.15),
+            ),
+          ),
+        ),
+        child: ListView.builder(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          itemCount: _rooms.length,
+          itemBuilder: (_, index) {
+            final roomId = _rooms.keys.elementAt(index);
+            final room = _rooms[roomId]!;
+            final isSelected = roomId == _selectedRoom;
+            final chipFullRoomId = _roomIdMap[roomId] ?? 'energie-$roomId';
+            return GestureDetector(
+              onLongPress: () => _showRoomPreview(roomId, room),
+              onTap: () async {
+                if (roomId != _selectedRoom) {
+                  ChatDraftService.instance.set(_selectedRoom, _messageController.text);
+                  if (mounted) {
+                    RecentRoomsService.instance.touch('energie', roomId);
+                    setState(() {
+                      _selectedRoom = roomId;
+                      _messages.clear();
+                      _isLoading = true;
+                      _hasMoreOlder = true;
+                      _newMessagesCount = 0;
+                      _isAtBottom = true;
+                    });
+                  }
+                  _messageController.text = ChatDraftService.instance.get(_selectedRoom);
+                  UnreadTrackerService.instance.markSeen(_fullRoomId);
+                  await _voiceService.switchRoom(_fullRoomId);
+                  await _refreshPresence();
+                  await ReadReceiptService.instance.watchRoom(_fullRoomId);
+                  await _markRoomRead();
+                  _subscribeToRoom(_fullRoomId);
+                  await _loadMessages();
+                }
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                margin: const EdgeInsets.only(right: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                decoration: BoxDecoration(
+                  gradient: isSelected ? LinearGradient(colors: [
+                    const Color(0xFF4A148C).withValues(alpha: 0.8),
+                    const Color(0xFF7B1FA2).withValues(alpha: 0.6),
+                  ]) : null,
+                  color: isSelected ? null : const Color(0xFF100B1E),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: isSelected
+                        ? const Color(0xFF9B51E0).withValues(alpha: 0.7 + _headerAuraCtrl.value * 0.3)
+                        : const Color(0xFF2A1A4A).withValues(alpha: 0.5),
+                    width: isSelected ? 1.5 : 1,
+                  ),
+                  boxShadow: isSelected ? [BoxShadow(
+                    color: const Color(0xFF9B51E0).withValues(alpha: 0.25 + _headerAuraCtrl.value * 0.15),
+                    blurRadius: 12,
+                  )] : null,
+                ),
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(room['icon'] ?? '💬', style: TextStyle(fontSize: isSelected ? 16 : 14)),
+                        const SizedBox(width: 5),
+                        Text(
+                          (room['name'] as String).replaceAll(RegExp(r'^\S+\s'), '').split('&').first.trim(),
+                          style: TextStyle(
+                            color: isSelected ? Colors.white : Colors.grey[400],
+                            fontSize: 12,
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.w400,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Positioned(
+                      top: -6, right: -6,
+                      child: ChatUnreadBadge(roomId: chipFullRoomId),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  // ✨ ROOM VIBE BANNER — Raumstimmung als kompakte Mood-Anzeige
+  Widget _buildRoomVibeBanner() {
+    const moods = ['🧘', '💫', '🔮', '✨', '🌙', '💜', '🌟', '🕊️'];
+    if (_myMood.isEmpty) return const SizedBox.shrink();
+    return Container(
+      height: 28,
+      color: const Color(0xFF08041A),
+      alignment: Alignment.centerLeft,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: Row(
+        children: [
+          Text('Vibe: ', style: TextStyle(color: Colors.grey[500], fontSize: 11)),
+          Text(_myMood, style: const TextStyle(fontSize: 14)),
+          const SizedBox(width: 6),
+          Text('· Du bist im ${_rooms[_selectedRoom]?['icon'] ?? '💬'} Raum', style: TextStyle(color: Colors.grey[600], fontSize: 10)),
+          const Spacer(),
+          // Show other online users' moods from room description (placeholder)
+          ...moods.take(3).map((e) => Padding(
+            padding: const EdgeInsets.only(left: 2),
+            child: Text(e, style: const TextStyle(fontSize: 11, color: Colors.white24)),
+          )),
+        ],
+      ),
+    );
+  }
+
+  // ✨ MOOD PICKER ROW — erscheint über dem Input-Feld
+  Widget _buildMoodPickerRow() {
+    const moods = ['🧘', '💫', '🔮', '✨', '🌙', '💜', '🌟', '🕊️', '🌺', '⚡', '🔥', '💎'];
+    return Container(
+      height: 44,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: [
+          GestureDetector(
+            onTap: () => setState(() { _myMood = ''; _showMoodPicker = false; }),
+            child: Container(
+              width: 32, height: 32,
+              margin: const EdgeInsets.only(right: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1A0A2E),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
+              ),
+              child: const Icon(Icons.close, size: 14, color: Colors.grey),
+            ),
+          ),
+          ...moods.map((e) => GestureDetector(
+            onTap: () => setState(() { _myMood = e; _showMoodPicker = false; }),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              width: 32, height: 32,
+              margin: const EdgeInsets.only(right: 6),
+              decoration: BoxDecoration(
+                color: _myMood == e ? const Color(0xFF4A148C) : const Color(0xFF1A0A2E),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: _myMood == e ? const Color(0xFF9B51E0) : Colors.grey.withValues(alpha: 0.2),
+                ),
+              ),
+              child: Center(child: Text(e, style: const TextStyle(fontSize: 16))),
+            ),
+          )),
+        ],
+      ),
+    );
+  }
+
+  // ✨ MEDITATION SYNC — Gemeinsamer Timer für den Meditation-Raum
+  void _toggleMeditationSync() {
+    if (_meditationSyncActive) {
+      _meditationSyncTimer?.cancel();
+      setState(() { _meditationSyncActive = false; _meditationSyncSeconds = 0; });
+    } else {
+      setState(() { _meditationSyncActive = true; _meditationSyncSeconds = 0; });
+      _meditationSyncTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+        if (mounted) setState(() => _meditationSyncSeconds++);
+      });
+    }
+  }
+
+  String _formatSync(int seconds) {
+    final m = (seconds ~/ 60).toString().padLeft(2, '0');
+    final s = (seconds % 60).toString().padLeft(2, '0');
+    return '$m:$s';
   }
 }
 

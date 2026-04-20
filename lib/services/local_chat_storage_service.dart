@@ -1,57 +1,34 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:hive/hive.dart';
-import 'package:hive_flutter/hive_flutter.dart';
+import 'package:sqflite/sqflite.dart' show ConflictAlgorithm;
+import '../core/db/app_database.dart';
 
-/// LOCAL CHAT STORAGE SERVICE
-/// 
-/// Produktionsreife lokale Chat-Speicherung mit Hive
-/// Bereitet Synchronisation mit Backend vor
-/// 
-/// Features:
-/// - Offline-First Architektur
-/// - Lokale Message-Speicherung
-/// - Room-based Message Management
-/// - Presence Tracking
-/// - Typing Indicators
-/// - Backend Sync Preparation
-
+/// LOCAL CHAT STORAGE SERVICE (SQLite)
+///
+/// Offline-First Chat-Speicherung — ersetzt Hive-Boxen.
 class LocalChatStorageService {
   static final LocalChatStorageService _instance = LocalChatStorageService._internal();
   factory LocalChatStorageService() => _instance;
   LocalChatStorageService._internal();
 
-  // Hive Box Names
-  static const String _chatMessagesBox = 'chat_messages';
-  static const String _chatRoomsBox = 'chat_rooms';
-  static const String _chatPresenceBox = 'chat_presence';
-  static const String _pendingSyncBox = 'chat_pending_sync';
-
   bool _initialized = false;
 
-  /// Initialize the local chat storage
   Future<void> initialize() async {
     if (_initialized) return;
-
-    try {
-      // Open Hive boxes
-      await Hive.openBox(_chatMessagesBox);
-      await Hive.openBox(_chatRoomsBox);
-      await Hive.openBox(_chatPresenceBox);
-      await Hive.openBox(_pendingSyncBox);
-
-      _initialized = true;
-
-      if (kDebugMode) {
-        debugPrint('✅ LocalChatStorageService initialized');
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ Error initializing LocalChatStorageService: $e');
-      }
-    }
+    await AppDatabase.instance.db;
+    _initialized = true;
+    if (kDebugMode) debugPrint('✅ LocalChatStorageService initialized');
   }
 
-  /// Get chat messages for a room
+  Future<void> _ensureInitialized() async {
+    if (!_initialized) await initialize();
+  }
+
+  // ──────────────────────────────────────────────────────
+  // MESSAGES
+  // ──────────────────────────────────────────────────────
+
+  /// Get chat messages for a room (newest first, paginated)
   Future<List<Map<String, dynamic>>> getMessages(
     String roomId,
     String realm, {
@@ -59,37 +36,23 @@ class LocalChatStorageService {
     int offset = 0,
   }) async {
     await _ensureInitialized();
-
     try {
-      final box = Hive.box(_chatMessagesBox);
+      final db = await AppDatabase.instance.db;
       final key = '${realm}_$roomId';
-      
-      final List<dynamic>? messagesData = box.get(key);
-      
-      if (messagesData == null || messagesData.isEmpty) {
-        return _getWelcomeMessages(roomId, realm);
-      }
-
-      // Convert to List<Map<String, dynamic>>
-      final messages = messagesData
-          .map((msg) => Map<String, dynamic>.from(msg as Map))
+      final rows = await db.query(
+        'chat_messages',
+        where: 'room_id = ?',
+        whereArgs: [key],
+        orderBy: 'created_at DESC',
+        limit: limit,
+        offset: offset,
+      );
+      if (rows.isEmpty) return _getWelcomeMessages(roomId, realm);
+      return rows
+          .map((r) => jsonDecode(r['data'] as String) as Map<String, dynamic>)
           .toList();
-
-      // Sort by timestamp (newest first)
-      messages.sort((a, b) {
-        final aTime = DateTime.parse(a['timestamp'] as String);
-        final bTime = DateTime.parse(b['timestamp'] as String);
-        return bTime.compareTo(aTime);
-      });
-
-      // Apply pagination
-      final paginatedMessages = messages.skip(offset).take(limit).toList();
-
-      return paginatedMessages;
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ Error getting messages: $e');
-      }
+      if (kDebugMode) debugPrint('❌ Error getting messages: $e');
       return _getWelcomeMessages(roomId, realm);
     }
   }
@@ -107,67 +70,53 @@ class LocalChatStorageService {
     String? mediaUrl,
   }) async {
     await _ensureInitialized();
+    final db = await AppDatabase.instance.db;
+    final key = '${realm}_$roomId';
+    final messageId = 'msg_${DateTime.now().millisecondsSinceEpoch}_${userId.hashCode}';
+    final timestamp = DateTime.now().toIso8601String();
 
-    try {
-      final box = Hive.box(_chatMessagesBox);
-      final key = '${realm}_$roomId';
+    final chatMessage = {
+      'id': messageId,
+      'roomId': roomId,
+      'realm': realm,
+      'userId': userId,
+      'username': username,
+      'message': message,
+      'avatarEmoji': avatarEmoji ?? '👤',
+      'avatarUrl': avatarUrl,
+      'mediaType': mediaType,
+      'mediaUrl': mediaUrl,
+      'timestamp': timestamp,
+      'edited': false,
+      'deleted': false,
+      'reactions': {},
+      'synced': false,
+    };
 
-      // Create message object
-      final messageId = 'msg_${DateTime.now().millisecondsSinceEpoch}_${userId.hashCode}';
-      final timestamp = DateTime.now().toIso8601String();
-
-      final chatMessage = {
-        'id': messageId,
-        'roomId': roomId,
-        'realm': realm,
-        'userId': userId,
-        'username': username,
-        'message': message,
-        'avatarEmoji': avatarEmoji ?? '👤',
-        'avatarUrl': avatarUrl,
-        'mediaType': mediaType,
-        'mediaUrl': mediaUrl,
-        'timestamp': timestamp,
-        'edited': false,
-        'deleted': false,
-        'reactions': {},
-        'synced': false, // Not synced with backend yet
-      };
-
-      // Get existing messages
-      final List<dynamic> messages = box.get(key) ?? [];
-      
-      // Add new message
-      messages.add(chatMessage);
-
-      // Keep only last 500 messages per room
-      if (messages.length > 500) {
-        messages.removeRange(0, messages.length - 500);
-      }
-
-      // Save messages
-      await box.put(key, messages);
-
-      // Add to pending sync queue
-      await _addToPendingSync(chatMessage);
-
-      // Update room activity
-      await _updateRoomActivity(realm, roomId, timestamp);
-
-      if (kDebugMode) {
-        debugPrint('💬 Message sent locally: $messageId in $roomId');
-      }
-
-      return {
-        'success': true,
-        'message': chatMessage,
-      };
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ Error sending message: $e');
-      }
-      throw Exception('Failed to send message: $e');
+    // Keep only last 500 messages – delete oldest if over limit
+    final count = (await db.rawQuery(
+      'SELECT COUNT(*) as c FROM chat_messages WHERE room_id = ?', [key],
+    )).first['c'] as int? ?? 0;
+    if (count >= 500) {
+      await db.rawDelete(
+        '''DELETE FROM chat_messages WHERE room_id = ? AND id IN
+           (SELECT id FROM chat_messages WHERE room_id = ? ORDER BY created_at ASC LIMIT ?)''',
+        [key, key, count - 499],
+      );
     }
+
+    await db.insert('chat_messages', {
+      'id': messageId,
+      'room_id': key,
+      'data': jsonEncode(chatMessage),
+      'created_at': DateTime.now().millisecondsSinceEpoch,
+    });
+
+    await _addToPendingSync(chatMessage);
+    await _updateRoomActivity(realm, roomId, timestamp);
+
+    if (kDebugMode) debugPrint('💬 Message sent locally: $messageId in $roomId');
+    return {'success': true, 'message': chatMessage};
   }
 
   /// Edit a message
@@ -179,50 +128,29 @@ class LocalChatStorageService {
     String userId,
   ) async {
     await _ensureInitialized();
+    final db = await AppDatabase.instance.db;
+    final key = '${realm}_$roomId';
 
-    try {
-      final box = Hive.box(_chatMessagesBox);
-      final key = '${realm}_$roomId';
+    final rows = await db.query('chat_messages',
+        where: 'id = ? AND room_id = ?', whereArgs: [messageId, key]);
+    if (rows.isEmpty) throw Exception('Message not found');
 
-      final List<dynamic> messages = box.get(key) ?? [];
-      
-      final messageIndex = messages.indexWhere((m) => m['id'] == messageId);
-      
-      if (messageIndex == -1) {
-        throw Exception('Message not found');
-      }
+    final msg = jsonDecode(rows.first['data'] as String) as Map<String, dynamic>;
+    if (msg['userId'] != userId) throw Exception('Not authorized to edit this message');
 
-      final message = Map<String, dynamic>.from(messages[messageIndex] as Map);
-      
-      // Check ownership
-      if (message['userId'] != userId) {
-        throw Exception('Not authorized to edit this message');
-      }
+    msg['message'] = newMessage;
+    msg['edited'] = true;
+    msg['editedAt'] = DateTime.now().toIso8601String();
+    msg['synced'] = false;
 
-      message['message'] = newMessage;
-      message['edited'] = true;
-      message['editedAt'] = DateTime.now().toIso8601String();
-      message['synced'] = false;
+    await db.update('chat_messages', {'data': jsonEncode(msg)},
+        where: 'id = ? AND room_id = ?', whereArgs: [messageId, key]);
+    await _addToPendingSync(msg);
 
-      messages[messageIndex] = message;
-      await box.put(key, messages);
-
-      // Add to pending sync
-      await _addToPendingSync(message);
-
-      return {
-        'success': true,
-        'message': message,
-      };
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ Error editing message: $e');
-      }
-      throw Exception('Failed to edit message: $e');
-    }
+    return {'success': true, 'message': msg};
   }
 
-  /// Delete a message
+  /// Delete a message (hard delete)
   Future<Map<String, dynamic>> deleteMessage(
     String roomId,
     String realm,
@@ -231,67 +159,40 @@ class LocalChatStorageService {
     bool isAdmin,
   ) async {
     await _ensureInitialized();
+    final db = await AppDatabase.instance.db;
+    final key = '${realm}_$roomId';
 
-    try {
-      final box = Hive.box(_chatMessagesBox);
-      final key = '${realm}_$roomId';
+    final rows = await db.query('chat_messages',
+        where: 'id = ? AND room_id = ?', whereArgs: [messageId, key]);
+    if (rows.isEmpty) throw Exception('Message not found');
 
-      final List<dynamic> messages = box.get(key) ?? [];
-      
-      final messageIndex = messages.indexWhere((m) => m['id'] == messageId);
-      
-      if (messageIndex == -1) {
-        throw Exception('Message not found');
-      }
-
-      final message = Map<String, dynamic>.from(messages[messageIndex] as Map);
-      
-      // Check ownership or admin
-      if (message['userId'] != userId && !isAdmin) {
-        throw Exception('Not authorized to delete this message');
-      }
-
-      message['deleted'] = true;
-      message['message'] = '[Nachricht gelöscht]';
-      message['deletedAt'] = DateTime.now().toIso8601String();
-      message['synced'] = false;
-
-      messages[messageIndex] = message;
-      await box.put(key, messages);
-
-      return {
-        'success': true,
-        'message': message,
-      };
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ Error deleting message: $e');
-      }
-      throw Exception('Failed to delete message: $e');
+    final msg = jsonDecode(rows.first['data'] as String) as Map<String, dynamic>;
+    if (msg['userId'] != userId && !isAdmin) {
+      throw Exception('Not authorized to delete this message');
     }
+
+    await db.delete('chat_messages',
+        where: 'id = ? AND room_id = ?', whereArgs: [messageId, key]);
+    return {'success': true, 'messageId': messageId};
   }
 
-  /// Get room info
+  // ──────────────────────────────────────────────────────
+  // ROOMS
+  // ──────────────────────────────────────────────────────
+
   Future<Map<String, dynamic>?> getRoomInfo(String realm, String roomId) async {
     await _ensureInitialized();
-
-    try {
-      final box = Hive.box(_chatRoomsBox);
-      final key = '${realm}_$roomId';
-      final roomData = box.get(key);
-      
-      if (roomData == null) return null;
-      
-      return Map<String, dynamic>.from(roomData as Map);
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ Error getting room info: $e');
-      }
-      return null;
-    }
+    final db = await AppDatabase.instance.db;
+    final rows = await db.query('chat_rooms',
+        where: 'room_id = ?', whereArgs: ['${realm}_$roomId']);
+    if (rows.isEmpty) return null;
+    return jsonDecode(rows.first['data'] as String) as Map<String, dynamic>;
   }
 
-  /// Update presence for a user
+  // ──────────────────────────────────────────────────────
+  // PRESENCE
+  // ──────────────────────────────────────────────────────
+
   Future<void> updatePresence(
     String realm,
     String roomId,
@@ -300,148 +201,94 @@ class LocalChatStorageService {
     String avatarEmoji,
   ) async {
     await _ensureInitialized();
-
-    try {
-      final box = Hive.box(_chatPresenceBox);
-      final key = '${realm}_$roomId';
-
-      final Map<String, dynamic> presence = 
-          Map<String, dynamic>.from((box.get(key) ?? {}) as Map);
-
-      presence[userId] = {
+    final db = await AppDatabase.instance.db;
+    await db.insert('chat_presence', {
+      'user_id': userId,
+      'room_id': '${realm}_$roomId',
+      'data': jsonEncode({
         'username': username,
         'avatarEmoji': avatarEmoji,
         'lastSeen': DateTime.now().toIso8601String(),
         'status': 'online',
-      };
-
-      await box.put(key, presence);
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ Error updating presence: $e');
-      }
-    }
+      }),
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 
-  /// Get online users
-  Future<List<Map<String, dynamic>>> getOnlineUsers(
-    String realm,
-    String roomId,
-  ) async {
+  Future<List<Map<String, dynamic>>> getOnlineUsers(String realm, String roomId) async {
     await _ensureInitialized();
-
-    try {
-      final box = Hive.box(_chatPresenceBox);
-      final key = '${realm}_$roomId';
-
-      final Map<String, dynamic> presence =
-          Map<String, dynamic>.from((box.get(key) ?? {}) as Map);
-
-      final now = DateTime.now();
-      final onlineUsers = <Map<String, dynamic>>[];
-
-      presence.forEach((userId, data) {
-        final userData = Map<String, dynamic>.from(data as Map);
-        final lastSeen = DateTime.parse(userData['lastSeen'] as String);
-        final diffMinutes = now.difference(lastSeen).inMinutes;
-
-        if (diffMinutes < 5) {
-          onlineUsers.add({
-            'userId': userId,
-            ...userData,
-          });
-        }
-      });
-
-      return onlineUsers;
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ Error getting online users: $e');
+    final db = await AppDatabase.instance.db;
+    final rows = await db.query('chat_presence',
+        where: 'room_id = ?', whereArgs: ['${realm}_$roomId']);
+    final now = DateTime.now();
+    final result = <Map<String, dynamic>>[];
+    for (final r in rows) {
+      final data = jsonDecode(r['data'] as String) as Map<String, dynamic>;
+      final lastSeen = DateTime.tryParse(data['lastSeen'] as String? ?? '');
+      if (lastSeen != null && now.difference(lastSeen).inMinutes < 5) {
+        result.add({'userId': r['user_id'], ...data});
       }
-      return [];
     }
+    return result;
   }
 
-  /// Clear all local chat data (for testing)
+  // ──────────────────────────────────────────────────────
+  // MANAGEMENT
+  // ──────────────────────────────────────────────────────
+
   Future<void> clearAllChatData() async {
     await _ensureInitialized();
-
-    try {
-      await Hive.box(_chatMessagesBox).clear();
-      await Hive.box(_chatRoomsBox).clear();
-      await Hive.box(_chatPresenceBox).clear();
-      await Hive.box(_pendingSyncBox).clear();
-
-      if (kDebugMode) {
-        debugPrint('✅ All chat data cleared');
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ Error clearing chat data: $e');
-      }
-    }
+    final db = await AppDatabase.instance.db;
+    await db.delete('chat_messages');
+    await db.delete('chat_rooms');
+    await db.delete('chat_presence');
+    await db.delete('chat_pending_sync');
+    if (kDebugMode) debugPrint('✅ All chat data cleared');
   }
 
-  // ============================================================================
-  // PRIVATE HELPER METHODS
-  // ============================================================================
+  // ──────────────────────────────────────────────────────
+  // PRIVATE HELPERS
+  // ──────────────────────────────────────────────────────
 
-  Future<void> _ensureInitialized() async {
-    if (!_initialized) {
-      await initialize();
-    }
-  }
-
-  Future<void> _updateRoomActivity(
-    String realm,
-    String roomId,
-    String timestamp,
-  ) async {
+  Future<void> _updateRoomActivity(String realm, String roomId, String timestamp) async {
     try {
-      final box = Hive.box(_chatRoomsBox);
+      final db = await AppDatabase.instance.db;
       final key = '${realm}_$roomId';
-
-      final Map<String, dynamic> roomInfo =
-          Map<String, dynamic>.from((box.get(key) ?? {}) as Map);
-
-      roomInfo['roomId'] = roomId;
-      roomInfo['realm'] = realm;
-      roomInfo['lastActivity'] = timestamp;
-      roomInfo['messageCount'] = (roomInfo['messageCount'] ?? 0) + 1;
-
-      await box.put(key, roomInfo);
+      final rows = await db.query('chat_rooms', where: 'room_id = ?', whereArgs: [key]);
+      final info = rows.isEmpty
+          ? <String, dynamic>{}
+          : jsonDecode(rows.first['data'] as String) as Map<String, dynamic>;
+      info['roomId'] = roomId;
+      info['realm'] = realm;
+      info['lastActivity'] = timestamp;
+      info['messageCount'] = ((info['messageCount'] as int?) ?? 0) + 1;
+      await db.insert('chat_rooms', {'room_id': key, 'data': jsonEncode(info)},
+          conflictAlgorithm: ConflictAlgorithm.replace);
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ Error updating room activity: $e');
-      }
+      if (kDebugMode) debugPrint('❌ Error updating room activity: $e');
     }
   }
 
   Future<void> _addToPendingSync(Map<String, dynamic> message) async {
     try {
-      final box = Hive.box(_pendingSyncBox);
-      final List<dynamic> pending = box.get('pending') ?? [];
-      
-      pending.add(message);
-      
-      await box.put('pending', pending);
+      final db = await AppDatabase.instance.db;
+      await db.insert('chat_pending_sync', {
+        'id': message['id'] as String,
+        'data': jsonEncode(message),
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ Error adding to pending sync: $e');
-      }
+      if (kDebugMode) debugPrint('❌ Error adding to pending sync: $e');
     }
   }
 
   List<Map<String, dynamic>> _getWelcomeMessages(String roomId, String realm) {
     final now = DateTime.now();
-
     return [
       {
         'id': 'msg_welcome_$roomId',
         'message': '✨ Willkommen im ${_getRoomDisplayName(roomId, realm)} Chat!',
         'username': 'Weltenbibliothek',
         'userId': 'system',
-        'timestamp': now.subtract(Duration(hours: 2)).toIso8601String(),
+        'timestamp': now.subtract(const Duration(hours: 2)).toIso8601String(),
         'roomId': roomId,
         'realm': realm,
         'avatarEmoji': '🌟',
@@ -454,7 +301,7 @@ class LocalChatStorageService {
         'message': '🎤 Voice Chat ist aktiviert! Klicke auf den Voice Button oben rechts.',
         'username': 'System',
         'userId': 'system',
-        'timestamp': now.subtract(Duration(hours: 1)).toIso8601String(),
+        'timestamp': now.subtract(const Duration(hours: 1)).toIso8601String(),
         'roomId': roomId,
         'realm': realm,
         'avatarEmoji': '🔊',
@@ -465,9 +312,9 @@ class LocalChatStorageService {
       {
         'id': 'msg_info_$roomId',
         'message': '💬 Schreibe deine erste Nachricht um den Chat zu starten!',
-        'username': 'Weltenbibliothekedit',
+        'username': 'Weltenbibliothek',
         'userId': 'admin',
-        'timestamp': now.subtract(Duration(minutes: 30)).toIso8601String(),
+        'timestamp': now.subtract(const Duration(minutes: 30)).toIso8601String(),
         'roomId': roomId,
         'realm': realm,
         'avatarEmoji': '👨‍💼',
@@ -479,23 +326,17 @@ class LocalChatStorageService {
   }
 
   String _getRoomDisplayName(String roomId, String realm) {
-    final roomNames = {
-      // Energie Welt
+    const roomNames = {
       'meditation': 'Meditation & Achtsamkeit',
       'chakra': 'Chakra Heilung',
       'frequenz': 'Frequenz & Schwingung',
       'general_energie': 'Allgemeine Diskussion',
-
-      // Materie Welt
       'politik': 'Politik & Weltgeschehen',
       'forschung': 'Forschung & Analyse',
       'ufos': 'UFOs & Phänomene',
       'general_materie': 'Allgemeine Diskussion',
-
-      // Default
       'general': 'Allgemeiner Chat',
     };
-
     return roomNames[roomId] ?? roomId;
   }
 }

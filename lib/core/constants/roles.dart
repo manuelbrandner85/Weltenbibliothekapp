@@ -15,98 +15,60 @@ class AppRoles {
   static const String user = 'user';
   static const String admin = 'admin';
   static const String rootAdmin = 'root_admin';
+  static const String rootAdminLegacy = 'root-admin'; // DB-Alias (dash-variant)
   static const String contentEditor = 'content_editor';  // NEU: Nur Content-Management
 
   // ============================================================================
   // ADMIN ACCOUNTS
   // ============================================================================
-  
+
   /// Root-Admin (VOLLZUGRIFF auf alles)
-  /// - User Management
-  /// - Content Management
-  /// - System Administration
+  /// Login: Supabase Email + Passwort – Passwort NIEMALS im Client-Code!
+  /// Rolle wird in Supabase profiles.role = 'root_admin' gesetzt.
   static const String rootAdminUsername = 'Weltenbibliothek';
-  static const String rootAdminPassword = 'Jolene2305';
-  
+
   /// Content-Editor Admin (NUR Content-Management)
-  /// - Alle Inhalte bearbeiten (Tabs, Tools, Marker, Medien)
-  /// - KEIN User Management
-  /// - KEINE System-Administration
+  /// Login: Supabase Email + Passwort – Passwort NIEMALS im Client-Code!
+  /// Rolle wird in Supabase profiles.role = 'content_editor' gesetzt.
   static const String contentEditorUsername = 'Weltenbibliothekedit';
-  static const String contentEditorPassword = 'Jolene2305';
 
   // ============================================================================
   // BERECHTIGUNGS-CHECKS - USER MANAGEMENT
   // ============================================================================
   
+  static bool _isRoot(String? r) => r == rootAdmin || r == rootAdminLegacy;
+
   /// Kann auf Admin-Dashboard zugreifen
-  static bool canAccessAdminDashboard(String? role) => 
-      role == admin || role == rootAdmin || role == contentEditor;
+  static bool canAccessAdminDashboard(String? role) =>
+      role == admin || _isRoot(role) || role == contentEditor;
 
   /// Kann User verwalten (Erstellen, Löschen, Befördern)
-  /// NUR für Root-Admin!
-  static bool canManageUsers(String? role) => 
-      role == rootAdmin;
+  static bool canManageUsers(String? role) => _isRoot(role);
 
   /// Kann User befördern/degradieren
-  /// NUR für Root-Admin!
-  static bool canPromoteDemote(String? role) => 
-      role == rootAdmin;
+  static bool canPromoteDemote(String? role) => _isRoot(role);
 
   /// Kann User-Liste einsehen
-  /// NUR für Root-Admin!
-  static bool canViewUserList(String? role) => 
-      role == rootAdmin;
+  static bool canViewUserList(String? role) => _isRoot(role);
 
   /// Kann User löschen
-  /// NUR für Root-Admin!
-  static bool canDeleteUsers(String? role) => 
-      role == rootAdmin;
+  static bool canDeleteUsers(String? role) => _isRoot(role);
 
   // ============================================================================
   // BERECHTIGUNGS-CHECKS - CONTENT MANAGEMENT
   // ============================================================================
   
   /// Kann Content bearbeiten (Tabs, Tools, Marker, Medien)
-  /// Root-Admin UND Content-Editor!
-  static bool canEditContent(String? role) => 
-      role == rootAdmin || role == contentEditor;
-
-  /// Kann Tabs erstellen/bearbeiten/löschen
-  static bool canManageTabs(String? role) => 
-      role == rootAdmin || role == contentEditor;
-
-  /// Kann Tools erstellen/bearbeiten/löschen
-  static bool canManageTools(String? role) => 
-      role == rootAdmin || role == contentEditor;
-
-  /// Kann Marker erstellen/bearbeiten/löschen
-  static bool canManageMarkers(String? role) => 
-      role == rootAdmin || role == contentEditor;
-
-  /// Kann Medien hochladen/bearbeiten/löschen
-  static bool canManageMedia(String? role) => 
-      role == rootAdmin || role == contentEditor;
-
-  /// Kann Feature Flags verwalten
-  static bool canManageFeatureFlags(String? role) => 
-      role == rootAdmin || role == contentEditor;
-
-  /// Kann Inhalte publishen/unpublishen
-  static bool canPublishContent(String? role) => 
-      role == rootAdmin || role == contentEditor;
-
-  /// Kann Version-Snapshots erstellen/rollback
-  static bool canManageVersions(String? role) => 
-      role == rootAdmin || role == contentEditor;
-
-  /// Kann Change-Log einsehen
-  static bool canViewChangeLog(String? role) => 
-      role == rootAdmin || role == contentEditor;
-
-  /// Kann Sandbox-Modus verwenden
-  static bool canUseSandbox(String? role) => 
-      role == rootAdmin || role == contentEditor;
+  static bool canEditContent(String? role) => _isRoot(role) || role == contentEditor;
+  static bool canManageTabs(String? role) => _isRoot(role) || role == contentEditor;
+  static bool canManageTools(String? role) => _isRoot(role) || role == contentEditor;
+  static bool canManageMarkers(String? role) => _isRoot(role) || role == contentEditor;
+  static bool canManageMedia(String? role) => _isRoot(role) || role == contentEditor;
+  static bool canManageFeatureFlags(String? role) => _isRoot(role) || role == contentEditor;
+  static bool canPublishContent(String? role) => _isRoot(role) || role == contentEditor;
+  static bool canManageVersions(String? role) => _isRoot(role) || role == contentEditor;
+  static bool canViewChangeLog(String? role) => _isRoot(role) || role == contentEditor;
+  static bool canUseSandbox(String? role) => _isRoot(role) || role == contentEditor;
 
   // ============================================================================
   // HELPER FUNCTIONS
@@ -114,15 +76,13 @@ class AppRoles {
   
   /// Ist der User ein Admin (irgendeine Admin-Rolle)
   static bool isAdmin(String? role) =>
-      role == admin || role == rootAdmin || role == contentEditor;
+      role == admin || _isRoot(role) || role == contentEditor;
 
   /// Ist der User Root-Admin (volle Rechte)
-  static bool isRootAdmin(String? role) => 
-      role == rootAdmin;
+  static bool isRootAdmin(String? role) => _isRoot(role);
 
   /// Ist der User Content-Editor (nur Content-Rechte)
-  static bool isContentEditor(String? role) => 
-      role == contentEditor;
+  static bool isContentEditor(String? role) => role == contentEditor;
 
   /// Helper für Offline-Fallback - Check by Username
   static bool isRootAdminByUsername(String? username) =>
@@ -150,20 +110,6 @@ class AppRoles {
     }
     
     return user;  // Fallback für normale User
-  }
-
-  /// Validate Password for Admin Accounts
-  static bool validateAdminPassword(String username, String password) {
-    final lower = username.toLowerCase();
-    
-    if (lower == rootAdminUsername.toLowerCase()) {
-      return password == rootAdminPassword;
-    }
-    if (lower == contentEditorUsername.toLowerCase()) {
-      return password == contentEditorPassword;
-    }
-    
-    return false;  // Normale User haben kein hardcoded Password
   }
 
   /// Get User Role Name (für UI)

@@ -207,9 +207,9 @@ class ImageUploadService {
       // Pick image from gallery
       final XFile? pickedFile = await picker.pickImage(
         source: ImageSource.gallery,
-        maxWidth: 2048,
-        maxHeight: 2048,
-        imageQuality: 85,
+        maxWidth: 1600,
+        maxHeight: 1600,
+        imageQuality: 80,
       );
       
       if (pickedFile == null) {

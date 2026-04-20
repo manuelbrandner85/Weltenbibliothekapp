@@ -1,13 +1,18 @@
 name: 🏗️ Build & Release APK
 
 on:
+  # Release-Build triggert auf drei Wegen:
+  #   1. Push auf main mit geänderter pubspec.yaml (neue Version) — VOLLAUTOMATISCH,
+  #      Tag wird vom Workflow selbst via softprops/action-gh-release erstellt.
+  #   2. Explizit gepushter Version-Tag (v5.32.0, ...) — Legacy/manueller Weg,
+  #      funktioniert weiterhin falls jemand manuell taggen will.
+  #   3. workflow_dispatch — manuelles Triggern aus der UI (auch für Feature-Branches).
+  # Für reine Dart-Änderungen bitte "🚀 Shorebird OTA Patch" verwenden, nicht diesen Workflow.
   push:
     branches:
-      - genspark_ai_developer
-    paths:
-      - 'pubspec.yaml'
-      - 'lib/**'
-      - 'android/**'
+      - main
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
   workflow_dispatch:
     inputs:
       version_note:
@@ -15,16 +20,54 @@ on:
         required: false
         default: 'Manueller Build'
 
+permissions:
+  contents: write
+
 jobs:
-  build-apk:
-    name: 🔨 Flutter APK Build (arm64)
+  # Pre-Check: Release nur bauen wenn noch keiner mit dieser Version existiert.
+  # Verhindert Doppel-Builds bei pubspec.yaml-Edits die die Version NICHT ändern
+  # (z.B. Dependency-Updates, Kommentare).
+  check:
+    name: 🔎 Release-Bedarf prüfen
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    outputs:
+      version:      ${{ steps.v.outputs.version }}
+      should_build: ${{ steps.v.outputs.should_build }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: v
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: //' | sed 's/+.*//')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          # Bei Tag-Push IMMER bauen (expliziter Release-Wunsch).
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            echo "✅ Tag-Push → bauen"
+            echo "should_build=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          # Bei main-Push / workflow_dispatch: nur bauen wenn GitHub-Release noch fehlt.
+          if gh release view "v$VERSION" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "⏭️  Release v$VERSION existiert bereits — skip"
+            echo "should_build=false" >> $GITHUB_OUTPUT
+          else
+            echo "✅ Kein Release für v$VERSION → bauen"
+            echo "should_build=true" >> $GITHUB_OUTPUT
+          fi
+
+  build-apk:
+    name: 🔨 Shorebird Release Build (arm64 + arm32)
+    needs: check
+    if: needs.check.outputs.should_build == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v4
         with:
-          ref: genspark_ai_developer
+          ref: ${{ github.ref }}
 
       - name: ☕ Java 17
         uses: actions/setup-java@v4
@@ -32,48 +75,146 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: 🐦 Flutter
-        uses: subosito/flutter-action@v2
+      - name: 🐦 Shorebird
+        uses: shorebirdtech/setup-shorebird@v1
         with:
-          flutter-version: '3.24.5'
-          channel: 'stable'
           cache: true
 
-      - name: 📦 pub get
-        run: flutter pub get
-
-      - name: 🔍 analyze
-        run: flutter analyze --no-fatal-infos
+      - name: 🔐 Release-Keystore aus Secrets dekodieren
+        # Secrets (einmalig in GitHub Repo → Settings → Secrets einrichten):
+        #   ANDROID_KEYSTORE_BASE64   — base64 der weltenbibliothek.jks
+        #   ANDROID_KEYSTORE_PASSWORD — store-password
+        #   ANDROID_KEY_ALIAS         — Alias (z.B. "weltenbibliothek")
+        #   ANDROID_KEY_PASSWORD      — key-password
+        # Ohne Secrets → Step überspringt, Build nutzt Debug-Key (nicht update-kompatibel).
+        if: ${{ env.ANDROID_KEYSTORE_BASE64 != '' }}
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/weltenbibliothek.jks
+          cat > android/key.properties <<EOF
+          storeFile=app/weltenbibliothek.jks
+          storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
+          keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
+          EOF
+          echo "✅ Release-Keystore + key.properties erstellt"
 
       - name: 📋 Version lesen
         id: version
         run: |
           VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: //' | sed 's/+.*//')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "apk_name=weltenbibliothek-v${VERSION}-arm64.apk" >> $GITHUB_OUTPUT
+          echo "apk_name=weltenbibliothek-v${VERSION}-universal.apk" >> $GITHUB_OUTPUT
 
-      - name: 🏗️ APK bauen
-        run: flutter build apk --release --target-platform android-arm64
+      - name: 🏗️ Shorebird Release (arm64 + arm32)
+        run: |
+          shorebird release android \
+            --artifact=apk \
+            --target-platform=android-arm64,android-arm \
+            --dart-define=APP_VERSION=${{ steps.version.outputs.version }} \
+            --dart-define=SUPABASE_URL=https://adtviduaftdquvfjpojb.supabase.co \
+            --dart-define=SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkdHZpZHVhZnRkcXV2Zmpwb2piIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxMzY3OTcsImV4cCI6MjA5MDcxMjc5N30.LPtmnjukb6o2CA16RDjoStqYb_1bipNULD4tgOfuD98 \
+            --dart-define=CLOUDFLARE_WORKER_URL=https://weltenbibliothek-api.brandy13062.workers.dev
+        env:
+          SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
 
       - name: 📝 APK umbenennen
         run: |
           mv build/app/outputs/flutter-apk/app-release.apk \
              build/app/outputs/flutter-apk/${{ steps.version.outputs.apk_name }}
 
-      - name: 📤 Artefakt speichern
+      - name: 📤 APK Artefakt
         uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.version.outputs.apk_name }}
           path: build/app/outputs/flutter-apk/${{ steps.version.outputs.apk_name }}
           retention-days: 30
 
+      - name: 📖 Release-Manifest lesen
+        # Liest supabase/release/current.json (min_version + changelog).
+        # Pflicht pro Release vor Tag-Push. Fehlen Felder → Step bricht ab.
+        id: manifest
+        run: |
+          set -euo pipefail
+          MANIFEST=supabase/release/current.json
+          if [ ! -f "$MANIFEST" ]; then
+            echo "❌ $MANIFEST fehlt — bitte anlegen mit {min_version, changelog}"
+            exit 1
+          fi
+          MIN_VERSION=$(jq -er '.min_version' "$MANIFEST")
+          CHANGELOG=$(jq -er '.changelog' "$MANIFEST")
+          {
+            echo "min_version=$MIN_VERSION"
+            echo "changelog<<EOF_CHANGELOG"
+            echo "$CHANGELOG"
+            echo "EOF_CHANGELOG"
+          } >> $GITHUB_OUTPUT
+          echo "✅ min_version=$MIN_VERSION"
+
       - name: 🚀 GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.version.outputs.version }}
           name: v${{ steps.version.outputs.version }} – Weltenbibliothek
+          body: |
+            ## Weltenbibliothek v${{ steps.version.outputs.version }}
+
+            ### Was ist neu
+            ${{ steps.manifest.outputs.changelog }}
+
+            ### Installation
+            APK herunterladen und auf dem Gerät installieren (Sideloading).
+            Installiert sich direkt über die vorherige Version — kein Deinstallieren nötig
+            (identischer Signing-Key ab v5.34.0).
+
+            OTA-Updates danach automatisch via Shorebird (nur Dart-Änderungen).
           files: build/app/outputs/flutter-apk/${{ steps.version.outputs.apk_name }}
           make_latest: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: 📢 Supabase app_config updaten (In-App-Update-Dialog)
+        # Hebt public.app_config auf die neue Version. Erst NACH erfolgreichem
+        # GitHub-Release — sonst würden User einen 404 beim APK-Download sehen.
+        # Nutzt SUPABASE_SERVICE_ROLE_KEY (umgeht RLS).
+        env:
+          SUPABASE_URL: https://adtviduaftdquvfjpojb.supabase.co
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          VERSION: ${{ steps.version.outputs.version }}
+          MIN_VERSION: ${{ steps.manifest.outputs.min_version }}
+          CHANGELOG: ${{ steps.manifest.outputs.changelog }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SUPABASE_SERVICE_ROLE_KEY:-}" ]; then
+            echo "❌ SUPABASE_SERVICE_ROLE_KEY Secret fehlt — app_config wurde NICHT aktualisiert"
+            exit 1
+          fi
+
+          APK_URL="https://github.com/manuelbrandner85/Weltenbibliothekapp/releases/download/v${VERSION}/weltenbibliothek-v${VERSION}-universal.apk"
+          NOTES_URL="https://github.com/manuelbrandner85/Weltenbibliothekapp/releases/tag/v${VERSION}"
+
+          BODY=$(jq -n \
+            --arg lv "$VERSION" \
+            --arg mv "$MIN_VERSION" \
+            --arg url "$APK_URL" \
+            --arg cl "$CHANGELOG" \
+            --arg notes "$NOTES_URL" \
+            '{latest_version:$lv, min_version:$mv, apk_download_url:$url, changelog:$cl, release_notes_url:$notes}')
+
+          echo "→ PATCH app_config: latest=$VERSION min=$MIN_VERSION"
+          HTTP_CODE=$(curl -sS -o /tmp/resp.json -w "%{http_code}" \
+            -X PATCH "${SUPABASE_URL}/rest/v1/app_config?platform=eq.android" \
+            -H "apikey: ${SUPABASE_SERVICE_ROLE_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: return=representation" \
+            -d "$BODY")
+
+          if [ "$HTTP_CODE" != "200" ] && [ "$HTTP_CODE" != "204" ]; then
+            echo "❌ Supabase-Update fehlgeschlagen (HTTP $HTTP_CODE)"
+            cat /tmp/resp.json
+            exit 1
+          fi
+          echo "✅ app_config aktualisiert — User auf v${MIN_VERSION}+ sehen Update-Dialog"
+          cat /tmp/resp.json | jq '.'

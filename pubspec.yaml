@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 5.29.1+20260404
+version: 5.35.0+20260420
 
 environment:
   sdk: '>=3.5.0 <4.0.0'
@@ -49,6 +49,8 @@ dependencies:
   shared_preferences: 2.5.3
   hive: ^2.2.3
   hive_flutter: 1.1.0
+  sqflite: ^2.3.3+1      # SQLite for offline cache & sync queue (Stage 2b)
+  path: ^1.9.0            # Path joins for sqflite DB path
   share_plus: ^7.2.1  # 🆕 Sharing functionality
   qr_flutter: ^4.1.0  # QR Code generation
   pdf: ^3.11.1  # PDF generation for export
@@ -58,6 +60,9 @@ dependencies:
   xml: ^6.5.0  # RSS Feed parsing
   crypto: ^3.0.3  # Hashing for image consistency
   url_launcher: ^6.3.1  # URL Launcher (Web-kompatibel)
+  shorebird_code_push: ^2.0.5  # 🔔 OTA-Patch-Status (Patch-Ready-Dialog)
+  dio: ^5.7.0                  # 📥 HTTP-Download mit Progress (In-App APK-Download)
+  open_filex: ^4.5.0           # 📲 Android PackageInstaller öffnen (APK installieren)
   cached_network_image: ^3.4.1  # 🆕 Image Caching für bessere Performance
   
   # Sensors (v5.37 - for gyroscope parallax)
@@ -145,6 +150,7 @@ flutter:
 
   # Assets
   assets:
+    - shorebird.yaml  # Shorebird OTA code push config
     - assets/icons/
     - assets/images/
     - assets/sounds/  # ✅ PRODUCTION-READY: Real audio assets

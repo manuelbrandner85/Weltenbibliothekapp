@@ -65,13 +65,22 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
     super.dispose();
   }
 
-  void _loadProfileAndCalculate() {
-    final profile = StorageService().getEnergieProfile();
+  Future<void> _loadProfileAndCalculate() async {
+    // 🛡️ FIX grauer Screen: async-Load wartet, bis die Hive-Box offen ist.
+    // Der sync-Getter konnte auf langsamen Geräten `null` liefern, obwohl
+    // ein Profil vorhanden war → ProfileRequiredWidget erschien fälschlich.
+    EnergieProfile? profile;
+    try {
+      profile = await StorageService().loadEnergieProfile();
+    } catch (e) {
+      debugPrint('⚠️ Numerologie: Profil-Load fehlgeschlagen: $e');
+      profile = null;
+    }
+    if (!mounted) return;
     if (profile != null) {
       setState(() => _profile = profile);
       _calculateAll();
     } else {
-      // Kein Profil vorhanden - zeige Hinweis
       setState(() => _profile = null);
     }
   }

@@ -13,6 +13,7 @@ library;
 
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../config/api_config.dart';
 
@@ -21,6 +22,8 @@ import '../config/api_config.dart';
 // ──────────────────────────────────────────────────────────────
 
 /// Supabase einmalig initialisieren – in main() aufrufen.
+/// Erstellt automatisch eine anonyme Session wenn kein User eingeloggt ist,
+/// damit RLS-Policies und Chat-Funktionen ohne E-Mail-Login funktionieren.
 Future<void> initSupabase() async {
   await Supabase.initialize(
     url: ApiConfig.supabaseUrl,
@@ -29,6 +32,25 @@ Future<void> initSupabase() async {
   );
   if (kDebugMode) {
     debugPrint('✅ [Supabase] Initialisiert: ${ApiConfig.supabaseUrl}');
+  }
+
+  // Automatisch anonyme Auth-Session erstellen wenn kein User eingeloggt.
+  // Voraussetzung: Authentication → Providers → Anonymous Sign-ins im
+  // Supabase-Dashboard aktiviert. Bei Fehler: stiller Fallback (allowAnonymous=true).
+  final client = Supabase.instance.client;
+  if (client.auth.currentUser == null) {
+    try {
+      await client.auth.signInAnonymously();
+      if (kDebugMode) {
+        debugPrint('✅ [Supabase] Anonyme Session erstellt: ${client.auth.currentUser?.id}');
+      }
+    } catch (e) {
+      // Tritt auf wenn Anonymous Sign-ins im Dashboard nicht aktiviert.
+      // App funktioniert trotzdem via allowAnonymous=true in sendMessage.
+      if (kDebugMode) {
+        debugPrint('⚠️ [Supabase] signInAnonymously fehlgeschlagen (Dashboard-Setting?): $e');
+      }
+    }
   }
 }
 
@@ -104,6 +126,26 @@ class SupabaseAuthService {
   Future<void> signOut() async {
     if (kDebugMode) debugPrint('🚪 [Auth] SignOut');
     await supabase.auth.signOut();
+    await _clearLocalData();
+  }
+
+  /// Löscht alle lokalen Auth- und Profil-Caches nach Logout.
+  Future<void> _clearLocalData() async {
+    for (final boxName in [
+      'user_data',
+      'materie_profiles',
+      'energie_profiles',
+      'auth_storage',
+    ]) {
+      try {
+        if (Hive.isBoxOpen(boxName)) {
+          await Hive.box(boxName).clear();
+          if (kDebugMode) debugPrint('🗑️ [Auth] Cleared: $boxName');
+        }
+      } catch (e) {
+        if (kDebugMode) debugPrint('⚠️ [Auth] Clear $boxName failed: $e');
+      }
+    }
   }
 
   // ── PASSWORT RESET ────────────────────────────────────────
@@ -395,37 +437,152 @@ class SupabaseChatService {
     return List<Map<String, dynamic>>.from(response.reversed.toList());
   }
 
+  /// Pagination: Nachrichten älter als [before] (ISO-String) laden.
+  /// Rückgabe in aufsteigender Reihenfolge (ältere zuerst).
+  Future<List<Map<String, dynamic>>> getMessagesBefore(
+    String roomId, {
+    required String before,
+    int limit = 50,
+  }) async {
+    final response = await supabase
+        .from('chat_messages')
+        .select()
+        .eq('room_id', roomId)
+        .eq('is_deleted', false)
+        .lt('created_at', before)
+        .order('created_at', ascending: false)
+        .limit(limit);
+    return List<Map<String, dynamic>>.from(response.reversed.toList());
+  }
+
   /// Nachricht senden.
+  /// Anonyme Posts sind erlaubt (user_id bleibt null) — konsistent mit
+  /// vorherigem Worker-Verhalten. RLS erlaubt anon-INSERT (v18 migration).
+  ///
+  /// Reply-Support (v36): Wenn [replyToId] gesetzt ist, wird ein Telegram-Style
+  /// Quote-Snapshot mitgespeichert. Der Snapshot (content/sender_name) bleibt
+  /// sichtbar auch wenn die Original-Nachricht später gelöscht wird.
   Future<Map<String, dynamic>> sendMessage({
     required String roomId,
     required String message,
+    String? username,
+    String? avatarUrl,
+    String? messageType,
+    bool allowAnonymous = true,
+    String? replyToId,
+    String? replyToContent,
+    String? replyToSenderName,
   }) async {
     final user = supabase.auth.currentUser;
-    if (user == null) throw Exception('Nicht eingeloggt');
+    if (user == null && !allowAnonymous) {
+      throw Exception('Nicht eingeloggt – bitte anmelden, um Nachrichten zu senden.');
+    }
 
-    final profile = await SupabaseProfileService.instance.getMyProfile();
-    final username = profile?['username'] ?? 'Anonym';
-    final avatarUrl = profile?['avatar_url'];
+    // Username/Avatar: explizit gesetzt > Profil > Email-Prefix > 'Anonym'
+    String effectiveUsername =
+        (username != null && username.trim().isNotEmpty) ? username.trim() : '';
+    String? effectiveAvatar = avatarUrl;
+    if (user != null && effectiveUsername.isEmpty) {
+      try {
+        final profile = await SupabaseProfileService.instance.getMyProfile();
+        final profileUsername = (profile?['username'] as String?)?.trim();
+        if (profileUsername != null && profileUsername.isNotEmpty) {
+          effectiveUsername = profileUsername;
+        } else if (user.email != null && user.email!.isNotEmpty) {
+          effectiveUsername = user.email!.split('@').first;
+        }
+        effectiveAvatar ??= profile?['avatar_url'] as String?;
+      } catch (_) {
+        // Profil-Fetch fehlgeschlagen – fallen unten auf 'Anonym' zurück.
+      }
+    }
+    if (effectiveUsername.isEmpty) effectiveUsername = 'Anonym';
 
-    final response = await supabase.from('chat_messages').insert({
+    final insertData = <String, dynamic>{
       'room_id': roomId,
-      'user_id': user.id,
-      'username': username,
-      'avatar_url': avatarUrl,
-      'content': message,  // DB-Spalte heißt 'content' (NOT NULL)
-      'message': message,  // Extra-Spalte für Kompatibilität
-    }).select().single();
+      'username': effectiveUsername,
+      'content': message, // NOT NULL
+      'message': message, // Kompat-Spalte
+    };
+    if (user != null) insertData['user_id'] = user.id;
+    if (effectiveAvatar != null) insertData['avatar_url'] = effectiveAvatar;
+    if (messageType != null) insertData['message_type'] = messageType;
+    if (replyToId != null && replyToId.isNotEmpty) {
+      insertData['reply_to_id'] = replyToId;
+      // Snapshot auf max. 280 Zeichen kürzen (Telegram-Style Quote).
+      final snippet = (replyToContent ?? '').trim();
+      insertData['reply_to_content'] =
+          snippet.length > 280 ? '${snippet.substring(0, 280)}…' : snippet;
+      insertData['reply_to_sender_name'] =
+          (replyToSenderName ?? '').trim().isEmpty ? null : replyToSenderName!.trim();
+    }
+
+    final response = await supabase
+        .from('chat_messages')
+        .insert(insertData)
+        .select()
+        .single();
 
     return response;
   }
 
+  /// Eigene Nachricht bearbeiten (RLS prüft Ownership).
+  /// [isAdmin] = true: versucht auch fremde Nachrichten zu bearbeiten (admin-policy).
+  Future<Map<String, dynamic>> editMessage({
+    required String messageId,
+    required String newMessage,
+    bool isAdmin = false,
+  }) async {
+    final user = supabase.auth.currentUser;
+    if (user == null) {
+      throw Exception('Nicht eingeloggt – Bearbeiten nicht möglich.');
+    }
+
+    final updateData = <String, dynamic>{
+      'message': newMessage,
+      'content': newMessage,
+      'edited_at': DateTime.now().toUtc().toIso8601String(),
+    };
+
+    final query = supabase.from('chat_messages').update(updateData);
+    // Ownership-Check via RLS – kein .eq('user_id', user.id) nötig wenn Policy sauber.
+    // Für Admin: RLS-Policy für Admins sollte greifen.
+    final result = await query.eq('id', messageId).select().single();
+    return result;
+  }
+
+  /// Nachricht löschen — Hard-Delete (v36).
+  /// RLS-Policy "User kann eigene Nachrichten löschen" greift. Admin-Löschung
+  /// läuft über Worker-Endpoint mit SERVICE_ROLE (nicht hier).
+  Future<void> deleteMessage({
+    required String messageId,
+    bool isAdmin = false,
+  }) async {
+    final user = supabase.auth.currentUser;
+    if (user == null) {
+      throw Exception('Nicht eingeloggt – Löschen nicht möglich.');
+    }
+
+    await supabase.from('chat_messages').delete().eq('id', messageId);
+  }
+
   /// Echtzeit-Subscription auf Chat-Nachrichten.
-  /// Ruft [onMessage] bei jeder neuen Nachricht auf.
+  /// - [onMessage]: neue INSERT-Nachricht
+  /// - [onUpdate]: bearbeitete Nachricht (edit)
+  /// - [onDelete]: hart gelöschte Nachricht (nur `id` im payload enthalten)
   RealtimeChannel subscribeToRoom(
     String roomId, {
     required void Function(Map<String, dynamic>) onMessage,
+    void Function(Map<String, dynamic>)? onUpdate,
+    void Function(String messageId)? onDelete,
   }) {
     _activeChannel?.unsubscribe();
+
+    final filter = PostgresChangeFilter(
+      type: PostgresChangeFilterType.eq,
+      column: 'room_id',
+      value: roomId,
+    );
 
     _activeChannel = supabase
         .channel('chat_room_$roomId')
@@ -433,16 +590,36 @@ class SupabaseChatService {
           event: PostgresChangeEvent.insert,
           schema: 'public',
           table: 'chat_messages',
-          filter: PostgresChangeFilter(
-            type: PostgresChangeFilterType.eq,
-            column: 'room_id',
-            value: roomId,
-          ),
+          filter: filter,
           callback: (payload) {
-            if (kDebugMode) {
-              debugPrint('💬 [Chat] Neue Nachricht in $roomId');
-            }
+            if (kDebugMode) debugPrint('💬 [Chat] INSERT in $roomId');
             onMessage(Map<String, dynamic>.from(payload.newRecord));
+          },
+        )
+        .onPostgresChanges(
+          event: PostgresChangeEvent.update,
+          schema: 'public',
+          table: 'chat_messages',
+          filter: filter,
+          callback: (payload) {
+            if (kDebugMode) debugPrint('✏️ [Chat] UPDATE in $roomId');
+            onUpdate?.call(Map<String, dynamic>.from(payload.newRecord));
+          },
+        )
+        .onPostgresChanges(
+          // DELETE-Filter auf room_id geht nicht zuverlässig (oldRecord ist
+          // bei REPLICA IDENTITY FULL komplett, sonst nur PK). Daher ohne
+          // Filter und im Callback auf room_id prüfen.
+          event: PostgresChangeEvent.delete,
+          schema: 'public',
+          table: 'chat_messages',
+          callback: (payload) {
+            final old = Map<String, dynamic>.from(payload.oldRecord);
+            if (old['room_id'] != null && old['room_id'] != roomId) return;
+            final id = old['id']?.toString();
+            if (id == null || id.isEmpty) return;
+            if (kDebugMode) debugPrint('🗑️ [Chat] DELETE $id in $roomId');
+            onDelete?.call(id);
           },
         )
         .subscribe();

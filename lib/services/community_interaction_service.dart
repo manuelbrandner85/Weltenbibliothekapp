@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'dart:async';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:http/http.dart' as http;
-import 'package:hive_flutter/hive_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Community Interaction Service
@@ -12,23 +12,19 @@ class CommunityInteractionService {
   // Backend URLs
   static const String _backendUrl = ApiConfig.workerUrl;
   
-  // Hive Boxes
-  static const String _likesBox = 'user_likes';
-  static const String _commentsBox = 'post_comments';
-  static const String _likeCacheBox = 'like_cache';
-  
+  // SharedPreferences key prefixes
+  static const String _pfxLike     = 'ci_like_';       // ci_like_{userId}_{postId} → bool
+  static const String _pfxCount    = 'ci_count_';      // ci_count_{postId} → int
+  static const String _pfxComments = 'ci_comments_';   // ci_comments_{postId} → JSON
+
   // Singleton
-  static final CommunityInteractionService _instance = 
+  static final CommunityInteractionService _instance =
       CommunityInteractionService._internal();
   factory CommunityInteractionService() => _instance;
   CommunityInteractionService._internal();
-  
-  /// Initialize Hive boxes
-  Future<void> init() async {
-    await Hive.openBox(_likesBox);
-    await Hive.openBox(_commentsBox);
-    await Hive.openBox(_likeCacheBox);
-  }
+
+  /// No-op – SharedPreferences needs no explicit init
+  Future<void> init() async {}
   
   // ============================================
   // LIKE SYSTEM
@@ -39,63 +35,44 @@ class CommunityInteractionService {
     required String postId,
     required String userId,
   }) async {
-    final box = Hive.box(_likesBox);
-    final likeKey = '${userId}_$postId';
-    final isLiked = box.get(likeKey, defaultValue: false);
-    
+    final prefs = await SharedPreferences.getInstance();
+    final likeKey = '$_pfxLike${userId}_$postId';
+    final isLiked = prefs.getBool(likeKey) ?? false;
+
     try {
-      // Toggle local state
-      await box.put(likeKey, !isLiked);
-      
-      // Sync with backend
+      await prefs.setBool(likeKey, !isLiked);
+
       final endpoint = isLiked ? 'unlike' : 'like';
       final response = await http.post(
         Uri.parse('$_backendUrl/api/community/$endpoint'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'post_id': postId,
-          'user_id': userId,
-        }),
+        body: jsonEncode({'post_id': postId, 'user_id': userId}),
       ).timeout(
         const Duration(seconds: 10),
         onTimeout: () => throw TimeoutException('Like toggle timeout'),
       );
-      
+
       if (response.statusCode == 200) {
-        if (kDebugMode) {
-          debugPrint('✅ Like toggled: $postId (${!isLiked})');
-        }
-        
-        // Update like count cache
+        if (kDebugMode) debugPrint('✅ Like toggled: $postId (${!isLiked})');
         await _updateLikeCountCache(postId, !isLiked);
-        
         return !isLiked;
       } else {
-        // Rollback on failure
-        await box.put(likeKey, isLiked);
-        if (kDebugMode) {
-          debugPrint('⚠️ Like toggle failed: ${response.statusCode}');
-        }
+        await prefs.setBool(likeKey, isLiked);
+        if (kDebugMode) debugPrint('⚠️ Like toggle failed: ${response.statusCode}');
         return isLiked;
       }
     } catch (e) {
-      // Rollback on error
-      await box.put(likeKey, isLiked);
-      if (kDebugMode) {
-        debugPrint('❌ Like error: $e');
-      }
+      await prefs.setBool(likeKey, isLiked);
+      if (kDebugMode) debugPrint('❌ Like error: $e');
       return isLiked;
     }
   }
   
   /// Check if user has liked a post (sync, from local cache)
-  bool isLiked({
-    required String postId,
-    required String userId,
-  }) {
-    final box = Hive.box(_likesBox);
-    final likeKey = '${userId}_$postId';
-    return box.get(likeKey, defaultValue: false);
+  bool isLiked({required String postId, required String userId}) {
+    // Synchronous read – not available from SharedPreferences; always false until async load.
+    // Callers should use fetchIsLiked() for accurate state.
+    return false;
   }
 
   /// Check if user has liked a post (async, from Supabase with cache fallback)
@@ -104,10 +81,8 @@ class CommunityInteractionService {
     required String userId,
   }) async {
     if (userId.isEmpty || postId.isEmpty) return false;
-    
-    final box = Hive.box(_likesBox);
-    final likeKey = '${userId}_$postId';
-    
+    final prefs = await SharedPreferences.getInstance();
+    final likeKey = '$_pfxLike${userId}_$postId';
     try {
       final supabase = Supabase.instance.client;
       final result = await supabase
@@ -117,15 +92,12 @@ class CommunityInteractionService {
           .eq('user_id', userId)
           .limit(1)
           .timeout(const Duration(seconds: 5));
-      
       final liked = (result as List).isNotEmpty;
-      // Update local cache
-      await box.put(likeKey, liked);
+      await prefs.setBool(likeKey, liked);
       return liked;
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ fetchIsLiked fallback to cache: $e');
-      // Fallback: Hive-Cache
-      return box.get(likeKey, defaultValue: false);
+      return prefs.getBool(likeKey) ?? false;
     }
   }
 
@@ -135,35 +107,22 @@ class CommunityInteractionService {
     required String userId,
   }) async {
     if (userId.isEmpty || postId.isEmpty) return false;
-    
-    final box = Hive.box(_likesBox);
-    final likeKey = '${userId}_$postId';
-    final currentlyLiked = box.get(likeKey, defaultValue: false) as bool;
-    
-    // Optimistic update
-    await box.put(likeKey, !currentlyLiked);
-    
+    final prefs = await SharedPreferences.getInstance();
+    final likeKey = '$_pfxLike${userId}_$postId';
+    final currentlyLiked = prefs.getBool(likeKey) ?? false;
+    await prefs.setBool(likeKey, !currentlyLiked);
     try {
       final supabase = Supabase.instance.client;
       if (currentlyLiked) {
-        // Unlike: delete from likes
-        await supabase
-            .from('likes')
-            .delete()
-            .eq('article_id', postId)
-            .eq('user_id', userId);
+        await supabase.from('likes').delete()
+            .eq('article_id', postId).eq('user_id', userId);
       } else {
-        // Like: insert into likes
-        await supabase.from('likes').insert({
-          'article_id': postId,
-          'user_id': userId,
-        });
+        await supabase.from('likes').insert({'article_id': postId, 'user_id': userId});
       }
       return !currentlyLiked;
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ toggleLikeSupabase error: $e');
-      // Rollback optimistic update
-      await box.put(likeKey, currentlyLiked);
+      await prefs.setBool(likeKey, currentlyLiked);
       return currentlyLiked;
     }
   }
@@ -171,57 +130,48 @@ class CommunityInteractionService {
   /// Get like count for a post (Supabase preferred, then cache)
   Future<int> getLikeCount(String postId) async {
     if (postId.isEmpty) return 0;
-    final cacheBox = Hive.box(_likeCacheBox);
+    final prefs = await SharedPreferences.getInstance();
+    final countKey = '$_pfxCount$postId';
 
-    // Try Supabase first (real data)
     try {
       final supabase = Supabase.instance.client;
       final result = await supabase
-          .from('likes')
-          .select('id')
-          .eq('article_id', postId)
+          .from('likes').select('id').eq('article_id', postId)
           .timeout(const Duration(seconds: 5));
       final count = (result as List).length;
-      await cacheBox.put(postId, count);
+      await prefs.setInt(countKey, count);
       return count;
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ getLikeCount Supabase failed, trying cache: $e');
     }
 
-    // Check cache as fallback
-    final cached = cacheBox.get(postId);
-    if (cached != null) return cached as int;
+    final cached = prefs.getInt(countKey);
+    if (cached != null) return cached;
 
-    // Last resort: Cloudflare D1 backend
     try {
       final response = await http.get(
         Uri.parse('$_backendUrl/api/community/likes/$postId'),
-      ).timeout(
-        const Duration(seconds: 5),
-        onTimeout: () => throw TimeoutException('Get like count timeout'),
-      );
-
+      ).timeout(const Duration(seconds: 5),
+          onTimeout: () => throw TimeoutException('Get like count timeout'));
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final count = data['count'] ?? 0;
-        await cacheBox.put(postId, count);
+        final count = data['count'] as int? ?? 0;
+        await prefs.setInt(countKey, count);
         return count;
       }
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('⚠️ Failed to fetch like count: $e');
-      }
+      if (kDebugMode) debugPrint('⚠️ Failed to fetch like count: $e');
     }
 
     return 0;
   }
-  
-  /// Update like count cache
+
   Future<void> _updateLikeCountCache(String postId, bool increment) async {
-    final cacheBox = Hive.box(_likeCacheBox);
-    final current = cacheBox.get(postId, defaultValue: 0) as int;
+    final prefs = await SharedPreferences.getInstance();
+    final countKey = '$_pfxCount$postId';
+    final current = prefs.getInt(countKey) ?? 0;
     final newCount = increment ? current + 1 : current - 1;
-    await cacheBox.put(postId, newCount > 0 ? newCount : 0);
+    await prefs.setInt(countKey, newCount > 0 ? newCount : 0);
   }
   
   // ============================================
@@ -295,35 +245,30 @@ class CommunityInteractionService {
             ?.map((c) => c as Map<String, dynamic>)
             .toList() ?? [];
         
-        // Cache comments
-        final box = Hive.box(_commentsBox);
-        await box.put(postId, comments);
-        
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('$_pfxComments$postId', jsonEncode(comments));
         return comments;
       }
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('⚠️ Failed to fetch comments: $e');
-      }
+      if (kDebugMode) debugPrint('⚠️ Failed to fetch comments: $e');
     }
-    
-    // Return cached comments on failure
-    final box = Hive.box(_commentsBox);
-    final cached = box.get(postId);
-    if (cached != null) {
-      return (cached as List).map((c) => c as Map<String, dynamic>).toList();
+
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('$_pfxComments$postId');
+    if (raw != null) {
+      return (jsonDecode(raw) as List).cast<Map<String, dynamic>>();
     }
-    
     return [];
   }
-  
-  /// Cache comment locally
+
   Future<void> _cacheComment(String postId, Map<String, dynamic> comment) async {
-    final box = Hive.box(_commentsBox);
-    final existing = box.get(postId, defaultValue: <Map<String, dynamic>>[]);
-    final comments = (existing as List).map((c) => c as Map<String, dynamic>).toList();
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString('$_pfxComments$postId');
+    final comments = raw != null
+        ? (jsonDecode(raw) as List).cast<Map<String, dynamic>>()
+        : <Map<String, dynamic>>[];
     comments.add(comment);
-    await box.put(postId, comments);
+    await prefs.setString('$_pfxComments$postId', jsonEncode(comments));
   }
   
   /// Get comment count for a post
@@ -373,50 +318,33 @@ class CommunityInteractionService {
   
   /// Preload likes for multiple posts (batch optimization)
   Future<void> preloadLikes(List<String> postIds, String userId) async {
-    final box = Hive.box(_likesBox);
-    final cacheBox = Hive.box(_likeCacheBox);
-    
     try {
       final response = await http.post(
         Uri.parse('$_backendUrl/api/community/likes/batch'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'post_ids': postIds,
-          'user_id': userId,
-        }),
-      ).timeout(
-        const Duration(seconds: 10),
-        onTimeout: () => throw TimeoutException('Preload likes timeout'),
-      );
-      
+        body: jsonEncode({'post_ids': postIds, 'user_id': userId}),
+      ).timeout(const Duration(seconds: 10),
+          onTimeout: () => throw TimeoutException('Preload likes timeout'));
+
       if (response.statusCode == 200) {
+        final prefs = await SharedPreferences.getInstance();
         final data = jsonDecode(response.body);
-        final likes = data['likes'] as Map<String, dynamic>?;
+        final likes  = data['likes']  as Map<String, dynamic>?;
         final counts = data['counts'] as Map<String, dynamic>?;
-        
-        // Cache likes
         if (likes != null) {
-          for (final entry in likes.entries) {
-            final likeKey = '${userId}_${entry.key}';
-            await box.put(likeKey, entry.value);
+          for (final e in likes.entries) {
+            await prefs.setBool('$_pfxLike${userId}_${e.key}', e.value as bool);
           }
         }
-        
-        // Cache counts
         if (counts != null) {
-          for (final entry in counts.entries) {
-            await cacheBox.put(entry.key, entry.value);
+          for (final e in counts.entries) {
+            await prefs.setInt('$_pfxCount${e.key}', e.value as int);
           }
         }
-        
-        if (kDebugMode) {
-          debugPrint('✅ Preloaded ${postIds.length} likes');
-        }
+        if (kDebugMode) debugPrint('✅ Preloaded ${postIds.length} likes');
       }
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('⚠️ Batch preload failed: $e');
-      }
+      if (kDebugMode) debugPrint('⚠️ Batch preload failed: $e');
     }
   }
   
@@ -426,13 +354,15 @@ class CommunityInteractionService {
   
   /// Clear all caches (for logout/reset)
   Future<void> clearCache() async {
-    await Hive.box(_likesBox).clear();
-    await Hive.box(_commentsBox).clear();
-    await Hive.box(_likeCacheBox).clear();
-    
-    if (kDebugMode) {
-      debugPrint('✅ Community cache cleared');
+    final prefs = await SharedPreferences.getInstance();
+    for (final key in prefs.getKeys().toList()) {
+      if (key.startsWith(_pfxLike) ||
+          key.startsWith(_pfxCount) ||
+          key.startsWith(_pfxComments)) {
+        await prefs.remove(key);
+      }
     }
+    if (kDebugMode) debugPrint('✅ Community cache cleared');
   }
   
   /// Get user statistics

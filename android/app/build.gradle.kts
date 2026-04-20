@@ -9,6 +9,17 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+// 🔐 Release-Keystore laden (persistenter Key für APK-Over-the-Top-Updates).
+// Quelle: android/key.properties → wird in CI aus GitHub-Secrets erzeugt.
+// Ohne key.properties (lokale Dev-Umgebung) bleibt der Release-Build debug-signiert.
+val keystorePropsFile = rootProject.file("key.properties")
+val keystoreProps = Properties().apply {
+    if (keystorePropsFile.exists()) {
+        load(FileInputStream(keystorePropsFile))
+    }
+}
+val hasReleaseKeystore = keystoreProps.getProperty("storeFile")?.isNotBlank() == true
+
 android {
     namespace = "com.myapp.mobile"
     compileSdk = flutter.compileSdkVersion
@@ -31,26 +42,43 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.myapp.mobile"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
+        // Android 5.0+ (API 21) – deckt >99% aller aktiven Android-Geräte ab
+        minSdk = 21
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
-        
-        // 🔧 OPTIMIZATION: Only build for ARM64 (modern devices)
+
+        // ARM64 (moderne Geräte) + ARM32 (ältere/32-bit Geräte)
+        // x86_64 wird weggelassen – Shorebird unterstützt es nicht im Prod-Release
         ndk {
-            abiFilters.addAll(listOf("arm64-v8a"))
+            abiFilters.addAll(listOf("arm64-v8a", "armeabi-v7a"))
+        }
+    }
+
+    signingConfigs {
+        // 🔐 Persistenter Release-Key (nur wenn key.properties vorhanden).
+        // Damit sind alle zukünftigen APKs mit dem gleichen Key signiert →
+        // User können Updates ohne Deinstallation installieren.
+        if (hasReleaseKeystore) {
+            create("release") {
+                storeFile = rootProject.file(keystoreProps.getProperty("storeFile"))
+                storePassword = keystoreProps.getProperty("storePassword")
+                keyAlias = keystoreProps.getProperty("keyAlias")
+                keyPassword = keystoreProps.getProperty("keyPassword")
+            }
         }
     }
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = if (hasReleaseKeystore) {
+                signingConfigs.getByName("release")
+            } else {
+                // Fallback: Debug-Key (nur Dev / lokaler `flutter run --release`).
+                // CI setzt IMMER key.properties aus den Secrets.
+                signingConfigs.getByName("debug")
+            }
             isMinifyEnabled = true // Enable code shrinking
             isShrinkResources = true // Enable resource shrinking
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
