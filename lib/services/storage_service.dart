@@ -75,6 +75,15 @@ class StorageService {
     if (kDebugMode) debugPrint('✅ Storage: Bereit (Profile via SharedPreferences, Daten via SQLite)');
   }
 
+  /// Hive-kompatibler Box-Shim (Hive→sqflite Migration).
+  /// Legacy-Caller (auto_save_manager, gematria_calculator, create_post_dialog)
+  /// erwarten `StorageService().getBox(name)` mit Hive-Box-API (put/get/values/...).
+  /// Siehe BoxShim in sqlite_storage_service.dart.
+  Future<BoxShim> getBox(String boxName) async => BoxShim(boxName);
+
+  /// Synchrone Variante für Caller die keinen await nutzen können.
+  BoxShim getBoxSync(String boxName) => BoxShim(boxName);
+
   // ============================================
   // CLOUD-SYNC (Fire-and-forget Supabase-Mirror)
   // ============================================
