@@ -1339,7 +1339,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
                     _buildStoriesBar(),
                     // 📌 PINNED MESSAGE BANNER
                     SizedBox(
-                      height: 44,
+                      height: 36,
                       child: PinnedMessageBanner(
                         room: _selectedRoom,
                         onRefresh: () {
@@ -1523,7 +1523,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
     return AnimatedBuilder(
       animation: _headerAuraCtrl,
       builder: (_, __) => Container(
-        height: 56,
+        height: 46,
         decoration: BoxDecoration(
           color: const Color(0xFF060A14),
           border: Border(
@@ -1534,7 +1534,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
         ),
         child: ListView(
           scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           children: _materieRooms.entries.map((entry) {
             final isSelected = _selectedRoom == entry.key;
             final roomData = entry.value;
@@ -2891,37 +2891,57 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
         ],
       ),
     );
-    
+
     if (confirm == true) {
       final msgId = msg['message_id'] ?? msg['id'] ?? '';
 
-      // ✅ OPTIMISTIC UPDATE: Sofort lokal löschen
+      // Backup für Rollback
+      final backupMsg = Map<String, dynamic>.from(msg);
+      final backupIndex = _messages.indexWhere((m) => (m['message_id'] ?? m['id']) == msgId);
+
+      // Optimistic: sofort lokal entfernen
       if (mounted) {
         setState(() {
           _messages.removeWhere((m) => (m['message_id'] ?? m['id']) == msgId);
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✅ Nachricht gelöscht'),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
-          ),
-        );
       }
 
-      // Server-Update im Hintergrund
-      _api.deleteChatMessage(
-        messageId: msgId,
-        roomId: _fullRoomId,
-        realm: 'materie',
-        userId: _userId,
-        username: _username,
-      ).then((_) {
-        if (kDebugMode) debugPrint('✅ Delete erfolgreich gespeichert');
-      }).catchError((e) {
-        if (kDebugMode) debugPrint('⚠️ Delete server error (optimistic delete bleibt): $e');
-        // Fehler ignorieren – Nachricht bleibt lokal gelöscht
-      });
+      try {
+        await _api.deleteChatMessage(
+          messageId: msgId,
+          roomId: _fullRoomId,
+          realm: 'materie',
+          userId: _userId,
+          username: _username,
+        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('✅ Nachricht gelöscht'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      } catch (e) {
+        // Rollback: Nachricht wiederherstellen
+        if (mounted) {
+          setState(() {
+            if (backupIndex >= 0 && backupIndex <= _messages.length) {
+              _messages.insert(backupIndex, backupMsg);
+            } else {
+              _messages.add(backupMsg);
+            }
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('❌ Löschen fehlgeschlagen. Bitte erneut versuchen.'),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+      }
     }
   }
   
@@ -3819,24 +3839,24 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
         final members = PresenceService.instance.members;
         if (members.isEmpty) return const SizedBox.shrink();
         return Container(
-          height: 72,
+          height: 52,
           color: const Color(0xFF040810),
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             itemCount: members.length,
             itemBuilder: (_, i) {
               final m = members[i];
               final isMe = m.userId == _userId;
               return Padding(
-                padding: const EdgeInsets.only(right: 12),
+                padding: const EdgeInsets.only(right: 10),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     AnimatedBuilder(
                       animation: _headerAuraCtrl,
                       builder: (_, __) => Container(
-                        width: 42, height: 42,
+                        width: 32, height: 32,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           gradient: RadialGradient(colors: [
@@ -3845,24 +3865,24 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
                           ]),
                           border: Border.all(
                             color: const Color(0xFF2979FF).withValues(alpha: 0.5 + _headerAuraCtrl.value * 0.4),
-                            width: isMe ? 2.5 : 1.5,
+                            width: isMe ? 2.0 : 1.5,
                           ),
                           boxShadow: [BoxShadow(
                             color: const Color(0xFF2979FF).withValues(alpha: 0.3 + _headerAuraCtrl.value * 0.2),
-                            blurRadius: 8,
+                            blurRadius: 6,
                           )],
                         ),
                         child: Center(
-                          child: Text(m.avatar.isNotEmpty ? m.avatar : '👤', style: const TextStyle(fontSize: 20)),
+                          child: Text(m.avatar.isNotEmpty ? m.avatar : '👤', style: const TextStyle(fontSize: 16)),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 1),
                     Text(
                       isMe ? 'Du' : m.username.length > 6 ? '${m.username.substring(0, 5)}…' : m.username,
                       style: TextStyle(
                         color: isMe ? const Color(0xFF2979FF) : Colors.grey[400],
-                        fontSize: 9,
+                        fontSize: 8,
                         fontWeight: isMe ? FontWeight.bold : FontWeight.normal,
                       ),
                     ),
