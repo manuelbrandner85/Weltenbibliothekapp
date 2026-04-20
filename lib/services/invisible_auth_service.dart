@@ -35,9 +35,6 @@ class InvisibleAuthService {
       () async {
         final prefs = await SharedPreferences.getInstance();
 
-        // One-time migration: falls alte Hive-Daten vorhanden
-        await _migrateFromHive(prefs);
-
         _userId    = prefs.getString(_kUserId);
         _authToken = prefs.getString(_kAuthToken);
         _deviceId  = prefs.getString(_kDeviceId);
@@ -54,37 +51,6 @@ class InvisibleAuthService {
       operationName: 'InvisibleAuth.initialize',
       context: {'backendUrl': _backendUrl},
     );
-  }
-
-  /// One-time: Hive auth_storage → SharedPreferences
-  Future<void> _migrateFromHive(SharedPreferences prefs) async {
-    if (prefs.getString(_kUserId) != null) return; // schon migriert
-    try {
-      // ignore: depend_on_referenced_packages
-      // Lazy import only if box exists to avoid hard Hive dep at runtime
-      // We dynamically try; if Hive is not available it just throws → catch
-      // ignore: avoid_dynamic_calls
-      final dynamic hive = await _tryOpenHiveBox('auth_storage');
-      if (hive != null) {
-        final uid   = hive.get('user_id') as String?;
-        final token = hive.get('auth_token') as String?;
-        final dev   = hive.get('device_id') as String?;
-        if (uid != null)   await prefs.setString(_kUserId, uid);
-        if (token != null) await prefs.setString(_kAuthToken, token);
-        if (dev != null)   await prefs.setString(_kDeviceId, dev);
-        if (kDebugMode) debugPrint('🔄 [Auth] Hive → SharedPreferences migriert');
-      }
-    } catch (_) {
-      // Keine alten Daten vorhanden — OK
-    }
-  }
-
-  Future<dynamic> _tryOpenHiveBox(String name) async {
-    try {
-      // ignore: depend_on_referenced_packages
-      final hive = await (throw UnimplementedError()); // Hive nicht mehr importiert
-      return hive;
-    } catch (_) { return null; }
   }
 
   /// Create invisible user (no UI, automatic)

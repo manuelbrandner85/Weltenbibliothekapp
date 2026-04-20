@@ -182,4 +182,45 @@ class BookmarkService {
     _bookmarks.clear();
     await _persist();
   }
+
+  /// Alias für removeBookmark (UI-kompatibel)
+  Future<bool> deleteBookmark(String id) => removeBookmark(id);
+
+  /// Export aller Bookmarks als JSON-Liste
+  Future<List<Map<String, dynamic>>> exportBookmarks() async {
+    await _ensureLoaded();
+    return _bookmarks.map((b) => b.toJson()).toList();
+  }
+
+  /// Sync-Statistiken (liest aus in-memory Cache).
+  /// Erwartet, dass init() bereits gelaufen ist.
+  Map<String, dynamic> getStatistics() {
+    final now = DateTime.now();
+    final todayStart = DateTime(now.year, now.month, now.day);
+    final weekStart  = todayStart.subtract(Duration(days: todayStart.weekday - 1));
+
+    int recherche = 0, narratives = 0, andere = 0;
+    int addedToday = 0, addedThisWeek = 0;
+
+    for (final b in _bookmarks) {
+      switch (b.category) {
+        case 'Recherche':  recherche++; break;
+        case 'Narratives': narratives++; break;
+        default:           andere++;
+      }
+      if (!b.createdAt.isBefore(todayStart)) addedToday++;
+      if (!b.createdAt.isBefore(weekStart))  addedThisWeek++;
+    }
+
+    return {
+      'total': _bookmarks.length,
+      'byCategory': {
+        'Recherche':  recherche,
+        'Narratives': narratives,
+        'Andere':     andere,
+      },
+      'addedToday':    addedToday,
+      'addedThisWeek': addedThisWeek,
+    };
+  }
 }

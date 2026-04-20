@@ -136,6 +136,14 @@ class UserLevel {
 
   int get xpForNextLevel => level * 100;
 
+  /// Fortschritt 0.0–1.0 bis zum nächsten Level
+  double get progressToNextLevel {
+    final needed = xpForNextLevel;
+    if (needed <= 0) return 0.0;
+    final v = currentXP / needed;
+    return v.clamp(0.0, 1.0);
+  }
+
   Map<String, dynamic> toJson() => {
     'level': level,
     'currentXP': currentXP,
