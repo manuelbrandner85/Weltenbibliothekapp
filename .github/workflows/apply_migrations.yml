@@ -52,8 +52,8 @@ jobs:
               -H "Content-Type: application/json" \
               -d "$body")
 
-            if [ "$HTTP" = "200" ]; then
-              echo "✅ $name OK"
+            if [ "$HTTP" = "200" ] || [ "$HTTP" = "201" ] || [ "$HTTP" = "204" ]; then
+              echo "✅ $name OK (HTTP $HTTP)"
             else
               echo "❌ $name fehlgeschlagen (HTTP $HTTP)"
               cat /tmp/resp.json || true

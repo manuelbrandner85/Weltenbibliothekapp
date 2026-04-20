@@ -468,6 +468,7 @@ chore(deps): Dependencies aktualisiert
 - [x] **apply_migrations.yml**: Eigenständiger CI-Workflow; läuft bei JEDEM Push auf main
       (kein paths-Filter); nutzt Supabase Management REST API mit `SUPABASE_ACCESS_TOKEN`;
       wendet v37 + v38 Migrationen idempotent an.
+      HTTP-Erfolgs-Check akzeptiert 200, 201 und 204 (Supabase gibt je nach Query 201 zurück).
 - [x] **Race-Condition-Fix (sync_app_config)**: GitHub Release Existence Check vor UPSERT;
       `sync_app_config.yml` überspringt UPSERT wenn APK-Release noch nicht existiert.
 - [x] **Auto-Patch bei lib/**-Änderungen**: `shorebird_patch.yml` feuert vollautomatisch bei
@@ -903,11 +904,20 @@ Danach läuft `.github/workflows/build_apk.yml` vollautomatisch:
    können direkt in der App herunterladen + installieren (Android `PackageInstaller`).
    Bei wiederholter Installation-Failure (Signatur-Mismatch): Notausgang nach 2 Versuchen.
 
-**Erforderliche GitHub-Secrets (einmalig einzurichten):**
+**Erforderliche GitHub-Secrets (vollständige Liste — IMMER zuerst prüfen!):**
 - `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`,
   `ANDROID_KEY_PASSWORD` (persistenter Keystore, siehe Regel 1)
-- `SHOREBIRD_TOKEN`
-- `SUPABASE_SERVICE_ROLE_KEY` (Service-Role für PostgREST-PATCH auf `app_config`)
+- `SHOREBIRD_TOKEN` (Shorebird Code Push)
+- `SUPABASE_SERVICE_ROLE_KEY` (PostgREST auf `app_config` + `update_history`, RLS-bypass)
+- `SUPABASE_ACCESS_TOKEN` (Supabase Management REST API — für `apply_migrations.yml`)
+- `GITHUB_TOKEN` (automatisch von GitHub Actions bereitgestellt, kein manuelles Einrichten)
+
+**KI-Standing-Rule — Secrets zuerst prüfen:**
+Bevor ein neuer Workflow oder ein neuer API-Call gebaut wird, IMMER die obige Liste
+durchgehen und sicherstellen dass das benötigte Secret vorhanden ist. Kein Workflow
+darf scheitern weil ein Secret vergessen wurde. Bei fehlendem Secret: dem User sagen
+welches Secret wo (Settings → Secrets → Actions) einzurichten ist — nicht einfach
+`exit 0` als Workaround nutzen.
 
 **Warum `app_config` dennoch automatisch safe ist:**
 Seit v5.34.0 wird jede APK mit demselben persistenten Release-Keystore signiert
