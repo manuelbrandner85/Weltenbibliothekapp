@@ -2702,11 +2702,9 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
         username: _username,
       ).then((_) {
         if (kDebugMode) debugPrint('✅ Edit erfolgreich gespeichert');
-        // Stille Aktualisierung nach Server-Bestätigung
-        if (mounted) _loadMessages(silent: true);
+        // Realtime-UPDATE-Handler synct andere Clients; kein Reload nötig.
       }).catchError((e) {
         if (kDebugMode) debugPrint('⚠️ Edit server error (optimistic update bleibt): $e');
-        // Fehler wird ignoriert – lokale Änderung bleibt bestehen
       });
     }
   }

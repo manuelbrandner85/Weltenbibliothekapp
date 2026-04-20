@@ -159,7 +159,6 @@ class CloudflareApiService {
 
       final supaMessages = (supaResult as List<dynamic>)
           .map((e) => Map<String, dynamic>.from(e as Map))
-          .where((m) => m['is_deleted'] != true)
           .map((m) => {
                 ...m,
                 'id': m['id'],             // ✅ immer vorhanden für Edit/Delete

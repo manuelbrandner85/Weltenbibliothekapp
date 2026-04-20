@@ -239,8 +239,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
     _inputFocusNode.addListener(() {
       if (mounted) {
         setState(() {
-        _isInputFocused = _inputFocusNode.hasFocus; // Update explicit state
-        debugPrint('🎯 [INPUT FOCUS] hasFocus: $_isInputFocused'); // Debug log
+        _isInputFocused = _inputFocusNode.hasFocus;
       });
       }
     });
@@ -1360,19 +1359,13 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
             // Main content
             Builder(
               builder: (context) {
-            // 🔧 FIX 10: Hide headers when input focused OR keyboard visible (using explicit state)
             final keyboardVisible = MediaQuery.of(context).viewInsets.bottom > 0;
-            final hideHeaders = keyboardVisible || _isInputFocused; // Use explicit boolean!
-            
-            debugPrint('🎯 [BUILD] keyboard: $keyboardVisible, focused: $_isInputFocused, hide: $hideHeaders'); // Debug
-            
-            // 🔧 FIX 11: GestureDetector um tap-outside zu detecten
+            final hideHeaders = keyboardVisible || _isInputFocused;
+
             return GestureDetector(
               onTap: () {
-                // Tap outside input → Headers wieder anzeigen
                 if (_isInputFocused) {
-                  debugPrint('👆 [TAP OUTSIDE] Unfocus input → Headers wieder anzeigen');
-                  FocusScope.of(context).unfocus(); // Unfocus TextField
+                  FocusScope.of(context).unfocus();
                   if (mounted) {
                     setState(() {
                     _isInputFocused = false;
@@ -1775,14 +1768,11 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
                     focusNode: _inputFocusNode,
                     // ✅ FIX: TextField immer aktiviert - nur Send-Button während Senden deaktivieren
                     enabled: true,  // ✅ ALWAYS ENABLED
-                    // 🔧 FIX 11: DIREKTER onTap Handler um Headers SOFORT zu verstecken!
                     onTap: () {
-                      debugPrint('🎯 [DIREKTER TAP] Input angeklickt!');
                       if (!_isInputFocused) {
                         if (mounted) {
                           setState(() {
                           _isInputFocused = true;
-                          debugPrint('🔥 [DIREKTER TAP] _isInputFocused = true');
                         });
                         }
                       }
