@@ -53,6 +53,9 @@ class _ReleaseUpdateScreenState extends State<ReleaseUpdateScreen> {
   // Zähler für fehlgeschlagene Installationsversuche — nach 2 aktivieren wir
   // den Notausgang (Signatur-Mismatch-Schutz).
   int _installAttempts = 0;
+  // Auto-Retry bei 404: Countdown-Sekunden bis zum nächsten Versuch.
+  int? _retryCountdown;
+  Timer? _retryTimer;
 
   @override
   void initState() {
@@ -61,6 +64,33 @@ class _ReleaseUpdateScreenState extends State<ReleaseUpdateScreen> {
     if (url != null && url.isNotEmpty) {
       _apkSizeFuture = ApkDownloadService.instance.getApkFileSize(url);
     }
+  }
+
+  @override
+  void dispose() {
+    _retryTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startRetryCountdown() {
+    _retryTimer?.cancel();
+    setState(() => _retryCountdown = 60);
+    _retryTimer = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (!mounted) { t.cancel(); return; }
+      setState(() {
+        _retryCountdown = (_retryCountdown ?? 1) - 1;
+        if (_retryCountdown! <= 0) {
+          t.cancel();
+          _retryCountdown = null;
+          _startDownload();
+        }
+      });
+    });
+  }
+
+  void _cancelRetryCountdown() {
+    _retryTimer?.cancel();
+    setState(() => _retryCountdown = null);
   }
 
   Future<void> _startDownload() async {
@@ -74,6 +104,7 @@ class _ReleaseUpdateScreenState extends State<ReleaseUpdateScreen> {
       return;
     }
 
+    _cancelRetryCountdown();
     setState(() {
       _stage = _UpdateStage.downloading;
       _errorMsg = null;
@@ -97,10 +128,17 @@ class _ReleaseUpdateScreenState extends State<ReleaseUpdateScreen> {
       await _installApk();
     } catch (e) {
       if (!mounted) return;
+      final msg = _friendlyError(e);
       setState(() {
         _stage = _UpdateStage.error;
-        _errorMsg = _friendlyError(e);
+        _errorMsg = msg;
       });
+      // Bei 404: APK noch nicht fertig → automatisch in 60s wiederholen
+      if (e is DioException &&
+          e.type == DioExceptionType.badResponse &&
+          e.response?.statusCode == 404) {
+        _startRetryCountdown();
+      }
     }
   }
 
@@ -549,18 +587,63 @@ class _ReleaseUpdateScreenState extends State<ReleaseUpdateScreen> {
                 height: 1.45),
           ),
           const SizedBox(height: 16),
-          ElevatedButton.icon(
-            onPressed: _startDownload,
-            icon: const Icon(Icons.refresh, size: 18),
-            label: const Text('Erneut versuchen'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: _red,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+          if (_retryCountdown != null) ...[
+            // Countdown: APK noch nicht fertig, automatischer Retry
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      value: _retryCountdown! / 60,
+                      strokeWidth: 2.5,
+                      color: _cyan,
+                      backgroundColor: Colors.white.withValues(alpha: 0.1),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Automatischer Neuversuch in ${_retryCountdown}s…',
+                      style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.8),
+                          fontSize: 13),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      _cancelRetryCountdown();
+                      _startDownload();
+                    },
+                    style: TextButton.styleFrom(
+                        foregroundColor: _cyan,
+                        minimumSize: const Size(0, 32),
+                        padding: const EdgeInsets.symmetric(horizontal: 8)),
+                    child: const Text('Sofort', style: TextStyle(fontSize: 12)),
+                  ),
+                ],
+              ),
             ),
-          ),
+          ] else ...[
+            ElevatedButton.icon(
+              onPressed: _startDownload,
+              icon: const Icon(Icons.refresh, size: 18),
+              label: const Text('Erneut versuchen'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _red,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ],
           if (showEscape) ...[
             const SizedBox(height: 8),
             TextButton(
