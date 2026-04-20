@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../services/cloudflare_api_service.dart';
@@ -174,19 +175,23 @@ class _EnhancedMessageBubbleState extends State<EnhancedMessageBubble> {
 
     return Align(
       alignment: widget.isMyMessage ? Alignment.centerRight : Alignment.centerLeft,
-      child: InkWell(
-        onLongPress: () {
-          debugPrint('🔧 [Mobile Fix] Long press detected on message');
-          _showMessageActions(context);
-        },
-        onTap: () {
-          // Optional: tap to show actions on mobile
-          if (defaultTargetPlatform == TargetPlatform.android ||
-              defaultTargetPlatform == TargetPlatform.iOS) {
-            debugPrint('🔧 [Mobile Fix] Tap detected - showing actions');
+      child: _SwipeToReply(
+        enabled: widget.onReply != null,
+        isMyMessage: widget.isMyMessage,
+        onTriggered: () => widget.onReply?.call(),
+        child: InkWell(
+          onLongPress: () {
+            debugPrint('🔧 [Mobile Fix] Long press detected on message');
             _showMessageActions(context);
-          }
-        },
+          },
+          onTap: () {
+            // Optional: tap to show actions on mobile
+            if (defaultTargetPlatform == TargetPlatform.android ||
+                defaultTargetPlatform == TargetPlatform.iOS) {
+              debugPrint('🔧 [Mobile Fix] Tap detected - showing actions');
+              _showMessageActions(context);
+            }
+          },
         borderRadius: BorderRadius.circular(12),
         child: Container(
           margin: const EdgeInsets.only(bottom: 12),
@@ -406,9 +411,10 @@ class _EnhancedMessageBubbleState extends State<EnhancedMessageBubble> {
           ),
         ),
       ),
+      ),
     );
   }
-  
+
   /// Telegram-Style Reply-Preview: linker farbiger Balken + Sendername (bold)
   /// + gekürzter Zitatinhalt. Snapshot-Felder aus der DB, daher bleibt die
   /// Quote auch sichtbar wenn die Original-Nachricht gelöscht wurde.
@@ -717,5 +723,114 @@ class _EnhancedMessageBubbleState extends State<EnhancedMessageBubble> {
     } catch (e) {
       return '';
     }
+  }
+}
+
+/// Telegram-Style Swipe-to-Reply wrapper.
+/// Swipes the child horizontally (left for own messages, right for others) and
+/// triggers [onTriggered] once the drag exceeds [_kTriggerDistance].
+class _SwipeToReply extends StatefulWidget {
+  final Widget child;
+  final bool enabled;
+  final bool isMyMessage;
+  final VoidCallback onTriggered;
+
+  const _SwipeToReply({
+    required this.child,
+    required this.enabled,
+    required this.isMyMessage,
+    required this.onTriggered,
+  });
+
+  @override
+  State<_SwipeToReply> createState() => _SwipeToReplyState();
+}
+
+class _SwipeToReplyState extends State<_SwipeToReply>
+    with SingleTickerProviderStateMixin {
+  static const double _kTriggerDistance = 60.0;
+  static const double _kMaxDistance = 90.0;
+
+  double _dragOffset = 0.0;
+  bool _triggered = false;
+  late final AnimationController _reset;
+
+  @override
+  void initState() {
+    super.initState();
+    _reset = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 180),
+    )..addListener(() {
+        setState(() {
+          _dragOffset = _dragOffset * (1 - _reset.value);
+        });
+      });
+  }
+
+  @override
+  void dispose() {
+    _reset.dispose();
+    super.dispose();
+  }
+
+  void _onUpdate(DragUpdateDetails d) {
+    if (!widget.enabled) return;
+    final dx = d.delta.dx;
+    // Own messages: swipe left (negative dx). Others: swipe right.
+    if (widget.isMyMessage && dx > 0 && _dragOffset == 0) return;
+    if (!widget.isMyMessage && dx < 0 && _dragOffset == 0) return;
+
+    setState(() {
+      _dragOffset = (_dragOffset + dx).clamp(-_kMaxDistance, _kMaxDistance);
+    });
+
+    if (!_triggered && _dragOffset.abs() >= _kTriggerDistance) {
+      _triggered = true;
+      HapticFeedback.mediumImpact();
+      widget.onTriggered();
+    }
+  }
+
+  void _onEnd(DragEndDetails _) {
+    _triggered = false;
+    _reset.forward(from: 0);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final iconOpacity =
+        (_dragOffset.abs() / _kTriggerDistance).clamp(0.0, 1.0);
+    final showOnRight = widget.isMyMessage; // own swipe left → icon on right
+    return GestureDetector(
+      onHorizontalDragUpdate: _onUpdate,
+      onHorizontalDragEnd: _onEnd,
+      behavior: HitTestBehavior.translucent,
+      child: Stack(
+        alignment: showOnRight
+            ? Alignment.centerRight
+            : Alignment.centerLeft,
+        children: [
+          Opacity(
+            opacity: iconOpacity,
+            child: Padding(
+              padding: EdgeInsets.only(
+                left: showOnRight ? 0 : 8,
+                right: showOnRight ? 8 : 0,
+              ),
+              child: const Icon(
+                Icons.reply,
+                color: Colors.white70,
+                size: 20,
+              ),
+            ),
+          ),
+          Transform.translate(
+            offset: Offset(_dragOffset, 0),
+            child: widget.child,
+          ),
+        ],
+      ),
+    );
   }
 }
