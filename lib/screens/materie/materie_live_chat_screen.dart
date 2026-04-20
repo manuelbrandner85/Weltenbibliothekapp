@@ -64,8 +64,10 @@ import '../../widgets/chat/chat_unread_badge.dart';
 import '../../widgets/chat/chat_online_indicator.dart';
 import '../../widgets/chat/chat_room_info_sheet.dart';
 import '../../widgets/chat/chat_read_receipt_indicator.dart';
+import '../../widgets/chat/chat_link_preview_card.dart';
 import '../../services/chat/presence_service.dart';
 import '../../services/chat/read_receipt_service.dart';
+import '../../services/chat/link_preview_service.dart';
 import '../../services/chat/user_block_service.dart';
 import '../../services/chat/unread_tracker_service.dart';
 
@@ -2461,9 +2463,25 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
               currentUsername: _username,
             ),
           ),
+        // ✨ Batch-3.1: Link-Preview-Karte unter Nachrichten mit URL.
+        if (!isEditing) _buildLinkPreviewRow(msg),
         // ✨ Batch-2.3: „Gelesen von N" Haken nur für eigene Nachrichten.
         if (!isEditing) _buildReadReceiptRow(msg),
       ],
+    );
+  }
+
+  Widget _buildLinkPreviewRow(Map<String, dynamic> msg) {
+    final text = (msg['message'] ?? msg['content'] ?? '').toString();
+    if (text.isEmpty) return const SizedBox.shrink();
+    final url = LinkPreviewService.firstUrl(text);
+    if (url == null) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(left: 60, right: 16, top: 4),
+      child: ChatLinkPreviewCard(
+        url: url,
+        accent: const Color(0xFFE53935),
+      ),
     );
   }
 
