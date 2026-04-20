@@ -50,14 +50,30 @@ Over-the-Air Updates laufen über Shorebird Code Push.
 ## SHOREBIRD WORKFLOW (GitHub Actions)
 
 ### Patch-Workflow (`shorebird_patch.yml`)
-- **Vollautomatisch**: Feuert bei jedem Push auf `main` oder `claude/**` wenn `lib/**`
-  geändert wurde (paths-Filter). Kein manuelles Triggern nötig.
-- Zusätzlich manuell triggerbar via `workflow_dispatch` (z.B. für gezielten Patch auf
-  bestimmtem Branch oder mit expliziter release_version).
-- Führt `shorebird patch android --allow-asset-diffs --release-version latest` aus
+- **Vollautomatisch**: Feuert bei JEDEM Push auf `main`. Kein manuelles Triggern nötig.
+- Zusätzlich manuell triggerbar via `workflow_dispatch` (Eingabe `release_version`:
+  `all` / `latest` / konkrete Version wie `5.36.0`).
+- **Patcht standardmäßig ALLE aktiven Release-Versionen** (nicht nur `latest`!).
+  Schleife liest `shorebird releases list --platforms=android` und ruft für jede
+  gefundene Version `shorebird patch android --release-version=<ver>` auf.
 - Schreibt Patch-Changelog automatisch in `app_config.patch_changelog` (Supabase)
 - Legt Eintrag in `update_history` (type=patch) an
 - NIEMALS neue Dart-Dependencies oder native Änderungen patchen → dann neuer Release nötig
+
+### ⚠️ WICHTIG — `--release-version=latest` ist FALSCH (verbindlich)
+
+Früher hat der Patch-Workflow nur `--release-version=latest` genutzt. Das hat
+dazu geführt, dass **ausschließlich User auf der neuesten APK** die Dart-Updates
+bekommen haben. User auf älteren Versionen (z.B. v5.34, v5.35, v5.36) haben die
+Patches nie gesehen, weil der Shorebird-Client auf dem Gerät nur Patches für
+die EXAKT installierte Release-Version akzeptiert.
+
+Neue Regel (seit v5.37+):
+- `shorebird_patch.yml` patcht **JEDE registrierte Release-Version**
+- Einzelne Fehler (z.B. Engine-Drift bei sehr alten Versionen) lassen den Job
+  nicht fehlschlagen — nur wenn 0 Patches erfolgreich waren
+- Kein manuelles Eingreifen nötig — User auf jeder APK-Version bekommen
+  automatisch die neuesten Dart-Änderungen
 
 ### Release-Workflow (nur wenn nötig)
 - Nur manuell triggern nach expliziter Absprache mit mir
