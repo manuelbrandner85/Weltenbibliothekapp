@@ -147,7 +147,10 @@ jobs:
           for V in $TARGETS; do
             echo ""
             echo "━━━━ 📡 Patch v$V ━━━━"
-            shorebird patch android \
+            # if-Statement statt EC=$? — verhindert dass GitHub Actions' implizites
+            # set -e den Loop beim ersten nicht-0 Exit abbricht (z.B. exit 70 wenn
+            # ein GitHub-Release kein Shorebird-Release hat).
+            if shorebird patch android \
               --allow-asset-diffs \
               --release-version="$V" \
               -- \
@@ -155,13 +158,11 @@ jobs:
               --dart-define=APP_VERSION=${{ steps.version.outputs.version }} \
               --dart-define=SUPABASE_URL=https://adtviduaftdquvfjpojb.supabase.co \
               --dart-define=SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkdHZpZHVhZnRkcXV2Zmpwb2piIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxMzY3OTcsImV4cCI6MjA5MDcxMjc5N30.LPtmnjukb6o2CA16RDjoStqYb_1bipNULD4tgOfuD98 \
-              --dart-define=CLOUDFLARE_WORKER_URL=https://weltenbibliothek-api.brandy13062.workers.dev
-            EC=$?
-            if [ $EC -eq 0 ]; then
+              --dart-define=CLOUDFLARE_WORKER_URL=https://weltenbibliothek-api.brandy13062.workers.dev; then
               echo "✅ v$V gepatcht"
               SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
             else
-              echo "⚠️  v$V Patch fehlgeschlagen (exit $EC) — fahre mit nächster Version fort"
+              echo "⚠️  v$V Patch fehlgeschlagen — fahre mit nächster Version fort"
               FAILED_VERSIONS="$FAILED_VERSIONS v$V"
               FAIL_COUNT=$((FAIL_COUNT + 1))
             fi
