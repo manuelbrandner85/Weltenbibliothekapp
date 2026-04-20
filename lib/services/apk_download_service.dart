@@ -114,6 +114,12 @@ class ApkDownloadService {
     return file;
   }
 
+  /// Liefert die Dateigröße der APK via HEAD-Request (für UI-Anzeige).
+  Future<int?> getApkFileSize(String url) async {
+    final dio = Dio(BaseOptions(connectTimeout: const Duration(seconds: 10)));
+    return _getRemoteFileSize(dio, url);
+  }
+
   /// HEAD-Request um Content-Length zu ermitteln.
   Future<int?> _getRemoteFileSize(Dio dio, String url) async {
     try {

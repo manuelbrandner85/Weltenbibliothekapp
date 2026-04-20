@@ -161,7 +161,13 @@ jobs:
           echo "apk_name=weltenbibliothek-v${VERSION}-universal.apk" >> $GITHUB_OUTPUT
 
       - name: 🏗️ Shorebird Release (arm64 + arm32)
+        # Exit-Code 70 bedeutet: Release für diese Version ist auf dem Shorebird-Server
+        # bereits registriert (passiert bei Workflow-Re-Run nach partiellem Fehler).
+        # Der APK-Build ist trotzdem fertig (Flutter assembleRelease läuft VOR der
+        # Server-Registrierung). Wir fangen Code 70 ab und fahren fort — alle
+        # folgenden Schritte (GitHub Release, Supabase, History) laufen dann normal.
         run: |
+          set +e
           shorebird release android \
             --artifact=apk \
             --target-platform=android-arm64,android-arm \
@@ -169,6 +175,14 @@ jobs:
             --dart-define=SUPABASE_URL=https://adtviduaftdquvfjpojb.supabase.co \
             --dart-define=SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkdHZpZHVhZnRkcXV2Zmpwb2piIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxMzY3OTcsImV4cCI6MjA5MDcxMjc5N30.LPtmnjukb6o2CA16RDjoStqYb_1bipNULD4tgOfuD98 \
             --dart-define=CLOUDFLARE_WORKER_URL=https://weltenbibliothek-api.brandy13062.workers.dev
+          EXIT_CODE=$?
+          if [ "$EXIT_CODE" -eq 70 ]; then
+            echo "⚠️  Shorebird: Release v${{ steps.version.outputs.version }} ist bereits auf dem Server registriert."
+            echo "    APK wurde trotzdem gebaut → weiter mit GitHub Release + Supabase."
+          elif [ "$EXIT_CODE" -ne 0 ]; then
+            echo "❌ Shorebird Release fehlgeschlagen (exit $EXIT_CODE)"
+            exit $EXIT_CODE
+          fi
         env:
           SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
 

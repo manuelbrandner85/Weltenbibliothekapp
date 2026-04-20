@@ -12,6 +12,7 @@ import '../services/haptic_service.dart';
 import '../services/haptic_feedback_service.dart'; // 📳 NEW: Haptic Feedback
 import '../widgets/theme_toggle_widget.dart';
 import 'shared/profile_editor_screen.dart'; // 🆕 NEW EDITOR
+import '../services/update_service.dart';
 
 /// **PROFIL-EINSTELLUNGEN**
 /// 
@@ -980,6 +981,8 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
               ),
             ),
           ),
+          const SizedBox(height: 8),
+          _VersionInfoCard(),
         ],
       ),
     );
@@ -1307,5 +1310,92 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
   void dispose() {
     // 🧹 PHASE B: Proper resource disposal
     super.dispose();
+  }
+}
+
+/// Kompaktes Widget das App-Version + Shorebird-Patch-Nummer anzeigt.
+/// Lädt die Patch-Nummer einmalig async beim ersten Build.
+class _VersionInfoCard extends StatefulWidget {
+  @override
+  State<_VersionInfoCard> createState() => _VersionInfoCardState();
+}
+
+class _VersionInfoCardState extends State<_VersionInfoCard> {
+  int? _patchNumber;
+  bool _checking = false;
+
+  @override
+  void initState() {
+    super.initState();
+    UpdateService.instance.getCurrentPatchNumber().then((n) {
+      if (mounted) setState(() => _patchNumber = n);
+    });
+  }
+
+  Future<void> _checkNow() async {
+    if (_checking) return;
+    setState(() => _checking = true);
+    try {
+      await UpdateService.instance.checkAndDownloadPatch();
+      final n = await UpdateService.instance.getCurrentPatchNumber();
+      if (mounted) setState(() => _patchNumber = n);
+    } finally {
+      if (mounted) setState(() => _checking = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final version = UpdateService.currentAppVersion;
+    final patchLabel = _patchNumber != null ? '· Patch #$_patchNumber' : '';
+    final isDebug = version == '0.0.0';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0A1020),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: const Color(0xFF00E5FF).withValues(alpha: 0.15),
+        ),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.info_outline_rounded,
+              color: Color(0xFF00E5FF), size: 16),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              isDebug
+                  ? 'Debug-Build (kein Versionscheck)'
+                  : 'v$version $patchLabel',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.65),
+                fontSize: 12.5,
+              ),
+            ),
+          ),
+          GestureDetector(
+            onTap: isDebug ? null : _checkNow,
+            child: _checking
+                ? const SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 1.5,
+                      color: Color(0xFF00E5FF),
+                    ),
+                  )
+                : Icon(
+                    Icons.refresh_rounded,
+                    size: 16,
+                    color: isDebug
+                        ? Colors.white.withValues(alpha: 0.2)
+                        : const Color(0xFF00E5FF).withValues(alpha: 0.7),
+                  ),
+          ),
+        ],
+      ),
+    );
   }
 }

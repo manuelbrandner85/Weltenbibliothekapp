@@ -443,19 +443,36 @@ chore(deps): Dependencies aktualisiert
       build_apk.yml (type=release) + shorebird_patch.yml (type=patch);
       `UpdateHistoryScreen` im Profil unter "Update-Verlauf"-Button
 - [x] SQL-Migrationen: `20260420_v37_patch_changelog.sql` + `20260420_v38_update_history.sql`
-      → **müssen noch im Supabase SQL-Editor ausgeführt werden**
+      → `apply_migrations.yml` CI-Workflow (SUPABASE_ACCESS_TOKEN) führt sie bei jedem
+      Push auf main automatisch aus (idempotent, kein manueller SQL-Editor nötig)
 - [x] **Phase 2 (V6) Auto-Restart via MethodChannel**: `MainActivity.kt` — MethodChannel
       `weltenbibliothek/restart`; AlarmManager schedulet Relaunch in 500 ms, dann
       `System.exit(0)` nach 50 ms. `RestartService.dart` — Dart-Seite mit Fallback
       (MissingPluginException → SystemNavigator.pop). `PatchReadyDialog` Button-Label
       "App neu starten". Version 5.37.0 (nativer Release nötig).
+- [x] **Phase 3 – APK-Dateigröße + bessere Fehlermeldungen**: `ApkDownloadService.getApkFileSize()`
+      public; `ReleaseUpdateScreen` zeigt "~102 MB" am Download-Button via FutureBuilder;
+      `_friendlyError()` parst DioException-Typen → nutzerfreundliche deutsche Fehlertexte.
+- [x] **Phase 4 – Auto-Retry-Countdown nach 404**: Bei 404-Fehler startet 60s Timer.periodic
+      im `ReleaseUpdateScreen`; zeigt CircularProgressIndicator-Countdown; Ablauf triggert
+      automatischen Retry; "Sofort"-Button unterbricht Countdown.
+- [x] **Phase 5 – Patch-Nummer in Profil**: `UpdateService.getCurrentPatchNumber()`;
+      `_VersionInfoCard` in `profile_settings_screen.dart` zeigt aktuelle App-Version
+      und installierten Shorebird-Patch (z.B. "v5.37.0 · Patch #4").
+- [x] **Phase 6 – Update-History Screen verbessert**: Pull-to-Refresh via `RefreshIndicator`;
+      animierte Skeleton-Cards (`_SkeletonCard` + `SingleTickerProviderStateMixin`, 900ms Puls);
+      Leer-Zustand mit Icon + erklärendem Text; Fehler-Zustand mit cloud_off + Retry-Button.
+- [x] **apply_migrations.yml**: Eigenständiger CI-Workflow; läuft bei JEDEM Push auf main
+      (kein paths-Filter); nutzt Supabase Management REST API mit `SUPABASE_ACCESS_TOKEN`;
+      wendet v37 + v38 Migrationen idempotent an.
+- [x] **Race-Condition-Fix (sync_app_config)**: GitHub Release Existence Check vor UPSERT;
+      `sync_app_config.yml` überspringt UPSERT wenn APK-Release noch nicht existiert.
 
 ### ⚠️ Noch ausstehend / bekannte Probleme
 
-1. **SQL-Migrationen ausführen** (drei ausstehend):
-   - `supabase/migrations/20260402_v12_missing_tool_tables.sql` (7 Tool-Tabellen)
-   - `supabase/migrations/20260420_v37_patch_changelog.sql` (patch_changelog Spalte)
-   - `supabase/migrations/20260420_v38_update_history.sql` (update_history Tabelle)
+1. **SQL-Migrationen**: `apply_migrations.yml` läuft automatisch bei jedem main-Push.
+   - `supabase/migrations/20260402_v12_missing_tool_tables.sql` (7 Tool-Tabellen) — noch manuell via SQL-Editor nötig, da nicht in apply_migrations.yml enthalten
+   - v37 + v38 werden automatisch per CI angewendet
 
 2. **544 info-level Issues** (keine Errors/Warnings):
    - `use_build_context_synchronously` in mehreren Screens

@@ -1,14 +1,12 @@
 name: 🗄️ Supabase Migrationen anwenden
 
-# Läuft automatisch wenn neue SQL-Migrations auf main gemergt werden.
+# Läuft bei JEDEM Push auf main (kein paths-Filter).
+# Alle SQLs sind idempotent (IF NOT EXISTS / DROP IF EXISTS) → mehrfach ausführen ist sicher.
 # Nutzt die Supabase Management REST API (SUPABASE_ACCESS_TOKEN Secret).
-# Alle Migrations-Dateien sind idempotent (IF NOT EXISTS / DROP IF EXISTS).
 
 on:
   push:
     branches: [main]
-    paths:
-      - 'supabase/migrations/**'
   workflow_dispatch:
 
 permissions:
