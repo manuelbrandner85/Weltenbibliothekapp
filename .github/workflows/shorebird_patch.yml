@@ -122,8 +122,16 @@ jobs:
           echo "Patch-Ziel: ${{ steps.release.outputs.target }}"
           # --verbose hilft beim Debug; vollständiger stderr->stdout-merge,
           # damit auch im "exit 70" Fall der Stack im Log steht.
+          # --allow-asset-diffs: Material-Icons-Font (.otf) ändert sich automatisch
+          # bei neuen Icons im Code (Tree-Shaking). Font ist aber bereits im
+          # Release-APK enthalten — wir senden nur Dart-Diff. Ohne dieses Flag
+          # wirft Shorebird UnpatchableChangeException → Exit 70.
+          # --allow-native-diffs: Erlaubt evtl. native lib-Hash-Mismatches die
+          # ebenfalls als Asset-Diff gewertet werden.
           shorebird patch android \
             --verbose \
+            --allow-asset-diffs \
+            --allow-native-diffs \
             --release-version="${{ steps.release.outputs.target }}" \
             -- \
             --target-platform=android-arm64,android-arm \
