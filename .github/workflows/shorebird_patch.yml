@@ -32,6 +32,14 @@ on:
 permissions:
   contents: read
 
+# Patches dürfen NICHT parallel laufen — Shorebird nimmt den zuletzt
+# hochgeladenen Patch als aktiv, d.h. wenn ein älterer Lauf später fertig wird
+# überschreibt er den neueren Stand. Daher: pro Branch nur ein Patch gleichzeitig,
+# ältere laufende Jobs werden beim neuen Push gecancelt.
+concurrency:
+  group: shorebird-patch-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   patch:
     name: 📡 Shorebird Patch android
