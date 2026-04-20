@@ -50,11 +50,14 @@ Over-the-Air Updates laufen über Shorebird Code Push.
 ## SHOREBIRD WORKFLOW (GitHub Actions)
 
 ### Patch-Workflow (`shorebird_patch.yml`)
-- Wird getriggert wenn Dart-Code sich ändert
-- Führt `shorebird patch android --release-version <aktuelle-version>` aus
-- Die `--release-version` muss IMMER mit der Version übereinstimmen,
-  die die User aktuell auf ihren Geräten haben
-- NIEMALS eine neue Release-Version im Patch-Workflow verwenden
+- **Vollautomatisch**: Feuert bei jedem Push auf `main` oder `claude/**` wenn `lib/**`
+  geändert wurde (paths-Filter). Kein manuelles Triggern nötig.
+- Zusätzlich manuell triggerbar via `workflow_dispatch` (z.B. für gezielten Patch auf
+  bestimmtem Branch oder mit expliziter release_version).
+- Führt `shorebird patch android --allow-asset-diffs --release-version latest` aus
+- Schreibt Patch-Changelog automatisch in `app_config.patch_changelog` (Supabase)
+- Legt Eintrag in `update_history` (type=patch) an
+- NIEMALS neue Dart-Dependencies oder native Änderungen patchen → dann neuer Release nötig
 
 ### Release-Workflow (nur wenn nötig)
 - Nur manuell triggern nach expliziter Absprache mit mir
@@ -145,7 +148,7 @@ Over-the-Air Updates laufen über Shorebird Code Push.
 ### Nach der Änderung:
 1. Fasse zusammen was geändert wurde
 2. Bestätige: "Patch-kompatibel ✓" oder "Neuer Release nötig ⚠️"
-3. Wenn Patch: Sage mir den Befehl zum Auslösen des Patch-Workflows
+3. Wenn Patch: Patch läuft **vollautomatisch** sobald der Commit auf `main` landet (lib/**-Änderung)
 4. Wenn Release: Erkläre mir die Schritte für die neue APK-Verteilung
 
 ---
@@ -467,6 +470,9 @@ chore(deps): Dependencies aktualisiert
       wendet v37 + v38 Migrationen idempotent an.
 - [x] **Race-Condition-Fix (sync_app_config)**: GitHub Release Existence Check vor UPSERT;
       `sync_app_config.yml` überspringt UPSERT wenn APK-Release noch nicht existiert.
+- [x] **Auto-Patch bei lib/**-Änderungen**: `shorebird_patch.yml` feuert vollautomatisch bei
+      Push auf `main`/`claude/**` mit `lib/**`-Änderungen (push+paths-Filter). Kein manuelles
+      Triggern mehr nötig. Zusätzlich weiterhin via `workflow_dispatch` manuell auslösbar.
 
 ### ⚠️ Noch ausstehend / bekannte Probleme
 
@@ -682,8 +688,11 @@ gh pr edit <NR> --body "Neue Beschreibung"
 - `shorebird.yaml` enthält `app_id` (public, in VCS); Secret nur in GitHub Actions (`SHOREBIRD_TOKEN`)
 - **OTA-Patch (Standard — reine Dart-Änderungen):**
   - Workflow: `.github/workflows/shorebird_patch.yml`
-  - Trigger: Nur manuell (workflow_dispatch); `release_version: latest` per Default
-  - Läuft `shorebird patch android` → sendet Dart-AOT-Diff an Shorebird, User bekommt Update beim nächsten App-Start automatisch
+  - **Trigger: VOLLAUTOMATISCH** bei Push auf `main` (oder `claude/**`) wenn `lib/**` geändert.
+    Zusätzlich manuell via `workflow_dispatch` triggerbar (Eingabe: release_version, source_branch).
+  - Läuft `shorebird patch android --allow-asset-diffs --release-version latest` →
+    sendet Dart-AOT-Diff an Shorebird, User bekommt Update beim nächsten App-Start automatisch.
+  - Schreibt `patch_changelog` in Supabase `app_config` + Eintrag in `update_history`.
   - Einschränkung: KEINE neuen Dart-Dependencies, KEINE nativen Änderungen (dann neuer Release nötig)
 
 ### ⚠️ Shorebird OTA-Patch Konfiguration — NICHT ÄNDERN (verbindlich)
