@@ -65,6 +65,7 @@ import '../../widgets/chat/chat_online_indicator.dart';
 import '../../widgets/chat/chat_room_info_sheet.dart';
 import '../../widgets/chat/chat_read_receipt_indicator.dart';
 import '../../widgets/chat/chat_link_preview_card.dart';
+import '../../widgets/chat/bouncing_dots_bubble.dart';
 import '../../services/chat/presence_service.dart';
 import '../../services/chat/read_receipt_service.dart';
 import '../../services/chat/link_preview_service.dart';
@@ -1584,16 +1585,39 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
         final visible = UserBlockService.instance
             .filterMessages(_messages)
             .toList(growable: false);
+        // Feature #10/#11: pre-compute flat items with grouping + separators
+        final chatItems = <Map<String, dynamic>>[];
+        {
+          DateTime? prevDate;
+          String? prevSender;
+          DateTime? prevTs;
+          for (final msg in visible) {
+            final ts = _parseMessageTimestamp(msg['timestamp'] ?? msg['created_at']);
+            final msgDay = ts != null ? DateTime(ts.year, ts.month, ts.day) : null;
+            if (msgDay != null && msgDay != prevDate) {
+              chatItems.add({'type': 'separator', 'date': ts});
+              prevDate = msgDay;
+              prevSender = null;
+              prevTs = null;
+            }
+            final isGrouped = prevSender != null &&
+                prevSender == msg['username']?.toString() &&
+                ts != null && prevTs != null &&
+                ts.difference(prevTs).inSeconds.abs() <= 120;
+            chatItems.add({'type': 'message', 'msg': Map<String, dynamic>.from(msg)..['_isGrouped'] = isGrouped});
+            prevSender = msg['username']?.toString();
+            prevTs = ts;
+          }
+        }
         return ListView.builder(
           controller: _scrollController,
           padding: const EdgeInsets.all(16),
-          reverse: false, // Normal order: Alte Nachrichten oben, neue unten
-          itemCount: visible.length + (_loadingOlder ? 1 : 0),
-          cacheExtent: 500, // 🚀 PERFORMANCE: Pre-render 500px ahead
-          addAutomaticKeepAlives: false, // 🚀 PHASE B
-          addRepaintBoundaries: true, // 🚀 PHASE B: Isolate repaints per item
+          reverse: false,
+          itemCount: chatItems.length + (_loadingOlder ? 1 : 0),
+          cacheExtent: 500,
+          addAutomaticKeepAlives: false,
+          addRepaintBoundaries: true,
           itemBuilder: (context, index) {
-            // ✨ Batch-1: Pagination-Spinner an Position 0 beim Nachladen.
             if (_loadingOlder && index == 0) {
               return const Padding(
                 padding: EdgeInsets.all(12),
@@ -1609,8 +1633,11 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
                 ),
               );
             }
-            final message = visible[index - (_loadingOlder ? 1 : 0)];
-            // 🚀 PHASE B: RepaintBoundary + ValueKey for performance
+            final item = chatItems[index - (_loadingOlder ? 1 : 0)];
+            if (item['type'] == 'separator') {
+              return _buildDateSeparator(item['date'] as DateTime, const Color(0xFFE53935));
+            }
+            final message = item['msg'] as Map<String, dynamic>;
             return RepaintBoundary(
               key: ValueKey(message['message_id'] ?? message['id']),
               child: _buildSwipeableMessage(message),
@@ -2261,57 +2288,56 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
   }
   
   // ⌨️ TYPING INDICATORS
+  // Feature #12: improved typing indicator with avatars + bouncing dots
   Widget _buildTypingIndicators() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      color: Colors.grey[900],
+    if (_typingUsers.isEmpty) return const SizedBox.shrink();
+    final users = _typingUsers.take(3).toList();
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          // Animated Dots
+          // Avatar stack
           SizedBox(
-            width: 30,
-            height: 20,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: List.generate(3, (index) {
-                return TweenAnimationBuilder(
-                  tween: Tween<double>(begin: 0.0, end: 1.0),
-                  duration: const Duration(milliseconds: 600),
-                  curve: Curves.easeInOut,
-                  builder: (context, double value, child) {
-                    final delay = index * 0.2;
-                    final animValue = ((value + delay) % 1.0);
-                    final opacity = (0.3 + (0.7 * (1 - (animValue - 0.5).abs() * 2)))
-                        .clamp(0.3, 1.0);
-                    
-                    return Container(
-                      width: 6,
-                      height: 6,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.withValues(alpha: opacity),
-                        shape: BoxShape.circle,
+            width: 28.0 + (users.length - 1) * 14.0,
+            height: 28,
+            child: Stack(
+              children: [
+                for (int i = 0; i < users.length; i++)
+                  Positioned(
+                    left: i * 14.0,
+                    child: CircleAvatar(
+                      radius: 14,
+                      backgroundColor: Colors.red.withValues(alpha: 0.2),
+                      child: Text(
+                        users[i].isNotEmpty ? users[i][0].toUpperCase() : '?',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Colors.redAccent,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    );
-                  },
-                );
-              }),
+                    ),
+                  ),
+              ],
             ),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              _typingUsers.length == 1
-                  ? '${_typingUsers.first} tippt...'
-                  : _typingUsers.length == 2
-                      ? '${_typingUsers.elementAt(0)} und ${_typingUsers.elementAt(1)} tippen...'
-                      : '${_typingUsers.length} Personen tippen...',
-              style: TextStyle(
-                color: Colors.grey[500],
-                fontSize: 13,
-                fontStyle: FontStyle.italic,
+          const SizedBox(width: 8),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const BouncingDotsBubble(color: Colors.redAccent),
+              const SizedBox(height: 3),
+              Text(
+                users.length == 1
+                    ? '${users[0]} tippt...'
+                    : users.length == 2
+                        ? '${users[0]} & ${users[1]} tippen...'
+                        : '${_typingUsers.length} Personen tippen...',
+                style: TextStyle(color: Colors.grey[500], fontSize: 11, fontStyle: FontStyle.italic),
               ),
-              overflow: TextOverflow.ellipsis,
-            ),
+            ],
           ),
         ],
       ),
@@ -2903,30 +2929,36 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
     final msgUserId = msg['userId']?.toString() ?? msg['user_id']?.toString() ?? '';
     final isOwn = (msgUserId.isNotEmpty && msgUserId == _userId) ||
         (msg['username']?.toString() == _username && _username.isNotEmpty);
-    
+    // Feature #10: iMessage-style grouping
+    final isGrouped = msg['_isGrouped'] == true;
+
     return Padding(
       padding: EdgeInsets.only(
         left: isOwn ? 60 : 12,
         right: isOwn ? 12 : 60,
-        bottom: 8,
+        bottom: isGrouped ? 2 : 8,
+        top: isGrouped ? 0 : 2,
       ),
       child: Row(
         mainAxisAlignment: isOwn ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          // Avatar (nur bei anderen)
+          // Avatar placeholder keeps alignment; hidden when grouped
           if (!isOwn) ...[
-            CircleAvatar(
-              radius: 18,
-              backgroundColor: Colors.red.withValues(alpha: 0.2),
-              child: Text(
-                msg['avatarEmoji']?.toString() ?? '👤',
-                style: const TextStyle(fontSize: 16),
-              ),
-            ),
+            if (!isGrouped)
+              CircleAvatar(
+                radius: 18,
+                backgroundColor: Colors.red.withValues(alpha: 0.2),
+                child: Text(
+                  msg['avatarEmoji']?.toString() ?? '👤',
+                  style: const TextStyle(fontSize: 16),
+                ),
+              )
+            else
+              const SizedBox(width: 36),
             const SizedBox(width: 8),
           ],
-          
+
           // Bubble mit Tail
           Flexible(
             child: InkWell(
@@ -2937,8 +2969,8 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
                 decoration: BoxDecoration(
                 color: isOwn ? Colors.red : Colors.grey[800],
                 borderRadius: BorderRadius.only(
-                  topLeft: const Radius.circular(16),
-                  topRight: const Radius.circular(16),
+                  topLeft: Radius.circular(isGrouped && !isOwn ? 4 : 16),
+                  topRight: Radius.circular(isGrouped && isOwn ? 4 : 16),
                   bottomLeft: isOwn ? const Radius.circular(16) : const Radius.circular(4),
                   bottomRight: isOwn ? const Radius.circular(4) : const Radius.circular(16),
                 ),
@@ -2953,8 +2985,8 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Username (nur bei anderen)
-                  if (!isOwn)
+                  // Username (nur bei anderen, nicht wenn gruppiert)
+                  if (!isOwn && !isGrouped)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 4),
                       child: Text(
@@ -2966,7 +2998,15 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
                         ),
                       ),
                     ),
-                  
+
+                  // Feature #14: Reply chain visualization
+                  if ((msg['reply_to_id']?.toString().isNotEmpty ?? false))
+                    _buildInlineReplyQuote(
+                      senderName: msg['reply_to_sender_name']?.toString(),
+                      content: msg['reply_to_content']?.toString(),
+                      color: const Color(0xFFE53935),
+                    ),
+
                   // 🎤 VOICE MESSAGE or 📷 IMAGE or 💬 TEXT
                   if (msg['mediaType'] == 'voice' || (msg['message']?.toString().startsWith('🎤 Sprachnachricht') == true && msg['mediaUrl'] != null))
                     // 🎵 VOICE MESSAGE PLAYER
@@ -3044,10 +3084,91 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
     );
   }
   
+  // Feature #14: inline reply quote block inside bubble
+  Widget _buildInlineReplyQuote({String? senderName, String? content, required Color color}) {
+    final name = (senderName ?? '').trim().isEmpty ? 'Nachricht' : senderName!.trim();
+    final snippet = (content ?? '').trim();
+    return Container(
+      margin: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.fromLTRB(8, 5, 8, 5),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(8),
+        border: Border(left: BorderSide(color: color, width: 3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(name, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: color)),
+          if (snippet.isNotEmpty) ...[
+            const SizedBox(height: 2),
+            Text(
+              snippet,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.65)),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // Feature #11: parse message timestamp from any format
+  static DateTime? _parseMessageTimestamp(dynamic raw) {
+    if (raw == null) return null;
+    if (raw is DateTime) return raw;
+    if (raw is String && raw.isNotEmpty) return DateTime.tryParse(raw);
+    if (raw is int) return DateTime.fromMillisecondsSinceEpoch(raw);
+    return null;
+  }
+
+  // Feature #11: date separator chip between days
+  Widget _buildDateSeparator(DateTime date, Color color) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+    final msgDay = DateTime(date.year, date.month, date.day);
+    String label;
+    if (msgDay == today) {
+      label = 'Heute';
+    } else if (msgDay == yesterday) {
+      label = 'Gestern';
+    } else {
+      const wd = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+      const mo = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
+      label = '${wd[date.weekday - 1]}, ${date.day}. ${mo[date.month - 1]}.';
+    }
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Row(
+        children: [
+          Expanded(child: Divider(color: Colors.white.withValues(alpha: 0.1))),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: color.withValues(alpha: 0.3)),
+            ),
+            child: Text(
+              label,
+              style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 0.4),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(child: Divider(color: Colors.white.withValues(alpha: 0.1))),
+        ],
+      ),
+    );
+  }
+
   String _formatTime(dynamic timestamp) {
     try {
       if (timestamp == null) return '';
-      
+
       DateTime dt;
       if (timestamp is int) {
         dt = DateTime.fromMillisecondsSinceEpoch(timestamp);
