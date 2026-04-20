@@ -57,13 +57,27 @@ jobs:
       - name: 📋 Version lesen
         id: version
         run: |
-          VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: //' | sed 's/+.*//')
+          FULL=$(grep '^version:' pubspec.yaml | sed 's/version: //' | tr -d ' ')
+          VERSION="${FULL%+*}"
+          echo "full=$FULL" >> $GITHUB_OUTPUT
           echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "--- Versions-Info ---"
+          echo "full    = $FULL"
+          echo "version = $VERSION"
 
       - name: 📡 Patch veröffentlichen
         run: |
+          # Auf push-Trigger nehmen wir IMMER die volle Version inkl. Build-Nummer
+          # aus pubspec.yaml (z.B. "5.34.0+20260421"). Bei workflow_dispatch kann
+          # der User explizit eine andere angeben.
+          TARGET="${{ github.event.inputs.release_version }}"
+          if [ -z "$TARGET" ] || [ "$TARGET" = "latest" ]; then
+            TARGET="${{ steps.version.outputs.full }}"
+          fi
+          echo "--- Patch-Ziel ---"
+          echo "release-version = $TARGET"
           shorebird patch android \
-            --release-version=${{ github.event.inputs.release_version || 'latest' }} \
+            --release-version="$TARGET" \
             -- \
             --target-platform=android-arm64,android-arm \
             --dart-define=APP_VERSION=${{ steps.version.outputs.version }} \
