@@ -125,21 +125,30 @@ jobs:
           sed -i "s/^version: .*/version: $TARGET/" pubspec.yaml
           grep '^version:' pubspec.yaml
 
+      - name: 🩺 Shorebird Diagnose (vor Patch)
+        env:
+          SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
+        run: |
+          echo "=== shorebird --version ==="
+          shorebird --version || true
+          echo "=== shorebird patches list --release-version ${{ steps.release.outputs.target }} ==="
+          shorebird patches list --release-version="${{ steps.release.outputs.target }}" 2>&1 || true
+
       - name: 📡 Patch veröffentlichen
         run: |
           echo "Patch-Ziel: ${{ steps.release.outputs.target }}"
-          # --verbose hilft beim Debug; vollständiger stderr->stdout-merge,
-          # damit auch im "exit 70" Fall der Stack im Log steht.
+          # --verbose hilft beim Debug; vollständiger stderr->stdout-merge.
           # --allow-asset-diffs: Material-Icons-Font (.otf) ändert sich automatisch
           # bei neuen Icons im Code (Tree-Shaking). Font ist aber bereits im
           # Release-APK enthalten — wir senden nur Dart-Diff. Ohne dieses Flag
           # wirft Shorebird UnpatchableChangeException → Exit 70.
-          # --allow-native-diffs: Erlaubt evtl. native lib-Hash-Mismatches die
-          # ebenfalls als Asset-Diff gewertet werden.
+          #
+          # --allow-native-diffs war ursprünglich drin, maskiert aber potenziell
+          # Engine-Drift zwischen Release-CLI und Patch-CLI. Entfernt um echte
+          # native-Diffs zu erkennen (Patches kamen beim User nicht mehr an).
           shorebird patch android \
             --verbose \
             --allow-asset-diffs \
-            --allow-native-diffs \
             --release-version="${{ steps.release.outputs.target }}" \
             -- \
             --target-platform=android-arm64,android-arm \
@@ -153,3 +162,11 @@ jobs:
           exit $STATUS
         env:
           SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
+
+      - name: 🩺 Shorebird Patches nach Upload
+        if: always()
+        env:
+          SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
+        run: |
+          echo "=== shorebird patches list --release-version ${{ steps.release.outputs.target }} ==="
+          shorebird patches list --release-version="${{ steps.release.outputs.target }}" 2>&1 || true
