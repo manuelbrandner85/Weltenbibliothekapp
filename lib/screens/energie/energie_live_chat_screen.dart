@@ -70,6 +70,7 @@ import '../../services/chat/presence_service.dart';
 import '../../services/chat/read_receipt_service.dart';
 import '../../services/chat/link_preview_service.dart';
 import '../../services/chat/chat_rate_limit_service.dart';
+import '../../services/haptic_feedback_service.dart';
 import '../../services/chat/chat_word_filter_service.dart';
 import '../../services/chat/chat_draft_service.dart';
 import '../../services/chat/user_block_service.dart';
@@ -526,6 +527,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
       return;
     }
     ChatRateLimitService.instance.recordSend(_selectedRoom);
+    HapticFeedbackService().messageSent();
 
     setState(() => _isSending = true);
     
@@ -2057,6 +2059,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
             _messages.add(newMsg);
             if (!_isAtBottom && !isOwn) _newMessagesCount++;
           });
+          if (!isOwn) HapticFeedbackService().messageReceived();
           _scrollToBottomIfAtEnd();
         }
       },

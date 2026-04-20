@@ -69,6 +69,7 @@ import '../../services/chat/presence_service.dart';
 import '../../services/chat/read_receipt_service.dart';
 import '../../services/chat/link_preview_service.dart';
 import '../../services/chat/chat_rate_limit_service.dart';
+import '../../services/haptic_feedback_service.dart';
 import '../../services/chat/chat_word_filter_service.dart';
 import '../../services/chat/chat_draft_service.dart';
 import '../../services/chat/user_block_service.dart';
@@ -471,6 +472,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
             _messages.add(newMsg);
             if (!_isAtBottom && !isOwn) _newMessagesCount++;
           });
+          if (!isOwn) HapticFeedbackService().messageReceived();
           _scrollToBottomIfAtEnd();
         }
       },
@@ -649,6 +651,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
       return;
     }
     ChatRateLimitService.instance.recordSend(_fullRoomId);
+    HapticFeedbackService().messageSent();
 
     try {
       // 🟢 Sende Nachricht via Supabase (CloudflareApiService delegiert intern)
