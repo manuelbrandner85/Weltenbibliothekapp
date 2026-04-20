@@ -108,8 +108,10 @@ jobs:
             '{platform:"android", latest_version:$lv, min_version:$mv, apk_download_url:$url, changelog:$cl, release_notes_url:$notes}')
 
           echo "→ UPSERT app_config: latest=$VERSION min=$MIN_VERSION"
+          # ?on_conflict=platform: PostgREST-UPSERT auf UNIQUE-Spalte (nicht PK).
+          # Ohne diesen Parameter gibt PostgREST 409 wenn die Zeile bereits existiert.
           HTTP_CODE=$(curl -sS -o /tmp/resp.json -w "%{http_code}" \
-            -X POST "${SUPABASE_URL}/rest/v1/app_config" \
+            -X POST "${SUPABASE_URL}/rest/v1/app_config?on_conflict=platform" \
             -H "apikey: ${SUPABASE_SERVICE_ROLE_KEY}" \
             -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
             -H "Content-Type: application/json" \
