@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import '../../../core/storage/unified_storage_service.dart';
+import '../../../services/sqlite_storage_service.dart';
 import '../../../core/constants/roles.dart';
 import '../../../services/supabase_service.dart';
 
@@ -149,9 +149,7 @@ class AdminStateNotifier extends StateNotifier<AdminState> {
     if (username == null || username.isEmpty) {
       try {
         final boxName = world == 'materie' ? 'materie_profiles' : 'energie_profiles';
-        if (!Hive.isBoxOpen(boxName)) await Hive.openBox(boxName);
-        final box = Hive.box(boxName);
-        final raw = box.get('current_profile');
+        final raw = SqliteStorageService.instance.getSync(boxName, 'current_profile');
         if (raw != null) {
           final data = Map<String, dynamic>.from(raw as Map);
           username = data['username'] as String?;

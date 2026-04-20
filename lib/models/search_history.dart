@@ -1,31 +1,13 @@
-import 'package:hive/hive.dart';
-
-part 'search_history.g.dart';
-
 /// Search History Entry v8.0
-/// 
+///
 /// Stores search queries with metadata for quick access
-@HiveType(typeId: 2)
-class SearchHistoryEntry extends HiveObject {
-  @HiveField(0)
+class SearchHistoryEntry {
   String id;
-
-  @HiveField(1)
   String query;
-
-  @HiveField(2)
   DateTime timestamp;
-
-  @HiveField(3)
   int resultCount;
-
-  @HiveField(4)
   String? summary;
-
-  @HiveField(5)
   List<String>? tags;
-
-  @HiveField(6)
   Map<String, dynamic>? metadata;
 
   SearchHistoryEntry({
@@ -67,7 +49,7 @@ class SearchHistoryEntry extends HiveObject {
   String get formattedDate {
     final now = DateTime.now();
     final diff = now.difference(timestamp);
-    
+
     if (diff.inMinutes < 1) {
       return 'Gerade eben';
     } else if (diff.inMinutes < 60) {

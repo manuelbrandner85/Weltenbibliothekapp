@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'dart:async';
-import 'package:hive_flutter/hive_flutter.dart'; // 🗄️ HIVE für Profile
 import '../../services/supabase_service.dart'; // 🔥 supabase Auth
 import 'package:supabase_flutter/supabase_flutter.dart' show RealtimeChannel;
 import '../../services/cloudflare_api_service.dart';
@@ -348,10 +347,6 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
   Future<void> _loadUsernameFromProfile() async {
     MaterieProfile? profile;
     try {
-      // Ensure box is open – main.dart opens it, but guard for safety
-      if (!Hive.isBoxOpen('materie_profiles')) {
-        await Hive.openBox('materie_profiles');
-      }
       final storage = StorageService();
       profile = storage.getMaterieProfile();
     } catch (e) {

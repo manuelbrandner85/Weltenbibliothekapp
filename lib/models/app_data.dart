@@ -5,33 +5,17 @@
 /// ═══════════════════════════════════════════════════════════
 library;
 
-import 'package:hive/hive.dart';
-
 // ═══════════════════════════════════════════════════════════
 // 1. TAROT JOURNAL - Tarot-Ziehungen Historie
 // ═══════════════════════════════════════════════════════════
 
-@HiveType(typeId: 10)
 class TarotReading {
-  @HiveField(0)
   final String id;
-  
-  @HiveField(1)
   final DateTime timestamp;
-  
-  @HiveField(2)
   final String cardName;
-  
-  @HiveField(3)
   final String cardSymbol;
-  
-  @HiveField(4)
   final String cardMeaning;
-  
-  @HiveField(5)
   final String? personalNote;
-  
-  @HiveField(6)
   final String spreadType; // 'single', '3-card', 'celtic'
 
   TarotReading({
@@ -69,24 +53,12 @@ class TarotReading {
 // 2. MONDTAGEBUCH - Mondphasen Notizen
 // ═══════════════════════════════════════════════════════════
 
-@HiveType(typeId: 11)
 class MoonJournalEntry {
-  @HiveField(0)
   final String id;
-  
-  @HiveField(1)
   final DateTime timestamp;
-  
-  @HiveField(2)
   final String moonPhase; // 'neumond', 'zunehmend', 'vollmond', 'abnehmend'
-  
-  @HiveField(3)
   final String note;
-  
-  @HiveField(4)
   final List<String> emotions; // ['Freude', 'Ruhe', 'Energie']
-  
-  @HiveField(5)
   final int energyLevel; // 1-10
 
   MoonJournalEntry({
@@ -121,21 +93,11 @@ class MoonJournalEntry {
 // 3. KRISTALL-SAMMLUNG - Persönliche Kristalle
 // ═══════════════════════════════════════════════════════════
 
-@HiveType(typeId: 12)
 class CrystalCollection {
-  @HiveField(0)
   final String crystalName;
-  
-  @HiveField(1)
   final DateTime addedDate;
-  
-  @HiveField(2)
   final String? note;
-  
-  @HiveField(3)
   final String? purchaseLocation;
-  
-  @HiveField(4)
   final List<String> experiencedEffects;
 
   CrystalCollection({
@@ -167,24 +129,12 @@ class CrystalCollection {
 // 4. MANTRA-CHALLENGE - 21-Tage-Tracking
 // ═══════════════════════════════════════════════════════════
 
-@HiveType(typeId: 13)
 class MantraChallenge {
-  @HiveField(0)
   final String id;
-  
-  @HiveField(1)
   final String mantraText;
-  
-  @HiveField(2)
   final DateTime startDate;
-  
-  @HiveField(3)
   final List<DateTime> completedDays;
-  
-  @HiveField(4)
   final bool isCompleted;
-  
-  @HiveField(5)
   final String? completionNote;
 
   MantraChallenge({
@@ -226,18 +176,10 @@ class MantraChallenge {
 // 5. MEDITATION STATISTIK - Tracking
 // ═══════════════════════════════════════════════════════════
 
-@HiveType(typeId: 14)
 class MeditationSession {
-  @HiveField(0)
   final String id;
-  
-  @HiveField(1)
   final DateTime timestamp;
-  
-  @HiveField(2)
   final int durationMinutes;
-  
-  @HiveField(3)
   final String meditationType; // 'breath', 'body_scan', 'mantra', 'visualization', 'chakra'
 
   MeditationSession({
@@ -266,30 +208,14 @@ class MeditationSession {
 // 6. APP ACHIEVEMENTS - Badge-System (v57)
 // ═══════════════════════════════════════════════════════════
 
-@HiveType(typeId: 15)
 class AppAchievement {
-  @HiveField(0)
   final String id;
-  
-  @HiveField(1)
   final String title;
-  
-  @HiveField(2)
   final String description;
-  
-  @HiveField(3)
   final String icon;
-  
-  @HiveField(4)
   final DateTime? unlockedAt;
-  
-  @HiveField(5)
   final bool isUnlocked;
-  
-  @HiveField(6)
   final int requiredCount;
-  
-  @HiveField(7)
   final int currentCount;
 
   AppAchievement({
@@ -332,21 +258,11 @@ class AppAchievement {
 // 7. STREAK-SYSTEM - Tägliche Aktivität
 // ═══════════════════════════════════════════════════════════
 
-@HiveType(typeId: 16)
 class ToolStreak {
-  @HiveField(0)
   final String toolId; // 'tarot', 'meditation', 'mantra', etc.
-  
-  @HiveField(1)
   final int currentStreak;
-  
-  @HiveField(2)
   final int longestStreak;
-  
-  @HiveField(3)
   final DateTime lastActiveDate;
-  
-  @HiveField(4)
   final List<DateTime> activityDates;
 
   ToolStreak({

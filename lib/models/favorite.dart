@@ -1,34 +1,14 @@
-import 'package:hive/hive.dart';
-
-part 'favorite.g.dart';
-
 /// Favorite Item Model v8.0
-/// 
-/// Speichert Lesezeichen & Favoriten lokal mit Hive
-@HiveType(typeId: 0)
-class Favorite extends HiveObject {
-  @HiveField(0)
+///
+/// Speichert Lesezeichen & Favoriten lokal mit SQLite
+class Favorite {
   String id;
-
-  @HiveField(1)
   FavoriteType type;
-
-  @HiveField(2)
   String title;
-
-  @HiveField(3)
   String? description;
-
-  @HiveField(4)
   String? url;
-
-  @HiveField(5)
   DateTime createdAt;
-
-  @HiveField(6)
   Map<String, dynamic>? metadata;
-
-  @HiveField(7)
   List<String>? tags;
 
   Favorite({
@@ -74,27 +54,13 @@ class Favorite extends HiveObject {
 }
 
 /// Favorite Types
-@HiveType(typeId: 1)
 enum FavoriteType {
-  @HiveField(0)
   research,      // Recherche-Ergebnisse
-  
-  @HiveField(1)
   narrative,     // Narratives (Area 51, MK-Ultra, etc.)
-  
-  @HiveField(2)
   pdf,           // PDF Dokumente
-  
-  @HiveField(3)
   image,         // Bilder
-  
-  @HiveField(4)
   video,         // Videos
-  
-  @HiveField(5)
   telegram,      // Telegram Kanäle
-  
-  @HiveField(6)
   source,        // Quellen/Links
 }
 
