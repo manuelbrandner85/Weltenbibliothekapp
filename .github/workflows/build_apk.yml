@@ -254,3 +254,31 @@ jobs:
           fi
           echo "✅ app_config aktualisiert — User auf v${MIN_VERSION}+ sehen Update-Dialog"
           cat /tmp/resp.json | jq '.'
+
+      - name: 📜 Update-History Eintrag schreiben
+        env:
+          SUPABASE_URL: https://adtviduaftdquvfjpojb.supabase.co
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          VERSION: ${{ steps.version.outputs.version }}
+          CHANGELOG: ${{ steps.version.outputs.changelog }}
+        run: |
+          if [ -z "${SUPABASE_SERVICE_ROLE_KEY:-}" ]; then
+            echo "⚠️  SUPABASE_SERVICE_ROLE_KEY fehlt — kein History-Eintrag"
+            exit 0
+          fi
+          RUN_URL="https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          BODY=$(jq -n \
+            --arg v "$VERSION" \
+            --arg cl "$CHANGELOG" \
+            --arg url "$RUN_URL" \
+            '{"type":"release","version":$v,"changelog":$cl,"github_run_url":$url}')
+
+          HTTP_CODE=$(curl -sS -o /dev/null -w "%{http_code}" \
+            -X POST "${SUPABASE_URL}/rest/v1/update_history" \
+            -H "apikey: ${SUPABASE_SERVICE_ROLE_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: return=minimal" \
+            -d "$BODY")
+          [ "$HTTP_CODE" = "201" ] && echo "✅ update_history Eintrag (release) gesetzt" \
+            || echo "⚠️  update_history INSERT fehlgeschlagen (HTTP $HTTP_CODE)"

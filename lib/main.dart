@@ -18,6 +18,7 @@ import 'screens/leaderboard_screen.dart';  // 🏆 Leaderboard
 import 'screens/enhanced_profile_screen.dart';  // 👤 Enhanced Profile
 import 'screens/cloudflare_notification_settings_screen.dart'; // CLOUDFLARE PUSH
 import 'screens/materie/search_history_screen.dart';
+import 'screens/shared/update_history_screen.dart';
 import 'screens/shared/backend_health_monitor_screen.dart'; // 🏥 HEALTH MONITOR // 🆕 SEARCH HISTORY
 // REMOVED: Simple Voice Test Screen (deprecated)
 // KI-ANALYSE-TOOLS (für Recherche-Tab)
@@ -330,6 +331,7 @@ class _WeltenbibliothekAppState extends State<WeltenbibliothekApp> {
             '/notifications': (context) => const CloudflareNotificationSettingsScreen(), // CLOUDFLARE
             '/search_history': (context) => const SearchHistoryScreen(), // 🆕 SEARCH HISTORY
             '/health': (context) => const BackendHealthMonitorScreen(), // 🏥 HEALTH MONITOR
+            UpdateHistoryScreen.routeName: (context) => const UpdateHistoryScreen(),
             // REMOVED: '/simple_voice_test' route (deprecated Simple Voice Test)
             // 🔐 ADMIN-DASHBOARDS (World-specific)
             '/admin/materie': (context) => const WorldAdminDashboard(world: 'materie'),
