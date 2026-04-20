@@ -151,7 +151,7 @@ class CloudflareApiService {
       final supaResult = await supabase
           .from('chat_messages')
           .select(
-              'id,room_id,user_id,username,avatar_url,content,message,message_type,created_at,is_deleted')
+              'id,room_id,user_id,username,avatar_url,content,message,message_type,created_at,edited_at,is_deleted,reply_to_id,reply_to_content,reply_to_sender_name')
           .eq('room_id', roomId)
           .eq('is_deleted', false)
           .order('created_at', ascending: true)
@@ -255,6 +255,9 @@ class CloudflareApiService {
   /// Send chat message – 🟢 Supabase-only (gem. Zielarchitektur v2.0).
   /// Erfordert eingeloggten User (SupabaseAuth). Tool-Bot-Posts (userId == 'tool_bot')
   /// sind als einzige Ausnahme anonym erlaubt.
+  ///
+  /// Reply-Support (v36): [replyToId] + optionale Snapshot-Felder für
+  /// Telegram-Style Inline-Quote.
   Future<Map<String, dynamic>> sendChatMessage({
     required String roomId,
     required String realm,
@@ -265,6 +268,9 @@ class CloudflareApiService {
     String? avatarUrl,
     String? mediaType,
     String? mediaUrl,
+    String? replyToId,
+    String? replyToContent,
+    String? replyToSenderName,
   }) async {
     if (kDebugMode) debugPrint('💬 [Chat] Send: $username → $roomId');
 
@@ -283,6 +289,9 @@ class CloudflareApiService {
         avatarUrl: avatarUrl,
         messageType: messageType,
         allowAnonymous: true,
+        replyToId: replyToId,
+        replyToContent: replyToContent,
+        replyToSenderName: replyToSenderName,
       );
       if (kDebugMode) debugPrint('✅ [Chat] Supabase insert OK: ${result['id']}');
       return Map<String, dynamic>.from(result);

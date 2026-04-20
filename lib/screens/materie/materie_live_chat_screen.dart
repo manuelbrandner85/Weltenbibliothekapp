@@ -474,6 +474,23 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
           _scrollToBottomIfAtEnd();
         }
       },
+      onUpdate: (updatedMsg) {
+        if (!mounted) return;
+        final id = updatedMsg['id']?.toString();
+        if (id == null) return;
+        final idx = _messages.indexWhere((m) => m['id']?.toString() == id);
+        if (idx >= 0) {
+          setState(() {
+            _messages[idx] = {..._messages[idx], ...updatedMsg};
+          });
+        }
+      },
+      onDelete: (messageId) {
+        if (!mounted) return;
+        setState(() {
+          _messages.removeWhere((m) => m['id']?.toString() == messageId);
+        });
+      },
     );
     if (kDebugMode) debugPrint('🔴 [Materie Realtime] Subscribed to room: $roomId');
     Future<void>.delayed(const Duration(seconds: 2), () {
@@ -635,6 +652,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
 
     try {
       // 🟢 Sende Nachricht via Supabase (CloudflareApiService delegiert intern)
+      final replyData = _replyingTo;
       final serverMsg = await _api.sendChatMessage(
         roomId: _fullRoomId, // 'materie-politik' etc.
         realm: 'materie',
@@ -643,6 +661,10 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
         message: text,
         avatarEmoji: _avatarEmoji,
         avatarUrl: _avatarUrl,
+        replyToId: replyData?['id']?.toString(),
+        replyToContent: replyData?['message']?.toString()
+            ?? replyData?['content']?.toString(),
+        replyToSenderName: replyData?['username']?.toString(),
       );
 
       _messageController.clear();
@@ -654,6 +676,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
         setState(() {
           final exists = _messages.any((m) => m['id'] == serverMsg['id']);
           if (!exists) _messages.add(serverMsg);
+          _replyingTo = null;
         });
         WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
       }

@@ -566,6 +566,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
       }
       
       // Online: Send directly via Supabase
+      final replyData = _replyingTo;
       final serverMsg = await _api.sendChatMessage(
         roomId: _fullRoomId, // 'energie-meditation' etc.
         realm: 'energie',
@@ -574,6 +575,10 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
         message: message,
         avatarEmoji: _avatar,
         avatarUrl: _avatarUrl,
+        replyToId: replyData?['id']?.toString(),
+        replyToContent: replyData?['message']?.toString()
+            ?? replyData?['content']?.toString(),
+        replyToSenderName: replyData?['username']?.toString(),
       );
 
       _messageController.clear();
@@ -585,6 +590,8 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
         setState(() {
           final exists = _messages.any((m) => m['id'] == serverMsg['id']);
           if (!exists) _messages.add(serverMsg);
+          // Reply-Kontext nach erfolgreichem Senden schließen.
+          _replyingTo = null;
         });
         WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
       }
@@ -2060,11 +2067,25 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
             _messages.add(newMsg);
             if (!_isAtBottom && !isOwn) _newMessagesCount++;
           });
-          // ✨ Unread-Tracker: wenn Raum aktuell NICHT aktiv (Screen im BG), zählen.
-          // Hier sind wir im aktiven Screen — nichts tun. bump() passiert
-          // serverseitig nicht; globale App-Notifications übernehmen das später.
           _scrollToBottomIfAtEnd();
         }
+      },
+      onUpdate: (updatedMsg) {
+        if (!mounted) return;
+        final id = updatedMsg['id']?.toString();
+        if (id == null) return;
+        final idx = _messages.indexWhere((m) => m['id']?.toString() == id);
+        if (idx >= 0) {
+          setState(() {
+            _messages[idx] = {..._messages[idx], ...updatedMsg};
+          });
+        }
+      },
+      onDelete: (messageId) {
+        if (!mounted) return;
+        setState(() {
+          _messages.removeWhere((m) => m['id']?.toString() == messageId);
+        });
       },
     );
     if (kDebugMode) debugPrint('🔴 [Energie Realtime] Subscribed to room: $roomId');
@@ -2896,16 +2917,35 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
     );
     
     if (newText != null && newText.trim().isNotEmpty && newText != msg['message']) {
+      final msgId = (msg['message_id'] ?? msg['id']).toString();
+      final trimmed = newText.trim();
+      final original = Map<String, dynamic>.from(msg);
+
+      // Optimistic local update (Realtime UPDATE bestätigt später).
+      if (mounted) {
+        setState(() {
+          final idx = _messages.indexWhere(
+              (m) => (m['id']?.toString() ?? m['message_id']?.toString()) == msgId);
+          if (idx >= 0) {
+            _messages[idx] = {
+              ..._messages[idx],
+              'message': trimmed,
+              'content': trimmed,
+              'edited_at': DateTime.now().toUtc().toIso8601String(),
+            };
+          }
+        });
+      }
+
       try {
         await _api.editChatMessage(
-          messageId: msg['message_id'] ?? msg['id'],
+          messageId: msgId,
           roomId: _fullRoomId,
           realm: 'energie',
-          newMessage: newText.trim(),
+          newMessage: trimmed,
           userId: _userId,
           username: _username,
         );
-        
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -2914,15 +2954,20 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
               duration: Duration(seconds: 2),
             ),
           );
-          await _loadMessages(silent: true);
         }
       } catch (e) {
+        // Rollback bei Fehler.
         if (mounted) {
+          setState(() {
+            final idx = _messages.indexWhere(
+                (m) => (m['id']?.toString() ?? m['message_id']?.toString()) == msgId);
+            if (idx >= 0) _messages[idx] = original;
+          });
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('❌ Fehler: $e'),
               backgroundColor: Colors.red,
-              duration: Duration(seconds: 3),
+              duration: const Duration(seconds: 3),
             ),
           );
         }

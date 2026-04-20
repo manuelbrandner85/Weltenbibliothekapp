@@ -458,6 +458,10 @@ class SupabaseChatService {
   /// Nachricht senden.
   /// Anonyme Posts sind erlaubt (user_id bleibt null) — konsistent mit
   /// vorherigem Worker-Verhalten. RLS erlaubt anon-INSERT (v18 migration).
+  ///
+  /// Reply-Support (v36): Wenn [replyToId] gesetzt ist, wird ein Telegram-Style
+  /// Quote-Snapshot mitgespeichert. Der Snapshot (content/sender_name) bleibt
+  /// sichtbar auch wenn die Original-Nachricht später gelöscht wird.
   Future<Map<String, dynamic>> sendMessage({
     required String roomId,
     required String message,
@@ -465,6 +469,9 @@ class SupabaseChatService {
     String? avatarUrl,
     String? messageType,
     bool allowAnonymous = true,
+    String? replyToId,
+    String? replyToContent,
+    String? replyToSenderName,
   }) async {
     final user = supabase.auth.currentUser;
     if (user == null && !allowAnonymous) {
@@ -500,6 +507,15 @@ class SupabaseChatService {
     if (user != null) insertData['user_id'] = user.id;
     if (effectiveAvatar != null) insertData['avatar_url'] = effectiveAvatar;
     if (messageType != null) insertData['message_type'] = messageType;
+    if (replyToId != null && replyToId.isNotEmpty) {
+      insertData['reply_to_id'] = replyToId;
+      // Snapshot auf max. 280 Zeichen kürzen (Telegram-Style Quote).
+      final snippet = (replyToContent ?? '').trim();
+      insertData['reply_to_content'] =
+          snippet.length > 280 ? '${snippet.substring(0, 280)}…' : snippet;
+      insertData['reply_to_sender_name'] =
+          (replyToSenderName ?? '').trim().isEmpty ? null : replyToSenderName!.trim();
+    }
 
     final response = await supabase
         .from('chat_messages')
@@ -535,7 +551,9 @@ class SupabaseChatService {
     return result;
   }
 
-  /// Nachricht löschen (Soft-Delete, is_deleted=true).
+  /// Nachricht löschen — Hard-Delete (v36).
+  /// RLS-Policy "User kann eigene Nachrichten löschen" greift. Admin-Löschung
+  /// läuft über Worker-Endpoint mit SERVICE_ROLE (nicht hier).
   Future<void> deleteMessage({
     required String messageId,
     bool isAdmin = false,
@@ -545,19 +563,26 @@ class SupabaseChatService {
       throw Exception('Nicht eingeloggt – Löschen nicht möglich.');
     }
 
-    await supabase.from('chat_messages').update({
-      'is_deleted': true,
-      'deleted_at': DateTime.now().toUtc().toIso8601String(),
-    }).eq('id', messageId);
+    await supabase.from('chat_messages').delete().eq('id', messageId);
   }
 
   /// Echtzeit-Subscription auf Chat-Nachrichten.
-  /// Ruft [onMessage] bei jeder neuen Nachricht auf.
+  /// - [onMessage]: neue INSERT-Nachricht
+  /// - [onUpdate]: bearbeitete Nachricht (edit)
+  /// - [onDelete]: hart gelöschte Nachricht (nur `id` im payload enthalten)
   RealtimeChannel subscribeToRoom(
     String roomId, {
     required void Function(Map<String, dynamic>) onMessage,
+    void Function(Map<String, dynamic>)? onUpdate,
+    void Function(String messageId)? onDelete,
   }) {
     _activeChannel?.unsubscribe();
+
+    final filter = PostgresChangeFilter(
+      type: PostgresChangeFilterType.eq,
+      column: 'room_id',
+      value: roomId,
+    );
 
     _activeChannel = supabase
         .channel('chat_room_$roomId')
@@ -565,16 +590,36 @@ class SupabaseChatService {
           event: PostgresChangeEvent.insert,
           schema: 'public',
           table: 'chat_messages',
-          filter: PostgresChangeFilter(
-            type: PostgresChangeFilterType.eq,
-            column: 'room_id',
-            value: roomId,
-          ),
+          filter: filter,
           callback: (payload) {
-            if (kDebugMode) {
-              debugPrint('💬 [Chat] Neue Nachricht in $roomId');
-            }
+            if (kDebugMode) debugPrint('💬 [Chat] INSERT in $roomId');
             onMessage(Map<String, dynamic>.from(payload.newRecord));
+          },
+        )
+        .onPostgresChanges(
+          event: PostgresChangeEvent.update,
+          schema: 'public',
+          table: 'chat_messages',
+          filter: filter,
+          callback: (payload) {
+            if (kDebugMode) debugPrint('✏️ [Chat] UPDATE in $roomId');
+            onUpdate?.call(Map<String, dynamic>.from(payload.newRecord));
+          },
+        )
+        .onPostgresChanges(
+          // DELETE-Filter auf room_id geht nicht zuverlässig (oldRecord ist
+          // bei REPLICA IDENTITY FULL komplett, sonst nur PK). Daher ohne
+          // Filter und im Callback auf room_id prüfen.
+          event: PostgresChangeEvent.delete,
+          schema: 'public',
+          table: 'chat_messages',
+          callback: (payload) {
+            final old = Map<String, dynamic>.from(payload.oldRecord);
+            if (old['room_id'] != null && old['room_id'] != roomId) return;
+            final id = old['id']?.toString();
+            if (id == null || id.isEmpty) return;
+            if (kDebugMode) debugPrint('🗑️ [Chat] DELETE $id in $roomId');
+            onDelete?.call(id);
           },
         )
         .subscribe();
