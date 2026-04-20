@@ -6,6 +6,7 @@
 //
 // Verhalten:
 //   - Fullscreen-Dialog mit Cyan-Akzent (Home-Dashboard-Stil)
+//   - Patch-Changelog aus Supabase app_config.patch_changelog (FutureBuilder)
 //   - Großer "App jetzt schließen"-Button → SystemNavigator.pop() + exit(0) Fallback
 //   - "Später"-TextButton erlaubt Schließen ohne Restart
 //   - barrierDismissible:false + PopScope canPop:false → User muss aktiv entscheiden
@@ -17,7 +18,7 @@ import 'package:flutter/services.dart';
 
 import '../services/update_service.dart';
 
-class PatchReadyDialog extends StatelessWidget {
+class PatchReadyDialog extends StatefulWidget {
   final PatchCheckResult result;
 
   const PatchReadyDialog({super.key, required this.result});
@@ -34,6 +35,19 @@ class PatchReadyDialog extends StatelessWidget {
         child: PatchReadyDialog(result: result),
       ),
     );
+  }
+
+  @override
+  State<PatchReadyDialog> createState() => _PatchReadyDialogState();
+}
+
+class _PatchReadyDialogState extends State<PatchReadyDialog> {
+  late final Future<String?> _changelogFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _changelogFuture = UpdateService.instance.fetchPatchChangelog();
   }
 
   @override
@@ -102,7 +116,61 @@ class PatchReadyDialog extends StatelessWidget {
                 height: 1.5,
               ),
             ),
-            if (result.nextPatchNumber != null) ...[
+            // Patch-Changelog aus Supabase (wenn vorhanden)
+            FutureBuilder<String?>(
+              future: _changelogFuture,
+              builder: (context, snap) {
+                if (!snap.hasData || snap.data == null) {
+                  return const SizedBox.shrink();
+                }
+                return Padding(
+                  padding: const EdgeInsets.only(top: 16),
+                  child: Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF00E5FF).withValues(alpha: 0.07),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: const Color(0xFF00E5FF).withValues(alpha: 0.25),
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.list_alt_rounded,
+                              color: Color(0xFF00E5FF),
+                              size: 14,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Was ist neu',
+                              style: TextStyle(
+                                color: const Color(0xFF00E5FF).withValues(alpha: 0.9),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          snap.data!,
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.75),
+                            fontSize: 12,
+                            height: 1.6,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+            if (widget.result.nextPatchNumber != null) ...[
               const SizedBox(height: 16),
               Center(
                 child: Container(
@@ -125,7 +193,7 @@ class PatchReadyDialog extends StatelessWidget {
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        'Patch ${result.nextPatchNumber} wartet',
+                        'Patch ${widget.result.nextPatchNumber} wartet',
                         style: const TextStyle(
                           color: Color(0xFF00E5FF),
                           fontSize: 12,

@@ -216,6 +216,27 @@ class UpdateService {
     }
   }
 
+  /// Liest `patch_changelog` aus Supabase `app_config` (android).
+  /// Gibt null zurück bei Offline, Fehler oder leerem Wert.
+  Future<String?> fetchPatchChangelog() async {
+    try {
+      if (!await _hasConnectivity()) return null;
+      final row = await Supabase.instance.client
+          .from('app_config')
+          .select('patch_changelog')
+          .eq('platform', 'android')
+          .maybeSingle()
+          .timeout(const Duration(seconds: 5), onTimeout: () => null);
+      final cl = (row?['patch_changelog'] as String?)?.trim();
+      return (cl == null || cl.isEmpty) ? null : cl;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('⚠️  [UpdateService] patch_changelog fetch fehlgeschlagen: $e');
+      }
+      return null;
+    }
+  }
+
   /// Schließt den Stream. Wird idR. nicht aufgerufen (Singleton), steht aber
   /// für Tests zur Verfügung.
   void dispose() {

@@ -116,10 +116,12 @@ jobs:
             -H "Prefer: resolution=merge-duplicates,return=representation" \
             -d "$BODY")
 
-          if [ "$HTTP_CODE" != "200" ] && [ "$HTTP_CODE" != "201" ]; then
+          echo "→ HTTP $HTTP_CODE"
+          # PostgREST gibt 200 (update), 201 (insert) oder 204 (no-content) zurück.
+          if [ "$HTTP_CODE" != "200" ] && [ "$HTTP_CODE" != "201" ] && [ "$HTTP_CODE" != "204" ]; then
             echo "❌ Supabase-Update fehlgeschlagen (HTTP $HTTP_CODE)"
             cat /tmp/resp.json
             exit 1
           fi
-          echo "✅ app_config aktualisiert"
-          cat /tmp/resp.json | jq '.'
+          echo "✅ app_config aktualisiert (HTTP $HTTP_CODE)"
+          cat /tmp/resp.json | jq '.' 2>/dev/null || echo "(leere Antwort – ist bei HTTP 204 normal)"
