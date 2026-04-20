@@ -3,29 +3,54 @@ import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
 /// SQLite-basierter Key-Value-Store als Hive-Ersatz.
-/// Tabelle: kv_store (box TEXT, key TEXT, value TEXT, PRIMARY KEY (box, key))
+///
+/// Tabelle kv_store: box TEXT, key TEXT, value TEXT (JSON), PRIMARY KEY (box, key)
+///
+/// Hält zusätzlich einen In-Memory-Cache, damit synchrone Lesezugriffe
+/// (getSync / getAllSync / containsKeySync) ohne await funktionieren —
+/// identisches Verhalten zum alten Hive-API.
 class SqliteStorageService {
   SqliteStorageService._();
   static final instance = SqliteStorageService._();
 
   Database? _db;
 
+  // Cache: '$box\x00$key' → decoded value (beliebiger Dart-Typ)
+  final Map<String, dynamic> _cache = {};
+
+  String _ck(String box, String key) => '$box\x00$key';
+
+  // ── Init ────────────────────────────────────────────────────────────────────
+
   Future<void> init() async {
     final dbPath = await getDatabasesPath();
     _db = await openDatabase(
       join(dbPath, 'weltenbibliothek.db'),
       version: 1,
-      onCreate: (db, version) async {
-        await db.execute('''
-          CREATE TABLE kv_store (
-            box TEXT NOT NULL,
-            key TEXT NOT NULL,
-            value TEXT,
-            PRIMARY KEY (box, key)
-          )
-        ''');
-      },
+      onCreate: (db, v) => db.execute('''
+        CREATE TABLE kv_store (
+          box  TEXT NOT NULL,
+          key  TEXT NOT NULL,
+          value TEXT,
+          PRIMARY KEY (box, key)
+        )
+      '''),
     );
+    await _loadCache();
+  }
+
+  Future<void> _loadCache() async {
+    final rows = await _db!.query('kv_store');
+    _cache.clear();
+    for (final r in rows) {
+      final raw = r['value'] as String?;
+      if (raw == null) continue;
+      try {
+        _cache[_ck(r['box'] as String, r['key'] as String)] = jsonDecode(raw);
+      } catch (_) {
+        _cache[_ck(r['box'] as String, r['key'] as String)] = raw;
+      }
+    }
   }
 
   Database get _database {
@@ -33,23 +58,55 @@ class SqliteStorageService {
     return _db!;
   }
 
-  Future<dynamic> get(String box, String key) async {
-    final rows = await _database.query(
-      'kv_store',
-      where: 'box = ? AND key = ?',
-      whereArgs: [box, key],
-    );
-    if (rows.isEmpty) return null;
-    final raw = rows.first['value'] as String?;
-    if (raw == null) return null;
-    try {
-      return jsonDecode(raw);
-    } catch (_) {
-      return raw;
-    }
+  // ── Sync reads (aus Cache — kein await nötig) ───────────────────────────────
+
+  dynamic getSync(String box, String key) => _cache[_ck(box, key)];
+
+  List<dynamic> getAllSync(String box) {
+    final prefix = '$box\x00';
+    return _cache.entries
+        .where((e) => e.key.startsWith(prefix))
+        .map((e) => e.value)
+        .toList();
   }
 
+  bool containsKeySync(String box, String key) =>
+      _cache.containsKey(_ck(box, key));
+
+  // ── Async reads (lesen ebenfalls aus Cache, konsistent) ─────────────────────
+
+  Future<dynamic> get(String box, String key) async => getSync(box, key);
+
+  Future<List<dynamic>> getAll(String box) async => getAllSync(box);
+
+  Future<Map<String, dynamic>> getAllWithKeys(String box) async {
+    final prefix = '$box\x00';
+    return {
+      for (final e in _cache.entries.where((e) => e.key.startsWith(prefix)))
+        e.key.substring(prefix.length): e.value,
+    };
+  }
+
+  Future<bool> containsKey(String box, String key) async =>
+      containsKeySync(box, key);
+
+  Future<int> count(String box) async {
+    final prefix = '$box\x00';
+    return _cache.keys.where((k) => k.startsWith(prefix)).length;
+  }
+
+  Future<List<String>> getKeys(String box) async {
+    final prefix = '$box\x00';
+    return _cache.keys
+        .where((k) => k.startsWith(prefix))
+        .map((k) => k.substring(prefix.length))
+        .toList();
+  }
+
+  // ── Writes (Cache + SQLite) ─────────────────────────────────────────────────
+
   Future<void> put(String box, String key, dynamic value) async {
+    _cache[_ck(box, key)] = value;
     await _database.insert(
       'kv_store',
       {'box': box, 'key': key, 'value': jsonEncode(value)},
@@ -58,6 +115,7 @@ class SqliteStorageService {
   }
 
   Future<void> delete(String box, String key) async {
+    _cache.remove(_ck(box, key));
     await _database.delete(
       'kv_store',
       where: 'box = ? AND key = ?',
@@ -65,77 +123,8 @@ class SqliteStorageService {
     );
   }
 
-  Future<List<dynamic>> getAll(String box) async {
-    final rows = await _database.query(
-      'kv_store',
-      where: 'box = ?',
-      whereArgs: [box],
-    );
-    return rows
-        .map((r) {
-          final raw = r['value'] as String?;
-          if (raw == null) return null;
-          try {
-            return jsonDecode(raw);
-          } catch (_) {
-            return raw;
-          }
-        })
-        .whereType<dynamic>()
-        .toList();
-  }
-
-  Future<Map<String, dynamic>> getAllWithKeys(String box) async {
-    final rows = await _database.query(
-      'kv_store',
-      where: 'box = ?',
-      whereArgs: [box],
-    );
-    final result = <String, dynamic>{};
-    for (final r in rows) {
-      final k = r['key'] as String;
-      final raw = r['value'] as String?;
-      if (raw != null) {
-        try {
-          result[k] = jsonDecode(raw);
-        } catch (_) {
-          result[k] = raw;
-        }
-      }
-    }
-    return result;
-  }
-
   Future<void> clear(String box) async {
+    _cache.removeWhere((k, _) => k.startsWith('$box\x00'));
     await _database.delete('kv_store', where: 'box = ?', whereArgs: [box]);
-  }
-
-  Future<bool> containsKey(String box, String key) async {
-    final rows = await _database.query(
-      'kv_store',
-      where: 'box = ? AND key = ?',
-      whereArgs: [box, key],
-      limit: 1,
-    );
-    return rows.isNotEmpty;
-  }
-
-  Future<int> count(String box) async {
-    final result = await _database.rawQuery(
-      'SELECT COUNT(*) as c FROM kv_store WHERE box = ?',
-      [box],
-    );
-    return (result.first['c'] as int?) ?? 0;
-  }
-
-  /// Gibt alle Schlüssel einer Box zurück.
-  Future<List<String>> getKeys(String box) async {
-    final rows = await _database.query(
-      'kv_store',
-      columns: ['key'],
-      where: 'box = ?',
-      whereArgs: [box],
-    );
-    return rows.map((r) => r['key'] as String).toList();
   }
 }

@@ -2,8 +2,8 @@ import 'dart:async';
 import '../services/storage_service.dart';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import '../models/spirit_extended_models.dart';
+import 'sqlite_storage_service.dart';
 import '../models/energie_profile.dart';
 import '../models/spirit_practices_database.dart';
 
@@ -260,16 +260,15 @@ class DailySpiritPracticeService extends ChangeNotifier {
   /// Gespeicherte Übungen laden
   Future<List<DailySpiritPractice>> _loadStoredPractices(String dateKey) async {
     try {
-      final box = await Hive.openBox('daily_practices');
-      final data = box.get(dateKey);
-      
+      final data = SqliteStorageService.instance.getSync('daily_practices', dateKey);
+
       if (data != null && data is List) {
         return data
             .map((json) => DailySpiritPractice.fromJson(
                 Map<String, dynamic>.from(json as Map)))
             .toList();
       }
-      
+
       return [];
     } catch (e) {
       if (kDebugMode) {
@@ -284,11 +283,8 @@ class DailySpiritPracticeService extends ChangeNotifier {
     try {
       final today = DateTime.now();
       final todayKey = '${today.year}-${today.month}-${today.day}';
-      
-      final box = await Hive.openBox('daily_practices');
       final data = _todaysPractices.map((p) => p.toJson()).toList();
-      
-      await box.put(todayKey, data);
+      await SqliteStorageService.instance.put('daily_practices', todayKey, data);
     } catch (e) {
       if (kDebugMode) {
         debugPrint('⚠️ Fehler beim Speichern: $e');

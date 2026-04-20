@@ -1,28 +1,10 @@
-import 'package:hive/hive.dart';
-
-part 'research_note.g.dart';
-
-@HiveType(typeId: 10)
-class ResearchNote extends HiveObject {
-  @HiveField(0)
+class ResearchNote {
   String id;
-
-  @HiveField(1)
   String title;
-
-  @HiveField(2)
   String content;
-
-  @HiveField(3)
   String sourceUrl;
-
-  @HiveField(4)
   DateTime createdAt;
-
-  @HiveField(5)
   DateTime updatedAt;
-
-  @HiveField(6)
   List<String> tags;
 
   ResearchNote({
@@ -52,4 +34,24 @@ class ResearchNote extends HiveObject {
       tags: tags,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'title': title,
+        'content': content,
+        'sourceUrl': sourceUrl,
+        'createdAt': createdAt.toIso8601String(),
+        'updatedAt': updatedAt.toIso8601String(),
+        'tags': tags,
+      };
+
+  factory ResearchNote.fromJson(Map<String, dynamic> json) => ResearchNote(
+        id: json['id'] as String,
+        title: json['title'] as String,
+        content: json['content'] as String,
+        sourceUrl: json['sourceUrl'] as String,
+        createdAt: DateTime.parse(json['createdAt'] as String),
+        updatedAt: DateTime.parse(json['updatedAt'] as String),
+        tags: (json['tags'] as List?)?.cast<String>() ?? [],
+      );
 }

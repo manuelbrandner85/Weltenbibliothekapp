@@ -1,8 +1,8 @@
 import 'dart:async';
 import '../services/storage_service.dart';
 import 'package:flutter/foundation.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import '../models/spirit_extended_models.dart';
+import 'sqlite_storage_service.dart';
 
 /// ============================================
 /// SPIRIT JOURNAL SERVICE
@@ -56,19 +56,18 @@ class SpiritJournalService extends ChangeNotifier {
   /// Lade alle Einträge
   Future<void> _loadEntries() async {
     try {
-      final box = await Hive.openBox(_boxName);
-      final data = box.get('entries');
-      
+      final data = SqliteStorageService.instance.getSync(_boxName, 'entries');
+
       if (data != null && data is List) {
         _entries = data
             .map((json) => SpiritJournalEntry.fromJson(
                 Map<String, dynamic>.from(json as Map)))
             .toList();
-        
+
         // Sortiere nach Datum (neueste zuerst)
         _entries.sort((a, b) => b.timestamp.compareTo(a.timestamp));
       }
-      
+
       _entriesController.add(_entries);
       notifyListeners();
     } catch (e) {
@@ -81,9 +80,8 @@ class SpiritJournalService extends ChangeNotifier {
   /// Speichere Einträge
   Future<void> _saveEntries() async {
     try {
-      final box = await Hive.openBox(_boxName);
       final data = _entries.map((e) => e.toJson()).toList();
-      await box.put('entries', data);
+      await SqliteStorageService.instance.put(_boxName, 'entries', data);
     } catch (e) {
       if (kDebugMode) {
         debugPrint('⚠️ Fehler beim Speichern: $e');

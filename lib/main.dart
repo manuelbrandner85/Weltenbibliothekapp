@@ -52,56 +52,9 @@ void main() async {
   // 🟢 SUPABASE - Muss als ERSTES initialisiert werden (vor allen anderen Services)
   await initSupabase();
 
-  // 🗄️ HIVE LOCAL STORAGE - Initialize + alle Boxen vorab öffnen
-  await Hive.initFlutter();
-  
-  // Alle Hive-Boxen die in der App verwendet werden vorab öffnen
-  // (verhindert HiveError: Box not found)
-  const hiveBoxes = [
-    'research_topics',
-    'community_posts',
-    'meditation_sessions',
-    'daily_practices',
-    'complete_content_cache',
-    'numerology_data',
-    'spirit_calculations',
-    'user_data', // ✅ FIX: UnifiedStorageService benötigt diese Box (Admin Dashboard)
-    // 🔮 SPIRIT-TAB: Alle Tool-Boxen vorab öffnen (verhindert "HiveError: Box not found")
-    'spirit_entries',
-    'spirit_progress',
-    'synchronicity_entries',
-    'journal_entries',
-    'partner_profiles',
-    'compatibility_analyses',
-    'weekly_horoscope',
-    'chakra_journal',
-    'chakra_daily_scores',
-    'chakra_meditation_sessions',
-    'chakra_affirmations',
-    'numerology_year_journey',
-    'numerology_journal',
-    'numerology_milestones',
-    'meditation_sessions_enhanced',
-    'meditation_presets',
-    'tarot_readings',
-    'tarot_daily_cards',
-    'tarot_spreads',
-    'moon_journal',
-    'crystal_collection',
-    'mantra_challenges',
-    'post_drafts',
-    'scheduled_posts',
-  ];
-  for (final box in hiveBoxes) {
-    try {
-      if (!Hive.isBoxOpen(box)) {
-        await Hive.openBox(box);
-      }
-    } catch (e) {
-      debugPrint('⚠️ Hive box "$box" konnte nicht geöffnet werden: $e');
-    }
-  }
-  
+  // 🗄️ SQLITE LOCAL STORAGE - Initialize SQLite database
+  await SqliteStorageService.instance.init();
+
   // 🛡️ ERROR BOUNDARY - Verhindert App-Crashes
   ErrorBoundary.initialize();
   

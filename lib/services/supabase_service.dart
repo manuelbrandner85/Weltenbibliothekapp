@@ -13,8 +13,8 @@ library;
 
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'sqlite_storage_service.dart';
 import '../config/api_config.dart';
 
 // ──────────────────────────────────────────────────────────────
@@ -131,6 +131,7 @@ class SupabaseAuthService {
 
   /// Löscht alle lokalen Auth- und Profil-Caches nach Logout.
   Future<void> _clearLocalData() async {
+    final db = SqliteStorageService.instance;
     for (final boxName in [
       'user_data',
       'materie_profiles',
@@ -138,10 +139,8 @@ class SupabaseAuthService {
       'auth_storage',
     ]) {
       try {
-        if (Hive.isBoxOpen(boxName)) {
-          await Hive.box(boxName).clear();
-          if (kDebugMode) debugPrint('🗑️ [Auth] Cleared: $boxName');
-        }
+        await db.clear(boxName);
+        if (kDebugMode) debugPrint('🗑️ [Auth] Cleared: $boxName');
       } catch (e) {
         if (kDebugMode) debugPrint('⚠️ [Auth] Clear $boxName failed: $e');
       }

@@ -1,21 +1,8 @@
-import 'package:hive/hive.dart';
-part 'synchronicity_entry.g.dart';
-
-@HiveType(typeId: 11)
 class SynchronicityEntry {
-  @HiveField(0)
   final DateTime timestamp;
-  
-  @HiveField(1)
   final String description;
-  
-  @HiveField(2)
   final String? pattern; // numbers, symbols, etc.
-  
-  @HiveField(3)
   final List<String>? tags;
-  
-  @HiveField(4)
   final int significance; // 1-10
 
   SynchronicityEntry({
@@ -26,12 +13,6 @@ class SynchronicityEntry {
     required this.significance,
   });
 
-  static Future<void> registerAdapter() async {
-    if (!Hive.isAdapterRegistered(11)) {
-      Hive.registerAdapter(SynchronicityEntryAdapter());
-    }
-  }
-  
   static List<String> detectPatterns(String text) {
     final patterns = <String>[];
     if (RegExp(r'11:11|22:22|333|444|555|666|777|888|999').hasMatch(text)) {
@@ -42,4 +23,20 @@ class SynchronicityEntry {
     }
     return patterns;
   }
+
+  Map<String, dynamic> toJson() => {
+        'timestamp': timestamp.toIso8601String(),
+        'description': description,
+        'pattern': pattern,
+        'tags': tags,
+        'significance': significance,
+      };
+
+  factory SynchronicityEntry.fromJson(Map<String, dynamic> json) => SynchronicityEntry(
+        timestamp: DateTime.parse(json['timestamp'] as String),
+        description: json['description'] as String,
+        pattern: json['pattern'] as String?,
+        tags: (json['tags'] as List?)?.cast<String>(),
+        significance: json['significance'] as int,
+      );
 }

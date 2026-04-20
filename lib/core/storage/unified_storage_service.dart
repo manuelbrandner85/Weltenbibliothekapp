@@ -5,8 +5,8 @@
 library;
 
 import 'package:flutter/foundation.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../services/sqlite_storage_service.dart';
 
 /// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 /// 📦 UNIFIED STORAGE SERVICE
@@ -44,10 +44,7 @@ class UnifiedStorageService {
   /// Get username for world
   String? getUsername(String world) {
     try {
-      // Box muss geöffnet sein (wird in main.dart geöffnet)
-      if (!Hive.isBoxOpen('user_data')) return null;
-      final box = Hive.box('user_data');
-      return box.get('username_$world') as String?;
+      return SqliteStorageService.instance.getSync('user_data', 'username_$world') as String?;
     } catch (e) {
       debugPrint('❌ Error getting username: $e');
       return null;
@@ -57,9 +54,7 @@ class UnifiedStorageService {
   /// Get user role for world
   String? getRole(String world) {
     try {
-      if (!Hive.isBoxOpen('user_data')) return 'user';
-      final box = Hive.box('user_data');
-      return box.get('role_$world') as String?;
+      return SqliteStorageService.instance.getSync('user_data', 'role_$world') as String?;
     } catch (e) {
       debugPrint('❌ Error getting role: $e');
       return 'user'; // Default role
@@ -69,9 +64,8 @@ class UnifiedStorageService {
   /// Get user profile for world
   Map<String, dynamic>? getProfile(String world) {
     try {
-      if (!Hive.isBoxOpen('user_data')) return null;
-      final box = Hive.box('user_data');
-      return box.get('profile_$world') as Map<String, dynamic>?;
+      final data = SqliteStorageService.instance.getSync('user_data', 'profile_$world');
+      return data != null ? Map<String, dynamic>.from(data as Map) : null;
     } catch (e) {
       debugPrint('❌ Error getting profile: $e');
       return null;
@@ -82,20 +76,15 @@ class UnifiedStorageService {
   /// Also writes username_ and role_ keys so AdminStateNotifier can read them.
   Future<void> saveProfile(String world, Map<String, dynamic> profile) async {
     try {
-      // Öffne Box falls noch nicht geöffnet
-      if (!Hive.isBoxOpen('user_data')) {
-        await Hive.openBox('user_data');
-      }
-      final box = Hive.box('user_data');
-      await box.put('profile_$world', profile);
-      // Mirror username and role for fast synchronous reads used by AdminStateNotifier
+      final db = SqliteStorageService.instance;
+      await db.put('user_data', 'profile_$world', profile);
       final username = profile['username'] as String?;
       final role = profile['role'] as String?;
       if (username != null && username.isNotEmpty) {
-        await box.put('username_$world', username);
+        await db.put('user_data', 'username_$world', username);
       }
       if (role != null && role.isNotEmpty) {
-        await box.put('role_$world', role);
+        await db.put('user_data', 'role_$world', role);
       }
     } catch (e) {
       debugPrint('❌ Error saving profile: $e');
@@ -112,8 +101,10 @@ class UnifiedStorageService {
       final userId = await getCurrentUserId();
       if (userId == null) return [];
 
-      final box = await Hive.openBox('bookmarks_$userId');
-      return box.values.cast<Map<String, dynamic>>().toList();
+      return SqliteStorageService.instance
+          .getAllSync('bookmarks_$userId')
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList();
     } catch (e) {
       debugPrint('❌ Error getting bookmarks: $e');
       return [];
@@ -126,10 +117,8 @@ class UnifiedStorageService {
       final userId = await getCurrentUserId();
       if (userId == null) return;
 
-      final box = await Hive.openBox('bookmarks_$userId');
-      final bookmarkId = bookmark['id'] ?? DateTime.now().millisecondsSinceEpoch.toString();
-      await box.put(bookmarkId, bookmark);
-      
+      final bookmarkId = bookmark['id'] as String? ?? DateTime.now().millisecondsSinceEpoch.toString();
+      await SqliteStorageService.instance.put('bookmarks_$userId', bookmarkId, bookmark);
       debugPrint('✅ Bookmark added: $bookmarkId');
     } catch (e) {
       debugPrint('❌ Error adding bookmark: $e');
@@ -142,9 +131,7 @@ class UnifiedStorageService {
       final userId = await getCurrentUserId();
       if (userId == null) return;
 
-      final box = await Hive.openBox('bookmarks_$userId');
-      await box.delete(bookmarkId);
-      
+      await SqliteStorageService.instance.delete('bookmarks_$userId', bookmarkId);
       debugPrint('✅ Bookmark removed: $bookmarkId');
     } catch (e) {
       debugPrint('❌ Error removing bookmark: $e');
@@ -161,8 +148,10 @@ class UnifiedStorageService {
       final userId = await getCurrentUserId();
       if (userId == null) return [];
 
-      final box = await Hive.openBox('reading_history_$userId');
-      return box.values.cast<Map<String, dynamic>>().toList();
+      return SqliteStorageService.instance
+          .getAllSync('reading_history_$userId')
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList();
     } catch (e) {
       debugPrint('❌ Error getting reading history: $e');
       return [];
@@ -175,13 +164,9 @@ class UnifiedStorageService {
       final userId = await getCurrentUserId();
       if (userId == null) return;
 
-      final box = await Hive.openBox('reading_history_$userId');
-      final itemId = item['id'] ?? DateTime.now().millisecondsSinceEpoch.toString();
-      
-      // Add timestamp
+      final itemId = item['id'] as String? ?? DateTime.now().millisecondsSinceEpoch.toString();
       item['timestamp'] = DateTime.now().toIso8601String();
-      
-      await box.put(itemId, item);
+      await SqliteStorageService.instance.put('reading_history_$userId', itemId, item);
       debugPrint('✅ Added to reading history: $itemId');
     } catch (e) {
       debugPrint('❌ Error adding to reading history: $e');
@@ -198,16 +183,14 @@ class UnifiedStorageService {
       final userId = await getCurrentUserId();
       if (userId == null) return;
 
-      final box = await Hive.openBox('reading_lists_$userId');
       final listId = DateTime.now().millisecondsSinceEpoch.toString();
-      
-      await box.put(listId, {
+      await SqliteStorageService.instance.put('reading_lists_$userId', listId, {
         'id': listId,
         'name': name,
         'items': items,
         'created_at': DateTime.now().toIso8601String(),
       });
-      
+
       debugPrint('✅ Reading list created: $name');
     } catch (e) {
       debugPrint('❌ Error creating reading list: $e');
@@ -266,9 +249,10 @@ class UnifiedStorageService {
     try {
       final userId = await getCurrentUserId();
       if (userId != null) {
-        await Hive.box('bookmarks_$userId').clear();
-        await Hive.box('reading_history_$userId').clear();
-        await Hive.box('reading_lists_$userId').clear();
+        final db = SqliteStorageService.instance;
+        await db.clear('bookmarks_$userId');
+        await db.clear('reading_history_$userId');
+        await db.clear('reading_lists_$userId');
       }
       debugPrint('✅ All caches cleared');
     } catch (e) {

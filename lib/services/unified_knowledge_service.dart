@@ -1,5 +1,5 @@
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter/foundation.dart';
+import 'sqlite_storage_service.dart';
 import 'dart:async';
 import '../models/knowledge_extended_models.dart';
 import '../data/materie_knowledge_data.dart';
@@ -38,20 +38,6 @@ class UnifiedKnowledgeService {
     if (_initialized) return;
 
     try {
-      // Open Hive boxes
-      if (!Hive.isBoxOpen(_knowledgeBox)) {
-        await Hive.openBox(_knowledgeBox);
-      }
-      if (!Hive.isBoxOpen(_favoritesBox)) {
-        await Hive.openBox(_favoritesBox);
-      }
-      if (!Hive.isBoxOpen(_notesBox)) {
-        await Hive.openBox(_notesBox);
-      }
-      if (!Hive.isBoxOpen(_progressBox)) {
-        await Hive.openBox(_progressBox);
-      }
-
       // Load initial data if empty
       await _loadInitialData();
 
@@ -64,33 +50,26 @@ class UnifiedKnowledgeService {
 
   /// LOAD INITIAL DATA (from data files)
   Future<void> _loadInitialData() async {
-    final box = Hive.box(_knowledgeBox);
-    
+    final db = SqliteStorageService.instance;
+
     // Only load if box is empty
-    if (box.isEmpty) {
+    if (await db.count(_knowledgeBox) == 0) {
       debugPrint('📚 Loading initial knowledge data (100 entries)...');
-      
-      // Load Materie data (15 base entries)
+
       for (var entry in materieKnowledgeDatabase) {
-        await box.put(entry.id, entry.toJson());
+        await db.put(_knowledgeBox, entry.id, entry.toJson());
       }
-      
-      // Load Materie complete (35 additional entries)
       for (var entry in materieKnowledgeComplete) {
-        await box.put(entry.id, entry.toJson());
+        await db.put(_knowledgeBox, entry.id, entry.toJson());
       }
-      
-      // Load Energie data (5 base entries)
       for (var entry in energieKnowledgeDatabase) {
-        await box.put(entry.id, entry.toJson());
+        await db.put(_knowledgeBox, entry.id, entry.toJson());
       }
-      
-      // Load Energie complete (45 additional entries)
       for (var entry in energieKnowledgeComplete) {
-        await box.put(entry.id, entry.toJson());
+        await db.put(_knowledgeBox, entry.id, entry.toJson());
       }
-      
-      debugPrint('✅ Loaded ${box.length} knowledge entries (50 Materie + 50 Energie)');
+
+      debugPrint('✅ Loaded ${await db.count(_knowledgeBox)} knowledge entries');
     }
   }
 
@@ -101,17 +80,17 @@ class UnifiedKnowledgeService {
   /// Get all entries (optionally filtered by world)
   Future<List<KnowledgeEntry>> getAllEntries({String? world}) async {
     await init();
-    
+
     try {
-      final box = Hive.box(_knowledgeBox);
-      final entries = box.values
+      final db = SqliteStorageService.instance;
+      final entries = db.getAllSync(_knowledgeBox)
           .map((e) => KnowledgeEntry.fromJson(Map<String, dynamic>.from(e as Map)))
           .toList();
-      
+
       if (world != null) {
         return entries.where((e) => e.world == world).toList();
       }
-      
+
       return entries;
     } catch (e) {
       debugPrint('❌ getAllEntries error: $e');
@@ -122,15 +101,14 @@ class UnifiedKnowledgeService {
   /// Get entry by ID
   Future<KnowledgeEntry?> getEntry(String id) async {
     await init();
-    
+
     try {
-      final box = Hive.box(_knowledgeBox);
-      final data = box.get(id);
-      
+      final data = SqliteStorageService.instance.getSync(_knowledgeBox, id);
+
       if (data != null) {
         return KnowledgeEntry.fromJson(Map<String, dynamic>.from(data as Map));
       }
-      
+
       return null;
     } catch (e) {
       debugPrint('❌ getEntry error: $e');
@@ -166,13 +144,12 @@ class UnifiedKnowledgeService {
   /// Increment view count
   Future<void> incrementViewCount(String id) async {
     await init();
-    
+
     try {
       final entry = await getEntry(id);
       if (entry != null) {
         final updated = entry.copyWith(viewCount: entry.viewCount + 1);
-        final box = Hive.box(_knowledgeBox);
-        await box.put(id, updated.toJson());
+        await SqliteStorageService.instance.put(_knowledgeBox, id, updated.toJson());
       }
     } catch (e) {
       debugPrint('❌ incrementViewCount error: $e');
@@ -186,16 +163,14 @@ class UnifiedKnowledgeService {
   /// Add to favorites
   Future<void> addFavorite(String knowledgeId, {String? notes}) async {
     await init();
-    
+
     try {
-      final box = Hive.box(_favoritesBox);
       final favorite = FavoriteEntry(
         knowledgeId: knowledgeId,
         addedAt: DateTime.now(),
         notes: notes,
       );
-      
-      await box.put(knowledgeId, favorite.toJson());
+      await SqliteStorageService.instance.put(_favoritesBox, knowledgeId, favorite.toJson());
       debugPrint('⭐ Added to favorites: $knowledgeId');
     } catch (e) {
       debugPrint('❌ addFavorite error: $e');
@@ -205,10 +180,9 @@ class UnifiedKnowledgeService {
   /// Remove from favorites
   Future<void> removeFavorite(String knowledgeId) async {
     await init();
-    
+
     try {
-      final box = Hive.box(_favoritesBox);
-      await box.delete(knowledgeId);
+      await SqliteStorageService.instance.delete(_favoritesBox, knowledgeId);
       debugPrint('✅ Removed from favorites: $knowledgeId');
     } catch (e) {
       debugPrint('❌ removeFavorite error: $e');
@@ -218,10 +192,9 @@ class UnifiedKnowledgeService {
   /// Check if entry is favorite
   Future<bool> isFavorite(String knowledgeId) async {
     await init();
-    
+
     try {
-      final box = Hive.box(_favoritesBox);
-      return box.containsKey(knowledgeId);
+      return SqliteStorageService.instance.containsKeySync(_favoritesBox, knowledgeId);
     } catch (e) {
       debugPrint('❌ isFavorite error: $e');
       return false;
@@ -231,11 +204,11 @@ class UnifiedKnowledgeService {
   /// Get all favorites
   Future<List<KnowledgeEntry>> getFavorites({String? world}) async {
     await init();
-    
+
     try {
-      final favBox = Hive.box(_favoritesBox);
-      final favoriteIds = favBox.keys.cast<String>().toList();
-      
+      final db = SqliteStorageService.instance;
+      final favoriteIds = await db.getKeys(_favoritesBox);
+
       final List<KnowledgeEntry> favorites = [];
       for (var id in favoriteIds) {
         final entry = await getEntry(id);
@@ -243,14 +216,16 @@ class UnifiedKnowledgeService {
           favorites.add(entry);
         }
       }
-      
+
       // Sort by added date (most recent first)
       favorites.sort((a, b) {
-        final favA = FavoriteEntry.fromJson(Map<String, dynamic>.from(favBox.get(a.id) as Map));
-        final favB = FavoriteEntry.fromJson(Map<String, dynamic>.from(favBox.get(b.id) as Map));
+        final favAData = db.getSync(_favoritesBox, a.id);
+        final favBData = db.getSync(_favoritesBox, b.id);
+        final favA = FavoriteEntry.fromJson(Map<String, dynamic>.from(favAData as Map));
+        final favB = FavoriteEntry.fromJson(Map<String, dynamic>.from(favBData as Map));
         return favB.addedAt.compareTo(favA.addedAt);
       });
-      
+
       return favorites;
     } catch (e) {
       debugPrint('❌ getFavorites error: $e');
@@ -265,11 +240,11 @@ class UnifiedKnowledgeService {
   /// Add/Update note
   Future<void> saveNote(String knowledgeId, String content, {List<String>? tags}) async {
     await init();
-    
+
     try {
-      final box = Hive.box(_notesBox);
-      final existingNoteData = box.get(knowledgeId);
-      
+      final db = SqliteStorageService.instance;
+      final existingNoteData = db.getSync(_notesBox, knowledgeId);
+
       KnowledgeNote note;
       if (existingNoteData != null) {
         final existingNote = KnowledgeNote.fromJson(Map<String, dynamic>.from(existingNoteData as Map));
@@ -291,7 +266,7 @@ class UnifiedKnowledgeService {
         );
       }
       
-      await box.put(knowledgeId, note.toJson());
+      await db.put(_notesBox, knowledgeId, note.toJson());
       debugPrint('📝 Note saved for: $knowledgeId');
     } catch (e) {
       debugPrint('❌ saveNote error: $e');
@@ -301,15 +276,14 @@ class UnifiedKnowledgeService {
   /// Get note for entry
   Future<KnowledgeNote?> getNote(String knowledgeId) async {
     await init();
-    
+
     try {
-      final box = Hive.box(_notesBox);
-      final data = box.get(knowledgeId);
-      
+      final data = SqliteStorageService.instance.getSync(_notesBox, knowledgeId);
+
       if (data != null) {
         return KnowledgeNote.fromJson(Map<String, dynamic>.from(data as Map));
       }
-      
+
       return null;
     } catch (e) {
       debugPrint('❌ getNote error: $e');
@@ -320,10 +294,9 @@ class UnifiedKnowledgeService {
   /// Delete note
   Future<void> deleteNote(String knowledgeId) async {
     await init();
-    
+
     try {
-      final box = Hive.box(_notesBox);
-      await box.delete(knowledgeId);
+      await SqliteStorageService.instance.delete(_notesBox, knowledgeId);
       debugPrint('🗑️ Note deleted for: $knowledgeId');
     } catch (e) {
       debugPrint('❌ deleteNote error: $e');
@@ -333,11 +306,10 @@ class UnifiedKnowledgeService {
   /// Get all entries with notes
   Future<List<KnowledgeEntry>> getEntriesWithNotes({String? world}) async {
     await init();
-    
+
     try {
-      final notesBox = Hive.box(_notesBox);
-      final knowledgeIds = notesBox.keys.cast<String>().toList();
-      
+      final knowledgeIds = await SqliteStorageService.instance.getKeys(_notesBox);
+
       final List<KnowledgeEntry> entries = [];
       for (var id in knowledgeIds) {
         final entry = await getEntry(id);
@@ -345,7 +317,7 @@ class UnifiedKnowledgeService {
           entries.add(entry);
         }
       }
-      
+
       return entries;
     } catch (e) {
       debugPrint('❌ getEntriesWithNotes error: $e');
@@ -360,11 +332,11 @@ class UnifiedKnowledgeService {
   /// Update reading progress
   Future<void> updateProgress(String knowledgeId, {bool? isRead, int? progressPercent}) async {
     await init();
-    
+
     try {
-      final box = Hive.box(_progressBox);
-      final existingData = box.get(knowledgeId);
-      
+      final db = SqliteStorageService.instance;
+      final existingData = db.getSync(_progressBox, knowledgeId);
+
       ReadingProgress progress;
       if (existingData != null) {
         final existing = ReadingProgress.fromJson(Map<String, dynamic>.from(existingData as Map));
@@ -384,8 +356,8 @@ class UnifiedKnowledgeService {
           lastAccessedAt: DateTime.now(),
         );
       }
-      
-      await box.put(knowledgeId, progress.toJson());
+
+      await db.put(_progressBox, knowledgeId, progress.toJson());
     } catch (e) {
       debugPrint('❌ updateProgress error: $e');
     }
@@ -394,15 +366,14 @@ class UnifiedKnowledgeService {
   /// Get reading progress
   Future<ReadingProgress?> getProgress(String knowledgeId) async {
     await init();
-    
+
     try {
-      final box = Hive.box(_progressBox);
-      final data = box.get(knowledgeId);
-      
+      final data = SqliteStorageService.instance.getSync(_progressBox, knowledgeId);
+
       if (data != null) {
         return ReadingProgress.fromJson(Map<String, dynamic>.from(data as Map));
       }
-      
+
       return null;
     } catch (e) {
       debugPrint('❌ getProgress error: $e');
@@ -413,27 +384,25 @@ class UnifiedKnowledgeService {
   /// Get read entries
   Future<List<KnowledgeEntry>> getReadEntries({String? world}) async {
     await init();
-    
+
     try {
-      final progressBox = Hive.box(_progressBox);
+      final db = SqliteStorageService.instance;
+      final keys = await db.getKeys(_progressBox);
       final List<KnowledgeEntry> readEntries = [];
-      
-      for (var key in progressBox.keys) {
-        final progressData = progressBox.get(key);
+
+      for (var key in keys) {
+        final progressData = db.getSync(_progressBox, key);
+        if (progressData == null) continue;
         final progress = ReadingProgress.fromJson(Map<String, dynamic>.from(progressData as Map));
-        
+
         if (progress.isRead) {
-          final entry = await getEntry(key as String);
+          final entry = await getEntry(key);
           if (entry != null && (world == null || entry.world == world)) {
             readEntries.add(entry);
           }
         }
       }
-      
-      // Sort by read date (most recent first)
-      // Note: Async sorting not possible in List.sort, so we skip sorting for now
-      // or implement manual sorting if needed
-      
+
       return readEntries;
     } catch (e) {
       debugPrint('❌ getReadEntries error: $e');
