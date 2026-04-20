@@ -44,7 +44,6 @@ import 'utils/error_boundary.dart';  // 🛡️ Error Boundary
 import 'services/supabase_service.dart';  // 🟢 SUPABASE: Auth + Chat + Community
 import 'services/profile_restore_service.dart'; // 🔄 PROFIL-WIEDERHERSTELLUNG
 import 'widgets/update_gate.dart'; // 🔔 In-App Update-Meldungen (Release + OTA-Patch)
-// import 'services/push_notification_service.dart'; // Firebase -> Cloudflare
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
