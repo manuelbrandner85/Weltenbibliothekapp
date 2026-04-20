@@ -18,16 +18,12 @@ on:
         description: 'Branch mit dem zu patchenden Code'
         required: false
         default: 'main'
-  # Auto-Patch bei reinen Dart-Änderungen auf main oder aktivem Feature-Branch.
-  # Wichtig: KEIN Auto-Patch wenn pubspec.yaml / android/** / ios/** geändert werden
-  # (= potenziell nativer Change → manueller Release-Flow nötig).
+  # Auto-Patch bei JEDEM Push auf main — kein paths-Filter.
+  # Shorebird patcht immer den aktuellen Dart-Stand; doppelte Patches (gleicher Code)
+  # sind harmlos und werden vom Client einfach ignoriert.
   push:
     branches:
       - main
-      - 'claude/**'
-    paths:
-      - 'lib/**'
-      - '.github/workflows/shorebird_patch.yml'
 
 permissions:
   contents: read
