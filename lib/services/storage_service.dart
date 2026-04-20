@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math' as math;
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/materie_profile.dart';
 import '../models/energie_profile.dart';
 import '../models/spirit_profile.dart';
@@ -57,106 +59,92 @@ class StorageService {
   static const String _postDraftsBox = 'post_drafts'; // ignore: unused_field
   static const String _scheduledPostsBox = 'scheduled_posts'; // ignore: unused_field
   
+  // ─── SharedPreferences keys (Profile-Speicher, kein Hive) ───────────────
+  static const String _kMaterieProfile = 'sp_materie_profile';
+  static const String _kEnergieProfile = 'sp_energie_profile';
+  static const String _kSpiritProfile  = 'sp_spirit_profile';
+
   // Singleton Pattern
   static final StorageService _instance = StorageService._internal();
   factory StorageService() => _instance;
   StorageService._internal();
+
+  // SharedPreferences-Instanz (einmalig geladen in init())
+  SharedPreferences? _prefs;
+  Future<SharedPreferences> _ensurePrefs() async =>
+      _prefs ??= await SharedPreferences.getInstance();
   
-  /// 🔄 ONE-TIME MIGRATION: Alte Box-Namen → Neue Box-Namen
-  Future<void> _migrateOldBoxes() async {
-    await guardStorage(
-      () async {
-        // Materie: materie_profile → materie_profiles
-        if (await Hive.boxExists('materie_profile')) {
-          if (kDebugMode) debugPrint('🔄 Migration: materie_profile → materie_profiles');
-          final oldBox = await Hive.openBox('materie_profile');
-          final newBox = await Hive.openBox('materie_profiles');
-          
-          // Kopiere alle Daten
-          for (var key in oldBox.keys) {
-            await newBox.put(key, oldBox.get(key));
-            if (kDebugMode) debugPrint('  ✅ Kopiert: $key');
+  /// 🔄 ONE-TIME MIGRATION: Hive-Profile → SharedPreferences
+  /// Läuft transparent beim ersten Start nach dem Update.
+  Future<void> _migrateHiveProfilesToPrefs(SharedPreferences prefs) async {
+    // Materie
+    if (prefs.getString(_kMaterieProfile) == null) {
+      try {
+        for (final boxName in ['materie_profile', 'materie_profiles']) {
+          if (await Hive.boxExists(boxName)) {
+            final box = await Hive.openBox(boxName);
+            final data = box.get('current_profile');
+            if (data != null) {
+              await prefs.setString(
+                _kMaterieProfile,
+                jsonEncode(Map<String, dynamic>.from(data as Map)),
+              );
+              if (kDebugMode) debugPrint('🔄 Materie-Profil Hive → SP migriert');
+            }
+            await box.close();
+            break;
           }
-          
-          // Lösche alte Box
-          await oldBox.clear();
-          await oldBox.close();
-          await Hive.deleteBoxFromDisk('materie_profile');
-          if (kDebugMode) debugPrint('  ✅ Alte Box gelöscht');
         }
-        
-        // Energie: energie_profile → energie_profiles
-        if (await Hive.boxExists('energie_profile')) {
-          if (kDebugMode) debugPrint('🔄 Migration: energie_profile → energie_profiles');
-          final oldBox = await Hive.openBox('energie_profile');
-          final newBox = await Hive.openBox('energie_profiles');
-          
-          // Kopiere alle Daten
-          for (var key in oldBox.keys) {
-            await newBox.put(key, oldBox.get(key));
-            if (kDebugMode) debugPrint('  ✅ Kopiert: $key');
+      } catch (e) {
+        if (kDebugMode) debugPrint('⚠️ Materie-Profil-Migration: $e');
+      }
+    }
+    // Energie / Spirit (gleiche Box)
+    if (prefs.getString(_kEnergieProfile) == null) {
+      try {
+        for (final boxName in ['energie_profile', 'energie_profiles']) {
+          if (await Hive.boxExists(boxName)) {
+            final box = await Hive.openBox(boxName);
+            final data = box.get('current_profile');
+            if (data != null) {
+              final json = jsonEncode(Map<String, dynamic>.from(data as Map));
+              await prefs.setString(_kEnergieProfile, json);
+              await prefs.setString(_kSpiritProfile, json);
+              if (kDebugMode) debugPrint('🔄 Energie-Profil Hive → SP migriert');
+            }
+            await box.close();
+            break;
           }
-          
-          // Lösche alte Box
-          await oldBox.clear();
-          await oldBox.close();
-          await Hive.deleteBoxFromDisk('energie_profile');
-          if (kDebugMode) debugPrint('  ✅ Alte Box gelöscht');
         }
-        
-        if (kDebugMode) debugPrint('✅ Migration abgeschlossen');
-      },
-      operation: 'migrateOldBoxes',
-      onError: (e, stack) async {
-        if (kDebugMode) {
-          debugPrint('💡 Keine alten Boxen vorhanden - OK');
-        }
-        // Return void (Function<Future<void>>)
-      },
-    );
+      } catch (e) {
+        if (kDebugMode) debugPrint('⚠️ Energie-Profil-Migration: $e');
+      }
+    }
   }
   
-  /// Hive initialisieren (✅ ANDROID-OPTIMIERT: Nur kritische Boxen beim Start)
+  /// Initialisierung (SharedPreferences + Hive ohne Profil-Boxen)
   Future<void> init() async {
-    if (kDebugMode) {
-      debugPrint('📦 Hive: Initialisierung starten...');
-    }
-    
+    if (kDebugMode) debugPrint('📦 Storage: Initialisierung starten...');
+
+    // 1. SharedPreferences laden (Profil-Speicher)
+    _prefs = await SharedPreferences.getInstance();
+
+    // 2. Hive init (noch nötig für Research, Spirit, etc.)
     await Hive.initFlutter();
-    
-    if (kDebugMode) {
-      debugPrint('📦 Hive: Flutter initialisiert');
-    }
-    
-    // 🔄 MIGRATION: Alte Box-Namen zu neuen Box-Namen (ONE-TIME)
-    await _migrateOldBoxes();
-    
-    // ✅ NUR KRITISCHE BOXEN beim Start öffnen (schneller App-Start!)
-    // Alle anderen Boxen werden lazy geladen bei Bedarf
+
+    // 3. One-time Hive → SP Migration für bestehende User
+    await _migrateHiveProfilesToPrefs(_prefs!);
+
+    // 4. Nur noch nicht-Profil-Boxen öffnen
     await guardStorage(
       () async {
-        await Hive.openBox(_materieProfileBox);
-        if (kDebugMode) debugPrint('✅ Hive: materieProfile geöffnet');
-        
-        await Hive.openBox(_energieProfileBox);
-        if (kDebugMode) debugPrint('✅ Hive: energieProfile geöffnet');
-        
         await Hive.openBox(_researchTopicsBox);
-        if (kDebugMode) debugPrint('✅ Hive: researchTopics geöffnet');
-        
         await Hive.openBox(_communityPostsBox);
-        if (kDebugMode) debugPrint('✅ Hive: communityPosts geöffnet');
-        
-        if (kDebugMode) {
-          debugPrint('✅ Hive: Kritische Boxen geöffnet (4/25)');
-          debugPrint('💡 Hive: Weitere Boxen werden bei Bedarf geladen');
-        }
+        if (kDebugMode) debugPrint('✅ Storage: Kritische Hive-Boxen geöffnet');
       },
       operation: 'openCriticalBoxes',
     );
-    
-    // ⚡ ALLE ANDEREN BOXEN werden lazy geladen via getBox()
-    // Dies beschleunigt den App-Start erheblich!
+    if (kDebugMode) debugPrint('✅ Storage: Bereit (Profile via SharedPreferences)');
   }
   
   // ============================================
@@ -238,96 +226,96 @@ class StorageService {
   // MATERIE PROFILE
   // ============================================
   
+  // ============================================
+  // MATERIE PROFILE — SharedPreferences
+  // ============================================
+
   Future<void> saveMaterieProfile(MaterieProfile profile) async {
-    final box = await _ensureBox(_materieProfileBox);
-    await box.put('current_profile', profile.toJson());
+    final prefs = await _ensurePrefs();
+    await prefs.setString(_kMaterieProfile, jsonEncode(profile.toJson()));
   }
 
   MaterieProfile? getMaterieProfile() {
-    final box = _boxOrNull(_materieProfileBox);
-    if (box == null) return null;
-    final data = box.get('current_profile') as Map?;
-    if (data == null) return null;
-    return MaterieProfile.fromJson(Map<String, dynamic>.from(data));
+    final raw = _prefs?.getString(_kMaterieProfile);
+    if (raw == null) return null;
+    try {
+      return MaterieProfile.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+    } catch (_) { return null; }
   }
 
-  /// Materie-Profil löschen
-  Future<void> deleteMaterieProfile() async {
-    final box = await _ensureBox(_materieProfileBox);
-    await box.delete('current_profile');
+  Future<MaterieProfile?> loadMaterieProfile() async {
+    final prefs = await _ensurePrefs();
+    final raw = prefs.getString(_kMaterieProfile);
+    if (raw == null) return null;
+    try {
+      return MaterieProfile.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+    } catch (_) { return null; }
   }
-  
+
+  Future<void> deleteMaterieProfile() async {
+    final prefs = await _ensurePrefs();
+    await prefs.remove(_kMaterieProfile);
+  }
+
   // ============================================
-  // ENERGIE PROFILE
+  // ENERGIE PROFILE — SharedPreferences
   // ============================================
-  
+
   Future<void> saveEnergieProfile(EnergieProfile profile) async {
-    final box = await _ensureBox(_energieProfileBox);
-    await box.put('current_profile', profile.toJson());
+    final prefs = await _ensurePrefs();
+    await prefs.setString(_kEnergieProfile, jsonEncode(profile.toJson()));
   }
 
   EnergieProfile? getEnergieProfile() {
-    final box = _boxOrNull(_energieProfileBox);
-    if (box == null) return null;
-    final data = box.get('current_profile') as Map?;
-    if (data == null) return null;
-    return EnergieProfile.fromJson(Map<String, dynamic>.from(data));
+    final raw = _prefs?.getString(_kEnergieProfile);
+    if (raw == null) return null;
+    try {
+      return EnergieProfile.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+    } catch (_) { return null; }
   }
 
-  // 🔮 SPIRIT PROFILE METHODS
+  Future<EnergieProfile?> loadEnergieProfile() async {
+    final prefs = await _ensurePrefs();
+    final raw = prefs.getString(_kEnergieProfile);
+    if (raw == null) return null;
+    try {
+      return EnergieProfile.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+    } catch (_) { return null; }
+  }
+
+  Future<void> deleteEnergieProfile() async {
+    final prefs = await _ensurePrefs();
+    await prefs.remove(_kEnergieProfile);
+  }
+
+  // ============================================
+  // SPIRIT PROFILE — SharedPreferences (gleicher Key wie Energie)
+  // ============================================
+
   SpiritProfile? getSpiritProfile() {
-    final box = _boxOrNull(_energieProfileBox);
-    if (box == null) return null;
-    final data = box.get('current_profile') as Map?;
-    if (data == null) return null;
-    return SpiritProfile.fromJson(Map<String, dynamic>.from(data));
+    final raw = _prefs?.getString(_kSpiritProfile) ?? _prefs?.getString(_kEnergieProfile);
+    if (raw == null) return null;
+    try {
+      return SpiritProfile.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+    } catch (_) { return null; }
   }
 
   Future<void> saveSpiritProfile(SpiritProfile profile) async {
-    await guardStorage(
-      () async {
-        final box = await _ensureBox(_energieProfileBox);
-        await box.put('current_profile', profile.toJson());
-        if (kDebugMode) {
-          debugPrint('✅ Spirit profile saved');
-        }
-      },
-      operation: 'saveSpiritProfile',
-      key: 'current_profile',
-    );
+    final prefs = await _ensurePrefs();
+    final json = jsonEncode(profile.toJson());
+    await prefs.setString(_kSpiritProfile, json);
+    // Energie-Profil-Key ebenfalls aktualisieren (shared data)
+    await prefs.setString(_kEnergieProfile, json);
+    if (kDebugMode) debugPrint('✅ Spirit profile saved (SharedPreferences)');
   }
 
-  /// Async-Variante von [getEnergieProfile] — wartet, bis die Hive-Box
-  /// geöffnet ist. Vermeidet die Race-Condition auf langsamen Geräten,
-  /// bei denen die Box beim initState() noch nicht offen ist (und
-  /// `_boxOrNull` null zurückgibt → Screen fällt in den leeren Zustand).
-  Future<EnergieProfile?> loadEnergieProfile() async {
-    final box = await _ensureBox(_energieProfileBox);
-    final data = box.get('current_profile') as Map?;
-    if (data == null) return null;
-    return EnergieProfile.fromJson(Map<String, dynamic>.from(data));
-  }
-
-  /// Async-Variante für den Materie-Profile-Load mit garantiert geöffneter Box.
-  Future<MaterieProfile?> loadMaterieProfile() async {
-    final box = await _ensureBox(_materieProfileBox);
-    final data = box.get('current_profile') as Map?;
-    if (data == null) return null;
-    return MaterieProfile.fromJson(Map<String, dynamic>.from(data));
-  }
-
-  /// Async-Variante für den Spirit-Profile-Load mit garantiert geöffneter Box.
   Future<SpiritProfile?> loadSpiritProfile() async {
-    final box = await _ensureBox(_energieProfileBox);
-    final data = box.get('current_profile') as Map?;
-    if (data == null) return null;
-    return SpiritProfile.fromJson(Map<String, dynamic>.from(data));
-  }
-
-  /// Energie-Profil löschen
-  Future<void> deleteEnergieProfile() async {
-    final box = await _ensureBox(_energieProfileBox);
-    await box.delete('current_profile');
+    final prefs = await _ensurePrefs();
+    final raw = prefs.getString(_kSpiritProfile) ?? prefs.getString(_kEnergieProfile);
+    if (raw == null) return null;
+    try {
+      return SpiritProfile.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+    } catch (_) { return null; }
   }
   
   // ============================================
