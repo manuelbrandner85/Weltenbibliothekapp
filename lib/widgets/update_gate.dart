@@ -17,6 +17,7 @@ import 'package:flutter/material.dart';
 
 import '../screens/release_update_screen.dart';
 import '../services/update_service.dart';
+import 'patch_download_indicator.dart';
 import 'patch_ready_dialog.dart';
 
 class UpdateGate extends StatefulWidget {
@@ -118,5 +119,12 @@ class _UpdateGateState extends State<UpdateGate> with WidgetsBindingObserver {
   }
 
   @override
-  Widget build(BuildContext context) => widget.child;
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        widget.child,
+        const PatchDownloadIndicator(),
+      ],
+    );
+  }
 }
