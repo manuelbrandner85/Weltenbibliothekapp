@@ -444,6 +444,11 @@ chore(deps): Dependencies aktualisiert
       `UpdateHistoryScreen` im Profil unter "Update-Verlauf"-Button
 - [x] SQL-Migrationen: `20260420_v37_patch_changelog.sql` + `20260420_v38_update_history.sql`
       → **müssen noch im Supabase SQL-Editor ausgeführt werden**
+- [x] **Phase 2 (V6) Auto-Restart via MethodChannel**: `MainActivity.kt` — MethodChannel
+      `weltenbibliothek/restart`; AlarmManager schedulet Relaunch in 500 ms, dann
+      `System.exit(0)` nach 50 ms. `RestartService.dart` — Dart-Seite mit Fallback
+      (MissingPluginException → SystemNavigator.pop). `PatchReadyDialog` Button-Label
+      "App neu starten". Version 5.37.0 (nativer Release nötig).
 
 ### ⚠️ Noch ausstehend / bekannte Probleme
 
