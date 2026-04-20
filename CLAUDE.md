@@ -764,20 +764,28 @@ dass für die aktuelle `pubspec.yaml`-Version noch kein Release existiert.
 - **workflow_dispatch**: Actions-UI → "Build & Release APK" → Run workflow (auch auf
   Feature-Branches nutzbar).
 
-**Auto-Merge durch Claude** (ab v5.35.0):
-Wenn ich einen Release-PR vorbereitet habe (pubspec.yaml gebumpt, `current.json` gepflegt,
-Workflow grün), MERGE ich den PR selbst auf `main` via `mcp__github__merge_pull_request`
-(Squash-Merge), sobald die CI-Checks grün sind. Anschließend feuert der Auto-Trigger den
-Release-Workflow. Kein manueller Eingriff vom Entwickler nötig — außer Review/Approval
-falls der PR inhaltlich geprüft werden soll.
+**Auto-Merge durch Claude** — STANDING RULE (ab v5.35.0, verbindlich):
+ICH MERGE JEDEN EIGENEN PR SELBST auf `main`, sobald CI grün ist. Kein Nachfragen beim
+Entwickler, kein Warten auf manuelle Freigabe. Ablauf jedes Mal identisch:
+
+1. Änderung committen + pushen.
+2. Draft-PR erstellen (oder vorhandenen nutzen).
+3. Via `update_pull_request(draft:false)` ready-for-review setzen.
+4. Auf CI warten (`pull_request_read(method:get_check_runs)` bis alle Checks completed).
+5. Konflikte mit `main` auflösen (merge main in Branch, push).
+6. Via `merge_pull_request(merge_method:"squash")` mergen.
+
+Dann feuert der Auto-Trigger in `build_apk.yml` den Release (wenn pubspec.yaml gebumpt).
 
 Regeln für Auto-Merge:
+- IMMER auto-mergen, sobald CI grün — nicht nur Release-PRs, sondern jeder von mir
+  gepushte PR (Features, Fixes, Docs, CI-Changes).
 - Nur wenn alle required CI-Checks auf `success` / `neutral` stehen (nicht `in_progress`
   oder `failure`).
-- Nur bei Release-PRs (pubspec.yaml-Bump + `current.json`-Update), nicht bei beliebigen
-  Feature-PRs.
 - Niemals force-mergen wenn CI rot ist — dann Ursache fixen, pushen, warten, dann mergen.
 - Draft-PRs werden vorher via `update_pull_request(draft:false)` ready-for-review gesetzt.
+- Merge-Konflikte mit main werden automatisch aufgelöst (merge main in Branch, HEAD bevorzugen
+  wenn HEAD-Version eindeutig neuer ist — z.B. bei `.github/workflows/**`).
 
 Danach läuft `.github/workflows/build_apk.yml` vollautomatisch:
 
