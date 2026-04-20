@@ -471,9 +471,8 @@ chore(deps): Dependencies aktualisiert
       HTTP-Erfolgs-Check akzeptiert 200, 201 und 204 (Supabase gibt je nach Query 201 zurück).
 - [x] **Race-Condition-Fix (sync_app_config)**: GitHub Release Existence Check vor UPSERT;
       `sync_app_config.yml` überspringt UPSERT wenn APK-Release noch nicht existiert.
-- [x] **Auto-Patch bei lib/**-Änderungen**: `shorebird_patch.yml` feuert vollautomatisch bei
-      Push auf `main`/`claude/**` mit `lib/**`-Änderungen (push+paths-Filter). Kein manuelles
-      Triggern mehr nötig. Zusätzlich weiterhin via `workflow_dispatch` manuell auslösbar.
+- [x] **Auto-Patch bei JEDEM main-Push**: `shorebird_patch.yml` feuert bei JEDEM Push auf `main`
+      (kein paths-Filter). Kein manuelles Triggern nötig. Doppelte Patches sind harmlos.
 
 ### ⚠️ Noch ausstehend / bekannte Probleme
 
@@ -689,7 +688,8 @@ gh pr edit <NR> --body "Neue Beschreibung"
 - `shorebird.yaml` enthält `app_id` (public, in VCS); Secret nur in GitHub Actions (`SHOREBIRD_TOKEN`)
 - **OTA-Patch (Standard — reine Dart-Änderungen):**
   - Workflow: `.github/workflows/shorebird_patch.yml`
-  - **Trigger: VOLLAUTOMATISCH** bei Push auf `main` (oder `claude/**`) wenn `lib/**` geändert.
+  - **Trigger: VOLLAUTOMATISCH** bei JEDEM Push auf `main` (kein paths-Filter).
+    Doppelte Patches (gleicher Code) sind harmlos — Shorebird ignoriert sie auf dem Gerät.
     Zusätzlich manuell via `workflow_dispatch` triggerbar (Eingabe: release_version, source_branch).
   - Läuft `shorebird patch android --allow-asset-diffs --release-version latest` →
     sendet Dart-AOT-Diff an Shorebird, User bekommt Update beim nächsten App-Start automatisch.
