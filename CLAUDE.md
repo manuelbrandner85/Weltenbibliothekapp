@@ -277,8 +277,10 @@ Weltenbibliothekapp/
 │   │   ├── shared/                      # Shared Screens (Profil, Voice, etc.)
 │   │   └── release_update_screen.dart   # ⭐ Fullscreen-Update-Gate (In-App-APK-Download)
 │   └── widgets/                         # Wiederverwendbare UI-Komponenten
-│       ├── update_gate.dart             # ⭐ Update-Koordinator (Stream-basiert)
-│       ├── patch_ready_dialog.dart      # ⭐ Prominenter OTA-Patch-Dialog (v5.36.0+)
+│       ├── update_gate.dart             # ⭐ Update-Koordinator (Stream-basiert, Stack-Overlay)
+│       ├── patch_ready_dialog.dart      # ⭐ Prominenter OTA-Patch-Dialog + Changelog (v5.36.0+)
+│       ├── patch_download_indicator.dart # Dezenter Download-Fortschritts-Banner
+│       ├── update_success_banner.dart   # Grüner Erfolgs-Banner nach Patch/Version-Update
 │       └── update_dialogs.dart          # Legacy ReleaseUpdateDialog (PatchReadyBanner entfernt)
 ├── workers/
 │   ├── api-worker.js                    # ⭐ Cloudflare Worker (Edge API)
@@ -425,11 +427,30 @@ chore(deps): Dependencies aktualisiert
 - [x] Signatur-Mismatch-Schutz im ReleaseUpdateScreen (Notausgang nach 2 fehlgeschlagenen Installs)
 - [x] APP_VERSION 0.0.0 Debug-Schutz (keine Force-Updates in lokalen Debug-Builds)
 - [x] Supabase `app_config` UPSERT statt PATCH (erstellt Zeile auch bei frischer DB)
+- [x] **UPSERT-409-Fix**: `?on_conflict=platform` in sync_app_config.yml + build_apk.yml
+      (PostgREST UPSERT auf UNIQUE-Spalte statt PK)
+- [x] **Phase 1a (V4) Offline-Schutz**: connectivity_plus-Check vor Supabase/Shorebird-Calls;
+      5s Timeout auf Supabase `maybeSingle()`
+- [x] **Phase 1b (V1) Patch-Changelog**: `app_config.patch_changelog` Spalte; CI schreibt
+      git-generierten Changelog; `PatchReadyDialog` zeigt "Was ist neu"-Box via FutureBuilder
+- [x] **Phase 1c (V2) Patch-Download-Indikator**: `PatchDownloadStatus`-Stream in UpdateService;
+      `PatchDownloadIndicator`-Overlay in UpdateGate (dezenter Banner mit LinearProgress)
+- [x] **Phase 1d (V3) Update-Bestätigung**: `UpdateConfirmationService` vergleicht
+      SharedPreferences mit aktueller Version/Patch; grüner `UpdateSuccessBanner` nach Neustart
+- [x] **Phase 1e (V5) Resumable APK-Download**: HEAD-Request für Content-Length; Range-Header
+      + FileMode.append für Resume; deleteOnError:false für Teildatei-Erhalt
+- [x] **Phase 1f (V7) Update-History**: `update_history` Tabelle in Supabase; CI-INSERTs in
+      build_apk.yml (type=release) + shorebird_patch.yml (type=patch);
+      `UpdateHistoryScreen` im Profil unter "Update-Verlauf"-Button
+- [x] SQL-Migrationen: `20260420_v37_patch_changelog.sql` + `20260420_v38_update_history.sql`
+      → **müssen noch im Supabase SQL-Editor ausgeführt werden**
 
 ### ⚠️ Noch ausstehend / bekannte Probleme
 
-1. **SQL-Migration ausführen**: `supabase/migrations/20260402_v12_missing_tool_tables.sql`
-   → Im Supabase SQL-Editor ausführen (7 Tool-Tabellen fehlen noch in der DB)
+1. **SQL-Migrationen ausführen** (drei ausstehend):
+   - `supabase/migrations/20260402_v12_missing_tool_tables.sql` (7 Tool-Tabellen)
+   - `supabase/migrations/20260420_v37_patch_changelog.sql` (patch_changelog Spalte)
+   - `supabase/migrations/20260420_v38_update_history.sql` (update_history Tabelle)
 
 2. **544 info-level Issues** (keine Errors/Warnings):
    - `use_build_context_synchronously` in mehreren Screens
