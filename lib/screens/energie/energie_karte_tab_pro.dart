@@ -69,7 +69,7 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0015),
+      backgroundColor: const Color(0xFF06040F),
       body: Stack(
         children: [
           // MAP
@@ -136,20 +136,15 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro> {
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            const Color(0xFF9C27B0).withAlpha((0.95 * 255).round()),
-            const Color(0xFF7B1FA2).withAlpha((0.95 * 255).round()),
-          ],
-        ),
+        color: const Color(0xFF100B1E),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: const Color(0xFF9C27B0).withAlpha((0.3 * 255).round()),
+          color: const Color(0xFFAB47BC).withAlpha((0.4 * 255).round()),
           width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF9C27B0).withAlpha((0.3 * 255).round()),
+            color: const Color(0xFFAB47BC).withAlpha((0.15 * 255).round()),
             blurRadius: 20,
             spreadRadius: 2,
           ),
@@ -272,7 +267,7 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro> {
                   ],
                 )
               : null,
-          color: isSelected ? null : const Color(0xFF1A1A2E).withAlpha((0.8 * 255).round()),
+          color: isSelected ? null : const Color(0xFF100B1E).withAlpha((0.9 * 255).round()),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected ? color : Colors.white24,
@@ -394,13 +389,13 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro> {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              const Color(0xFF1A1A2E).withAlpha((0.98 * 255).round()),
-              const Color(0xFF0F0F23).withAlpha((0.98 * 255).round()),
+              const Color(0xFF100B1E).withAlpha((0.99 * 255).round()),
+              const Color(0xFF06040F).withAlpha((0.99 * 255).round()),
             ],
           ),
           borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           border: Border.all(
-            color: location.category.color.withAlpha((0.3 * 255).round()),
+            color: location.category.color.withAlpha((0.4 * 255).round()),
             width: 1.5,
           ),
         ),
@@ -834,16 +829,18 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro> {
   }
   
   Widget _buildMapLayerSwitcher() {
+    const accent = Color(0xFFAB47BC);
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF100B1E),
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: accent.withValues(alpha: 0.35), width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.3),
-            blurRadius: 12,
+            color: Colors.black.withValues(alpha: 0.5),
+            blurRadius: 14,
             offset: const Offset(0, 4),
           ),
         ],
@@ -857,39 +854,29 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro> {
               setState(() => _isLayerSwitcherExpanded = !_isLayerSwitcherExpanded);
             },
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    Icons.layers,
-                    size: 28,
-                    color: const Color(0xFF9C27B0),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    'Karte',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: const Color(0xFF9C27B0),
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.3,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
+                  const Icon(Icons.layers, size: 24, color: accent),
+                  const SizedBox(width: 10),
+                  const Text('Karte',
+                      style: TextStyle(
+                          fontSize: 14, color: accent,
+                          fontWeight: FontWeight.bold, letterSpacing: 0.3)),
+                  const SizedBox(width: 6),
                   Icon(
                     _isLayerSwitcherExpanded ? Icons.expand_less : Icons.expand_more,
-                    size: 24,
-                    color: const Color(0xFF9C27B0),
+                    size: 20, color: accent,
                   ),
                 ],
               ),
             ),
           ),
-          
+
           // LAYER OPTIONEN (nur wenn ausgeklappt)
           if (_isLayerSwitcherExpanded) ...[
-            Divider(height: 1, color: Colors.grey.withValues(alpha: 0.3)),
+            Divider(height: 1, color: Colors.white.withValues(alpha: 0.1)),
             _buildLayerOption('street', Icons.map, 'Straße'),
             _buildLayerOption('satellite', Icons.satellite, 'Satellit'),
             _buildLayerOption('terrain', Icons.terrain, 'Gelände'),
@@ -899,24 +886,25 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro> {
       ),
     );
   }
-  
+
   Widget _buildLayerOption(String layerType, IconData icon, String label) {
+    const accent = Color(0xFFAB47BC);
     final isSelected = _currentMapLayer == layerType;
-    
+
     return InkWell(
       onTap: () {
         setState(() {
           _currentMapLayer = layerType;
-          _isLayerSwitcherExpanded = false; // Automatisch einklappen
+          _isLayerSwitcherExpanded = false;
         });
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.purple.withValues(alpha: 0.15) : Colors.transparent,
+          color: isSelected ? accent.withValues(alpha: 0.15) : Colors.transparent,
           border: Border(
             bottom: BorderSide(
-              color: Colors.grey.withValues(alpha: 0.2),
+              color: Colors.white.withValues(alpha: 0.08),
               width: 0.5,
             ),
           ),
@@ -924,17 +912,14 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              size: 28,
-              color: isSelected ? const Color(0xFF9C27B0) : Colors.grey.shade600,
-            ),
-            const SizedBox(width: 12),
+            Icon(icon, size: 22,
+                color: isSelected ? accent : Colors.white.withValues(alpha: 0.5)),
+            const SizedBox(width: 10),
             Text(
               label,
               style: TextStyle(
-                fontSize: 16,
-                color: isSelected ? const Color(0xFF9C27B0) : Colors.grey.shade800,
+                fontSize: 14,
+                color: isSelected ? accent : Colors.white.withValues(alpha: 0.7),
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                 letterSpacing: 0.3,
               ),
