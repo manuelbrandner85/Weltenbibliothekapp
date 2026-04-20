@@ -16,6 +16,7 @@ import 'dart:io' show Platform, exit;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../services/restart_service.dart';
 import '../services/update_service.dart';
 
 class PatchReadyDialog extends StatefulWidget {
@@ -107,8 +108,8 @@ class _PatchReadyDialogState extends State<PatchReadyDialog> {
             Text(
               'Ein neues Update wurde im Hintergrund heruntergeladen und '
               'ist bereit zur Aktivierung.\n\n'
-              'Bitte schließe die App und öffne sie erneut, um das Update '
-              'zu aktivieren.',
+              'Tippe auf "App neu starten" – die App startet automatisch neu '
+              'und das Update wird sofort aktiv.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.8),
@@ -212,7 +213,7 @@ class _PatchReadyDialogState extends State<PatchReadyDialog> {
                 onPressed: () => _closeApp(context),
                 icon: const Icon(Icons.power_settings_new_rounded, size: 22),
                 label: const Text(
-                  'App jetzt schließen',
+                  'App neu starten',
                   style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
                 ),
                 style: ElevatedButton.styleFrom(
@@ -243,16 +244,19 @@ class _PatchReadyDialogState extends State<PatchReadyDialog> {
     );
   }
 
-  void _closeApp(BuildContext context) {
-    // Android: App schließen, User öffnet sie neu → Patch wird aktiv.
-    // Auf iOS ist exit() per App-Store-Policy tabu, aber wir liefern Android
-    // als Sideload-APK — hier ist das akzeptabel.
+  Future<void> _closeApp(BuildContext context) async {
     if (Platform.isAndroid) {
-      SystemNavigator.pop();
-      // Fallback falls SystemNavigator.pop() nicht greift:
-      Future.delayed(const Duration(milliseconds: 300), () => exit(0));
+      // V6: Native auto-restart via AlarmManager (schedules relaunch + kills process).
+      // Falls back to manual close on old APKs that don't have the Kotlin handler.
+      final handled = await RestartService.restartApp();
+      if (!handled) {
+        SystemNavigator.pop();
+        await Future.delayed(const Duration(milliseconds: 300));
+        exit(0);
+      }
+      // If handled: Kotlin already scheduled restart + will call System.exit(0) in 50ms.
     } else {
-      Navigator.of(context).pop();
+      if (context.mounted) Navigator.of(context).pop();
     }
   }
 }
