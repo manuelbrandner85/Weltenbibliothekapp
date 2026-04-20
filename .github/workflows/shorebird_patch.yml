@@ -18,6 +18,16 @@ on:
         description: 'Branch mit dem zu patchenden Code'
         required: false
         default: 'main'
+  # Auto-Patch bei reinen Dart-Änderungen auf main oder aktivem Feature-Branch.
+  # Wichtig: KEIN Auto-Patch wenn pubspec.yaml / android/** / ios/** geändert werden
+  # (= potenziell nativer Change → manueller Release-Flow nötig).
+  push:
+    branches:
+      - main
+      - 'claude/**'
+    paths:
+      - 'lib/**'
+      - '.github/workflows/shorebird_patch.yml'
 
 permissions:
   contents: read
@@ -31,7 +41,9 @@ jobs:
       - name: 📥 Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.inputs.source_branch || 'main' }}
+          # Bei workflow_dispatch: expliziter source_branch (oder 'main').
+          # Bei push: der gepushte Commit (github.sha).
+          ref: ${{ github.event.inputs.source_branch || github.sha }}
 
       - name: ☕ Java 17
         uses: actions/setup-java@v4
