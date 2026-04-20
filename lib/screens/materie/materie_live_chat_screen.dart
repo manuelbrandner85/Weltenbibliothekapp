@@ -73,6 +73,7 @@ import '../../services/haptic_feedback_service.dart';
 import '../../services/offline_sync_service.dart';
 import '../../services/chat/chat_word_filter_service.dart';
 import '../../services/chat/chat_draft_service.dart';
+import '../../services/chat/recent_rooms_service.dart';
 import '../../services/chat/user_block_service.dart';
 import '../../services/chat/unread_tracker_service.dart';
 
@@ -222,6 +223,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
     
     // 🔧 FIX 18: Set initial room from dashboard navigation
     _selectedRoom = widget.initialRoom ?? 'politik';
+    RecentRoomsService.instance.touch('materie', _selectedRoom);
 
     // 🎤 Initialize WebRTC Voice Service
     _initializeWebRTC();
@@ -1450,6 +1452,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
                 // ✨ Batch-5: Draft des alten Raums sichern
                 ChatDraftService.instance.set(_fullRoomId, _messageController.text);
                 if (mounted) {
+                  RecentRoomsService.instance.touch('materie', entry.key);
                   setState(() {
                   _selectedRoom = entry.key;
                   _messages.clear();

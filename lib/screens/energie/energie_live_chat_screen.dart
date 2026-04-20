@@ -73,6 +73,7 @@ import '../../services/chat/chat_rate_limit_service.dart';
 import '../../services/haptic_feedback_service.dart';
 import '../../services/chat/chat_word_filter_service.dart';
 import '../../services/chat/chat_draft_service.dart';
+import '../../services/chat/recent_rooms_service.dart';
 import '../../services/chat/user_block_service.dart';
 import '../../services/chat/unread_tracker_service.dart';
 // 📷 Image Picker
@@ -230,6 +231,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
     
     // 🔧 FIX 18: Set initial room from dashboard navigation
     _selectedRoom = widget.initialRoom ?? 'meditation';
+    RecentRoomsService.instance.touch('energie', _selectedRoom);
     
     // 🎤 Initialize WebRTC Voice Service
     _initializeWebRTC();
@@ -1485,6 +1487,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
                       ChatDraftService.instance
                           .set(_selectedRoom, _messageController.text);
                       if (mounted) {
+                        RecentRoomsService.instance.touch('energie', roomId);
                         setState(() {
                         _selectedRoom = roomId;
                         _messages.clear(); // ← Clear old messages

@@ -9,6 +9,7 @@ import '../../models/energie_profile.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../materie/recherche_tab_mobile.dart';
 import 'energie_live_chat_screen.dart';
+import '../../services/chat/recent_rooms_service.dart';
 import '../shared/bookmarks_screen.dart';
 import '../shared/stats_dashboard_screen.dart';
 import 'spirit_tab_modern.dart';
@@ -233,6 +234,7 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
               _buildMysticBanner(),
               _buildLiveStatBanner(),
               _buildActionGrid(),
+              _buildRecentRooms(),
               _buildSectionTitle('✨ Spirituelle Themen', subtitle: 'Im Fokus'),
               _buildTrendingChips(),
               _buildSectionTitle('📿 Neueste Artikel', subtitle: 'Wissen & Weisheit'),
@@ -804,6 +806,102 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
             ),
           ),
         ]),
+      ),
+    );
+  }
+
+  // ── RECENT ROOMS ───────────────────────────────────────────────────────
+  static const Map<String, (String, String)> _recentRoomMeta = {
+    'meditation': ('🧘', 'Meditation'),
+    'astralreisen': ('🌌', 'Astralreisen'),
+    'chakren': ('🔥', 'Chakren'),
+    'spiritualitaet': ('🔮', 'Spiritualität'),
+    'heilung': ('💫', 'Heilung'),
+    'tarot': ('🃏', 'Tarot'),
+    'astrologie': ('🌠', 'Astrologie'),
+  };
+
+  Widget _buildRecentRooms() {
+    return SliverToBoxAdapter(
+      child: FutureBuilder<List<String>>(
+        future: RecentRoomsService.instance.get('energie'),
+        builder: (ctx, snap) {
+          final rooms = snap.data ?? const <String>[];
+          if (rooms.isEmpty) return const SizedBox.shrink();
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.history, size: 16, color: Colors.white70),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Zuletzt besucht',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.85),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  height: 36,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
+                    itemCount: rooms.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 8),
+                    itemBuilder: (c, i) {
+                      final id = rooms[i];
+                      final meta = _recentRoomMeta[id] ?? ('💬', id);
+                      return InkWell(
+                        borderRadius: BorderRadius.circular(18),
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                EnergieLiveChatScreen(initialRoom: id),
+                          ),
+                        ),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.06),
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(
+                              color: _purple.withValues(alpha: 0.4),
+                              width: 1,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(meta.$1, style: const TextStyle(fontSize: 14)),
+                              const SizedBox(width: 6),
+                              Text(
+                                meta.$2,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }

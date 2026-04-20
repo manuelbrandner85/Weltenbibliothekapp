@@ -9,6 +9,7 @@ import '../../models/materie_profile.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'recherche_tab_mobile.dart';
 import 'materie_live_chat_screen.dart';
+import '../../services/chat/recent_rooms_service.dart';
 import '../shared/bookmarks_screen.dart';
 import '../shared/stats_dashboard_screen.dart';
 
@@ -192,6 +193,7 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
               _buildHeroHeader(),
               _buildLiveStatBanner(),
               _buildActionGrid(),
+              _buildRecentRooms(),
               _buildSectionTitle('🔥 Trending', subtitle: 'Heiß diskutiert'),
               _buildTrendingChips(),
               _buildSectionTitle('📰 Neueste Artikel', subtitle: 'Frisch aus der Welt'),
@@ -692,6 +694,102 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
             ),
           ),
         ]),
+      ),
+    );
+  }
+
+  // ── RECENT ROOMS ───────────────────────────────────────────────────────
+  static const Map<String, (String, String)> _recentRoomMeta = {
+    'politik': ('🎭', 'Politik'),
+    'geschichte': ('🏛️', 'Geschichte'),
+    'ufo': ('🛸', 'UFOs'),
+    'verschwoerungen': ('👁️', 'Verschwörungen'),
+    'wissenschaft': ('🔬', 'Wissenschaft'),
+    'heilung': ('🌿', 'Heilung'),
+    'forschung': ('🧪', 'Forschung'),
+  };
+
+  Widget _buildRecentRooms() {
+    return SliverToBoxAdapter(
+      child: FutureBuilder<List<String>>(
+        future: RecentRoomsService.instance.get('materie'),
+        builder: (ctx, snap) {
+          final rooms = snap.data ?? const <String>[];
+          if (rooms.isEmpty) return const SizedBox.shrink();
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.history, size: 16, color: Colors.white70),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Zuletzt besucht',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.85),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  height: 36,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
+                    itemCount: rooms.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 8),
+                    itemBuilder: (c, i) {
+                      final id = rooms[i];
+                      final meta = _recentRoomMeta[id] ?? ('💬', id);
+                      return InkWell(
+                        borderRadius: BorderRadius.circular(18),
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                MaterieLiveChatScreen(initialRoom: id),
+                          ),
+                        ),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.06),
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(
+                              color: _red.withValues(alpha: 0.4),
+                              width: 1,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(meta.$1, style: const TextStyle(fontSize: 14)),
+                              const SizedBox(width: 6),
+                              Text(
+                                meta.$2,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
