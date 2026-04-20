@@ -79,18 +79,37 @@ Over-the-Air Updates laufen über Shorebird Code Push.
 
 ---
 
-## APP-INTERNES UPDATE-SYSTEM
+## APP-INTERNES UPDATE-SYSTEM (vollautomatisch ab v5.36.0)
 
-### Shorebird Auto-Update
+### Shorebird Auto-Update (OTA-Patches)
 - `shorebird_code_push` Package ist integriert
 - In `shorebird.yaml`: auto_update bleibt auf `true` (Standard)
 - Patches werden automatisch im Hintergrund geladen und beim nächsten Start aktiviert
+- **Patch-Benachrichtigung: prominenter Fullscreen-Dialog** (`PatchReadyDialog`)
+  ersetzt die alte kleine SnackBar. User sieht: "Update bereit! Bitte App schließen
+  und neu starten." mit großem "App jetzt schließen"-Button + "Später"-Option.
+- Stream-basiert: `UpdateService.onPatchReady` feuert ein Event sobald ein Patch
+  heruntergeladen ist — UpdateGate hört zu und zeigt sofort den Dialog.
+- Debug-Build-Schutz: Bei `APP_VERSION='0.0.0'` (lokaler Debug-Build ohne
+  `--dart-define`) wird der Release-Check komplett übersprungen.
 
-### Versions-Check für neue APK (wenn neuer Release nötig war)
-- In Supabase existiert eine Tabelle `app_config` mit Feld `min_version`
+### Versions-Check für neue APK (vollautomatisch)
+- In Supabase existiert eine Tabelle `app_config` mit Feldern `latest_version`,
+  `min_version`, `apk_download_url`, `changelog`, `release_notes_url`
 - Beim App-Start wird geprüft ob die aktuelle App-Version >= min_version ist
-- Falls nicht → User bekommt Dialog mit Download-Link für neue APK
-- Download-Link wird ebenfalls aus `app_config` gelesen
+- Falls nicht → User sieht Fullscreen `ReleaseUpdateScreen` mit In-App-Download
+- Tabelle wird per **UPSERT** aus CI aktualisiert (nicht mehr PATCH):
+  HTTP POST mit Header `Prefer: resolution=merge-duplicates,return=representation`.
+  Das erstellt die Zeile automatisch falls sie fehlt (frische DB / erster Release).
+- `min_version` und `changelog` werden **automatisch aus Git generiert** —
+  `supabase/release/current.json` ist deprecated und wird nicht mehr gelesen.
+  - `min_version` = letzter GitHub-Release-Tag (per `gh release list`)
+  - `changelog` = `git log <letzter-Tag>..HEAD`, chore/ci/Merge gefiltert
+
+### Signatur-Mismatch-Schutz (ReleaseUpdateScreen)
+- Wenn Installation nach >= 2 Versuchen fehlschlägt (wahrscheinlich Signatur-Mismatch
+  mit alter Debug-Key-APK): `PopScope canPop:true` + "App trotzdem weiter nutzen"-Button
+  + klare "Deinstallieren & Neuinstallieren"-Anleitung. Verhindert Endlosschleife.
 
 ---
 
@@ -255,8 +274,12 @@ Weltenbibliothekapp/
 │   │   │   ├── materie_live_chat_screen.dart  # ⭐ Materie-Chat (Hauptscreen)
 │   │   │   ├── materie_community_tab.dart     # Community-Feed Materie
 │   │   │   └── ...
-│   │   └── shared/                      # Shared Screens (Profil, Voice, etc.)
+│   │   ├── shared/                      # Shared Screens (Profil, Voice, etc.)
+│   │   └── release_update_screen.dart   # ⭐ Fullscreen-Update-Gate (In-App-APK-Download)
 │   └── widgets/                         # Wiederverwendbare UI-Komponenten
+│       ├── update_gate.dart             # ⭐ Update-Koordinator (Stream-basiert)
+│       ├── patch_ready_dialog.dart      # ⭐ Prominenter OTA-Patch-Dialog (v5.36.0+)
+│       └── update_dialogs.dart          # Legacy ReleaseUpdateDialog (PatchReadyBanner entfernt)
 ├── workers/
 │   ├── api-worker.js                    # ⭐ Cloudflare Worker (Edge API)
 │   └── wrangler.toml                    # Worker-Konfiguration
@@ -395,6 +418,13 @@ chore(deps): Dependencies aktualisiert
 - [x] `SUPABASE_SERVICE_ROLE_KEY` als Cloudflare Secret gesetzt
 - [x] Tool-Table-Mappings im Worker (alle 7 Tools)
 - [x] SQL-Migrations für 7 fehlende Tool-Tabellen erstellt
+- [x] **Vollautomatisches Update-System (Release + Patch)** — v5.36.0+
+- [x] `supabase/release/current.json` eliminiert — min_version + changelog automatisch aus Git
+- [x] Prominenter Patch-Ready-Dialog (`PatchReadyDialog`) statt SnackBar-Banner
+- [x] Stream-basierte Patch-Benachrichtigung (`UpdateService.onPatchReady`)
+- [x] Signatur-Mismatch-Schutz im ReleaseUpdateScreen (Notausgang nach 2 fehlgeschlagenen Installs)
+- [x] APP_VERSION 0.0.0 Debug-Schutz (keine Force-Updates in lokalen Debug-Builds)
+- [x] Supabase `app_config` UPSERT statt PATCH (erstellt Zeile auch bei frischer DB)
 
 ### ⚠️ Noch ausstehend / bekannte Probleme
 
@@ -736,24 +766,21 @@ und die neue APK ist mit dem persistenten Release-Key signiert → User auf der 
 4. Alte User, die wirklich auf die neue APK müssen, bekommen eine Anleitung: Deinstallieren
    → Neuinstall der neuen APK (Datenverlust akzeptiert, Einmal-Wechsel).
 
-### Regel 4 — Release-Flow (vollautomatisch ab v5.35.0)
+### Regel 4 — Release-Flow (100% vollautomatisch ab v5.36.0)
 
-Der Release-Flow ist vollständig automatisiert. Der Entwickler macht NUR zwei Dinge:
+Der Release-Flow ist vollständig automatisiert. Der Entwickler macht NUR EINE Sache:
 
-1. **`pubspec.yaml` Version bumpen** (z.B. `5.34.0+20260419` → `5.35.0+20260420`).
-2. **`supabase/release/current.json` pflegen** — Pflichtfelder:
-   ```json
-   {
-     "min_version": "5.34.0",
-     "changelog": "• Bullet 1\n• Bullet 2"
-   }
-   ```
-   `min_version` = unter dieser Version wird das Update als forced gemeldet (User kann App
-   nicht weiter nutzen bis Download). In der Regel die vorherige Version.
+1. **`pubspec.yaml` Version bumpen** (z.B. `5.35.0+20260420` → `5.36.0+20260421`).
 
-Beides wird per normalem PR auf `main` gemerged. **Kein Tag-Push nötig** — der Workflow
-erstellt den Tag `vX.Y.Z` selbst via `softprops/action-gh-release@v2`, sobald er merkt
-dass für die aktuelle `pubspec.yaml`-Version noch kein Release existiert.
+Alles andere generiert der CI selbst:
+- `min_version` kommt aus dem **letzten GitHub-Release** (`gh release list --limit 1`).
+- `changelog` kommt aus **Git-Commits seit dem letzten Tag** (`git log <tag>..HEAD`),
+  chore/ci/Merge-Commits werden gefiltert.
+- `supabase/release/current.json` ist **deprecated** und wird nicht mehr gelesen.
+
+Der Version-Bump wird per normalem PR auf `main` gemerged. **Kein Tag-Push nötig** — der
+Workflow erstellt den Tag `vX.Y.Z` selbst via `softprops/action-gh-release@v2`, sobald er
+merkt dass für die aktuelle `pubspec.yaml`-Version noch kein Release existiert.
 
 **Trigger-Wege** (alle drei funktionieren):
 - **Merge auf `main` mit pubspec.yaml-Bump** (Standard): Pre-Check-Job vergleicht Version
@@ -763,6 +790,22 @@ dass für die aktuelle `pubspec.yaml`-Version noch kein Release existiert.
   funktioniert weiterhin, falls ein spezifischer Commit released werden soll.
 - **workflow_dispatch**: Actions-UI → "Build & Release APK" → Run workflow (auch auf
   Feature-Branches nutzbar).
+
+**STANDING RULE: CLAUDE.md IMMER AKTUALISIEREN** (ab v5.36.0, verbindlich):
+
+Nach JEDER erfolgreichen Code-Änderung MUSS CLAUDE.md aktualisiert werden.
+Das umfasst:
+- Neue/geänderte Features in "Erledigt" eintragen
+- Geänderte Architektur/Flows dokumentieren
+- Neue Dateien in der Projektstruktur ergänzen
+- Bekannte Fallstricke aktualisieren
+- Veraltete Informationen entfernen/korrigieren
+
+CLAUDE.md ist die EINZIGE Wahrheitsquelle für KI-Assistenten.
+Wenn CLAUDE.md nicht aktuell ist, machen zukünftige Sessions Fehler.
+Diese Regel gilt für JEDE Änderung — nicht nur für große Refactorings.
+
+---
 
 **Auto-Merge durch Claude** — STANDING RULE (ab v5.35.0, verbindlich):
 ICH MERGE JEDEN EIGENEN PR SELBST auf `main`, sobald CI grün ist. Kein Nachfragen beim
@@ -789,18 +832,24 @@ Regeln für Auto-Merge:
 
 Danach läuft `.github/workflows/build_apk.yml` vollautomatisch:
 
-1. Keystore aus Secrets dekodieren (`ANDROID_KEYSTORE_*`) → persistent-signierte APK.
-2. `shorebird release android --artifact=apk` → registriert Release auf Shorebird-Server.
-3. APK in GitHub Release veröffentlichen unter fixem URL-Schema
+1. Pre-Check ermittelt automatisch `prev_version` (= letzter Release-Tag) und
+   `changelog` (= `git log <tag>..HEAD`, gefiltert).
+2. Keystore aus Secrets dekodieren (`ANDROID_KEYSTORE_*`) → persistent-signierte APK.
+3. `shorebird release android --artifact=apk` → registriert Release auf Shorebird-Server.
+4. APK in GitHub Release veröffentlichen unter fixem URL-Schema
    `.../releases/download/vX.Y.Z/weltenbibliothek-vX.Y.Z-universal.apk`.
-4. Release-Notes kommen aus `current.json::changelog`.
-5. **`public.app_config` in Supabase wird per PostgREST-PATCH gesetzt** (nutzt
-   `SUPABASE_SERVICE_ROLE_KEY`, umgeht RLS). Felder:
+5. Release-Notes kommen aus dem **automatisch generierten Changelog**.
+6. **`public.app_config` in Supabase wird per PostgREST-UPSERT gesetzt** (POST mit
+   `Prefer: resolution=merge-duplicates`, nutzt `SUPABASE_SERVICE_ROLE_KEY`, umgeht RLS).
+   Erstellt die Zeile automatisch falls sie fehlt. Felder:
+   - `platform` = `"android"` (UPSERT-Key via UNIQUE constraint)
    - `latest_version` = Tag-Version (ohne `v`)
-   - `min_version`, `changelog` aus `current.json`
+   - `min_version` = letzter veröffentlichter Tag
+   - `changelog` = aus Git generiert
    - `apk_download_url`, `release_notes_url` aus Tag abgeleitet
-6. User auf älterer Version sehen beim nächsten App-Start den `ReleaseUpdateScreen` und
+7. User auf älterer Version sehen beim nächsten App-Start den `ReleaseUpdateScreen` und
    können direkt in der App herunterladen + installieren (Android `PackageInstaller`).
+   Bei wiederholter Installation-Failure (Signatur-Mismatch): Notausgang nach 2 Versuchen.
 
 **Erforderliche GitHub-Secrets (einmalig einzurichten):**
 - `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`,

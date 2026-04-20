@@ -1,17 +1,19 @@
 name: 🔁 Sync Supabase app_config
 
-# Setzt public.app_config in Supabase auf die aktuelle Version aus pubspec.yaml
-# + Inhalte aus supabase/release/current.json (min_version, changelog).
+# Setzt public.app_config in Supabase auf die aktuelle Version aus pubspec.yaml.
+# min_version wird AUTOMATISCH aus dem letzten GitHub-Release ermittelt,
+# changelog AUTOMATISCH aus Git-Commits seit dem letzten Tag generiert.
+# current.json wird NICHT mehr gelesen (deprecated ab v5.36.0).
 #
 # Läuft als eigener, schneller Job (kein APK-Rebuild). Ziel: Auch wenn der große
 # Release-Workflow build_apk.yml Step 11 failt, zieht dieser Workflow den
 # app_config-State automatisch nach sobald er auf main läuft.
 #
 # Trigger:
-#   • Push auf main der pubspec.yaml ODER current.json ändert
+#   • Push auf main der pubspec.yaml ändert
 #   • workflow_dispatch (manuell, z.B. nach Secret-Fix)
 #
-# Idempotent: PATCH auf dieselbe Version ist ein No-Op auf User-Seite
+# Idempotent: UPSERT auf dieselbe Version ist ein No-Op auf User-Seite
 #   (dieselben Werte → kein neuer Update-Dialog).
 #
 # Voraussetzung: Repo-Secret SUPABASE_SERVICE_ROLE_KEY gesetzt.
@@ -21,7 +23,6 @@ on:
     branches: [main]
     paths:
       - 'pubspec.yaml'
-      - 'supabase/release/current.json'
       - '.github/workflows/sync_app_config.yml'
   workflow_dispatch:
 
@@ -34,34 +35,52 @@ concurrency:
 
 jobs:
   sync:
-    name: 📢 PATCH app_config (android)
+    name: 📢 UPSERT app_config (android)
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # volle Git-History für Changelog-Generierung
 
-      - name: 📋 Version + Manifest lesen
+      - name: 📋 Version lesen + min_version/changelog automatisch ermitteln
         id: read
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: //' | sed 's/+.*//')
-          MANIFEST=supabase/release/current.json
-          if [ ! -f "$MANIFEST" ]; then
-            echo "❌ $MANIFEST fehlt"
-            exit 1
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+          # AUTO min_version: letzter GitHub-Release-Tag (ohne "v").
+          # Fallback auf aktuelle VERSION falls noch kein Release existiert.
+          PREV_VERSION=$(gh release list --repo "$GITHUB_REPOSITORY" --limit 1 \
+            --json tagName --jq '.[0].tagName // empty' 2>/dev/null | sed 's/^v//' || true)
+          if [ -z "$PREV_VERSION" ]; then
+            PREV_VERSION="$VERSION"
           fi
-          MIN_VERSION=$(jq -er '.min_version' "$MANIFEST")
-          CHANGELOG=$(jq -er '.changelog' "$MANIFEST")
+          echo "min_version=$PREV_VERSION" >> $GITHUB_OUTPUT
+
+          # AUTO changelog: Commits seit letztem Tag (oder letzte 10).
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -n "$LAST_TAG" ]; then
+            CHANGELOG=$(git log "$LAST_TAG"..HEAD --pretty=format:"• %s" --no-merges 2>/dev/null \
+              | grep -v -E "^• (chore|ci|Merge)" | head -20 || true)
+          else
+            CHANGELOG=$(git log --pretty=format:"• %s" --no-merges -10 2>/dev/null \
+              | grep -v -E "^• (chore|ci|Merge)" || true)
+          fi
+          if [ -z "$CHANGELOG" ]; then
+            CHANGELOG="• Bugfixes und Verbesserungen"
+          fi
           {
-            echo "version=$VERSION"
-            echo "min_version=$MIN_VERSION"
             echo "changelog<<EOF_CL"
             echo "$CHANGELOG"
             echo "EOF_CL"
           } >> $GITHUB_OUTPUT
-          echo "✅ version=$VERSION min_version=$MIN_VERSION"
+          echo "✅ version=$VERSION min_version=$PREV_VERSION"
 
-      - name: 📢 PATCH Supabase app_config
+      - name: 📢 UPSERT Supabase app_config
         env:
           SUPABASE_URL: https://adtviduaftdquvfjpojb.supabase.co
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -85,18 +104,18 @@ jobs:
             --arg url "$APK_URL" \
             --arg cl "$CHANGELOG" \
             --arg notes "$NOTES_URL" \
-            '{latest_version:$lv, min_version:$mv, apk_download_url:$url, changelog:$cl, release_notes_url:$notes}')
+            '{platform:"android", latest_version:$lv, min_version:$mv, apk_download_url:$url, changelog:$cl, release_notes_url:$notes}')
 
-          echo "→ PATCH app_config: latest=$VERSION min=$MIN_VERSION"
+          echo "→ UPSERT app_config: latest=$VERSION min=$MIN_VERSION"
           HTTP_CODE=$(curl -sS -o /tmp/resp.json -w "%{http_code}" \
-            -X PATCH "${SUPABASE_URL}/rest/v1/app_config?platform=eq.android" \
+            -X POST "${SUPABASE_URL}/rest/v1/app_config" \
             -H "apikey: ${SUPABASE_SERVICE_ROLE_KEY}" \
             -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
             -H "Content-Type: application/json" \
-            -H "Prefer: return=representation" \
+            -H "Prefer: resolution=merge-duplicates,return=representation" \
             -d "$BODY")
 
-          if [ "$HTTP_CODE" != "200" ] && [ "$HTTP_CODE" != "204" ]; then
+          if [ "$HTTP_CODE" != "200" ] && [ "$HTTP_CODE" != "201" ]; then
             echo "❌ Supabase-Update fehlgeschlagen (HTTP $HTTP_CODE)"
             cat /tmp/resp.json
             exit 1
