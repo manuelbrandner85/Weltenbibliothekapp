@@ -827,3 +827,38 @@ der alten Version, bis alle User migriert sind.
 **Im Zweifelsfall (Dart-only Änderung):** Statt Release besser `shorebird patch` nehmen —
 kein APK-Reinstall nötig, keine `app_config`-Änderung, User kriegen Patch beim nächsten
 App-Start automatisch.
+
+### Regel 5 — app_config-Sync ist eigener Workflow (Fallback zu Step 11)
+
+Der eingebettete Step 11 in `build_apk.yml` („📢 Supabase app_config updaten") hatte
+in der Vergangenheit silent Failures (z.B. weil `SUPABASE_SERVICE_ROLE_KEY` fehlte,
+aber der APK-Build davor bereits erfolgreich war → GitHub-Release da, app_config aber
+noch auf alter Version → In-App-Update-Dialog bleibt aus).
+
+Deshalb gibt es zusätzlich **`.github/workflows/sync_app_config.yml`**:
+
+- Eigenständiger, schneller Job (keine Flutter-Toolchain nötig, <1 min).
+- Trigger automatisch auf jedem `main`-Push der `pubspec.yaml` ODER
+  `supabase/release/current.json` ändert.
+- Läuft **parallel** zum großen Release-Build — wenn Step 11 failt, zieht dieser
+  Workflow den `app_config`-State trotzdem nach.
+- Idempotent: PATCH auf dieselbe Version ist no-op für User.
+- Zusätzlich manuell via `workflow_dispatch` triggerbar (z.B. nach Secret-Fix).
+
+**Claude-Standing-Rule für Releases (ab v5.36.0, verbindlich):**
+
+Nach jedem Release führe ich den End-to-End-Check ohne Nachfragen durch:
+
+1. GitHub-Release existiert (Tag `vX.Y.Z`, APK attached) — prüfen via
+   `mcp__github__list_releases`.
+2. `sync_app_config`-Workflow ist auf dem gleichen Commit grün gelaufen.
+3. Supabase `app_config`-Row zeigt neue `latest_version` — prüfen via Supabase MCP
+   `execute_sql` (read-only SELECT).
+
+Fails einer der drei Schritte, fixe ich **automatisch ohne Rückfrage**:
+
+- Release fehlt → Build-Workflow neu dispatchen.
+- sync_app_config grün aber app_config alt → Workflow neu dispatchen (nicht
+  SQL-Editor-Update empfehlen).
+- Secret `SUPABASE_SERVICE_ROLE_KEY` fehlt → dem User die Einrichtung ansagen,
+  andere Release-Teile laufen weiter.
