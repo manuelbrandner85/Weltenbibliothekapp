@@ -1,13 +1,19 @@
 // 🟢 RELEASE UPDATE SCREEN – Fullscreen-Update-Gate
 //
 // Wird angezeigt wenn eine neue APK-Version verfügbar ist. Sperrt die App
-// komplett (PopScope canPop:false), bis der User die neue APK heruntergeladen
-// und installiert hat.
+// komplett (PopScope canPop:false bei Force-Update), bis der User die neue
+// APK heruntergeladen und installiert hat.
 //
 // Flow:
 //   1. Info-Ansicht: aktuelle vs. neue Version + Changelog + Download-Button
 //   2. Download: Progress-Bar (MB / Gesamt / %), cancel möglich
 //   3. Fertig: Android PackageInstaller öffnet sich automatisch
+//
+// Signatur-Mismatch-Schutz (ab v5.36.0):
+//   Wenn die Installation wiederholt fehlschlägt (>=2 Versuche), zeigen wir
+//   eine klare "Deinstallieren & Neuinstallieren"-Anleitung und aktivieren
+//   einen Notausgang ("App trotzdem weiter nutzen"). Sonst säße ein User
+//   mit alter Debug-Key-APK in einer Endlosschleife fest.
 
 import 'dart:async';
 import 'dart:io';
@@ -41,6 +47,9 @@ class _ReleaseUpdateScreenState extends State<ReleaseUpdateScreen> {
   ApkDownloadProgress? _progress;
   String? _errorMsg;
   File? _apkFile;
+  // Zähler für fehlgeschlagene Installationsversuche — nach 2 aktivieren wir
+  // den Notausgang (Signatur-Mismatch-Schutz).
+  int _installAttempts = 0;
 
   Future<void> _startDownload() async {
     final url = widget.info.apkDownloadUrl;
@@ -86,15 +95,27 @@ class _ReleaseUpdateScreenState extends State<ReleaseUpdateScreen> {
   Future<void> _installApk() async {
     final file = _apkFile;
     if (file == null) return;
+    _installAttempts++;
     setState(() => _stage = _UpdateStage.installing);
     final ok = await ApkDownloadService.instance.installApk(file);
     if (!mounted) return;
     if (!ok) {
       setState(() {
         _stage = _UpdateStage.error;
-        _errorMsg = 'Installer konnte nicht geöffnet werden. '
-            'Bitte in Einstellungen "Aus unbekannten Quellen installieren" '
-            'für die Weltenbibliothek erlauben.';
+        if (_installAttempts >= 2) {
+          // Wahrscheinlich Signatur-Mismatch (alte Debug-Key-APK).
+          // Klare Anleitung + Notausgang wird im Build unten aktiviert.
+          _errorMsg = 'Die Installation schlägt wiederholt fehl. '
+              'Wahrscheinlich wurde deine aktuelle Version mit einem '
+              'anderen Signatur-Schlüssel gebaut.\n\n'
+              'Lösung: App deinstallieren → neue APK installieren.\n'
+              '(Hinweis: Lokale Daten gehen dabei verloren, '
+              'aber dein Profil wird automatisch wiederhergestellt.)';
+        } else {
+          _errorMsg = 'Installer konnte nicht geöffnet werden. '
+              'Bitte in Einstellungen "Aus unbekannten Quellen installieren" '
+              'für die Weltenbibliothek erlauben.';
+        }
       });
     }
     // Bei ok: User bleibt im installing-State, Android übernimmt.
@@ -110,8 +131,14 @@ class _ReleaseUpdateScreenState extends State<ReleaseUpdateScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Notausgang erlauben sobald 2+ Installationsversuche fehlgeschlagen sind
+    // (typisch für Signatur-Mismatch bei alten Debug-Key-APKs).
+    final allowEscape =
+        _stage == _UpdateStage.error && _installAttempts >= 2;
+    final canPop = !widget.info.isForced || allowEscape;
+
     return PopScope(
-      canPop: false,
+      canPop: canPop,
       child: Scaffold(
         backgroundColor: _bg,
         body: SafeArea(
@@ -132,7 +159,7 @@ class _ReleaseUpdateScreenState extends State<ReleaseUpdateScreen> {
                     const Spacer(),
                     _buildActionArea(),
                     const SizedBox(height: 24),
-                    _buildFooter(),
+                    _buildFooter(canPop),
                   ],
                 ),
               ),
@@ -441,6 +468,7 @@ class _ReleaseUpdateScreenState extends State<ReleaseUpdateScreen> {
   }
 
   Widget _buildErrorState() {
+    final showEscape = _installAttempts >= 2;
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -485,6 +513,20 @@ class _ReleaseUpdateScreenState extends State<ReleaseUpdateScreen> {
                   borderRadius: BorderRadius.circular(12)),
             ),
           ),
+          if (showEscape) ...[
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.white.withValues(alpha: 0.75),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+              child: const Text(
+                'App trotzdem weiter nutzen',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -492,11 +534,13 @@ class _ReleaseUpdateScreenState extends State<ReleaseUpdateScreen> {
 
   // ───────────────────────── Footer ─────────────────────────
 
-  Widget _buildFooter() {
+  Widget _buildFooter(bool canPop) {
     return Column(
       children: [
         Text(
-          'Dieses Update ist erforderlich, um die App weiter nutzen zu können.',
+          canPop
+              ? 'Tipp: Du kannst die App weiter nutzen und später updaten.'
+              : 'Dieses Update ist erforderlich, um die App weiter nutzen zu können.',
           textAlign: TextAlign.center,
           style: TextStyle(
               color: Colors.white.withValues(alpha: 0.45),
@@ -506,12 +550,19 @@ class _ReleaseUpdateScreenState extends State<ReleaseUpdateScreen> {
         const SizedBox(height: 12),
         TextButton(
           onPressed: () {
-            SystemNavigator.pop();
+            if (canPop) {
+              Navigator.of(context).maybePop();
+            } else {
+              SystemNavigator.pop();
+            }
           },
           style: TextButton.styleFrom(
               foregroundColor: Colors.white.withValues(alpha: 0.5),
               minimumSize: const Size(0, 36)),
-          child: const Text('App beenden', style: TextStyle(fontSize: 12)),
+          child: Text(
+            canPop ? 'Später' : 'App beenden',
+            style: const TextStyle(fontSize: 12),
+          ),
         ),
       ],
     );

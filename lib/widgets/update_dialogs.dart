@@ -1,21 +1,19 @@
 // 🟢 UPDATE DIALOGS – UI für In-App-Update-Meldungen
 //
-// - [ReleaseUpdateDialog]: neue APK verfügbar → Download-Link
-// - [PatchReadyDialog]:   OTA-Patch installiert → App neu starten
+// - [ReleaseUpdateDialog]: kompakte Legacy-Dialog-Variante für neue APK
+//   (aktuell wird stattdessen der Fullscreen [ReleaseUpdateScreen] verwendet).
 //
-// Design orientiert sich am Home-Dashboard-Stil (dunkler Hintergrund,
-// blaue/lila Akzente). Texte auf Deutsch.
-
-import 'dart:io' show Platform, exit;
+// HINWEIS: Der frühere [PatchReadyBanner] (kleine SnackBar für OTA-Patches)
+// wurde ab v5.36.0 entfernt. Patch-Benachrichtigungen laufen jetzt über
+// den prominenten [PatchReadyDialog] in patch_ready_dialog.dart.
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../services/update_service.dart';
 
 // ---------------------------------------------------------------------------
-// Release-Update-Dialog (neue APK)
+// Release-Update-Dialog (neue APK) – Legacy/Kompakt-Variante
 // ---------------------------------------------------------------------------
 
 class ReleaseUpdateDialog extends StatelessWidget {
@@ -243,65 +241,5 @@ class _VersionRow extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Patch-Ready-Dialog (OTA heruntergeladen, Restart nötig)
-// ---------------------------------------------------------------------------
-
-class PatchReadyBanner {
-  /// Zeigt eine persistente SnackBar mit "Jetzt neu starten"-Button.
-  /// Nicht-blockierend — User kann Arbeit zu Ende bringen und später restarten.
-  static void show(BuildContext context) {
-    final messenger = ScaffoldMessenger.of(context);
-    messenger.clearSnackBars();
-    messenger.showSnackBar(
-      SnackBar(
-        backgroundColor: const Color(0xFF0A1020),
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(days: 1), // bleibt sichtbar bis User handelt
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-          side: const BorderSide(color: Color(0xFF00E5FF), width: 1),
-        ),
-        content: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: const Color(0xFF00E5FF).withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(Icons.auto_awesome,
-                  color: Color(0xFF00E5FF), size: 20),
-            ),
-            const SizedBox(width: 12),
-            const Expanded(
-              child: Text(
-                'Update heruntergeladen — App neu starten, um es zu aktivieren.',
-                style: TextStyle(color: Colors.white, fontSize: 13),
-              ),
-            ),
-          ],
-        ),
-        action: SnackBarAction(
-          label: 'Neu starten',
-          textColor: const Color(0xFF00E5FF),
-          onPressed: () => _restartApp(),
-        ),
-      ),
-    );
-  }
-
-  static void _restartApp() {
-    // Android: App schließen, User öffnet sie neu (dann wird Patch aktiv).
-    // Auf iOS ist exit() Apple-Store-Policy-seitig nicht erlaubt, aber wir
-    // verteilen Android-APK sideloaded — das ist hier akzeptabel.
-    if (Platform.isAndroid) {
-      SystemNavigator.pop();
-      // Fallback falls SystemNavigator.pop() nicht greift:
-      Future.delayed(const Duration(milliseconds: 300), () => exit(0));
-    }
   }
 }

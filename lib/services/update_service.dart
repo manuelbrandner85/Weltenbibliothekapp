@@ -2,12 +2,14 @@
 //
 // Zwei Modi:
 //   1. Release-Update: Neue APK verfügbar (App-Version < latest in Supabase)
-//      → Dialog mit Download-Link (user lädt + installiert APK manuell)
+//      → Fullscreen-Screen mit Download-/Installer-Flow
 //   2. Patch-Ready: Shorebird-OTA-Patch wurde heruntergeladen, Restart nötig
-//      → Snackbar/Dialog "App neu starten"
+//      → Prominenter Fullscreen-Dialog "App jetzt schließen"
 //
 // Die aktuelle App-Version kommt via --dart-define=APP_VERSION=... beim Build.
-// Fallback: lese aus pubspec (nicht zur Laufzeit) → String.fromEnvironment.
+// Fallback: String.fromEnvironment → '0.0.0' (Debug-Build). Bei '0.0.0' wird
+// der Release-Check KOMPLETT übersprungen, damit lokale Debug-Builds nicht
+// fälschlich einen Force-Update-Screen zeigen.
 
 import 'dart:async';
 
@@ -15,7 +17,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shorebird_code_push/shorebird_code_push.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-/// Ergebnis des Update-Checks
+/// Ergebnis des Release-Update-Checks (Supabase app_config vs. APP_VERSION).
 class UpdateCheckResult {
   final bool releaseUpdateAvailable;
   final bool isForced;
@@ -38,19 +40,57 @@ class UpdateCheckResult {
   static const empty = UpdateCheckResult();
 }
 
+/// Ergebnis des Patch-Checks (Shorebird).
+/// [patchReady] = true ⇢ beim nächsten App-Start wird ein neuer Patch aktiv.
+class PatchCheckResult {
+  final bool patchReady;
+  final int? currentPatchNumber;
+  final int? nextPatchNumber;
+
+  const PatchCheckResult({
+    this.patchReady = false,
+    this.currentPatchNumber,
+    this.nextPatchNumber,
+  });
+
+  static const empty = PatchCheckResult();
+}
+
 class UpdateService {
   UpdateService._();
   static final instance = UpdateService._();
 
   /// Aktuelle App-Version (Semver ohne Build-Nummer), gesetzt via dart-define.
-  /// Beim Build: --dart-define=APP_VERSION=5.31.0
+  /// Beim Build: --dart-define=APP_VERSION=5.35.0
   static const String currentAppVersion =
       String.fromEnvironment('APP_VERSION', defaultValue: '0.0.0');
 
+  /// true wenn APP_VERSION nicht gesetzt wurde (lokaler Debug-Build).
+  /// In diesem Fall werden Release-Checks übersprungen, damit nicht
+  /// fälschlich ein Force-Update-Screen erscheint.
+  bool get isVersionUnknown => currentAppVersion == '0.0.0';
+
   final ShorebirdUpdater _shorebird = ShorebirdUpdater();
 
+  /// Broadcast-Stream: feuert wenn ein Patch heruntergeladen und installiert
+  /// wurde und beim nächsten Start aktiv wird. Das UpdateGate hört hier zu
+  /// und zeigt dann den prominenten [PatchReadyDialog].
+  final StreamController<PatchCheckResult> _patchReadyController =
+      StreamController<PatchCheckResult>.broadcast();
+
+  Stream<PatchCheckResult> get onPatchReady => _patchReadyController.stream;
+
   /// Prüft Supabase `app_config` für Android und vergleicht mit [currentAppVersion].
+  /// Bei Debug-Builds (APP_VERSION='0.0.0') wird sofort empty zurückgegeben.
   Future<UpdateCheckResult> checkReleaseUpdate() async {
+    // Debug-Build-Schutz: nie Force-Update in lokalen Builds zeigen.
+    if (isVersionUnknown) {
+      if (kDebugMode) {
+        debugPrint('ℹ️  [UpdateService] APP_VERSION=0.0.0 → Release-Check übersprungen');
+      }
+      return UpdateCheckResult.empty;
+    }
+
     try {
       final row = await Supabase.instance.client
           .from('app_config')
@@ -94,40 +134,58 @@ class UpdateService {
     }
   }
 
-  /// true = Shorebird hat einen Patch heruntergeladen, der beim nächsten
-  /// App-Start aktiv wird.
-  Future<bool> isPatchReady() async {
+  /// Fragt Shorebird, ob ein Patch bereitliegt, der beim nächsten App-Start
+  /// aktiv wird. Gibt ein [PatchCheckResult] zurück (mit Patch-Nummern),
+  /// damit das UI Details anzeigen kann.
+  Future<PatchCheckResult> checkPatchReady() async {
     try {
-      if (!_shorebird.isAvailable) return false;
-      final status = await _shorebird.readCurrentPatch();
+      if (!_shorebird.isAvailable) return PatchCheckResult.empty;
+      final current = await _shorebird.readCurrentPatch();
       final next = await _shorebird.readNextPatch();
       // Patch wartet, wenn es einen `next` gibt, der nicht dem aktuellen entspricht.
-      if (next == null) return false;
-      if (status == null) return true;
-      return next.number != status.number;
+      if (next == null) {
+        return PatchCheckResult(currentPatchNumber: current?.number);
+      }
+      final ready = current == null || next.number != current.number;
+      return PatchCheckResult(
+        patchReady: ready,
+        currentPatchNumber: current?.number,
+        nextPatchNumber: next.number,
+      );
     } catch (e) {
       if (kDebugMode) {
         debugPrint('⚠️  [UpdateService] Patch-Status-Check fehlgeschlagen: $e');
       }
-      return false;
+      return PatchCheckResult.empty;
     }
   }
 
   /// Fragt Shorebird-Server aktiv nach neuem Patch (blockierend bis Download).
   /// Wird idR. vom Auto-Updater erledigt; hier nur als Trigger wenn die App
-  /// länger offen ist.
+  /// länger offen ist. Nach erfolgreichem Download wird der Stream befeuert.
   Future<void> checkAndDownloadPatch() async {
     try {
       if (!_shorebird.isAvailable) return;
       final status = await _shorebird.checkForUpdate();
       if (status == UpdateStatus.outdated) {
         await _shorebird.update();
+        // Nach erfolgreichem Download: Patch-Status prüfen und Listener benachrichtigen.
+        final result = await checkPatchReady();
+        if (result.patchReady && !_patchReadyController.isClosed) {
+          _patchReadyController.add(result);
+        }
       }
     } catch (e) {
       if (kDebugMode) {
         debugPrint('⚠️  [UpdateService] Patch-Download fehlgeschlagen: $e');
       }
     }
+  }
+
+  /// Schließt den Stream. Wird idR. nicht aufgerufen (Singleton), steht aber
+  /// für Tests zur Verfügung.
+  void dispose() {
+    _patchReadyController.close();
   }
 
   // ---------------------------------------------------------------------------
