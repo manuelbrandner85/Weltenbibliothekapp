@@ -1,44 +1,44 @@
-import 'package:hive_flutter/hive_flutter.dart';
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/search_history.dart';
 
-/// Search History Service v8.0
-/// 
-/// Manages search history with Hive Local Storage
-/// - Stores last 50 searches
-/// - Auto-cleanup old entries
-/// - Search & Filter capabilities
+/// Search History Service v9.0 (SharedPreferences)
+///
+/// Manages search history – last 50 searches, auto-cleanup, filter.
 class SearchHistoryService {
-  static const String _boxName = 'search_history';
+  static const String _kHistory = 'search_history';
   static const int _maxHistoryEntries = 50;
-  static Box<SearchHistoryEntry>? _box;
 
-  /// Initialize Hive & open box
+  static List<SearchHistoryEntry> _entries = [];
+  static bool _loaded = false;
+
   static Future<void> init() async {
-    await Hive.initFlutter();
-    
-    // Register adapter
-    if (!Hive.isAdapterRegistered(2)) {
-      Hive.registerAdapter(SearchHistoryEntryAdapter());
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_kHistory);
+    if (raw != null) {
+      try {
+        final list = jsonDecode(raw) as List;
+        _entries = list
+            .map((e) => SearchHistoryEntry.fromJson(e as Map<String, dynamic>))
+            .toList();
+      } catch (_) {
+        _entries = [];
+      }
     }
-    
-    // Open box
-    _box = await Hive.openBox<SearchHistoryEntry>(_boxName);
-    
-    // Auto-cleanup on init
+    _loaded = true;
     await _cleanupOldEntries();
   }
 
-  /// Get box instance
-  static Box<SearchHistoryEntry> get box {
-    if (_box == null || !_box!.isOpen) {
-      throw Exception('SearchHistory box not initialized. Call SearchHistoryService.init() first.');
-    }
-    return _box!;
+  static Future<void> _persist() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      _kHistory,
+      jsonEncode(_entries.map((e) => e.toJson()).toList()),
+    );
   }
 
   // ==================== CREATE ====================
 
-  /// Add search to history
   static Future<void> addSearch({
     required String query,
     int resultCount = 0,
@@ -46,17 +46,9 @@ class SearchHistoryService {
     List<String>? tags,
     Map<String, dynamic>? metadata,
   }) async {
-    // Check if query already exists (avoid duplicates)
-    final existing = box.values
-        .where((e) => e.query.toLowerCase() == query.toLowerCase())
-        .toList();
-    
-    // Remove existing entries of same query
-    for (var entry in existing) {
-      await box.delete(entry.key);
-    }
-    
-    // Create new entry
+    if (!_loaded) await init();
+    _entries.removeWhere((e) => e.query.toLowerCase() == query.toLowerCase());
+
     final entry = SearchHistoryEntry(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       query: query,
@@ -66,112 +58,81 @@ class SearchHistoryService {
       tags: tags,
       metadata: metadata,
     );
-    
-    await box.put(entry.id, entry);
-    
-    // Cleanup if exceeds max
+
+    _entries.add(entry);
     await _cleanupOldEntries();
+    await _persist();
   }
 
   // ==================== READ ====================
 
-  /// Get all history entries (sorted by newest first)
   static List<SearchHistoryEntry> getAllHistory() {
-    return box.values.toList()
+    return List.of(_entries)
       ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
   }
 
-  /// Get recent history (last N entries)
   static List<SearchHistoryEntry> getRecentHistory({int limit = 10}) {
-    final all = getAllHistory();
-    return all.take(limit).toList();
+    return getAllHistory().take(limit).toList();
   }
 
-  /// Search in history
   static List<SearchHistoryEntry> searchHistory(String query) {
     if (query.isEmpty) return getAllHistory();
-    
-    final queryLower = query.toLowerCase();
-    return box.values
+    final q = query.toLowerCase();
+    return _entries
         .where((e) =>
-            e.query.toLowerCase().contains(queryLower) ||
-            (e.summary?.toLowerCase().contains(queryLower) ?? false) ||
-            (e.tags?.any((tag) => tag.toLowerCase().contains(queryLower)) ?? false))
+            e.query.toLowerCase().contains(q) ||
+            (e.summary?.toLowerCase().contains(q) ?? false) ||
+            (e.tags?.any((tag) => tag.toLowerCase().contains(q)) ?? false))
         .toList()
       ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
   }
 
-  /// Get history count
-  static int getHistoryCount() {
-    return box.length;
-  }
+  static int getHistoryCount() => _entries.length;
 
-  /// Check if query exists in history
-  static bool hasQuery(String query) {
-    return box.values.any((e) => e.query.toLowerCase() == query.toLowerCase());
-  }
+  static bool hasQuery(String query) =>
+      _entries.any((e) => e.query.toLowerCase() == query.toLowerCase());
 
   // ==================== DELETE ====================
 
-  /// Delete history entry
   static Future<void> deleteEntry(String id) async {
-    await box.delete(id);
+    _entries.removeWhere((e) => e.id == id);
+    await _persist();
   }
 
-  /// Clear all history
   static Future<void> clearAllHistory() async {
-    await box.clear();
+    _entries.clear();
+    await _persist();
   }
 
-  /// Delete entries older than specified days
   static Future<void> deleteOlderThan(int days) async {
-    final cutoffDate = DateTime.now().subtract(Duration(days: days));
-    final idsToDelete = box.values
-        .where((e) => e.timestamp.isBefore(cutoffDate))
-        .map((e) => e.id)
-        .toList();
-    
-    for (final id in idsToDelete) {
-      await box.delete(id);
-    }
+    final cutoff = DateTime.now().subtract(Duration(days: days));
+    _entries.removeWhere((e) => e.timestamp.isBefore(cutoff));
+    await _persist();
   }
 
   // ==================== CLEANUP ====================
 
-  /// Auto-cleanup: Keep only last N entries
   static Future<void> _cleanupOldEntries() async {
-    if (box.length <= _maxHistoryEntries) return;
-    
-    final all = getAllHistory();
-    final toDelete = all.skip(_maxHistoryEntries).toList();
-    
-    for (final entry in toDelete) {
-      await box.delete(entry.id);
-    }
+    if (_entries.length <= _maxHistoryEntries) return;
+    _entries.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    _entries = _entries.take(_maxHistoryEntries).toList();
   }
 
   // ==================== STATS ====================
 
-  /// Get most searched queries
   static List<String> getMostSearchedQueries({int limit = 10}) {
     final queryCount = <String, int>{};
-    
-    for (final entry in box.values) {
-      final query = entry.query.toLowerCase();
-      queryCount[query] = (queryCount[query] ?? 0) + 1;
+    for (final e in _entries) {
+      final q = e.query.toLowerCase();
+      queryCount[q] = (queryCount[q] ?? 0) + 1;
     }
-    
     final sorted = queryCount.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
-    
     return sorted.take(limit).map((e) => e.key).toList();
   }
 
-  /// Get search statistics
   static Map<String, dynamic> getStatistics() {
-    final all = box.values.toList();
-    
-    if (all.isEmpty) {
+    if (_entries.isEmpty) {
       return {
         'totalSearches': 0,
         'uniqueQueries': 0,
@@ -180,19 +141,15 @@ class SearchHistoryService {
         'newestSearch': null,
       };
     }
-    
-    final uniqueQueries = all.map((e) => e.query.toLowerCase()).toSet().length;
-    final totalResults = all.fold<int>(0, (sum, e) => sum + e.resultCount);
-    final avgResults = totalResults / all.length;
-    
-    all.sort((a, b) => a.timestamp.compareTo(b.timestamp));
-    
+    final uniqueQueries = _entries.map((e) => e.query.toLowerCase()).toSet().length;
+    final totalResults = _entries.fold<int>(0, (sum, e) => sum + e.resultCount);
+    final sorted = List.of(_entries)..sort((a, b) => a.timestamp.compareTo(b.timestamp));
     return {
-      'totalSearches': all.length,
+      'totalSearches': _entries.length,
       'uniqueQueries': uniqueQueries,
-      'averageResultCount': avgResults.round(),
-      'oldestSearch': all.first.timestamp,
-      'newestSearch': all.last.timestamp,
+      'averageResultCount': (totalResults / _entries.length).round(),
+      'oldestSearch': sorted.first.timestamp,
+      'newestSearch': sorted.last.timestamp,
     };
   }
 }

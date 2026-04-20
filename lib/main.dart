@@ -59,8 +59,6 @@ void main() async {
   const hiveBoxes = [
     'research_topics',
     'community_posts',
-    'achievement_progress',
-    'user_progress',
     'meditation_sessions',
     'daily_practices',
     'complete_content_cache',
@@ -76,9 +74,6 @@ void main() async {
     'chat_rooms_local',
     'chat_presence',
     'pending_sync',
-    'likes_cache',
-    'comments_cache',
-    'like_cache',
     'numerology_data',
     'spirit_calculations',
     'user_data', // ✅ FIX: UnifiedStorageService benötigt diese Box (Admin Dashboard)
@@ -105,8 +100,6 @@ void main() async {
     'moon_journal',
     'crystal_collection',
     'mantra_challenges',
-    'achievements',
-    'tool_streaks',
     'post_drafts',
     'scheduled_posts',
   ];

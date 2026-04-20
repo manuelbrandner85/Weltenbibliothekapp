@@ -13,7 +13,6 @@ import '../../services/offline_sync_service.dart'; // 📡 OFFLINE SYNC (NEW Pha
 import '../../services/user_service.dart';
 import '../../services/storage_service.dart'; // StorageService for profile access
 import '../../core/storage/unified_storage_service.dart'; // UnifiedStorageService
-import 'package:hive_flutter/hive_flutter.dart'; // Hive for box check
 import 'package:flutter_riverpod/flutter_riverpod.dart'; // Riverpod
 import '../../services/profile_sync_service.dart'; // 🔥 BACKEND SYNC
 import '../../models/energie_profile.dart';
@@ -335,10 +334,6 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
   Future<void> _loadUserData() async {
     EnergieProfile? energieProfile;
     try {
-      // Ensure box is open – main.dart opens it, but guard for safety
-      if (!Hive.isBoxOpen('energie_profiles')) {
-        await Hive.openBox('energie_profiles');
-      }
       final storage = StorageService();
       energieProfile = storage.getEnergieProfile();
     } catch (e) {
