@@ -612,6 +612,76 @@ gh pr edit <NR> --body "Neue Beschreibung"
   - Trigger: Nur manuell (workflow_dispatch); `release_version: latest` per Default
   - Läuft `shorebird patch android` → sendet Dart-AOT-Diff an Shorebird, User bekommt Update beim nächsten App-Start automatisch
   - Einschränkung: KEINE neuen Dart-Dependencies, KEINE nativen Änderungen (dann neuer Release nötig)
+
+### ⚠️ Shorebird OTA-Patch Konfiguration — NICHT ÄNDERN (verbindlich)
+
+> Diese Konfiguration ist das Ergebnis eines stundenlangen Debuggings nach "Patch uploaded,
+> aber auf Gerät nicht aktiv"-Problem. Jede Abweichung davon hat den Patch silent kaputt
+> gemacht. Bevor du auch nur EIN Flag hinzufügst/entfernst: lies diesen Abschnitt.
+>
+> Letzter funktionierender Patch: Run #15 auf Commit `fe09bad` (Shorebird CLI 1.6.92,
+> Flutter 3.41.6 rev `76ca3dff01`). Aktuell funktionierender Patch: v5.34.0 auf dem Gerät
+> zeigte `cur=2 nxt=2 chk=upToDate` nach Fix.
+
+**PFLICHT-Einstellungen in `.github/workflows/shorebird_patch.yml`:**
+
+1. **Shorebird CLI pinnen auf exakt die Version, mit der der Release gebaut wurde:**
+   ```yaml
+   - uses: shorebirdtech/setup-shorebird@v1
+     with:
+       shorebird-version: 1.6.92
+   ```
+   Ohne Pin driftet `setup-shorebird@v1` auf die neueste CLI und damit auf einen anderen
+   Flutter-Engine-Snapshot. Patch wird dann zwar uploaded, aber vom Client auf dem Gerät
+   still verworfen, weil die Engine-Bytes nicht zum registrierten Release passen.
+   → Wenn ein neuer Release mit neuerer Shorebird-CLI gebaut wird, MUSS dieser Pin
+   mitgezogen werden.
+
+2. **Nur `--allow-asset-diffs`, niemals `--allow-native-diffs`:**
+   ```bash
+   shorebird patch android --allow-asset-diffs --release-version="latest" -- \
+     --target-platform=android-arm64,android-arm \
+     --dart-define=APP_VERSION=... \
+     --dart-define=SUPABASE_URL=... \
+     --dart-define=SUPABASE_ANON_KEY=... \
+     --dart-define=CLOUDFLARE_WORKER_URL=...
+   ```
+   - `--allow-asset-diffs` ist nötig weil MaterialIcons.otf bei jedem Build neu
+     tree-geshaked wird sobald neue Icons im Dart-Code stehen.
+   - `--allow-native-diffs` **maskiert** Engine-Drift (CLI-Mismatch) statt ihn zu fixen:
+     Shorebird nimmt den Patch an, Gerät lehnt ihn später still ab. NIEMALS setzen.
+
+3. **`--release-version="latest"` direkt an Shorebird geben, keinen eigenen Resolver bauen.**
+   Shorebird löst "latest" korrekt gegen die jüngste registrierte Release-Version auf.
+   Custom-Resolver (parsen von `shorebird releases list`) hat in der Vergangenheit auf
+   nicht-existente Versionen gezeigt.
+
+4. **Kein `pubspec.yaml` mit der Release-Version synchronisieren.**
+   Die App-Version im Patch-Build ist unerheblich — Shorebird matcht am Engine-Snapshot-Hash,
+   nicht am `version:` Feld.
+
+5. **Kein `--verbose | tee`.** Verschluckt manchmal Exit-Codes und hat in der Vergangenheit
+   grüne Runs produziert, die in Wahrheit gefailt sind.
+
+6. **Concurrency-Gruppe mit `cancel-in-progress: true`:** Shorebird nimmt den zuletzt
+   hochgeladenen Patch als aktiv — ältere laufende Jobs würden neuere überschreiben wenn
+   sie später fertig werden.
+   ```yaml
+   concurrency:
+     group: shorebird-patch-${{ github.ref }}
+     cancel-in-progress: true
+   ```
+
+7. **`SUPABASE_ANON_KEY` ist ein echter JWT mit Payload
+   `{"iss":"supabase","ref":"adtviduaftdquvfjpojb","role":"anon",...}`.**
+   Nicht kürzen, nicht "verkürzen", nicht durch Platzhalter ersetzen — sonst bootet die App
+   nicht mehr gegen Supabase.
+
+**Debug-Banner (`lib/widgets/ota_debug_banner.dart`):**
+Falls je wieder ein Patch "silent fail" verhält, temporär wieder in `update_gate.dart`
+einsetzen — zeigt `v=<APP_VERSION> sb=<ON|OFF> cur=<N> nxt=<N> chk=<status>` oben rechts
+und macht sichtbar ob Shorebird den Patch installiert hat. Nach erfolgreichem Test WIEDER
+ENTFERNEN (user-facing Diagnose-Overlay).
 - **Neuer Release (nur bei nativen Änderungen, nach Absprache):**
   - Workflow: `.github/workflows/build_apk.yml`
   - Trigger: Nur manuell (`workflow_dispatch`) — Push-Trigger ist abgeschaltet, damit Dart-only Commits keinen fehlschlagenden Release-Build auslösen
