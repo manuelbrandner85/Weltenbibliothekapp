@@ -240,9 +240,13 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
   Widget _buildPostsView() {
     return Container(
       color: _mBg,
-      child: CustomScrollView(
-        physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
-        slivers: [
+      child: RefreshIndicator(
+        color: _mRed,
+        backgroundColor: Colors.black87,
+        onRefresh: _loadData,
+        child: CustomScrollView(
+          physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+          slivers: [
           SliverToBoxAdapter(child: _buildHeader()),
           SliverToBoxAdapter(child: _buildStatBanner()),
           if (_selectedView == 'trending')
@@ -270,7 +274,8 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
                     ),
                   ),
                 ),
-        ],
+          ],
+        ),
       ),
     );
   }

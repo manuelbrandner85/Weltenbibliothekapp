@@ -240,9 +240,13 @@ class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern> w
   Widget _buildPostsView() {
     return Container(
       color: _kBg,
-      child: CustomScrollView(
-        physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
-        slivers: [
+      child: RefreshIndicator(
+        color: _kPurple,
+        backgroundColor: Colors.black87,
+        onRefresh: _loadData,
+        child: CustomScrollView(
+          physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+          slivers: [
           SliverToBoxAdapter(child: _buildHeader()),
           SliverToBoxAdapter(child: _buildStatBanner()),
 
@@ -303,7 +307,8 @@ class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern> w
                     ),
                   ),
                 ),
-        ],
+          ],
+        ),
       ),
     );
   }
