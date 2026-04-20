@@ -13,6 +13,7 @@
 
 import 'dart:async';
 
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shorebird_code_push/shorebird_code_push.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -80,6 +81,20 @@ class UpdateService {
 
   Stream<PatchCheckResult> get onPatchReady => _patchReadyController.stream;
 
+  /// Schneller Offline-Check bevor wir Supabase/Shorebird kontaktieren.
+  /// Ohne Netz bekäme der User einen 5-10s Timeout und die App fühlt sich
+  /// hängend an — das verhindern wir hier.
+  /// Im Zweifel (Exception) geben wir `true` zurück, damit echte Calls
+  /// versucht werden.
+  Future<bool> _hasConnectivity() async {
+    try {
+      final results = await Connectivity().checkConnectivity();
+      return results.any((r) => r != ConnectivityResult.none);
+    } catch (_) {
+      return true;
+    }
+  }
+
   /// Prüft Supabase `app_config` für Android und vergleicht mit [currentAppVersion].
   /// Bei Debug-Builds (APP_VERSION='0.0.0') wird sofort empty zurückgegeben.
   Future<UpdateCheckResult> checkReleaseUpdate() async {
@@ -91,12 +106,24 @@ class UpdateService {
       return UpdateCheckResult.empty;
     }
 
+    // Offline-Schutz: kein Timeout-Hänger wenn kein Netz vorhanden.
+    if (!await _hasConnectivity()) {
+      if (kDebugMode) {
+        debugPrint('ℹ️  [UpdateService] Kein Netz → Release-Check übersprungen');
+      }
+      return UpdateCheckResult.empty;
+    }
+
     try {
       final row = await Supabase.instance.client
           .from('app_config')
           .select()
           .eq('platform', 'android')
-          .maybeSingle();
+          .maybeSingle()
+          .timeout(
+            const Duration(seconds: 5),
+            onTimeout: () => null,
+          );
 
       if (row == null) return UpdateCheckResult.empty;
 
@@ -166,6 +193,13 @@ class UpdateService {
   Future<void> checkAndDownloadPatch() async {
     try {
       if (!_shorebird.isAvailable) return;
+      // Offline-Schutz: ohne Netz kein Patch-Check.
+      if (!await _hasConnectivity()) {
+        if (kDebugMode) {
+          debugPrint('ℹ️  [UpdateService] Kein Netz → Patch-Check übersprungen');
+        }
+        return;
+      }
       final status = await _shorebird.checkForUpdate();
       if (status == UpdateStatus.outdated) {
         await _shorebird.update();
