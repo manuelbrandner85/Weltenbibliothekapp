@@ -123,8 +123,14 @@ jobs:
           java-version: '17'
 
       - name: 🐦 Shorebird
+        # CLI-Version pinnen (identisch zu shorebird_patch.yml) damit Release-Engine
+        # und Patch-Engine dieselben Snapshot-Bytes haben. Ohne Pin driftet
+        # setup-shorebird@v1 auf die jeweils neueste CLI — Patches werden dann zwar
+        # uploaded, aber vom Gerät still verworfen weil Engine-Hashes nicht matchen.
+        # Siehe CLAUDE.md "Shorebird OTA-Patch Konfiguration".
         uses: shorebirdtech/setup-shorebird@v1
         with:
+          shorebird-version: 1.6.92
           cache: true
 
       - name: 🔐 Release-Keystore aus Secrets dekodieren
