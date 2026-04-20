@@ -41,6 +41,15 @@ class UpdateCheckResult {
   static const empty = UpdateCheckResult();
 }
 
+/// Fortschritts-Status beim Shorebird-Patch-Download.
+/// Wird über [UpdateService.onPatchDownloadStatus] gestreamt.
+enum PatchDownloadPhase { checking, downloading, done, error }
+
+class PatchDownloadStatus {
+  final PatchDownloadPhase phase;
+  const PatchDownloadStatus(this.phase);
+}
+
 /// Ergebnis des Patch-Checks (Shorebird).
 /// [patchReady] = true ⇢ beim nächsten App-Start wird ein neuer Patch aktiv.
 class PatchCheckResult {
@@ -80,6 +89,14 @@ class UpdateService {
       StreamController<PatchCheckResult>.broadcast();
 
   Stream<PatchCheckResult> get onPatchReady => _patchReadyController.stream;
+
+  /// Broadcast-Stream: feuert Fortschrittszustände während des Patch-Downloads.
+  /// UpdateGate zeigt daraus einen dezenten Indikator-Overlay.
+  final StreamController<PatchDownloadStatus> _patchDownloadController =
+      StreamController<PatchDownloadStatus>.broadcast();
+
+  Stream<PatchDownloadStatus> get onPatchDownloadStatus =>
+      _patchDownloadController.stream;
 
   /// Schneller Offline-Check bevor wir Supabase/Shorebird kontaktieren.
   /// Ohne Netz bekäme der User einen 5-10s Timeout und die App fühlt sich
@@ -191,6 +208,12 @@ class UpdateService {
   /// Wird idR. vom Auto-Updater erledigt; hier nur als Trigger wenn die App
   /// länger offen ist. Nach erfolgreichem Download wird der Stream befeuert.
   Future<void> checkAndDownloadPatch() async {
+    void _emit(PatchDownloadPhase phase) {
+      if (!_patchDownloadController.isClosed) {
+        _patchDownloadController.add(PatchDownloadStatus(phase));
+      }
+    }
+
     try {
       if (!_shorebird.isAvailable) return;
       // Offline-Schutz: ohne Netz kein Patch-Check.
@@ -200,19 +223,46 @@ class UpdateService {
         }
         return;
       }
+      _emit(PatchDownloadPhase.checking);
       final status = await _shorebird.checkForUpdate();
       if (status == UpdateStatus.outdated) {
+        _emit(PatchDownloadPhase.downloading);
         await _shorebird.update();
+        _emit(PatchDownloadPhase.done);
         // Nach erfolgreichem Download: Patch-Status prüfen und Listener benachrichtigen.
         final result = await checkPatchReady();
         if (result.patchReady && !_patchReadyController.isClosed) {
           _patchReadyController.add(result);
         }
+      } else {
+        _emit(PatchDownloadPhase.done);
       }
     } catch (e) {
+      _emit(PatchDownloadPhase.error);
       if (kDebugMode) {
         debugPrint('⚠️  [UpdateService] Patch-Download fehlgeschlagen: $e');
       }
+    }
+  }
+
+  /// Liest `patch_changelog` aus Supabase `app_config` (android).
+  /// Gibt null zurück bei Offline, Fehler oder leerem Wert.
+  Future<String?> fetchPatchChangelog() async {
+    try {
+      if (!await _hasConnectivity()) return null;
+      final row = await Supabase.instance.client
+          .from('app_config')
+          .select('patch_changelog')
+          .eq('platform', 'android')
+          .maybeSingle()
+          .timeout(const Duration(seconds: 5), onTimeout: () => null);
+      final cl = (row?['patch_changelog'] as String?)?.trim();
+      return (cl == null || cl.isEmpty) ? null : cl;
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('⚠️  [UpdateService] patch_changelog fetch fehlgeschlagen: $e');
+      }
+      return null;
     }
   }
 
@@ -220,6 +270,7 @@ class UpdateService {
   /// für Tests zur Verfügung.
   void dispose() {
     _patchReadyController.close();
+    _patchDownloadController.close();
   }
 
   // ---------------------------------------------------------------------------
