@@ -10,10 +10,6 @@ name: 🚀 Shorebird OTA Patch
 on:
   workflow_dispatch:
     inputs:
-      release_version:
-        description: 'Ziel-Release (z.B. 5.36.0). "all" = alle registrierten Releases. Standard: all'
-        required: false
-        default: 'all'
       source_branch:
         description: 'Branch mit dem zu patchenden Code'
         required: false
@@ -82,106 +78,34 @@ jobs:
           echo "=== shorebird releases list --platforms=android ==="
           shorebird releases list --platforms=android 2>&1 || true
 
-      - name: 📡 Patch veröffentlichen (ALLE aktiven Release-Versionen)
-        # WICHTIG: Patcht standardmäßig JEDE registrierte Shorebird-Release-Version.
-        # Grund: User haben unterschiedliche APKs installiert (v5.34, v5.35, v5.36, v5.37).
-        # `--release-version=latest` würde NUR v5.37 patchen → alle anderen User
-        # bekommen die neuen Dart-Änderungen nie. Deshalb: Schleife über alle Versionen.
+      - name: 📡 Patch veröffentlichen (nur neueste Release-Version)
+        # STRATEGIE (ab v5.37+): Patches gehen NUR an die neueste Release-Version.
+        # User auf älteren APKs (v5.35.0+) werden über den in-App `ReleaseUpdateScreen`
+        # zum Download der neuen APK geleitet — gesteuert über `app_config.min_version`.
+        # Damit entfällt das fragile Multi-Version-Patching (Engine-Drift, Release-IDs
+        # mit Build-Nummer, CLI-Kompatibilität) komplett.
         #
-        # Eine einzelne Version kann via workflow_dispatch `release_version` gezielt
-        # gepatcht werden (z.B. "5.36.0"). "all" = alle Versionen patchen.
-        #
-        # Version-Liste kommt aus `shorebird releases list` (einzige zuverlässige
-        # Quelle für die EXAKTEN Shorebird-Release-IDs inkl. Build-Nummer).
-        # Shorebird registriert Releases als `<semver>+<buildNumber>` (z.B.
-        # `5.37.0+20260421`). `--release-version=5.37.0` ohne Build-Nummer
-        # schlägt mit "Release not found" fehl — deshalb ist GitHub-Tag-Parsing
-        # hier falsch (Tags sind nur `v5.37.0`).
+        # `--release-version=latest` löst Shorebird-intern gegen die jüngste
+        # registrierte Release-Version auf — eigener Resolver nicht nötig.
         #
         # --allow-asset-diffs bleibt weil MaterialIcons.otf bei jedem Build anders
         # tree-geshaked wird sobald neue Icons im Dart-Code stehen.
         env:
           SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
         run: |
-          set -uo pipefail
+          set -euo pipefail
 
-          REQUESTED="${{ github.event.inputs.release_version || 'all' }}"
+          shorebird patch android \
+            --allow-asset-diffs \
+            --release-version=latest \
+            -- \
+            --target-platform=android-arm64,android-arm \
+            --dart-define=APP_VERSION=${{ steps.version.outputs.version }} \
+            --dart-define=SUPABASE_URL=https://adtviduaftdquvfjpojb.supabase.co \
+            --dart-define=SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkdHZpZHVhZnRkcXV2Zmpwb2piIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxMzY3OTcsImV4cCI6MjA5MDcxMjc5N30.LPtmnjukb6o2CA16RDjoStqYb_1bipNULD4tgOfuD98 \
+            --dart-define=CLOUDFLARE_WORKER_URL=https://weltenbibliothek-api.brandy13062.workers.dev
 
-          # Registrierte Shorebird-Releases extrahieren (Format: <semver>+<buildNumber>).
-          # Die CLI gibt eine ASCII-Table aus; wir greppen Zeilen mit semver+build
-          # und dedupen. Keine GitHub-Tag-Fallbacks — nur was Shorebird wirklich kennt.
-          ALL_VERSIONS=$(shorebird releases list --platforms=android 2>/dev/null \
-            | grep -oE '[0-9]+\.[0-9]+\.[0-9]+\+[0-9]+' \
-            | sort -V -u)
-
-          if [ -z "$ALL_VERSIONS" ]; then
-            echo "❌ Keine Shorebird-Releases gefunden — Patch abgebrochen"
-            echo "→ Debug: Raw-Ausgabe von shorebird releases list:"
-            shorebird releases list --platforms=android 2>&1 || true
-            exit 1
-          fi
-
-          # Ziel-Liste bestimmen:
-          # - "all" (Standard): alle registrierten Shorebird-Releases
-          # - "latest": nur neueste Version
-          # - konkrete Version: Substring-Match (z.B. "5.36.0" matcht "5.36.0+20260420")
-          if [ "$REQUESTED" = "all" ]; then
-            TARGETS="$ALL_VERSIONS"
-          elif [ "$REQUESTED" = "latest" ]; then
-            TARGETS=$(echo "$ALL_VERSIONS" | tail -n1)
-          else
-            TARGETS=$(echo "$ALL_VERSIONS" | grep -F "$REQUESTED" || echo "$REQUESTED")
-          fi
-
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo "Registrierte Releases:"
-          echo "$ALL_VERSIONS" | sed 's/^/  • /'
-          echo ""
-          echo "Ziel-Versionen für diesen Patch-Lauf:"
-          echo "$TARGETS" | sed 's/^/  → /'
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-
-          FAILED_VERSIONS=""
-          SUCCESS_COUNT=0
-          FAIL_COUNT=0
-
-          for V in $TARGETS; do
-            echo ""
-            echo "━━━━ 📡 Patch v$V ━━━━"
-            # if-Statement statt EC=$? — verhindert dass GitHub Actions' implizites
-            # set -e den Loop beim ersten nicht-0 Exit abbricht (z.B. exit 70 wenn
-            # ein GitHub-Release kein Shorebird-Release hat).
-            if shorebird patch android \
-              --allow-asset-diffs \
-              --release-version="$V" \
-              -- \
-              --target-platform=android-arm64,android-arm \
-              --dart-define=APP_VERSION=${{ steps.version.outputs.version }} \
-              --dart-define=SUPABASE_URL=https://adtviduaftdquvfjpojb.supabase.co \
-              --dart-define=SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkdHZpZHVhZnRkcXV2Zmpwb2piIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxMzY3OTcsImV4cCI6MjA5MDcxMjc5N30.LPtmnjukb6o2CA16RDjoStqYb_1bipNULD4tgOfuD98 \
-              --dart-define=CLOUDFLARE_WORKER_URL=https://weltenbibliothek-api.brandy13062.workers.dev; then
-              echo "✅ v$V gepatcht"
-              SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
-            else
-              echo "⚠️  v$V Patch fehlgeschlagen — fahre mit nächster Version fort"
-              FAILED_VERSIONS="$FAILED_VERSIONS v$V"
-              FAIL_COUNT=$((FAIL_COUNT + 1))
-            fi
-          done
-
-          echo ""
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo "Patch-Zusammenfassung: $SUCCESS_COUNT erfolgreich, $FAIL_COUNT fehlgeschlagen"
-          if [ -n "$FAILED_VERSIONS" ]; then
-            echo "Fehlgeschlagene Versionen:$FAILED_VERSIONS"
-          fi
-
-          # Job-Exit: nur fail wenn ALLE Versionen fehlgeschlagen sind.
-          # Einzelne Fehler (z.B. Engine-Drift bei alter Version) sind OK.
-          if [ $SUCCESS_COUNT -eq 0 ]; then
-            echo "❌ Kein einziger Patch hat funktioniert"
-            exit 1
-          fi
+          echo "✅ Patch an neueste Release-Version gesendet"
 
       - name: 📝 Patch-Changelog in Supabase schreiben
         env:
