@@ -17,6 +17,7 @@ name: 🔁 Sync Supabase app_config
 #   (dieselben Werte → kein neuer Update-Dialog).
 #
 # Voraussetzung: Repo-Secret SUPABASE_SERVICE_ROLE_KEY gesetzt.
+# (Re-Trigger nach Secret-Einrichtung v5.36.0)
 
 on:
   push:
