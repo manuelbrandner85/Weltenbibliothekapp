@@ -74,6 +74,7 @@ import '../../services/haptic_feedback_service.dart';
 import '../../services/chat/chat_word_filter_service.dart';
 import '../../services/chat/chat_draft_service.dart';
 import '../../services/chat/recent_rooms_service.dart';
+import '../../services/chat/mention_notification_service.dart';
 import '../../services/chat/user_block_service.dart';
 import '../../services/chat/unread_tracker_service.dart';
 // 📷 Image Picker
@@ -2096,7 +2097,19 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
             _messages.add(newMsg);
             if (!_isAtBottom && !isOwn) _newMessagesCount++;
           });
-          if (!isOwn) HapticFeedbackService().messageReceived();
+          if (!isOwn) {
+            HapticFeedbackService().messageReceived();
+            final text = (newMsg['message'] ?? newMsg['content'] ?? '').toString();
+            if (_username.isNotEmpty &&
+                MentionNotificationService.containsMention(text, _username)) {
+              MentionNotificationService.instance.notifyMention(
+                fromUsername:
+                    (newMsg['username'] ?? 'Unbekannt').toString(),
+                roomLabel: _rooms[_selectedRoom]?['name']?.toString() ?? 'Chat',
+                snippet: text.length > 80 ? '${text.substring(0, 77)}…' : text,
+              );
+            }
+          }
           _scrollToBottomIfAtEnd();
         }
       },
