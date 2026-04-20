@@ -59,114 +59,48 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
+      # Shorebird CLI 1.6.92 + Flutter 3.41.6 (revision 76ca3dff01) war die
+      # Kombination beim letzten funktionierenden Patch (Run #15, commit fe09bad).
+      # Ohne Pin driftet setup-shorebird@v1 auf die jeweils neueste CLI und damit
+      # auf einen anderen Flutter-Engine-Snapshot — der Patch uploaded zwar, wird
+      # aber vom Client auf dem Gerät still verworfen weil die Engine-Bytes nicht
+      # zum registrierten Release passen. Deshalb fest pinnen.
       - name: 🐦 Shorebird
         uses: shorebirdtech/setup-shorebird@v1
+        with:
+          shorebird-version: 1.6.92
 
       - name: 📋 Version lesen
         id: version
         run: |
-          FULL=$(grep '^version:' pubspec.yaml | sed 's/version: //' | tr -d ' ')
-          VERSION="${FULL%+*}"
-          echo "full=$FULL" >> $GITHUB_OUTPUT
+          VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: //' | sed 's/+.*//')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "pubspec full = $FULL"
-          echo "pubspec version = $VERSION"
+          echo "APP_VERSION = $VERSION"
 
-      - name: 🔎 Shorebird-Release-Version auflösen
-        id: release
-        env:
-          SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
-        run: |
-          # Prio 1: User-Input via workflow_dispatch.
-          INPUT_VERSION="${{ github.event.inputs.release_version }}"
-          if [ -n "$INPUT_VERSION" ] && [ "$INPUT_VERSION" != "latest" ]; then
-            echo "target=$INPUT_VERSION" >> $GITHUB_OUTPUT
-            echo "Verwende User-Input: $INPUT_VERSION"
-            exit 0
-          fi
-
-          # Prio 2: 'shorebird releases list' parsen — Debug-Output ins Log,
-          # damit wir bei Fehlern sehen was der CLI zurückgibt.
-          echo "--- shorebird releases list (stdout+stderr) ---"
-          RAW=$(shorebird releases list --platforms=android 2>&1 || true)
-          echo "$RAW"
-          echo "--- end list ---"
-
-          PREFIX="${{ steps.version.outputs.version }}"
-          MATCH=$(echo "$RAW" \
-            | grep -oE "${PREFIX//./\\.}\+[0-9]+" \
-            | sort -u -V \
-            | tail -n 1 || true)
-
-          # Prio 3: Known-good Fallback. Diese Release ist definitiv auf Shorebird
-          # registriert (siehe v5.34.0 Release vom Apr 19 2026, commit c7f72b4).
-          # Wichtig: pubspec wurde in e219145 auf +20260421 gebumpt wegen Android-
-          # Downgrade-Schutz, aber Shorebird kennt nur +20260419. Patch muss
-          # daher gegen +20260419 gehen.
-          KNOWN_GOOD="5.34.0+20260419"
-
-          if [ -z "$MATCH" ]; then
-            MATCH="$KNOWN_GOOD"
-            echo "⚠️  Kein passender Release aus CLI — Fallback: $MATCH"
-          else
-            echo "✅ Aus CLI aufgelöst: $MATCH"
-          fi
-          echo "target=$MATCH" >> $GITHUB_OUTPUT
-
-      - name: 🔧 pubspec an Ziel-Release angleichen
-        # Shorebird prüft, dass die lokale pubspec-version exakt zur Release-
-        # Version passt, gegen die gepatcht wird. Da pubspec in e219145 auf
-        # +20260421 gebumpt wurde (Android-Downgrade-Fix), müssen wir sie hier
-        # für den Patch-Lauf auf den tatsächlich existierenden Shorebird-Release
-        # (+20260419) zurückdrehen. Wird nicht committet — nur auf dem Runner.
-        run: |
-          TARGET="${{ steps.release.outputs.target }}"
-          echo "pubspec-Version → $TARGET"
-          sed -i "s/^version: .*/version: $TARGET/" pubspec.yaml
-          grep '^version:' pubspec.yaml
-
-      - name: 🩺 Shorebird Diagnose (vor Patch)
+      - name: 🩺 Shorebird-Status (vor Patch)
         env:
           SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
         run: |
           echo "=== shorebird --version ==="
           shorebird --version || true
-          echo "=== shorebird patches list --release-version ${{ steps.release.outputs.target }} ==="
-          shorebird patches list --release-version="${{ steps.release.outputs.target }}" 2>&1 || true
+          echo "=== shorebird releases list --platforms=android ==="
+          shorebird releases list --platforms=android 2>&1 || true
 
       - name: 📡 Patch veröffentlichen
+        # Minimal und identisch zur funktionierenden Version (Run #15, fe09bad).
+        # --allow-asset-diffs bleibt weil MaterialIcons.otf bei jedem Build anders
+        # tree-gescüttelt wird sobald neue Icons im Dart-Code stehen. Alles andere
+        # (--allow-native-diffs, pubspec-sync, verbose+tee, eigener Release-Resolver)
+        # war Overengineering und hat Patches invalidiert.
         run: |
-          echo "Patch-Ziel: ${{ steps.release.outputs.target }}"
-          # --verbose hilft beim Debug; vollständiger stderr->stdout-merge.
-          # --allow-asset-diffs: Material-Icons-Font (.otf) ändert sich automatisch
-          # bei neuen Icons im Code (Tree-Shaking). Font ist aber bereits im
-          # Release-APK enthalten — wir senden nur Dart-Diff. Ohne dieses Flag
-          # wirft Shorebird UnpatchableChangeException → Exit 70.
-          #
-          # --allow-native-diffs war ursprünglich drin, maskiert aber potenziell
-          # Engine-Drift zwischen Release-CLI und Patch-CLI. Entfernt um echte
-          # native-Diffs zu erkennen (Patches kamen beim User nicht mehr an).
           shorebird patch android \
-            --verbose \
             --allow-asset-diffs \
-            --release-version="${{ steps.release.outputs.target }}" \
+            --release-version="${{ github.event.inputs.release_version || 'latest' }}" \
             -- \
             --target-platform=android-arm64,android-arm \
             --dart-define=APP_VERSION=${{ steps.version.outputs.version }} \
             --dart-define=SUPABASE_URL=https://adtviduaftdquvfjpojb.supabase.co \
-            --dart-define=SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFub24iLCJpYXQiOjE3NzUxMzY3OTcsImV4cCI6MjA5MDcxMjc5N30.LPtmnjukb6o2CA16RDjoStqYb_1bipNULD4tgOfuD98 \
-            --dart-define=CLOUDFLARE_WORKER_URL=https://weltenbibliothek-api.brandy13062.workers.dev \
-            2>&1 | tee /tmp/shorebird-patch.log
-          STATUS=${PIPESTATUS[0]}
-          echo "--- shorebird patch exit: $STATUS ---"
-          exit $STATUS
+            --dart-define=SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkdHZpZHVhZnRkcXV2Zmpwb2piIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxMzY3OTcsImV4cCI6MjA5MDcxMjc5N30.LPtmnjukb6o2CA16RDjoStqYb_1bipNULD4tgOfuD98 \
+            --dart-define=CLOUDFLARE_WORKER_URL=https://weltenbibliothek-api.brandy13062.workers.dev
         env:
           SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
-
-      - name: 🩺 Shorebird Patches nach Upload
-        if: always()
-        env:
-          SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
-        run: |
-          echo "=== shorebird patches list --release-version ${{ steps.release.outputs.target }} ==="
-          shorebird patches list --release-version="${{ steps.release.outputs.target }}" 2>&1 || true
