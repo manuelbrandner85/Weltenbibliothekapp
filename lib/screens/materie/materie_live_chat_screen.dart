@@ -62,7 +62,6 @@ import '../../widgets/chat/chat_emoji_picker_button.dart';
 import '../../widgets/chat/chat_status_banner.dart';
 import '../../widgets/chat/chat_new_messages_fab.dart';
 import '../../widgets/chat/chat_unread_badge.dart';
-import '../../widgets/chat/chat_online_indicator.dart';
 import '../../widgets/chat/chat_room_info_sheet.dart';
 import '../../widgets/chat/chat_read_receipt_indicator.dart';
 import '../../widgets/chat/chat_link_preview_card.dart';
@@ -91,7 +90,7 @@ class MaterieLiveChatScreen extends StatefulWidget {
   State<MaterieLiveChatScreen> createState() => _MaterieLiveChatScreenState();
 }
 
-class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
+class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with TickerProviderStateMixin {
   final TextEditingController _messageController = TextEditingController();
   final CloudflareApiService _api = CloudflareApiService();
   final ScrollController _scrollController = ScrollController();
@@ -181,6 +180,12 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
   bool _hasMoreOlder = true;
   bool _reconnecting = false;
 
+  // ✨ Chat UX Redesign: Animationen + Mood
+  late AnimationController _headerAuraCtrl;
+  late AnimationController _headerOrbitCtrl;
+  String _myMood = '';
+  bool _showMoodPicker = false;
+
   // 🔧 FIX 16: MATERIE Räume - API-kompatible IDs (Verschwörungstheorien-Themen)
   final Map<String, Map<String, dynamic>> _materieRooms = {
     'politik': {
@@ -228,10 +233,14 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
   @override
   void initState() {
     super.initState();
-    
+
+    // ✨ Chat UX Redesign: Header-Animationen starten
+    _headerAuraCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 4))..repeat(reverse: true);
+    _headerOrbitCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 15))..repeat();
+
     // 🔥 Initialize User ID from UserService
     _userId = UserService.getCurrentUserId();
-    
+
     // 🔧 FIX 18: Set initial room from dashboard navigation
     _selectedRoom = widget.initialRoom ?? 'politik';
     RecentRoomsService.instance.touch('materie', _selectedRoom);
@@ -392,18 +401,18 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
 
   @override
   void dispose() {
+    _headerAuraCtrl.dispose();
+    _headerOrbitCtrl.dispose();
     _messageController.removeListener(_onInputChanged);
     _messageController.dispose();
-    _scrollController.removeListener(_onScroll); // ✨ Batch-1
+    _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     _inputFocusNode.dispose();
     _refreshTimer?.cancel();
     _pendingSub?.cancel();
-    _voiceParticipantsSub?.cancel(); // 🔧 Prevent memory leak
-    _realtimeChannel?.unsubscribe(); // 🔴 Realtime cleanup
-    // ✨ Batch-2: Presence sauber verlassen.
+    _voiceParticipantsSub?.cancel();
+    _realtimeChannel?.unsubscribe();
     PresenceService.instance.leave();
-    // ✨ Batch-2.3: Read-Receipt-Stream schließen.
     ReadReceiptService.instance.leave();
     for (final t in _scheduledTimers) { t.cancel(); }
     super.dispose();
@@ -1197,26 +1206,66 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
       resizeToAvoidBottomInset: true, // 📱 Mobile: Keyboard doesn't cover input
       backgroundColor: const Color(0xFF04080F), // home-dashboard bg
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0A1020), // home-dashboard card
+        flexibleSpace: AnimatedBuilder(
+          animation: _headerAuraCtrl,
+          builder: (_, __) => Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  const Color(0xFF0D0A1A),
+                  Color.lerp(const Color(0xFF0A1020), const Color(0xFF1A0A0A), _headerAuraCtrl.value)!,
+                  const Color(0xFF080812),
+                ],
+              ),
+            ),
+          ),
+        ),
+        backgroundColor: Colors.transparent,
         title: GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: _showRoomInfoSheet,
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Flexible(
-                child: Text(
-                  '💬 ${_materieRooms[_selectedRoom]?['name'] ?? 'MATERIE LIVE-CHAT'}',
-                  overflow: TextOverflow.ellipsis,
-                ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    _materieRooms[_selectedRoom]?['icon'] ?? '💬',
+                    style: const TextStyle(fontSize: 18),
+                  ),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      (_materieRooms[_selectedRoom]?['name'] as String? ?? 'MATERIE LIVE-CHAT')
+                          .replaceAll(RegExp(r'^\S+\s'), ''),
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 10),
-              const ChatOnlineIndicator(),
+              ListenableBuilder(
+                listenable: PresenceService.instance,
+                builder: (_, __) {
+                  final count = PresenceService.instance.onlineCount;
+                  return Text(
+                    count > 0 ? '$count online · Materie-Welt' : 'Materie-Welt',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: count > 0 ? const Color(0xFF2979FF) : Colors.grey[500],
+                      fontWeight: FontWeight.w500,
+                    ),
+                  );
+                },
+              ),
             ],
           ),
         ),
         actions: [
-          // 🎥 VIDEO + VOICE CHAT BUTTON (Telegram-Style)
           IconButton(
             icon: const Icon(Icons.video_call, color: Colors.white),
             onPressed: () {
@@ -1235,18 +1284,16 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
             },
             tooltip: 'Video / Voice Chat',
           ),
-          // Feature #24: Mentions inbox
           if (_username.isNotEmpty)
             IconButton(
               icon: const Icon(Icons.alternate_email, color: Colors.white),
               tooltip: 'Erwähnungen',
               onPressed: _showMentionsInbox,
             ),
-          // 🔍 SEARCH BUTTON
           IconButton(
             icon: Icon(
               _showSearch ? Icons.close : Icons.search,
-              color: _showSearch ? Colors.red : Colors.white,
+              color: _showSearch ? const Color(0xFF2979FF) : Colors.white,
             ),
             onPressed: _toggleSearch,
             tooltip: 'Suchen',
@@ -1293,9 +1340,11 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
                   else ...[
                   // 🔧 HIDE WHEN INPUT FOCUSED OR KEYBOARD OPEN
                   if (!hideHeaders) ...[
-                    // 📌 PINNED MESSAGE BANNER (Fixed height)
+                    // ✨ STORIES BAR — Online-User als glühende Avatar-Kreise
+                    _buildStoriesBar(),
+                    // 📌 PINNED MESSAGE BANNER
                     SizedBox(
-                      height: 44, // 🔧 Reduziert für mehr Chat-Platz
+                      height: 44,
                       child: PinnedMessageBanner(
                         room: _selectedRoom,
                         onRefresh: () {
@@ -1319,6 +1368,8 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
                   // ⌨️ TYPING INDICATORS
                   if (_typingUsers.isNotEmpty) _buildTypingIndicators(),
                   _buildRoomSelector(),
+                  // ✨ ROOM VIBE BANNER
+                  _buildRoomVibeBanner(),
                 ], // End keyboard-hidden headers
           // Feature #21: swipe left/right between rooms
           Expanded(
@@ -1472,119 +1523,105 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
     // }
   // }
 
-  /// 🆕 MODERN TABBED ROOM SELECTOR (Telegram-Style)
+  // ✨ UPGRADED ROOM SELECTOR — Glassmorphism Chips mit Glow (Materie-Blau)
   Widget _buildRoomSelector() {
-    return Container(
-      height: 32, // 🔧 FIX: 42 → 32px (Room Selector kompakt!)
-      decoration: BoxDecoration(
-        color: const Color(0xFF0A1020), // home-dashboard card
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.2),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
+    return AnimatedBuilder(
+      animation: _headerAuraCtrl,
+      builder: (_, __) => Container(
+        height: 56,
+        decoration: BoxDecoration(
+          color: const Color(0xFF060A14),
+          border: Border(
+            bottom: BorderSide(
+              color: const Color(0xFF2979FF).withValues(alpha: 0.15),
+            ),
           ),
-        ],
-      ),
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 4),
-        children: _materieRooms.entries.map((entry) {
-          final isSelected = _selectedRoom == entry.key;
-          final roomData = entry.value;
-          final chipFullRoomId = 'materie-${entry.key}';
+        ),
+        child: ListView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          children: _materieRooms.entries.map((entry) {
+            final isSelected = _selectedRoom == entry.key;
+            final roomData = entry.value;
+            final chipFullRoomId = 'materie-${entry.key}';
+            final roomColor = (roomData['color'] as Color?) ?? const Color(0xFF2979FF);
 
-          return GestureDetector(
-            // Feature #22: room preview on long-press
-            onLongPress: () => _showRoomPreview(entry.key, entry.value),
-            onTap: () async {
-              if (entry.key != _selectedRoom) {
-                // ✨ Batch-5: Draft des alten Raums sichern
-                ChatDraftService.instance.set(_fullRoomId, _messageController.text);
-                if (mounted) {
-                  RecentRoomsService.instance.touch('materie', entry.key);
-                  setState(() {
-                  _selectedRoom = entry.key;
-                  _messages.clear();
-                  _isLoading = true;
-                  _hasMoreOlder = true;
-                  _newMessagesCount = 0;
-                  _isAtBottom = true;
-                });
+            return GestureDetector(
+              onLongPress: () => _showRoomPreview(entry.key, entry.value),
+              onTap: () async {
+                if (entry.key != _selectedRoom) {
+                  ChatDraftService.instance.set(_fullRoomId, _messageController.text);
+                  if (mounted) {
+                    RecentRoomsService.instance.touch('materie', entry.key);
+                    setState(() {
+                      _selectedRoom = entry.key;
+                      _messages.clear();
+                      _isLoading = true;
+                      _hasMoreOlder = true;
+                      _newMessagesCount = 0;
+                      _isAtBottom = true;
+                    });
+                  }
+                  _messageController.text = ChatDraftService.instance.get(_fullRoomId);
+                  UnreadTrackerService.instance.markSeen(_fullRoomId);
+                  await _voiceService.switchRoom(_fullRoomId);
+                  await _refreshPresence();
+                  await ReadReceiptService.instance.watchRoom(_fullRoomId);
+                  await _markRoomRead();
+                  _subscribeToRoom(_fullRoomId);
+                  await _loadMessages();
                 }
-                // ✨ Batch-5: Draft des neuen Raums laden
-                _messageController.text = ChatDraftService.instance.get(_fullRoomId);
-                // ✨ Batch-1: Unread für neuen Raum zurücksetzen.
-                UnreadTrackerService.instance.markSeen(_fullRoomId);
-
-                // 🔧 Switch WebRTC Voice Room
-                await _voiceService.switchRoom(_fullRoomId); // ← WebRTC cleanup
-                // ✨ Batch-2: Presence auf den neuen Raum umziehen.
-                await _refreshPresence();
-                // ✨ Batch-2.3: Read-Receipts auf neuen Raum umstellen.
-                await ReadReceiptService.instance.watchRoom(_fullRoomId);
-                await _markRoomRead();
-                // 🔴 Re-subscribe Realtime for new room
-                _subscribeToRoom(_fullRoomId);
-                await _loadMessages();
-              }
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6), // 🔧 FIX 6: Mehr spacing
-              decoration: BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(
-                    color: isSelected 
-                        ? (roomData['color'] as Color) 
-                        : Colors.transparent,
-                    width: 3,
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                margin: const EdgeInsets.only(right: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                decoration: BoxDecoration(
+                  gradient: isSelected ? LinearGradient(colors: [
+                    roomColor.withValues(alpha: 0.3),
+                    roomColor.withValues(alpha: 0.15),
+                  ]) : null,
+                  color: isSelected ? null : const Color(0xFF0A1020),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: isSelected
+                        ? roomColor.withValues(alpha: 0.7 + _headerAuraCtrl.value * 0.3)
+                        : const Color(0xFF1A2A3A).withValues(alpha: 0.5),
+                    width: isSelected ? 1.5 : 1,
                   ),
+                  boxShadow: isSelected ? [BoxShadow(
+                    color: roomColor.withValues(alpha: 0.2 + _headerAuraCtrl.value * 0.15),
+                    blurRadius: 10,
+                  )] : null,
+                ),
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(roomData['icon'] ?? '💬', style: TextStyle(fontSize: isSelected ? 16 : 14)),
+                        const SizedBox(width: 5),
+                        Text(
+                          (roomData['name'] as String).replaceAll(RegExp(r'^\S+\s'), '').split('&').first.trim(),
+                          style: TextStyle(
+                            color: isSelected ? Colors.white : Colors.grey[400],
+                            fontSize: 12,
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.w400,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Positioned(
+                      top: -6, right: -6,
+                      child: ChatUnreadBadge(roomId: chipFullRoomId),
+                    ),
+                  ],
                 ),
               ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // 🔧 FIX 14: Icon + ✨ Batch-1: Unread-Badge
-                  Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      Text(
-                        roomData['icon'] ?? '💬',
-                        style: TextStyle(
-                          fontSize: isSelected ? 22 : 20,
-                        ),
-                      ),
-                      Positioned(
-                        top: -4,
-                        right: -10,
-                        child: ChatUnreadBadge(roomId: chipFullRoomId),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4), // Mehr Abstand
-                  // 🔧 FIX 14: Label OHNE Icon, größer & lesbarer
-                  Text(
-                    (roomData['name'] as String)
-                        .replaceAll('🌍 ', '')
-                        .replaceAll('🧪 ', '')
-                        .replaceAll('🔬 ', '')
-                        .replaceAll('⚛️ ', '')
-                        .replaceAll('🏗️ ', '')
-                        .split('&')[0] // Vor & schneiden
-                        .trim(),
-                    style: TextStyle(
-                      color: isSelected ? Colors.white : Colors.grey[400],
-                      fontSize: 11, // Größer für Lesbarkeit
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
-                  ),
-                ],
-              ),
-            ),
-          );
-        }).toList(),
+            );
+          }).toList(),
+        ),
       ),
     );
   }
@@ -1699,6 +1736,8 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          // ✨ MOOD PICKER
+          if (_showMoodPicker) _buildMoodPickerRow(),
           // Feature #17: Smart replies
           _buildSmartRepliesRow(const Color(0xFFE53935)),
           // 🆕 REPLY PREVIEW
@@ -1716,14 +1755,37 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
             children: [
               // 📷 IMAGE UPLOAD BUTTON
               IconButton(
-                icon: const Icon(Icons.image, color: Colors.red),
+                icon: const Icon(Icons.image, color: Color(0xFF2979FF)),
                 onPressed: _pickAndUploadImage,
                 tooltip: 'Bild hochladen',
               ),
-
-              // 👤 AVATAR BUTTON (Klickbar zum Ändern - wie ENERGIE)
+              // ✨ MOOD BUTTON
               GestureDetector(
-                onTap: _showAvatarPicker, // ✅ Avatar-Picker implementiert
+                onTap: () => setState(() => _showMoodPicker = !_showMoodPicker),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  margin: const EdgeInsets.only(right: 4),
+                  decoration: BoxDecoration(
+                    color: _myMood.isNotEmpty || _showMoodPicker
+                        ? const Color(0xFF2979FF).withValues(alpha: 0.2)
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: _myMood.isNotEmpty
+                          ? const Color(0xFF2979FF).withValues(alpha: 0.5)
+                          : Colors.transparent,
+                    ),
+                  ),
+                  child: Text(
+                    _myMood.isNotEmpty ? _myMood : '🌍',
+                    style: const TextStyle(fontSize: 18),
+                  ),
+                ),
+              ),
+              // 👤 AVATAR BUTTON
+              GestureDetector(
+                onTap: _showAvatarPicker,
                 child: Container(
                   width: 40,
                   height: 40,
@@ -3750,6 +3812,139 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  // ✨ STORIES BAR — Online-User als glühende Avatar-Kreise (Materie-Blau)
+  Widget _buildStoriesBar() {
+    return ListenableBuilder(
+      listenable: PresenceService.instance,
+      builder: (_, __) {
+        final members = PresenceService.instance.members;
+        if (members.isEmpty) return const SizedBox.shrink();
+        return Container(
+          height: 72,
+          color: const Color(0xFF040810),
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            itemCount: members.length,
+            itemBuilder: (_, i) {
+              final m = members[i];
+              final isMe = m.userId == _userId;
+              return Padding(
+                padding: const EdgeInsets.only(right: 12),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    AnimatedBuilder(
+                      animation: _headerAuraCtrl,
+                      builder: (_, __) => Container(
+                        width: 42, height: 42,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: RadialGradient(colors: [
+                            const Color(0xFF2979FF).withValues(alpha: isMe ? 0.9 : 0.5),
+                            const Color(0xFF1565C0).withValues(alpha: isMe ? 0.7 : 0.3),
+                          ]),
+                          border: Border.all(
+                            color: const Color(0xFF2979FF).withValues(alpha: 0.5 + _headerAuraCtrl.value * 0.4),
+                            width: isMe ? 2.5 : 1.5,
+                          ),
+                          boxShadow: [BoxShadow(
+                            color: const Color(0xFF2979FF).withValues(alpha: 0.3 + _headerAuraCtrl.value * 0.2),
+                            blurRadius: 8,
+                          )],
+                        ),
+                        child: Center(
+                          child: Text(m.avatar.isNotEmpty ? m.avatar : '👤', style: const TextStyle(fontSize: 20)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      isMe ? 'Du' : m.username.length > 6 ? '${m.username.substring(0, 5)}…' : m.username,
+                      style: TextStyle(
+                        color: isMe ? const Color(0xFF2979FF) : Colors.grey[400],
+                        fontSize: 9,
+                        fontWeight: isMe ? FontWeight.bold : FontWeight.normal,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  // ✨ ROOM VIBE BANNER
+  Widget _buildRoomVibeBanner() {
+    const moods = ['🎭', '🛸', '🔬', '👁️', '🏛️', '💡', '🌍', '⚠️'];
+    if (_myMood.isEmpty) return const SizedBox.shrink();
+    return Container(
+      height: 28,
+      color: const Color(0xFF060A14),
+      alignment: Alignment.centerLeft,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: Row(
+        children: [
+          Text('Vibe: ', style: TextStyle(color: Colors.grey[500], fontSize: 11)),
+          Text(_myMood, style: const TextStyle(fontSize: 14)),
+          const SizedBox(width: 6),
+          Text('· ${_materieRooms[_selectedRoom]?['icon'] ?? '💬'} Raum', style: TextStyle(color: Colors.grey[600], fontSize: 10)),
+          const Spacer(),
+          ...moods.take(3).map((e) => Padding(
+            padding: const EdgeInsets.only(left: 2),
+            child: Text(e, style: const TextStyle(fontSize: 11, color: Colors.white24)),
+          )),
+        ],
+      ),
+    );
+  }
+
+  // ✨ MOOD PICKER ROW
+  Widget _buildMoodPickerRow() {
+    const moods = ['🎭', '🛸', '🔬', '👁️', '🏛️', '💡', '🌍', '⚠️', '🔴', '💎', '🔥', '🧠'];
+    return Container(
+      height: 44,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: [
+          GestureDetector(
+            onTap: () => setState(() { _myMood = ''; _showMoodPicker = false; }),
+            child: Container(
+              width: 32, height: 32,
+              margin: const EdgeInsets.only(right: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xFF0A1020),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
+              ),
+              child: const Icon(Icons.close, size: 14, color: Colors.grey),
+            ),
+          ),
+          ...moods.map((e) => GestureDetector(
+            onTap: () => setState(() { _myMood = e; _showMoodPicker = false; }),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              width: 32, height: 32,
+              margin: const EdgeInsets.only(right: 6),
+              decoration: BoxDecoration(
+                color: _myMood == e ? const Color(0xFF1A2A4A) : const Color(0xFF0A1020),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: _myMood == e ? const Color(0xFF2979FF) : Colors.grey.withValues(alpha: 0.2),
+                ),
+              ),
+              child: Center(child: Text(e, style: const TextStyle(fontSize: 16))),
+            ),
+          )),
+        ],
       ),
     );
   }
