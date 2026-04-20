@@ -245,23 +245,19 @@ class LocalChatStorageService {
       }
 
       final message = Map<String, dynamic>.from(messages[messageIndex] as Map);
-      
+
       // Check ownership or admin
       if (message['userId'] != userId && !isAdmin) {
         throw Exception('Not authorized to delete this message');
       }
 
-      message['deleted'] = true;
-      message['message'] = '[Nachricht gelöscht]';
-      message['deletedAt'] = DateTime.now().toIso8601String();
-      message['synced'] = false;
-
-      messages[messageIndex] = message;
+      // Hard delete: remove from local cache to mirror Supabase-Hard-Delete.
+      messages.removeAt(messageIndex);
       await box.put(key, messages);
 
       return {
         'success': true,
-        'message': message,
+        'messageId': messageId,
       };
     } catch (e) {
       if (kDebugMode) {
