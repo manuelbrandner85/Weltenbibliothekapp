@@ -18,6 +18,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -47,9 +48,20 @@ class _ReleaseUpdateScreenState extends State<ReleaseUpdateScreen> {
   ApkDownloadProgress? _progress;
   String? _errorMsg;
   File? _apkFile;
+  // APK-Größe für den Download-Button (via HEAD-Request beim Screen-Start)
+  Future<int?>? _apkSizeFuture;
   // Zähler für fehlgeschlagene Installationsversuche — nach 2 aktivieren wir
   // den Notausgang (Signatur-Mismatch-Schutz).
   int _installAttempts = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    final url = widget.info.apkDownloadUrl;
+    if (url != null && url.isNotEmpty) {
+      _apkSizeFuture = ApkDownloadService.instance.getApkFileSize(url);
+    }
+  }
 
   Future<void> _startDownload() async {
     final url = widget.info.apkDownloadUrl;
@@ -87,9 +99,36 @@ class _ReleaseUpdateScreenState extends State<ReleaseUpdateScreen> {
       if (!mounted) return;
       setState(() {
         _stage = _UpdateStage.error;
-        _errorMsg = 'Download fehlgeschlagen: $e';
+        _errorMsg = _friendlyError(e);
       });
     }
+  }
+
+  static String _friendlyError(Object e) {
+    if (e is DioException) {
+      switch (e.type) {
+        case DioExceptionType.connectionTimeout:
+        case DioExceptionType.receiveTimeout:
+        case DioExceptionType.sendTimeout:
+          return 'Zeitüberschreitung beim Download.\nBitte Verbindung prüfen und erneut versuchen.';
+        case DioExceptionType.connectionError:
+          return 'Keine Internetverbindung.\nBitte WLAN oder Mobilfunk prüfen.';
+        case DioExceptionType.badResponse:
+          final status = e.response?.statusCode;
+          if (status == 404) {
+            return 'Update-Datei noch nicht verfügbar.\nBitte in einigen Minuten erneut versuchen.';
+          }
+          if (status != null && status >= 500) {
+            return 'Server-Fehler (HTTP $status).\nBitte später erneut versuchen.';
+          }
+          return 'Download fehlgeschlagen (HTTP $status).\nBitte erneut versuchen.';
+        case DioExceptionType.cancel:
+          return 'Download abgebrochen.';
+        default:
+          break;
+      }
+    }
+    return 'Download fehlgeschlagen.\nBitte Verbindung prüfen und erneut versuchen.';
   }
 
   Future<void> _installApk() async {
@@ -330,23 +369,32 @@ class _ReleaseUpdateScreenState extends State<ReleaseUpdateScreen> {
   }
 
   Widget _buildDownloadButton() {
-    return SizedBox(
-      height: 58,
-      child: ElevatedButton.icon(
-        onPressed: _startDownload,
-        icon: const Icon(Icons.download_rounded, size: 24),
-        label: const Text(
-          'Jetzt herunterladen & installieren',
-          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-        ),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: _blue,
-          foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14)),
-          elevation: 0,
-        ),
-      ),
+    return FutureBuilder<int?>(
+      future: _apkSizeFuture,
+      builder: (context, snap) {
+        final sizeLabel = snap.hasData && snap.data != null
+            ? ' (~${_formatBytes(snap.data!)})'
+            : '';
+        return SizedBox(
+          height: 58,
+          child: ElevatedButton.icon(
+            onPressed: _startDownload,
+            icon: const Icon(Icons.download_rounded, size: 24),
+            label: Text(
+              'Herunterladen & installieren$sizeLabel',
+              style: const TextStyle(
+                  fontSize: 15, fontWeight: FontWeight.w700),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _blue,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14)),
+              elevation: 0,
+            ),
+          ),
+        );
+      },
     );
   }
 
