@@ -1419,43 +1419,6 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
           ),
         ),
         actions: [
-          // Meditation Sync FAB (nur im Meditation-Raum)
-          if (_selectedRoom == 'meditation')
-            AnimatedBuilder(
-              animation: _headerAuraCtrl,
-              builder: (_, __) => GestureDetector(
-                onTap: _toggleMeditationSync,
-                child: Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: _meditationSyncActive
-                          ? [const Color(0xFF7C4DFF), const Color(0xFF9B51E0)]
-                          : [const Color(0xFF2A1A4A), const Color(0xFF1E1230)],
-                    ),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: const Color(0xFF9B51E0).withValues(alpha: 0.5 + _headerAuraCtrl.value * 0.3),
-                    ),
-                    boxShadow: _meditationSyncActive ? [
-                      BoxShadow(color: const Color(0xFF9B51E0).withValues(alpha: 0.4), blurRadius: 8),
-                    ] : null,
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(_meditationSyncActive ? '🔴' : '🧘', style: const TextStyle(fontSize: 14)),
-                      const SizedBox(width: 4),
-                      Text(
-                        _meditationSyncActive ? _formatSync(_meditationSyncSeconds) : 'Sync',
-                        style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
           // 🎥 VIDEO + VOICE CHAT BUTTON
           IconButton(
             icon: const Icon(Icons.video_call, color: Colors.white),
@@ -1534,7 +1497,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                     _buildStoriesBar(),
                     // 📌 PINNED MESSAGE BANNER (Kompakt für mehr Chat-Platz)
                     SizedBox(
-                      height: 44,
+                      height: 36,
                       child: PinnedMessageBanner(
                         room: _selectedRoom,
                         onRefresh: () {
@@ -3102,36 +3065,57 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
         ],
       ),
     );
-    
+
     if (confirm == true) {
       final msgId = msg['message_id'] ?? msg['id'] ?? '';
 
-      // ✅ OPTIMISTIC UPDATE: Sofort lokal entfernen
+      // Backup für Rollback
+      final backupMsg = Map<String, dynamic>.from(msg);
+      final backupIndex = _messages.indexWhere((m) => (m['message_id'] ?? m['id']) == msgId);
+
+      // Optimistic: sofort lokal entfernen
       if (mounted) {
         setState(() {
           _messages.removeWhere((m) => (m['message_id'] ?? m['id']) == msgId);
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✅ Nachricht gelöscht'),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
-          ),
-        );
       }
 
-      // Server-Update im Hintergrund
-      _api.deleteChatMessage(
-        messageId: msgId,
-        roomId: _fullRoomId,
-        realm: 'energie',
-        userId: _userId,
-        username: _username,
-      ).then((_) {
-        if (kDebugMode) debugPrint('✅ Energie Delete gespeichert');
-      }).catchError((e) {
-        if (kDebugMode) debugPrint('⚠️ Energie Delete server error (optimistic bleibt): $e');
-      });
+      try {
+        await _api.deleteChatMessage(
+          messageId: msgId,
+          roomId: _fullRoomId,
+          realm: 'energie',
+          userId: _userId,
+          username: _username,
+        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('✅ Nachricht gelöscht'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      } catch (e) {
+        // Rollback: Nachricht wiederherstellen
+        if (mounted) {
+          setState(() {
+            if (backupIndex >= 0 && backupIndex <= _messages.length) {
+              _messages.insert(backupIndex, backupMsg);
+            } else {
+              _messages.add(backupMsg);
+            }
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('❌ Löschen fehlgeschlagen. Bitte erneut versuchen.'),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+      }
     }
   }
   
@@ -4028,24 +4012,24 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
         final members = PresenceService.instance.members;
         if (members.isEmpty) return const SizedBox.shrink();
         return Container(
-          height: 72,
+          height: 52,
           color: const Color(0xFF0A0618),
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             itemCount: members.length,
             itemBuilder: (_, i) {
               final m = members[i];
               final isMe = m.userId == _userId;
               return Padding(
-                padding: const EdgeInsets.only(right: 12),
+                padding: const EdgeInsets.only(right: 10),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     AnimatedBuilder(
                       animation: _headerAuraCtrl,
                       builder: (_, __) => Container(
-                        width: 42, height: 42,
+                        width: 32, height: 32,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           gradient: RadialGradient(colors: [
@@ -4054,24 +4038,24 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                           ]),
                           border: Border.all(
                             color: const Color(0xFF9B51E0).withValues(alpha: 0.5 + _headerAuraCtrl.value * 0.4),
-                            width: isMe ? 2.5 : 1.5,
+                            width: isMe ? 2.0 : 1.5,
                           ),
                           boxShadow: [BoxShadow(
                             color: const Color(0xFF9B51E0).withValues(alpha: 0.3 + _headerAuraCtrl.value * 0.2),
-                            blurRadius: 8,
+                            blurRadius: 6,
                           )],
                         ),
                         child: Center(
-                          child: Text(m.avatar.isNotEmpty ? m.avatar : '👤', style: const TextStyle(fontSize: 20)),
+                          child: Text(m.avatar.isNotEmpty ? m.avatar : '👤', style: const TextStyle(fontSize: 16)),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 1),
                     Text(
                       isMe ? 'Du' : m.username.length > 6 ? '${m.username.substring(0, 5)}…' : m.username,
                       style: TextStyle(
                         color: isMe ? const Color(0xFF9B51E0) : Colors.grey[400],
-                        fontSize: 9,
+                        fontSize: 8,
                         fontWeight: isMe ? FontWeight.bold : FontWeight.normal,
                       ),
                     ),
@@ -4090,7 +4074,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
     return AnimatedBuilder(
       animation: _headerAuraCtrl,
       builder: (_, __) => Container(
-        height: 56,
+        height: 46,
         decoration: BoxDecoration(
           color: const Color(0xFF0D0820),
           border: Border(
@@ -4101,7 +4085,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
         ),
         child: ListView.builder(
           scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           itemCount: _rooms.length,
           itemBuilder: (_, index) {
             final roomId = _rooms.keys.elementAt(index);
