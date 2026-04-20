@@ -64,7 +64,9 @@ import '../../widgets/chat/chat_new_messages_fab.dart';
 import '../../widgets/chat/chat_unread_badge.dart';
 import '../../widgets/chat/chat_online_indicator.dart';
 import '../../widgets/chat/chat_room_info_sheet.dart';
+import '../../widgets/chat/chat_read_receipt_indicator.dart';
 import '../../services/chat/presence_service.dart';
+import '../../services/chat/read_receipt_service.dart';
 import '../../services/chat/user_block_service.dart';
 import '../../services/chat/unread_tracker_service.dart';
 // 📷 Image Picker
@@ -260,9 +262,22 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
       await _loadUserData();
       // ✨ Batch-2: Presence aktivieren, sobald der Username bekannt ist.
       await _refreshPresence();
+      // ✨ Batch-2.3: Read-Receipts für den Raum streamen + markieren.
+      await ReadReceiptService.instance.watchRoom(_fullRoomId);
+      await _markRoomRead();
       await _loadMessages();
       _loadPolls();
     });
+  }
+
+  // ✨ Batch-2.3: Eigenen Receipt für aktuellen Raum bumpen.
+  Future<void> _markRoomRead() async {
+    if (_userId.isEmpty) return;
+    // Server-Call nur sinnvoll mit echter Session (RLS auth.uid()=user_id).
+    await ReadReceiptService.instance.markRead(
+      roomId: _fullRoomId,
+      userId: _userId,
+    );
   }
 
   // didChangeDependencies removed – profile loading happens once in initState.
@@ -1404,6 +1419,10 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
                       await _voiceService.switchRoom(_fullRoomId);
                       // ✨ Batch-2: Presence auf den neuen Raum umziehen.
                       await _refreshPresence();
+                      // ✨ Batch-2.3: Read-Receipts auf neuen Raum umstellen.
+                      await ReadReceiptService.instance
+                          .watchRoom(_fullRoomId);
+                      await _markRoomRead();
                       // 🔴 Re-subscribe Realtime for new room
                       _subscribeToRoom(_fullRoomId);
                       await _loadMessages();
@@ -1843,6 +1862,8 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
     // ✨ Batch-2: Presence sauber verlassen, damit der User nicht als online
     // in dem Raum hängen bleibt.
     PresenceService.instance.leave();
+    // ✨ Batch-2.3: Read-Receipt-Stream schließen.
+    ReadReceiptService.instance.leave();
     super.dispose();
   }
 
@@ -1898,6 +1919,8 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
         _newMessagesCount = 0;
       });
     }
+    // ✨ Batch-2.3: User sieht das Ende → Receipt bumpen.
+    _markRoomRead();
   }
 
   // ✨ Batch-1: Nur scrollen wenn User ohnehin am Ende ist, sonst Counter erhöhen.
@@ -2688,7 +2711,30 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
               currentUsername: _username,
             ),
           ),
+        // ✨ Batch-2.3: „Gelesen von N" Haken nur für eigene Nachrichten
+        if (!isEditing) _buildReadReceiptRow(msg),
       ],
+    );
+  }
+
+  Widget _buildReadReceiptRow(Map<String, dynamic> msg) {
+    final msgUserId = msg['userId']?.toString() ?? msg['user_id']?.toString() ?? '';
+    final isOwn = (msgUserId.isNotEmpty && msgUserId == _userId) ||
+        (msg['username']?.toString() == _username && _username.isNotEmpty);
+    if (!isOwn) return const SizedBox.shrink();
+    final ts = DateTime.tryParse(
+          (msg['created_at'] ?? msg['timestamp'] ?? '').toString(),
+        ) ??
+        DateTime.now().toUtc();
+    return Padding(
+      padding: const EdgeInsets.only(right: 16, top: 2),
+      child: Align(
+        alignment: Alignment.centerRight,
+        child: ChatReadReceiptIndicator(
+          messageCreatedAt: ts.toUtc(),
+          ownUserId: _userId,
+        ),
+      ),
     );
   }
   
