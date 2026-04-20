@@ -105,6 +105,18 @@ jobs:
           fi
           echo "target=$MATCH" >> $GITHUB_OUTPUT
 
+      - name: 🔧 pubspec an Ziel-Release angleichen
+        # Shorebird prüft, dass die lokale pubspec-version exakt zur Release-
+        # Version passt, gegen die gepatcht wird. Da pubspec in e219145 auf
+        # +20260421 gebumpt wurde (Android-Downgrade-Fix), müssen wir sie hier
+        # für den Patch-Lauf auf den tatsächlich existierenden Shorebird-Release
+        # (+20260419) zurückdrehen. Wird nicht committet — nur auf dem Runner.
+        run: |
+          TARGET="${{ steps.release.outputs.target }}"
+          echo "pubspec-Version → $TARGET"
+          sed -i "s/^version: .*/version: $TARGET/" pubspec.yaml
+          grep '^version:' pubspec.yaml
+
       - name: 📡 Patch veröffentlichen
         run: |
           echo "Patch-Ziel: ${{ steps.release.outputs.target }}"
