@@ -764,6 +764,21 @@ dass für die aktuelle `pubspec.yaml`-Version noch kein Release existiert.
 - **workflow_dispatch**: Actions-UI → "Build & Release APK" → Run workflow (auch auf
   Feature-Branches nutzbar).
 
+**Auto-Merge durch Claude** (ab v5.35.0):
+Wenn ich einen Release-PR vorbereitet habe (pubspec.yaml gebumpt, `current.json` gepflegt,
+Workflow grün), MERGE ich den PR selbst auf `main` via `mcp__github__merge_pull_request`
+(Squash-Merge), sobald die CI-Checks grün sind. Anschließend feuert der Auto-Trigger den
+Release-Workflow. Kein manueller Eingriff vom Entwickler nötig — außer Review/Approval
+falls der PR inhaltlich geprüft werden soll.
+
+Regeln für Auto-Merge:
+- Nur wenn alle required CI-Checks auf `success` / `neutral` stehen (nicht `in_progress`
+  oder `failure`).
+- Nur bei Release-PRs (pubspec.yaml-Bump + `current.json`-Update), nicht bei beliebigen
+  Feature-PRs.
+- Niemals force-mergen wenn CI rot ist — dann Ursache fixen, pushen, warten, dann mergen.
+- Draft-PRs werden vorher via `update_pull_request(draft:false)` ready-for-review gesetzt.
+
 Danach läuft `.github/workflows/build_apk.yml` vollautomatisch:
 
 1. Keystore aus Secrets dekodieren (`ANDROID_KEYSTORE_*`) → persistent-signierte APK.
