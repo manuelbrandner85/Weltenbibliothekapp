@@ -120,13 +120,20 @@ jobs:
       - name: 📡 Patch veröffentlichen
         run: |
           echo "Patch-Ziel: ${{ steps.release.outputs.target }}"
+          # --verbose hilft beim Debug; vollständiger stderr->stdout-merge,
+          # damit auch im "exit 70" Fall der Stack im Log steht.
           shorebird patch android \
+            --verbose \
             --release-version="${{ steps.release.outputs.target }}" \
             -- \
             --target-platform=android-arm64,android-arm \
             --dart-define=APP_VERSION=${{ steps.version.outputs.version }} \
             --dart-define=SUPABASE_URL=https://adtviduaftdquvfjpojb.supabase.co \
             --dart-define=SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFub24iLCJpYXQiOjE3NzUxMzY3OTcsImV4cCI6MjA5MDcxMjc5N30.LPtmnjukb6o2CA16RDjoStqYb_1bipNULD4tgOfuD98 \
-            --dart-define=CLOUDFLARE_WORKER_URL=https://weltenbibliothek-api.brandy13062.workers.dev
+            --dart-define=CLOUDFLARE_WORKER_URL=https://weltenbibliothek-api.brandy13062.workers.dev \
+            2>&1 | tee /tmp/shorebird-patch.log
+          STATUS=${PIPESTATUS[0]}
+          echo "--- shorebird patch exit: $STATUS ---"
+          exit $STATUS
         env:
           SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
