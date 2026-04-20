@@ -49,6 +49,8 @@ dependencies:
   shared_preferences: 2.5.3
   hive: ^2.2.3
   hive_flutter: 1.1.0
+  sqflite: ^2.3.3+1      # SQLite for offline cache & sync queue (Stage 2b)
+  path: ^1.9.0            # Path joins for sqflite DB path
   share_plus: ^7.2.1  # 🆕 Sharing functionality
   qr_flutter: ^4.1.0  # QR Code generation
   pdf: ^3.11.1  # PDF generation for export
