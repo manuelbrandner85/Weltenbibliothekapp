@@ -69,7 +69,7 @@ jobs:
         env:
           SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
         run: |
-          # Wenn der User manuell eine Version angibt, nimm die.
+          # Prio 1: User-Input via workflow_dispatch.
           INPUT_VERSION="${{ github.event.inputs.release_version }}"
           if [ -n "$INPUT_VERSION" ] && [ "$INPUT_VERSION" != "latest" ]; then
             echo "target=$INPUT_VERSION" >> $GITHUB_OUTPUT
@@ -77,27 +77,31 @@ jobs:
             exit 0
           fi
 
-          # Sonst: 'shorebird releases list' parsen und die neueste Release-
-          # Version finden, die zum pubspec-Prefix passt (z.B. "5.34.0").
-          # Das verhindert, dass CI gegen eine nicht-registrierte Version
-          # (= pubspec-Build-Nummer > letzter Release-Build) patcht.
-          echo "--- shorebird releases list ---"
-          shorebird releases list --platforms=android || true
-          RAW=$(shorebird releases list --platforms=android 2>/dev/null || true)
+          # Prio 2: 'shorebird releases list' parsen — Debug-Output ins Log,
+          # damit wir bei Fehlern sehen was der CLI zurückgibt.
+          echo "--- shorebird releases list (stdout+stderr) ---"
+          RAW=$(shorebird releases list --platforms=android 2>&1 || true)
+          echo "$RAW"
+          echo "--- end list ---"
 
           PREFIX="${{ steps.version.outputs.version }}"
-          # Akzeptiert Zeilen wie "5.34.0+20260419" oder "| 5.34.0+20260419 |"
           MATCH=$(echo "$RAW" \
             | grep -oE "${PREFIX//./\\.}\+[0-9]+" \
             | sort -u -V \
             | tail -n 1 || true)
 
+          # Prio 3: Known-good Fallback. Diese Release ist definitiv auf Shorebird
+          # registriert (siehe v5.34.0 Release vom Apr 19 2026, commit c7f72b4).
+          # Wichtig: pubspec wurde in e219145 auf +20260421 gebumpt wegen Android-
+          # Downgrade-Schutz, aber Shorebird kennt nur +20260419. Patch muss
+          # daher gegen +20260419 gehen.
+          KNOWN_GOOD="5.34.0+20260419"
+
           if [ -z "$MATCH" ]; then
-            # Fallback: pubspec-volle-Version (kann schief gehen, siehe oben)
-            MATCH="${{ steps.version.outputs.full }}"
-            echo "⚠️  Kein passender Release gefunden, Fallback auf pubspec: $MATCH"
+            MATCH="$KNOWN_GOOD"
+            echo "⚠️  Kein passender Release aus CLI — Fallback: $MATCH"
           else
-            echo "✅ Aufgelöst: $MATCH"
+            echo "✅ Aus CLI aufgelöst: $MATCH"
           fi
           echo "target=$MATCH" >> $GITHUB_OUTPUT
 
