@@ -204,6 +204,18 @@ class UpdateService {
     }
   }
 
+  /// Liest die aktuell installierte Shorebird-Patch-Nummer.
+  /// Gibt null zurück wenn Shorebird nicht verfügbar oder kein Patch installiert.
+  Future<int?> getCurrentPatchNumber() async {
+    try {
+      if (!_shorebird.isAvailable) return null;
+      final current = await _shorebird.readCurrentPatch();
+      return current?.number;
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// Fragt Shorebird-Server aktiv nach neuem Patch (blockierend bis Download).
   /// Wird idR. vom Auto-Updater erledigt; hier nur als Trigger wenn die App
   /// länger offen ist. Nach erfolgreichem Download wird der Stream befeuert.
