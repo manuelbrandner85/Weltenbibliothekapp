@@ -70,10 +70,11 @@ Seit v5.37+ gilt das **"latest-only"-Modell**:
    Bei jedem neuen Release setzt `build_apk.yml` `min_version` auf die vorher
    installierte Version, sodass ältere User spätestens beim nächsten App-Start den
    Fullscreen-Update-Gate sehen und die neue APK in der App downloaden können.
-   - **≥ v5.36.0**: vollautomatisch (Dialog → PackageInstaller in der App).
-   - **v5.34.0–v5.35.x**: Keystore passt, aber pre-v5.36 UI-Infrastruktur fehlt →
-     User kommen manuell über GitHub Releases. Für Power-User akzeptabel;
-     die meisten User sollten inzwischen auf v5.36+ sein.
+   - **≥ v5.35.0**: `ReleaseUpdateScreen` ist in der App enthalten (seit Commit
+     `d912e58`, v5.35.0-Release) → User sieht den Fullscreen-Dialog mit
+     In-App-Download-Button und installiert die neue APK direkt in der App
+     (PackageInstaller). Keystore ist ab v5.34.0 persistent → saubere Upgrades
+     ohne Deinstallation.
    - **< v5.34.0**: alter Debug-Keystore → Signatur-Mismatch. In-App-Install
      schlägt nach 2 Versuchen fehl, Notausgang-Anleitung (Deinstall + Neuinstall)
      greift. Für diese User bleibt nur der manuelle Einmal-Wechsel.
