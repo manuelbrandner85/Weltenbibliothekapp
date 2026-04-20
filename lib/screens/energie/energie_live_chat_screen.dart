@@ -71,6 +71,7 @@ import '../../services/chat/read_receipt_service.dart';
 import '../../services/chat/link_preview_service.dart';
 import '../../services/chat/chat_rate_limit_service.dart';
 import '../../services/chat/chat_word_filter_service.dart';
+import '../../services/chat/chat_draft_service.dart';
 import '../../services/chat/user_block_service.dart';
 import '../../services/chat/unread_tracker_service.dart';
 // 📷 Image Picker
@@ -405,7 +406,10 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
   void _onInputChanged() {
     final text = _messageController.text;
     final cursorPos = _messageController.selection.baseOffset;
-    
+
+    // ✨ Batch-5: Draft persistieren
+    ChatDraftService.instance.set(_selectedRoom, text);
+
     // 🎤➤ UPDATE BUTTON STATE: Voice/Send
     if (mounted) {
       setState(() {
@@ -547,7 +551,8 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
         );
         
         _messageController.clear();
-        
+        ChatDraftService.instance.clear(_selectedRoom);
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -572,6 +577,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
       );
 
       _messageController.clear();
+      ChatDraftService.instance.clear(_selectedRoom);
 
       // 🔴 Optimistic add – Realtime-Subscription deduplicated via ID.
       //    Verhindert Flicker durch redundanten Full-Reload.
@@ -1440,6 +1446,9 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
                 return GestureDetector(
                   onTap: () async {
                     if (roomId != _selectedRoom) {
+                      // ✨ Batch-5: Draft des alten Raums sichern
+                      ChatDraftService.instance
+                          .set(_selectedRoom, _messageController.text);
                       if (mounted) {
                         setState(() {
                         _selectedRoom = roomId;
@@ -1450,6 +1459,9 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> {
                         _isAtBottom = true;
                       });
                       }
+                      // ✨ Batch-5: Draft des neuen Raums laden
+                      _messageController.text =
+                          ChatDraftService.instance.get(_selectedRoom);
                       // ✨ Batch-1: Unread für neuen Raum auf 0 setzen.
                       UnreadTrackerService.instance.markSeen(_fullRoomId);
 

@@ -70,6 +70,7 @@ import '../../services/chat/read_receipt_service.dart';
 import '../../services/chat/link_preview_service.dart';
 import '../../services/chat/chat_rate_limit_service.dart';
 import '../../services/chat/chat_word_filter_service.dart';
+import '../../services/chat/chat_draft_service.dart';
 import '../../services/chat/user_block_service.dart';
 import '../../services/chat/unread_tracker_service.dart';
 
@@ -645,6 +646,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
       );
 
       _messageController.clear();
+      ChatDraftService.instance.clear(_fullRoomId);
 
       // 🔴 Optimistic add (Realtime-Sub dedup'd via ID → kein Duplikat,
       //    kein Full-Reload nötig).
@@ -955,7 +957,10 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
   void _onInputChanged() {
     final text = _messageController.text;
     final cursorPos = _messageController.selection.baseOffset;
-    
+
+    // ✨ Batch-5: Draft persistieren
+    ChatDraftService.instance.set(_fullRoomId, text);
+
     // 🎤➤ UPDATE BUTTON STATE: Voice/Send
     if (mounted) {
       setState(() {
@@ -1366,6 +1371,8 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
           return GestureDetector(
             onTap: () async {
               if (entry.key != _selectedRoom) {
+                // ✨ Batch-5: Draft des alten Raums sichern
+                ChatDraftService.instance.set(_fullRoomId, _messageController.text);
                 if (mounted) {
                   setState(() {
                   _selectedRoom = entry.key;
@@ -1376,6 +1383,8 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
                   _isAtBottom = true;
                 });
                 }
+                // ✨ Batch-5: Draft des neuen Raums laden
+                _messageController.text = ChatDraftService.instance.get(_fullRoomId);
                 // ✨ Batch-1: Unread für neuen Raum zurücksetzen.
                 UnreadTrackerService.instance.markSeen(_fullRoomId);
 
