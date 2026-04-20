@@ -105,12 +105,25 @@ jobs:
 
           REQUESTED="${{ github.event.inputs.release_version || 'all' }}"
 
-          # Versionen aus GitHub Releases lesen (ohne "v"-Prefix).
+          # Min-Version-Floor: Releases vor v5.34.0 haben einen anderen (Debug-)Keystore
+          # und sind NICHT auf Shorebird registriert → "Release not found"-Spam.
+          # Ab v5.34.0 läuft der persistente Release-Keystore + Shorebird-Registrierung.
+          MIN_VERSION="5.34.0"
+
+          # Versionen aus GitHub Releases lesen (ohne "v"-Prefix), Min-Floor anwenden.
           # Limit 20 reicht locker — wir patchen in der Regel die letzten 4–8 Versionen.
           ALL_VERSIONS=$(gh release list --repo "$GITHUB_REPOSITORY" --limit 20 \
             --json tagName --jq '.[].tagName' 2>/dev/null \
             | sed 's/^v//' \
             | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' \
+            | awk -v min="$MIN_VERSION" '
+                {
+                  split($0, a, ".");
+                  split(min, b, ".");
+                  if (a[1] > b[1] \
+                      || (a[1] == b[1] && a[2] > b[2]) \
+                      || (a[1] == b[1] && a[2] == b[2] && a[3] >= b[3])) print
+                }' \
             | sort -V -u)
 
           if [ -z "$ALL_VERSIONS" ]; then
