@@ -1141,13 +1141,6 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
             },
             tooltip: 'Video / Voice Chat',
           ),
-          // 🎤 VOICE CHAT JOIN BUTTON (Mikrofon-Icon)
-          if (!_isInVoiceRoom)
-            IconButton(
-              icon: const Icon(Icons.mic, color: Colors.white),
-              onPressed: _joinVoiceChatAndOpen,
-              tooltip: 'Voice Chat beitreten',
-            ),
           // 🔍 SEARCH BUTTON
           IconButton(
             icon: Icon(
@@ -1581,17 +1574,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
                 onPressed: _pickAndUploadImage,
                 tooltip: 'Bild hochladen',
               ),
-              
-              // ➤ SEND BUTTON
-              IconButton(
-                icon: Icon(
-                  _hasText ? Icons.send : Icons.mic_none,
-                  color: _hasText ? Colors.red : Colors.grey,
-                ),
-                onPressed: _hasText ? _sendMessage : _openVoiceRecorder,
-                tooltip: _hasText ? 'Nachricht senden' : 'Sprachnachricht aufnehmen',
-                ),
-              
+
               // 👤 AVATAR BUTTON (Klickbar zum Ändern - wie ENERGIE)
               GestureDetector(
                 onTap: _showAvatarPicker, // ✅ Avatar-Picker implementiert
@@ -1683,7 +1666,36 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
                   ),
                 ),
               ),
-              // 📌 OLD SEND BUTTON REMOVED (replaced by dynamic Voice/Send)
+              const SizedBox(width: 12),
+
+              // ➤ SEND / MIC BUTTON (Energie-Style Gradient)
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: _hasText
+                        ? [Colors.red, const Color(0xFFE53935)]
+                        : [Colors.grey.shade400, Colors.grey.shade500],
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: _hasText ? _sendMessage : _openVoiceRecorder,
+                    borderRadius: BorderRadius.circular(20),
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      alignment: Alignment.center,
+                      child: Icon(
+                        _hasText ? Icons.send : Icons.mic_none,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
         ],
@@ -2042,59 +2054,6 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> {
       _isMuted ? '🔇 Stummgeschaltet' : '🎤 Mikrofon aktiv',
       Colors.red,
     );
-  }
-  
-  // 🎤 JOIN VOICE CHAT AND OPEN SCREEN (NEW)
-  Future<void> _joinVoiceChatAndOpen() async {
-    if (kDebugMode) {
-      debugPrint('🎤 [JOIN] Joining voice chat and opening screen...');
-    }
-    
-    // First join the voice room
-    try {
-      final success = await _voiceService.joinVoiceRoom(
-        roomId: _selectedRoom,
-        userId: _userId,
-        username: _username,
-        world: 'materie',  // 🆕 World parameter
-      );
-      
-      if (success) {
-        if (mounted) {
-          setState(() {
-          _isInVoiceRoom = true;
-        });
-        }
-        
-        // Wait a moment for state to update
-        await Future.delayed(const Duration(milliseconds: 300));
-        
-        // Then open the Telegram Voice Screen
-        if (mounted) {
-          _openTelegramVoiceScreen();
-        }
-      } else {
-        final error = _voiceService.getLastError();
-        _showSnackBar(
-          error ?? '❌ Fehler beim Beitreten',
-          Colors.red,
-        );
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ Voice Join Error: $e');
-      }
-      
-      String errorMessage = '❌ Voice Chat Fehler';
-      
-      if (e.toString().contains('Berechtigung')) {
-        errorMessage = '🎤 Mikrofon-Berechtigung erforderlich';
-      } else if (e.toString().contains('aktiviert')) {
-        errorMessage = '🎤 Mikrofon konnte nicht aktiviert werden';
-      }
-      
-      _showSnackBar(errorMessage, Colors.red);
-    }
   }
   
   // 🎤 OPEN MODERN VOICE CHAT SCREEN (Phase B - Grid Layout)
