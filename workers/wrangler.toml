@@ -25,6 +25,19 @@ binding = "AI"
 binding    = "R2_BUCKET"
 bucket_name = "weltenbibliothek-media"
 
+# ⏰ Cron Trigger — Dispatcher drained notification_queue minütlich an FCM.
+# Ohne FCM_SERVICE_ACCOUNT fällt das auf "mark as sent" zurück
+# (In-App-Polling übernimmt die Zustellung).
+[triggers]
+crons = ["* * * * *"]
+
 # Secrets (via `npx wrangler secret put <NAME>` setzen):
-#   SUPABASE_SERVICE_ROLE_KEY  – für Admin-Operationen
+#   SUPABASE_SERVICE_ROLE_KEY  – für Admin-Operationen + Queue-Dispatch
+#   FCM_SERVICE_ACCOUNT        – Firebase Service Account JSON (Push-Versand)
+#
+# FCM Service Account generieren:
+#   1. Firebase Console → Project Settings → Service Accounts
+#   2. "Generate new private key" → JSON downloaden
+#   3. Inhalt der JSON-Datei (ohne Formatierung) an wrangler übergeben:
+#      cat service-account.json | npx wrangler secret put FCM_SERVICE_ACCOUNT
 # ============================================================

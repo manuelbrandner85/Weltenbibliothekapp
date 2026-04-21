@@ -521,6 +521,24 @@ chore(deps): Dependencies aktualisiert
       `unified_storage_service.dart` (×2), `supabase_service.dart`, `admin_state.dart`,
       `materie_live_chat_screen.dart`. Alle 6 Model-Dateien (@HiveType/@HiveField entfernt),
       alle 5 `.g.dart`-Dateien gelöscht. pubspec.yaml: hive/hive_flutter/hive_generator entfernt.
+- [x] **Paket A+B+C (Chat-Bugs + Realtime-Stream + In-App Push-Stack, PR #28)**:
+      15 Chat-Bug-Fixes (_fullRoomId in offline queue, user-revalidation gegen Account-
+      Wechsel, Scroll addPostFrameCallback). `CommunityService.streamPosts()` via
+      Supabase Realtime. `PushNotificationManager` mit Auto-Register auf
+      `onAuthStateChange`, 30s-Polling, flutter_local_notifications, Deep-Link via
+      `appNavigatorKey`. Worker `/api/push/subscribe` + `/pending` + `/dispatch`.
+      Supabase-Trigger `trg_enqueue_chat_notification` (v39).
+- [x] **FCM Background Push-Delivery (PR #28)**: `firebase_core` + `firebase_messaging`
+      in pubspec. Gradle: `google-services` Plugin wird nur angewandt wenn
+      `android/app/google-services.json` existiert (CI injiziert aus
+      `GOOGLE_SERVICES_JSON_BASE64` Secret). `PushNotificationManager` holt FCM-Token,
+      registriert ihn, handled onMessage/onMessageOpenedApp/onBackgroundMessage.
+      Worker: FCM HTTP v1 Sender mit RS256-JWT-Signing via Web Crypto, Cron-Trigger
+      `* * * * *` drained `notification_queue` einmal pro Minute. Neuer
+      `deploy_worker.yml` Workflow setzt `FCM_SERVICE_ACCOUNT` + `SUPABASE_SERVICE_ROLE_KEY`
+      als Worker-Secrets und deployt automatisch bei jeder `workers/**` Änderung.
+      Migration v40 entfernt den doppelten v13-Trigger. Fail-safe: ohne Firebase-Config
+      fällt die App auf In-App-Polling zurück — kein Crash.
 
 ### ⚠️ Noch ausstehend / bekannte Probleme
 
@@ -960,6 +978,49 @@ Danach läuft `.github/workflows/build_apk.yml` vollautomatisch:
 - `SUPABASE_SERVICE_ROLE_KEY` (PostgREST auf `app_config` + `update_history`, RLS-bypass)
 - `SUPABASE_ACCESS_TOKEN` (Supabase Management REST API — für `apply_migrations.yml`)
 - `GITHUB_TOKEN` (automatisch von GitHub Actions bereitgestellt, kein manuelles Einrichten)
+- `GOOGLE_SERVICES_JSON_BASE64` (base64-Encode der google-services.json aus Firebase
+  Console; wird von `build_apk.yml` und `shorebird_patch.yml` in `android/app/` dekodiert)
+- `CLOUDFLARE_API_TOKEN` (Wrangler Deploy-Token — für `deploy_worker.yml`)
+- `FCM_SERVICE_ACCOUNT_JSON` (Firebase Service-Account JSON als String — für
+  Background-Push-Versand an FCM HTTP v1 API; optional)
+
+**Firebase Cloud Messaging (FCM) Setup — einmalige manuelle Schritte:**
+
+Damit Push-Benachrichtigungen auch bei **geschlossener App** zugestellt werden, müssen
+folgende Schritte einmal ausgeführt werden (danach läuft alles automatisch):
+
+1. **Firebase-Projekt erstellen** → https://console.firebase.google.com/
+   - "Add project" → Name z.B. "Weltenbibliothek"
+   - Analytics optional (nicht nötig für FCM)
+2. **Android App hinzufügen** (innerhalb des Projekts):
+   - Package name: `com.myapp.mobile` (siehe `android/app/build.gradle.kts`)
+   - `google-services.json` herunterladen → **NICHT** ins Repo committen
+3. **GitHub Secret `GOOGLE_SERVICES_JSON_BASE64`** setzen:
+   ```bash
+   base64 -w 0 google-services.json | pbcopy   # macOS
+   base64 -w 0 google-services.json | xclip    # Linux
+   ```
+   Dann unter Settings → Secrets → Actions als `GOOGLE_SERVICES_JSON_BASE64` einfügen.
+4. **Firebase Service-Account generieren** (für Worker-Dispatcher):
+   - Firebase Console → Project Settings → Service Accounts
+   - "Generate new private key" → JSON downloaden
+   - **NICHT** ins Repo committen
+5. **GitHub Secret `FCM_SERVICE_ACCOUNT_JSON`** setzen:
+   - Inhalt der Service-Account-JSON (ohne Formatierung ändern) als Secret einfügen.
+6. **Cloudflare Worker-Secret (automatisch via `deploy_worker.yml`)**: Sobald
+   `CLOUDFLARE_API_TOKEN` + `FCM_SERVICE_ACCOUNT_JSON` als GitHub-Secrets vorhanden
+   sind, setzt der Worker-Deploy-Job das Worker-Secret `FCM_SERVICE_ACCOUNT`
+   automatisch bei jedem Push auf `main`.
+
+Nach diesem Setup:
+- Neue APK-Builds enthalten die google-services.json und können FCM-Tokens holen.
+- Der Cron-Trigger `* * * * *` im Worker drained `notification_queue` jede Minute
+  und sendet Pushes via FCM HTTP v1 API.
+- Chat-Nachrichten lösen über den Supabase-Trigger `trg_enqueue_chat_notification`
+  automatisch Push-Zeilen aus → Empfänger bekommt den Push auch bei geschlossener App.
+
+Fallback bei fehlenden FCM-Secrets: Die App läuft weiter, aber Push-Delivery
+funktioniert nur während die App offen ist (30s-Polling von `/api/push/pending`).
 
 **KI-Standing-Rule — Secrets zuerst prüfen:**
 Bevor ein neuer Workflow oder ein neuer API-Call gebaut wird, IMMER die obige Liste

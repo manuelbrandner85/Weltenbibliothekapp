@@ -45,7 +45,9 @@ import 'widgets/achievement_unlock_dialog.dart';  // 🏆 Achievement UI
 import 'utils/error_boundary.dart';  // 🛡️ Error Boundary
 import 'services/supabase_service.dart';  // 🟢 SUPABASE: Auth + Chat + Community
 import 'services/profile_restore_service.dart'; // 🔄 PROFIL-WIEDERHERSTELLUNG
-import 'services/push_notification_manager.dart'; // 🔔 PUSH NOTIFICATIONS (in-app)
+import 'services/push_notification_manager.dart'; // 🔔 PUSH NOTIFICATIONS (FCM + in-app)
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'widgets/update_gate.dart'; // 🔔 In-App Update-Meldungen (Release + OTA-Patch)
 
 /// Global navigator key — needed by PushNotificationManager to deep-link into
@@ -54,7 +56,18 @@ final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
+  // 🔔 FIREBASE — vor allem anderen initialisieren (Background-Handler muss
+  // VOR runApp() registriert werden, sonst verschluckt das Isolate die Nachricht).
+  // Fail-safe: Wenn keine google-services.json vorhanden ist oder Play Services
+  // fehlen, läuft die App auf den In-App-Polling-Kanal zurück (kein Crash).
+  try {
+    await Firebase.initializeApp();
+    FirebaseMessaging.onBackgroundMessage(fcmBackgroundHandler);
+  } catch (e) {
+    debugPrint('⚠️ Firebase init skipped (no config / no Play Services): $e');
+  }
+
   // 🟢 SUPABASE - Muss als ERSTES initialisiert werden (vor allen anderen Services)
   await initSupabase();
 

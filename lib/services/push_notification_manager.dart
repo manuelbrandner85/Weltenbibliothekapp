@@ -1,22 +1,31 @@
-/// 🔔 Push Notification Manager
+/// 🔔 Push Notification Manager (FCM + In-App Polling)
 ///
-/// Koordiniert den kompletten In-App-Push-Stack:
-///   1. Auto-Register auf Supabase `push_subscriptions` sobald ein User eingeloggt
-///      ist (onAuthStateChange.signedIn / initialSession).
-///   2. Periodisches Polling von `/api/push/pending?user_id=UUID` während die App
-///      offen ist, konsumiert die Queue-Einträge und zeigt sie als lokale
-///      `flutter_local_notifications` an.
-///   3. Deep-Link-Handler: Tap auf eine Notification öffnet
+/// Koordiniert den kompletten Push-Stack der App:
+///   1. Firebase Cloud Messaging für **Background-Delivery** (App geschlossen):
+///      - initialisiert Firebase, holt FCM-Token, registriert ihn auf
+///        `push_subscriptions` via Worker `/api/push/subscribe`.
+///      - Top-Level Background-Handler `_fcmBackgroundHandler` wird vor dem
+///        `runApp()` registriert (Pflicht laut FlutterFire) und zeigt eingehende
+///        FCM-Pushes als lokale Notification.
+///      - Foreground: `FirebaseMessaging.onMessage` → lokale Notification (iOS
+///        zeigt FCM-Pushes sonst nicht an wenn App im Vordergrund).
+///   2. In-App Polling als Fallback (App offen, FCM ausgefallen oder nicht
+///      konfiguriert): alle 30s `/api/push/pending?user_id=UUID`, zeigt neue
+///      Einträge als lokale Notifications.
+///   3. Auto-Register: reagiert auf `onAuthStateChange.signedIn` und
+///      registriert die Subscription sobald ein User eingeloggt ist.
+///   4. Deep-Link: Tap auf Notification ruft `_deepLinkHandler` auf und öffnet
 ///      `/chat/:world/:room` oder `/post/:id` via globalem NavigatorKey.
 ///
-/// Background-Zustellung (App komplett zu) liegt außerhalb dieser Klasse — dafür
-/// braucht es einen echten FCM-Push-Sender. Solange der Dispatcher auf dem Worker
-/// noch `sent`-markiert ohne FCM-Call, sieht der User Queue-Einträge erst beim
-/// nächsten App-Öffnen. Das ist bewusst so (D3 "Phase C reicht").
+/// Graceful Degradation: Wenn Firebase fehlschlägt (keine google-services.json,
+/// kein Play Services, etc.), überspringen wir den FCM-Teil und polling läuft
+/// als einziger Kanal weiter — App crasht nie an fehlender Firebase-Config.
 library;
 
 import 'dart:async';
 import 'dart:convert';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -30,15 +39,75 @@ import '../config/api_config.dart';
 /// are set up. Receives the raw `data` map from the notification payload.
 typedef DeepLinkHandler = void Function(Map<String, dynamic> data);
 
+/// Shared local-notifications plugin instance — wird sowohl vom Manager als
+/// auch vom Top-Level FCM-Background-Handler benutzt.
+final FlutterLocalNotificationsPlugin _localPlugin =
+    FlutterLocalNotificationsPlugin();
+
+const AndroidNotificationChannel _androidChannel = AndroidNotificationChannel(
+  'weltenbibliothek_push',
+  'Benachrichtigungen',
+  description: 'Chat-Nachrichten, Erwähnungen & Updates',
+  importance: Importance.high,
+);
+
+const NotificationDetails _notifDetails = NotificationDetails(
+  android: AndroidNotificationDetails(
+    'weltenbibliothek_push',
+    'Benachrichtigungen',
+    channelDescription: 'Chat-Nachrichten, Erwähnungen & Updates',
+    importance: Importance.high,
+    priority: Priority.high,
+  ),
+  iOS: DarwinNotificationDetails(
+    presentAlert: true,
+    presentBadge: true,
+    presentSound: true,
+  ),
+);
+
+/// Top-Level Background-Handler für FCM (wird von Flutter Isolate aufgerufen
+/// wenn App geschlossen ist). MUSS eine Top-Level-Funktion sein und mit
+/// `@pragma('vm:entry-point')` annotiert, damit die AOT-Compilation sie behält.
+@pragma('vm:entry-point')
+Future<void> fcmBackgroundHandler(RemoteMessage message) async {
+  // Firebase muss im Background-Isolate erneut initialisiert werden.
+  try {
+    await Firebase.initializeApp();
+  } catch (_) {
+    // Already initialized or config missing — weiter versuchen.
+  }
+  // Android zeigt Notifications mit `notification`-Payload automatisch in der
+  // System-Tray an; nur wenn kein Notification-Block da ist (data-only Push)
+  // müssen wir selbst zeichnen.
+  if (message.notification == null) {
+    final data = message.data;
+    final title = data['title']?.toString() ?? 'Weltenbibliothek';
+    final body = data['body']?.toString() ?? '';
+    final id = (message.messageId?.hashCode) ??
+        DateTime.now().millisecondsSinceEpoch.remainder(1 << 31);
+    try {
+      await _localPlugin.show(id, title, body, _notifDetails,
+          payload: jsonEncode(data));
+    } catch (_) {
+      // BG isolate darf lokale Notifications ohne init kaum zeichnen;
+      // fehlt init, fällt FCM trotzdem auf Android-System-Tray zurück.
+    }
+  }
+}
+
 class PushNotificationManager with WidgetsBindingObserver {
   PushNotificationManager._();
   static final PushNotificationManager instance = PushNotificationManager._();
 
-  final FlutterLocalNotificationsPlugin _plugin =
-      FlutterLocalNotificationsPlugin();
   StreamSubscription<AuthState>? _authSub;
+  StreamSubscription<RemoteMessage>? _fcmForegroundSub;
+  StreamSubscription<RemoteMessage>? _fcmOpenedSub;
+  StreamSubscription<String>? _fcmTokenSub;
   Timer? _pollTimer;
   bool _initialized = false;
+  bool _firebaseReady = false;
+  String? _fcmToken;
   DeepLinkHandler? _deepLinkHandler;
   final Set<String> _seenIds = <String>{};
 
@@ -59,21 +128,28 @@ class PushNotificationManager with WidgetsBindingObserver {
       requestBadgePermission: true,
       requestSoundPermission: true,
     );
-    await _plugin.initialize(
+    await _localPlugin.initialize(
       const InitializationSettings(android: androidInit, iOS: iosInit),
       onDidReceiveNotificationResponse: _onNotificationTap,
     );
 
-    // Runtime permission (Android 13+). iOS asks via init() already.
+    // Android 8+ verlangt einen Notification-Channel bevor `show()` läuft.
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+      await _localPlugin
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>()
+          ?.createNotificationChannel(_androidChannel);
+
       final status = await Permission.notification.status;
       if (status.isDenied) {
         await Permission.notification.request();
       }
     }
 
-    // Register immediately if we already have a session, then react to future
-    // auth changes (login/logout on a fresh install or token refresh).
+    // Firebase (FCM) — fail-safe: App läuft weiter auch ohne Config.
+    await _initFirebase();
+
+    // Immediate-register + Polling, falls bereits ein User eingeloggt ist.
     final client = Supabase.instance.client;
     if (client.auth.currentUser != null) {
       unawaited(_registerSubscription(client.auth.currentUser!.id));
@@ -90,6 +166,67 @@ class PushNotificationManager with WidgetsBindingObserver {
     });
 
     WidgetsBinding.instance.addObserver(this);
+
+    // War die App aus einer Notification geöffnet worden? Dann Deep-Link jetzt
+    // verfolgen (getInitialMessage gibt die Message zurück, die die App
+    // gestartet hat).
+    if (_firebaseReady) {
+      unawaited(_handleInitialFcmMessage());
+    }
+  }
+
+  Future<void> _initFirebase() async {
+    try {
+      if (Firebase.apps.isEmpty) {
+        await Firebase.initializeApp();
+      }
+      final fcm = FirebaseMessaging.instance;
+
+      // iOS / Android 13+ Permission via FCM-Flow (zusätzlich zu
+      // permission_handler, falls auf iOS gelaufen).
+      await fcm.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+
+      // Wichtig für iOS: erst nach `requestPermission` kommt APNs-Token + FCM.
+      await fcm.setForegroundNotificationPresentationOptions(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+
+      _fcmForegroundSub = FirebaseMessaging.onMessage.listen(_onFcmForeground);
+      _fcmOpenedSub =
+          FirebaseMessaging.onMessageOpenedApp.listen(_onFcmOpenedApp);
+      _fcmTokenSub = fcm.onTokenRefresh.listen((token) {
+        _fcmToken = token;
+        final uid = Supabase.instance.client.auth.currentUser?.id;
+        if (uid != null) unawaited(_registerSubscription(uid));
+      });
+
+      _fcmToken = await fcm.getToken();
+      _firebaseReady = _fcmToken != null;
+      if (kDebugMode) {
+        debugPrint(
+            '🔔 FCM ready=${_firebaseReady} token=${_fcmToken?.substring(0, 16) ?? "null"}…');
+      }
+    } catch (e) {
+      _firebaseReady = false;
+      if (kDebugMode) {
+        debugPrint('⚠️ Firebase init skipped: $e');
+      }
+    }
+  }
+
+  Future<void> _handleInitialFcmMessage() async {
+    try {
+      final msg = await FirebaseMessaging.instance.getInitialMessage();
+      if (msg != null) _onFcmOpenedApp(msg);
+    } catch (_) {
+      // No-op.
+    }
   }
 
   @override
@@ -103,17 +240,27 @@ class PushNotificationManager with WidgetsBindingObserver {
 
   Future<void> _registerSubscription(String userId) async {
     try {
-      final res = await http.post(
-        Uri.parse('${ApiConfig.workerUrl}/api/push/subscribe'),
-        headers: const {'Content-Type': 'application/json'},
-        body: json.encode({
-          'user_id': userId,
-          'endpoint': 'inapp-poll-$userId',
-          'platform': defaultTargetPlatform == TargetPlatform.iOS ? 'ios' : 'android',
-        }),
-      ).timeout(const Duration(seconds: 10));
+      final payload = <String, dynamic>{
+        'user_id': userId,
+        'platform':
+            defaultTargetPlatform == TargetPlatform.iOS ? 'ios' : 'android',
+      };
+      if (_fcmToken != null && _fcmToken!.isNotEmpty) {
+        payload['fcm_token'] = _fcmToken;
+        payload['endpoint'] = 'fcm:$_fcmToken';
+      } else {
+        payload['endpoint'] = 'inapp-poll-$userId';
+      }
+      final res = await http
+          .post(
+            Uri.parse('${ApiConfig.workerUrl}/api/push/subscribe'),
+            headers: const {'Content-Type': 'application/json'},
+            body: json.encode(payload),
+          )
+          .timeout(const Duration(seconds: 10));
       if (kDebugMode) {
-        debugPrint('🔔 push subscribe → ${res.statusCode}');
+        debugPrint(
+            '🔔 push subscribe → ${res.statusCode} fcm=${_fcmToken != null}');
       }
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ push subscribe failed: $e');
@@ -160,32 +307,40 @@ class PushNotificationManager with WidgetsBindingObserver {
     final data = queueItem['data'];
     final payload = data is Map ? json.encode(data) : null;
     // Stable hash: queue UUID → 32-bit int
-    final stableId =
-        queueItem['id']?.toString().hashCode ??
-            DateTime.now().millisecondsSinceEpoch.remainder(1 << 31);
+    final stableId = queueItem['id']?.toString().hashCode ??
+        DateTime.now().millisecondsSinceEpoch.remainder(1 << 31);
     try {
-      await _plugin.show(
+      await _localPlugin.show(
         stableId,
         title,
         body,
-        const NotificationDetails(
-          android: AndroidNotificationDetails(
-            'weltenbibliothek_push',
-            'Benachrichtigungen',
-            channelDescription: 'Chat-Nachrichten, Erwähnungen & Updates',
-            importance: Importance.high,
-            priority: Priority.high,
-          ),
-          iOS: DarwinNotificationDetails(
-            presentAlert: true,
-            presentBadge: true,
-            presentSound: true,
-          ),
-        ),
+        _notifDetails,
         payload: payload,
       );
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ local notif show failed: $e');
+    }
+  }
+
+  void _onFcmForeground(RemoteMessage message) {
+    // FCM mit `notification`-Block rendert iOS / Android-System-Tray nicht wenn
+    // App im Vordergrund ist → immer lokal zeichnen.
+    final title = message.notification?.title ??
+        message.data['title']?.toString() ??
+        'Weltenbibliothek';
+    final body = message.notification?.body ??
+        message.data['body']?.toString() ??
+        '';
+    final id = message.messageId?.hashCode ??
+        DateTime.now().millisecondsSinceEpoch.remainder(1 << 31);
+    final payload = message.data.isNotEmpty ? jsonEncode(message.data) : null;
+    _localPlugin.show(id, title, body, _notifDetails, payload: payload);
+  }
+
+  void _onFcmOpenedApp(RemoteMessage message) {
+    // User hat eine FCM-Notification getappt und die App dadurch geöffnet.
+    if (message.data.isNotEmpty) {
+      _deepLinkHandler?.call(Map<String, dynamic>.from(message.data));
     }
   }
 
@@ -205,6 +360,9 @@ class PushNotificationManager with WidgetsBindingObserver {
   Future<void> dispose() async {
     WidgetsBinding.instance.removeObserver(this);
     await _authSub?.cancel();
+    await _fcmForegroundSub?.cancel();
+    await _fcmOpenedSub?.cancel();
+    await _fcmTokenSub?.cancel();
     _stopPolling();
   }
 }

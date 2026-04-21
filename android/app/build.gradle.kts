@@ -9,6 +9,14 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+// 🔔 Firebase (FCM): Plugin nur anwenden wenn google-services.json vorhanden ist.
+// CI schreibt die Datei vor dem Build aus dem GOOGLE_SERVICES_JSON_BASE64 Secret.
+// Lokal können Entwickler die Datei aus der Firebase Console kopieren.
+val googleServicesFile = file("google-services.json")
+if (googleServicesFile.exists()) {
+    apply(plugin = "com.google.gms.google-services")
+}
+
 // 🔐 Release-Keystore laden (persistenter Key für APK-Over-the-Top-Updates).
 // Quelle: android/key.properties → wird in CI aus GitHub-Secrets erzeugt.
 // Ohne key.properties (lokale Dev-Umgebung) bleibt der Release-Build debug-signiert.

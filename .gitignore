@@ -103,3 +103,10 @@ SOURCE_CODE_README.md
 
 # Supabase CLI local state
 supabase/.temp/linked-project.json
+
+# 🔔 Firebase — google-services.json kommt aus GitHub Secret
+# (GOOGLE_SERVICES_JSON_BASE64), wird in CI dekodiert.
+# Lokal: aus Firebase Console → Project Settings → Android App herunterladen.
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+lib/firebase_options.dart
