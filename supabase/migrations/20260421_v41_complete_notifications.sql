@@ -13,7 +13,8 @@ CREATE TABLE IF NOT EXISTS public.user_achievements (
   UNIQUE(user_id, achievement_id)
 );
 ALTER TABLE public.user_achievements ENABLE ROW LEVEL SECURITY;
-CREATE POLICY IF NOT EXISTS "user_achievements_own"
+DROP POLICY IF EXISTS "user_achievements_own" ON public.user_achievements;
+CREATE POLICY "user_achievements_own"
   ON public.user_achievements FOR ALL TO authenticated
   USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 CREATE INDEX IF NOT EXISTS idx_user_achievements_user
@@ -29,13 +30,16 @@ CREATE TABLE IF NOT EXISTS public.followers (
   CHECK (follower_id != following_id)
 );
 ALTER TABLE public.followers ENABLE ROW LEVEL SECURITY;
-CREATE POLICY IF NOT EXISTS "followers_select"
+DROP POLICY IF EXISTS "followers_select" ON public.followers;
+CREATE POLICY "followers_select"
   ON public.followers FOR SELECT TO authenticated
   USING (auth.uid() = follower_id OR auth.uid() = following_id);
-CREATE POLICY IF NOT EXISTS "followers_insert"
+DROP POLICY IF EXISTS "followers_insert" ON public.followers;
+CREATE POLICY "followers_insert"
   ON public.followers FOR INSERT TO authenticated
   WITH CHECK (auth.uid() = follower_id);
-CREATE POLICY IF NOT EXISTS "followers_delete"
+DROP POLICY IF EXISTS "followers_delete" ON public.followers;
+CREATE POLICY "followers_delete"
   ON public.followers FOR DELETE TO authenticated
   USING (auth.uid() = follower_id);
 CREATE INDEX IF NOT EXISTS idx_followers_follower ON public.followers(follower_id);
@@ -50,7 +54,8 @@ CREATE TABLE IF NOT EXISTS public.world_subscriptions (
   UNIQUE(user_id, world)
 );
 ALTER TABLE public.world_subscriptions ENABLE ROW LEVEL SECURITY;
-CREATE POLICY IF NOT EXISTS "world_subs_own"
+DROP POLICY IF EXISTS "world_subs_own" ON public.world_subscriptions;
+CREATE POLICY "world_subs_own"
   ON public.world_subscriptions FOR ALL TO authenticated
   USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 CREATE INDEX IF NOT EXISTS idx_world_subs_world ON public.world_subscriptions(world);
