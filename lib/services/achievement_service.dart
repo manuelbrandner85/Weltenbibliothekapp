@@ -1,15 +1,10 @@
 /// Achievement System Service
-/// Version: 2.0.0 (SharedPreferences)
-///
-/// Features:
-/// - Badge Collection System
-/// - Unlock Logic & Progress Tracking
-/// - XP & Level System
-/// - Local Storage (SharedPreferences)
+/// Version: 2.1.0 (SharedPreferences + Supabase sync + FCM push)
 library;
 
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:convert';
 
 /// Achievement Category Types
@@ -445,7 +440,7 @@ class AchievementService {
     }
   }
 
-  /// Unlock achievement
+  /// Unlock achievement (local + Supabase sync + FCM push)
   Future<bool> _unlockAchievement(String achievementId) async {
     final achievement = _achievements[achievementId];
     if (achievement == null) return false;
@@ -463,6 +458,9 @@ class AchievementService {
     await _addXP(achievement.xpReward);
     await _saveProgress();
 
+    // Sync to Supabase — fires DB notification + FCM push via fn_unlock_achievement RPC
+    _syncUnlockToSupabase(achievement).ignore();
+
     for (var listener in _unlockListeners) {
       listener(achievement, progress);
     }
@@ -474,6 +472,23 @@ class AchievementService {
     _checkPerfectionist();
 
     return true;
+  }
+
+  /// Calls fn_unlock_achievement RPC on Supabase so the achievement is
+  /// persisted server-side and the user gets a FCM push notification.
+  Future<void> _syncUnlockToSupabase(Achievement achievement) async {
+    try {
+      final userId = Supabase.instance.client.auth.currentUser?.id;
+      if (userId == null) return;
+      await Supabase.instance.client.rpc('fn_unlock_achievement', params: {
+        'p_user_id': userId,
+        'p_achievement_id': achievement.id,
+        'p_title': achievement.name,
+        'p_icon': achievement.icon,
+      });
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ Achievement sync to Supabase failed: $e');
+    }
   }
 
   /// Add XP and check for level up

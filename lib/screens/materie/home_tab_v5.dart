@@ -13,6 +13,7 @@ import '../../services/chat/recent_rooms_service.dart';
 import '../shared/bookmarks_screen.dart';
 import '../shared/stats_dashboard_screen.dart';
 import '../shared/notification_center_screen.dart';
+import '../../services/world_subscription_service.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // MATERIE HOME DASHBOARD V7 – REDESIGN 2026
@@ -44,6 +45,8 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
   List<Map<String, dynamic>> _latestArticles = [];
   List<Map<String, dynamic>> _trending = [];
   int _notifs = 0;
+  bool _worldSubscribed = false;
+  final _worldSubSvc = WorldSubscriptionService();
   final _scrollCtrl = ScrollController();
   double _scrollOffset = 0;
   Timer? _liveTimer;
@@ -79,6 +82,7 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
       setState(() => _scrollOffset = _scrollCtrl.offset);
     });
     _loadAll();
+    _loadWorldSubscription();
     _startLive();
   }
 
@@ -222,6 +226,25 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
     } catch (_) {}
   }
 
+  Future<void> _loadWorldSubscription() async {
+    final subscribed = await _worldSubSvc.isSubscribed('materie');
+    if (mounted) setState(() => _worldSubscribed = subscribed);
+  }
+
+  Future<void> _toggleWorldSubscription() async {
+    final newState = await _worldSubSvc.toggle('materie');
+    if (mounted) {
+      setState(() => _worldSubscribed = newState);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(newState
+            ? '🔔 Artikel-Benachrichtigungen aktiviert'
+            : '🔕 Artikel-Benachrichtigungen deaktiviert'),
+        duration: const Duration(seconds: 2),
+        backgroundColor: newState ? const Color(0xFF2979FF) : Colors.grey[800],
+      ));
+    }
+  }
+
   // ── Navigation ─────────────────────────────────────────────────────────
   Future<void> _go(Widget screen) => Navigator.push<void>(
       context, MaterialPageRoute(builder: (_) => screen));
@@ -332,6 +355,8 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
                           _buildAvatarOrb(),
                           const SizedBox(width: 14),
                           Expanded(child: _buildGreetingText()),
+                          _buildArticleAlertToggle(),
+                          const SizedBox(width: 8),
                           _buildNotifBell(),
                         ],
                       ),
@@ -428,6 +453,38 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
               style: TextStyle(color: Colors.white38, fontSize: 11)),
         ]),
       ],
+    );
+  }
+
+  Widget _buildArticleAlertToggle() {
+    return Tooltip(
+      message: _worldSubscribed
+          ? 'Artikel-Alerts deaktivieren'
+          : 'Artikel-Alerts aktivieren',
+      child: GestureDetector(
+        onTap: _toggleWorldSubscription,
+        child: Container(
+          width: 44, height: 44,
+          decoration: BoxDecoration(
+            color: _worldSubscribed
+                ? _blue.withValues(alpha: 0.2)
+                : Colors.white.withValues(alpha: 0.07),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: _worldSubscribed
+                  ? _blue.withValues(alpha: 0.6)
+                  : Colors.white.withValues(alpha: 0.12),
+            ),
+          ),
+          child: Icon(
+            _worldSubscribed
+                ? Icons.newspaper
+                : Icons.newspaper_outlined,
+            color: _worldSubscribed ? _blue : Colors.white60,
+            size: 20,
+          ),
+        ),
+      ),
     );
   }
 
