@@ -12,6 +12,7 @@ import 'energie_live_chat_screen.dart';
 import '../../services/chat/recent_rooms_service.dart';
 import '../shared/bookmarks_screen.dart';
 import '../shared/stats_dashboard_screen.dart';
+import '../shared/notification_center_screen.dart';
 import 'spirit_tab_modern.dart';
 import 'calculators/chakra_calculator_screen.dart';
 
@@ -56,6 +57,8 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
   double _scrollOffset = 0;
   Timer? _liveTimer;
   RealtimeChannel? _channel;
+  RealtimeChannel? _notifChannel;
+  RealtimeChannel? _statsChannel;
 
   // ── Colors ─────────────────────────────────────────────────────────────
   static const _bg      = Color(0xFF06040F);
@@ -96,6 +99,8 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
     _scrollCtrl.dispose();
     _liveTimer?.cancel();
     _channel?.unsubscribe();
+    _notifChannel?.unsubscribe();
+    _statsChannel?.unsubscribe();
     super.dispose();
   }
 
@@ -130,30 +135,102 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
       _trending       = await _dash.getTrendingTopics(realm: 'energie', limit: 8);
       final uid  = Supabase.instance.client.auth.currentUser?.id ??
                    await StorageService().getUserId('energie');
-      final notifs = await _dash.getNotifications(userId: uid, realm: 'energie', limit: 50);
+      // Unread-Count direkt aus DB (kein Umweg über getNotifications-Normalisierung)
+      final unreadResult = await Supabase.instance.client
+          .from('notifications')
+          .select('id')
+          .eq('user_id', uid!)
+          .isFilter('read_at', null);
       if (mounted) {
         setState(() {
-          _notifs = notifs.where((n) => n['is_read'] == false || n['read'] == false).length;
+          _notifs = (unreadResult as List).length;
         });
       }
     } catch (_) {}
   }
 
   void _startLive() {
-    _channel = Supabase.instance.client
-        .channel('energie_home_v7')
+    final client = Supabase.instance.client;
+
+    // Realtime: Artikel → Content + Stats neu laden
+    _channel = client
+        .channel('energie_home_content')
       ..onPostgresChanges(
         event: PostgresChangeEvent.all,
         schema: 'public', table: 'articles',
-        callback: (_) { if (mounted) _loadContent(); },
+        callback: (_) { if (mounted) { _loadContent(); _loadStats(); } },
       )
       ..subscribe();
+
+    // Realtime: chat_messages + bookmarks + likes → Stats neu laden
+    _statsChannel = client
+        .channel('energie_home_stats')
+      ..onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public', table: 'chat_messages',
+        callback: (_) { if (mounted) _loadStats(); },
+      )
+      ..onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public', table: 'bookmarks',
+        callback: (_) { if (mounted) _loadStats(); },
+      )
+      ..onPostgresChanges(
+        event: PostgresChangeEvent.all,
+        schema: 'public', table: 'likes',
+        callback: (_) { if (mounted) _loadStats(); },
+      )
+      ..subscribe();
+
+    // Realtime: notifications → Glocken-Badge sofort aktualisieren
+    final uid = client.auth.currentUser?.id;
+    if (uid != null) {
+      _notifChannel = client
+          .channel('energie_home_notifs')
+        ..onPostgresChanges(
+          event: PostgresChangeEvent.insert,
+          schema: 'public',
+          table: 'notifications',
+          filter: PostgresChangeFilter(
+            type: FilterType.eq,
+            column: 'user_id',
+            value: uid,
+          ),
+          callback: (_) { if (mounted) setState(() => _notifs++); },
+        )
+        ..onPostgresChanges(
+          event: PostgresChangeEvent.update,
+          schema: 'public',
+          table: 'notifications',
+          filter: PostgresChangeFilter(
+            type: FilterType.eq,
+            column: 'user_id',
+            value: uid,
+          ),
+          callback: (_) { if (mounted) _refreshNotifCount(); },
+        )
+        ..subscribe();
+    }
+
     _liveTimer = Timer.periodic(const Duration(minutes: 5),
         (_) { if (mounted) _loadAll(); });
   }
 
+  Future<void> _refreshNotifCount() async {
+    try {
+      final uid = Supabase.instance.client.auth.currentUser?.id;
+      if (uid == null) return;
+      final result = await Supabase.instance.client
+          .from('notifications')
+          .select('id')
+          .eq('user_id', uid)
+          .isFilter('read_at', null);
+      if (mounted) setState(() => _notifs = (result as List).length);
+    } catch (_) {}
+  }
+
   // ── Navigation ─────────────────────────────────────────────────────────
-  void _go(Widget screen) => Navigator.push(
+  Future<void> _go(Widget screen) => Navigator.push<void>(
       context, MaterialPageRoute(builder: (_) => screen));
 
   /// Zum Spirit-Tab wechseln: bevorzugt via Parent-Tab-Switch
@@ -396,7 +473,10 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
 
   Widget _buildNotifBell() {
     return GestureDetector(
-      onTap: () => _go(const StatsDashboardScreen(world: 'energie')),
+      onTap: () async {
+        await _go(const NotificationCenterScreen(world: 'energie'));
+        _refreshNotifCount();
+      },
       child: Stack(
         clipBehavior: Clip.none,
         children: [
