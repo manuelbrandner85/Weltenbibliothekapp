@@ -87,7 +87,7 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
         schema: 'public',
         table: 'notifications',
         filter: PostgresChangeFilter(
-          type: FilterType.eq,
+          type: PostgresChangeFilterType.eq,
           column: 'user_id',
           value: uid,
         ),
@@ -104,7 +104,7 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
         schema: 'public',
         table: 'notifications',
         filter: PostgresChangeFilter(
-          type: FilterType.eq,
+          type: PostgresChangeFilterType.eq,
           column: 'user_id',
           value: uid,
         ),

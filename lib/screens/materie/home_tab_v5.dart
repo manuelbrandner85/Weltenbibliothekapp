@@ -183,7 +183,7 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
           schema: 'public',
           table: 'notifications',
           filter: PostgresChangeFilter(
-            type: FilterType.eq,
+            type: PostgresChangeFilterType.eq,
             column: 'user_id',
             value: uid,
           ),
@@ -194,7 +194,7 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
           schema: 'public',
           table: 'notifications',
           filter: PostgresChangeFilter(
-            type: FilterType.eq,
+            type: PostgresChangeFilterType.eq,
             column: 'user_id',
             value: uid,
           ),

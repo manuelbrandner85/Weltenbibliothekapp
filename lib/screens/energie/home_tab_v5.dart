@@ -192,7 +192,7 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
           schema: 'public',
           table: 'notifications',
           filter: PostgresChangeFilter(
-            type: FilterType.eq,
+            type: PostgresChangeFilterType.eq,
             column: 'user_id',
             value: uid,
           ),
@@ -203,7 +203,7 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
           schema: 'public',
           table: 'notifications',
           filter: PostgresChangeFilter(
-            type: FilterType.eq,
+            type: PostgresChangeFilterType.eq,
             column: 'user_id',
             value: uid,
           ),
