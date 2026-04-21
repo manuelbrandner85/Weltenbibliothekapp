@@ -77,8 +77,22 @@ jobs:
         env:
           GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
         run: |
-          echo "$GOOGLE_SERVICES_JSON_BASE64" | base64 --decode > android/app/google-services.json
-          echo "✅ google-services.json injiziert"
+          set -euo pipefail
+          RAW="$GOOGLE_SERVICES_JSON_BASE64"
+          CLEANED=$(printf '%s' "$RAW" | tr -d '[:space:]')
+          if printf '%s' "$CLEANED" | base64 -d > android/app/google-services.json 2>/dev/null \
+               && jq -e .project_info.project_id android/app/google-services.json >/dev/null; then
+            echo "✅ google-services.json injiziert (base64)"
+          elif printf '%s' "$RAW" | jq -e .project_info.project_id >/dev/null 2>&1; then
+            printf '%s' "$RAW" > android/app/google-services.json
+            echo "✅ google-services.json injiziert (rohes JSON)"
+          else
+            echo "❌ GOOGLE_SERVICES_JSON_BASE64 ist weder gültiges base64 noch rohes JSON."
+            echo "   Fix: base64 -w 0 google-services.json | pbcopy  (macOS)"
+            echo "        base64 -w 0 google-services.json | xclip   (Linux)"
+            rm -f android/app/google-services.json
+            exit 1
+          fi
 
       - name: 🩺 Shorebird-Status (vor Patch)
         env:
