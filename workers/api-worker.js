@@ -930,20 +930,22 @@ export default {
           }
         }
 
+        // HARD-DELETE statt Soft-Delete:
+        // 1. Soft-Delete via PATCH feuert ein UPDATE-Event im Realtime-Stream → der
+        //    Client-Filter auf `is_deleted=eq.false` beim initialen Load greift, aber
+        //    die laufende Realtime-Subscription aktualisiert die Message in-place und
+        //    zeigt sie weiterhin an. Ergebnis: Nachricht scheint "wieder aufzutauchen".
+        // 2. Hard-DELETE feuert ein DELETE-Event → alle Clients entfernen die Message
+        //    sofort aus der Liste. Persistenz + UI-Konsistenz in einem Schritt.
         const deleteRes = await fetch(
           `${SUPABASE_URL}/rest/v1/chat_messages?id=eq.${messageId}`,
           {
-            method: 'PATCH',
+            method: 'DELETE',
             headers: {
-              'Content-Type': 'application/json',
               'apikey': svcKey,
               'Authorization': `Bearer ${svcKey}`,
-              'Prefer': 'return=representation',
+              'Prefer': 'return=minimal',
             },
-            body: JSON.stringify({
-              is_deleted: true,
-              deleted_at: new Date().toISOString(),
-            }),
           }
         );
         if (!deleteRes.ok) {
@@ -951,9 +953,8 @@ export default {
           console.error('Delete Supabase error:', deleteRes.status, errText);
           return errorResponse(`Supabase Fehler beim Löschen: ${deleteRes.status}`, deleteRes.status);
         }
-        const deleted = await deleteRes.json().catch(() => []);
         // Idempotent: auch wenn 0 Rows betroffen (schon gelöscht), gilt als Erfolg
-        return jsonResponse({ success: true, message: 'Nachricht gelöscht', data: deleted });
+        return jsonResponse({ success: true, message: 'Nachricht gelöscht' });
       } catch (e) {
         return errorResponse(`Delete-Fehler: ${e.message}`);
       }

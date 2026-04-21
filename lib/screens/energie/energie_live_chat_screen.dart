@@ -1733,173 +1733,101 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                     accentColor: const Color(0xFF9B51E0),
                   ),
                 
-                // Message Input Row
+                // ─── MESSAGE INPUT ROW (Telegram-Style: kompakt, "+" öffnet Anhänge) ───
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                // 📷 IMAGE UPLOAD BUTTON
-                IconButton(
-                  icon: const Icon(Icons.image, color: Color(0xFF9B51E0)),
-                  onPressed: _pickAndUploadImage,
-                  tooltip: 'Bild hochladen',
-                ),
-                // ✨ MOOD BUTTON
-                GestureDetector(
-                  onTap: () => setState(() => _showMoodPicker = !_showMoodPicker),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    margin: const EdgeInsets.only(right: 4),
-                    decoration: BoxDecoration(
-                      color: _myMood.isNotEmpty || _showMoodPicker
-                          ? const Color(0xFF9B51E0).withValues(alpha: 0.2)
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: _myMood.isNotEmpty
-                            ? const Color(0xFF9B51E0).withValues(alpha: 0.5)
-                            : Colors.transparent,
-                      ),
+                    // ➕ ATTACH-BUTTON (Bild / Mood / Avatar hinter "+"-Menü)
+                    IconButton(
+                      icon: const Icon(Icons.add_circle_outline, color: Color(0xFF9B51E0), size: 28),
+                      onPressed: _showAttachmentSheet,
+                      tooltip: 'Anhänge & Profil',
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
                     ),
-                    child: Text(
-                      _myMood.isNotEmpty ? _myMood : '🌟',
-                      style: const TextStyle(fontSize: 18),
-                    ),
-                  ),
-                ),
-                // Avatar - KLICKBAR zum Ändern
-                GestureDetector(
-                  onTap: _showAvatarPicker,
-                  child: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF9B51E0), Color(0xFF6A5ACD)],
-                      ),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.3),
-                        width: 2,
-                      ),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(18),
-                      child: _avatarUrl != null && _avatarUrl!.isNotEmpty
-                          // 🖼️ PRIORITÄT 1: Hochgeladenes Bild
-                          ? Image.network(
-                              _avatarUrl!,
-                              width: 36,
-                              height: 36,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                // Fallback bei Bild-Fehler: Zeige Emoji
-                                return Center(
-                                  child: Text(
-                                    _avatar.isEmpty ? '👤' : _avatar,
-                                    style: const TextStyle(fontSize: 20),
-                                  ),
-                                );
-                              },
-                            )
-                          // 🎭 PRIORITÄT 2: Avatar-Emoji
-                          : Center(
-                              child: Text(
-                                _avatar.isEmpty ? '👤' : _avatar,
-                                style: const TextStyle(fontSize: 20),
-                              ),
-                            ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
 
-                // ✨ Batch-1: Emoji-Picker-Button
-                ChatEmojiPickerButton(
-                  onSelected: _insertEmoji,
-                  color: const Color(0xFFBB86FC),
-                ),
+                    // ✨ EMOJI-PICKER (inline)
+                    ChatEmojiPickerButton(
+                      onSelected: _insertEmoji,
+                      color: const Color(0xFFBB86FC),
+                    ),
 
-                // Input Field
-                Expanded(
-                  child: TextField(
-                    controller: _messageController,
-                    focusNode: _inputFocusNode,
-                    // ✅ FIX: TextField immer aktiviert - nur Send-Button während Senden deaktivieren
-                    enabled: true,  // ✅ ALWAYS ENABLED
-                    onTap: () {
-                      if (!_isInputFocused) {
-                        if (mounted) {
-                          setState(() {
-                          _isInputFocused = true;
-                        });
-                        }
-                      }
-                    },
-                    style: const TextStyle(color: Colors.white),
-                    decoration: InputDecoration(
-                      hintText: 'Nachricht schreiben... (@mention)', // ✅ Added @mention hint
-                      hintStyle: const TextStyle(color: Colors.white38),
-                      filled: true,
-                      fillColor: Colors.white.withValues(alpha: 0.05),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(20),
-                        borderSide: BorderSide.none,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
+                    // ✍️ TEXT-INPUT (kompakt)
+                    Expanded(
+                      child: TextField(
+                        controller: _messageController,
+                        focusNode: _inputFocusNode,
+                        enabled: true,
+                        onTap: () {
+                          if (!_isInputFocused && mounted) {
+                            setState(() => _isInputFocused = true);
+                          }
+                        },
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          hintText: 'Nachricht',
+                          hintStyle: const TextStyle(color: Colors.white38),
+                          filled: true,
+                          fillColor: Colors.white.withValues(alpha: 0.05),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(20),
+                            borderSide: BorderSide.none,
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 10,
+                          ),
+                          isDense: true,
+                        ),
+                        minLines: 1,
+                        maxLines: 5,
+                        textInputAction: TextInputAction.newline,
                       ),
                     ),
-                    maxLines: 3,
-                    minLines: 1,
-                    onSubmitted: (_) => _isSending ? null : _sendMessage(),  // ✅ Prevent submit during sending
-                  ),
-                ),
-                const SizedBox(width: 12),
-                
-                // ➤ SEND BUTTON
-                Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: _hasText 
-                        ? [const Color(0xFF9B51E0), const Color(0xFF6A5ACD)]
-                        : [Colors.grey.shade400, Colors.grey.shade500],
-                      ),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: _isSending
-                            ? null
-                            : (_hasText ? _sendMessage : _openVoiceRecorder),
-                        // Feature #16: long-press on send → schedule message
-                        onLongPress: _hasText ? _showScheduleMessageDialog : null,
+                    const SizedBox(width: 8),
+
+                    // ➤ SEND / MIC BUTTON (swap bei Text-Eingabe)
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: _hasText
+                              ? [const Color(0xFF9B51E0), const Color(0xFF6A5ACD)]
+                              : [Colors.grey.shade400, Colors.grey.shade500],
+                        ),
                         borderRadius: BorderRadius.circular(20),
-                        child: Container(
-                          width: 40,
-                          height: 40,
-                          alignment: Alignment.center,
-                          child: _isSending
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: _isSending
+                              ? null
+                              : (_hasText ? _sendMessage : _openVoiceRecorder),
+                          onLongPress: _hasText ? _showScheduleMessageDialog : null,
+                          borderRadius: BorderRadius.circular(20),
+                          child: Container(
+                            width: 40,
+                            height: 40,
+                            alignment: Alignment.center,
+                            child: _isSending
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : Icon(
+                                    _hasText ? Icons.send : Icons.mic_none,
                                     color: Colors.white,
-                                    strokeWidth: 2,
+                                    size: 20,
                                   ),
-                                )
-                              : Icon(
-                                  _hasText ? Icons.send : Icons.mic_none,
-                                  color: Colors.white,
-                                  size: 20,
-                                ),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
-              ), // Row Ende
+                  ],
+                ), // Row Ende
             ],
           ), // Column (Input Area) Ende
         ), // Container (Input Area) Ende
@@ -2001,6 +1929,98 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
     );
   }
   
+  /// Telegram-Style Attach-Menü: Bild / Mood / Avatar hinter "+"-Button.
+  /// Spart horizontal Platz im Input, damit der Hint-Text nicht mehr umbricht.
+  void _showAttachmentSheet() {
+    FocusScope.of(context).unfocus();
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF1A0D2E),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _attachOption(
+                    icon: Icons.image,
+                    label: 'Bild',
+                    color: const Color(0xFF9B51E0),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      _pickAndUploadImage();
+                    },
+                  ),
+                  _attachOption(
+                    icon: Icons.mood,
+                    label: 'Stimmung',
+                    color: const Color(0xFFBB86FC),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      if (mounted) {
+                        setState(() => _showMoodPicker = !_showMoodPicker);
+                      }
+                    },
+                  ),
+                  _attachOption(
+                    icon: Icons.face,
+                    label: 'Avatar',
+                    color: const Color(0xFF6A5ACD),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      _showAvatarPicker();
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _attachOption({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color, size: 28),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: const TextStyle(color: Colors.white, fontSize: 13),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   // ✨ Batch-1: Emoji-Insert an aktueller Caret-Position.
   void _insertEmoji(String emoji) {
     final text = _messageController.text;
