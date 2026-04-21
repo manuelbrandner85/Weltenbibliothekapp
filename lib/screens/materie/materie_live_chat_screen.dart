@@ -1745,133 +1745,59 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
               accentColor: const Color(0xFF2196F3),
             ),
           
-          // MESSAGE INPUT ROW
+          // ─── MESSAGE INPUT ROW (Telegram-Style: kompakt, "+" öffnet Anhänge) ───
           Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              // 📷 IMAGE UPLOAD BUTTON
+              // ➕ ATTACH-BUTTON (öffnet BottomSheet mit Bild/Mood/Avatar)
               IconButton(
-                icon: const Icon(Icons.image, color: Color(0xFF2979FF)),
-                onPressed: _pickAndUploadImage,
-                tooltip: 'Bild hochladen',
+                icon: const Icon(Icons.add_circle_outline, color: Color(0xFF2979FF), size: 28),
+                onPressed: _showAttachmentSheet,
+                tooltip: 'Anhänge & Profil',
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
               ),
-              // ✨ MOOD BUTTON
-              GestureDetector(
-                onTap: () => setState(() => _showMoodPicker = !_showMoodPicker),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  margin: const EdgeInsets.only(right: 4),
-                  decoration: BoxDecoration(
-                    color: _myMood.isNotEmpty || _showMoodPicker
-                        ? const Color(0xFF2979FF).withValues(alpha: 0.2)
-                        : Colors.transparent,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: _myMood.isNotEmpty
-                          ? const Color(0xFF2979FF).withValues(alpha: 0.5)
-                          : Colors.transparent,
-                    ),
-                  ),
-                  child: Text(
-                    _myMood.isNotEmpty ? _myMood : '🌍',
-                    style: const TextStyle(fontSize: 18),
-                  ),
-                ),
-              ),
-              // 👤 AVATAR BUTTON
-              GestureDetector(
-                onTap: _showAvatarPicker,
-                child: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Colors.red, Color(0xFFE53935)],
-                    ),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.3),
-                      width: 2,
-                    ),
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(18),
-                    child: _avatarUrl != null && _avatarUrl!.isNotEmpty
-                        ? Image.network(
-                            _avatarUrl!,
-                            width: 36,
-                            height: 36,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Center(
-                                child: Text(
-                                  _avatar.isEmpty ? '👤' : _avatar,
-                                  style: const TextStyle(fontSize: 20),
-                                ),
-                              );
-                            },
-                          )
-                        : Center(
-                            child: Text(
-                              _avatar.isEmpty ? '👤' : _avatar,
-                              style: const TextStyle(fontSize: 20),
-                            ),
-                          ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
 
-              // ✨ Batch-1: Emoji-Picker-Button
+              // ✨ EMOJI-PICKER (inline)
               ChatEmojiPickerButton(
                 onSelected: _insertEmoji,
                 color: Colors.red,
               ),
 
+              // ✍️ TEXT-INPUT (kompakt: startet einzeilig, wächst max. 5 Zeilen)
               Expanded(
                 child: TextField(
                   controller: _messageController,
                   focusNode: _inputFocusNode,
-                  // 🔧 FIX 11: DIREKTER onTap Handler um Headers SOFORT zu verstecken!
                   onTap: () {
-                    debugPrint('🎯 [DIREKTER TAP] Input angeklickt!');
-                    if (!_isInputFocused) {
-                      if (mounted) {
-                        setState(() {
-                        _isInputFocused = true;
-                        debugPrint('🔥 [DIREKTER TAP] _isInputFocused = true');
-                      });
-                      }
+                    if (!_isInputFocused && mounted) {
+                      setState(() => _isInputFocused = true);
                     }
                   },
                   style: const TextStyle(color: Colors.white),
-                  maxLines: null,
-                  textInputAction: TextInputAction.send,
-                  onSubmitted: (_) => _sendMessage(), // ⌨️ Enter key sends message
+                  minLines: 1,
+                  maxLines: 5,
+                  textInputAction: TextInputAction.newline,
                   decoration: InputDecoration(
-                    hintText: 'Nachricht schreiben... (@mention)',
+                    hintText: 'Nachricht',
                     hintStyle: TextStyle(color: Colors.grey[600]),
                     filled: true,
                     fillColor: const Color(0xFF2A2A2A),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(24),
+                      borderRadius: BorderRadius.circular(20),
                       borderSide: BorderSide.none,
                     ),
                     contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 12,
+                      horizontal: 16,
+                      vertical: 10,
                     ),
-                    prefixIcon: Icon(
-                      Icons.alternate_email,
-                      color: Colors.grey[600],
-                      size: 20,
-                    ),
+                    isDense: true,
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
 
-              // ➤ SEND / MIC BUTTON (Energie-Style Gradient)
+              // ➤ SEND / MIC BUTTON (swap bei Text-Eingabe)
               Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -1885,7 +1811,6 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
                   color: Colors.transparent,
                   child: InkWell(
                     onTap: _hasText ? _sendMessage : _openVoiceRecorder,
-                    // Feature #16: long-press → schedule message
                     onLongPress: _hasText ? _showScheduleMessageDialog : null,
                     borderRadius: BorderRadius.circular(20),
                     child: Container(
@@ -1904,6 +1829,98 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  /// Telegram-Style Attach-Menü: Bild / Mood / Avatar hinter "+"-Button.
+  /// Spart horizontal Platz im Input, damit der Hint-Text nicht mehr umbricht.
+  void _showAttachmentSheet() {
+    FocusScope.of(context).unfocus();
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF0A1020),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _attachOption(
+                    icon: Icons.image,
+                    label: 'Bild',
+                    color: const Color(0xFF2979FF),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      _pickAndUploadImage();
+                    },
+                  ),
+                  _attachOption(
+                    icon: Icons.mood,
+                    label: 'Stimmung',
+                    color: const Color(0xFFFFB300),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      if (mounted) {
+                        setState(() => _showMoodPicker = !_showMoodPicker);
+                      }
+                    },
+                  ),
+                  _attachOption(
+                    icon: Icons.face,
+                    label: 'Avatar',
+                    color: const Color(0xFFE53935),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      _showAvatarPicker();
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _attachOption({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color, size: 28),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: const TextStyle(color: Colors.white, fontSize: 13),
+            ),
+          ],
+        ),
       ),
     );
   }

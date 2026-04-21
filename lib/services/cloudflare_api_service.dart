@@ -340,7 +340,10 @@ class CloudflareApiService {
     }
   }
 
-  /// Edit chat message – 🟢 Supabase-only (RLS prüft Ownership / Admin).
+  /// Edit chat message – via Cloudflare Worker (Service-Role umgeht RLS).
+  /// Client darf NICHT direkt Supabase.update() nutzen: chat_messages RLS verlangt
+  /// auth.uid() = user_id, unsere Zeilen haben aber user_id = NULL (InvisibleAuth).
+  /// Der Worker authentifiziert per username-Match + SERVICE_ROLE_KEY.
   Future<Map<String, dynamic>> editChatMessage({
     required String roomId,
     required String messageId,
@@ -350,21 +353,31 @@ class CloudflareApiService {
     String? realm,
     bool? isAdmin,
   }) async {
-    if (kDebugMode) debugPrint('🔧 [Chat] Edit: $messageId');
-    try {
-      final result = await SupabaseChatService.instance.editMessage(
-        messageId: messageId,
-        newMessage: newMessage,
-        isAdmin: isAdmin ?? false,
-      );
-      return {'success': true, 'message': result};
-    } catch (e) {
-      if (kDebugMode) debugPrint('❌ [Chat] Edit failed: $e');
-      rethrow;
+    if (kDebugMode) debugPrint('🔧 [Chat] Edit via Worker: $messageId');
+    final response = await http.put(
+      Uri.parse('$baseUrl/api/chat/messages/$messageId'),
+      headers: const {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'userId': userId,
+        'username': username,
+        'roomId': roomId,
+        'realm': realm,
+        'message': newMessage,
+        'isAdmin': isAdmin ?? false,
+      }),
+    );
+    if (response.statusCode != 200) {
+      if (kDebugMode) {
+        debugPrint('❌ [Chat] Edit failed: ${response.statusCode} ${response.body}');
+      }
+      throw Exception('Edit fehlgeschlagen (${response.statusCode})');
     }
+    return jsonDecode(response.body) as Map<String, dynamic>;
   }
 
-  /// Delete chat message – 🟢 Supabase-only, soft-delete (is_deleted = true).
+  /// Delete chat message – via Cloudflare Worker (Hard-Delete, Realtime DELETE-Event).
+  /// Gleiche Begründung wie edit: RLS blockiert Client-DELETE, Worker umgeht RLS
+  /// per SERVICE_ROLE_KEY und prüft Ownership via username-Match.
   Future<Map<String, dynamic>> deleteChatMessage({
     required String roomId,
     required String messageId,
@@ -373,17 +386,25 @@ class CloudflareApiService {
     String? realm,
     bool? isAdmin,
   }) async {
-    if (kDebugMode) debugPrint('🗑️ [Chat] Delete: $messageId');
-    try {
-      await SupabaseChatService.instance.deleteMessage(
-        messageId: messageId,
-        isAdmin: isAdmin ?? false,
-      );
-      return {'success': true, 'message': 'Nachricht gelöscht'};
-    } catch (e) {
-      if (kDebugMode) debugPrint('❌ [Chat] Delete failed: $e');
-      rethrow;
+    if (kDebugMode) debugPrint('🗑️ [Chat] Delete via Worker: $messageId');
+    final response = await http.delete(
+      Uri.parse('$baseUrl/api/chat/messages/$messageId'),
+      headers: const {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'userId': userId,
+        'username': username,
+        'roomId': roomId,
+        'realm': realm,
+        'isAdmin': isAdmin ?? false,
+      }),
+    );
+    if (response.statusCode != 200) {
+      if (kDebugMode) {
+        debugPrint('❌ [Chat] Delete failed: ${response.statusCode} ${response.body}');
+      }
+      throw Exception('Delete fehlgeschlagen (${response.statusCode})');
     }
+    return jsonDecode(response.body) as Map<String, dynamic>;
   }
 
 
