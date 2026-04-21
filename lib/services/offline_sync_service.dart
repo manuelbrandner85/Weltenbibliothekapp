@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:sqflite/sqflite.dart' show ConflictAlgorithm;
+import 'package:supabase_flutter/supabase_flutter.dart' show Supabase;
 import '../core/db/app_database.dart';
 import '../services/error_reporting_service.dart';
 import '../services/cloudflare_api_service.dart';
@@ -301,6 +302,20 @@ class OfflineSyncService extends ChangeNotifier {
 
   Future<bool> _executeAction(OfflineAction action) async {
     final api = CloudflareApiService();
+    // User-Revalidation: queued actions belong to the user who was logged in when
+    // the action was queued. If a different user is logged in now, skip the action
+    // instead of executing it under the wrong identity.
+    final queuedUserId = action.data['userId']?.toString() ?? action.userId;
+    final currentUserId = Supabase.instance.client.auth.currentUser?.id;
+    if (queuedUserId != null &&
+        queuedUserId.isNotEmpty &&
+        currentUserId != null &&
+        currentUserId != queuedUserId) {
+      if (kDebugMode) {
+        debugPrint('⚠️  OfflineSync: queued user $queuedUserId != current $currentUserId — skipping');
+      }
+      return true; // drop from queue, don't retry
+    }
     try {
       switch (action.type) {
         case OfflineActionType.sendMessage:

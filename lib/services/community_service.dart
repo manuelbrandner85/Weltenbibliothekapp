@@ -4,6 +4,7 @@ import 'dart:async';  // ✅ TimeoutException
 import 'dart:io';  // ✅ SocketException
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/community_post.dart';
 import 'cloudflare_api_service.dart';
 
@@ -20,6 +21,50 @@ class CommunityService {
   static const String _baseUrl = ApiConfig.workerUrl;
   static const Duration _timeout = Duration(seconds: 10);
   final CloudflareApiService _cloudflareApi = CloudflareApiService();
+
+  /// Realtime-Stream auf `community_posts` (Supabase Realtime).
+  ///
+  /// Liefert bei jedem INSERT/UPDATE/DELETE die aktuelle Liste der Posts für die
+  /// gewünschte Welt. Nutzt Supabase PostgREST-Stream direkt (kein
+  /// Cloudflare-Umweg), damit der Feed ohne Polling live bleibt solange die
+  /// App vorne ist.
+  ///
+  /// Verwendung:
+  /// ```dart
+  /// final sub = CommunityService().streamPosts(WorldType.materie).listen((posts) {
+  ///   setState(() => _posts = posts);
+  /// });
+  /// // später: sub.cancel();
+  /// ```
+  Stream<List<CommunityPost>> streamPosts(WorldType worldType) {
+    final realm = worldType == WorldType.materie ? 'materie' : 'energie';
+    final client = Supabase.instance.client;
+    return client
+        .from('community_posts')
+        .stream(primaryKey: ['id'])
+        .eq('world', realm)
+        .order('created_at', ascending: false)
+        .limit(50)
+        .map((rows) => rows.map((r) => CommunityPost(
+              id: r['id']?.toString() ?? '',
+              authorUsername: r['author']?.toString() ??
+                  r['username']?.toString() ??
+                  'Anonym',
+              authorAvatar: r['author_avatar']?.toString() ?? '👤',
+              content: r['content']?.toString() ?? '',
+              createdAt: DateTime.tryParse(r['created_at']?.toString() ?? '') ??
+                  DateTime.now(),
+              likes: (r['likes_count'] as num?)?.toInt() ?? 0,
+              comments: (r['comments_count'] as num?)?.toInt() ?? 0,
+              shares: (r['shares_count'] as num?)?.toInt() ?? 0,
+              tags: (r['tags'] is List)
+                  ? List<String>.from(r['tags'] as List)
+                  : const <String>[],
+              worldType: worldType,
+              mediaUrl: r['media_url']?.toString(),
+              mediaType: r['media_type']?.toString(),
+            )).toList());
+  }
   
   // ✅ PRODUCTION: Error-resistant implementation
   /// Fetch all posts (with optional world filter)

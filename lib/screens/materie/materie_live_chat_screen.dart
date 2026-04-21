@@ -714,12 +714,13 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
       final queueId = await offlineService.queueAction(
         type: OfflineActionType.sendMessage,
         data: {
-          'roomId': _selectedRoom,
+          'roomId': _fullRoomId,
           'realm': 'materie',
           'userId': _userId,
           'username': _username,
           'message': text,
           'avatarEmoji': _avatarEmoji,
+          'avatarUrl': _avatarUrl,
         },
         userId: _userId,
       );
@@ -1174,17 +1175,16 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
   }
 
   void _scrollToBottom() {
-    if (_scrollController.hasClients) {
-      Future.delayed(const Duration(milliseconds: 100), () {
-        if (_scrollController.hasClients) {
-          _scrollController.animateTo(
-            _scrollController.position.maxScrollExtent,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeOut,
-          );
-        }
-      });
-    }
+    // Wait for the next frame so the ListView has measured the new items
+    // before jumping — avoids a race where maxScrollExtent is still stale.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.hasClients) return;
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    });
     if (mounted) {
       setState(() {
         _isAtBottom = true;

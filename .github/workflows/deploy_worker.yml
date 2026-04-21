@@ -1,0 +1,87 @@
+name: ☁️ Cloudflare Worker deployen
+
+# Deployt den API-Worker automatisch bei jeder Änderung an `workers/**`.
+# Setzt bei Bedarf auch die FCM-Secrets (FCM_SERVICE_ACCOUNT, SUPABASE_SERVICE_ROLE_KEY).
+#
+# Required GitHub Secrets:
+#   CLOUDFLARE_API_TOKEN            — Wrangler-Deploy-Token (Account:Workers Scripts:Edit,
+#                                     Account:Workers KV Storage:Edit, Zone:Workers Routes:Edit)
+#   SUPABASE_SERVICE_ROLE_KEY       — Supabase Service-Role JWT (wird als Worker-Secret
+#                                     gesetzt, siehe Step "🔑 Worker-Secrets setzen")
+#   FCM_SERVICE_ACCOUNT_JSON        — Firebase Service-Account JSON als String
+#                                     (Firebase Console → Project Settings →
+#                                     Service Accounts → Generate new private key)
+#                                     OPTIONAL: ohne fällt der Dispatcher auf
+#                                     "mark as sent" zurück (In-App-Polling only).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'workers/**'
+      - '.github/workflows/deploy_worker.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-worker-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: 🚀 Worker deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🟩 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 🔑 Worker-Secrets setzen
+        # Wrangler akzeptiert Secret-Werte via STDIN. Wir setzen die Secrets VOR
+        # dem Deploy — Secrets sind pro-Worker-persistent, müssen aber bei jedem
+        # Deploy-Run nicht neu gesetzt werden. Wir setzen sie trotzdem, damit
+        # rotierte Werte automatisch übernommen werden.
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          FCM_SERVICE_ACCOUNT_JSON: ${{ secrets.FCM_SERVICE_ACCOUNT_JSON }}
+        working-directory: workers
+        run: |
+          set -euo pipefail
+          if [ -z "${CLOUDFLARE_API_TOKEN:-}" ]; then
+            echo "❌ CLOUDFLARE_API_TOKEN Secret fehlt — Deploy übersprungen"
+            exit 1
+          fi
+
+          if [ -n "${SUPABASE_SERVICE_ROLE_KEY:-}" ]; then
+            echo "→ SUPABASE_SERVICE_ROLE_KEY setzen …"
+            printf '%s' "$SUPABASE_SERVICE_ROLE_KEY" | \
+              npx -y wrangler@3 secret put SUPABASE_SERVICE_ROLE_KEY
+          else
+            echo "⚠️  SUPABASE_SERVICE_ROLE_KEY fehlt (Admin-Operationen gehen nicht)"
+          fi
+
+          if [ -n "${FCM_SERVICE_ACCOUNT_JSON:-}" ]; then
+            echo "→ FCM_SERVICE_ACCOUNT setzen …"
+            printf '%s' "$FCM_SERVICE_ACCOUNT_JSON" | \
+              npx -y wrangler@3 secret put FCM_SERVICE_ACCOUNT
+          else
+            echo "ℹ️  FCM_SERVICE_ACCOUNT_JSON fehlt — Push-Dispatcher markiert Queue nur als 'sent'"
+            echo "    (In-App-Polling bleibt funktionsfähig; echte FCM-Pushes aus: erst wenn"
+            echo "     Secret gesetzt ist)"
+          fi
+
+      - name: 🚀 Deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        working-directory: workers
+        run: |
+          npx -y wrangler@3 deploy
+          echo "✅ Worker deployed — Cron-Trigger aktiv"

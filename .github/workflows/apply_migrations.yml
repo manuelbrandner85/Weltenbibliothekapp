@@ -70,5 +70,11 @@ jobs:
           run_sql "v38 update_history Tabelle" \
             supabase/migrations/20260420_v38_update_history.sql
 
+          run_sql "v39 chat_notification Trigger" \
+            supabase/migrations/20260420_v39_chat_notification_trigger.sql
+
+          run_sql "v40 drop_duplicate_chat_trigger" \
+            supabase/migrations/20260420_v40_drop_duplicate_chat_trigger.sql
+
           echo ""
           echo "🎉 Alle Migrationen erfolgreich angewendet"

@@ -177,6 +177,27 @@ jobs:
           EOF
           echo "✅ Release-Keystore + key.properties erstellt"
 
+      - name: 🔔 google-services.json aus Secret dekodieren (FCM)
+        # Secret einrichten:
+        #   GOOGLE_SERVICES_JSON_BASE64 — base64-Encode der google-services.json
+        #   aus Firebase Console → Project Settings → Android App (com.myapp.mobile)
+        #
+        # Ohne Secret: Step überspringt, Gradle-Plugin wird nicht angewandt,
+        # App läuft ohne FCM (nur In-App-Polling bei offener App).
+        if: ${{ env.GOOGLE_SERVICES_JSON_BASE64 != '' }}
+        env:
+          GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
+        run: |
+          echo "$GOOGLE_SERVICES_JSON_BASE64" | base64 --decode > android/app/google-services.json
+          if jq -e .project_info.project_id android/app/google-services.json >/dev/null; then
+            PROJECT_ID=$(jq -r .project_info.project_id android/app/google-services.json)
+            echo "✅ google-services.json injiziert (project=$PROJECT_ID)"
+          else
+            echo "❌ google-services.json ist kein gültiges JSON"
+            rm -f android/app/google-services.json
+            exit 1
+          fi
+
       - name: 📋 Version lesen
         id: version
         run: |

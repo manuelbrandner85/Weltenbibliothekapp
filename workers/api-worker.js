@@ -100,7 +100,230 @@ async function countFromSupabase(env, table, filters = '') {
   return isNaN(total) ? 0 : total;
 }
 
+// ═══════════════════════════════════════════════════════════════
+// 🔔 FCM PUSH DISPATCH (HTTP v1 API)
+// ═══════════════════════════════════════════════════════════════
+// Sendet Supabase `notification_queue`-Zeilen via Firebase Cloud Messaging.
+// Wird vom POST /api/push/dispatch Endpoint und vom Cron-Trigger aufgerufen.
+//
+// Voraussetzung (eine der drei Secrets gesetzt):
+//   FCM_SERVICE_ACCOUNT  (JSON-String des Firebase Service Account)
+// Ohne Secret: Queue-Zeilen werden nur als 'sent' markiert (Client-Polling).
+// ───────────────────────────────────────────────────────────────
+
+function base64UrlEncode(data) {
+  let str;
+  if (data instanceof ArrayBuffer) {
+    str = btoa(String.fromCharCode(...new Uint8Array(data)));
+  } else if (typeof data === 'string') {
+    str = btoa(data);
+  } else {
+    str = btoa(String.fromCharCode(...new Uint8Array(data)));
+  }
+  return str.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+}
+
+function pemToArrayBuffer(pem) {
+  const b64 = pem
+    .replace(/-----BEGIN [^-]+-----/g, '')
+    .replace(/-----END [^-]+-----/g, '')
+    .replace(/\s+/g, '');
+  const raw = atob(b64);
+  const buf = new ArrayBuffer(raw.length);
+  const view = new Uint8Array(buf);
+  for (let i = 0; i < raw.length; i++) view[i] = raw.charCodeAt(i);
+  return buf;
+}
+
+async function getFcmAccessToken(env) {
+  const raw = env.FCM_SERVICE_ACCOUNT;
+  if (!raw) return null;
+  let sa;
+  try {
+    sa = typeof raw === 'string' ? JSON.parse(raw) : raw;
+  } catch (e) {
+    throw new Error(`FCM_SERVICE_ACCOUNT ist kein gültiges JSON: ${e.message}`);
+  }
+  if (!sa.client_email || !sa.private_key || !sa.project_id) {
+    throw new Error('FCM_SERVICE_ACCOUNT fehlt client_email/private_key/project_id');
+  }
+  const now = Math.floor(Date.now() / 1000);
+  const header = { alg: 'RS256', typ: 'JWT' };
+  const claim = {
+    iss: sa.client_email,
+    scope: 'https://www.googleapis.com/auth/firebase.messaging',
+    aud: 'https://oauth2.googleapis.com/token',
+    exp: now + 3600,
+    iat: now,
+  };
+  const encHeader = base64UrlEncode(JSON.stringify(header));
+  const encClaim = base64UrlEncode(JSON.stringify(claim));
+  const toSign = `${encHeader}.${encClaim}`;
+
+  const keyBuf = pemToArrayBuffer(sa.private_key);
+  const key = await crypto.subtle.importKey(
+    'pkcs8',
+    keyBuf,
+    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+  const sigBuf = await crypto.subtle.sign(
+    'RSASSA-PKCS1-v1_5',
+    key,
+    new TextEncoder().encode(toSign)
+  );
+  const jwt = `${toSign}.${base64UrlEncode(sigBuf)}`;
+
+  const res = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+      assertion: jwt,
+    }).toString(),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.access_token) {
+    throw new Error(`FCM OAuth-Token-Fehler: ${res.status} ${JSON.stringify(data)}`);
+  }
+  return { accessToken: data.access_token, projectId: sa.project_id };
+}
+
+async function sendFcmMessage(accessToken, projectId, token, title, body, data) {
+  const payload = {
+    message: {
+      token,
+      notification: { title, body },
+      data: Object.fromEntries(
+        Object.entries(data || {}).map(([k, v]) => [k, String(v)])
+      ),
+      android: {
+        priority: 'high',
+        notification: { channel_id: 'weltenbibliothek_push', sound: 'default' },
+      },
+      apns: {
+        payload: { aps: { sound: 'default', 'content-available': 1 } },
+      },
+    },
+  };
+  const res = await fetch(
+    `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`,
+    {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    }
+  );
+  const respText = await res.text();
+  return { ok: res.ok, status: res.status, body: respText };
+}
+
+async function dispatchPushQueue(env, pushAuth) {
+  // 1. Pending-Zeilen laden (bis 100 pro Lauf)
+  const fetchRes = await fetch(
+    `${SUPABASE_URL}/rest/v1/notification_queue?status=eq.pending&select=id,user_id,title,body,data,attempts&order=created_at.asc&limit=100`,
+    { headers: pushAuth }
+  );
+  const rows = await fetchRes.json().catch(() => []);
+  const list = Array.isArray(rows) ? rows : [];
+  if (list.length === 0) return { drained: 0, sent: 0, failed: 0 };
+
+  // 2. FCM-Access-Token holen (oder null → nur als 'sent' markieren)
+  let fcm = null;
+  try {
+    fcm = await getFcmAccessToken(env);
+  } catch (e) {
+    console.error('FCM auth failed:', e.message);
+  }
+
+  // 3. Für jede Queue-Zeile: tokens des Users laden und senden
+  let sent = 0;
+  let failed = 0;
+  for (const row of list) {
+    let deliveryOk = false;
+    if (fcm) {
+      const subsRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/push_subscriptions?user_id=eq.${row.user_id}&is_active=eq.true&fcm_token=not.is.null&select=fcm_token`,
+        { headers: pushAuth }
+      );
+      const subs = await subsRes.json().catch(() => []);
+      const tokens = (Array.isArray(subs) ? subs : [])
+        .map(s => s.fcm_token)
+        .filter(Boolean);
+      for (const token of tokens) {
+        try {
+          const r = await sendFcmMessage(
+            fcm.accessToken,
+            fcm.projectId,
+            token,
+            row.title,
+            row.body,
+            row.data || {}
+          );
+          if (r.ok) {
+            deliveryOk = true;
+          } else if (r.status === 404 || r.status === 410) {
+            // Token invalid / unregistered → deaktivieren
+            await fetch(
+              `${SUPABASE_URL}/rest/v1/push_subscriptions?fcm_token=eq.${encodeURIComponent(token)}`,
+              {
+                method: 'PATCH',
+                headers: { ...pushAuth, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ is_active: false }),
+              }
+            );
+          }
+        } catch (e) {
+          console.error('FCM send error:', e.message);
+        }
+      }
+    }
+
+    // 4. Queue-Zeile markieren: 'sent' wenn Delivery ok ODER kein FCM konfiguriert
+    //    (Client-Polling holt sie sich dann), sonst 'failed' mit attempts++
+    const newStatus = deliveryOk || !fcm ? 'sent' : 'failed';
+    await fetch(
+      `${SUPABASE_URL}/rest/v1/notification_queue?id=eq.${row.id}`,
+      {
+        method: 'PATCH',
+        headers: { ...pushAuth, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status: newStatus,
+          processed_at: new Date().toISOString(),
+          attempts: (row.attempts || 0) + 1,
+        }),
+      }
+    );
+    if (newStatus === 'sent') sent++; else failed++;
+  }
+
+  return { drained: list.length, sent, failed, fcmEnabled: !!fcm };
+}
+
 export default {
+  // ⏰ Cron-Trigger — ruft den Dispatcher einmal pro Minute auf.
+  async scheduled(event, env, ctx) {
+    const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || '';
+    if (!serviceKey) {
+      console.error('cron skip: SUPABASE_SERVICE_ROLE_KEY fehlt');
+      return;
+    }
+    const pushAuth = {
+      'apikey': serviceKey,
+      'Authorization': `Bearer ${serviceKey}`,
+    };
+    try {
+      const result = await dispatchPushQueue(env, pushAuth);
+      console.log('cron dispatch ok:', JSON.stringify(result));
+    } catch (e) {
+      console.error('cron dispatch failed:', e.message);
+    }
+  },
+
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const path = url.pathname;
@@ -866,10 +1089,124 @@ export default {
     }
 
     // ── Push-Notifications (/api/push/* und /api/v2/push/*) ──
+    // Real Supabase-backed implementation:
+    //   POST /api/push/subscribe   → upsert push_subscriptions row
+    //   POST /api/push/unsubscribe → mark subscription inactive
+    //   GET  /api/push/pending?user_id=UUID → fetch+mark pending notification_queue rows
+    //   POST /api/push/dispatch    → drain notification_queue, mark status (cron-callable)
+    // Legacy NoOp paths (/stats, /settings, /send, /schedule, /topics/*, /register) keep
+    // returning success so old clients don't break.
     if (path.startsWith('/api/push/') || path.startsWith('/api/v2/push/')) {
-      // Alle Push-Calls werden als Success beantwortet (NoOp wenn kein Push-Backend)
+      const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || '';
+      const anonKey = env.SUPABASE_ANON_KEY || '';
+      const pushAuth = serviceKey
+        ? { 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}` }
+        : { 'apikey': anonKey, 'Authorization': `Bearer ${anonKey}` };
+
+      // POST /api/push/subscribe
+      if (method === 'POST' && (path.endsWith('/subscribe') || path.endsWith('/register'))) {
+        const userId = body?.user_id || body?.userId;
+        if (!userId) return errorResponse('user_id required', 400);
+        const row = {
+          user_id: userId,
+          endpoint: body?.endpoint || body?.fcm_token || `local-${userId}`,
+          p256dh: body?.keys?.p256dh || '',
+          auth_key: body?.keys?.auth || '',
+          platform: body?.platform || 'android',
+          fcm_token: body?.fcm_token || null,
+          device_info: body?.device_info || {},
+          is_active: true,
+          updated_at: new Date().toISOString(),
+        };
+        try {
+          const res = await fetch(
+            `${SUPABASE_URL}/rest/v1/push_subscriptions?on_conflict=user_id,endpoint`,
+            {
+              method: 'POST',
+              headers: {
+                ...pushAuth,
+                'Content-Type': 'application/json',
+                'Prefer': 'resolution=merge-duplicates,return=representation',
+              },
+              body: JSON.stringify(row),
+            }
+          );
+          const data = await res.json().catch(() => ({}));
+          return jsonResponse({ success: res.ok, subscription: Array.isArray(data) ? data[0] : data }, res.ok ? 201 : 500);
+        } catch (e) {
+          return errorResponse(`Subscribe failed: ${e.message}`);
+        }
+      }
+
+      // POST /api/push/unsubscribe  oder  DELETE /api/push/unsubscribe/:userId
+      if ((method === 'POST' && path.endsWith('/unsubscribe')) ||
+          (method === 'DELETE' && path.includes('/unsubscribe/'))) {
+        const userId = body?.user_id || body?.userId || path.split('/').pop();
+        if (!userId) return errorResponse('user_id required', 400);
+        try {
+          const res = await fetch(
+            `${SUPABASE_URL}/rest/v1/push_subscriptions?user_id=eq.${userId}`,
+            {
+              method: 'PATCH',
+              headers: { ...pushAuth, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ is_active: false, updated_at: new Date().toISOString() }),
+            }
+          );
+          return jsonResponse({ success: res.ok });
+        } catch (e) {
+          return errorResponse(`Unsubscribe failed: ${e.message}`);
+        }
+      }
+
+      // GET /api/push/pending?user_id=UUID → returns pending + marks them 'sent'
+      // Used by the mobile client while the app is open to drain queued notifications.
+      if (method === 'GET' && path.includes('/pending')) {
+        const userId = url.searchParams.get('user_id') || path.split('/').pop();
+        if (!userId || userId === 'pending') {
+          return jsonResponse({ notifications: [], count: 0 });
+        }
+        try {
+          const fetchRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/notification_queue?user_id=eq.${userId}&status=eq.pending&select=*&order=created_at.asc&limit=50`,
+            { headers: pushAuth }
+          );
+          const rows = await fetchRes.json().catch(() => []);
+          const list = Array.isArray(rows) ? rows : [];
+          if (list.length > 0 && serviceKey) {
+            const ids = list.map(r => r.id);
+            await fetch(
+              `${SUPABASE_URL}/rest/v1/notification_queue?id=in.(${ids.join(',')})`,
+              {
+                method: 'PATCH',
+                headers: { ...pushAuth, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: 'sent', processed_at: new Date().toISOString() }),
+              }
+            );
+          }
+          return jsonResponse({ notifications: list, count: list.length });
+        } catch (e) {
+          return errorResponse(`Pending fetch failed: ${e.message}`);
+        }
+      }
+
+      // POST /api/push/dispatch → drains notification_queue; callable by cron.
+      // Sendet FCM-Push an alle aktiven fcm_token-Subscriptions des User und
+      // markiert Queue-Zeilen als 'sent' (oder 'failed' wenn FCM-Call erfolglos).
+      // Ohne `FCM_SERVICE_ACCOUNT` Secret fällt der Handler auf "mark as sent"
+      // zurück (Client-Polling bleibt funktionsfähig).
+      if (method === 'POST' && path.endsWith('/dispatch')) {
+        if (!serviceKey) return errorResponse('SERVICE_ROLE_KEY required', 500);
+        try {
+          const result = await dispatchPushQueue(env, pushAuth);
+          return jsonResponse({ success: true, ...result });
+        } catch (e) {
+          return errorResponse(`Dispatch failed: ${e.message}`);
+        }
+      }
+
+      // Legacy NoOp fallbacks (keep old clients working)
       if (method === 'POST') {
-        return jsonResponse({ success: true, message: 'Push registriert (NoOp)' });
+        return jsonResponse({ success: true, message: 'Push ok' });
       }
       if (method === 'GET') {
         if (path.includes('/stats')) {
@@ -877,9 +1214,6 @@ export default {
         }
         if (path.includes('/settings')) {
           return jsonResponse({ enabled: true, rooms: [], topics: [] });
-        }
-        if (path.includes('/pending')) {
-          return jsonResponse({ notifications: [], count: 0 });
         }
         return jsonResponse({ status: 'ok' });
       }
