@@ -1344,6 +1344,22 @@ export default {
         'Authorization': `Bearer ${svcKey}`,
       };
 
+      // Helper: Notification in beiden Tabellen speichern (In-App + FCM-Queue)
+      const pushNotif = async (userId, type, title, body, data = {}) => {
+        if (!userId || !svcKey) return;
+        const h = svcHeaders;
+        await Promise.all([
+          fetch(`${SUPABASE_URL}/rest/v1/notifications`, {
+            method: 'POST', headers: { ...h, 'Prefer': 'return=minimal' },
+            body: JSON.stringify({ user_id: userId, type, title, body, data }),
+          }),
+          fetch(`${SUPABASE_URL}/rest/v1/notification_queue`, {
+            method: 'POST', headers: { ...h, 'Prefer': 'return=minimal' },
+            body: JSON.stringify({ user_id: userId, title, body, data }),
+          }),
+        ]).catch(() => {});
+      };
+
       // ── GET /api/admin/content/:world ───────────────────────
       if (method === 'GET' && path.includes('/content/')) {
         try {
@@ -1522,8 +1538,12 @@ export default {
             method: 'PATCH', headers: { ...svcHeaders, 'Prefer': 'return=representation' },
             body: JSON.stringify({ role: 'admin' }),
           });
-          const ok = res.ok;
-          return jsonResponse({ success: ok, message: ok ? 'User zu Admin befördert' : 'Fehler beim Befördern' });
+          if (res.ok) {
+            await pushNotif(userId, 'system', '🌟 Du bist jetzt Admin!',
+              'Ein Administrator hat dich befördert. Du hast jetzt erweiterte Rechte.',
+              { type: 'promoted', new_role: 'admin' });
+          }
+          return jsonResponse({ success: res.ok, message: res.ok ? 'User zu Admin befördert' : 'Fehler beim Befördern' });
         } catch (e) { return errorResponse(`Promote-Fehler: ${e.message}`); }
       }
 
@@ -1536,8 +1556,12 @@ export default {
             method: 'PATCH', headers: { ...svcHeaders, 'Prefer': 'return=representation' },
             body: JSON.stringify({ role: 'user' }),
           });
-          const ok = res.ok;
-          return jsonResponse({ success: ok, message: ok ? 'Admin zu User degradiert' : 'Fehler beim Degradieren' });
+          if (res.ok) {
+            await pushNotif(userId, 'system', 'ℹ️ Rollenänderung',
+              'Deine Admin-Rechte wurden angepasst.',
+              { type: 'demoted', new_role: 'user' });
+          }
+          return jsonResponse({ success: res.ok, message: res.ok ? 'Admin zu User degradiert' : 'Fehler beim Degradieren' });
         } catch (e) { return errorResponse(`Demote-Fehler: ${e.message}`); }
       }
 
@@ -1563,6 +1587,11 @@ export default {
             method: 'PATCH', headers: svcHeaders,
             body: JSON.stringify({ is_banned: true }),
           });
+          if (res.ok) {
+            await pushNotif(userId, 'system', '🚫 Konto gesperrt',
+              'Dein Konto wurde von einem Administrator gesperrt.',
+              { type: 'banned' });
+          }
           return jsonResponse({ success: res.ok, action: 'banned' });
         } catch (e) { return errorResponse(`Ban-Fehler: ${e.message}`); }
       }
@@ -1575,6 +1604,11 @@ export default {
             method: 'PATCH', headers: svcHeaders,
             body: JSON.stringify({ is_banned: false }),
           });
+          if (res.ok) {
+            await pushNotif(userId, 'system', '✅ Sperre aufgehoben',
+              'Deine Kontosperre wurde von einem Administrator aufgehoben.',
+              { type: 'unbanned' });
+          }
           return jsonResponse({ success: res.ok, action: 'unbanned' });
         } catch (e) { return errorResponse(`Unban-Fehler: ${e.message}`); }
       }
@@ -2109,6 +2143,13 @@ export default {
           const isUUID = userId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);
 
           if (roomId) {
+            // Count active participants BEFORE this join to detect "first joiner"
+            const countRes = await fetch(
+              `${SUPABASE_URL}/rest/v1/voice_participants?room_id=eq.${roomId}&is_active=eq.true&select=id&limit=1`,
+              { headers: { 'Content-Type': 'application/json', 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}`, 'Prefer': 'count=exact' } }
+            );
+            const prevCount = parseInt(countRes.headers.get('content-range')?.split('/')[1] || '1', 10);
+
             const upsertBody = {
               room_id:    roomId,
               user_id:    isUUID ? userId : null,
@@ -2128,6 +2169,32 @@ export default {
               },
               body: JSON.stringify(upsertBody),
             });
+
+            // Notify world subscribers when room goes from 0 → 1 participant
+            if (prevCount === 0) {
+              const world = body.world || (roomId.startsWith('energie') ? 'energie' : 'materie');
+              const worldLabel = world === 'energie' ? 'Energie' : 'Materie';
+              // Fetch all active push subscribers for this world (excluding the joiner)
+              const subsRes = await fetch(
+                `${SUPABASE_URL}/rest/v1/push_subscriptions?is_active=eq.true&select=user_id`,
+                { headers: { 'Content-Type': 'application/json', 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}` } }
+              );
+              const subs = await subsRes.json().catch(() => []);
+              if (Array.isArray(subs)) {
+                const notifyTitle = `🎙️ Voice-Raum geöffnet · ${worldLabel}`;
+                const notifyBody  = `${username} hat einen Voice-Raum gestartet. Tritt jetzt bei!`;
+                const notifyData  = { type: 'voice_started', room_id: roomId, world, starter: username };
+                await Promise.all(
+                  subs
+                    .filter(s => s.user_id && s.user_id !== (isUUID ? userId : null))
+                    .map(s => fetch(`${SUPABASE_URL}/rest/v1/notification_queue`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json', 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}`, 'Prefer': 'return=minimal' },
+                      body: JSON.stringify({ user_id: s.user_id, title: notifyTitle, body: notifyBody, data: notifyData }),
+                    }))
+                );
+              }
+            }
           }
           return jsonResponse({ success: true, action: 'join', roomId });
         } catch (e) {

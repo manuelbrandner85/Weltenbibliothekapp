@@ -13,6 +13,7 @@ import '../../services/chat/recent_rooms_service.dart';
 import '../shared/bookmarks_screen.dart';
 import '../shared/stats_dashboard_screen.dart';
 import '../shared/notification_center_screen.dart';
+import '../../services/world_subscription_service.dart';
 import 'spirit_tab_modern.dart';
 import 'calculators/chakra_calculator_screen.dart';
 
@@ -53,6 +54,8 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
   List<Map<String, dynamic>> _latestArticles = [];
   List<Map<String, dynamic>> _trending = [];
   int _notifs = 0;
+  bool _worldSubscribed = false;
+  final _worldSubSvc = WorldSubscriptionService();
   final _scrollCtrl = ScrollController();
   double _scrollOffset = 0;
   Timer? _liveTimer;
@@ -88,6 +91,7 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
       setState(() => _scrollOffset = _scrollCtrl.offset);
     });
     _loadAll();
+    _loadWorldSubscription();
     _startLive();
   }
 
@@ -214,6 +218,26 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
 
     _liveTimer = Timer.periodic(const Duration(minutes: 5),
         (_) { if (mounted) _loadAll(); });
+  }
+
+  Future<void> _loadWorldSubscription() async {
+    final subscribed = await _worldSubSvc.isSubscribed('energie');
+    if (mounted) setState(() => _worldSubscribed = subscribed);
+  }
+
+  Future<void> _toggleWorldSubscription() async {
+    final newState = await _worldSubSvc.toggle('energie');
+    if (mounted) {
+      setState(() => _worldSubscribed = newState);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(newState
+            ? '🔔 Artikel-Benachrichtigungen aktiviert'
+            : '🔕 Artikel-Benachrichtigungen deaktiviert'),
+        duration: const Duration(seconds: 2),
+        backgroundColor:
+            newState ? const Color(0xFF7C4DFF) : Colors.grey[800],
+      ));
+    }
   }
 
   Future<void> _refreshNotifCount() async {
@@ -371,6 +395,8 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
                           _buildAuraOrb(),
                           const SizedBox(width: 14),
                           Expanded(child: _buildGreetingText()),
+                          _buildArticleAlertToggle(),
+                          const SizedBox(width: 8),
                           _buildNotifBell(),
                         ],
                       ),
@@ -468,6 +494,38 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
               style: TextStyle(color: Colors.white38, fontSize: 11)),
         ]),
       ],
+    );
+  }
+
+  Widget _buildArticleAlertToggle() {
+    return Tooltip(
+      message: _worldSubscribed
+          ? 'Artikel-Alerts deaktivieren'
+          : 'Artikel-Alerts aktivieren',
+      child: GestureDetector(
+        onTap: _toggleWorldSubscription,
+        child: Container(
+          width: 44, height: 44,
+          decoration: BoxDecoration(
+            color: _worldSubscribed
+                ? _purple.withValues(alpha: 0.2)
+                : Colors.white.withValues(alpha: 0.07),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: _worldSubscribed
+                  ? _purple.withValues(alpha: 0.6)
+                  : Colors.white.withValues(alpha: 0.12),
+            ),
+          ),
+          child: Icon(
+            _worldSubscribed
+                ? Icons.newspaper
+                : Icons.newspaper_outlined,
+            color: _worldSubscribed ? _purple : Colors.white60,
+            size: 20,
+          ),
+        ),
+      ),
     );
   }
 

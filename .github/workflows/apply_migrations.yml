@@ -76,5 +76,8 @@ jobs:
           run_sql "v40 drop_duplicate_chat_trigger" \
             supabase/migrations/20260420_v40_drop_duplicate_chat_trigger.sql
 
+          run_sql "v41 complete_notifications" \
+            supabase/migrations/20260421_v41_complete_notifications.sql
+
           echo ""
           echo "🎉 Alle Migrationen erfolgreich angewendet"
