@@ -2015,13 +2015,14 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
 
   // 📜 Scroll to bottom helper (unconditional — für Send-Action & Room-Wechsel)
   void _scrollToBottom() {
-    if (_scrollController.hasClients) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.hasClients) return;
       _scrollController.animateTo(
         _scrollController.position.maxScrollExtent,
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOut,
       );
-    }
+    });
     if (mounted) {
       setState(() {
         _isAtBottom = true;

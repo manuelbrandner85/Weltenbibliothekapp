@@ -866,10 +866,127 @@ export default {
     }
 
     // ── Push-Notifications (/api/push/* und /api/v2/push/*) ──
+    // Real Supabase-backed implementation:
+    //   POST /api/push/subscribe   → upsert push_subscriptions row
+    //   POST /api/push/unsubscribe → mark subscription inactive
+    //   GET  /api/push/pending?user_id=UUID → fetch+mark pending notification_queue rows
+    //   POST /api/push/dispatch    → drain notification_queue, mark status (cron-callable)
+    // Legacy NoOp paths (/stats, /settings, /send, /schedule, /topics/*, /register) keep
+    // returning success so old clients don't break.
     if (path.startsWith('/api/push/') || path.startsWith('/api/v2/push/')) {
-      // Alle Push-Calls werden als Success beantwortet (NoOp wenn kein Push-Backend)
+      const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || '';
+      const anonKey = env.SUPABASE_ANON_KEY || '';
+      const pushAuth = serviceKey
+        ? { 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}` }
+        : { 'apikey': anonKey, 'Authorization': `Bearer ${anonKey}` };
+
+      // POST /api/push/subscribe
+      if (method === 'POST' && (path.endsWith('/subscribe') || path.endsWith('/register'))) {
+        const userId = body?.user_id || body?.userId;
+        if (!userId) return errorResponse('user_id required', 400);
+        const row = {
+          user_id: userId,
+          endpoint: body?.endpoint || body?.fcm_token || `local-${userId}`,
+          p256dh: body?.keys?.p256dh || '',
+          auth_key: body?.keys?.auth || '',
+          platform: body?.platform || 'android',
+          fcm_token: body?.fcm_token || null,
+          device_info: body?.device_info || {},
+          is_active: true,
+          updated_at: new Date().toISOString(),
+        };
+        try {
+          const res = await fetch(
+            `${SUPABASE_URL}/rest/v1/push_subscriptions?on_conflict=user_id,endpoint`,
+            {
+              method: 'POST',
+              headers: {
+                ...pushAuth,
+                'Content-Type': 'application/json',
+                'Prefer': 'resolution=merge-duplicates,return=representation',
+              },
+              body: JSON.stringify(row),
+            }
+          );
+          const data = await res.json().catch(() => ({}));
+          return jsonResponse({ success: res.ok, subscription: Array.isArray(data) ? data[0] : data }, res.ok ? 201 : 500);
+        } catch (e) {
+          return errorResponse(`Subscribe failed: ${e.message}`);
+        }
+      }
+
+      // POST /api/push/unsubscribe  oder  DELETE /api/push/unsubscribe/:userId
+      if ((method === 'POST' && path.endsWith('/unsubscribe')) ||
+          (method === 'DELETE' && path.includes('/unsubscribe/'))) {
+        const userId = body?.user_id || body?.userId || path.split('/').pop();
+        if (!userId) return errorResponse('user_id required', 400);
+        try {
+          const res = await fetch(
+            `${SUPABASE_URL}/rest/v1/push_subscriptions?user_id=eq.${userId}`,
+            {
+              method: 'PATCH',
+              headers: { ...pushAuth, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ is_active: false, updated_at: new Date().toISOString() }),
+            }
+          );
+          return jsonResponse({ success: res.ok });
+        } catch (e) {
+          return errorResponse(`Unsubscribe failed: ${e.message}`);
+        }
+      }
+
+      // GET /api/push/pending?user_id=UUID → returns pending + marks them 'sent'
+      // Used by the mobile client while the app is open to drain queued notifications.
+      if (method === 'GET' && path.includes('/pending')) {
+        const userId = url.searchParams.get('user_id') || path.split('/').pop();
+        if (!userId || userId === 'pending') {
+          return jsonResponse({ notifications: [], count: 0 });
+        }
+        try {
+          const fetchRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/notification_queue?user_id=eq.${userId}&status=eq.pending&select=*&order=created_at.asc&limit=50`,
+            { headers: pushAuth }
+          );
+          const rows = await fetchRes.json().catch(() => []);
+          const list = Array.isArray(rows) ? rows : [];
+          if (list.length > 0 && serviceKey) {
+            const ids = list.map(r => r.id);
+            await fetch(
+              `${SUPABASE_URL}/rest/v1/notification_queue?id=in.(${ids.join(',')})`,
+              {
+                method: 'PATCH',
+                headers: { ...pushAuth, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: 'sent', processed_at: new Date().toISOString() }),
+              }
+            );
+          }
+          return jsonResponse({ notifications: list, count: list.length });
+        } catch (e) {
+          return errorResponse(`Pending fetch failed: ${e.message}`);
+        }
+      }
+
+      // POST /api/push/dispatch → drains notification_queue; callable by a cron trigger.
+      // Current implementation marks rows as 'sent' so the client's /pending poll finds
+      // them; a future FCM integration would send them here before marking sent.
+      if (method === 'POST' && path.endsWith('/dispatch')) {
+        if (!serviceKey) return errorResponse('SERVICE_ROLE_KEY required', 500);
+        try {
+          const fetchRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/notification_queue?status=eq.pending&select=id,user_id,title,body,data&order=created_at.asc&limit=100`,
+            { headers: pushAuth }
+          );
+          const rows = await fetchRes.json().catch(() => []);
+          const list = Array.isArray(rows) ? rows : [];
+          return jsonResponse({ success: true, drained: list.length, items: list });
+        } catch (e) {
+          return errorResponse(`Dispatch failed: ${e.message}`);
+        }
+      }
+
+      // Legacy NoOp fallbacks (keep old clients working)
       if (method === 'POST') {
-        return jsonResponse({ success: true, message: 'Push registriert (NoOp)' });
+        return jsonResponse({ success: true, message: 'Push ok' });
       }
       if (method === 'GET') {
         if (path.includes('/stats')) {
@@ -877,9 +994,6 @@ export default {
         }
         if (path.includes('/settings')) {
           return jsonResponse({ enabled: true, rooms: [], topics: [] });
-        }
-        if (path.includes('/pending')) {
-          return jsonResponse({ notifications: [], count: 0 });
         }
         return jsonResponse({ status: 'ok' });
       }

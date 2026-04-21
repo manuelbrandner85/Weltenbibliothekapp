@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 // ✅ FÜR kDebugMode
 import 'package:flutter/services.dart';
@@ -44,7 +45,12 @@ import 'widgets/achievement_unlock_dialog.dart';  // 🏆 Achievement UI
 import 'utils/error_boundary.dart';  // 🛡️ Error Boundary
 import 'services/supabase_service.dart';  // 🟢 SUPABASE: Auth + Chat + Community
 import 'services/profile_restore_service.dart'; // 🔄 PROFIL-WIEDERHERSTELLUNG
+import 'services/push_notification_manager.dart'; // 🔔 PUSH NOTIFICATIONS (in-app)
 import 'widgets/update_gate.dart'; // 🔔 In-App Update-Meldungen (Release + OTA-Patch)
+
+/// Global navigator key — needed by PushNotificationManager to deep-link into
+/// routes from outside the widget tree (notification tap).
+final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -78,6 +84,22 @@ void main() async {
   
   // 📡 OFFLINE SYNC - Initialize (NEW Phase 3)
   await OfflineSyncService().initialize();
+
+  // 🔔 PUSH NOTIFICATION MANAGER - Auto-Register + in-app polling
+  // (fire-and-forget; init itself is awaitable but non-critical)
+  unawaited(PushNotificationManager.instance.init(
+    onDeepLink: (data) {
+      final nav = appNavigatorKey.currentState;
+      if (nav == null) return;
+      final route = data['route']?.toString();
+      final roomId = data['room_id']?.toString() ?? data['roomId']?.toString();
+      if (route != null && route.isNotEmpty) {
+        nav.pushNamed(route);
+      } else if (roomId != null && roomId.startsWith('energie-')) {
+        nav.pushNamed('/dashboard');
+      }
+    },
+  ));
   
   // ═══════════════════════════════════════════════════════════
   // MOBILE SYSTEM UI OPTIMIERUNGEN (SYNC - SCHNELL)
@@ -247,6 +269,7 @@ class _WeltenbibliothekAppState extends State<WeltenbibliothekApp> {
         return MaterialApp(
           title: 'Dual Realms - Deep Research',
           debugShowCheckedModeBanner: false,
+          navigatorKey: appNavigatorKey,
           
           // 🌗 THEME: Dark/Light via ThemeService (Toggle in Profil-Settings)
           themeMode: themeService.themeMode,
