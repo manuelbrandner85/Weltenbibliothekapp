@@ -224,69 +224,68 @@ async function sendFcmMessage(accessToken, projectId, token, title, body, data) 
 }
 
 async function dispatchPushQueue(env, pushAuth) {
-  // 1. Pending-Zeilen laden (bis 100 pro Lauf)
-  const fetchRes = await fetch(
-    `${SUPABASE_URL}/rest/v1/notification_queue?status=eq.pending&select=id,user_id,title,body,data,attempts&order=created_at.asc&limit=100`,
-    { headers: pushAuth }
-  );
-  const rows = await fetchRes.json().catch(() => []);
-  const list = Array.isArray(rows) ? rows : [];
-  if (list.length === 0) return { drained: 0, sent: 0, failed: 0 };
-
-  // 2. FCM-Access-Token holen (oder null → nur als 'sent' markieren)
+  // 1. FCM-Access-Token holen — ZUERST, bevor Queue gelesen wird.
+  //    Wenn FCM nicht konfiguriert ist: Queue NICHT anfassen → Items bleiben 'pending'
+  //    für In-App-Polling (30s-Zyklus). Damit gehen keine Nachrichten verloren.
   let fcm = null;
   try {
     fcm = await getFcmAccessToken(env);
   } catch (e) {
-    console.error('FCM auth failed:', e.message);
+    console.warn('FCM nicht konfiguriert, Cron überspringt Queue:', e.message);
+    return { drained: 0, sent: 0, failed: 0, fcmEnabled: false, skipped: true };
   }
 
-  // 3. Für jede Queue-Zeile: tokens des Users laden und senden
+  // 2. Pending-Zeilen laden (bis 100 pro Lauf) + retrybare Failed-Items (attempts < 3)
+  const fetchRes = await fetch(
+    `${SUPABASE_URL}/rest/v1/notification_queue?or=(status.eq.pending,and(status.eq.failed,attempts.lt.3))&select=id,user_id,title,body,data,attempts&order=created_at.asc&limit=100`,
+    { headers: pushAuth }
+  );
+  const rows = await fetchRes.json().catch(() => []);
+  const list = Array.isArray(rows) ? rows : [];
+  if (list.length === 0) return { drained: 0, sent: 0, failed: 0, fcmEnabled: true };
+
+  // 3. Für jede Queue-Zeile: FCM-Tokens des Users laden und senden
   let sent = 0;
   let failed = 0;
   for (const row of list) {
     let deliveryOk = false;
-    if (fcm) {
-      const subsRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/push_subscriptions?user_id=eq.${row.user_id}&is_active=eq.true&fcm_token=not.is.null&select=fcm_token`,
-        { headers: pushAuth }
-      );
-      const subs = await subsRes.json().catch(() => []);
-      const tokens = (Array.isArray(subs) ? subs : [])
-        .map(s => s.fcm_token)
-        .filter(Boolean);
+    const subsRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/push_subscriptions?user_id=eq.${row.user_id}&is_active=eq.true&fcm_token=not.is.null&select=fcm_token`,
+      { headers: pushAuth }
+    );
+    const subs = await subsRes.json().catch(() => []);
+    const tokens = (Array.isArray(subs) ? subs : []).map(s => s.fcm_token).filter(Boolean);
+
+    if (tokens.length === 0) {
+      // Kein FCM-Token für diesen User → als 'sent' markieren (kein Gerät registriert)
+      console.warn(`push skip: user ${row.user_id} hat kein aktives fcm_token`);
+    } else {
       for (const token of tokens) {
         try {
-          const r = await sendFcmMessage(
-            fcm.accessToken,
-            fcm.projectId,
-            token,
-            row.title,
-            row.body,
-            row.data || {}
-          );
+          const r = await sendFcmMessage(fcm.accessToken, fcm.projectId, token, row.title, row.body, row.data || {});
           if (r.ok) {
             deliveryOk = true;
+            console.log(`FCM ok: user=${row.user_id}`);
           } else if (r.status === 404 || r.status === 410) {
             // Token invalid / unregistered → deaktivieren
+            console.warn(`FCM token invalid (${r.status}), deaktiviere: ${token.slice(0, 20)}…`);
             await fetch(
               `${SUPABASE_URL}/rest/v1/push_subscriptions?fcm_token=eq.${encodeURIComponent(token)}`,
-              {
-                method: 'PATCH',
-                headers: { ...pushAuth, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ is_active: false }),
-              }
+              { method: 'PATCH', headers: { ...pushAuth, 'Content-Type': 'application/json' }, body: JSON.stringify({ is_active: false }) }
             );
+          } else {
+            const errBody = await r.text().catch(() => '');
+            console.error(`FCM error ${r.status}: ${errBody}`);
           }
         } catch (e) {
-          console.error('FCM send error:', e.message);
+          console.error('FCM send exception:', e.message);
         }
       }
     }
 
-    // 4. Queue-Zeile markieren: 'sent' wenn Delivery ok ODER kein FCM konfiguriert
-    //    (Client-Polling holt sie sich dann), sonst 'failed' mit attempts++
-    const newStatus = deliveryOk || !fcm ? 'sent' : 'failed';
+    // 4. Queue-Zeile markieren: 'sent' wenn Delivery ok oder kein Token; 'failed' sonst.
+    //    Failed-Items mit attempts < 3 werden beim nächsten Cron-Lauf erneut versucht.
+    const newStatus = (deliveryOk || tokens.length === 0) ? 'sent' : 'failed';
     await fetch(
       `${SUPABASE_URL}/rest/v1/notification_queue?id=eq.${row.id}`,
       {
@@ -302,7 +301,7 @@ async function dispatchPushQueue(env, pushAuth) {
     if (newStatus === 'sent') sent++; else failed++;
   }
 
-  return { drained: list.length, sent, failed, fcmEnabled: !!fcm };
+  return { drained: list.length, sent, failed, fcmEnabled: true };
 }
 
 export default {
@@ -1231,10 +1230,6 @@ export default {
       }
 
       // POST /api/push/dispatch → drains notification_queue; callable by cron.
-      // Sendet FCM-Push an alle aktiven fcm_token-Subscriptions des User und
-      // markiert Queue-Zeilen als 'sent' (oder 'failed' wenn FCM-Call erfolglos).
-      // Ohne `FCM_SERVICE_ACCOUNT` Secret fällt der Handler auf "mark as sent"
-      // zurück (Client-Polling bleibt funktionsfähig).
       if (method === 'POST' && path.endsWith('/dispatch')) {
         if (!serviceKey) return errorResponse('SERVICE_ROLE_KEY required', 500);
         try {
@@ -1242,6 +1237,34 @@ export default {
           return jsonResponse({ success: true, ...result });
         } catch (e) {
           return errorResponse(`Dispatch failed: ${e.message}`);
+        }
+      }
+
+      // GET /api/push/debug?user_id=UUID → Diagnose-Endpunkt (kein Secret exponiert)
+      if (method === 'GET' && path.endsWith('/debug')) {
+        const userId = url.searchParams.get('user_id');
+        const fcmConfigured = !!env.FCM_SERVICE_ACCOUNT;
+        if (!userId) return jsonResponse({ fcm_configured: fcmConfigured });
+        try {
+          const [subsRes, queueRes] = await Promise.all([
+            fetch(`${SUPABASE_URL}/rest/v1/push_subscriptions?user_id=eq.${userId}&select=is_active,fcm_token,platform,updated_at`, { headers: pushAuth }),
+            fetch(`${SUPABASE_URL}/rest/v1/notification_queue?user_id=eq.${userId}&select=id,title,status,attempts,created_at&order=created_at.desc&limit=10`, { headers: pushAuth }),
+          ]);
+          const subs = await subsRes.json().catch(() => []);
+          const queue = await queueRes.json().catch(() => []);
+          const safeSubs = Array.isArray(subs) ? subs : [];
+          return jsonResponse({
+            fcm_configured: fcmConfigured,
+            subscriptions: safeSubs.map(s => ({
+              is_active: s.is_active,
+              has_fcm_token: !!s.fcm_token,
+              platform: s.platform,
+              updated_at: s.updated_at,
+            })),
+            recent_queue: Array.isArray(queue) ? queue : [],
+          });
+        } catch (e) {
+          return errorResponse(`Debug failed: ${e.message}`);
         }
       }
 
