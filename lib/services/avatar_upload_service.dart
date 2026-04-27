@@ -13,21 +13,21 @@ import '../config/api_config.dart';
 import 'dart:io';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 /// Exception mit nutzerlesbarer deutscher Fehlermeldung. Wird von
-/// [AvatarUploadService.uploadAvatar] geworfen — Caller kann den Text 1:1
-/// im Error-Dialog anzeigen.
+/// [AvatarUploadService.uploadAvatarOrThrow] geworfen — Caller kann den Text
+/// 1:1 im Error-Dialog anzeigen.
 class AvatarUploadException implements Exception {
   final String message;
   AvatarUploadException(this.message);
   @override
   String toString() => message;
 }
-import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 
 class AvatarUploadService {
   static const String _avatarKeyPrefix = 'user_avatar_';
