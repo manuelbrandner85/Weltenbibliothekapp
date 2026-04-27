@@ -305,16 +305,28 @@ class OfflineSyncService extends ChangeNotifier {
     // User-Revalidation: queued actions belong to the user who was logged in when
     // the action was queued. If a different user is logged in now, skip the action
     // instead of executing it under the wrong identity.
+    //
+    // Wichtig: Wenn aktuell KEIN User eingeloggt ist (currentUserId == null),
+    // queued action aufschieben statt durchführen — sonst geht sie unter falschem
+    // (anonymem) Identitäts-Kontext raus oder schlägt mit RLS-Deny silent fail.
     final queuedUserId = action.data['userId']?.toString() ?? action.userId;
     final currentUserId = Supabase.instance.client.auth.currentUser?.id;
-    if (queuedUserId != null &&
-        queuedUserId.isNotEmpty &&
-        currentUserId != null &&
-        currentUserId != queuedUserId) {
+
+    if (queuedUserId == null || queuedUserId.isEmpty) {
+      // Action hat keinen Owner — drop (broken queue entry).
+      if (kDebugMode) debugPrint('⚠️  OfflineSync: queued action ohne userId — drop');
+      return true;
+    }
+    if (currentUserId == null) {
+      // Niemand eingeloggt → noch nicht ausführen, bei nächstem Versuch retry.
+      if (kDebugMode) debugPrint('⏸  OfflineSync: kein currentUser → defer');
+      return false;
+    }
+    if (currentUserId != queuedUserId) {
       if (kDebugMode) {
         debugPrint('⚠️  OfflineSync: queued user $queuedUserId != current $currentUserId — skipping');
       }
-      return true; // drop from queue, don't retry
+      return true; // drop from queue, don't retry under wrong identity
     }
     try {
       switch (action.type) {
@@ -445,11 +457,29 @@ class OfflineSyncService extends ChangeNotifier {
 
   @override
   Future<void> dispose() async {
+    // Robustes Dispose: jeder Schritt einzeln gecatcht, damit ein einzelner
+    // Fehler die anderen nicht blockiert (vermeidet Stream-Controller-Leaks).
     _syncTimer?.cancel();
-    await _connectivitySubscription?.cancel();
-    await _networkStateController.close();
-    await _syncStatusController.close();
-    await _pendingActionsController.close();
+    try {
+      await _connectivitySubscription?.cancel();
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ connectivity cancel failed: $e');
+    }
+    try {
+      await _networkStateController.close();
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ networkStateController close failed: $e');
+    }
+    try {
+      await _syncStatusController.close();
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ syncStatusController close failed: $e');
+    }
+    try {
+      await _pendingActionsController.close();
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ pendingActionsController close failed: $e');
+    }
     super.dispose();
   }
 }

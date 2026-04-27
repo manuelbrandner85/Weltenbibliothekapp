@@ -127,6 +127,31 @@ class SqliteStorageService {
     _cache.removeWhere((k, _) => k.startsWith('$box\x00'));
     await _database.delete('kv_store', where: 'box = ?', whereArgs: [box]);
   }
+
+  /// Force-Refresh: lädt Cache neu aus SQLite. Schutz für den seltenen Fall
+  /// dass externe Schreibpfade (z.B. Migrations, andere Services) die DB
+  /// direkt verändern und _cache veraltet wäre. Nicht in normalen Flows nötig.
+  Future<void> refresh() async {
+    if (_db == null) return;
+    await _loadCache();
+  }
+
+  /// Selektives Cache-Reload für eine einzelne Box. Effizienter als full refresh()
+  /// wenn nur ein Bereich (z.B. Profile-Box nach Backend-Sync) refreshed werden soll.
+  Future<void> refreshBox(String box) async {
+    if (_db == null) return;
+    final rows = await _db!.query('kv_store', where: 'box = ?', whereArgs: [box]);
+    _cache.removeWhere((k, _) => k.startsWith('$box\x00'));
+    for (final r in rows) {
+      final raw = r['value'] as String?;
+      if (raw == null) continue;
+      try {
+        _cache[_ck(r['box'] as String, r['key'] as String)] = jsonDecode(raw);
+      } catch (_) {
+        _cache[_ck(r['box'] as String, r['key'] as String)] = raw;
+      }
+    }
+  }
 }
 
 /// Hive-Box-kompatibler Shim über SqliteStorageService.

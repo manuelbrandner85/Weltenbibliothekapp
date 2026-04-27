@@ -142,7 +142,9 @@ NotificationDetails _systemDetails({required String body}) {
 Future<void> fcmBackgroundHandler(RemoteMessage message) async {
   try {
     await Firebase.initializeApp();
-  } catch (_) {}
+  } catch (e) {
+    if (kDebugMode) debugPrint('⚠️ fcmBackgroundHandler Firebase.initializeApp: $e');
+  }
   if (message.notification == null) {
     final data = message.data;
     final title = data['title']?.toString() ?? 'Weltenbibliothek';
@@ -158,7 +160,9 @@ Future<void> fcmBackgroundHandler(RemoteMessage message) async {
         _notifDetailsForType(type, body),
         payload: jsonEncode(data),
       );
-    } catch (_) {}
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ fcmBackgroundHandler localPlugin.show: $e');
+    }
   }
 }
 
