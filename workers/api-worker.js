@@ -1191,6 +1191,44 @@ export default {
         }
       }
 
+      // POST /api/push/test → legt Test-Notification für user_id in notification_queue
+      // Body: { user_id, type?, title?, body? }
+      if (method === 'POST' && path.endsWith('/test')) {
+        const userId = body?.user_id;
+        if (!userId) return errorResponse('user_id required', 400);
+        if (!serviceKey) return errorResponse('SERVICE_ROLE_KEY required', 500);
+        const type = body?.type || 'chat_message';
+        const testTitle = body?.title || '🔔 Test-Benachrichtigung';
+        const testBody = body?.body || `Push-System funktioniert! Typ: ${type} · ${new Date().toLocaleTimeString('de-DE')}`;
+        try {
+          const ins = await fetch(
+            `${SUPABASE_URL}/rest/v1/notification_queue`,
+            {
+              method: 'POST',
+              headers: { ...pushAuth, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
+              body: JSON.stringify({
+                user_id: userId,
+                title: testTitle,
+                body: testBody,
+                data: { type, test: true, sent_at: new Date().toISOString() },
+                status: 'pending',
+              }),
+            }
+          );
+          const row = await ins.json().catch(() => null);
+          // Sofort dispatchen damit FCM-Push nicht auf den nächsten Cron wartet
+          if (env.AI || serviceKey) {
+            try {
+              const pushAuth2 = { 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}` };
+              await dispatchPushQueue(env, pushAuth2);
+            } catch (_) {}
+          }
+          return jsonResponse({ success: ins.ok, queued: true, row: Array.isArray(row) ? row[0] : row });
+        } catch (e) {
+          return errorResponse(`Test-Push fehlgeschlagen: ${e.message}`);
+        }
+      }
+
       // POST /api/push/dispatch → drains notification_queue; callable by cron.
       // Sendet FCM-Push an alle aktiven fcm_token-Subscriptions des User und
       // markiert Queue-Zeilen als 'sent' (oder 'failed' wenn FCM-Call erfolglos).

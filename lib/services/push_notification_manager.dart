@@ -1,25 +1,12 @@
-/// 🔔 Push Notification Manager (FCM + In-App Polling)
+/// 🔔 Push Notification Manager — High-End (FCM + In-App Polling)
 ///
-/// Koordiniert den kompletten Push-Stack der App:
-///   1. Firebase Cloud Messaging für **Background-Delivery** (App geschlossen):
-///      - initialisiert Firebase, holt FCM-Token, registriert ihn auf
-///        `push_subscriptions` via Worker `/api/push/subscribe`.
-///      - Top-Level Background-Handler `_fcmBackgroundHandler` wird vor dem
-///        `runApp()` registriert (Pflicht laut FlutterFire) und zeigt eingehende
-///        FCM-Pushes als lokale Notification.
-///      - Foreground: `FirebaseMessaging.onMessage` → lokale Notification (iOS
-///        zeigt FCM-Pushes sonst nicht an wenn App im Vordergrund).
-///   2. In-App Polling als Fallback (App offen, FCM ausgefallen oder nicht
-///      konfiguriert): alle 30s `/api/push/pending?user_id=UUID`, zeigt neue
-///      Einträge als lokale Notifications.
-///   3. Auto-Register: reagiert auf `onAuthStateChange.signedIn` und
-///      registriert die Subscription sobald ein User eingeloggt ist.
-///   4. Deep-Link: Tap auf Notification ruft `_deepLinkHandler` auf und öffnet
-///      `/chat/:world/:room` oder `/post/:id` via globalem NavigatorKey.
-///
-/// Graceful Degradation: Wenn Firebase fehlschlägt (keine google-services.json,
-/// kein Play Services, etc.), überspringen wir den FCM-Teil und polling läuft
-/// als einziger Kanal weiter — App crasht nie an fehlender Firebase-Config.
+/// High-End Features (v2):
+///   • 3 Android-Channels: wb_chat (HIGH), wb_social (DEFAULT), wb_system (LOW)
+///   • BigTextStyleInformation — voller Text im Expanded-View
+///   • Notification-Grouping per Raum (Chat) / Typ (Social)
+///   • Stabile Notification-IDs: gleicher Raum = gleicher Slot (kein Stapeln)
+///   • Zusammenfassungs-Notification wenn ≥ 2 aus gleichem Raum
+///   • FCM + 30s-Polling Fallback
 library;
 
 import 'dart:async';
@@ -35,66 +22,161 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/api_config.dart';
 
-/// Callback for deep-link navigation. Registered by the app shell after routes
-/// are set up. Receives the raw `data` map from the notification payload.
 typedef DeepLinkHandler = void Function(Map<String, dynamic> data);
 
-/// Shared local-notifications plugin instance — wird sowohl vom Manager als
-/// auch vom Top-Level FCM-Background-Handler benutzt.
 final FlutterLocalNotificationsPlugin _localPlugin =
     FlutterLocalNotificationsPlugin();
 
-const AndroidNotificationChannel _androidChannel = AndroidNotificationChannel(
-  'weltenbibliothek_push',
-  'Benachrichtigungen',
-  description: 'Chat-Nachrichten, Erwähnungen & Updates',
+// ── Notification Channels ────────────────────────────────────────────────────
+
+const _chatChannel = AndroidNotificationChannel(
+  'wb_chat',
+  'Chat & Erwähnungen',
+  description: 'Nachrichten, Antworten und @Erwähnungen',
   importance: Importance.high,
+  playSound: true,
+  enableVibration: true,
 );
 
-const NotificationDetails _notifDetails = NotificationDetails(
-  android: AndroidNotificationDetails(
-    'weltenbibliothek_push',
-    'Benachrichtigungen',
-    channelDescription: 'Chat-Nachrichten, Erwähnungen & Updates',
-    importance: Importance.high,
-    priority: Priority.high,
-  ),
-  iOS: DarwinNotificationDetails(
-    presentAlert: true,
-    presentBadge: true,
-    presentSound: true,
-  ),
+const _socialChannel = AndroidNotificationChannel(
+  'wb_social',
+  'Social',
+  description: 'Likes, Kommentare und neue Follower',
+  importance: Importance.defaultImportance,
+  playSound: true,
 );
 
-/// Top-Level Background-Handler für FCM (wird von Flutter Isolate aufgerufen
-/// wenn App geschlossen ist). MUSS eine Top-Level-Funktion sein und mit
-/// `@pragma('vm:entry-point')` annotiert, damit die AOT-Compilation sie behält.
+const _systemChannel = AndroidNotificationChannel(
+  'wb_system',
+  'System & Achievements',
+  description: 'Achievements, Updates und Systembenachrichtigungen',
+  importance: Importance.low,
+  playSound: false,
+);
+
+// ── Hilfsfunktionen für styled NotificationDetails ───────────────────────────
+
+NotificationDetails _chatDetails({
+  required String body,
+  String? groupKey,
+  String? summaryText,
+  bool isGroupSummary = false,
+}) {
+  return NotificationDetails(
+    android: AndroidNotificationDetails(
+      'wb_chat',
+      'Chat & Erwähnungen',
+      channelDescription: 'Nachrichten, Antworten und @Erwähnungen',
+      importance: Importance.high,
+      priority: Priority.high,
+      styleInformation: BigTextStyleInformation(
+        body,
+        contentTitle: null,
+        summaryText: summaryText,
+      ),
+      groupKey: groupKey,
+      setAsGroupSummary: isGroupSummary,
+      autoCancel: true,
+      enableLights: true,
+      color: const Color(0xFF7C4DFF),
+    ),
+    iOS: const DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+      threadIdentifier: 'chat',
+    ),
+  );
+}
+
+NotificationDetails _socialDetails({
+  required String body,
+  bool isGroupSummary = false,
+}) {
+  return NotificationDetails(
+    android: AndroidNotificationDetails(
+      'wb_social',
+      'Social',
+      channelDescription: 'Likes, Kommentare und neue Follower',
+      importance: Importance.defaultImportance,
+      priority: Priority.defaultPriority,
+      styleInformation: BigTextStyleInformation(body),
+      groupKey: 'wb_social_group',
+      setAsGroupSummary: isGroupSummary,
+      autoCancel: true,
+      color: const Color(0xFFE91E63),
+    ),
+    iOS: const DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: false,
+      threadIdentifier: 'social',
+    ),
+  );
+}
+
+NotificationDetails _systemDetails({required String body}) {
+  return NotificationDetails(
+    android: AndroidNotificationDetails(
+      'wb_system',
+      'System & Achievements',
+      channelDescription: 'Achievements, Updates und Systembenachrichtigungen',
+      importance: Importance.low,
+      priority: Priority.low,
+      styleInformation: BigTextStyleInformation(body),
+      autoCancel: true,
+      color: const Color(0xFFFFC107),
+    ),
+    iOS: const DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: false,
+      presentSound: false,
+      threadIdentifier: 'system',
+    ),
+  );
+}
+
+// ── FCM Background Handler (Top-Level, AOT-sicher) ───────────────────────────
+
 @pragma('vm:entry-point')
 Future<void> fcmBackgroundHandler(RemoteMessage message) async {
-  // Firebase muss im Background-Isolate erneut initialisiert werden.
   try {
     await Firebase.initializeApp();
-  } catch (_) {
-    // Already initialized or config missing — weiter versuchen.
-  }
-  // Android zeigt Notifications mit `notification`-Payload automatisch in der
-  // System-Tray an; nur wenn kein Notification-Block da ist (data-only Push)
-  // müssen wir selbst zeichnen.
+  } catch (_) {}
   if (message.notification == null) {
     final data = message.data;
     final title = data['title']?.toString() ?? 'Weltenbibliothek';
     final body = data['body']?.toString() ?? '';
-    final id = (message.messageId?.hashCode) ??
+    final id = message.messageId?.hashCode ??
         DateTime.now().millisecondsSinceEpoch.remainder(1 << 31);
+    final type = data['type']?.toString() ?? '';
     try {
-      await _localPlugin.show(id, title, body, _notifDetails,
-          payload: jsonEncode(data));
-    } catch (_) {
-      // BG isolate darf lokale Notifications ohne init kaum zeichnen;
-      // fehlt init, fällt FCM trotzdem auf Android-System-Tray zurück.
-    }
+      await _localPlugin.show(
+        id,
+        title,
+        body,
+        _notifDetailsForType(type, body),
+        payload: jsonEncode(data),
+      );
+    } catch (_) {}
   }
 }
+
+NotificationDetails _notifDetailsForType(String type, String body) {
+  switch (type) {
+    case 'chat_message':
+    case 'mention':
+    case 'reply':
+      return _chatDetails(body: body);
+    case 'achievement':
+    case 'system':
+      return _systemDetails(body: body);
+    default:
+      return _socialDetails(body: body);
+  }
+}
+
+// ── PushNotificationManager ──────────────────────────────────────────────────
 
 class PushNotificationManager with WidgetsBindingObserver {
   PushNotificationManager._();
@@ -111,6 +193,9 @@ class PushNotificationManager with WidgetsBindingObserver {
   DeepLinkHandler? _deepLinkHandler;
   final Set<String> _seenIds = <String>{};
 
+  // Gruppen-Zähler: roomId/type → Anzahl angezeigter Notifications
+  final Map<String, int> _groupCounts = {};
+
   static const Duration _pollInterval = Duration(seconds: 30);
 
   Future<void> init({DeepLinkHandler? onDeepLink}) async {
@@ -121,7 +206,6 @@ class PushNotificationManager with WidgetsBindingObserver {
     _initialized = true;
     _deepLinkHandler = onDeepLink;
 
-    // Local notifications plugin — platform channels, deep-link tap callback.
     const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosInit = DarwinInitializationSettings(
       requestAlertPermission: true,
@@ -133,23 +217,20 @@ class PushNotificationManager with WidgetsBindingObserver {
       onDidReceiveNotificationResponse: _onNotificationTap,
     );
 
-    // Android 8+ verlangt einen Notification-Channel bevor `show()` läuft.
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-      await _localPlugin
+      final impl = _localPlugin
           .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>()
-          ?.createNotificationChannel(_androidChannel);
+              AndroidFlutterLocalNotificationsPlugin>();
+      await impl?.createNotificationChannel(_chatChannel);
+      await impl?.createNotificationChannel(_socialChannel);
+      await impl?.createNotificationChannel(_systemChannel);
 
       final status = await Permission.notification.status;
-      if (status.isDenied) {
-        await Permission.notification.request();
-      }
+      if (status.isDenied) await Permission.notification.request();
     }
 
-    // Firebase (FCM) — fail-safe: App läuft weiter auch ohne Config.
     await _initFirebase();
 
-    // Immediate-register + Polling, falls bereits ein User eingeloggt ist.
     final client = Supabase.instance.client;
     if (client.auth.currentUser != null) {
       unawaited(_registerSubscription(client.auth.currentUser!.id));
@@ -167,56 +248,32 @@ class PushNotificationManager with WidgetsBindingObserver {
 
     WidgetsBinding.instance.addObserver(this);
 
-    // War die App aus einer Notification geöffnet worden? Dann Deep-Link jetzt
-    // verfolgen (getInitialMessage gibt die Message zurück, die die App
-    // gestartet hat).
-    if (_firebaseReady) {
-      unawaited(_handleInitialFcmMessage());
-    }
+    if (_firebaseReady) unawaited(_handleInitialFcmMessage());
   }
 
   Future<void> _initFirebase() async {
     try {
-      if (Firebase.apps.isEmpty) {
-        await Firebase.initializeApp();
-      }
+      if (Firebase.apps.isEmpty) await Firebase.initializeApp();
       final fcm = FirebaseMessaging.instance;
-
-      // iOS / Android 13+ Permission via FCM-Flow (zusätzlich zu
-      // permission_handler, falls auf iOS gelaufen).
-      await fcm.requestPermission(
-        alert: true,
-        badge: true,
-        sound: true,
-      );
-
-      // Wichtig für iOS: erst nach `requestPermission` kommt APNs-Token + FCM.
+      await fcm.requestPermission(alert: true, badge: true, sound: true);
       await fcm.setForegroundNotificationPresentationOptions(
-        alert: true,
-        badge: true,
-        sound: true,
+        alert: true, badge: true, sound: true,
       );
-
       _fcmForegroundSub = FirebaseMessaging.onMessage.listen(_onFcmForeground);
-      _fcmOpenedSub =
-          FirebaseMessaging.onMessageOpenedApp.listen(_onFcmOpenedApp);
+      _fcmOpenedSub = FirebaseMessaging.onMessageOpenedApp.listen(_onFcmOpenedApp);
       _fcmTokenSub = fcm.onTokenRefresh.listen((token) {
         _fcmToken = token;
         final uid = Supabase.instance.client.auth.currentUser?.id;
         if (uid != null) unawaited(_registerSubscription(uid));
       });
-
       _fcmToken = await fcm.getToken();
       _firebaseReady = _fcmToken != null;
       if (kDebugMode) {
-        debugPrint(
-            '🔔 FCM ready=${_firebaseReady} token=${_fcmToken?.substring(0, 16) ?? "null"}…');
+        debugPrint('🔔 FCM ready=$_firebaseReady token=${_fcmToken?.substring(0, 16) ?? "null"}…');
       }
     } catch (e) {
       _firebaseReady = false;
-      if (kDebugMode) {
-        debugPrint('⚠️ Firebase init skipped: $e');
-      }
+      if (kDebugMode) debugPrint('⚠️ Firebase init skipped: $e');
     }
   }
 
@@ -224,26 +281,19 @@ class PushNotificationManager with WidgetsBindingObserver {
     try {
       final msg = await FirebaseMessaging.instance.getInitialMessage();
       if (msg != null) _onFcmOpenedApp(msg);
-    } catch (_) {
-      // No-op.
-    }
+    } catch (_) {}
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    // Drain the queue immediately on resume — users expect to see new messages
-    // that piled up while the app was backgrounded.
-    if (state == AppLifecycleState.resumed) {
-      _pollOnce();
-    }
+    if (state == AppLifecycleState.resumed) _pollOnce();
   }
 
   Future<void> _registerSubscription(String userId) async {
     try {
       final payload = <String, dynamic>{
         'user_id': userId,
-        'platform':
-            defaultTargetPlatform == TargetPlatform.iOS ? 'ios' : 'android',
+        'platform': defaultTargetPlatform == TargetPlatform.iOS ? 'ios' : 'android',
       };
       if (_fcmToken != null && _fcmToken!.isNotEmpty) {
         payload['fcm_token'] = _fcmToken;
@@ -251,16 +301,13 @@ class PushNotificationManager with WidgetsBindingObserver {
       } else {
         payload['endpoint'] = 'inapp-poll-$userId';
       }
-      final res = await http
-          .post(
-            Uri.parse('${ApiConfig.workerUrl}/api/push/subscribe'),
-            headers: const {'Content-Type': 'application/json'},
-            body: json.encode(payload),
-          )
-          .timeout(const Duration(seconds: 10));
+      final res = await http.post(
+        Uri.parse('${ApiConfig.workerUrl}/api/push/subscribe'),
+        headers: const {'Content-Type': 'application/json'},
+        body: json.encode(payload),
+      ).timeout(const Duration(seconds: 10));
       if (kDebugMode) {
-        debugPrint(
-            '🔔 push subscribe → ${res.statusCode} fcm=${_fcmToken != null}');
+        debugPrint('🔔 push subscribe → ${res.statusCode} fcm=${_fcmToken != null}');
       }
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ push subscribe failed: $e');
@@ -270,7 +317,7 @@ class PushNotificationManager with WidgetsBindingObserver {
   void _startPolling() {
     _pollTimer?.cancel();
     _pollTimer = Timer.periodic(_pollInterval, (_) => _pollOnce());
-    _pollOnce(); // immediate first drain
+    _pollOnce();
   }
 
   void _stopPolling() {
@@ -301,44 +348,146 @@ class PushNotificationManager with WidgetsBindingObserver {
     }
   }
 
-  Future<void> _showLocal(Map<String, dynamic> queueItem) async {
-    final title = queueItem['title']?.toString() ?? 'Weltenbibliothek';
-    final body = queueItem['body']?.toString() ?? '';
-    final data = queueItem['data'];
-    final payload = data is Map ? json.encode(data) : null;
-    // Stable hash: queue UUID → 32-bit int
-    final stableId = queueItem['id']?.toString().hashCode ??
-        DateTime.now().millisecondsSinceEpoch.remainder(1 << 31);
+  // ── High-End Notification anzeigen ──────────────────────────────────────────
+
+  Future<void> _showLocal(Map<String, dynamic> item) async {
+    final title = item['title']?.toString() ?? 'Weltenbibliothek';
+    final body = item['body']?.toString() ?? '';
+    final dataRaw = item['data'];
+    final data = dataRaw is Map ? Map<String, dynamic>.from(dataRaw) : <String, dynamic>{};
+    final type = data['type']?.toString() ?? '';
+    final roomId = data['room_id']?.toString();
+    final payload = data.isNotEmpty ? json.encode(data) : null;
+
     try {
-      await _localPlugin.show(
-        stableId,
-        title,
-        body,
-        _notifDetails,
-        payload: payload,
-      );
+      switch (type) {
+        case 'chat_message':
+        case 'mention':
+        case 'reply':
+          await _showChatNotification(title, body, roomId, data, payload);
+          break;
+        case 'achievement':
+        case 'system':
+          await _showSystemNotification(title, body, data, payload);
+          break;
+        default:
+          await _showSocialNotification(title, body, data, payload);
+      }
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ local notif show failed: $e');
     }
   }
 
+  Future<void> _showChatNotification(
+    String title,
+    String body,
+    String? roomId,
+    Map<String, dynamic> data,
+    String? payload,
+  ) async {
+    // Stabile ID: gleicher Raum → gleicher Notification-Slot
+    final groupKey = 'wb_chat_${roomId ?? "general"}';
+    final notifId = groupKey.hashCode & 0x7FFFFFFF;
+    final count = (_groupCounts[groupKey] ?? 0) + 1;
+    _groupCounts[groupKey] = count;
+
+    // Einzelne Notification
+    await _localPlugin.show(
+      notifId,
+      title,
+      body,
+      _chatDetails(
+        body: body,
+        groupKey: groupKey,
+        summaryText: count > 1 ? '$count neue Nachrichten' : null,
+      ),
+      payload: payload,
+    );
+
+    // Gruppen-Zusammenfassung ab 2 Nachrichten (Android)
+    if (count >= 2 && !kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+      final summaryId = (groupKey + '_summary').hashCode & 0x7FFFFFFF;
+      await _localPlugin.show(
+        summaryId,
+        'Weltenbibliothek · Chat',
+        '$count neue Nachrichten',
+        _chatDetails(body: '$count neue Nachrichten', groupKey: groupKey, isGroupSummary: true),
+        payload: payload,
+      );
+    }
+  }
+
+  Future<void> _showSocialNotification(
+    String title,
+    String body,
+    Map<String, dynamic> data,
+    String? payload,
+  ) async {
+    final type = data['type']?.toString() ?? 'social';
+    final notifId = (data['article_id']?.toString() ?? type).hashCode & 0x7FFFFFFF;
+    final count = (_groupCounts['wb_social'] ?? 0) + 1;
+    _groupCounts['wb_social'] = count;
+
+    await _localPlugin.show(
+      notifId,
+      title,
+      body,
+      _socialDetails(body: body),
+      payload: payload,
+    );
+
+    if (count >= 3 && !kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+      await _localPlugin.show(
+        'wb_social_summary'.hashCode & 0x7FFFFFFF,
+        'Weltenbibliothek',
+        '$count neue Aktivitäten',
+        _socialDetails(body: '$count neue Aktivitäten', isGroupSummary: true),
+        payload: payload,
+      );
+    }
+  }
+
+  Future<void> _showSystemNotification(
+    String title,
+    String body,
+    Map<String, dynamic> data,
+    String? payload,
+  ) async {
+    final notifId = (data['achievement_id']?.toString() ?? 'system_${DateTime.now().millisecondsSinceEpoch}')
+        .hashCode & 0x7FFFFFFF;
+    await _localPlugin.show(notifId, title, body, _systemDetails(body: body), payload: payload);
+  }
+
+  // ── FCM Foreground / Opened ──────────────────────────────────────────────────
+
   void _onFcmForeground(RemoteMessage message) {
-    // FCM mit `notification`-Block rendert iOS / Android-System-Tray nicht wenn
-    // App im Vordergrund ist → immer lokal zeichnen.
     final title = message.notification?.title ??
         message.data['title']?.toString() ??
         'Weltenbibliothek';
     final body = message.notification?.body ??
         message.data['body']?.toString() ??
         '';
-    final id = message.messageId?.hashCode ??
-        DateTime.now().millisecondsSinceEpoch.remainder(1 << 31);
+    final type = message.data['type']?.toString() ?? '';
+    final roomId = message.data['room_id']?.toString();
     final payload = message.data.isNotEmpty ? jsonEncode(message.data) : null;
-    _localPlugin.show(id, title, body, _notifDetails, payload: payload);
+    final data = Map<String, dynamic>.from(message.data);
+
+    switch (type) {
+      case 'chat_message':
+      case 'mention':
+      case 'reply':
+        _showChatNotification(title, body, roomId, data, payload);
+        break;
+      case 'achievement':
+      case 'system':
+        _showSystemNotification(title, body, data, payload);
+        break;
+      default:
+        _showSocialNotification(title, body, data, payload);
+    }
   }
 
   void _onFcmOpenedApp(RemoteMessage message) {
-    // User hat eine FCM-Notification getappt und die App dadurch geöffnet.
     if (message.data.isNotEmpty) {
       _deepLinkHandler?.call(Map<String, dynamic>.from(message.data));
     }
@@ -349,9 +498,7 @@ class PushNotificationManager with WidgetsBindingObserver {
     if (payload == null || payload.isEmpty) return;
     try {
       final data = json.decode(payload);
-      if (data is Map) {
-        _deepLinkHandler?.call(Map<String, dynamic>.from(data));
-      }
+      if (data is Map) _deepLinkHandler?.call(Map<String, dynamic>.from(data));
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ notif tap payload parse failed: $e');
     }
