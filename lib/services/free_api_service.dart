@@ -298,7 +298,42 @@ class FreeApiService {
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // 11. Mondphase — Mathematische Berechnung (kein API nötig)
+  // 11. Cloudflare Workers AI — Llama 3.1 8B (via eigenem Worker)
+  // ─────────────────────────────────────────────────────────────────────────
+
+  static const _workerBase =
+      String.fromEnvironment('CLOUDFLARE_WORKER_URL',
+          defaultValue: 'https://weltenbibliothek-api.brandy13062.workers.dev');
+
+  /// Stellt eine Frage an Llama 3.1 8B via Cloudflare Workers AI.
+  /// [systemPrompt] optional; Antwort immer auf Deutsch.
+  Future<String?> fetchWorkersAI({
+    required String question,
+    String? systemPrompt,
+    int maxTokens = 400,
+  }) async {
+    final uri = Uri.parse('$_workerBase/api/ai/ask');
+    try {
+      final res = await http.post(
+        uri,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'question': question,
+          if (systemPrompt != null) 'system': systemPrompt,
+          'max_tokens': maxTokens,
+        }),
+      ).timeout(_timeout);
+      if (res.statusCode != 200) return null;
+      final data = jsonDecode(res.body) as Map<String, dynamic>;
+      return data['answer'] as String?;
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ Workers AI: $e');
+      return null;
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // 12. Mondphase — Mathematische Berechnung (kein API nötig)
   // ─────────────────────────────────────────────────────────────────────────
 
   /// Berechnet die aktuelle Mondphase (0.0–1.0, 0=Neumond, 0.5=Vollmond).

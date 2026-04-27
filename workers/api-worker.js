@@ -34,6 +34,7 @@
  *   GET  /materie/ufos              → UFO-Sichtungen
  *   GET  /api/status/*              → Status-Endpunkte
  *   GET/POST /messages/*            → Message-Reactions/Receipts
+ *   POST /api/ai/ask                → Workers AI (Llama 3.1 8B, kein API-Key)
  *   POST /api/ai/auto-tag           → Auto-Tagging
  *   POST /api/ai/recommendations    → Empfehlungen
  *   POST /api/ai/suggestions        → AI-Vorschläge
@@ -1789,6 +1790,27 @@ export default {
         } catch (e) {
           return errorResponse(`Tool-Speicher-Fehler: ${e.message}`);
         }
+      }
+    }
+
+    // ── Workers AI: Freie Frage per Llama (kein API-Key nötig) ──
+    if (path === '/api/ai/ask' && method === 'POST') {
+      if (!env.AI) return errorResponse('Workers AI nicht konfiguriert', 503);
+      try {
+        const { question, system, max_tokens } = await request.json();
+        if (!question) return errorResponse('question fehlt', 400);
+        const systemPrompt = system ||
+          'Du bist ein hilfreicher Assistent der Weltenbibliothek. Antworte präzise auf Deutsch.';
+        const res = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: question },
+          ],
+          max_tokens: Math.min(max_tokens || 400, 800),
+        });
+        return jsonResponse({ answer: res?.response || '', model: 'llama-3.1-8b-instruct' });
+      } catch (e) {
+        return errorResponse(`Workers AI Fehler: ${e.message}`);
       }
     }
 
