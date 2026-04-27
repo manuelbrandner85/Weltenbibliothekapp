@@ -539,6 +539,32 @@ chore(deps): Dependencies aktualisiert
       als Worker-Secrets und deployt automatisch bei jeder `workers/**` Änderung.
       Migration v40 entfernt den doppelten v13-Trigger. Fail-safe: ohne Firebase-Config
       fällt die App auf In-App-Polling zurück — kein Crash.
+- [x] **Komplett-Audit-Bundles 1+2A+3+4+5+6 (2026-04-27)**:
+  - **Bundle 1 — 10 Crash-Fixes** (PR #46): try-catch um Supabase-likes/bookmarks,
+    mounted-Checks in Live-Chat-Screens, OfflineSync-User-Validation-Race,
+    ArticleLikeButton Memory-Cache-Initial-State, CommunityInteractionService.isLiked()
+    liefert echten Cache-Wert (statt immer false), SqliteStorageService refresh-API,
+    OfflineSyncService dispose robust, community_service Future.wait eagerError:false,
+    PushNotificationManager fcmBackgroundHandler echtes Logging.
+  - **Bundle 2A — Design-Tokens** (PR #47): `lib/config/wb_design.dart` zentrales
+    Token-System im Home-Tab-Stil — bgEnergie/bgMaterie/bgNeutral, surfaces, akzent-
+    paletten pro Welt, Text-Hierarchie, Spacings, Radien, Hero/Action-Tile-Gradients,
+    pre-composed Decorations (`card`, `statBanner`, `heroBanner`).
+  - **Bundle 3 — 6 Sync-Fixes** (PR #48): updateProfile/getComments try-catch,
+    Slug-Generation thread-safe (microsecondsSinceEpoch%1000000), getMessages
+    `.reversed.toList()` → `order(ascending:true)`, getLikeCount 5s→10s Timeout,
+    Worker `encodeURIComponent(userId)` an 4 Stellen.
+  - **Bundle 4 — 3 UX-Items** (PR #49): hardcoded "MANUEL" → echter Username aus
+    Supabase user_metadata, AvatarUploadException + uploadAvatarOrThrow für
+    nutzerlesbare Fehler, ConnectivityHelper für schnellen Online-Check.
+  - **Bundle 6 — Push-Notification-Settings** (PR #50): `PushPreferencesService`
+    mit 8 Toggles + Master-Switch in SharedPreferences, `PushPreferencesScreen`
+    im Home-Tab-Stil, PushNotificationManager filtert eingehende Notifs nach
+    Type-Pref vor Anzeige (In-App-Center bleibt unberührt).
+- [x] **PR #44 + #45 — Patch-Stack-Verbesserungen** (2026-04-27):
+  - patch_changelog parst Squash-Merge-Body (vorher nur Commit-Title)
+  - PushNotificationManager Subscribe-Retry mit exp.Backoff, periodischer
+    Health-Check via /api/push/debug, Heal-on-Resume, forceResubscribe() API.
 
 ### ⚠️ Noch ausstehend / bekannte Probleme
 
@@ -644,7 +670,11 @@ Beide Methoden haben **required** Parameter: `roomId`, `username`, `newMessage`/
 Immer alle übergeben! (war ein Bug in offline_sync_service.dart)
 
 ### 4. `openclaw_dashboard_service.dart`
-Dieser Service ist in **keiner** Datei mehr nötig. Falls er wieder importiert wird → sofort entfernen!
+**Status (Bundle-5-Audit, 2026-04-27):** noch in `screens/{materie,energie}/home_tab_v5.dart`
+für `getRecentArticles()` und `getTrendingTopics()` in Verwendung. Komplett-Entfernung
+ist eingeplant aber nicht-trivial (Stats-Migration zu direktem Supabase ist in
+Bundle 1 bereits erfolgt). Bis zur Vollmigration: Service akzeptiert, aber bei
+neuen Features lieber direkt Supabase / CloudflareApiService nutzen.
 
 ### 5. HybridChatService vs. SupabaseChatService
 - `HybridChatService`: Kapselt Cloudflare API + Supabase als Fallback

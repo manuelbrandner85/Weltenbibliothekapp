@@ -122,33 +122,13 @@ class CommunityService {
       return Future.wait(posts, eagerError: false);
 
     } on SocketException {
-      
-      if (kDebugMode) {
-      
-        debugPrint('❌ Network: Keine Internetverbindung');
-      
-      }
-      
+      if (kDebugMode) debugPrint('❌ Network: Keine Internetverbindung');
       return [];
-      
     } on TimeoutException catch (e) {
-      
-      if (kDebugMode) {
-      
-        debugPrint('❌ Timeout: $e');
-      
-      }
-      
+      if (kDebugMode) debugPrint('❌ Timeout: $e');
       return [];
-      
     } catch (e) {
-      
-      if (kDebugMode) {
-      
-        debugPrint('❌ Error fetching articles: $e $e');
-      
-      }
-      
+      if (kDebugMode) debugPrint('❌ Error fetching articles: $e');
       return [];
     }
   }
