@@ -60,6 +60,11 @@ CREATE POLICY "world_subs_own"
   USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 CREATE INDEX IF NOT EXISTS idx_world_subs_world ON public.world_subscriptions(world);
 
+-- ─── Notifications-Tabelle: fehlende Spalten ergänzen ─────────────────────
+-- v10 legte notifications mit `message` + `is_read` an. v41 braucht body + read_at.
+ALTER TABLE public.notifications ADD COLUMN IF NOT EXISTS body TEXT;
+ALTER TABLE public.notifications ADD COLUMN IF NOT EXISTS read_at TIMESTAMPTZ;
+
 -- ─── Helper: beide Tabellen gleichzeitig befüllen ──────────────────────────
 -- Wird von allen Triggern verwendet um Doppel-Code zu vermeiden.
 CREATE OR REPLACE FUNCTION fn_insert_notification_both(
