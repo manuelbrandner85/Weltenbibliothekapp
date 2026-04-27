@@ -697,7 +697,7 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
         sub: 'Geschichte & Ereignisse',
         gradient: [const Color(0xFF1B5E20), const Color(0xFF2E7D32), const Color(0xFF43A047)],
         badge: 0,
-        onTap: () => _go(const HistoryTimelineScreen()),
+        onTap: () => _go(const HistoryTimelineScreen(roomId: 'materie_history')),
       ),
       _TileDef(
         icon: Icons.collections_bookmark_rounded,
