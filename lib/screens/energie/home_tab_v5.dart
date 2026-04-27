@@ -131,16 +131,57 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
 
   Future<void> _loadStats() async {
     try {
-      final s = await _dash.getStatistics(realm: 'energie');
+      final uid = Supabase.instance.client.auth.currentUser?.id;
+      if (uid == null) return;
+
+      final results = await Future.wait([
+        // Eigene Community-Beiträge (Energie-Welt)
+        Supabase.instance.client
+            .from('community_posts')
+            .select('id, likes_count')
+            .eq('user_id', uid)
+            .eq('world', 'energie'),
+        // Eigene Chat-Nachrichten (alle Energie-Räume)
+        Supabase.instance.client
+            .from('chat_messages')
+            .select('id, created_at')
+            .eq('user_id', uid)
+            .like('room_id', 'energie%')
+            .order('created_at', ascending: false)
+            .limit(500),
+      ]);
+
+      final posts   = (results[0] as List?) ?? [];
+      final msgs    = (results[1] as List?) ?? [];
+      final likes   = posts.fold<int>(0, (s, p) => s + ((p['likes_count'] as num?)?.toInt() ?? 0));
+      final streak  = _calcStreak(msgs
+          .map((m) => DateTime.tryParse(m['created_at'] as String? ?? ''))
+          .whereType<DateTime>()
+          .toList());
+
       if (mounted) {
         setState(() {
-          _articles  = s['totalArticles']    ?? s['total_articles']    ?? 0;
-          _sessions  = s['researchSessions'] ?? s['research_sessions'] ?? 0;
-          _bookmarks = s['bookmarkedTopics'] ?? s['bookmarked_topics'] ?? 0;
-          _shares    = s['sharedFindings']   ?? s['shared_findings']   ?? 0;
+          _articles  = posts.length;
+          _sessions  = msgs.length;
+          _bookmarks = likes;
+          _shares    = streak;
         });
       }
     } catch (_) {}
+  }
+
+  int _calcStreak(List<DateTime> dates) {
+    if (dates.isEmpty) return 0;
+    final daySet = dates.map((d) => DateTime(d.year, d.month, d.day)).toSet();
+    int streak = 0;
+    var cursor = DateTime.now();
+    cursor = DateTime(cursor.year, cursor.month, cursor.day);
+    if (!daySet.contains(cursor)) cursor = cursor.subtract(const Duration(days: 1));
+    while (daySet.contains(cursor)) {
+      streak++;
+      cursor = cursor.subtract(const Duration(days: 1));
+    }
+    return streak;
   }
 
   Future<void> _loadContent() async {
@@ -166,17 +207,17 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
   void _startLive() {
     final client = Supabase.instance.client;
 
-    // Realtime: Artikel → Content + Stats neu laden
+    // Realtime: community_posts → Content + Stats neu laden
     _channel = client
         .channel('energie_home_content')
       ..onPostgresChanges(
         event: PostgresChangeEvent.all,
-        schema: 'public', table: 'articles',
+        schema: 'public', table: 'community_posts',
         callback: (_) { if (mounted) { _loadContent(); _loadStats(); } },
       )
       ..subscribe();
 
-    // Realtime: chat_messages + bookmarks + likes → Stats neu laden
+    // Realtime: chat_messages + community_posts → Stats neu laden
     _statsChannel = client
         .channel('energie_home_stats')
       ..onPostgresChanges(
@@ -186,12 +227,7 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
       )
       ..onPostgresChanges(
         event: PostgresChangeEvent.all,
-        schema: 'public', table: 'bookmarks',
-        callback: (_) { if (mounted) _loadStats(); },
-      )
-      ..onPostgresChanges(
-        event: PostgresChangeEvent.all,
-        schema: 'public', table: 'likes',
+        schema: 'public', table: 'community_posts',
         callback: (_) { if (mounted) _loadStats(); },
       )
       ..subscribe();
@@ -1003,10 +1039,10 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
   // ── LIVE STAT BANNER ───────────────────────────────────────────────────
   Widget _buildLiveStatBanner() {
     final stats = [
-      _StatDef(icon: Icons.auto_stories,      label: 'Artikel',   value: _articles,  color: _purple),
-      _StatDef(icon: Icons.self_improvement,  label: 'Sessions',  value: _sessions,  color: _teal),
-      _StatDef(icon: Icons.bookmark_border,   label: 'Gespeich.', value: _bookmarks, color: _gold),
-      _StatDef(icon: Icons.share_outlined,    label: 'Geteilt',   value: _shares,    color: _green),
+      _StatDef(icon: Icons.edit_note,          label: 'Beiträge',  value: _articles,  color: _purple),
+      _StatDef(icon: Icons.chat_bubble_outline, label: 'Nachrichten', value: _sessions, color: _teal),
+      _StatDef(icon: Icons.favorite_border,   label: 'Likes',     value: _bookmarks, color: _pink),
+      _StatDef(icon: Icons.local_fire_department, label: 'Streak', value: _shares,   color: _gold),
     ];
 
     return SliverToBoxAdapter(
@@ -1029,13 +1065,7 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
                 final s = e.value;
                 return Expanded(
                   child: GestureDetector(
-                    onTap: () {
-                      if (s.label == 'Gespeich.') {
-                        _go(const BookmarksScreen());
-                      } else {
-                        _go(const StatsDashboardScreen(world: 'energie'));
-                      }
-                    },
+                    onTap: () => _go(const StatsDashboardScreen(world: 'energie')),
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 4),
                       decoration: i < stats.length - 1
@@ -1078,8 +1108,8 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
     final tiles = [
       _TileDef(
         icon: Icons.self_improvement_rounded,
-        label: 'Spirit',
-        sub: 'Seele & Bewusstsein',
+        label: 'Üben & Spirit',
+        sub: 'Tools · Meditation · Chakras',
         gradient: [const Color(0xFF3E0D6B), const Color(0xFF6A1B9A), const Color(0xFFAB47BC)],
         badge: 0,
         onTap: _openSpiritTab,

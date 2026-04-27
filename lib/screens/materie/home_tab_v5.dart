@@ -9,6 +9,7 @@ import '../../models/materie_profile.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'recherche_tab_mobile.dart';
 import 'materie_live_chat_screen.dart';
+import 'history_timeline_screen.dart';
 import '../../services/chat/recent_rooms_service.dart';
 import '../shared/bookmarks_screen.dart';
 import '../shared/stats_dashboard_screen.dart';
@@ -112,16 +113,57 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
 
   Future<void> _loadStats() async {
     try {
-      final s = await _dash.getStatistics(realm: 'materie');
+      final uid = Supabase.instance.client.auth.currentUser?.id;
+      if (uid == null) return;
+
+      final results = await Future.wait([
+        // Eigene Community-Beiträge (Materie-Welt)
+        Supabase.instance.client
+            .from('community_posts')
+            .select('id, likes_count')
+            .eq('user_id', uid)
+            .eq('world', 'materie'),
+        // Eigene Chat-Nachrichten (alle Materie-Räume)
+        Supabase.instance.client
+            .from('chat_messages')
+            .select('id, created_at')
+            .eq('user_id', uid)
+            .like('room_id', 'materie%')
+            .order('created_at', ascending: false)
+            .limit(500),
+      ]);
+
+      final posts   = (results[0] as List?) ?? [];
+      final msgs    = (results[1] as List?) ?? [];
+      final likes   = posts.fold<int>(0, (s, p) => s + ((p['likes_count'] as num?)?.toInt() ?? 0));
+      final streak  = _calcStreak(msgs
+          .map((m) => DateTime.tryParse(m['created_at'] as String? ?? ''))
+          .whereType<DateTime>()
+          .toList());
+
       if (mounted) {
         setState(() {
-          _articles  = s['totalArticles']    ?? s['total_articles']    ?? 0;
-          _sessions  = s['researchSessions'] ?? s['research_sessions'] ?? 0;
-          _bookmarks = s['bookmarkedTopics'] ?? s['bookmarked_topics'] ?? 0;
-          _shares    = s['sharedFindings']   ?? s['shared_findings']   ?? 0;
+          _articles  = posts.length;
+          _sessions  = msgs.length;
+          _bookmarks = likes;
+          _shares    = streak;
         });
       }
     } catch (_) {}
+  }
+
+  int _calcStreak(List<DateTime> dates) {
+    if (dates.isEmpty) return 0;
+    final daySet = dates.map((d) => DateTime(d.year, d.month, d.day)).toSet();
+    int streak = 0;
+    var cursor = DateTime.now();
+    cursor = DateTime(cursor.year, cursor.month, cursor.day);
+    if (!daySet.contains(cursor)) cursor = cursor.subtract(const Duration(days: 1));
+    while (daySet.contains(cursor)) {
+      streak++;
+      cursor = cursor.subtract(const Duration(days: 1));
+    }
+    return streak;
   }
 
   Future<void> _loadContent() async {
@@ -147,17 +189,17 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
   void _startLive() {
     final client = Supabase.instance.client;
 
-    // Realtime: Artikel → Content + Stats neu laden
+    // Realtime: community_posts → Content + Stats neu laden
     _channel = client
         .channel('materie_home_content')
       ..onPostgresChanges(
         event: PostgresChangeEvent.all,
-        schema: 'public', table: 'articles',
+        schema: 'public', table: 'community_posts',
         callback: (_) { if (mounted) { _loadContent(); _loadStats(); } },
       )
       ..subscribe();
 
-    // Realtime: chat_messages + bookmarks + likes → Stats neu laden
+    // Realtime: chat_messages + community_posts → Stats neu laden
     _statsChannel = client
         .channel('materie_home_stats')
       ..onPostgresChanges(
@@ -167,12 +209,7 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
       )
       ..onPostgresChanges(
         event: PostgresChangeEvent.all,
-        schema: 'public', table: 'bookmarks',
-        callback: (_) { if (mounted) _loadStats(); },
-      )
-      ..onPostgresChanges(
-        event: PostgresChangeEvent.all,
-        schema: 'public', table: 'likes',
+        schema: 'public', table: 'community_posts',
         callback: (_) { if (mounted) _loadStats(); },
       )
       ..subscribe();
@@ -569,10 +606,10 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
   // ── LIVE STAT BANNER ───────────────────────────────────────────────────
   Widget _buildLiveStatBanner() {
     final stats = [
-      _StatDef(icon: Icons.article_outlined, label: 'Artikel', value: _articles, color: _blue),
-      _StatDef(icon: Icons.timeline,          label: 'Sessions', value: _sessions,  color: _cyan),
-      _StatDef(icon: Icons.bookmark_outline,  label: 'Gespeich.', value: _bookmarks, color: _amber),
-      _StatDef(icon: Icons.share_outlined,    label: 'Geteilt',  value: _shares,    color: _green),
+      _StatDef(icon: Icons.edit_note,             label: 'Beiträge',    value: _articles,  color: _blue),
+      _StatDef(icon: Icons.chat_bubble_outline,   label: 'Nachrichten', value: _sessions,  color: _cyan),
+      _StatDef(icon: Icons.favorite_border,       label: 'Likes',       value: _bookmarks, color: _red),
+      _StatDef(icon: Icons.local_fire_department, label: 'Streak',      value: _shares,    color: _amber),
     ];
 
     return SliverToBoxAdapter(
@@ -595,13 +632,7 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
                 final s = e.value;
                 return Expanded(
                   child: GestureDetector(
-                    onTap: () {
-                      if (s.label == 'Gespeich.') {
-                        _go(const BookmarksScreen());
-                      } else {
-                        _go(const StatsDashboardScreen(world: 'materie'));
-                      }
-                    },
+                    onTap: () => _go(const StatsDashboardScreen(world: 'materie')),
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 4),
                       decoration: i < stats.length - 1
@@ -661,12 +692,12 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
         onTap: () => _go(const MaterieLiveChatScreen()),
       ),
       _TileDef(
-        icon: Icons.explore_rounded,
-        label: 'Erkunden',
-        sub: 'Themen & Karte',
-        gradient: [const Color(0xFF4A148C), const Color(0xFF6A1B9A), const Color(0xFF9C27B0)],
+        icon: Icons.timeline_rounded,
+        label: 'Zeitlinie',
+        sub: 'Geschichte & Ereignisse',
+        gradient: [const Color(0xFF1B5E20), const Color(0xFF2E7D32), const Color(0xFF43A047)],
         badge: 0,
-        onTap: () => _go(const MobileOptimierterRechercheTab()),
+        onTap: () => _go(const HistoryTimelineScreen()),
       ),
       _TileDef(
         icon: Icons.collections_bookmark_rounded,
