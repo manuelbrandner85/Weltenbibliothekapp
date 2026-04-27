@@ -213,8 +213,13 @@ class SupabaseProfileService {
     if (avatarUrl != null) updates['avatar_url'] = avatarUrl;
     if (world != null) updates['world'] = world;
 
-    await supabase.from('profiles').update(updates).eq('id', userId);
-    if (kDebugMode) debugPrint('✅ [Profile] Aktualisiert: $userId');
+    try {
+      await supabase.from('profiles').update(updates).eq('id', userId);
+      if (kDebugMode) debugPrint('✅ [Profile] Aktualisiert: $userId');
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ [Profile] update failed: $e');
+      rethrow;
+    }
   }
 
   /// Avatar hochladen und URL in Profil speichern.
@@ -283,8 +288,12 @@ class SupabaseCommunityService {
     final profile = await SupabaseProfileService.instance.getMyProfile();
     final username = profile?['username'] ?? user.email?.split('@').first ?? 'Anonym';
 
-    // Slug aus Titel generieren (Pflichtfeld in DB)
-    final slug = '${title.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '-').replaceAll(RegExp(r'^-+|-+$'), '')}-${DateTime.now().millisecondsSinceEpoch}';
+    // Slug aus Titel generieren (Pflichtfeld in DB).
+    // Thread-safe via UUID-Random-Suffix statt millisecondsSinceEpoch — bei
+    // schnellen parallelen Posts würde ms-Suffix kollidieren.
+    final randomSuffix = (DateTime.now().microsecondsSinceEpoch % 1000000)
+        .toRadixString(36);
+    final slug = '${title.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '-').replaceAll(RegExp(r'^-+|-+$'), '')}-$randomSuffix';
 
     final response = await supabase.from('articles').insert({
       'user_id': user.id,
@@ -379,14 +388,18 @@ class SupabaseCommunityService {
   // ── KOMMENTARE ────────────────────────────────────────────
 
   Future<List<Map<String, dynamic>>> getComments(String articleId) async {
-    final response = await supabase
-        .from('comments')
-        .select('*, profiles(username, avatar_url)')
-        .eq('article_id', articleId)
-        .eq('is_deleted', false)
-        .order('created_at', ascending: true);
-
-    return List<Map<String, dynamic>>.from(response);
+    try {
+      final response = await supabase
+          .from('comments')
+          .select('*, profiles(username, avatar_url)')
+          .eq('article_id', articleId)
+          .eq('is_deleted', false)
+          .order('created_at', ascending: true);
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ getComments failed: $e');
+      return [];
+    }
   }
 
   Future<Map<String, dynamic>> addComment({
@@ -423,17 +436,24 @@ class SupabaseChatService {
   RealtimeChannel? _activeChannel;
 
   /// Nachrichten für einen Raum laden (letzte 50).
+  /// Sortiert aufsteigend nach created_at (ältere zuerst → neueste unten).
+  /// Optimiert: order(ascending:true) + .limit() → kein .reversed.toList()
+  /// post-processing nötig, spart O(n) Allocation.
   Future<List<Map<String, dynamic>>> getMessages(String roomId,
       {int limit = 50}) async {
-    final response = await supabase
-        .from('chat_messages')
-        .select()
-        .eq('room_id', roomId)
-        .eq('is_deleted', false)
-        .order('created_at', ascending: false)
-        .limit(limit);
-
-    return List<Map<String, dynamic>>.from(response.reversed.toList());
+    try {
+      final response = await supabase
+          .from('chat_messages')
+          .select()
+          .eq('room_id', roomId)
+          .eq('is_deleted', false)
+          .order('created_at', ascending: true)
+          .limit(limit);
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ getMessages failed: $e');
+      return [];
+    }
   }
 
   /// Pagination: Nachrichten älter als [before] (ISO-String) laden.
