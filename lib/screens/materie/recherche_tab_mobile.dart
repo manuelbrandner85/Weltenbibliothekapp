@@ -23,6 +23,7 @@ import '../../models/recherche_models.dart';
 import '../../models/analyse_models.dart';
 import '../../services/analyse_service.dart';
 import '../../services/openclaw_comprehensive_service.dart';
+import '../../services/free_api_service.dart';
 import '../../widgets/visualisierung/visualisierungen.dart';
 import '../../widgets/media_grid_widget.dart';
 import 'materie_research_screen.dart'; // 🌐 RESEARCH SCREEN
@@ -88,13 +89,25 @@ class _MobileOptimierterRechercheTabState extends State<MobileOptimierterRecherc
   bool _notizenLoading = false;
   static const String _notizenStorageKey = 'recherche_notizen';
 
+  // Guardian News State
+  final _freeApi = FreeApiService.instance;
+  List<GuardianArticle> _guardianArticles = [];
+  bool _guardianLoading = false;
+  String _guardianQuery = '';
+  final _guardianCtrl = TextEditingController();
+
+  // Wayback Archive State
+  final _waybackUrlCtrl = TextEditingController();
+  String? _waybackResult;
+  bool _waybackLoading = false;
+
   @override
   void initState() {
     super.initState();
 
     _analyseService = AnalyseService();
 
-    _tabController = TabController(length: 11, vsync: this);
+    _tabController = TabController(length: 13, vsync: this);
 
     _cosmosCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 20))..repeat();
     _pulseCtrl  = AnimationController(vsync: this, duration: const Duration(milliseconds: 2000))..repeat(reverse: true);
@@ -108,6 +121,8 @@ class _MobileOptimierterRechercheTabState extends State<MobileOptimierterRecherc
   void dispose() {
     _suchController.dispose();
     _notizenController.dispose();
+    _guardianCtrl.dispose();
+    _waybackUrlCtrl.dispose();
     _tabController.dispose();
     _rechercheSub?.cancel();
     _analyseSub?.cancel();
@@ -1498,9 +1513,11 @@ class _MobileOptimierterRechercheTabState extends State<MobileOptimierterRecherc
                 Tab(text: 'KARTE'),
                 Tab(text: 'ALTERNATIVE'),
                 Tab(text: 'META'),
-                Tab(text: 'EPSTEIN FILES'), // 🆕 EPSTEIN FILES TAB
-                Tab(text: 'QUELLEN'), // 🆕 ADDITIONAL SOURCES
-                Tab(text: 'NOTIZEN'), // 🆕 RESEARCH NOTES
+                Tab(text: 'EPSTEIN FILES'),
+                Tab(text: 'QUELLEN'),
+                Tab(text: 'NOTIZEN'),
+                Tab(text: '📰 GUARDIAN'),
+                Tab(text: '📦 ARCHIV'),
               ],
             ),
           ),
@@ -1518,9 +1535,11 @@ class _MobileOptimierterRechercheTabState extends State<MobileOptimierterRecherc
                 _buildKarteTab(),
                 _buildAlternativeTab(),
                 _buildMetaTab(),
-                _buildEpsteinFilesTab(), // 🆕 EPSTEIN FILES TAB CONTENT
-                const AdditionalSourcesScreen(), // 🆕 ADDITIONAL SOURCES
-                _buildNotizenTab(), // 🆕 NOTIZEN TAB
+                _buildEpsteinFilesTab(),
+                const AdditionalSourcesScreen(),
+                _buildNotizenTab(),
+                _buildGuardianTab(),
+                _buildWaybackTab(),
               ],
             ),
           ),
@@ -2660,6 +2679,398 @@ class _MobileOptimierterRechercheTabState extends State<MobileOptimierterRecherc
     );
   }
   
+  // ─── GUARDIAN NEWS TAB ───────────────────────────────────────────────────────
+
+  Future<void> _loadGuardianNews([String? q]) async {
+    final query = (q ?? _guardianQuery).trim();
+    if (query.isEmpty) return;
+    setState(() { _guardianLoading = true; _guardianQuery = query; });
+    final result = await _freeApi.fetchGuardianNews(query, limit: 12);
+    if (mounted) setState(() { _guardianArticles = result; _guardianLoading = false; });
+  }
+
+  Widget _buildGuardianTab() {
+    return Column(
+      children: [
+        // Suchleiste
+        Container(
+          color: _bg,
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _guardianCtrl,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    hintText: 'Guardian-Nachrichten suchen…',
+                    hintStyle: const TextStyle(color: Colors.white38, fontSize: 13),
+                    filled: true,
+                    fillColor: _card,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide.none,
+                    ),
+                    prefixIcon: const Icon(Icons.newspaper, color: _blue),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                  ),
+                  onSubmitted: (v) => _loadGuardianNews(v),
+                ),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton(
+                onPressed: () => _loadGuardianNews(_guardianCtrl.text),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _blue,
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                ),
+                child: const Icon(Icons.search),
+              ),
+            ],
+          ),
+        ),
+        // Tipp-Text wenn noch keine Suche
+        if (_guardianQuery.isEmpty)
+          Expanded(
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text('📰', style: TextStyle(fontSize: 48)),
+                  const SizedBox(height: 16),
+                  Text(
+                    'The Guardian — Aktuelle Nachrichten',
+                    style: TextStyle(color: Colors.grey[400], fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Suche nach einem Thema\nz.B. "geopolitics", "climate", "AI"',
+                    style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  // Schnellsuche-Buttons
+                  Wrap(
+                    spacing: 8, runSpacing: 8,
+                    alignment: WrapAlignment.center,
+                    children: ['geopolitics', 'conspiracy', 'government', 'war', 'surveillance']
+                        .map((tag) => ActionChip(
+                              label: Text(tag, style: const TextStyle(fontSize: 12)),
+                              backgroundColor: _card,
+                              onPressed: () {
+                                _guardianCtrl.text = tag;
+                                _loadGuardianNews(tag);
+                              },
+                            ))
+                        .toList(),
+                  ),
+                ],
+              ),
+            ),
+          )
+        else if (_guardianLoading)
+          const Expanded(
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(color: _blue),
+                  SizedBox(height: 16),
+                  Text('Lade Guardian-Artikel…', style: TextStyle(color: Colors.white54)),
+                ],
+              ),
+            ),
+          )
+        else if (_guardianArticles.isEmpty)
+          Expanded(
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.search_off, size: 48, color: Colors.white24),
+                  const SizedBox(height: 12),
+                  const Text('Keine Artikel gefunden', style: TextStyle(color: Colors.white54)),
+                  TextButton(
+                    onPressed: () => _loadGuardianNews(),
+                    child: const Text('Neu laden', style: TextStyle(color: _blue)),
+                  ),
+                ],
+              ),
+            ),
+          )
+        else
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: () => _loadGuardianNews(),
+              color: _blue,
+              child: ListView.builder(
+                padding: const EdgeInsets.all(12),
+                itemCount: _guardianArticles.length + 1,
+                itemBuilder: (ctx, i) {
+                  if (i == 0) {
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: _blue.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: _blue.withValues(alpha: 0.3)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Text('📰', style: TextStyle(fontSize: 22)),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('The Guardian',
+                                    style: TextStyle(color: _blue, fontWeight: FontWeight.bold)),
+                                Text('${_guardianArticles.length} Artikel zu "$_guardianQuery"',
+                                    style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                  final art = _guardianArticles[i - 1];
+                  return Card(
+                    color: _card,
+                    margin: const EdgeInsets.only(bottom: 10),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(10),
+                      onTap: () async {
+                        final uri = Uri.tryParse(art.webUrl);
+                        if (uri != null) await launchUrl(uri, mode: LaunchMode.externalApplication);
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.all(14),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (art.sectionName != null)
+                              Container(
+                                margin: const EdgeInsets.only(bottom: 6),
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: _blue.withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(art.sectionName!,
+                                    style: const TextStyle(color: _blue, fontSize: 11)),
+                              ),
+                            Text(
+                              art.webTitle,
+                              style: const TextStyle(
+                                  color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
+                              maxLines: 3,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            if (art.trailText != null) ...[
+                              const SizedBox(height: 6),
+                              Text(
+                                art.trailText!.replaceAll(RegExp(r'<[^>]*>'), ''),
+                                style: const TextStyle(color: Colors.white54, fontSize: 12),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                if (art.webPublicationDate != null)
+                                  Text(
+                                    art.webPublicationDate!.substring(0, 10),
+                                    style: const TextStyle(color: Colors.white38, fontSize: 11),
+                                  ),
+                                const Spacer(),
+                                const Icon(Icons.open_in_new, size: 14, color: _blue),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  // ─── WAYBACK ARCHIVE TAB ─────────────────────────────────────────────────────
+
+  Future<void> _checkWayback() async {
+    final url = _waybackUrlCtrl.text.trim();
+    if (url.isEmpty) return;
+    setState(() { _waybackLoading = true; _waybackResult = null; });
+    final snapshot = await _freeApi.fetchWaybackSnapshot(url);
+    if (mounted) setState(() { _waybackResult = snapshot; _waybackLoading = false; });
+  }
+
+  Widget _buildWaybackTab() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: _amber.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: _amber.withValues(alpha: 0.3)),
+            ),
+            child: const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text('📦', style: TextStyle(fontSize: 22)),
+                    SizedBox(width: 8),
+                    Text('Wayback Machine — Internet Archive',
+                        style: TextStyle(color: _amber, fontWeight: FontWeight.bold)),
+                  ],
+                ),
+                SizedBox(height: 6),
+                Text(
+                  'Prüfe ob eine gelöschte oder zensierte Webseite im Archiv gespeichert ist.',
+                  style: TextStyle(color: Colors.white54, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          const Text('URL prüfen:', style: TextStyle(color: Colors.white70)),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _waybackUrlCtrl,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    hintText: 'https://beispiel.com/artikel',
+                    hintStyle: const TextStyle(color: Colors.white38, fontSize: 13),
+                    filled: true,
+                    fillColor: _card,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide.none,
+                    ),
+                    prefixIcon: const Icon(Icons.link, color: _amber),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                  ),
+                  onSubmitted: (_) => _checkWayback(),
+                ),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton(
+                onPressed: _waybackLoading ? null : _checkWayback,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _amber,
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                ),
+                child: _waybackLoading
+                    ? const SizedBox(
+                        width: 18, height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
+                      )
+                    : const Icon(Icons.search),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          if (_waybackResult != null) ...[
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: _green.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: _green.withValues(alpha: 0.4)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Row(
+                    children: [
+                      Icon(Icons.check_circle, color: _green, size: 20),
+                      SizedBox(width: 8),
+                      Text('✅ Snapshot gefunden!',
+                          style: TextStyle(color: _green, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(_waybackResult!, style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () async {
+                        final uri = Uri.tryParse(_waybackResult!);
+                        if (uri != null) await launchUrl(uri, mode: LaunchMode.externalApplication);
+                      },
+                      icon: const Icon(Icons.open_in_new),
+                      label: const Text('Archiv öffnen'),
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: _green, foregroundColor: Colors.black),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ] else if (!_waybackLoading && _waybackUrlCtrl.text.isNotEmpty && _waybackResult == null) ...[
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: _red.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: _red.withValues(alpha: 0.3)),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.cancel, color: _red, size: 20),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Kein Archiv-Snapshot gefunden für diese URL.',
+                      style: TextStyle(color: Colors.white54),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+          const SizedBox(height: 32),
+          const Text('Was ist die Wayback Machine?',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          const Text(
+            'Das Internet Archive speichert Snapshots von Webseiten seit 1996. '
+            'Wenn eine Nachricht, ein Artikel oder eine Quelle gelöscht oder '
+            'zensiert wurde, kann hier oft noch die Original-Version gefunden werden.',
+            style: TextStyle(color: Colors.white54, fontSize: 13, height: 1.5),
+          ),
+          const SizedBox(height: 24),
+          InkWell(
+            onTap: () async {
+              final uri = Uri.parse('https://archive.org');
+              await launchUrl(uri, mode: LaunchMode.externalApplication);
+            },
+            child: const Text('→ archive.org direkt öffnen',
+                style: TextStyle(color: _amber, decoration: TextDecoration.underline)),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildSectionHeader(String title) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
