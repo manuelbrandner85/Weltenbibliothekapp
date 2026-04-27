@@ -1,6 +1,6 @@
 /// 👤 AVATAR UPLOAD SERVICE
 /// Handles avatar image selection, upload, and storage
-/// 
+///
 /// Features:
 /// - Image picker integration
 /// - Image compression
@@ -13,6 +13,16 @@ import '../config/api_config.dart';
 import 'dart:io';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+
+/// Exception mit nutzerlesbarer deutscher Fehlermeldung. Wird von
+/// [AvatarUploadService.uploadAvatar] geworfen — Caller kann den Text 1:1
+/// im Error-Dialog anzeigen.
+class AvatarUploadException implements Exception {
+  final String message;
+  AvatarUploadException(this.message);
+  @override
+  String toString() => message;
+}
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
@@ -75,18 +85,18 @@ class AvatarUploadService {
     }
   }
   
-  /// Upload avatar to Cloudflare R2
-  Future<String?> uploadAvatar(File imageFile, String userId) async {
+  /// Upload avatar to Cloudflare R2.
+  ///
+  /// Wirft jetzt eine [AvatarUploadException] mit nutzerlesbarem Grund statt
+  /// silently null zurückzugeben, damit der Caller einen Error-Dialog zeigen
+  /// kann. Bei Erfolg liefert die URL.
+  Future<String> uploadAvatar(File imageFile, String userId) async {
+    if (kDebugMode) debugPrint('⬆️ Uploading avatar for user $userId...');
+
     try {
-      if (kDebugMode) {
-        debugPrint('⬆️ Uploading avatar for user $userId...');
-      }
-      
-      // Read image bytes
       final bytes = await imageFile.readAsBytes();
       final base64Image = base64Encode(bytes);
-      
-      // Upload to backend
+
       final response = await http.post(
         Uri.parse('$_backendUrl/api/avatar/upload'),
         headers: {'Content-Type': 'application/json'},
@@ -95,29 +105,46 @@ class AvatarUploadService {
           'image_data': base64Image,
         }),
       ).timeout(const Duration(seconds: 30));
-      
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final avatarUrl = data['avatar_url'] as String;
-        
-        // Save to local storage
+        final avatarUrl = data['avatar_url'] as String?;
+        if (avatarUrl == null || avatarUrl.isEmpty) {
+          throw AvatarUploadException(
+            'Server lieferte keine Avatar-URL zurück.',
+          );
+        }
         await saveAvatarUrl(userId, avatarUrl);
-        
-        if (kDebugMode) {
-          debugPrint('✅ Avatar uploaded: $avatarUrl');
-        }
-        
+        if (kDebugMode) debugPrint('✅ Avatar uploaded: $avatarUrl');
         return avatarUrl;
+      } else if (response.statusCode == 413) {
+        throw AvatarUploadException('Bild zu groß. Bitte kleineres wählen.');
+      } else if (response.statusCode == 415) {
+        throw AvatarUploadException('Format wird nicht unterstützt.');
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        throw AvatarUploadException('Nicht berechtigt — bitte erneut anmelden.');
       } else {
-        if (kDebugMode) {
-          debugPrint('❌ Upload failed: ${response.statusCode}');
-        }
-        return null;
+        throw AvatarUploadException(
+          'Upload fehlgeschlagen (${response.statusCode}).',
+        );
       }
+    } on AvatarUploadException {
+      rethrow;
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ Error uploading avatar: $e');
-      }
+      if (kDebugMode) debugPrint('❌ Error uploading avatar: $e');
+      throw AvatarUploadException(
+        'Verbindung zum Server fehlgeschlagen. Bitte erneut versuchen.',
+      );
+    }
+  }
+
+  /// Legacy-Wrapper für Aufrufer die noch null erwarten. Vermeidet
+  /// Crashes beim graduellen Migrate.
+  Future<String?> uploadAvatarSafe(File imageFile, String userId) async {
+    try {
+      return await uploadAvatar(imageFile, userId);
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ uploadAvatarSafe swallowed: $e');
       return null;
     }
   }

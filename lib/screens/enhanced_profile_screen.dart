@@ -13,6 +13,7 @@
 
 import 'package:flutter/material.dart';
  // OpenClaw v2.0
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/achievement_service.dart';
 import '../services/leaderboard_service.dart';
 import '../services/reward_service.dart';
@@ -34,6 +35,24 @@ class _EnhancedProfileScreenState extends State<EnhancedProfileScreen> {
   final _rewardService = RewardService();
   final _dailyService = DailyKnowledgeService();
 
+  /// Liefert den Anzeigenamen aus Supabase-User-Metadata, fällt sonst
+  /// auf E-Mail-Local-Part oder generischen Profile-Title zurück.
+  String _displayName() {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return 'PROFIL';
+    final meta = user.userMetadata;
+    final name = (meta?['display_name'] as String?) ??
+        (meta?['username'] as String?);
+    if (name != null && name.trim().isNotEmpty) {
+      return name.toUpperCase();
+    }
+    final email = user.email;
+    if (email != null && email.contains('@')) {
+      return email.split('@').first.toUpperCase();
+    }
+    return 'PROFIL';
+  }
+
   @override
   Widget build(BuildContext context) {
     final level = _achievementService.currentLevel;
@@ -52,9 +71,9 @@ class _EnhancedProfileScreenState extends State<EnhancedProfileScreen> {
             pinned: true,
             backgroundColor: EnhancedAppThemes.energiePrimary,  // 🎨 NEW: Weltenbibliothek Color
             flexibleSpace: FlexibleSpaceBar(
-              title: const Text(
-                'MANUEL',
-                style: TextStyle(
+              title: Text(
+                _displayName(),
+                style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   letterSpacing: 1.5,
                 ),
