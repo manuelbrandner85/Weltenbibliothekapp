@@ -23,8 +23,29 @@ class CommunityInteractionService {
   factory CommunityInteractionService() => _instance;
   CommunityInteractionService._internal();
 
-  /// No-op – SharedPreferences needs no explicit init
-  Future<void> init() async {}
+  /// In-Memory-Cache für synchrone Reads. Wird beim init() aus SharedPreferences
+  /// gehydratet, bei toggleLike/fetchIsLiked aktualisiert. Damit liefert isLiked()
+  /// korrekte Werte statt immer false.
+  final Map<String, bool> _likeCache = {};
+  bool _initialized = false;
+
+  /// Lädt alle ci_like_* Keys aus SharedPreferences in den Memory-Cache.
+  /// Idempotent — mehrfacher Aufruf ist harmlos.
+  Future<void> init() async {
+    if (_initialized) return;
+    _initialized = true;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      for (final key in prefs.getKeys()) {
+        if (key.startsWith(_pfxLike)) {
+          _likeCache[key] = prefs.getBool(key) ?? false;
+        }
+      }
+      if (kDebugMode) debugPrint('✅ CommunityInteraction cache hydriert: ${_likeCache.length} likes');
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ Cache-Hydration failed: $e');
+    }
+  }
   
   // ============================================
   // LIKE SYSTEM
@@ -68,11 +89,13 @@ class CommunityInteractionService {
     }
   }
   
-  /// Check if user has liked a post (sync, from local cache)
+  /// Check if user has liked a post — synchronously aus Memory-Cache.
+  /// Cache wird via init() (App-Start) und fetchIsLiked() (Lazy) befüllt.
+  /// Liefert sofort den letzten bekannten Stand statt immer false.
   bool isLiked({required String postId, required String userId}) {
-    // Synchronous read – not available from SharedPreferences; always false until async load.
-    // Callers should use fetchIsLiked() for accurate state.
-    return false;
+    if (userId.isEmpty || postId.isEmpty) return false;
+    final key = '$_pfxLike${userId}_$postId';
+    return _likeCache[key] ?? false;
   }
 
   /// Check if user has liked a post (async, from Supabase with cache fallback)
@@ -91,13 +114,16 @@ class CommunityInteractionService {
           .eq('article_id', postId)
           .eq('user_id', userId)
           .limit(1)
-          .timeout(const Duration(seconds: 5));
+          .timeout(const Duration(seconds: 10));
       final liked = (result as List).isNotEmpty;
       await prefs.setBool(likeKey, liked);
+      _likeCache[likeKey] = liked;
       return liked;
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ fetchIsLiked fallback to cache: $e');
-      return prefs.getBool(likeKey) ?? false;
+      final cached = prefs.getBool(likeKey) ?? false;
+      _likeCache[likeKey] = cached;
+      return cached;
     }
   }
 
@@ -111,6 +137,7 @@ class CommunityInteractionService {
     final likeKey = '$_pfxLike${userId}_$postId';
     final currentlyLiked = prefs.getBool(likeKey) ?? false;
     await prefs.setBool(likeKey, !currentlyLiked);
+    _likeCache[likeKey] = !currentlyLiked;
     try {
       final supabase = Supabase.instance.client;
       if (currentlyLiked) {
@@ -123,6 +150,7 @@ class CommunityInteractionService {
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ toggleLikeSupabase error: $e');
       await prefs.setBool(likeKey, currentlyLiked);
+      _likeCache[likeKey] = currentlyLiked;
       return currentlyLiked;
     }
   }

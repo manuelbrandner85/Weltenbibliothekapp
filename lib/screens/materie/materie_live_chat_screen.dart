@@ -296,14 +296,20 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
 
     // Profil VOR Nachrichten laden → Username garantiert gesetzt wenn User schreibt.
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
       await _loadUsernameFromProfile();
+      if (!mounted) return;
       _notificationService.setCurrentUsername(_username);
       // ✨ Batch-2: Presence aktivieren, sobald der Username bekannt ist.
       await _refreshPresence();
+      if (!mounted) return;
       // ✨ Batch-2.3: Read-Receipts für den Raum streamen + markieren.
       await ReadReceiptService.instance.watchRoom(_fullRoomId);
+      if (!mounted) return;
       await _markRoomRead();
+      if (!mounted) return;
       await _loadMessages();
+      if (!mounted) return;
       _loadPolls();
     });
   }

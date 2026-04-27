@@ -37,23 +37,29 @@ class _ArticleLikeButtonState extends State<ArticleLikeButton> with SingleTicker
   @override
   void initState() {
     super.initState();
-    _isLiked = widget.initiallyLiked;
     _likeCount = widget.initialLikes;
     // Echte User-ID: Supabase Auth > UserService
-    _realUserId = Supabase.instance.client.auth.currentUser?.id 
+    _realUserId = Supabase.instance.client.auth.currentUser?.id
         ?? UserService.getCurrentUserId();
-    
+
+    // Initial-State: erst Memory-Cache prüfen (sofortige korrekte Anzeige),
+    // sonst widget.initiallyLiked als Fallback. Vermeidet Flash zu "nicht-geliked".
+    _isLiked = _interactionService.isLiked(
+      postId: widget.articleId,
+      userId: _realUserId,
+    ) || widget.initiallyLiked;
+
     // Animation setup
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 200),
       vsync: this,
     );
-    
+
     _scaleAnimation = Tween<double>(begin: 1.0, end: 1.3).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
     );
-    
-    // Lade echten Like-Status aus Supabase
+
+    // Async: echten Like-Status aus Supabase nachladen falls Cache leer war
     _loadLikeStatus();
   }
   

@@ -117,9 +117,10 @@ class CommunityService {
         );
       }).toList();
       
-      // Wait for all stats fetches to complete
-      return Future.wait(posts);
-      
+      // Wait for all stats fetches to complete — eagerError:false damit
+      // ein einzelner Stats-Fail nicht die ganze Post-Liste verschluckt.
+      return Future.wait(posts, eagerError: false);
+
     } on SocketException {
       
       if (kDebugMode) {

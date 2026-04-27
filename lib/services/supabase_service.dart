@@ -310,34 +310,49 @@ class SupabaseCommunityService {
     final userId = supabase.auth.currentUser?.id;
     if (userId == null) throw Exception('Nicht eingeloggt');
 
-    await supabase.from('likes').insert({
-      'article_id': articleId,
-      'user_id': userId,
-    });
+    try {
+      await supabase.from('likes').insert({
+        'article_id': articleId,
+        'user_id': userId,
+      });
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ likeArticle failed: $e');
+      rethrow;
+    }
   }
 
   Future<void> unlikeArticle(String articleId) async {
     final userId = supabase.auth.currentUser?.id;
     if (userId == null) throw Exception('Nicht eingeloggt');
 
-    await supabase
-        .from('likes')
-        .delete()
-        .eq('article_id', articleId)
-        .eq('user_id', userId);
+    try {
+      await supabase
+          .from('likes')
+          .delete()
+          .eq('article_id', articleId)
+          .eq('user_id', userId);
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ unlikeArticle failed: $e');
+      rethrow;
+    }
   }
 
   Future<bool> hasLiked(String articleId) async {
     final userId = supabase.auth.currentUser?.id;
     if (userId == null) return false;
 
-    final response = await supabase
-        .from('likes')
-        .select('id')
-        .eq('article_id', articleId)
-        .eq('user_id', userId)
-        .maybeSingle();
-    return response != null;
+    try {
+      final response = await supabase
+          .from('likes')
+          .select('id')
+          .eq('article_id', articleId)
+          .eq('user_id', userId)
+          .maybeSingle();
+      return response != null;
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ hasLiked failed: $e');
+      return false;
+    }
   }
 
   // ── BOOKMARKS ────────────────────────────────────────────
@@ -346,34 +361,49 @@ class SupabaseCommunityService {
     final userId = supabase.auth.currentUser?.id;
     if (userId == null) throw Exception('Nicht eingeloggt');
 
-    await supabase.from('bookmarks').insert({
-      'article_id': articleId,
-      'user_id': userId,
-    });
+    try {
+      await supabase.from('bookmarks').insert({
+        'article_id': articleId,
+        'user_id': userId,
+      });
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ bookmarkArticle failed: $e');
+      rethrow;
+    }
   }
 
   Future<void> removeBookmark(String articleId) async {
     final userId = supabase.auth.currentUser?.id;
     if (userId == null) throw Exception('Nicht eingeloggt');
 
-    await supabase
-        .from('bookmarks')
-        .delete()
-        .eq('article_id', articleId)
-        .eq('user_id', userId);
+    try {
+      await supabase
+          .from('bookmarks')
+          .delete()
+          .eq('article_id', articleId)
+          .eq('user_id', userId);
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ removeBookmark failed: $e');
+      rethrow;
+    }
   }
 
   Future<List<Map<String, dynamic>>> getMyBookmarks() async {
     final userId = supabase.auth.currentUser?.id;
     if (userId == null) return [];
 
-    final response = await supabase
-        .from('bookmarks')
-        .select('*, articles(*, profiles(username, avatar_url))')
-        .eq('user_id', userId)
-        .order('created_at', ascending: false);
+    try {
+      final response = await supabase
+          .from('bookmarks')
+          .select('*, articles(*, profiles(username, avatar_url))')
+          .eq('user_id', userId)
+          .order('created_at', ascending: false);
 
-    return List<Map<String, dynamic>>.from(response);
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ getMyBookmarks failed: $e');
+      return [];
+    }
   }
 
   // ── KOMMENTARE ────────────────────────────────────────────
