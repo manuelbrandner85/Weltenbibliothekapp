@@ -1168,71 +1168,210 @@ class _MobileOptimierterRechercheTabState extends State<MobileOptimierterRecherc
       child: SlideTransition(
         position: Tween<Offset>(begin: const Offset(0, 0.05), end: Offset.zero).animate(_entryAnim),
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+          padding: const EdgeInsets.fromLTRB(16, 18, 16, 32),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Section title
-              Padding(
-                padding: const EdgeInsets.only(bottom: 14),
-                child: Row(
-                  children: [
-                    Container(width: 4, height: 20, decoration: BoxDecoration(color: _blue, borderRadius: BorderRadius.circular(2))),
-                    const SizedBox(width: 10),
-                    const Text('KI-ANALYSE-TOOLS', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold, letterSpacing: 1.1)),
-                    const SizedBox(width: 8),
-                    Text('5 Tools', style: TextStyle(color: _blueL.withValues(alpha: 0.6), fontSize: 12)),
-                  ],
-                ),
+              // ─── Gruppe 1: KI-Analyse ─────────────────────────
+              _buildToolGroupHeader(
+                icon: '🧠',
+                title: 'KI-ANALYSE',
+                subtitle: 'Inhalte automatisch prüfen',
+                accent: _red,
               ),
-
-              // KI-Tool Grid
+              const SizedBox(height: 10),
               GridView.count(
                 crossAxisCount: 2,
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 crossAxisSpacing: 12,
                 mainAxisSpacing: 12,
-                childAspectRatio: 0.9,
+                childAspectRatio: 0.92,
                 children: [
                   _buildKIToolCard(context,
-                      icon: Icons.visibility, title: 'Propaganda\nDetector',
-                      color: _red, description: 'Manipulation\nerkennen',
+                      icon: Icons.visibility,
+                      title: 'Propaganda\nDetector',
+                      color: _red,
+                      description: 'Manipulation\nerkennen',
                       onTap: () => Navigator.of(context).pushNamed('/propaganda-detector')),
                   _buildKIToolCard(context,
-                      icon: Icons.image_search, title: 'Image\nForensics',
-                      color: _blue, description: 'Bild-Manipulation\nanalysieren',
+                      icon: Icons.image_search,
+                      title: 'Image\nForensics',
+                      color: _blue,
+                      description: 'Bild-Manipulation\nanalysieren',
                       onTap: () => Navigator.of(context).pushNamed('/image-forensics')),
-                  _buildKIToolCard(context,
-                      icon: Icons.device_hub, title: 'Power\nNetwork',
-                      color: _purple, description: 'Machtnetzwerke\nvisualisieren',
-                      onTap: () => Navigator.of(context).pushNamed('/power-network-mapper')),
-                  _buildKIToolCard(context,
-                      icon: Icons.analytics, title: 'Event\nPredictor',
-                      color: _amber, description: 'Zukunfts-Szenarien\nanalysieren',
-                      onTap: () => Navigator.of(context).pushNamed('/event-predictor')),
-                  _buildKIToolCard(context,
-                      icon: Icons.folder_special, title: 'Epstein\nFiles',
-                      color: _red, description: 'Justice.gov PDF\nLesen & Übersetzen',
-                      onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const EpsteinFilesSimpleScreen()))),
                 ],
               ),
 
-              const SizedBox(height: 28),
+              const SizedBox(height: 24),
 
-              // Hint
+              // ─── Gruppe 2: Netzwerke & Vorhersage ─────────────
+              _buildToolGroupHeader(
+                icon: '🕸️',
+                title: 'NETZWERKE & VORHERSAGE',
+                subtitle: 'Strukturen und Szenarien',
+                accent: _purple,
+              ),
+              const SizedBox(height: 10),
+              GridView.count(
+                crossAxisCount: 2,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                childAspectRatio: 0.92,
+                children: [
+                  _buildKIToolCard(context,
+                      icon: Icons.device_hub,
+                      title: 'Power\nNetwork',
+                      color: _purple,
+                      description: 'Machtnetzwerke\nvisualisieren',
+                      onTap: () => Navigator.of(context).pushNamed('/power-network-mapper')),
+                  _buildKIToolCard(context,
+                      icon: Icons.analytics,
+                      title: 'Event\nPredictor',
+                      color: _amber,
+                      description: 'Zukunfts-Szenarien\nanalysieren',
+                      onTap: () => Navigator.of(context).pushNamed('/event-predictor')),
+                ],
+              ),
+
+              const SizedBox(height: 24),
+
+              // ─── Gruppe 3: Archive & Dokumente ────────────────
+              _buildToolGroupHeader(
+                icon: '📂',
+                title: 'ARCHIVE & DOKUMENTE',
+                subtitle: 'Originalquellen einsehen',
+                accent: _amber,
+              ),
+              const SizedBox(height: 10),
+              _buildKIToolCardWide(
+                context,
+                icon: Icons.folder_special,
+                title: 'Epstein Files',
+                color: _red,
+                description: 'Justice.gov PDF · Originaldokumente lesen & übersetzen',
+                onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const EpsteinFilesSimpleScreen())),
+              ),
+
+              const SizedBox(height: 32),
+
+              // ─── Hint ─────────────────────────────────────────
               Center(
                 child: Column(
                   children: [
                     Icon(Icons.keyboard_arrow_up, color: _blue.withValues(alpha: 0.5), size: 28),
                     const SizedBox(height: 4),
-                    Text('Suchfeld oben nutzen oder Tool antippen',
-                        style: TextStyle(color: Colors.white.withValues(alpha: 0.35), fontSize: 12)),
+                    Text(
+                      'Suchfeld oben nutzen oder Tool antippen',
+                      style: TextStyle(color: Colors.white.withValues(alpha: 0.35), fontSize: 12),
+                    ),
                   ],
                 ),
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  /// Section-Header für Tool-Gruppe — kleines Icon + Titel + dezente Subline
+  Widget _buildToolGroupHeader({
+    required String icon,
+    required String title,
+    required String subtitle,
+    required Color accent,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Container(
+          width: 4,
+          height: 32,
+          decoration: BoxDecoration(color: accent, borderRadius: BorderRadius.circular(2)),
+        ),
+        const SizedBox(width: 10),
+        Text(icon, style: const TextStyle(fontSize: 18)),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold, letterSpacing: 1.1),
+              ),
+              Text(
+                subtitle,
+                style: TextStyle(color: Colors.white.withValues(alpha: 0.45), fontSize: 11),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Volle Breite Tool-Card — für einzelne Tools die kein Grid-Pendant haben
+  Widget _buildKIToolCardWide(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required Color color,
+    required String description,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(colors: [_card, _cardB], begin: Alignment.topLeft, end: Alignment.bottomRight),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color.withValues(alpha: 0.35), width: 1.5),
+          boxShadow: [BoxShadow(color: color.withValues(alpha: 0.12), blurRadius: 12, offset: const Offset(0, 4))],
+        ),
+        child: Row(
+          children: [
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(colors: [color.withValues(alpha: 0.25), Colors.transparent]),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(shape: BoxShape.circle, color: color.withValues(alpha: 0.15)),
+                  child: Icon(icon, color: color, size: 24),
+                ),
+              ],
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 4),
+                  Text(description, style: TextStyle(color: Colors.white.withValues(alpha: 0.55), fontSize: 12, height: 1.3)),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(color: color.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(8)),
+              child: Text('Öffnen', style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.bold)),
+            ),
+          ],
         ),
       ),
     );
