@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
+import 'package:cached_network_image/cached_network_image.dart';
 import 'dart:async';
 import '../../services/supabase_service.dart'; // 🔥 supabase Auth
 import 'package:supabase_flutter/supabase_flutter.dart' show RealtimeChannel;
@@ -3438,18 +3439,16 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
                         tag: 'chat-img-${msg['id'] ?? msg['timestamp']}',
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(8),
-                          child: Image.network(
-                            msg['mediaUrl']!,
+                          child: CachedNetworkImage(
+                            imageUrl: msg['mediaUrl']!,
                             width: 200,
                             fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                width: 200,
-                                height: 150,
-                                color: Colors.grey[700],
-                                child: const Icon(Icons.broken_image, size: 48),
-                              );
-                            },
+                            errorWidget: (context, url, error) => Container(
+                              width: 200,
+                              height: 150,
+                              color: Colors.grey[700],
+                              child: const Icon(Icons.broken_image, size: 48),
+                            ),
                           ),
                         ),
                       ),

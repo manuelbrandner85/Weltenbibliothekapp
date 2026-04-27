@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../services/storage_service.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
@@ -729,14 +730,20 @@ class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern> w
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(12),
-                child: Image.network(post.mediaUrl!, fit: BoxFit.cover,
-                    loadingBuilder: (_, child, prog) => prog == null
-                        ? child
-                        : Container(height: 180, color: _kPurple.withValues(alpha: 0.08),
-                            child: Center(child: CircularProgressIndicator(color: _kPurple))),
-                    errorBuilder: (_, __, ___) => Container(height: 180,
-                        color: _kCard,
-                        child: const Icon(Icons.broken_image, color: Colors.white24, size: 40))),
+                child: CachedNetworkImage(
+                  imageUrl: post.mediaUrl!,
+                  fit: BoxFit.cover,
+                  placeholder: (_, __) => Container(
+                    height: 180,
+                    color: _kPurple.withValues(alpha: 0.08),
+                    child: Center(child: CircularProgressIndicator(color: _kPurple)),
+                  ),
+                  errorWidget: (_, __, ___) => Container(
+                    height: 180,
+                    color: _kCard,
+                    child: const Icon(Icons.broken_image, color: Colors.white24, size: 40),
+                  ),
+                ),
               ),
             ),
 

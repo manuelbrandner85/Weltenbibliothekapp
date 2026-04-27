@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../services/cloudflare_api_service.dart';
@@ -233,17 +234,15 @@ class _EnhancedMessageBubbleState extends State<EnhancedMessageBubble> {
                         if (message['avatar_url'] != null && 
                             (message['avatar_url'] as String).startsWith('http'))
                           ClipOval(
-                            child: Image.network(
-                              message['avatar_url'],
+                            child: CachedNetworkImage(
+                              imageUrl: message['avatar_url'],
                               width: 24,
                               height: 24,
                               fit: BoxFit.cover,
-                              errorBuilder: (context, error, stack) {
-                                return Text(
-                                  message['avatar'] ?? '👤',
-                                  style: const TextStyle(fontSize: 20),
-                                );
-                              },
+                              errorWidget: (context, url, error) => Text(
+                                message['avatar'] ?? '👤',
+                                style: const TextStyle(fontSize: 20),
+                              ),
                             ),
                           )
                         else if (message['avatar'] != null) 
@@ -474,11 +473,10 @@ class _EnhancedMessageBubbleState extends State<EnhancedMessageBubble> {
               maxHeight: 300,
               minWidth: 200,
             ),
-            child: Image.network(
-              mediaUrl,
+            child: CachedNetworkImage(
+              imageUrl: mediaUrl,
               fit: BoxFit.cover,
-              loadingBuilder: (context, child, loadingProgress) {
-                if (loadingProgress == null) return child;
+              progressIndicatorBuilder: (context, url, progress) {
                 return Container(
                   height: 200,
                   color: Colors.grey[850],
@@ -487,10 +485,7 @@ class _EnhancedMessageBubbleState extends State<EnhancedMessageBubble> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         CircularProgressIndicator(
-                          value: loadingProgress.expectedTotalBytes != null
-                              ? loadingProgress.cumulativeBytesLoaded /
-                                  loadingProgress.expectedTotalBytes!
-                              : null,
+                          value: progress.progress,
                           color: widget.worldColor,
                         ),
                         const SizedBox(height: 8),
@@ -506,7 +501,7 @@ class _EnhancedMessageBubbleState extends State<EnhancedMessageBubble> {
                   ),
                 );
               },
-              errorBuilder: (context, error, stack) {
+              errorWidget: (context, url, error) {
                 return Container(
                   height: 120,
                   width: 200,
@@ -528,7 +523,6 @@ class _EnhancedMessageBubbleState extends State<EnhancedMessageBubble> {
                         const SizedBox(height: 4),
                         TextButton.icon(
                           onPressed: () {
-                            // Reload by forcing rebuild
                             (context as Element).markNeedsBuild();
                           },
                           icon: const Icon(Icons.refresh, size: 16, color: Colors.white70),

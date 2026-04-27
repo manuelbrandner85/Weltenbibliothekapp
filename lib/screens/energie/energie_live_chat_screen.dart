@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart'; // kDebugMode
+import 'package:cached_network_image/cached_network_image.dart';
 import 'dart:async';
 import 'dart:io'; // File for uploads
 import '../../services/supabase_service.dart'; // 🔥 supabase client für Auth
@@ -3617,18 +3618,16 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                         tag: 'chat-img-${msg['id'] ?? msg['timestamp']}',
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(8),
-                          child: Image.network(
-                            msg['mediaUrl']!,
+                          child: CachedNetworkImage(
+                            imageUrl: msg['mediaUrl']!,
                             width: 200,
                             fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                width: 200,
-                                height: 150,
-                                color: const Color(0xFF2A2A3E),
-                                child: const Icon(Icons.broken_image, size: 48),
-                              );
-                            },
+                            errorWidget: (context, url, error) => Container(
+                              width: 200,
+                              height: 150,
+                              color: const Color(0xFF2A2A3E),
+                              child: const Icon(Icons.broken_image, size: 48),
+                            ),
                           ),
                         ),
                       ),
