@@ -85,12 +85,22 @@ class AvatarUploadService {
     }
   }
   
-  /// Upload avatar to Cloudflare R2.
-  ///
-  /// Wirft jetzt eine [AvatarUploadException] mit nutzerlesbarem Grund statt
-  /// silently null zurückzugeben, damit der Caller einen Error-Dialog zeigen
-  /// kann. Bei Erfolg liefert die URL.
-  Future<String> uploadAvatar(File imageFile, String userId) async {
+  /// Upload avatar to Cloudflare R2 — Legacy-API mit null-Return bei Fehler.
+  /// Bestehende Caller erwarten `String?`. Backward-compatible.
+  /// Für Error-Dialogs lieber [uploadAvatarOrThrow] nutzen.
+  Future<String?> uploadAvatar(File imageFile, String userId) async {
+    try {
+      return await uploadAvatarOrThrow(imageFile, userId);
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ uploadAvatar swallowed: $e');
+      return null;
+    }
+  }
+
+  /// Upload avatar mit nutzerlesbarer [AvatarUploadException] bei Fehler.
+  /// UI-Pfade die spezifische Fehlermeldungen zeigen wollen (zu groß,
+  /// falsches Format, Auth, Connection) nutzen diesen Throw-Style.
+  Future<String> uploadAvatarOrThrow(File imageFile, String userId) async {
     if (kDebugMode) debugPrint('⬆️ Uploading avatar for user $userId...');
 
     try {
@@ -135,17 +145,6 @@ class AvatarUploadService {
       throw AvatarUploadException(
         'Verbindung zum Server fehlgeschlagen. Bitte erneut versuchen.',
       );
-    }
-  }
-
-  /// Legacy-Wrapper für Aufrufer die noch null erwarten. Vermeidet
-  /// Crashes beim graduellen Migrate.
-  Future<String?> uploadAvatarSafe(File imageFile, String userId) async {
-    try {
-      return await uploadAvatar(imageFile, userId);
-    } catch (e) {
-      if (kDebugMode) debugPrint('⚠️ uploadAvatarSafe swallowed: $e');
-      return null;
     }
   }
   
