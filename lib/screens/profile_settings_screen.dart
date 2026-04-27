@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
  // OpenClaw v2.0
+import '../config/wb_design.dart'; // 🎨 Design-Tokens
 import '../services/storage_service.dart';
 import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart'; // 📸 Image Picker
@@ -113,7 +114,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('✅ Energie-Profil aktualisiert'),
-            backgroundColor: Colors.purple,
+            backgroundColor: WbDesign.energiePurple,
           ),
         );
       }
@@ -207,7 +208,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0A),
+      backgroundColor: WbDesign.bgNeutral,
       appBar: AppBar(
         title: const Text('👤 Profil-Einstellungen'),
         backgroundColor: Colors.transparent,
@@ -221,22 +222,22 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // MATERIE-PROFIL SEKTION
-                  _buildSectionHeader('🔵 MATERIE-PROFIL', Colors.blue),
+                  _buildSectionHeader('🔵 MATERIE-PROFIL', WbDesign.materieBlue),
                   const SizedBox(height: 12),
-                  
+
                   if (_materieProfile != null && _materieProfile!.isValid)
                     _buildMaterieProfileCard()
                   else
                     _buildEmptyProfileCard(
                       worldName: 'Materie',
-                      worldColor: Colors.blue,
+                      worldColor: WbDesign.materieBlue,
                       onCreateTap: _editMaterieProfile,
                     ),
-                  
+
                   const SizedBox(height: 32),
-                  
+
                   // ENERGIE-PROFIL SEKTION
-                  _buildSectionHeader('🟣 ENERGIE-PROFIL', Colors.purple),
+                  _buildSectionHeader('🟣 ENERGIE-PROFIL', WbDesign.energiePurple),
                   const SizedBox(height: 12),
                   
                   if (_energieProfile != null && _energieProfile!.isValid)
@@ -244,7 +245,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                   else
                     _buildEmptyProfileCard(
                       worldName: 'Energie',
-                      worldColor: Colors.purple,
+                      worldColor: WbDesign.energiePurple,
                       onCreateTap: _editEnergieProfile,
                     ),
                   
@@ -319,13 +320,13 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            Colors.blue.withValues(alpha: 0.1),
-            Colors.blue.withValues(alpha: 0.05),
+            WbDesign.materieBlue.withValues(alpha: 0.1),
+            WbDesign.materieBlue.withValues(alpha: 0.05),
           ],
         ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Colors.blue.withValues(alpha: 0.3),
+          color: WbDesign.materieBlue.withValues(alpha: 0.3),
           width: 1,
         ),
       ),
@@ -370,7 +371,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                           colors: [Color(0xFF2196F3), Color(0xFF00BCD4)],
                         ),
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.blue, width: 2),
+                        border: Border.all(color: WbDesign.materieBlue, width: 2),
                       ),
                       child: const Center(
                         child: Text(
@@ -385,7 +386,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                       child: Container(
                         padding: const EdgeInsets.all(4),
                         decoration: BoxDecoration(
-                          color: Colors.blue,
+                          color: WbDesign.materieBlue,
                           shape: BoxShape.circle,
                           border: Border.all(color: Colors.white, width: 2),
                         ),
@@ -436,8 +437,8 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                   icon: const Icon(Icons.edit, size: 18),
                   label: const Text('Bearbeiten'),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.blue,
-                    side: const BorderSide(color: Colors.blue),
+                    foregroundColor: WbDesign.materieBlue,
+                    side: const BorderSide(color: WbDesign.materieBlue),
                   ),
                 ),
               ),
@@ -469,13 +470,13 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            Colors.purple.withValues(alpha: 0.1),
-            Colors.purple.withValues(alpha: 0.05),
+            WbDesign.energiePurple.withValues(alpha: 0.1),
+            WbDesign.energiePurple.withValues(alpha: 0.05),
           ],
         ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Colors.purple.withValues(alpha: 0.3),
+          color: WbDesign.energiePurple.withValues(alpha: 0.3),
           width: 1,
         ),
       ),
@@ -520,7 +521,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                           colors: [Color(0xFF9C27B0), Color(0xFF673AB7)],
                         ),
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.purple, width: 2),
+                        border: Border.all(color: WbDesign.energiePurple, width: 2),
                       ),
                       child: const Center(
                         child: Text(
@@ -535,7 +536,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                       child: Container(
                         padding: const EdgeInsets.all(4),
                         decoration: BoxDecoration(
-                          color: Colors.purple,
+                          color: WbDesign.energiePurple,
                           shape: BoxShape.circle,
                           border: Border.all(color: Colors.white, width: 2),
                         ),
@@ -618,8 +619,8 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                   icon: const Icon(Icons.edit, size: 18),
                   label: const Text('Bearbeiten'),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.purple,
-                    side: const BorderSide(color: Colors.purple),
+                    foregroundColor: WbDesign.energiePurple,
+                    side: const BorderSide(color: WbDesign.energiePurple),
                   ),
                 ),
               ),
