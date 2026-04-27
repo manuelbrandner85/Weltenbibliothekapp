@@ -165,7 +165,7 @@ class CommunityInteractionService {
       final supabase = Supabase.instance.client;
       final result = await supabase
           .from('likes').select('id').eq('article_id', postId)
-          .timeout(const Duration(seconds: 5));
+          .timeout(const Duration(seconds: 10));
       final count = (result as List).length;
       await prefs.setInt(countKey, count);
       return count;

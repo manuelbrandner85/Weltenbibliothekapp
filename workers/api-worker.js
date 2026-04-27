@@ -249,8 +249,9 @@ async function dispatchPushQueue(env, pushAuth) {
   let failed = 0;
   for (const row of list) {
     let deliveryOk = false;
+    // user_id URL-encoden um Parameter-Poisoning bei Sonderzeichen zu vermeiden.
     const subsRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/push_subscriptions?user_id=eq.${row.user_id}&is_active=eq.true&fcm_token=not.is.null&select=fcm_token`,
+      `${SUPABASE_URL}/rest/v1/push_subscriptions?user_id=eq.${encodeURIComponent(row.user_id)}&is_active=eq.true&fcm_token=not.is.null&select=fcm_token`,
       { headers: pushAuth }
     );
     const subs = await subsRes.json().catch(() => []);
@@ -1146,7 +1147,7 @@ export default {
         if (!userId) return errorResponse('user_id required', 400);
         try {
           const res = await fetch(
-            `${SUPABASE_URL}/rest/v1/push_subscriptions?user_id=eq.${userId}`,
+            `${SUPABASE_URL}/rest/v1/push_subscriptions?user_id=eq.${encodeURIComponent(userId)}`,
             {
               method: 'PATCH',
               headers: { ...pushAuth, 'Content-Type': 'application/json' },
@@ -1168,7 +1169,7 @@ export default {
         }
         try {
           const fetchRes = await fetch(
-            `${SUPABASE_URL}/rest/v1/notification_queue?user_id=eq.${userId}&status=eq.pending&select=*&order=created_at.asc&limit=50`,
+            `${SUPABASE_URL}/rest/v1/notification_queue?user_id=eq.${encodeURIComponent(userId)}&status=eq.pending&select=*&order=created_at.asc&limit=50`,
             { headers: pushAuth }
           );
           const rows = await fetchRes.json().catch(() => []);
@@ -1247,8 +1248,8 @@ export default {
         if (!userId) return jsonResponse({ fcm_configured: fcmConfigured });
         try {
           const [subsRes, queueRes] = await Promise.all([
-            fetch(`${SUPABASE_URL}/rest/v1/push_subscriptions?user_id=eq.${userId}&select=is_active,fcm_token,platform,updated_at`, { headers: pushAuth }),
-            fetch(`${SUPABASE_URL}/rest/v1/notification_queue?user_id=eq.${userId}&select=id,title,status,attempts,created_at&order=created_at.desc&limit=10`, { headers: pushAuth }),
+            fetch(`${SUPABASE_URL}/rest/v1/push_subscriptions?user_id=eq.${encodeURIComponent(userId)}&select=is_active,fcm_token,platform,updated_at`, { headers: pushAuth }),
+            fetch(`${SUPABASE_URL}/rest/v1/notification_queue?user_id=eq.${encodeURIComponent(userId)}&select=id,title,status,attempts,created_at&order=created_at.desc&limit=10`, { headers: pushAuth }),
           ]);
           const subs = await subsRes.json().catch(() => []);
           const queue = await queueRes.json().catch(() => []);
