@@ -1,60 +1,78 @@
 import 'package:flutter/material.dart';
- // OpenClaw v2.0
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
+import 'package:url_launcher/url_launcher.dart';
 import '../../services/group_tools_service.dart';
 import '../../services/user_service.dart';
+import '../../services/free_api_service.dart';
 
 /// 🛸 UFO-Sichtungen Screen
-/// Globale Karte von UFO-Sichtungen & Begegnungen
+/// Community-Meldungen + offizielle NASA-Bolide/Fireball-Ereignisse
 class UfoSightingsScreen extends StatefulWidget {
   final String roomId;
-  
-  const UfoSightingsScreen({
-    super.key,
-    this.roomId = 'ufos',
-  });
+
+  const UfoSightingsScreen({super.key, this.roomId = 'ufos'});
 
   @override
   State<UfoSightingsScreen> createState() => _UfoSightingsScreenState();
 }
 
-class _UfoSightingsScreenState extends State<UfoSightingsScreen> {
+class _UfoSightingsScreenState extends State<UfoSightingsScreen>
+    with SingleTickerProviderStateMixin {
   final GroupToolsService _toolsService = GroupToolsService();
   final UserService _userService = UserService();
-  
+  final _api = FreeApiService.instance;
+
+  late final TabController _tabCtrl;
+
   List<Map<String, dynamic>> _sightings = [];
-  bool _isLoading = false;
+  List<NasaFireball> _fireballs = [];
+
+  bool _loadingSightings = false;
+  bool _loadingFireballs = false;
+
   String _username = '';
   String _userId = '';
-  
+
   @override
   void initState() {
     super.initState();
+    _tabCtrl = TabController(length: 2, vsync: this);
     _loadUserData();
     _loadSightings();
+    _loadFireballs();
   }
-  
+
+  @override
+  void dispose() {
+    _tabCtrl.dispose();
+    super.dispose();
+  }
+
   Future<void> _loadUserData() async {
-    final user = await _userService.getCurrentUser();
-    setState(() {
-      _username = user.username;
-      _userId = 'user_${user.username.toLowerCase()}';
-    });
-  }
-  
-  Future<void> _loadSightings() async {
-    setState(() => _isLoading = true);
     try {
-      // TODO: Add Flutter Service method
-      final response = await _toolsService.getUfoSightings(roomId: widget.roomId);
+      final user = await _userService.getCurrentUser();
       setState(() {
-        _sightings = response;
-        _isLoading = false;
+        _username = user.username;
+        _userId = 'user_${user.username.toLowerCase()}';
       });
+    } catch (_) {}
+  }
+
+  Future<void> _loadSightings() async {
+    setState(() => _loadingSightings = true);
+    try {
+      final response = await _toolsService.getUfoSightings(roomId: widget.roomId);
+      if (mounted) setState(() { _sightings = response; _loadingSightings = false; });
     } catch (e) {
-      if (kDebugMode) debugPrint('❌ Error: $e');
-      setState(() => _isLoading = false);
+      if (kDebugMode) debugPrint('❌ UFO load: $e');
+      if (mounted) setState(() => _loadingSightings = false);
     }
+  }
+
+  Future<void> _loadFireballs() async {
+    setState(() => _loadingFireballs = true);
+    final result = await _api.fetchFireballs(limit: 30);
+    if (mounted) setState(() { _fireballs = result; _loadingFireballs = false; });
   }
 
   @override
@@ -63,41 +81,76 @@ class _UfoSightingsScreenState extends State<UfoSightingsScreen> {
       backgroundColor: const Color(0xFF0A0A0F),
       appBar: AppBar(
         backgroundColor: const Color(0xFF1A1A2E),
-        title: const Text('🛸 UFO-Sichtungen'),
+        title: const Text('🛸 UFO & Luftphänomene'),
         actions: [
-          IconButton(icon: const Icon(Icons.refresh), onPressed: _loadSightings),
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () { _loadSightings(); _loadFireballs(); },
+          ),
+        ],
+        bottom: TabBar(
+          controller: _tabCtrl,
+          indicatorColor: Colors.green,
+          labelColor: Colors.green,
+          unselectedLabelColor: Colors.white54,
+          tabs: [
+            Tab(text: 'Community (${_sightings.length})'),
+            Tab(text: '🔥 NASA Fireballs'),
+          ],
+        ),
+      ),
+      body: TabBarView(
+        controller: _tabCtrl,
+        children: [
+          _buildCommunityTab(),
+          _buildFireballTab(),
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _sightings.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.rocket_launch, size: 64, color: Colors.green.shade400),
-                      const SizedBox(height: 16),
-                      const Text('Noch keine Sichtungen', style: TextStyle(color: Colors.white38)),
-                    ],
-                  ),
-                )
-              : ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: _sightings.length,
-                  itemBuilder: (context, index) {
-                    final sighting = _sightings[index];
-                    return _buildSightingCard(sighting);
-                  },
-                ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showAddSightingDialog(),
-        backgroundColor: Colors.green,
-        icon: const Icon(Icons.add_location),
-        label: const Text('Sichtung melden'),
+      floatingActionButton: _tabCtrl.index == 0
+          ? FloatingActionButton.extended(
+              onPressed: _showAddSightingDialog,
+              backgroundColor: Colors.green,
+              icon: const Icon(Icons.add_location),
+              label: const Text('Sichtung melden'),
+            )
+          : null,
+    );
+  }
+
+  // ── Tab 1: Community Sichtungen ──────────────────────────────────────────
+
+  Widget _buildCommunityTab() {
+    if (_loadingSightings) {
+      return const Center(child: CircularProgressIndicator(color: Colors.green));
+    }
+    if (_sightings.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.rocket_launch, size: 64, color: Colors.green.shade400),
+            const SizedBox(height: 16),
+            const Text('Noch keine Community-Sichtungen',
+                style: TextStyle(color: Colors.white38)),
+            const SizedBox(height: 8),
+            const Text('Schau dir offizielle NASA-Daten im "🔥 Fireballs"-Tab an!',
+                style: TextStyle(color: Colors.white24, fontSize: 12),
+                textAlign: TextAlign.center),
+          ],
+        ),
+      );
+    }
+    return RefreshIndicator(
+      onRefresh: _loadSightings,
+      color: Colors.green,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: _sightings.length,
+        itemBuilder: (context, index) => _buildSightingCard(_sightings[index]),
       ),
     );
   }
-  
+
   Widget _buildSightingCard(Map<String, dynamic> sighting) {
     final title = sighting['sighting_title'] ?? 'Unbekannt';
     final description = sighting['sighting_description'] ?? '';
@@ -105,7 +158,7 @@ class _UfoSightingsScreenState extends State<UfoSightingsScreen> {
     final objectType = sighting['object_type'] ?? 'unknown';
     final witnesses = sighting['witnesses'] ?? 1;
     final verified = sighting['verified'] == 1 || sighting['verified'] == true;
-    
+
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       color: const Color(0xFF1A1A2E),
@@ -118,8 +171,7 @@ class _UfoSightingsScreenState extends State<UfoSightingsScreen> {
             Row(
               children: [
                 Container(
-                  width: 48,
-                  height: 48,
+                  width: 48, height: 48,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: LinearGradient(
@@ -133,18 +185,11 @@ class _UfoSightingsScreenState extends State<UfoSightingsScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        title,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        objectType.toUpperCase(),
-                        style: TextStyle(color: Colors.green.shade400, fontSize: 12),
-                      ),
+                      Text(title,
+                          style: const TextStyle(
+                              color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                      Text(objectType.toUpperCase(),
+                          style: TextStyle(color: Colors.green.shade400, fontSize: 12)),
                     ],
                   ),
                 ),
@@ -167,12 +212,10 @@ class _UfoSightingsScreenState extends State<UfoSightingsScreen> {
               ],
             ),
             const SizedBox(height: 12),
-            Text(
-              description,
-              style: TextStyle(color: Colors.white.withValues(alpha: 0.8)),
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-            ),
+            Text(description,
+                style: TextStyle(color: Colors.white.withValues(alpha: 0.8)),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis),
             const SizedBox(height: 12),
             Row(
               children: [
@@ -182,7 +225,8 @@ class _UfoSightingsScreenState extends State<UfoSightingsScreen> {
                 const SizedBox(width: 16),
                 const Icon(Icons.group, size: 16, color: Colors.white54),
                 const SizedBox(width: 4),
-                Text('$witnesses Zeugen', style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                Text('$witnesses Zeugen',
+                    style: const TextStyle(color: Colors.white54, fontSize: 12)),
               ],
             ),
           ],
@@ -190,7 +234,169 @@ class _UfoSightingsScreenState extends State<UfoSightingsScreen> {
       ),
     );
   }
-  
+
+  // ── Tab 2: NASA Fireballs ────────────────────────────────────────────────
+
+  Widget _buildFireballTab() {
+    if (_loadingFireballs) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(color: Colors.orange),
+            SizedBox(height: 16),
+            Text('Lade NASA Bolide-Daten…', style: TextStyle(color: Colors.white54)),
+          ],
+        ),
+      );
+    }
+    if (_fireballs.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.wifi_off, size: 48, color: Colors.white24),
+            const SizedBox(height: 12),
+            const Text('NASA SSD nicht erreichbar', style: TextStyle(color: Colors.white54)),
+            TextButton(
+              onPressed: _loadFireballs,
+              child: const Text('Neu laden', style: TextStyle(color: Colors.orange)),
+            ),
+          ],
+        ),
+      );
+    }
+    return RefreshIndicator(
+      onRefresh: _loadFireballs,
+      color: Colors.orange,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(12),
+        itemCount: _fireballs.length + 1,
+        itemBuilder: (ctx, i) {
+          if (i == 0) return _buildFireballHeader();
+          return _buildFireballCard(_fireballs[i - 1]);
+        },
+      ),
+    );
+  }
+
+  Widget _buildFireballHeader() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.orange.withValues(alpha: 0.2), Colors.red.withValues(alpha: 0.1)],
+        ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.orange.withValues(alpha: 0.4)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Text('🔥', style: TextStyle(fontSize: 24)),
+              SizedBox(width: 8),
+              Text('NASA Bolide / Fireball Monitor',
+                  style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold, fontSize: 16)),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '${_fireballs.length} bestätigte Atmosphären-Eintritte · Quelle: NASA JPL',
+            style: const TextStyle(color: Colors.white54, fontSize: 12),
+          ),
+          const SizedBox(height: 6),
+          InkWell(
+            onTap: () async {
+              final uri = Uri.parse('https://cneos.jpl.nasa.gov/fireballs/');
+              await launchUrl(uri, mode: LaunchMode.externalApplication);
+            },
+            child: const Text(
+              'cneos.jpl.nasa.gov/fireballs →',
+              style: TextStyle(color: Colors.orange, fontSize: 12, decoration: TextDecoration.underline),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFireballCard(NasaFireball fb) {
+    final date = fb.date;
+    final dateStr = date != null
+        ? '${date.day}.${date.month}.${date.year}'
+        : 'Datum unbekannt';
+    final energy = fb.energy != null
+        ? '${fb.energy!.toStringAsFixed(1)} GJ Energie'
+        : null;
+    final vel = fb.velocity != null
+        ? '${fb.velocity!.toStringAsFixed(1)} km/s'
+        : null;
+
+    return Card(
+      color: const Color(0xFF1A1A2E),
+      margin: const EdgeInsets.only(bottom: 10),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 44, height: 44,
+              decoration: BoxDecoration(
+                color: Colors.orange.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+              ),
+              child: const Center(child: Text('☄️', style: TextStyle(fontSize: 22))),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    fb.locationLabel,
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 4),
+                  Wrap(
+                    spacing: 10,
+                    children: [
+                      if (energy != null)
+                        _chip(Icons.bolt, energy, Colors.orange),
+                      if (vel != null)
+                        _chip(Icons.speed, vel, Colors.blue),
+                      if (fb.altitude != null)
+                        _chip(Icons.height, '${fb.altitude!.toStringAsFixed(0)} km Höhe', Colors.green),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(dateStr, style: const TextStyle(color: Colors.white38, fontSize: 11)),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _chip(IconData icon, String label, Color color) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 12, color: color),
+        const SizedBox(width: 3),
+        Text(label, style: TextStyle(color: color, fontSize: 11)),
+      ],
+    );
+  }
+
+  // ── Dialog: Eigene Sichtung melden ──────────────────────────────────────
+
   void _showAddSightingDialog() {
     if (_username.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -198,7 +404,7 @@ class _UfoSightingsScreenState extends State<UfoSightingsScreen> {
       );
       return;
     }
-    
+
     showDialog(
       context: context,
       builder: (context) {
@@ -206,7 +412,7 @@ class _UfoSightingsScreenState extends State<UfoSightingsScreen> {
         final descCtrl = TextEditingController();
         String objectType = 'light';
         int witnesses = 1;
-        
+
         return StatefulBuilder(
           builder: (context, setState) => AlertDialog(
             backgroundColor: const Color(0xFF1A1A2E),
@@ -257,9 +463,7 @@ class _UfoSightingsScreenState extends State<UfoSightingsScreen> {
                       const SizedBox(width: 16),
                       IconButton(
                         icon: const Icon(Icons.remove, color: Colors.white),
-                        onPressed: () {
-                          if (witnesses > 1) setState(() => witnesses--);
-                        },
+                        onPressed: () { if (witnesses > 1) setState(() => witnesses--); },
                       ),
                       Text('$witnesses', style: const TextStyle(color: Colors.white, fontSize: 18)),
                       IconButton(
@@ -272,13 +476,10 @@ class _UfoSightingsScreenState extends State<UfoSightingsScreen> {
               ),
             ),
             actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Abbrechen'),
-              ),
+              TextButton(onPressed: () => Navigator.pop(context), child: const Text('Abbrechen')),
               ElevatedButton(
                 onPressed: () async {
-                  final sightingId = await _toolsService.createUfoSighting(
+                  final id = await _toolsService.createUfoSighting(
                     roomId: widget.roomId,
                     userId: _userId,
                     username: _username,
@@ -289,7 +490,7 @@ class _UfoSightingsScreenState extends State<UfoSightingsScreen> {
                   );
                   if (context.mounted) {
                     Navigator.pop(context);
-                    if (sightingId != null) _loadSightings();
+                    if (id != null) _loadSightings();
                   }
                 },
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
@@ -300,11 +501,5 @@ class _UfoSightingsScreenState extends State<UfoSightingsScreen> {
         );
       },
     );
-  }
-
-  @override
-  void dispose() {
-    // 🧹 PHASE B: Proper resource disposal
-    super.dispose();
   }
 }
