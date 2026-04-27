@@ -143,18 +143,41 @@ jobs:
             exit 0
           fi
 
-          # Changelog: Commits seit letztem Tag (oder letzte 10), chore/ci/Merge gefiltert.
+          # Changelog: Bei Squash-Merges enthält der HEAD-Commit alle Sub-Commits
+          # im Body. Wir parsen daher BEIDES — git log (für mehrere echte Commits
+          # zwischen zwei Tags) UND den HEAD-Commit-Body (für Squash-Merge-PRs).
           LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+
+          # 1) git log über alle Commits seit letztem Tag
           if [ -n "$LAST_TAG" ]; then
-            CL=$(git log "$LAST_TAG"..HEAD --pretty=format:"• %s" --no-merges 2>/dev/null \
-              | grep -v -E "^• (chore|ci|Merge)" | head -20 || true)
+            COMMITS=$(git log "$LAST_TAG"..HEAD --pretty=format:"%s" --no-merges 2>/dev/null || true)
           else
-            CL=$(git log --pretty=format:"• %s" --no-merges -10 2>/dev/null \
-              | grep -v -E "^• (chore|ci|Merge)" || true)
+            COMMITS=$(git log --pretty=format:"%s" --no-merges -10 2>/dev/null || true)
           fi
+
+          # 2) Wenn nur 1 Commit (typisch bei Squash-Merge): zusätzlich Body parsen
+          COMMIT_COUNT=$(echo "$COMMITS" | grep -c . || echo "0")
+          if [ "$COMMIT_COUNT" = "1" ]; then
+            # Squash-Merge erkannt — Body enthält "* feat(...)", "* fix(...)" Lines
+            BODY_LINES=$(git log -1 --pretty=format:"%b" 2>/dev/null \
+              | grep -E "^\* (feat|fix|refactor|perf|style)" \
+              | sed 's/^\* /• /' || true)
+            if [ -n "$BODY_LINES" ]; then
+              CL="$BODY_LINES"
+            else
+              CL=$(echo "$COMMITS" | sed 's/^/• /' | grep -v -E "^• (chore|ci|Merge)" || true)
+            fi
+          else
+            CL=$(echo "$COMMITS" | sed 's/^/• /' | grep -v -E "^• (chore|ci|Merge)" | head -20 || true)
+          fi
+
           if [ -z "$CL" ]; then
             CL="• Bugfixes und Verbesserungen"
           fi
+
+          echo "Changelog (preview):"
+          echo "$CL"
+          echo "---"
 
           BODY=$(jq -n --arg cl "$CL" '{"patch_changelog": $cl}')
           HTTP_CODE=$(curl -sS -o /tmp/pc_resp.json -w "%{http_code}" \
