@@ -1194,12 +1194,13 @@ export default {
       // POST /api/push/test → legt Test-Notification für user_id in notification_queue
       // Body: { user_id, type?, title?, body? }
       if (method === 'POST' && path.endsWith('/test')) {
-        const userId = body?.user_id;
+        const testReqBody = await request.json().catch(() => ({}));
+        const userId = testReqBody?.user_id;
         if (!userId) return errorResponse('user_id required', 400);
         if (!serviceKey) return errorResponse('SERVICE_ROLE_KEY required', 500);
-        const type = body?.type || 'chat_message';
-        const testTitle = body?.title || '🔔 Test-Benachrichtigung';
-        const testBody = body?.body || `Push-System funktioniert! Typ: ${type} · ${new Date().toLocaleTimeString('de-DE')}`;
+        const type = testReqBody?.type || 'chat_message';
+        const testTitle = testReqBody?.title || '🔔 Test-Benachrichtigung';
+        const testBody = testReqBody?.body || `Push-System funktioniert! Typ: ${type} · ${new Date().toLocaleTimeString('de-DE')}`;
         try {
           const ins = await fetch(
             `${SUPABASE_URL}/rest/v1/notification_queue`,
