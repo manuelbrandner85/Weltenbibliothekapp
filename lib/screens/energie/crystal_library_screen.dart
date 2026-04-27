@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
- // OpenClaw v2.0
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
-import 'dart:convert'; // Helper for JSON decode
+import 'dart:convert';
 import '../../services/group_tools_service.dart';
 import '../../services/user_service.dart';
 
@@ -19,31 +18,56 @@ class CrystalLibraryScreen extends StatefulWidget {
   State<CrystalLibraryScreen> createState() => _CrystalLibraryScreenState();
 }
 
-class _CrystalLibraryScreenState extends State<CrystalLibraryScreen> {
+class _CrystalLibraryScreenState extends State<CrystalLibraryScreen>
+    with SingleTickerProviderStateMixin {
   final GroupToolsService _toolsService = GroupToolsService();
   final UserService _userService = UserService();
   final TextEditingController _searchController = TextEditingController();
-  
+  final TextEditingController _mineralSearchCtrl = TextEditingController();
+
+  late final TabController _tabCtrl;
+
   List<Map<String, dynamic>> _crystals = [];
   bool _isLoading = false;
   String _username = '';
   String _userId = '';
   String? _errorMessage;
-  
+
+  // Mineralien-Tab
+  List<_MineralEntry> _filteredMinerals = List.from(_kMinerals);
+
   // Filter
-  String _sortBy = 'likes'; // 'likes', 'recent', 'name'
-  
+  String _sortBy = 'likes';
+
   @override
   void initState() {
     super.initState();
+    _tabCtrl = TabController(length: 2, vsync: this);
     _loadUserData();
     _loadCrystals();
   }
-  
+
   @override
   void dispose() {
+    _tabCtrl.dispose();
     _searchController.dispose();
+    _mineralSearchCtrl.dispose();
     super.dispose();
+  }
+
+  void _filterMinerals(String query) {
+    final q = query.toLowerCase();
+    setState(() {
+      _filteredMinerals = q.isEmpty
+          ? List.from(_kMinerals)
+          : _kMinerals
+              .where((m) =>
+                  m.name.toLowerCase().contains(q) ||
+                  m.nameEn.toLowerCase().contains(q) ||
+                  m.formula.toLowerCase().contains(q) ||
+                  m.colors.any((c) => c.toLowerCase().contains(q)))
+              .toList();
+    });
   }
   
   Future<void> _loadUserData() async {
@@ -145,7 +169,6 @@ class _CrystalLibraryScreenState extends State<CrystalLibraryScreen> {
         backgroundColor: const Color(0xFF1A1A2E),
         title: const Text('💠 Kristall-Bibliothek'),
         actions: [
-          // Sort-Dropdown
           PopupMenuButton<String>(
             icon: const Icon(Icons.sort, color: Colors.white70),
             onSelected: (value) {
@@ -163,11 +186,41 @@ class _CrystalLibraryScreenState extends State<CrystalLibraryScreen> {
             onPressed: () => _loadCrystals(),
           ),
         ],
+        bottom: TabBar(
+          controller: _tabCtrl,
+          indicatorColor: Colors.purple,
+          labelColor: Colors.purple,
+          unselectedLabelColor: Colors.white54,
+          tabs: [
+            Tab(text: 'Community (${_crystals.length})'),
+            Tab(text: '🌍 Mineralien (${_kMinerals.length})'),
+          ],
+        ),
       ),
-      body: Column(
+      body: TabBarView(
+        controller: _tabCtrl,
         children: [
-          // Search Bar
-          Container(
+          _buildCommunityTab(),
+          _buildMineralienTab(),
+        ],
+      ),
+      floatingActionButton: _tabCtrl.index == 0
+          ? FloatingActionButton.extended(
+              onPressed: _showAddCrystalDialog,
+              backgroundColor: const Color(0xFF9C27B0),
+              icon: const Icon(Icons.add),
+              label: const Text('Kristall hinzufügen'),
+            )
+          : null,
+    );
+  }
+
+  // ── Community-Tab (bisherige Inhalte) ────────────────────────────────────
+  Widget _buildCommunityTab() {
+    return Column(
+      children: [
+        // Search Bar
+        Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -259,16 +312,149 @@ class _CrystalLibraryScreenState extends State<CrystalLibraryScreen> {
                           ),
           ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _showAddCrystalDialog,
-        backgroundColor: const Color(0xFF9C27B0),
-        icon: const Icon(Icons.add),
-        label: const Text('Kristall hinzufügen'),
+      );
+  }
+
+  // ── Mineralien-Tab ────────────────────────────────────────────────────────
+  Widget _buildMineralienTab() {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+          color: const Color(0xFF0A0A0F),
+          child: TextField(
+            controller: _mineralSearchCtrl,
+            style: const TextStyle(color: Colors.white),
+            decoration: InputDecoration(
+              hintText: 'Mineral suchen (Name, Formel, Farbe)…',
+              hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4)),
+              prefixIcon: const Icon(Icons.search, color: Colors.purple),
+              suffixIcon: _mineralSearchCtrl.text.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear, color: Colors.white38),
+                      onPressed: () {
+                        _mineralSearchCtrl.clear();
+                        _filterMinerals('');
+                      },
+                    )
+                  : null,
+              filled: true,
+              fillColor: const Color(0xFF1A1A2E),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(30),
+                borderSide: BorderSide.none,
+              ),
+            ),
+            onChanged: _filterMinerals,
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          color: const Color(0xFF0A0A0F),
+          child: Row(
+            children: [
+              const Icon(Icons.info_outline, size: 14, color: Colors.white38),
+              const SizedBox(width: 6),
+              Text(
+                '${_filteredMinerals.length} Mineralien · Quellen: Mindat, IMA, mineralienatlas.de',
+                style: const TextStyle(color: Colors.white38, fontSize: 11),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.all(12),
+            itemCount: _filteredMinerals.length,
+            itemBuilder: (ctx, i) => _buildMineralCard(_filteredMinerals[i]),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMineralCard(_MineralEntry m) {
+    return Card(
+      color: const Color(0xFF1A1A2E),
+      margin: const EdgeInsets.only(bottom: 10),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      child: ExpansionTile(
+        tilePadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        childrenPadding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+        leading: Container(
+          width: 42, height: 42,
+          decoration: BoxDecoration(
+            color: m.displayColor.withValues(alpha: 0.2),
+            shape: BoxShape.circle,
+            border: Border.all(color: m.displayColor.withValues(alpha: 0.5)),
+          ),
+          child: Center(child: Text(m.emoji, style: const TextStyle(fontSize: 20))),
+        ),
+        title: Text(m.name,
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        subtitle: Text('${m.nameEn} · ${m.formula}',
+            style: const TextStyle(color: Colors.white54, fontSize: 12)),
+        trailing: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: Colors.purple.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text('Härte ${m.hardness}',
+              style: const TextStyle(color: Colors.purple, fontSize: 11)),
+        ),
+        iconColor: Colors.purple,
+        collapsedIconColor: Colors.white38,
+        children: [
+          // Farben
+          _mineralRow('🎨', 'Farben', m.colors.join(', ')),
+          _mineralRow('🔷', 'Kristallsystem', m.crystalSystem),
+          _mineralRow('📍', 'Fundorte', m.origins.join(', ')),
+          _mineralRow('💡', 'Wirkung (spirituell)', m.spiritualEffect),
+          if (m.chakra != null) _mineralRow('🌈', 'Chakra', m.chakra!),
+          if (m.element != null) _mineralRow('🌿', 'Element', m.element!),
+          const SizedBox(height: 6),
+          // Tags
+          Wrap(
+            spacing: 6, runSpacing: 6,
+            children: m.tags.map((tag) => Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: m.displayColor.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: m.displayColor.withValues(alpha: 0.3)),
+              ),
+              child: Text(tag,
+                  style: TextStyle(color: m.displayColor, fontSize: 11)),
+            )).toList(),
+          ),
+        ],
       ),
     );
   }
-  
+
+  Widget _mineralRow(String emoji, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(emoji, style: const TextStyle(fontSize: 14)),
+          const SizedBox(width: 8),
+          SizedBox(
+            width: 110,
+            child: Text(label,
+                style: const TextStyle(color: Colors.white38, fontSize: 12)),
+          ),
+          Expanded(
+            child: Text(value,
+                style: const TextStyle(color: Colors.white70, fontSize: 12)),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildCrystalCard(Map<String, dynamic> crystal) {
     final name = crystal['crystal_name'] ?? 'Unbekannt';
     final type = crystal['crystal_type'] ?? '';
@@ -434,6 +620,243 @@ class _CrystalLibraryScreenState extends State<CrystalLibraryScreen> {
     );
   }
 }
+
+// ── Mineralien-Datenmodell & Dataset ─────────────────────────────────────────
+
+class _MineralEntry {
+  final String name;
+  final String nameEn;
+  final String formula;
+  final String hardness;
+  final List<String> colors;
+  final String crystalSystem;
+  final List<String> origins;
+  final String spiritualEffect;
+  final String? chakra;
+  final String? element;
+  final List<String> tags;
+  final String emoji;
+  final Color displayColor;
+
+  const _MineralEntry({
+    required this.name,
+    required this.nameEn,
+    required this.formula,
+    required this.hardness,
+    required this.colors,
+    required this.crystalSystem,
+    required this.origins,
+    required this.spiritualEffect,
+    this.chakra,
+    this.element,
+    required this.tags,
+    required this.emoji,
+    required this.displayColor,
+  });
+}
+
+const List<_MineralEntry> _kMinerals = [
+  _MineralEntry(
+    name: 'Amethyst', nameEn: 'Amethyst', formula: 'SiO₂',
+    hardness: '7', colors: ['Violett', 'Lila', 'Dunkelviolett'],
+    crystalSystem: 'Trigonal',
+    origins: ['Brasilien', 'Uruguay', 'Sambia', 'Madagaskar'],
+    spiritualEffect: 'Beruhigt Geist und Emotionen, fördert Intuition und spirituelles Bewusstsein.',
+    chakra: 'Stirn- & Kronenchakra', element: 'Wind',
+    tags: ['Beruhigend', 'Intuition', 'Schlaf', 'Meditation'],
+    emoji: '💜', displayColor: Color(0xFF9C27B0),
+  ),
+  _MineralEntry(
+    name: 'Rosenquarz', nameEn: 'Rose Quartz', formula: 'SiO₂',
+    hardness: '7', colors: ['Rosa', 'Hellrosa', 'Blasslila'],
+    crystalSystem: 'Trigonal',
+    origins: ['Brasilien', 'Madagaskar', 'USA', 'Indien'],
+    spiritualEffect: 'Stein der bedingungslosen Liebe. Öffnet das Herzchakra, fördert Selbstliebe und Mitgefühl.',
+    chakra: 'Herzchakra', element: 'Wasser',
+    tags: ['Liebe', 'Selbstliebe', 'Herzchakra', 'Mitgefühl'],
+    emoji: '🌸', displayColor: Color(0xFFE91E8C),
+  ),
+  _MineralEntry(
+    name: 'Bergkristall', nameEn: 'Clear Quartz', formula: 'SiO₂',
+    hardness: '7', colors: ['Klar', 'Weiß', 'Transparent'],
+    crystalSystem: 'Trigonal',
+    origins: ['Weltweit', 'Brasilien', 'Schweiz', 'USA'],
+    spiritualEffect: 'Universalverstärker. Klärt Gedanken, verstärkt Intentionen und andere Steine.',
+    chakra: 'Alle Chakren', element: 'Sturm',
+    tags: ['Verstärker', 'Klarheit', 'Energie', 'Programmierbar'],
+    emoji: '🔮', displayColor: Color(0xFFE0E0E0),
+  ),
+  _MineralEntry(
+    name: 'Citrin', nameEn: 'Citrine', formula: 'SiO₂',
+    hardness: '7', colors: ['Gelb', 'Orange', 'Goldgelb'],
+    crystalSystem: 'Trigonal',
+    origins: ['Brasilien', 'Madagaskar', 'Spanien', 'Russland'],
+    spiritualEffect: 'Stein der Fülle und Freude. Aktiviert Solarplexus, fördert Selbstvertrauen und Kreativität.',
+    chakra: 'Solarplexus-Chakra', element: 'Feuer',
+    tags: ['Fülle', 'Freude', 'Kreativität', 'Energie', 'Manifestation'],
+    emoji: '🌟', displayColor: Color(0xFFFFC107),
+  ),
+  _MineralEntry(
+    name: 'Labradorit', nameEn: 'Labradorite', formula: 'CaAl₂Si₂O₈–NaAlSi₃O₈',
+    hardness: '6–6.5', colors: ['Grau', 'Blau', 'Grün', 'Gold (Labradoreszenz)'],
+    crystalSystem: 'Triklin',
+    origins: ['Kanada', 'Finnland', 'Madagaskar', 'Russland'],
+    spiritualEffect: 'Stein der Transformation. Schützt die Aura, weckt mystische Fähigkeiten und Intuition.',
+    chakra: 'Drittes Auge', element: 'Wind',
+    tags: ['Transformation', 'Schutz', 'Magie', 'Intuition'],
+    emoji: '🌊', displayColor: Color(0xFF1976D2),
+  ),
+  _MineralEntry(
+    name: 'Obsidian', nameEn: 'Obsidian', formula: 'SiO₂ (vulkanisches Glas)',
+    hardness: '5–5.5', colors: ['Schwarz', 'Schwarz-Gold (Goldscheen)', 'Regenbogen'],
+    crystalSystem: 'Amorph',
+    origins: ['Mexiko', 'USA', 'Äthiopien', 'Island'],
+    spiritualEffect: 'Wahrheitsspiegel. Tief reinigend, schützt vor negativer Energie, verwurzelt.',
+    chakra: 'Wurzelchakra', element: 'Erde',
+    tags: ['Schutz', 'Erdung', 'Reinigung', 'Wahrheit'],
+    emoji: '🖤', displayColor: Color(0xFF212121),
+  ),
+  _MineralEntry(
+    name: 'Malachit', nameEn: 'Malachite', formula: 'Cu₂(CO₃)(OH)₂',
+    hardness: '3.5–4', colors: ['Grün', 'Dunkelgrün', 'Hellgrün (Bänderung)'],
+    crystalSystem: 'Monoklin',
+    origins: ['Kongo', 'Russland', 'Australien', 'Namibia'],
+    spiritualEffect: 'Stein der Transformation und des Schutzes. Zieht Emotionen an die Oberfläche.',
+    chakra: 'Herzchakra', element: 'Erde',
+    tags: ['Transformation', 'Herzchakra', 'Heilung', 'Schutz'],
+    emoji: '🌿', displayColor: Color(0xFF388E3C),
+  ),
+  _MineralEntry(
+    name: 'Lapis Lazuli', nameEn: 'Lapis Lazuli', formula: 'Lazurit + Calcit + Pyrit',
+    hardness: '5–6', colors: ['Dunkelblau', 'Mittelblau', 'Blau mit Goldflecken'],
+    crystalSystem: 'Isometrisch',
+    origins: ['Afghanistan', 'Chile', 'Russland', 'Pakistan'],
+    spiritualEffect: 'Königsstein der Weisheit. Aktiviert drittes Auge, fördert intellektuelle Klarheit.',
+    chakra: 'Kehlchakra & Drittes Auge', element: 'Wind & Wasser',
+    tags: ['Weisheit', 'Wahrheit', 'Kommunikation', 'Intuition'],
+    emoji: '🔵', displayColor: Color(0xFF1565C0),
+  ),
+  _MineralEntry(
+    name: 'Türkis', nameEn: 'Turquoise', formula: 'CuAl₆(PO₄)₄(OH)₈·4H₂O',
+    hardness: '5–6', colors: ['Türkis', 'Blaugrün', 'Hellblau'],
+    crystalSystem: 'Triklin',
+    origins: ['Iran', 'USA', 'China', 'Mexiko'],
+    spiritualEffect: 'Stein der Weisheit und des Schutzes. Brücke zwischen Himmel und Erde.',
+    chakra: 'Kehlchakra', element: 'Sturm',
+    tags: ['Schutz', 'Kommunikation', 'Heilung', 'Reisen'],
+    emoji: '🩵', displayColor: Color(0xFF00BCD4),
+  ),
+  _MineralEntry(
+    name: 'Hämatit', nameEn: 'Hematite', formula: 'Fe₂O₃',
+    hardness: '5–6', colors: ['Silbergrau', 'Schwarz', 'Rotbraun'],
+    crystalSystem: 'Trigonal',
+    origins: ['Brasilien', 'England', 'Australien', 'Deutschland'],
+    spiritualEffect: 'Stärkster Erdungsstein. Verankert im Hier und Jetzt, stärkt Willenskraft.',
+    chakra: 'Wurzelchakra', element: 'Erde',
+    tags: ['Erdung', 'Schutz', 'Fokus', 'Stärke'],
+    emoji: '⚫', displayColor: Color(0xFF546E7A),
+  ),
+  _MineralEntry(
+    name: 'Fluorit', nameEn: 'Fluorite', formula: 'CaF₂',
+    hardness: '4', colors: ['Lila', 'Grün', 'Blau', 'Gelb', 'Mehrfarbig'],
+    crystalSystem: 'Isometrisch',
+    origins: ['China', 'Mexiko', 'England', 'Deutschland'],
+    spiritualEffect: 'Geniusstein. Strukturiert das Denken, schützt vor elektromagnetischen Feldern.',
+    chakra: 'Stirnchakra', element: 'Wind',
+    tags: ['Konzentration', 'Klarheit', 'Lernstein', 'EMF-Schutz'],
+    emoji: '🟣', displayColor: Color(0xFF7E57C2),
+  ),
+  _MineralEntry(
+    name: 'Tigerauge', nameEn: "Tiger's Eye", formula: 'SiO₂ (Chatoyant)',
+    hardness: '7', colors: ['Goldbraun', 'Braun', 'Rot'],
+    crystalSystem: 'Trigonal',
+    origins: ['Südafrika', 'Australien', 'USA', 'Indien'],
+    spiritualEffect: 'Stein des Mutes und der Stärke. Fördert Willenskraft und klares Urteilsvermögen.',
+    chakra: 'Solarplexus-Chakra', element: 'Feuer & Erde',
+    tags: ['Mut', 'Stärke', 'Fokus', 'Selbstvertrauen'],
+    emoji: '🐯', displayColor: Color(0xFFFF8F00),
+  ),
+  _MineralEntry(
+    name: 'Selenit', nameEn: 'Selenite', formula: 'CaSO₄·2H₂O',
+    hardness: '2', colors: ['Weiß', 'Perlweiß', 'Transparent'],
+    crystalSystem: 'Monoklin',
+    origins: ['Mexiko', 'USA', 'Marokko', 'Australien'],
+    spiritualEffect: 'Mondstein des Lichts. Reinigt andere Steine, öffnet Kronenchakra, verbindet mit höheren Welten.',
+    chakra: 'Kronenchakra', element: 'Wind',
+    tags: ['Reinigung', 'Engel', 'Frieden', 'Bewusstsein'],
+    emoji: '🤍', displayColor: Color(0xFFF5F5F5),
+  ),
+  _MineralEntry(
+    name: 'Karneol', nameEn: 'Carnelian', formula: 'SiO₂ (Chalzedon)',
+    hardness: '7', colors: ['Orange', 'Rot', 'Rotorange'],
+    crystalSystem: 'Trigonal',
+    origins: ['Indien', 'Brasilien', 'Uruguay', 'Ägypten'],
+    spiritualEffect: 'Stein der Vitalität und Kreativität. Stärkt Lebensenergie und Motivation.',
+    chakra: 'Sakral-Chakra', element: 'Feuer',
+    tags: ['Vitalität', 'Kreativität', 'Motivation', 'Sexualität'],
+    emoji: '🔶', displayColor: Color(0xFFE64A19),
+  ),
+  _MineralEntry(
+    name: 'Mondstein', nameEn: 'Moonstone', formula: 'KAlSi₃O₈',
+    hardness: '6–6.5', colors: ['Weiß', 'Cremeweiß', 'Blauer Schimmer'],
+    crystalSystem: 'Monoklin',
+    origins: ['Sri Lanka', 'Indien', 'Australien', 'Madagaskar'],
+    spiritualEffect: 'Stein der inneren Göttin. Stärkt Intuition, Empfindsamkeit und weibliche Energie.',
+    chakra: 'Sakral- & Kronenchakra', element: 'Wasser',
+    tags: ['Intuition', 'Weiblichkeit', 'Mondenergie', 'Träume'],
+    emoji: '🌙', displayColor: Color(0xFFB0BEC5),
+  ),
+  _MineralEntry(
+    name: 'Rhodonit', nameEn: 'Rhodonite', formula: 'MnSiO₃',
+    hardness: '5.5–6.5', colors: ['Rosa', 'Rot', 'Rosa mit schwarzen Adern'],
+    crystalSystem: 'Triklin',
+    origins: ['Russland', 'Australien', 'Schweden', 'Brasilien'],
+    spiritualEffect: 'Stein der Wunden-Heilung. Löst emotionale Verletzungen, fördert Vergebung.',
+    chakra: 'Herzchakra', element: 'Erde',
+    tags: ['Heilung', 'Vergebung', 'Liebe', 'Emotionen'],
+    emoji: '🌺', displayColor: Color(0xFFE91E63),
+  ),
+  _MineralEntry(
+    name: 'Aventurin', nameEn: 'Aventurine', formula: 'SiO₂ (Quarz)',
+    hardness: '7', colors: ['Grün', 'Blau', 'Orange', 'Gelb'],
+    crystalSystem: 'Trigonal',
+    origins: ['Indien', 'Brasilien', 'Russland', 'Tansania'],
+    spiritualEffect: 'Glücksstein par excellence. Stärkt Optimismus, öffnet Herzchakra, zieht Fülle an.',
+    chakra: 'Herzchakra', element: 'Erde',
+    tags: ['Glück', 'Optimismus', 'Fülle', 'Herzchakra'],
+    emoji: '🍀', displayColor: Color(0xFF43A047),
+  ),
+  _MineralEntry(
+    name: 'Amazonit', nameEn: 'Amazonite', formula: 'KAlSi₃O₈',
+    hardness: '6–6.5', colors: ['Türkisgrün', 'Blaugrün', 'Grünblau'],
+    crystalSystem: 'Triklin',
+    origins: ['Brasilien', 'USA', 'Russland', 'Äthiopien'],
+    spiritualEffect: 'Stein der Wahrheit und Kommunikation. Beruhigt Nerven, fördert Ausgewogenheit.',
+    chakra: 'Herzchakra & Kehlchakra', element: 'Wasser',
+    tags: ['Kommunikation', 'Wahrheit', 'Balance', 'Beruhigung'],
+    emoji: '🏞️', displayColor: Color(0xFF00897B),
+  ),
+  _MineralEntry(
+    name: 'Azurit', nameEn: 'Azurite', formula: 'Cu₃(CO₃)₂(OH)₂',
+    hardness: '3.5–4', colors: ['Tiefblau', 'Azurblau', 'Dunkelblau'],
+    crystalSystem: 'Monoklin',
+    origins: ['Marokko', 'USA', 'Chile', 'Australien'],
+    spiritualEffect: 'Stein des dritten Auges. Stimuliert Hellsehen und psychische Fähigkeiten.',
+    chakra: 'Drittes Auge', element: 'Wind',
+    tags: ['Hellsehen', 'Drittes Auge', 'Intuition', 'Meditation'],
+    emoji: '🔷', displayColor: Color(0xFF1976D2),
+  ),
+  _MineralEntry(
+    name: 'Moldavit', nameEn: 'Moldavite', formula: 'SiO₂ (Tektit)',
+    hardness: '5.5', colors: ['Flaschengrün', 'Olivgrün', 'Transparent-Grün'],
+    crystalSystem: 'Amorph',
+    origins: ['Tschechien', 'Deutschland', 'Österreich'],
+    spiritualEffect: 'Stein des Kosmos. Extraterrestrischer Ursprung (Meteorit-Impact). Starke Transformation und spirituelles Erwachen.',
+    chakra: 'Herzchakra & Kronenchakra', element: 'Sturm',
+    tags: ['Transformation', 'Extraterrestrisch', 'Erwachen', 'Kosmisch'],
+    emoji: '☄️', displayColor: Color(0xFF558B2F),
+  ),
+];
 
 // ========================================
 // 💠 ADD CRYSTAL DIALOG

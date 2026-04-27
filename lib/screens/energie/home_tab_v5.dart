@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../services/free_api_service.dart';
 import '../../services/openclaw_dashboard_service.dart';
 import '../../services/storage_service.dart';
 import '../../models/energie_profile.dart';
@@ -46,6 +47,14 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
 
   // ── Services ───────────────────────────────────────────────────────────
   final _dash = OpenClawDashboardService();
+
+  // ── Free API ───────────────────────────────────────────────────────────
+  final _freeApi = FreeApiService.instance;
+  DailyQuote? _dailyQuote;
+  SunData? _sunData;
+  MoonPhase? _moonPhaseData;
+  List<DonkiEvent> _donkiEvents = [];
+  bool _cosmicLoading = true;
 
   // ── State ──────────────────────────────────────────────────────────────
   EnergieProfile? _profile;
@@ -92,6 +101,7 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
     });
     _loadAll();
     _loadWorldSubscription();
+    _loadCosmicData();
     _startLive();
   }
 
@@ -225,6 +235,23 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
     if (mounted) setState(() => _worldSubscribed = subscribed);
   }
 
+  Future<void> _loadCosmicData() async {
+    if (mounted) setState(() => _cosmicLoading = true);
+    final results = await Future.wait([
+      _freeApi.fetchDailyQuote(tags: 'wisdom,inspirational,spirituality'),
+      _freeApi.fetchSunriseSunset(),
+      _freeApi.fetchDonkiEvents(daysBack: 7),
+    ]);
+    if (!mounted) return;
+    setState(() {
+      _dailyQuote  = results[0] as DailyQuote?;
+      _sunData     = results[1] as SunData?;
+      _donkiEvents = (results[2] as List<DonkiEvent>?) ?? [];
+      _moonPhaseData = _freeApi.calcMoonPhase();
+      _cosmicLoading = false;
+    });
+  }
+
   Future<void> _toggleWorldSubscription() async {
     final newState = await _worldSubSvc.toggle('energie');
     if (mounted) {
@@ -333,6 +360,8 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
             slivers: [
               _buildHeroHeader(),
               _buildMysticBanner(),
+              _buildDailyQuoteSliver(),
+              _buildCosmicEnergySliver(),
               _buildLiveStatBanner(),
               _buildActionGrid(),
               _buildRecentRooms(),
@@ -602,6 +631,284 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
                 style: TextStyle(color: _purpleL, fontSize: 10, fontWeight: FontWeight.w700)),
           ),
         ]),
+      ),
+    );
+  }
+
+  // ── DAILY QUOTE (Quotable API) ─────────────────────────────────────────
+  Widget _buildDailyQuoteSliver() {
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+        child: _cosmicLoading
+            ? _cosmicShimmer(80)
+            : _dailyQuote == null
+                ? const SizedBox.shrink()
+                : AnimatedBuilder(
+                    animation: _auraCtrl,
+                    builder: (_, __) => Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            _indigo.withValues(alpha: 0.4),
+                            _purpleD.withValues(alpha: 0.6 + _auraCtrl.value * 0.1),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(
+                            color: _purpleL.withValues(alpha: 0.18 + _auraCtrl.value * 0.08)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(children: [
+                            const Text('✨', style: TextStyle(fontSize: 16)),
+                            const SizedBox(width: 6),
+                            const Text('Tägliche Weisheit',
+                                style: TextStyle(
+                                    color: _purpleL,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 0.8)),
+                          ]),
+                          const SizedBox(height: 10),
+                          Text(
+                            '"${_dailyQuote!.content}"',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 15,
+                              fontStyle: FontStyle.italic,
+                              height: 1.5,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: Text(
+                              '— ${_dailyQuote!.author}',
+                              style: TextStyle(
+                                  color: _gold.withValues(alpha: 0.8),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+      ),
+    );
+  }
+
+  // ── COSMIC ENERGY (Moon + Sunrise + NASA DONKI) ─────────────────────────
+  Widget _buildCosmicEnergySliver() {
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+        child: _cosmicLoading
+            ? _cosmicShimmer(140)
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: 10),
+                    child: Text(
+                      '🌌 Kosmische Energie heute',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  Row(
+                    children: [
+                      // Mondphase
+                      Expanded(child: _buildMoonCard()),
+                      const SizedBox(width: 10),
+                      // Sonnenaufgang / Sonnenuntergang
+                      Expanded(child: _buildSunCard()),
+                    ],
+                  ),
+                  // NASA DONKI Sonnenstürme
+                  if (_donkiEvents.isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    _buildDonkiCard(),
+                  ],
+                ],
+              ),
+      ),
+    );
+  }
+
+  Widget _buildMoonCard() {
+    final moon = _moonPhaseData ?? _freeApi.calcMoonPhase();
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: _card,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _purpleL.withValues(alpha: 0.15)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(moon.emoji, style: const TextStyle(fontSize: 32)),
+          const SizedBox(height: 8),
+          Text(moon.name,
+              style: const TextStyle(
+                  color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13)),
+          const SizedBox(height: 4),
+          Text('${moon.illuminationPercent}% beleuchtet',
+              style: TextStyle(color: _purpleL.withValues(alpha: 0.7), fontSize: 11)),
+          const SizedBox(height: 6),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: moon.phase,
+              backgroundColor: Colors.white12,
+              valueColor: AlwaysStoppedAnimation<Color>(_purpleL.withValues(alpha: 0.7)),
+              minHeight: 4,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSunCard() {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: _card,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _gold.withValues(alpha: 0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('☀️', style: TextStyle(fontSize: 28)),
+          const SizedBox(height: 8),
+          const Text('Sonnenenergie',
+              style: TextStyle(
+                  color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13)),
+          const SizedBox(height: 8),
+          if (_sunData != null) ...[
+            _sunRow('🌅', 'Aufgang', _sunData!.sunriseFormatted),
+            const SizedBox(height: 4),
+            _sunRow('🌇', 'Untergang', _sunData!.sunsetFormatted),
+            if (_sunData!.dayLength != null) ...[
+              const SizedBox(height: 4),
+              _sunRow('⏱', 'Tageslicht',
+                  '${_sunData!.dayLength!.inHours}h ${_sunData!.dayLength!.inMinutes % 60}min'),
+            ],
+          ] else
+            Text('München · CET',
+                style: TextStyle(color: Colors.white38, fontSize: 11)),
+        ],
+      ),
+    );
+  }
+
+  Widget _sunRow(String emoji, String label, String value) {
+    return Row(
+      children: [
+        Text(emoji, style: const TextStyle(fontSize: 12)),
+        const SizedBox(width: 4),
+        Text(label, style: const TextStyle(color: Colors.white38, fontSize: 11)),
+        const Spacer(),
+        Text(value,
+            style: TextStyle(
+                color: _gold.withValues(alpha: 0.85),
+                fontSize: 12,
+                fontWeight: FontWeight.w600)),
+      ],
+    );
+  }
+
+  Widget _buildDonkiCard() {
+    final latest = _donkiEvents.first;
+    final date = latest.parsedStart;
+    final dateStr = date != null
+        ? '${date.day}.${date.month}.${date.year}'
+        : 'kürzlich';
+
+    return AnimatedBuilder(
+      animation: _auraCtrl,
+      builder: (_, __) => Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Colors.orange.withValues(alpha: 0.12 + _auraCtrl.value * 0.06),
+              Colors.red.withValues(alpha: 0.06),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.orange.withValues(alpha: 0.25)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Text('🌞', style: TextStyle(fontSize: 20)),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Text('NASA DONKI — Sonnenaktivität',
+                      style: TextStyle(
+                          color: Colors.orange,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13)),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '${_donkiEvents.length} Ereignisse',
+                    style: const TextStyle(color: Colors.orange, fontSize: 10),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              latest.intensityLabel,
+              style: const TextStyle(
+                  color: Colors.white, fontWeight: FontWeight.w600),
+            ),
+            if (latest.note != null && latest.note!.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(
+                latest.note!.length > 120
+                    ? '${latest.note!.substring(0, 120)}…'
+                    : latest.note!,
+                style: const TextStyle(color: Colors.white54, fontSize: 12),
+              ),
+            ],
+            const SizedBox(height: 6),
+            Text('Letztes Ereignis: $dateStr · Quelle: NASA DONKI',
+                style: const TextStyle(color: Colors.white38, fontSize: 10)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _cosmicShimmer(double height) {
+    return AnimatedBuilder(
+      animation: _auraCtrl,
+      builder: (_, __) => Container(
+        height: height,
+        decoration: BoxDecoration(
+          color: _card.withValues(alpha: 0.5 + _auraCtrl.value * 0.2),
+          borderRadius: BorderRadius.circular(16),
+        ),
       ),
     );
   }
