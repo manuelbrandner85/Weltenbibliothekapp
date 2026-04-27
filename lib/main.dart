@@ -104,12 +104,39 @@ void main() async {
     onDeepLink: (data) {
       final nav = appNavigatorKey.currentState;
       if (nav == null) return;
+      final type = data['type']?.toString() ?? '';
       final route = data['route']?.toString();
       final roomId = data['room_id']?.toString() ?? data['roomId']?.toString();
+
+      // Explizite Route hat höchste Priorität
       if (route != null && route.isNotEmpty) {
         nav.pushNamed(route);
-      } else if (roomId != null && roomId.startsWith('energie-')) {
-        nav.pushNamed('/dashboard');
+        return;
+      }
+
+      switch (type) {
+        case 'chat_message':
+        case 'mention':
+        case 'reply':
+          // Chat-Räume: Energie-Prefix → Energie-Dashboard, sonst Home
+          if (roomId != null && roomId.startsWith('energie-')) {
+            nav.pushNamed('/dashboard');
+          }
+          // Materie-Räume landen auf PortalHome (kein eigener Materie-Route)
+          break;
+        case 'achievement':
+          nav.pushNamed('/achievements');
+          break;
+        case 'like':
+        case 'comment':
+        case 'follow':
+        case 'new_article':
+          // Benachrichtigungszentrum öffnen
+          nav.pushNamed('/notifications');
+          break;
+        default:
+          // Kein Route-Mapping → ignorieren (App bleibt auf aktuellem Screen)
+          break;
       }
     },
   ));
