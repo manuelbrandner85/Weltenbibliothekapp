@@ -6,9 +6,11 @@ import '../../widgets/stats/stats_charts.dart';
 
 /// 📊 Stats Dashboard – Echtzeit aus Supabase
 ///
-/// Daten kommen direkt aus den produktiven Tabellen
-/// (likes, bookmarks, articles, chat_messages) und werden über
-/// Supabase-Realtime live aktualisiert.
+/// Daten kommen direkt aus community_posts und chat_messages:
+/// - Beiträge = eigene Posts in dieser Welt
+/// - Likes    = Likes die eigene Posts erhalten haben
+/// - Chat     = Chat-Nachrichten in Räumen dieser Welt
+/// - Streak   = Aufeinanderfolgende Aktivitätstage (Chat + Posts)
 class StatsDashboardScreen extends StatefulWidget {
   final String world; // 'materie' oder 'energie'
 
@@ -22,9 +24,9 @@ class _StatsDashboardScreenState extends State<StatsDashboardScreen> {
   final _db = Supabase.instance.client;
 
   Map<String, int> _stats = {
-    'read': 0,
-    'favorites': 0,
-    'notes': 0,
+    'posts': 0,
+    'likes': 0,
+    'messages': 0,
     'currentStreak': 0,
   };
   List<Map<String, dynamic>> _categoryDistribution = [];
@@ -32,9 +34,7 @@ class _StatsDashboardScreenState extends State<StatsDashboardScreen> {
   Map<String, int> _streakData = {};
   bool _isLoading = true;
 
-  RealtimeChannel? _likesChannel;
-  RealtimeChannel? _bookmarksChannel;
-  RealtimeChannel? _articlesChannel;
+  RealtimeChannel? _postsChannel;
   RealtimeChannel? _chatChannel;
   Timer? _debounceTimer;
 
@@ -50,9 +50,7 @@ class _StatsDashboardScreenState extends State<StatsDashboardScreen> {
   @override
   void dispose() {
     _debounceTimer?.cancel();
-    _likesChannel?.unsubscribe();
-    _bookmarksChannel?.unsubscribe();
-    _articlesChannel?.unsubscribe();
+    _postsChannel?.unsubscribe();
     _chatChannel?.unsubscribe();
     super.dispose();
   }
@@ -68,42 +66,12 @@ class _StatsDashboardScreenState extends State<StatsDashboardScreen> {
       });
     }
 
-    _likesChannel = _db
-        .channel('stats_likes_${widget.world}')
+    _postsChannel = _db
+        .channel('stats_posts_${widget.world}')
       ..onPostgresChanges(
         event: PostgresChangeEvent.all,
         schema: 'public',
-        table: 'likes',
-        filter: PostgresChangeFilter(
-          type: PostgresChangeFilterType.eq,
-          column: 'user_id',
-          value: uid,
-        ),
-        callback: (_) => scheduleReload(),
-      )
-      ..subscribe();
-
-    _bookmarksChannel = _db
-        .channel('stats_bookmarks_${widget.world}')
-      ..onPostgresChanges(
-        event: PostgresChangeEvent.all,
-        schema: 'public',
-        table: 'bookmarks',
-        filter: PostgresChangeFilter(
-          type: PostgresChangeFilterType.eq,
-          column: 'user_id',
-          value: uid,
-        ),
-        callback: (_) => scheduleReload(),
-      )
-      ..subscribe();
-
-    _articlesChannel = _db
-        .channel('stats_articles_${widget.world}')
-      ..onPostgresChanges(
-        event: PostgresChangeEvent.all,
-        schema: 'public',
-        table: 'articles',
+        table: 'community_posts',
         filter: PostgresChangeFilter(
           type: PostgresChangeFilterType.eq,
           column: 'user_id',
@@ -140,39 +108,34 @@ class _StatsDashboardScreenState extends State<StatsDashboardScreen> {
 
     try {
       final results = await Future.wait([
-        _fetchLikedArticles(uid),
-        _fetchBookmarkedArticles(uid),
-        _fetchOwnArticles(uid),
-        _fetchOwnChatDates(uid),
+        _fetchUserPosts(uid),
+        _fetchChatDates(uid),
       ]);
 
-      final liked = results[0] as List<Map<String, dynamic>>;
-      final bookmarked = results[1] as List<Map<String, dynamic>>;
-      final owned = results[2] as List<Map<String, dynamic>>;
-      final chatDates = results[3] as List<DateTime>;
+      final posts     = results[0] as List<Map<String, dynamic>>;
+      final chatDates = results[1] as List<DateTime>;
 
-      // Counters
-      final read = liked.length;
-      final favorites = bookmarked.length;
-      final notes = owned.length;
-      final currentStreak = _calcCurrentStreak(chatDates);
+      final postCount    = posts.length;
+      final likesReceived = posts.fold<int>(0, (s, p) => s + ((p['likes_count'] as num?)?.toInt() ?? 0));
+      final chatCount    = chatDates.length;
+      final streak       = _calcCurrentStreak(chatDates);
 
-      // Category distribution (aus geliketen Artikeln, gruppiert)
-      final categoryDist = _groupByCategory(liked);
+      // Kategorieverteilung aus Posts
+      final categoryDist = _groupByCategory(posts);
 
-      // Reading progress: kumulative Likes-Anzahl pro Tag (letzte 30 Tage)
-      final progressHist = _buildProgressHistory(liked);
+      // Lesefortschritt: kumulierte Posts pro Tag (30 Tage)
+      final progressHist = _buildProgressHistory(posts);
 
-      // Streak heatmap: Aktivitäts-Counts pro Tag (letzte 90 Tage)
+      // Streak-Heatmap aus Chat-Aktivität
       final streakData = _buildStreakHeatmap(chatDates);
 
       if (mounted) {
         setState(() {
           _stats = {
-            'read': read,
-            'favorites': favorites,
-            'notes': notes,
-            'currentStreak': currentStreak,
+            'posts': postCount,
+            'likes': likesReceived,
+            'messages': chatCount,
+            'currentStreak': streak,
           };
           _categoryDistribution = categoryDist;
           _progressHistory = progressHist;
@@ -188,53 +151,23 @@ class _StatsDashboardScreenState extends State<StatsDashboardScreen> {
 
   // ── Supabase-Queries ──────────────────────────────────────────────────
 
-  /// Likes des Users → JOIN articles (nur für Welt X) für Datum + Kategorie
-  Future<List<Map<String, dynamic>>> _fetchLikedArticles(String uid) async {
+  Future<List<Map<String, dynamic>>> _fetchUserPosts(String uid) async {
     try {
       final res = await _db
-          .from('likes')
-          .select('created_at, articles!inner(world, category)')
+          .from('community_posts')
+          .select('id, created_at, likes_count, content')
           .eq('user_id', uid)
-          .eq('articles.world', widget.world);
+          .eq('world', widget.world)
+          .order('created_at', ascending: false)
+          .limit(500);
       return List<Map<String, dynamic>>.from(res as List);
     } catch (e) {
-      if (kDebugMode) debugPrint('⚠️ likes query: $e');
+      if (kDebugMode) debugPrint('⚠️ community_posts query: $e');
       return [];
     }
   }
 
-  /// Bookmarks des Users für Welt X
-  Future<List<Map<String, dynamic>>> _fetchBookmarkedArticles(String uid) async {
-    try {
-      final res = await _db
-          .from('bookmarks')
-          .select('created_at, articles!inner(world, category)')
-          .eq('user_id', uid)
-          .eq('articles.world', widget.world);
-      return List<Map<String, dynamic>>.from(res as List);
-    } catch (e) {
-      if (kDebugMode) debugPrint('⚠️ bookmarks query: $e');
-      return [];
-    }
-  }
-
-  /// Eigene Artikel des Users in Welt X (= Notizen/Beiträge)
-  Future<List<Map<String, dynamic>>> _fetchOwnArticles(String uid) async {
-    try {
-      final res = await _db
-          .from('articles')
-          .select('id, created_at, category')
-          .eq('user_id', uid)
-          .eq('world', widget.world);
-      return List<Map<String, dynamic>>.from(res as List);
-    } catch (e) {
-      if (kDebugMode) debugPrint('⚠️ articles query: $e');
-      return [];
-    }
-  }
-
-  /// Chat-Aktivität als Streak-Quelle (alle Räume der Welt)
-  Future<List<DateTime>> _fetchOwnChatDates(String uid) async {
+  Future<List<DateTime>> _fetchChatDates(String uid) async {
     try {
       final res = await _db
           .from('chat_messages')
@@ -248,7 +181,7 @@ class _StatsDashboardScreenState extends State<StatsDashboardScreen> {
           .whereType<DateTime>()
           .toList();
     } catch (e) {
-      if (kDebugMode) debugPrint('⚠️ chat dates query: $e');
+      if (kDebugMode) debugPrint('⚠️ chat_messages query: $e');
       return [];
     }
   }
@@ -263,7 +196,6 @@ class _StatsDashboardScreenState extends State<StatsDashboardScreen> {
     int streak = 0;
     var cursor = DateTime.now();
     cursor = DateTime(cursor.year, cursor.month, cursor.day);
-    // Wenn heute keine Aktivität, prüfe ab gestern
     if (!daySet.contains(cursor)) {
       cursor = cursor.subtract(const Duration(days: 1));
     }
@@ -274,27 +206,24 @@ class _StatsDashboardScreenState extends State<StatsDashboardScreen> {
     return streak;
   }
 
-  List<Map<String, dynamic>> _groupByCategory(
-      List<Map<String, dynamic>> liked) {
-    final Map<String, int> counts = {};
-    for (final row in liked) {
-      final art = row['articles'] as Map<String, dynamic>?;
-      final cat = (art?['category'] as String?) ?? 'unknown';
-      counts[cat] = (counts[cat] ?? 0) + 1;
-    }
-    return counts.entries
-        .map((e) => {
-              'category': _getCategoryLabel(e.key),
-              'count': e.value,
-              'color': _getCategoryColor(e.key),
-            })
-        .toList();
+  List<Map<String, dynamic>> _groupByCategory(List<Map<String, dynamic>> posts) {
+    // Wörter im Post-Content als Proxy für Kategorie
+    final worldColor = widget.world == 'materie'
+        ? const Color(0xFFE53935)
+        : const Color(0xFF7C4DFF);
+    if (posts.isEmpty) return [];
+    return [
+      {
+        'category': widget.world == 'materie' ? 'Materie-Beiträge' : 'Energie-Beiträge',
+        'count': posts.length,
+        'color': worldColor,
+      }
+    ];
   }
 
-  List<Map<String, dynamic>> _buildProgressHistory(
-      List<Map<String, dynamic>> liked) {
+  List<Map<String, dynamic>> _buildProgressHistory(List<Map<String, dynamic>> posts) {
     final Map<String, int> daily = {};
-    for (final row in liked) {
+    for (final row in posts) {
       final ts = DateTime.tryParse(row['created_at'] as String? ?? '');
       if (ts == null) continue;
       final key = _dayKey(ts);
@@ -334,42 +263,14 @@ class _StatsDashboardScreenState extends State<StatsDashboardScreen> {
   String _dayKey(DateTime d) =>
       '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
-  String _getCategoryLabel(String c) {
-    const labels = {
-      'conspiracy': 'Verschwörungen',
-      'research': 'Forschung',
-      'forbiddenKnowledge': 'Verbotenes Wissen',
-      'ancientWisdom': 'Alte Weisheit',
-      'meditation': 'Meditation',
-      'astrology': 'Astrologie',
-      'energyWork': 'Energie-Arbeit',
-      'consciousness': 'Bewusstsein',
-    };
-    return labels[c] ?? c;
-  }
-
-  Color _getCategoryColor(String c) {
-    const colors = {
-      'conspiracy': Color(0xFFE53935),
-      'research': Color(0xFF1E88E5),
-      'forbiddenKnowledge': Color(0xFF6A1B9A),
-      'ancientWisdom': Color(0xFFFFB300),
-      'meditation': Color(0xFF7E57C2),
-      'astrology': Color(0xFFAB47BC),
-      'energyWork': Color(0xFF26A69A),
-      'consciousness': Color(0xFF29B6F6),
-    };
-    return colors[c] ?? Colors.grey;
-  }
-
   // ── BUILD ─────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final worldColor = widget.world == 'materie'
-        ? const Color(0xFF1E88E5)
-        : const Color(0xFF7E57C2);
+        ? const Color(0xFFE53935)
+        : const Color(0xFF7C4DFF);
 
     return Scaffold(
       appBar: AppBar(
@@ -413,7 +314,7 @@ class _StatsDashboardScreenState extends State<StatsDashboardScreen> {
                     const SizedBox(height: 24),
                     if (_categoryDistribution.isNotEmpty) ...[
                       _buildSectionHeader(
-                          '📊 Kategorieverteilung', 'Geliketen Themen'),
+                          '📊 Aktivitätsübersicht', 'Deine Beiträge'),
                       const SizedBox(height: 16),
                       CategoryPieChart(
                         data: _categoryDistribution,
@@ -421,14 +322,14 @@ class _StatsDashboardScreenState extends State<StatsDashboardScreen> {
                       ),
                       const SizedBox(height: 24),
                     ],
-                    _buildSectionHeader('📈 Lesefortschritt', 'Letzte 30 Tage'),
+                    _buildSectionHeader('📈 Beitragsfortschritt', 'Letzte 30 Tage'),
                     const SizedBox(height: 16),
                     ReadingProgressChart(
                       data: _progressHistory,
                       world: widget.world,
                     ),
                     const SizedBox(height: 24),
-                    _buildSectionHeader('🔥 Aktivitätsverlauf', 'Letzte 90 Tage'),
+                    _buildSectionHeader('🔥 Chat-Aktivitätsverlauf', 'Letzte 90 Tage'),
                     const SizedBox(height: 16),
                     StreakHeatmap(
                       data: _streakData,
@@ -439,7 +340,7 @@ class _StatsDashboardScreenState extends State<StatsDashboardScreen> {
                       child: Padding(
                         padding: const EdgeInsets.symmetric(vertical: 24),
                         child: Text(
-                          '💡 Tipp: Like Artikel und schreibe im Chat, um deinen Streak zu erhöhen!',
+                          '💡 Tipp: Schreibe Posts und chatte täglich, um deinen Streak zu erhöhen!',
                           style: TextStyle(
                             color: Colors.grey[600],
                             fontSize: 12,
@@ -463,17 +364,17 @@ class _StatsDashboardScreenState extends State<StatsDashboardScreen> {
           children: [
             Expanded(
               child: AnimatedCounterCard(
-                title: 'Gelesen',
-                value: _stats['read'] ?? 0,
-                icon: Icons.check_circle,
-                color: Colors.green,
+                title: 'Beiträge',
+                value: _stats['posts'] ?? 0,
+                icon: Icons.edit_note,
+                color: Colors.blue,
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: AnimatedCounterCard(
-                title: 'Favoriten',
-                value: _stats['favorites'] ?? 0,
+                title: 'Likes erhalten',
+                value: _stats['likes'] ?? 0,
                 icon: Icons.favorite,
                 color: Colors.red,
               ),
@@ -485,10 +386,10 @@ class _StatsDashboardScreenState extends State<StatsDashboardScreen> {
           children: [
             Expanded(
               child: AnimatedCounterCard(
-                title: 'Beiträge',
-                value: _stats['notes'] ?? 0,
-                icon: Icons.note_alt,
-                color: Colors.orange,
+                title: 'Nachrichten',
+                value: _stats['messages'] ?? 0,
+                icon: Icons.chat_bubble_outline,
+                color: Colors.teal,
               ),
             ),
             const SizedBox(width: 12),
