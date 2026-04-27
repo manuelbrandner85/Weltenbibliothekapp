@@ -21,6 +21,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/api_config.dart';
+import 'push_preferences_service.dart';
 
 typedef DeepLinkHandler = void Function(Map<String, dynamic> data);
 
@@ -211,6 +212,9 @@ class PushNotificationManager with WidgetsBindingObserver {
     }
     _initialized = true;
     _deepLinkHandler = onDeepLink;
+
+    // Push-Filter-Preferences hydratieren (synchroner Read in _showLocal/_onFcmForeground).
+    await PushPreferencesService.instance.init();
 
     const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
     const iosInit = DarwinInitializationSettings(
@@ -423,6 +427,14 @@ class PushNotificationManager with WidgetsBindingObserver {
     final roomId = data['room_id']?.toString();
     final payload = data.isNotEmpty ? json.encode(data) : null;
 
+    // 🔔 User-Preferences respektieren: wenn der Typ deaktiviert ist
+    // (oder Master-Toggle aus), Notification verwerfen. In-App-Center
+    // zeigt sie trotzdem (nutzt eigenen Fetch auf `notifications`-Tabelle).
+    if (!PushPreferencesService.instance.isTypeEnabled(type)) {
+      if (kDebugMode) debugPrint('🔕 push gefiltert (type=$type per Pref deaktiviert)');
+      return;
+    }
+
     try {
       switch (type) {
         case 'chat_message':
@@ -535,6 +547,12 @@ class PushNotificationManager with WidgetsBindingObserver {
     final roomId = message.data['room_id']?.toString();
     final payload = message.data.isNotEmpty ? jsonEncode(message.data) : null;
     final data = Map<String, dynamic>.from(message.data);
+
+    // User-Preferences respektieren — gleicher Filter wie In-App-Polling.
+    if (!PushPreferencesService.instance.isTypeEnabled(type)) {
+      if (kDebugMode) debugPrint('🔕 FCM-foreground gefiltert (type=$type)');
+      return;
+    }
 
     switch (type) {
       case 'chat_message':
