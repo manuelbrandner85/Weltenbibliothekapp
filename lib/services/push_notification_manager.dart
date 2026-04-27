@@ -187,8 +187,10 @@ class PushNotificationManager with WidgetsBindingObserver {
   StreamSubscription<RemoteMessage>? _fcmOpenedSub;
   StreamSubscription<String>? _fcmTokenSub;
   Timer? _pollTimer;
+  Timer? _healthCheckTimer;
   bool _initialized = false;
   bool _firebaseReady = false;
+  bool _subscribed = false;
   String? _fcmToken;
   DeepLinkHandler? _deepLinkHandler;
   final Set<String> _seenIds = <String>{};
@@ -286,10 +288,17 @@ class PushNotificationManager with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) _pollOnce();
+    if (state == AppLifecycleState.resumed) {
+      _pollOnce();
+      // Falls Subscribe initial gescheitert ist → beim Resume nochmal versuchen.
+      if (!_subscribed) {
+        final uid = Supabase.instance.client.auth.currentUser?.id;
+        if (uid != null) unawaited(_registerSubscription(uid));
+      }
+    }
   }
 
-  Future<void> _registerSubscription(String userId) async {
+  Future<void> _registerSubscription(String userId, {int retry = 0}) async {
     try {
       final payload = <String, dynamic>{
         'user_id': userId,
@@ -307,10 +316,25 @@ class PushNotificationManager with WidgetsBindingObserver {
         body: json.encode(payload),
       ).timeout(const Duration(seconds: 10));
       if (kDebugMode) {
-        debugPrint('🔔 push subscribe → ${res.statusCode} fcm=${_fcmToken != null}');
+        debugPrint('🔔 push subscribe → ${res.statusCode} fcm=${_fcmToken != null} retry=$retry');
+      }
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        _subscribed = true;
+        return;
+      }
+      // Server-Fehler → Retry mit exponentiellem Backoff (max. 3 Versuche)
+      if (retry < 3) {
+        final delay = Duration(seconds: 2 << retry); // 2s, 4s, 8s
+        await Future.delayed(delay);
+        return _registerSubscription(userId, retry: retry + 1);
       }
     } catch (e) {
-      if (kDebugMode) debugPrint('⚠️ push subscribe failed: $e');
+      if (kDebugMode) debugPrint('⚠️ push subscribe failed (retry=$retry): $e');
+      if (retry < 3) {
+        final delay = Duration(seconds: 2 << retry);
+        await Future.delayed(delay);
+        return _registerSubscription(userId, retry: retry + 1);
+      }
     }
   }
 
@@ -318,11 +342,47 @@ class PushNotificationManager with WidgetsBindingObserver {
     _pollTimer?.cancel();
     _pollTimer = Timer.periodic(_pollInterval, (_) => _pollOnce());
     _pollOnce();
+
+    // Health-Check: alle 5 Minuten verifizieren dass die Subscription
+    // beim Worker registriert ist. Heilt automatisch wenn Subscribe
+    // beim Login-Time fehlgeschlagen war (Netzwerk/DNS/Timeout).
+    _healthCheckTimer?.cancel();
+    _healthCheckTimer = Timer.periodic(
+      const Duration(minutes: 5),
+      (_) => _verifyAndHealSubscription(),
+    );
   }
 
   void _stopPolling() {
     _pollTimer?.cancel();
     _pollTimer = null;
+    _healthCheckTimer?.cancel();
+    _healthCheckTimer = null;
+    _subscribed = false;
+  }
+
+  /// Verifiziert via /api/push/debug ob eine aktive Subscription existiert.
+  /// Falls nicht → erneute Registrierung. Schützt vor "Push silent broken"-
+  /// Fällen (z.B. wenn Subscribe beim ersten App-Start gefailt ist).
+  Future<void> _verifyAndHealSubscription() async {
+    final uid = Supabase.instance.client.auth.currentUser?.id;
+    if (uid == null) return;
+    try {
+      final res = await http.get(
+        Uri.parse('${ApiConfig.workerUrl}/api/push/debug?user_id=$uid'),
+      ).timeout(const Duration(seconds: 8));
+      if (res.statusCode != 200) return;
+      final body = json.decode(res.body);
+      final subs = body is Map ? (body['subscriptions'] as List? ?? []) : [];
+      final hasActive = subs.any((s) => s is Map && s['is_active'] == true);
+      if (!hasActive) {
+        if (kDebugMode) debugPrint('🩹 push: keine aktive Subscription → re-register');
+        _subscribed = false;
+        await _registerSubscription(uid);
+      }
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ push health-check failed: $e');
+    }
   }
 
   Future<void> _pollOnce() async {
@@ -511,5 +571,14 @@ class PushNotificationManager with WidgetsBindingObserver {
     await _fcmOpenedSub?.cancel();
     await _fcmTokenSub?.cancel();
     _stopPolling();
+  }
+
+  /// Public API: erlaubt UI (z.B. Profile-Settings) eine sofortige
+  /// Re-Registrierung anzustoßen, falls der User Push-Probleme meldet.
+  Future<void> forceResubscribe() async {
+    final uid = Supabase.instance.client.auth.currentUser?.id;
+    if (uid == null) return;
+    _subscribed = false;
+    await _registerSubscription(uid);
   }
 }
