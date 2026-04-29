@@ -7,7 +7,7 @@ name: ☁️ Cloudflare Worker deployen
 #   CLOUDFLARE_API_TOKEN            — Wrangler-Deploy-Token
 #   SUPABASE_SERVICE_ROLE_KEY       — Supabase Service-Role JWT
 #   FCM_SERVICE_ACCOUNT_JSON        — Firebase Service-Account JSON (optional)
-#   VPS_PASSWORD                    — SSH root-Passwort für VPS (optional, skip wenn fehlt)
+#   VPS_PASSWORD                    — SSH root-Passwort für VPS (optional)
 # Optional (Fallback-Werte eingebettet):
 #   LIVEKIT_API_KEY                 — Standard: wb-a9b26485d407e7dc2043
 #   LIVEKIT_API_SECRET              — Standard: f9c57648d1756868aa7c124b545c029bcb2569b5bf82c1fa5058eefc4efc21d1
@@ -36,9 +36,6 @@ jobs:
     env:
       VPS_HOST: 72.62.154.95
       VPS_USER: root
-      WB_KEY: ${{ secrets.LIVEKIT_API_KEY || 'wb-a9b26485d407e7dc2043' }}
-      WB_SECRET: ${{ secrets.LIVEKIT_API_SECRET || 'f9c57648d1756868aa7c124b545c029bcb2569b5bf82c1fa5058eefc4efc21d1' }}
-      WB_URL: ${{ secrets.LIVEKIT_URL || 'wss://livekit.srv1438024.hstgr.cloud' }}
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v4
@@ -53,6 +50,9 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           FCM_SERVICE_ACCOUNT_JSON: ${{ secrets.FCM_SERVICE_ACCOUNT_JSON }}
+          WB_KEY: ${{ secrets.LIVEKIT_API_KEY || 'wb-a9b26485d407e7dc2043' }}
+          WB_SECRET: ${{ secrets.LIVEKIT_API_SECRET || 'f9c57648d1756868aa7c124b545c029bcb2569b5bf82c1fa5058eefc4efc21d1' }}
+          WB_URL: ${{ secrets.LIVEKIT_URL || 'wss://livekit.srv1438024.hstgr.cloud' }}
         working-directory: workers
         run: |
           set -euo pipefail
@@ -100,6 +100,8 @@ jobs:
         continue-on-error: true
         env:
           VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
+          WB_KEY: ${{ secrets.LIVEKIT_API_KEY || 'wb-a9b26485d407e7dc2043' }}
+          WB_SECRET: ${{ secrets.LIVEKIT_API_SECRET || 'f9c57648d1756868aa7c124b545c029bcb2569b5bf82c1fa5058eefc4efc21d1' }}
         run: |
           set -euo pipefail
           if [ -z "${VPS_PASSWORD:-}" ]; then
@@ -109,22 +111,8 @@ jobs:
 
           sudo apt-get install -y -qq sshpass
 
-          YAML_B64=$(printf '%s\n' "port: 7880
-redis:
-  address: 127.0.0.1:6379
-keys:
-  mensaena-6dd99c8f63b0: d92c860810313cd704b8959854d4225611fcb1291456603b86a0adcff2cb2a6e
-  ${WB_KEY}: ${WB_SECRET}
-rtc:
-  tcp_port: 7881
-  port_range_start: 50000
-  port_range_end: 60000
-  use_external_ip: true
-room:
-  auto_create: true
-  empty_timeout: 300
-logging:
-  level: info" | base64 | tr -d '\n')
+          # Single-line printf um YAML-Einrückungsprobleme zu vermeiden
+          YAML_B64=$(printf 'port: 7880\nredis:\n  address: 127.0.0.1:6379\nkeys:\n  mensaena-6dd99c8f63b0: d92c860810313cd704b8959854d4225611fcb1291456603b86a0adcff2cb2a6e\n  %s: %s\nrtc:\n  tcp_port: 7881\n  port_range_start: 50000\n  port_range_end: 60000\n  use_external_ip: true\nroom:\n  auto_create: true\n  empty_timeout: 300\nlogging:\n  level: info\n' "${WB_KEY}" "${WB_SECRET}" | base64 | tr -d '\n')
 
           sshpass -p "$VPS_PASSWORD" ssh \
             -o StrictHostKeyChecking=no \
