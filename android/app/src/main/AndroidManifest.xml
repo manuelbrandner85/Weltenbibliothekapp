@@ -4,16 +4,20 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     
-    <!-- 🎤 MICROPHONE PERMISSION (for Voice Messages & WebRTC) -->
+    <!-- 🎤 MICROPHONE PERMISSION (Voice Messages + LiveKit Group-Call) -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
-    
-    <!-- 🎙️ WebRTC PERMISSIONS -->
+
+    <!-- 🎥 LIVEKIT PERMISSIONS (Camera + Audio + Bluetooth + Foreground-Service) -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.BLUETOOTH" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <!-- Foreground-Service-Typen für Android 14+ (Screen-Share + Voice-Call) -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
     
     <!-- Audio Focus (Android 8.0+) -->
     <uses-permission android:name="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE" />
@@ -68,6 +72,14 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+
+        <!-- 🎥 Foreground-Service für LiveKit Screen-Share + Voice-Call.
+             flutter_background plugin nutzt diesen Service. Auf Android 14+ braucht
+             der Service `foregroundServiceType=mediaProjection|microphone|camera`. -->
+        <service
+            android:name="de.julianassmann.flutter_background.IsolateHolderService"
+            android:foregroundServiceType="mediaProjection|microphone|camera"
+            android:exported="false" />
 
         <!-- 📲 FileProvider für In-App-APK-Install (Android 7+ braucht content:// URIs) -->
         <provider

@@ -303,7 +303,7 @@ Weltenbibliothekapp/
 │   │   ├── supabase_service.dart        # ⭐ Auth, Profile, Chat (Supabase)
 │   │   ├── cloudflare_api_service.dart  # ⭐ Edge API, AI, Recherche (Cloudflare)
 │   │   ├── hybrid_chat_service.dart     # Chat-Koordination (Supabase RT + Cloudflare)
-│   │   ├── webrtc_voice_service.dart    # Voice/WebRTC
+│   │   ├── livekit_call_service.dart    # 🎥 LiveKit Video-Gruppencall (ersetzt WebRTC)
 │   │   ├── offline_sync_service.dart    # Offline-Warteschlange
 │   │   ├── storage_service.dart         # SQLite lokaler Speicher (via SqliteStorageService)
 │   │   ├── sqlite_storage_service.dart  # ⭐ SQLite KV-Store + in-memory cache (Hive-Ersatz)
@@ -577,7 +577,24 @@ chore(deps): Dependencies aktualisiert
    - `unused_field` Warnungen (nicht kritisch)
    - `deprecated_member_use` (Radio-Widgets, alte APIs)
 
-3. **Voice/WebRTC** noch nicht vollständig getestet auf Produktion
+3. **🎥 LiveKit-Migration läuft** (v5.39.0+, 2026-04-27):
+   - flutter_webrtc komplett entfernt — alle 17 alten WebRTC-Dateien gelöscht
+   - livekit_client + flutter_background als neue Dependencies
+   - Worker hat `/api/livekit/token` Endpoint (HMAC-SHA256-JWT, 4h TTL,
+     Mensaena-kompatibel mit roomJoin/canPublish/canSubscribe/canPublishData
+     + canPublishSources camera/microphone/screen_share)
+   - `LiveKitCallService` (lib/services/) implementiert join/leave/mic/cam/
+     screen-share/hand-heben/reactions/in-call-chat/auto-speaker-focus
+   - `livekit_call_provider.dart` (Riverpod) für State-Sharing in der UI
+   - **Pending**: `LiveKitGroupCallScreen` UI im jeweiligen Welt-Stil
+     (Energie/Materie) + Wiring der Voice-Buttons in den Chat-Screens.
+     Voice-Buttons zeigen aktuell „kommt im nächsten Update"-Hinweis.
+   - **Server-Setup**: User muss eigenen LiveKit-Docker auf Hostinger
+     hochziehen (getrennt von Mensaena-Container, eigene Ports/Keys/Domain).
+     Anleitung in `docs/LIVEKIT_SERVER_SETUP.md`.
+   - **Build**: Native Änderung → neuer APK-Release nötig (5.39.0+20260424).
+     `--dart-define=LIVEKIT_URL=wss://livekit-wb.deine-domain.de` beim Build.
+   - GitHub-Secrets nötig: `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`, `LIVEKIT_URL`.
 
 4. **Push-Notifications** (Cloudflare-basiert, nicht Firebase) – Registrierung funktioniert,
    Delivery-Test aussteht
@@ -725,7 +742,7 @@ const user_id = isUUID ? rawUserId : null;
 | `supabase_service.dart` | Auth, Profile, Chat, Community (Supabase) |
 | `cloudflare_api_service.dart` | Edge API, AI, Recherche, Voice (Cloudflare) |
 | `hybrid_chat_service.dart` | Chat-Koordination (Cloudflare Primary, Supabase Fallback) |
-| `webrtc_voice_service.dart` | WebRTC Voice-Rooms |
+| `livekit_call_service.dart` | 🎥 LiveKit Video-Gruppencall (ersetzt WebRTC seit v5.39.0) |
 | `offline_sync_service.dart` | Offline-Queue für Nachrichten |
 | `storage_service.dart` | SQLite lokaler Speicher (Profile, Favoriten) — via SqliteStorageService |
 | `sqlite_storage_service.dart` | SQLite KV-Store + in-memory cache — Hive-Ersatz (box/key/value) |

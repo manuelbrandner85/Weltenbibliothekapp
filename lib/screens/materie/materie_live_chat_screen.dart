@@ -19,9 +19,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart'; // Riverpod
 // 🔥 BACKEND SYNC
 // import '../../services/voice_message_service_export.dart'; // 🎙️ VOICE MESSAGE (Disabled for Android)
 // import '../../widgets/voice_record_button.dart'; // 🎙️ VOICE RECORD BUTTON (Disabled for Android)
-import '../../services/webrtc_voice_service.dart'; // 🎤 WEBRTC VOICE
-// REMOVED: import '../../widgets/voice_chat_banner.dart'; (unused)
-import '../../widgets/voice/voice_participant_header_bar.dart'; // 🎤 Voice Participant Header Bar
+// webrtc_voice_service entfernt — Migration auf LiveKit (siehe livekit_call_service.dart)
+// voice_participant_header_bar entfernt — UI kommt im LiveKit-Folge-PR
 import '../../widgets/offline_indicator.dart'; // 📡 OFFLINE INDICATOR (NEW Phase 3)
 // 👤 MATERIE PROFIL MODEL
 import '../shared/profile_editor_screen.dart'; // ✅ Profile Editor
@@ -36,9 +35,8 @@ import '../../widgets/message_search_widget.dart'; // 🔍 Message Search
 import '../../widgets/poll_widget.dart'; // 🗳️ Poll Widget
 import '../../widgets/pinned_message_banner.dart'; // 📌 Pinned Message Banner
 
-import '../shared/modern_voice_chat_screen.dart'; // 🎤 Modern Voice Chat Screen (Phase B)
-import '../shared/video_voice_chat_screen.dart'; // 🎥 Video + Voice Chat (Telegram-Style)
-import '../../providers/webrtc_call_provider.dart'; // Riverpod provider
+// modern_voice_chat_screen + video_voice_chat_screen entfernt — siehe LiveKit-Folge-PR
+// webrtc_call_provider entfernt — Riverpod-State kommt jetzt aus livekit_call_provider
 // 🎤 Admin Dialogs & Notifications
 // 🚫 Kick User Dialog
 // 🔴 Ban User Dialog
@@ -146,9 +144,8 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
   bool _hasText = false; // true = Send Button, false = Voice Button
   
   // 🆕 FEATURE 1: WEBRTC VOICE ROOM
-  bool _isInVoiceRoom = false;
-  bool _isMuted = false;
-  List<Map<String, dynamic>> _voiceParticipants = [];
+  // ⏳ Voice-Room-Migration WebRTC → LiveKit. UI kommt im Folge-PR.
+  // Voice-Button zeigt vorerst Coming-Soon-SnackBar.
   
   // 🆕 ADMIN ACTION SERVICE
   
@@ -245,8 +242,8 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
     _selectedRoom = widget.initialRoom ?? 'politik';
     RecentRoomsService.instance.touch('materie', _selectedRoom);
 
-    // 🎤 Initialize WebRTC Voice Service
-    _initializeWebRTC();
+    // 🎥 Voice-Service: WebRTC → LiveKit Migration läuft. Init geschieht
+    // jetzt via LiveKitCallService.joinRoom() beim User-Klick auf Voice-Button.
 
     // 📝 Listen to input changes for @ mentions
     _messageController.addListener(_onInputChanged);
@@ -412,7 +409,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
     _inputFocusNode.dispose();
     _refreshTimer?.cancel();
     _pendingSub?.cancel();
-    _voiceParticipantsSub?.cancel();
+    // _voiceParticipantsSub entfernt — LiveKit hat eigenen Lifecycle
     _realtimeChannel?.unsubscribe();
     PresenceService.instance.leave();
     ReadReceiptService.instance.leave();
@@ -1268,19 +1265,17 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
           ),
         ),
         actions: [
+          // 🎥 VIDEO/VOICE CHAT — LiveKit-UI kommt im Folge-PR
           IconButton(
             icon: const Icon(Icons.video_call, color: Colors.white),
             onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => VideoVoiceChatScreen(
-                    roomId: 'materie_$_selectedRoom',
-                    userId: _userId,
-                    username: _username,
-                    avatar: _avatar.isNotEmpty ? _avatar : '🔴',
-                    accentColor: const Color(0xFFE53935),
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    '🎥 Video-Call wird gerade auf LiveKit umgestellt — '
+                    'kommt im nächsten Update.',
                   ),
+                  duration: Duration(seconds: 3),
                 ),
               );
             },
@@ -1360,13 +1355,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
                       ),
                     ),
                     // ✅ REMOVED: VoiceChatBanner (redundant - use VoiceParticipantHeaderBar instead)
-                  // 🎤 TELEGRAM VOICE HEADER BAR (ONLY WHEN ACTIVE - like real Telegram)
-                  if (_isInVoiceRoom)
-                    VoiceParticipantHeaderBar(
-                      participants: _voiceParticipants,
-                      accentColor: Colors.red,
-                      onTap: _openTelegramVoiceScreen,
-                    ),
+                  // 🎥 Voice-Header-Bar entfernt — kommt im LiveKit-Folge-PR.
                   // ⌨️ TYPING INDICATORS
                   if (_typingUsers.isNotEmpty) _buildTypingIndicators(),
                   _buildRoomSelector(),
@@ -1566,7 +1555,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
                   }
                   _messageController.text = ChatDraftService.instance.get(_fullRoomId);
                   UnreadTrackerService.instance.markSeen(_fullRoomId);
-                  await _voiceService.switchRoom(_fullRoomId);
+                  // Voice-switchRoom entfällt — LiveKit hat eigenen Lifecycle.
                   await _refreshPresence();
                   await ReadReceiptService.instance.watchRoom(_fullRoomId);
                   await _markRoomRead();
@@ -2192,220 +2181,6 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
   // ═══════════════════════════════════════════════════════════
   // 🆕 NEUE FEATURES - WEBRTC, TYPING, REACTIONS, SWIPE
   // ═══════════════════════════════════════════════════════════
-  
-  // 🎤 WEBRTC VOICE METHODS
-  final WebRTCVoiceService _voiceService = WebRTCVoiceService();
-  StreamSubscription? _voiceParticipantsSub;
-  
-  Future<void> _initializeWebRTC() async {
-    await _voiceService.initialize();
-    
-    // Listen to participants (cancel in dispose)
-    _voiceParticipantsSub?.cancel();
-    _voiceParticipantsSub = _voiceService.participantsStream.listen((participants) {
-      if (!mounted) return;
-      setState(() {
-        _voiceParticipants = participants.map((p) => {
-          'userId': p.userId,
-          'username': p.username,
-          'avatarEmoji': p.avatarEmoji,
-          'isSpeaking': p.isSpeaking,
-          'isMuted': p.isMuted,
-        }).toList();
-      });
-    });
-  }
-  
-  // ignore: unused_element
-  Future<void> _toggleVoiceRoom() async {
-    if (_isInVoiceRoom) {
-      await _voiceService.leaveVoiceRoom();
-      if (mounted) {
-        setState(() {
-        _isInVoiceRoom = false;
-        _voiceParticipants = [];
-      });
-      }
-      _showSnackBar('🔇 Voice Room verlassen', Colors.grey);
-    } else {
-      // ✅ PHASE 2: Enhanced Error Handling
-      try {
-        final success = await _voiceService.joinVoiceRoom(
-          roomId: _selectedRoom,
-          userId: _userId,
-          username: _username,
-          world: 'materie',  // 🆕 World parameter
-        );
-        
-        if (success) {
-          if (mounted) {
-            setState(() {
-            _isInVoiceRoom = true;
-          });
-          }
-          _showSnackBar('🎤 Voice Room beigetreten', Colors.red);
-        } else {
-          // Check for specific error
-          final error = _voiceService.getLastError();
-          _showSnackBar(
-            error ?? '❌ Fehler beim Beitreten',
-            Colors.red,
-          );
-        }
-      } catch (e) {
-        if (kDebugMode) {
-          debugPrint('❌ Voice Room Join Error: $e');
-        }
-        
-        // Show user-friendly error message
-        String errorMessage = '❌ Voice Chat Fehler';
-        
-        if (e.toString().contains('Berechtigung')) {
-          errorMessage = '🎤 Mikrofon-Berechtigung erforderlich';
-        } else if (e.toString().contains('aktiviert')) {
-          errorMessage = '🎤 Mikrofon konnte nicht aktiviert werden';
-        }
-        
-        _showSnackBar(errorMessage, Colors.red);
-      }
-    }
-  }
-  
-  // ignore: unused_element
-  Future<void> _toggleMute() async {
-    await _voiceService.toggleMute();
-    if (mounted) {
-      setState(() {
-      _isMuted = !_isMuted;
-    });
-    }
-    _showSnackBar(
-      _isMuted ? '🔇 Stummgeschaltet' : '🎤 Mikrofon aktiv',
-      Colors.red,
-    );
-  }
-  
-  // 🎤 OPEN MODERN VOICE CHAT SCREEN (Phase B - Grid Layout)
-  void _openTelegramVoiceScreen() {
-    if (kDebugMode) {
-      debugPrint('🎤 [MODERN MATERIE] Opening Modern Voice Chat Screen (2×5 Grid)...');
-    }
-    
-    // 🔑 Get Admin Status from Backend Role
-    final storage = StorageService();
-    final profile = storage.getMaterieProfile();
-    final backendRole = profile?.role;  // 'root_admin', 'admin', or 'user'
-    final adminLevel = AdminPermissions.getAdminLevelFromBackendRole(backendRole);
-    final isAdmin = adminLevel != AdminLevel.user;
-    final isRootAdmin = adminLevel == AdminLevel.rootAdmin;
-    
-    if (kDebugMode) {
-      debugPrint('🔑 [ADMIN CHECK MATERIE]');
-      debugPrint('   userId: $_userId');
-      debugPrint('   backendRole: $backendRole');
-      debugPrint('   adminLevel: $adminLevel');
-      debugPrint('   isAdmin: $isAdmin');
-      debugPrint('   isRootAdmin: $isRootAdmin');
-    }
-    
-    // ✅ Phase A: Set admin status in Riverpod provider
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final notifier = ProviderScope.containerOf(context).read(webrtcCallProvider.notifier);
-      notifier.setAdminStatus(isAdmin, isRootAdmin);
-    });
-    
-    // ✅ Phase B: Navigate to Modern Grid UI
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ModernVoiceChatScreen(
-          roomId: _selectedRoom,
-          roomName: 'Materie Chat - $_selectedRoom',
-          userId: _userId,
-          username: _username,
-          world: 'materie',  // ✅ ADD: world parameter
-          accentColor: Colors.red, // Materie red
-          // ✅ NO participants prop - Riverpod provider handles it!
-          // ✅ NO callbacks - Riverpod notifier handles everything!
-        ),
-      ),
-    );
-  }
-
-  
-  // 🎤 VOICE ROOM BAR
-  // ignore: unused_element
-  Widget _buildVoiceRoomBar() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Colors.red.withValues(alpha: 0.2),
-            Colors.orange.withValues(alpha: 0.2),
-          ],
-        ),
-        border: Border(
-          bottom: BorderSide(
-            color: Colors.red.withValues(alpha: 0.3),
-            width: 1,
-          ),
-        ),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.headset_mic, color: Colors.white, size: 20),
-          const SizedBox(width: 8),
-          Text(
-            '${_voiceParticipants.length}/10 im Voice Room',
-            style: const TextStyle(color: Colors.white, fontSize: 14),
-          ),
-          const Spacer(),
-          // Participants Avatars
-          ..._voiceParticipants.take(5).map((p) {
-            return Padding(
-              padding: const EdgeInsets.only(left: 4),
-              child: Stack(
-                children: [
-                  CircleAvatar(
-                    radius: 16,
-                    backgroundColor: p['isSpeaking'] == true 
-                        ? Colors.greenAccent 
-                        : Colors.grey[700],
-                    child: Text(
-                      p['avatarEmoji']?.toString() ?? '👤',
-                      style: const TextStyle(fontSize: 12),
-                    ),
-                  ),
-                  if (p['isSpeaking'] == true)
-                    Positioned.fill(
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: const AlwaysStoppedAnimation<Color>(
-                          Colors.greenAccent,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            );
-          }),
-          if (_voiceParticipants.length > 5)
-            Padding(
-              padding: const EdgeInsets.only(left: 4),
-              child: CircleAvatar(
-                radius: 16,
-                backgroundColor: Colors.grey[700],
-                child: Text(
-                  '+${_voiceParticipants.length - 5}',
-                  style: const TextStyle(fontSize: 10, color: Colors.white),
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
   
   // ⌨️ TYPING INDICATORS
   // Feature #12: improved typing indicator with avatars + bouncing dots
@@ -3129,7 +2904,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
     });
     _messageController.text = ChatDraftService.instance.get(_fullRoomId);
     UnreadTrackerService.instance.markSeen(_fullRoomId);
-    await _voiceService.switchRoom(_fullRoomId);
+    // Voice-switchRoom entfällt — LiveKit hat eigenen Lifecycle.
     await _refreshPresence();
     await ReadReceiptService.instance.watchRoom(_fullRoomId);
     await _markRoomRead();
