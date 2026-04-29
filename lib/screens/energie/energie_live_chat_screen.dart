@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart'; // kDebugMode
 import 'package:cached_network_image/cached_network_image.dart';
 import 'dart:async';
 import 'dart:io'; // File for uploads
+import '../../config/api_config.dart';
+import '../shared/livekit_group_call_screen.dart';
 import '../../services/supabase_service.dart'; // 🔥 supabase client für Auth
 import 'package:supabase_flutter/supabase_flutter.dart' show RealtimeChannel;
 // Removed: dart:convert (unused after FIX 15)
@@ -1422,17 +1424,28 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
           ),
         ),
         actions: [
-          // 🎥 VIDEO/VOICE CHAT — LiveKit-UI kommt im Folge-PR
+          // 🎥 LIVEKIT VIDEO/VOICE GROUPCALL
           IconButton(
             icon: const Icon(Icons.video_call, color: Colors.white),
             onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text(
-                    '🎥 Video-Call wird gerade auf LiveKit umgestellt — '
-                    'kommt im nächsten Update.',
+              if (!ApiConfig.isLivekitEnabled) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Video-Call ist serverseitig noch nicht aktiviert.'),
+                    duration: Duration(seconds: 3),
                   ),
-                  duration: Duration(seconds: 3),
+                );
+                return;
+              }
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => LiveKitGroupCallScreen(
+                    roomName: 'wb-energie-$_selectedRoom',
+                    world: 'energie',
+                    displayName: _username.isNotEmpty ? _username : 'Mitglied',
+                    avatarUrl: null,
+                  ),
                 ),
               );
             },
