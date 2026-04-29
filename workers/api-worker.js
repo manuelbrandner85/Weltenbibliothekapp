@@ -1284,6 +1284,118 @@ export default {
       }
     }
 
+    // ── LiveKit Token ─────────────────────────────────────────
+    // POST /api/livekit/token   { roomName, displayName? }
+    // Auth: Bearer <Supabase-Access-Token>
+    //
+    // Generiert ein LiveKit-AccessToken (HMAC-SHA256-JWT) das exakt der
+    // Mensaena-Implementierung entspricht: identity = user.id, name = displayName,
+    // ttl = 4h, grants: roomJoin/canPublish/canSubscribe/canPublishData +
+    // canPublishSources für Camera/Microphone/Screen-Share.
+    //
+    // Server-Secrets als Wrangler-Secret:
+    //   wrangler secret put LIVEKIT_API_KEY
+    //   wrangler secret put LIVEKIT_API_SECRET
+    //   wrangler secret put LIVEKIT_URL  (optional — sonst returned der Endpoint
+    //                                     leeren String und Client nutzt seinen eigenen)
+    if (path === '/api/livekit/token' && method === 'POST') {
+      try {
+        const authHeader = request.headers.get('Authorization') || '';
+        if (!authHeader.startsWith('Bearer ')) {
+          return jsonResponse({ error: 'Nicht authentifiziert' }, 401);
+        }
+        const supabaseToken = authHeader.slice(7);
+
+        // Supabase Auth verifizieren — User-ID + Metadata holen
+        const userRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+          headers: {
+            'apikey': env.SUPABASE_ANON_KEY || '',
+            'Authorization': `Bearer ${supabaseToken}`,
+          },
+        });
+        if (!userRes.ok) {
+          return jsonResponse({ error: 'Token ungültig' }, 401);
+        }
+        const user = await userRes.json();
+        if (!user || !user.id) {
+          return jsonResponse({ error: 'User nicht gefunden' }, 401);
+        }
+
+        const body = await request.json().catch(() => ({}));
+        const roomName = body.roomName;
+        if (!roomName || typeof roomName !== 'string') {
+          return jsonResponse({ error: 'roomName fehlt' }, 400);
+        }
+
+        const apiKey = env.LIVEKIT_API_KEY;
+        const apiSecret = env.LIVEKIT_API_SECRET;
+        if (!apiKey || !apiSecret) {
+          return jsonResponse(
+            { error: 'LiveKit ist serverseitig nicht konfiguriert' },
+            503,
+          );
+        }
+
+        const meta = user.user_metadata || {};
+        const name = body.displayName
+          || meta.username
+          || meta.display_name
+          || (user.email ? user.email.split('@')[0] : 'Mitglied');
+
+        // base64url-Encoding (RFC 7515) — JWT-Header/Payload/Signature
+        const b64url = (str) => btoa(str)
+          .replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+
+        const header = b64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+        const now = Math.floor(Date.now() / 1000);
+        const payload = b64url(JSON.stringify({
+          iss: apiKey,
+          sub: user.id,
+          name: name,
+          nbf: now,
+          exp: now + 14400, // 4 Stunden — wie Mensaena
+          video: {
+            roomJoin: true,
+            room: roomName,
+            canPublish: true,
+            canSubscribe: true,
+            canPublishData: true,
+            canPublishSources: [
+              'camera',
+              'microphone',
+              'screen_share',
+              'screen_share_audio',
+            ],
+          },
+        }));
+
+        // HMAC-SHA256 Signatur
+        const encoder = new TextEncoder();
+        const key = await crypto.subtle.importKey(
+          'raw',
+          encoder.encode(apiSecret),
+          { name: 'HMAC', hash: 'SHA-256' },
+          false,
+          ['sign'],
+        );
+        const sigBytes = await crypto.subtle.sign(
+          'HMAC',
+          key,
+          encoder.encode(`${header}.${payload}`),
+        );
+        const signature = b64url(
+          String.fromCharCode(...new Uint8Array(sigBytes)),
+        );
+
+        return jsonResponse({
+          token: `${header}.${payload}.${signature}`,
+          url: env.LIVEKIT_URL || '',
+        });
+      } catch (e) {
+        return errorResponse(`LiveKit Token-Generierung fehlgeschlagen: ${e.message}`);
+      }
+    }
+
     // ── Statistiken ───────────────────────────────────────────
     if (path === '/api/statistics' || path.startsWith('/api/statistics')) {
       try {

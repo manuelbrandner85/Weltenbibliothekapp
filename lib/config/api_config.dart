@@ -122,6 +122,20 @@ class ApiConfig {
   static String get pushSendUrl => '$workerUrl/api/push/send';
   static String get aiApiUrl => '$workerUrl/ai';
   static String get profileApiUrl => '$workerUrl/api/sync';
+
+  // ──────────────────────────────────────────────────────────────
+  // 🎥 LIVEKIT (Video-Gruppencall, Self-Hosted auf Hostinger)
+  // ──────────────────────────────────────────────────────────────
+  // URL kommt zur Build-Zeit über `--dart-define=LIVEKIT_URL=wss://...`.
+  // Token wird via Cloudflare Worker generiert (HMAC-SHA256), Secrets bleiben
+  // serverseitig. Wenn nicht konfiguriert → isLivekitEnabled = false und
+  // Voice-Buttons zeigen einen "nicht verfügbar"-Hinweis statt zu crashen.
+  static const String livekitUrl = String.fromEnvironment(
+    'LIVEKIT_URL',
+    defaultValue: '',
+  );
+  static String get livekitTokenUrl => '$workerUrl/api/livekit/token';
+  static bool get isLivekitEnabled => livekitUrl.isNotEmpty;
   static String get cloudSyncApiUrl => '$workerUrl/api/sync';
   static String get websocketUrl =>
       workerUrl.replaceAll('https://', 'wss://');
