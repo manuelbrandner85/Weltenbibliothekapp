@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:cached_network_image/cached_network_image.dart';
 import 'dart:async';
+import '../../config/api_config.dart';
+import '../shared/livekit_group_call_screen.dart';
 import '../../services/supabase_service.dart'; // 🔥 supabase Auth
 import 'package:supabase_flutter/supabase_flutter.dart' show RealtimeChannel;
 import '../../services/cloudflare_api_service.dart';
@@ -1265,17 +1267,28 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
           ),
         ),
         actions: [
-          // 🎥 VIDEO/VOICE CHAT — LiveKit-UI kommt im Folge-PR
+          // 🎥 LIVEKIT VIDEO/VOICE GROUPCALL
           IconButton(
             icon: const Icon(Icons.video_call, color: Colors.white),
             onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text(
-                    '🎥 Video-Call wird gerade auf LiveKit umgestellt — '
-                    'kommt im nächsten Update.',
+              if (!ApiConfig.isLivekitEnabled) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Video-Call ist serverseitig noch nicht aktiviert.'),
+                    duration: Duration(seconds: 3),
                   ),
-                  duration: Duration(seconds: 3),
+                );
+                return;
+              }
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => LiveKitGroupCallScreen(
+                    roomName: 'wb-materie-$_selectedRoom',
+                    world: 'materie',
+                    displayName: _username.isNotEmpty ? _username : 'Mitglied',
+                    avatarUrl: null,
+                  ),
                 ),
               );
             },
