@@ -7,7 +7,6 @@ library;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:livekit_client/livekit_client.dart';
 
 import '../services/livekit_call_service.dart';
 
@@ -35,11 +34,6 @@ final livekitIsInCallProvider = Provider<bool>((ref) {
   final state = ref.watch(livekitConnectionStateProvider);
   return state == LiveKitConnectionState.connected ||
       state == LiveKitConnectionState.reconnecting;
-});
-
-/// Convenience: Teilnehmerliste mit lokaler Reihenfolge (Local zuerst).
-final livekitParticipantsProvider = Provider<List<Participant>>((ref) {
-  return ref.watch(livekitCallProvider).participants;
 });
 
 @visibleForTesting
