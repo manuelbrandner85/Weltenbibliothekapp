@@ -6,19 +6,12 @@ name: 🔧 LiveKit — Weltenbibliothek einrichten
 # Voraussetzungen:
 #   GitHub Secret VPS_PASSWORD  — Root-Passwort Hostinger VPS (72.62.154.95)
 #   GitHub Secret CLOUDFLARE_API_TOKEN — Wrangler Deploy-Token
-#
-# Was dieser Workflow tut:
-#   1. SSH zum VPS → livekit.yaml mit WB-Key ergänzen (Mensaena-Key BLEIBT)
-#   2. docker-compose.yml auf offizielles livekit-Image umstellen (sauberer)
-#   3. LiveKit neu starten
-#   4. Cloudflare Worker-Secrets setzen (LIVEKIT_API_KEY/SECRET/URL)
-#   5. Worker deployen
-#
-# Nach Ausführung: Shorebird-Patch feuert automatisch bei nächstem main-Push
-# und backt LIVEKIT_URL in die App (via Fallback in shorebird_patch.yml).
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.trigger-livekit-setup']
 
 permissions:
   contents: read
@@ -32,6 +25,8 @@ jobs:
       VPS_HOST: 72.62.154.95
       VPS_USER: root
       LIVEKIT_URL: wss://livekit.srv1438024.hstgr.cloud
+      WB_KEY: wb-a9b26485d407e7dc2043
+      WB_SECRET: f9c57648d1756868aa7c124b545c029bcb2569b5bf82c1fa5058eefc4efc21d1
 
     steps:
       - name: 📥 Checkout
@@ -40,21 +35,15 @@ jobs:
       - name: 🛠 sshpass installieren
         run: sudo apt-get install -y -qq sshpass
 
-      - name: 🔑 WB API-Key generieren + LiveKit-Config auf VPS aktualisieren
-        id: keygen
+      - name: 🔑 Credentials maskieren
+        run: echo "::add-mask::f9c57648d1756868aa7c124b545c029bcb2569b5bf82c1fa5058eefc4efc21d1"
+
+      - name: 🖥 livekit.yaml auf VPS aktualisieren
         env:
           VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
         run: |
           set -euo pipefail
 
-          # Neue WB-Credentials
-          WB_KEY="wb-$(openssl rand -hex 10)"
-          WB_SECRET=$(openssl rand -hex 32)
-          echo "wb_key=$WB_KEY" >> $GITHUB_OUTPUT
-          echo "wb_secret=$WB_SECRET" >> $GITHUB_OUTPUT
-          echo "::add-mask::$WB_SECRET"
-
-          # livekit.yaml — Mensaena-Key BLEIBT, WB-Key kommt dazu
           YAML_B64=$(printf '%s\n' "port: 7880
 redis:
   address: 127.0.0.1:6379
@@ -72,86 +61,43 @@ room:
 logging:
   level: info" | base64 | tr -d '\n')
 
-          # docker-compose.yml — offizielles Image statt alpine-Download-Hack
-          COMPOSE_B64=$(printf '%s\n' 'name: livekit
-services:
-  redis:
-    image: redis:7-alpine
-    restart: unless-stopped
-    network_mode: host
-    command: ["redis-server", "--save", "", "--port", "6379"]
-  livekit:
-    image: livekit/livekit-server:v1.11.0
-    restart: unless-stopped
-    network_mode: host
-    depends_on:
-      - redis
-    volumes:
-      - ./livekit.yaml:/etc/livekit.yaml:ro
-    command: --config /etc/livekit.yaml
-    labels:
-      - traefik.enable=true
-      - "traefik.http.routers.livekit.rule=Host(`livekit.srv1438024.hstgr.cloud`)"
-      - "traefik.http.routers.livekit.entrypoints=websecure"
-      - "traefik.http.routers.livekit.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.livekit.service=livekit"
-      - "traefik.http.services.livekit.loadbalancer.server.url=http://127.0.0.1:7880"' | base64 | tr -d '\n')
-
-          # SSH: Files schreiben + LiveKit neu starten
           sshpass -p "$VPS_PASSWORD" ssh \
             -o StrictHostKeyChecking=no \
             -o ConnectTimeout=30 \
+            -o PasswordAuthentication=yes \
             ${VPS_USER}@${VPS_HOST} \
             "set -euo pipefail
              mkdir -p /docker/livekit
              printf '%s' '${YAML_B64}' | base64 -d > /docker/livekit/livekit.yaml
-             printf '%s' '${COMPOSE_B64}' | base64 -d > /docker/livekit/docker-compose.yml
-             echo '=== livekit.yaml keys (ohne Secrets) ==='
-             grep 'keys:' -A5 /docker/livekit/livekit.yaml | grep -v ':' | head -5 || true
-             grep '^  [a-z]' /docker/livekit/livekit.yaml | head -10 || true
-             echo '=== docker compose down ==='
-             cd /docker/livekit
-             docker compose down --remove-orphans || true
-             echo '=== docker pull ==='
-             docker pull livekit/livekit-server:v1.11.0 2>&1 | tail -3
-             echo '=== docker compose up ==='
-             docker compose up -d
-             sleep 6
-             docker compose ps"
+             echo '✅ livekit.yaml geschrieben'
+             if docker ps --format '{{.Names}}' | grep -q livekit; then
+               cd /docker/livekit && docker compose restart livekit
+               sleep 5
+               docker compose ps
+             else
+               echo 'ℹ️  LiveKit-Container nicht aktiv, kein Restart nötig'
+             fi"
 
       - name: ☁️ Cloudflare Worker-Secrets setzen + deployen
         working-directory: workers
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          WB_KEY: ${{ steps.keygen.outputs.wb_key }}
-          WB_SECRET: ${{ steps.keygen.outputs.wb_secret }}
         run: |
           set -euo pipefail
           npm install -g wrangler@latest --silent 2>&1 | tail -2
 
-          echo "$WB_KEY"     | wrangler secret put LIVEKIT_API_KEY
-          echo "$WB_SECRET"  | wrangler secret put LIVEKIT_API_SECRET
-          echo "${{ env.LIVEKIT_URL }}" | wrangler secret put LIVEKIT_URL
+          echo "${WB_KEY}"      | wrangler secret put LIVEKIT_API_KEY
+          echo "${WB_SECRET}"   | wrangler secret put LIVEKIT_API_SECRET
+          echo "${LIVEKIT_URL}" | wrangler secret put LIVEKIT_URL
 
           wrangler deploy
           echo "✅ Worker deployed mit LiveKit-Secrets"
 
-      - name: 📋 Zusammenfassung
+      - name: ✅ Zusammenfassung
         run: |
           echo "## ✅ LiveKit WB-Setup abgeschlossen" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Verbindung" >> $GITHUB_STEP_SUMMARY
-          echo "- **URL:** \`${{ env.LIVEKIT_URL }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **API Key:** \`${{ steps.keygen.outputs.wb_key }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **LiveKit URL:** \`${LIVEKIT_URL}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **WB API Key:** \`${WB_KEY}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Mensaena-Key:** unverändert ✅" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Optional — GitHub Secrets für künftige Workflows setzen" >> $GITHUB_STEP_SUMMARY
-          echo "Unter **Settings → Secrets → Actions** eintragen:" >> $GITHUB_STEP_SUMMARY
-          echo "| Secret | Wert |" >> $GITHUB_STEP_SUMMARY
-          echo "|--------|------|" >> $GITHUB_STEP_SUMMARY
-          echo "| \`LIVEKIT_API_KEY\` | \`${{ steps.keygen.outputs.wb_key }}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| \`LIVEKIT_API_SECRET\` | *(im Workflow-Log maskiert — siehe Schritt keygen)* |" >> $GITHUB_STEP_SUMMARY
-          echo "| \`LIVEKIT_URL\` | \`${{ env.LIVEKIT_URL }}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "LIVEKIT_URL ist bereits als Fallback in \`shorebird_patch.yml\` hard-coded" >> $GITHUB_STEP_SUMMARY
-          echo "→ App bekommt die URL automatisch beim nächsten Shorebird-Patch." >> $GITHUB_STEP_SUMMARY
+          echo "- **Worker:** neu deployed mit LiveKit-Secrets ✅" >> $GITHUB_STEP_SUMMARY
