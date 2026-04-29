@@ -1,12 +1,17 @@
 name: 🔧 LiveKit — Weltenbibliothek einrichten
 
 # Richtet WB-API-Key in bestehendem LiveKit ein + Cloudflare-Worker-Secrets.
-# Idempotent: überspringt alles wenn WB-Key bereits konfiguriert ist.
+# Läuft automatisch bei jedem Push auf main bis Setup erfolgreich war.
+# Danach kann der push-Trigger entfernt werden.
 
 on:
   workflow_dispatch:
   push:
     branches: [main]
+
+concurrency:
+  group: livekit-setup
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -30,30 +35,10 @@ jobs:
       - name: 🔑 Secret maskieren
         run: echo "::add-mask::f9c57648d1756868aa7c124b545c029bcb2569b5bf82c1fa5058eefc4efc21d1"
 
-      - name: ✅ Idempotenz-Check (Worker bereits konfiguriert?)
-        id: check
-        run: |
-          # Prüfe ob Worker schon LIVEKIT_API_KEY kennt
-          HTTP=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 10 \
-            -X POST https://weltenbibliothek-api.brandy13062.workers.dev/api/livekit/token \
-            -H "Content-Type: application/json" \
-            -H "Authorization: Bearer dummy" \
-            -d '{"roomName":"test"}' 2>/dev/null || echo "000")
-          # 503 = nicht konfiguriert, 401 = konfiguriert aber kein gültiger Token
-          if [ "$HTTP" = "401" ] || [ "$HTTP" = "400" ]; then
-            echo "skip=true" >> $GITHUB_OUTPUT
-            echo "✅ Worker bereits konfiguriert (HTTP $HTTP) — überspringe Setup"
-          else
-            echo "skip=false" >> $GITHUB_OUTPUT
-            echo "🔧 Worker nicht konfiguriert (HTTP $HTTP) — Setup wird ausgeführt"
-          fi
-
       - name: 🛠 sshpass installieren
-        if: steps.check.outputs.skip != 'true'
         run: sudo apt-get install -y -qq sshpass
 
       - name: 🖥 livekit.yaml auf VPS aktualisieren
-        if: steps.check.outputs.skip != 'true'
         env:
           VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
         run: |
@@ -93,7 +78,6 @@ logging:
              fi"
 
       - name: ☁️ Cloudflare Worker-Secrets setzen + deployen
-        if: steps.check.outputs.skip != 'true'
         working-directory: workers
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -108,11 +92,8 @@ logging:
 
       - name: 📝 Zusammenfassung
         run: |
-          if [ "${{ steps.check.outputs.skip }}" = "true" ]; then
-            echo "## ✅ LiveKit WB bereits konfiguriert" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "## ✅ LiveKit WB-Setup abgeschlossen" >> $GITHUB_STEP_SUMMARY
-            echo "- LiveKit URL: \`${LIVEKIT_URL}\`" >> $GITHUB_STEP_SUMMARY
-            echo "- WB API Key: \`${WB_KEY}\`" >> $GITHUB_STEP_SUMMARY
-            echo "- Mensaena-Key unverändert ✅" >> $GITHUB_STEP_SUMMARY
-          fi
+          echo "## ✅ LiveKit WB-Setup abgeschlossen" >> $GITHUB_STEP_SUMMARY
+          echo "- LiveKit URL: \`${LIVEKIT_URL}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- WB API Key: \`${WB_KEY}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Mensaena-Key unverändert ✅" >> $GITHUB_STEP_SUMMARY
+          echo "- Worker deployed ✅" >> $GITHUB_STEP_SUMMARY
