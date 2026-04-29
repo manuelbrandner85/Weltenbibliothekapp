@@ -1,17 +1,12 @@
 name: 🔧 LiveKit — Weltenbibliothek einrichten
 
-# Einmalig ausführen um WB-API-Key in bestehendem LiveKit (Mensaena-Instanz)
-# hinzuzufügen, Cloudflare-Worker-Secrets zu setzen und Worker zu deployen.
-#
-# Voraussetzungen:
-#   GitHub Secret VPS_PASSWORD  — Root-Passwort Hostinger VPS (72.62.154.95)
-#   GitHub Secret CLOUDFLARE_API_TOKEN — Wrangler Deploy-Token
+# Richtet WB-API-Key in bestehendem LiveKit ein + Cloudflare-Worker-Secrets.
+# Idempotent: überspringt alles wenn WB-Key bereits konfiguriert ist.
 
 on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ['.trigger-livekit-setup']
 
 permissions:
   contents: read
@@ -32,13 +27,33 @@ jobs:
       - name: 📥 Checkout
         uses: actions/checkout@v4
 
-      - name: 🛠 sshpass installieren
-        run: sudo apt-get install -y -qq sshpass
-
-      - name: 🔑 Credentials maskieren
+      - name: 🔑 Secret maskieren
         run: echo "::add-mask::f9c57648d1756868aa7c124b545c029bcb2569b5bf82c1fa5058eefc4efc21d1"
 
+      - name: ✅ Idempotenz-Check (Worker bereits konfiguriert?)
+        id: check
+        run: |
+          # Prüfe ob Worker schon LIVEKIT_API_KEY kennt
+          HTTP=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 10 \
+            -X POST https://weltenbibliothek-api.brandy13062.workers.dev/api/livekit/token \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer dummy" \
+            -d '{"roomName":"test"}' 2>/dev/null || echo "000")
+          # 503 = nicht konfiguriert, 401 = konfiguriert aber kein gültiger Token
+          if [ "$HTTP" = "401" ] || [ "$HTTP" = "400" ]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+            echo "✅ Worker bereits konfiguriert (HTTP $HTTP) — überspringe Setup"
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+            echo "🔧 Worker nicht konfiguriert (HTTP $HTTP) — Setup wird ausgeführt"
+          fi
+
+      - name: 🛠 sshpass installieren
+        if: steps.check.outputs.skip != 'true'
+        run: sudo apt-get install -y -qq sshpass
+
       - name: 🖥 livekit.yaml auf VPS aktualisieren
+        if: steps.check.outputs.skip != 'true'
         env:
           VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
         run: |
@@ -72,32 +87,32 @@ logging:
              echo '✅ livekit.yaml geschrieben'
              if docker ps --format '{{.Names}}' | grep -q livekit; then
                cd /docker/livekit && docker compose restart livekit
-               sleep 5
-               docker compose ps
+               sleep 5 && docker compose ps
              else
-               echo 'ℹ️  LiveKit-Container nicht aktiv, kein Restart nötig'
+               echo 'ℹ️  LiveKit-Container nicht aktiv'
              fi"
 
       - name: ☁️ Cloudflare Worker-Secrets setzen + deployen
+        if: steps.check.outputs.skip != 'true'
         working-directory: workers
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
           set -euo pipefail
           npm install -g wrangler@latest --silent 2>&1 | tail -2
-
           echo "${WB_KEY}"      | wrangler secret put LIVEKIT_API_KEY
           echo "${WB_SECRET}"   | wrangler secret put LIVEKIT_API_SECRET
           echo "${LIVEKIT_URL}" | wrangler secret put LIVEKIT_URL
-
           wrangler deploy
-          echo "✅ Worker deployed mit LiveKit-Secrets"
+          echo "✅ Worker deployed"
 
-      - name: ✅ Zusammenfassung
+      - name: 📝 Zusammenfassung
         run: |
-          echo "## ✅ LiveKit WB-Setup abgeschlossen" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **LiveKit URL:** \`${LIVEKIT_URL}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **WB API Key:** \`${WB_KEY}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Mensaena-Key:** unverändert ✅" >> $GITHUB_STEP_SUMMARY
-          echo "- **Worker:** neu deployed mit LiveKit-Secrets ✅" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.check.outputs.skip }}" = "true" ]; then
+            echo "## ✅ LiveKit WB bereits konfiguriert" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## ✅ LiveKit WB-Setup abgeschlossen" >> $GITHUB_STEP_SUMMARY
+            echo "- LiveKit URL: \`${LIVEKIT_URL}\`" >> $GITHUB_STEP_SUMMARY
+            echo "- WB API Key: \`${WB_KEY}\`" >> $GITHUB_STEP_SUMMARY
+            echo "- Mensaena-Key unverändert ✅" >> $GITHUB_STEP_SUMMARY
+          fi
