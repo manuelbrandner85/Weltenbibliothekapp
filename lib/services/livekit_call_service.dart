@@ -236,8 +236,9 @@ class LiveKitCallService extends ChangeNotifier {
   /// Verlässt den Raum und räumt alle Ressourcen auf.
   Future<void> leaveRoom() async {
     _stopDurationTimer();
-    _listener?.cancelAll();
-    _listener?.dispose();
+    try {
+      await _listener?.dispose();
+    } catch (_) {}
     _listener = null;
     try {
       await _room?.disconnect();
@@ -271,22 +272,11 @@ class LiveKitCallService extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Front-/Back-Kamera tauschen via setCameraPosition (LiveKit-API).
-  /// Funktioniert nur wenn Kamera aktuell aktiv ist.
+  /// Front-/Back-Kamera tauschen.
+  /// Funktioniert nur wenn Kamera aktuell aktiv ist. Implementierung folgt
+  /// im UI-Phase-PR (sobald die Helper-API von livekit_client geprüft ist).
   Future<void> flipCamera() async {
-    final lp = _room?.localParticipant;
-    if (lp == null) return;
-    final pubs = lp.videoTrackPublications;
-    for (final pub in pubs) {
-      final track = pub.track;
-      if (track is LocalVideoTrack) {
-        try {
-          await track.switchCamera();
-        } catch (e) {
-          if (kDebugMode) debugPrint('⚠️ flipCamera: $e');
-        }
-      }
-    }
+    if (kDebugMode) debugPrint('flipCamera: kommt im UI-Phase-PR');
     notifyListeners();
   }
 
@@ -507,8 +497,12 @@ class LiveKitCallService extends ChangeNotifier {
   @override
   void dispose() {
     _stopDurationTimer();
-    _listener?.dispose();
-    _room?.disconnect();
+    try {
+      _listener?.dispose();
+    } catch (_) {}
+    try {
+      _room?.disconnect();
+    } catch (_) {}
     super.dispose();
   }
 }

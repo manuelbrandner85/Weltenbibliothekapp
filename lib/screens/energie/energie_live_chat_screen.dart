@@ -141,10 +141,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
   bool _hasText = false; // true = Send Button, false = Voice Button
   
   // ⏳ Voice-Room-Migration WebRTC → LiveKit. UI kommt im Folge-PR.
-  // Stub-State damit Datei kompiliert; Voice-Button zeigt Coming-Soon-Hinweis.
-  final bool _isInVoiceRoom = false;
-  final bool _isMuted = false;
-  final List<Map<String, dynamic>> _voiceParticipants = const [];
+  // Voice-Button zeigt vorerst Coming-Soon-SnackBar.
   
   // 🆕 ADMIN ACTION SERVICE
   

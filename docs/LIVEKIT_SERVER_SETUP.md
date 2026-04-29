@@ -17,10 +17,20 @@
 
 ---
 
+## VPS-Daten (Hostinger)
+
+| Feld | Wert |
+|---|---|
+| IPv4 | `72.62.154.95` |
+| IPv6 | `2a02:4780:79:945c::1` |
+| Reverse-DNS | `srv1438024.hstgr.cloud` |
+
+---
+
 ## Phase 1 — VPS verbinden + bestehende Konfiguration LESEN
 
 ```bash
-ssh root@<DEINE-HOSTINGER-VPS-IP>
+ssh root@72.62.154.95
 
 # Passwort sofort ändern
 passwd

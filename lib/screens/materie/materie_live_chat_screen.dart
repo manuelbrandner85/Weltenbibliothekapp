@@ -145,10 +145,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
   
   // 🆕 FEATURE 1: WEBRTC VOICE ROOM
   // ⏳ Voice-Room-Migration WebRTC → LiveKit. UI kommt im Folge-PR.
-  // Stub-State damit Datei kompiliert; Voice-Button zeigt Coming-Soon-Hinweis.
-  final bool _isInVoiceRoom = false;
-  final bool _isMuted = false;
-  final List<Map<String, dynamic>> _voiceParticipants = const [];
+  // Voice-Button zeigt vorerst Coming-Soon-SnackBar.
   
   // 🆕 ADMIN ACTION SERVICE
   
@@ -2907,7 +2904,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
     });
     _messageController.text = ChatDraftService.instance.get(_fullRoomId);
     UnreadTrackerService.instance.markSeen(_fullRoomId);
-    await _voiceService.switchRoom(_fullRoomId);
+    // Voice-switchRoom entfällt — LiveKit hat eigenen Lifecycle.
     await _refreshPresence();
     await ReadReceiptService.instance.watchRoom(_fullRoomId);
     await _markRoomRead();
