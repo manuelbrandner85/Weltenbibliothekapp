@@ -1,0 +1,64 @@
+name: livekit-weltenbibliothek
+
+# Weltenbibliothek LiveKit-Server
+# Läuft auf eigenen Ports (7891/7892) — kein Konflikt mit bestehendem Caddy/Mensaena.
+# TLS via Traefik + Cloudflare DNS-01 ACME (kein Port 80/443 nötig).
+#
+# Starten: docker compose up -d
+# Stoppen: docker compose down
+# Logs:    docker compose logs -f
+
+services:
+
+  # ── LiveKit Medienserver ───────────────────────────────────────────────────
+  livekit:
+    image: livekit/livekit-server:v1.7
+    container_name: livekit-weltenbibliothek
+    restart: unless-stopped
+    ports:
+      - "5350:5350/udp"                    # TURN UDP
+      - "3479:3479/udp"                    # TURN UDP (alternativ)
+      - "4443:4443/tcp"                    # TURN TLS
+      - "60001-65000:60001-65000/udp"      # WebRTC Media-Ports
+    volumes:
+      - ./livekit.yaml:/etc/livekit.yaml:ro
+    command: --config /etc/livekit.yaml
+    networks:
+      - livekit-wb-net
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:7880"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+
+  # ── Traefik Reverse Proxy + TLS ────────────────────────────────────────────
+  # Eigene Ports 7891 (HTTP) / 7892 (HTTPS/WSS) → kein Konflikt mit Port 80/443
+  # ACME DNS-01 via Cloudflare → kein Port-80-Zugriff nötig
+  traefik:
+    image: traefik:v3.1
+    container_name: traefik-weltenbibliothek
+    restart: unless-stopped
+    ports:
+      - "7891:7891/tcp"    # HTTP (optional, für Redirect)
+      - "7892:7892/tcp"    # HTTPS / WSS — hier verbindet sich der LiveKit-Client
+    environment:
+      - CF_DNS_API_TOKEN=${CLOUDFLARE_DNS_API_TOKEN}
+    volumes:
+      - ./traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./dynamic.yml:/etc/traefik/dynamic.yml:ro
+      - traefik-wb-acme:/acme
+    networks:
+      - livekit-wb-net
+    depends_on:
+      livekit:
+        condition: service_healthy
+
+networks:
+  livekit-wb-net:
+    name: livekit-wb-net
+    driver: bridge
+
+volumes:
+  traefik-wb-acme:
+    name: traefik-wb-acme
