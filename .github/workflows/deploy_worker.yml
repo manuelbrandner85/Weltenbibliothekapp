@@ -108,6 +108,7 @@ jobs:
             echo "⚠️  VPS_PASSWORD Secret fehlt — VPS livekit.yaml Update übersprungen"
             exit 0
           fi
+          echo "ℹ️  VPS_PASSWORD ist gesetzt (${#VPS_PASSWORD} Zeichen) — SSH wird versucht"
 
           sudo apt-get install -y -qq sshpass
 
