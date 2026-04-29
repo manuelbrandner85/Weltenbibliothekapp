@@ -1,18 +1,17 @@
 name: ☁️ Cloudflare Worker deployen
 
 # Deployt den API-Worker automatisch bei jeder Änderung an `workers/**`.
-# Setzt bei Bedarf auch die FCM-Secrets (FCM_SERVICE_ACCOUNT, SUPABASE_SERVICE_ROLE_KEY).
+# Setzt FCM/Supabase/LiveKit-Secrets und aktualisiert livekit.yaml auf dem VPS.
 #
 # Required GitHub Secrets:
-#   CLOUDFLARE_API_TOKEN            — Wrangler-Deploy-Token (Account:Workers Scripts:Edit,
-#                                     Account:Workers KV Storage:Edit, Zone:Workers Routes:Edit)
-#   SUPABASE_SERVICE_ROLE_KEY       — Supabase Service-Role JWT (wird als Worker-Secret
-#                                     gesetzt, siehe Step "🔑 Worker-Secrets setzen")
-#   FCM_SERVICE_ACCOUNT_JSON        — Firebase Service-Account JSON als String
-#                                     (Firebase Console → Project Settings →
-#                                     Service Accounts → Generate new private key)
-#                                     OPTIONAL: ohne fällt der Dispatcher auf
-#                                     "mark as sent" zurück (In-App-Polling only).
+#   CLOUDFLARE_API_TOKEN            — Wrangler-Deploy-Token
+#   SUPABASE_SERVICE_ROLE_KEY       — Supabase Service-Role JWT
+#   FCM_SERVICE_ACCOUNT_JSON        — Firebase Service-Account JSON (optional)
+#   VPS_PASSWORD                    — SSH root-Passwort für VPS (optional, skip wenn fehlt)
+# Optional (Fallback-Werte eingebettet):
+#   LIVEKIT_API_KEY                 — Standard: wb-a9b26485d407e7dc2043
+#   LIVEKIT_API_SECRET              — Standard: f9c57648d1756868aa7c124b545c029bcb2569b5bf82c1fa5058eefc4efc21d1
+#   LIVEKIT_URL                     — Standard: wss://livekit.srv1438024.hstgr.cloud
 
 on:
   push:
@@ -33,7 +32,13 @@ jobs:
   deploy:
     name: 🚀 Worker deploy
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
+    env:
+      VPS_HOST: 72.62.154.95
+      VPS_USER: root
+      WB_KEY: ${{ secrets.LIVEKIT_API_KEY || 'wb-a9b26485d407e7dc2043' }}
+      WB_SECRET: ${{ secrets.LIVEKIT_API_SECRET || 'f9c57648d1756868aa7c124b545c029bcb2569b5bf82c1fa5058eefc4efc21d1' }}
+      WB_URL: ${{ secrets.LIVEKIT_URL || 'wss://livekit.srv1438024.hstgr.cloud' }}
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v4
@@ -44,17 +49,10 @@ jobs:
           node-version: '20'
 
       - name: 🔑 Worker-Secrets setzen
-        # Wrangler akzeptiert Secret-Werte via STDIN. Wir setzen die Secrets VOR
-        # dem Deploy — Secrets sind pro-Worker-persistent, müssen aber bei jedem
-        # Deploy-Run nicht neu gesetzt werden. Wir setzen sie trotzdem, damit
-        # rotierte Werte automatisch übernommen werden.
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           FCM_SERVICE_ACCOUNT_JSON: ${{ secrets.FCM_SERVICE_ACCOUNT_JSON }}
-          LIVEKIT_API_KEY: ${{ secrets.LIVEKIT_API_KEY }}
-          LIVEKIT_API_SECRET: ${{ secrets.LIVEKIT_API_SECRET }}
-          LIVEKIT_URL: ${{ secrets.LIVEKIT_URL }}
         working-directory: workers
         run: |
           set -euo pipefail
@@ -77,35 +75,16 @@ jobs:
               npx -y wrangler@3 secret put FCM_SERVICE_ACCOUNT
           else
             echo "ℹ️  FCM_SERVICE_ACCOUNT_JSON fehlt — Push-Dispatcher markiert Queue nur als 'sent'"
-            echo "    (In-App-Polling bleibt funktionsfähig; echte FCM-Pushes aus: erst wenn"
-            echo "     Secret gesetzt ist)"
           fi
 
-          # 🎥 LiveKit-Secrets — für /api/livekit/token Endpoint nötig.
-          # Ohne diese liefert der Endpoint 503 und die App zeigt "nicht verfügbar".
-          if [ -n "${LIVEKIT_API_KEY:-}" ]; then
-            echo "→ LIVEKIT_API_KEY setzen …"
-            printf '%s' "$LIVEKIT_API_KEY" | \
-              npx -y wrangler@3 secret put LIVEKIT_API_KEY
-          else
-            echo "ℹ️  LIVEKIT_API_KEY fehlt — Video-Call-Token-Endpoint deaktiviert"
-          fi
-
-          if [ -n "${LIVEKIT_API_SECRET:-}" ]; then
-            echo "→ LIVEKIT_API_SECRET setzen …"
-            printf '%s' "$LIVEKIT_API_SECRET" | \
-              npx -y wrangler@3 secret put LIVEKIT_API_SECRET
-          else
-            echo "ℹ️  LIVEKIT_API_SECRET fehlt — Video-Call-Token-Endpoint deaktiviert"
-          fi
-
-          if [ -n "${LIVEKIT_URL:-}" ]; then
-            echo "→ LIVEKIT_URL setzen …"
-            printf '%s' "$LIVEKIT_URL" | \
-              npx -y wrangler@3 secret put LIVEKIT_URL
-          else
-            echo "ℹ️  LIVEKIT_URL fehlt — Client muss URL selbst kennen (--dart-define=LIVEKIT_URL)"
-          fi
+          # 🎥 LiveKit-WB-Secrets — Fallback-Werte eingebettet, werden immer gesetzt
+          echo "→ LIVEKIT_API_KEY setzen (${WB_KEY}) …"
+          printf '%s' "${WB_KEY}" | npx -y wrangler@3 secret put LIVEKIT_API_KEY
+          echo "→ LIVEKIT_API_SECRET setzen …"
+          printf '%s' "${WB_SECRET}" | npx -y wrangler@3 secret put LIVEKIT_API_SECRET
+          echo "→ LIVEKIT_URL setzen (${WB_URL}) …"
+          printf '%s' "${WB_URL}" | npx -y wrangler@3 secret put LIVEKIT_URL
+          echo "✅ Alle LiveKit-WB-Secrets gesetzt"
 
       - name: 🚀 Deploy
         env:
@@ -114,3 +93,52 @@ jobs:
         run: |
           npx -y wrangler@3 deploy
           echo "✅ Worker deployed — Cron-Trigger aktiv"
+
+      - name: 🖥 livekit.yaml auf VPS aktualisieren (WB-Key hinzufügen)
+        # Schreibt Mensaena + WB-Key in livekit.yaml und restartet den Container.
+        # continue-on-error: VPS-Fail blockiert nicht den Worker-Deploy.
+        continue-on-error: true
+        env:
+          VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [ -z "${VPS_PASSWORD:-}" ]; then
+            echo "⚠️  VPS_PASSWORD Secret fehlt — VPS livekit.yaml Update übersprungen"
+            exit 0
+          fi
+
+          sudo apt-get install -y -qq sshpass
+
+          YAML_B64=$(printf '%s\n' "port: 7880
+redis:
+  address: 127.0.0.1:6379
+keys:
+  mensaena-6dd99c8f63b0: d92c860810313cd704b8959854d4225611fcb1291456603b86a0adcff2cb2a6e
+  ${WB_KEY}: ${WB_SECRET}
+rtc:
+  tcp_port: 7881
+  port_range_start: 50000
+  port_range_end: 60000
+  use_external_ip: true
+room:
+  auto_create: true
+  empty_timeout: 300
+logging:
+  level: info" | base64 | tr -d '\n')
+
+          sshpass -p "$VPS_PASSWORD" ssh \
+            -o StrictHostKeyChecking=no \
+            -o ConnectTimeout=30 \
+            -o PasswordAuthentication=yes \
+            ${VPS_USER}@${VPS_HOST} \
+            "set -euo pipefail
+             mkdir -p /docker/livekit
+             printf '%s' '${YAML_B64}' | base64 -d > /docker/livekit/livekit.yaml
+             echo '✅ livekit.yaml geschrieben'
+             if docker ps --format '{{.Names}}' | grep -q livekit; then
+               cd /docker/livekit && docker compose restart livekit
+               sleep 5 && docker compose ps
+             else
+               echo 'ℹ️  LiveKit-Container nicht aktiv'
+             fi"
+          echo "✅ VPS livekit.yaml aktualisiert"
