@@ -565,6 +565,16 @@ chore(deps): Dependencies aktualisiert
   - patch_changelog parst Squash-Merge-Body (vorher nur Commit-Title)
   - PushNotificationManager Subscribe-Retry mit exp.Backoff, periodischer
     Health-Check via /api/push/debug, Heal-on-Resume, forceResubscribe() API.
+- [x] **LiveKit-Migration Phase 1-5 abgeschlossen** (v5.39.0+, 2026-04-29):
+  - **PR #55 (Phase 1/2)**: flutter_webrtc entfernt, livekit_client+flutter_background,
+    Worker `/api/livekit/token`, `LiveKitCallService` + `livekit_call_provider.dart`,
+    `api_config.dart` LiveKit-URLs, `docs/LIVEKIT_SERVER_SETUP.md` (12-Phasen-Guide)
+  - **PR #56 (Phase 4/5)**: `lib/screens/shared/livekit_group_call_screen.dart` —
+    Vollbild-UI im Welt-Stil (TopBar, _ControlBar 6 Buttons, _StatusView,
+    Avatar-Hero im Welt-Gradient, PopScope). Voice-Buttons in beiden Chat-Screens
+    öffnen direkt den LiveKitGroupCallScreen.
+  - **GitHub Release v5.39.0** wurde automatisch gebaut und veröffentlicht ✓
+  - **Noch offen**: echte mic/cam/screen/hand-Toggles (warten auf live Server-Test)
 
 ### ⚠️ Noch ausstehend / bekannte Probleme
 
@@ -577,22 +587,25 @@ chore(deps): Dependencies aktualisiert
    - `unused_field` Warnungen (nicht kritisch)
    - `deprecated_member_use` (Radio-Widgets, alte APIs)
 
-3. **🎥 LiveKit-Migration läuft** (v5.39.0+, 2026-04-27):
+3. **🎥 LiveKit-Migration Phase 1-5 abgeschlossen** (v5.39.0+, PR #55+56, 2026-04-29):
    - flutter_webrtc komplett entfernt — alle 17 alten WebRTC-Dateien gelöscht
    - livekit_client + flutter_background als neue Dependencies
    - Worker hat `/api/livekit/token` Endpoint (HMAC-SHA256-JWT, 4h TTL,
      Mensaena-kompatibel mit roomJoin/canPublish/canSubscribe/canPublishData
      + canPublishSources camera/microphone/screen_share)
-   - `LiveKitCallService` (lib/services/) implementiert join/leave/mic/cam/
-     screen-share/hand-heben/reactions/in-call-chat/auto-speaker-focus
+   - `LiveKitCallService` (lib/services/) — join/leave + Pin/AutoSpeakerFocus State
    - `livekit_call_provider.dart` (Riverpod) für State-Sharing in der UI
-   - **Pending**: `LiveKitGroupCallScreen` UI im jeweiligen Welt-Stil
-     (Energie/Materie) + Wiring der Voice-Buttons in den Chat-Screens.
-     Voice-Buttons zeigen aktuell „kommt im nächsten Update"-Hinweis.
+   - `lib/screens/shared/livekit_group_call_screen.dart` — Vollbild-Call-UI im Welt-Stil:
+     TopBar (Raum, Timer, Pulsing-Dot), _ControlBar (6 Buttons), _StatusView,
+     _ConnectedPlaceholder mit Avatar-Hero im Welt-Gradient, PopScope mit Bestätigung
+   - Voice-Buttons in beiden Chat-Screens öffnen direkt `LiveKitGroupCallScreen`
+     (Mic/Cam/Screen/Hand/Chat zeigen aktuell „kommt im nächsten Update" SnackBar)
+   - **⏳ Pending — Folge-PR**: Echte Track-Toggles (mic/cam/screen/hand/chat)
+     im LiveKitCallService — wartet auf live LiveKit-Server-Test
    - **Server-Setup**: User muss eigenen LiveKit-Docker auf Hostinger
      hochziehen (getrennt von Mensaena-Container, eigene Ports/Keys/Domain).
      Anleitung in `docs/LIVEKIT_SERVER_SETUP.md`.
-   - **Build**: Native Änderung → neuer APK-Release nötig (5.39.0+20260424).
+   - **Build**: Native Änderung → neuer APK-Release nötig (5.39.0+20260424). ✓ RELEASED
      `--dart-define=LIVEKIT_URL=wss://livekit-wb.deine-domain.de` beim Build.
    - GitHub-Secrets nötig: `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`, `LIVEKIT_URL`.
 
