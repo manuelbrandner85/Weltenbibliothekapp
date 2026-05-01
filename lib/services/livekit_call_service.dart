@@ -1,23 +1,28 @@
-/// 🎥 LIVEKIT CALL SERVICE — Minimal-Wrapper (Phase 1 von 2)
+/// 🎥 LIVEKIT CALL SERVICE
 ///
-/// Kapselt die Token-Beschaffung und Room-Connect-Logik. Die komplette UI-
-/// Anbindung (Listener, Speaker-Detection, Pin, Reactions) kommt im UI-PR
-/// zusammen mit dem LiveKitGroupCallScreen — dort kann die exakte LiveKit-
-/// Event-API direkt gegen das fertige UI getestet werden.
+/// Kapselt die Token-Beschaffung, Room-Connect-Logik und Track-Toggles
+/// (Mikrofon, Kamera, Bildschirm-Teilen, Hand heben).
 ///
 /// **Token-Flow** (1:1 wie Mensaena):
 ///   1. Client holt Supabase-Access-Token aus aktueller Session
 ///   2. POST /api/livekit/token mit { roomName, displayName }
 ///   3. Worker antwortet mit { token, url }
 ///   4. Room.connect(url, token) → live
+///
+/// **Track-Flow** (Phase 2):
+///   - Mikrofon wird beim Beitritt automatisch aktiviert (nach Permission-OK)
+///   - Kamera/Bildschirm-Teilen sind opt-in via Toggle
+///   - Hand-heben wird als participant.attributes.handRaised gesetzt
 library;
 
 import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter_background/flutter_background.dart';
 import 'package:http/http.dart' as http;
 import 'package:livekit_client/livekit_client.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/api_config.dart';
@@ -47,6 +52,12 @@ class LiveKitCallService extends ChangeNotifier {
   String? _pinnedIdentity;
   bool _autoSpeakerFocus = true;
 
+  // Track-Toggle State
+  bool _micEnabled = false;
+  bool _cameraEnabled = false;
+  bool _screenShareEnabled = false;
+  bool _handRaised = false;
+
   // ── Getters ────────────────────────────────────────────────────────────────
 
   Room? get room => _room;
@@ -60,6 +71,11 @@ class LiveKitCallService extends ChangeNotifier {
   String? get pinnedIdentity => _pinnedIdentity;
   bool get autoSpeakerFocus => _autoSpeakerFocus;
 
+  bool get micEnabled => _micEnabled;
+  bool get cameraEnabled => _cameraEnabled;
+  bool get screenShareEnabled => _screenShareEnabled;
+  bool get handRaised => _handRaised;
+
   // ── Connection-Lifecycle ───────────────────────────────────────────────────
 
   /// Tritt einem LiveKit-Raum bei. Wirft eine Exception mit deutscher
@@ -70,7 +86,7 @@ class LiveKitCallService extends ChangeNotifier {
     String? displayName,
   }) async {
     if (!ApiConfig.isLivekitEnabled) {
-      throw Exception('Video-Call ist nicht konfiguriert (LIVEKIT_URL fehlt).');
+      throw Exception('Sprach-Anruf ist nicht konfiguriert (LIVEKIT_URL fehlt).');
     }
     if (_connectionState == LiveKitConnectionState.connecting ||
         _connectionState == LiveKitConnectionState.connected) {
@@ -82,8 +98,20 @@ class LiveKitCallService extends ChangeNotifier {
     _world = world;
     _errorMessage = null;
     _pinnedIdentity = null;
+    _micEnabled = false;
+    _cameraEnabled = false;
+    _screenShareEnabled = false;
+    _handRaised = false;
 
     try {
+      // Mikrofon-Permission bevor Room-Connect — sonst kann LiveKit kein
+      // Audio-Track publishen.
+      final micStatus = await Permission.microphone.request();
+      if (!micStatus.isGranted) {
+        throw Exception(
+            'Mikrofon-Berechtigung fehlt. Bitte in den App-Einstellungen erlauben.');
+      }
+
       final supabase = Supabase.instance.client;
       final accessToken = supabase.auth.currentSession?.accessToken;
       if (accessToken == null || accessToken.isEmpty) {
@@ -106,7 +134,7 @@ class LiveKitCallService extends ChangeNotifier {
           .timeout(const Duration(seconds: 15));
 
       if (tokenRes.statusCode != 200) {
-        String msg = 'Token-Endpoint Fehler (${tokenRes.statusCode})';
+        String msg = 'Token-Server Fehler (${tokenRes.statusCode})';
         try {
           final body = jsonDecode(tokenRes.body);
           if (body is Map && body['error'] is String) {
@@ -128,10 +156,24 @@ class LiveKitCallService extends ChangeNotifier {
         throw Exception('Keine LiveKit-Server-URL verfügbar.');
       }
 
-      final room = Room();
+      final room = Room(
+        roomOptions: const RoomOptions(
+          adaptiveStream: true,
+          dynacast: true,
+        ),
+      );
       _room = room;
 
       await room.connect(livekitUrl, token);
+
+      // Mikrofon direkt beim Beitritt aktivieren — User soll standardmäßig
+      // im Anruf hörbar sein (nicht "stumm beigetreten").
+      try {
+        await room.localParticipant?.setMicrophoneEnabled(true);
+        _micEnabled = true;
+      } catch (e) {
+        if (kDebugMode) debugPrint('⚠️ setMicrophoneEnabled fehlgeschlagen: $e');
+      }
 
       _setState(LiveKitConnectionState.connected);
       _startDurationTimer();
@@ -150,6 +192,14 @@ class LiveKitCallService extends ChangeNotifier {
   /// Verlässt den Raum und räumt alle Ressourcen auf.
   Future<void> leaveRoom() async {
     _stopDurationTimer();
+
+    // Bildschirm-Teilen: Foreground-Service stoppen falls aktiv
+    if (_screenShareEnabled) {
+      try {
+        await FlutterBackground.disableBackgroundExecution();
+      } catch (_) {}
+    }
+
     try {
       await _room?.disconnect();
     } catch (_) {}
@@ -160,7 +210,121 @@ class LiveKitCallService extends ChangeNotifier {
     _errorMessage = null;
     _callDurationSeconds = 0;
     _pinnedIdentity = null;
+    _micEnabled = false;
+    _cameraEnabled = false;
+    _screenShareEnabled = false;
+    _handRaised = false;
     notifyListeners();
+  }
+
+  // ── Track-Toggles ──────────────────────────────────────────────────────────
+
+  /// Mikrofon ein-/ausschalten. Wirft KEINE Exception — Fehler landen in
+  /// errorMessage damit die UI sie anzeigen kann.
+  Future<void> toggleMicrophone() async {
+    final lp = _room?.localParticipant;
+    if (lp == null) return;
+    final target = !_micEnabled;
+    try {
+      if (target) {
+        final status = await Permission.microphone.request();
+        if (!status.isGranted) {
+          _errorMessage =
+              'Mikrofon-Berechtigung fehlt. Bitte in den App-Einstellungen erlauben.';
+          notifyListeners();
+          return;
+        }
+      }
+      await lp.setMicrophoneEnabled(target);
+      _micEnabled = target;
+      notifyListeners();
+    } catch (e) {
+      _errorMessage = _friendlyError(e);
+      notifyListeners();
+    }
+  }
+
+  /// Kamera ein-/ausschalten. Fragt Permission beim ersten Aktivieren.
+  Future<void> toggleCamera() async {
+    final lp = _room?.localParticipant;
+    if (lp == null) return;
+    final target = !_cameraEnabled;
+    try {
+      if (target) {
+        final status = await Permission.camera.request();
+        if (!status.isGranted) {
+          _errorMessage =
+              'Kamera-Berechtigung fehlt. Bitte in den App-Einstellungen erlauben.';
+          notifyListeners();
+          return;
+        }
+      }
+      await lp.setCameraEnabled(target);
+      _cameraEnabled = target;
+      notifyListeners();
+    } catch (e) {
+      _errorMessage = _friendlyError(e);
+      notifyListeners();
+    }
+  }
+
+  /// Bildschirm teilen ein-/ausschalten. Auf Android ist dafür ein
+  /// Foreground-Service mit MediaProjection-Permission nötig — den startet
+  /// `flutter_background` automatisch.
+  Future<void> toggleScreenShare() async {
+    final lp = _room?.localParticipant;
+    if (lp == null) return;
+    final target = !_screenShareEnabled;
+    try {
+      if (target) {
+        // Foreground-Service starten (Android-Pflicht für Screen-Capture).
+        const config = FlutterBackgroundAndroidConfig(
+          notificationTitle: 'Bildschirm wird geteilt',
+          notificationText: 'Weltenbibliothek teilt deinen Bildschirm im Anruf.',
+          notificationImportance: AndroidNotificationImportance.normal,
+          enableWifiLock: true,
+        );
+        try {
+          final hasPerms = await FlutterBackground.hasPermissions;
+          if (!hasPerms) {
+            await FlutterBackground.initialize(androidConfig: config);
+          }
+          await FlutterBackground.enableBackgroundExecution();
+        } catch (e) {
+          if (kDebugMode) debugPrint('⚠️ Foreground-Service fehlgeschlagen: $e');
+        }
+      } else {
+        try {
+          await FlutterBackground.disableBackgroundExecution();
+        } catch (_) {}
+      }
+      await lp.setScreenShareEnabled(target);
+      _screenShareEnabled = target;
+      notifyListeners();
+    } catch (e) {
+      _errorMessage = _friendlyError(e);
+      notifyListeners();
+    }
+  }
+
+  /// Hand heben / senken. Setzt Participant-Attribute, andere Teilnehmer
+  /// können das in ihrer UI zeigen.
+  Future<void> toggleHandRaised() async {
+    final lp = _room?.localParticipant;
+    if (lp == null) return;
+    final target = !_handRaised;
+    try {
+      await lp.setAttributes({
+        'handRaised': target ? 'true' : 'false',
+        'handRaisedAt':
+            target ? DateTime.now().millisecondsSinceEpoch.toString() : '',
+      });
+      _handRaised = target;
+      notifyListeners();
+    } catch (e) {
+      _errorMessage = _friendlyError(e);
+      notifyListeners();
+    }
   }
 
   // ── Pin / Auto-Speaker-Focus (UI-state, kein LiveKit-API-Call) ────────────
@@ -208,7 +372,11 @@ class LiveKitCallService extends ChangeNotifier {
       return 'Nicht angemeldet. Bitte App neu starten und einloggen.';
     }
     if (s.contains('503') || s.contains('nicht konfiguriert')) {
-      return 'Video-Call ist serverseitig noch nicht aktiviert.';
+      return 'Sprach-Anruf ist serverseitig noch nicht aktiviert.';
+    }
+    if (s.contains('Mikrofon-Berechtigung') ||
+        s.contains('Kamera-Berechtigung')) {
+      return s.replaceFirst('Exception: ', '');
     }
     return s.replaceFirst('Exception: ', '');
   }
