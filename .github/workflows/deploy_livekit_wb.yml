@@ -1,17 +1,17 @@
 name: 🎥 LiveKit-WB Server deployen
 
-# Deployt die WB-eigene LiveKit-Instanz auf den Hostinger VPS.
-# - Eigener Container `livekit-weltenbibliothek` auf Ports 7891/7892
-# - Eigene livekit.yaml mit nur dem WB-API-Key (kein Mensaena-Sharing)
-# - TLS-Cert vom Host gemountet (Hostinger-Wildcard *.srv1438024.hstgr.cloud)
+# Deployt die WB-eigene LiveKit-Instanz auf den Hostinger VPS und konfiguriert
+# Mensaena's Caddy als Reverse-Proxy für die WB-Subdomain.
 #
-# 🛡️  MENSAENA-SCHUTZ (verbindlich):
+# 🛡️  MENSAENA-SCHUTZ (verbindlich, mehrstufig):
 #   1. Pre-Deploy-Check: Mensaena's Container muss vor dem Deploy laufen
 #   2. Port-Konflikt-Check: Keine Überschneidung mit Mensaena's Ports
-#   3. Post-Deploy-Check: Mensaena läuft danach unverändert weiter
-#   4. Workflow bricht ab wenn Mensaena vor/nach dem Deploy nicht erreichbar ist
-#
-# Trigger: Push auf main mit Änderung in infra/livekit-wb/** oder manuell.
+#   3. Caddyfile-Backup vor jeder Modifikation
+#   4. Idempotente BEGIN/END-Marker — Re-Deploy ersetzt Block, hängt nicht an
+#   5. Caddy validate vor Reload — Syntax-Fehler = kein Reload
+#   6. Caddy reload (graceful) statt Restart — 0s Mensaena-Downtime
+#   7. Auto-Rollback: Bei Fehler wird Backup-Caddyfile wiederhergestellt
+#   8. Post-Deploy-Health-Check: Mensaena MUSS noch erreichbar sein
 #
 # Required Secrets:
 #   VPS_PASSWORD                — SSH root-Passwort für VPS
@@ -42,6 +42,7 @@ jobs:
       VPS_DIR: /docker/livekit-wb
       WB_DOMAIN: livekit-wb.srv1438024.hstgr.cloud
       MENSAENA_HEALTH_URL: https://livekit.srv1438024.hstgr.cloud
+      CADDY_CONTAINER: livekit-caddy-1
 
     steps:
       - name: 📥 Checkout
@@ -53,7 +54,6 @@ jobs:
         run: |
           if [ -z "${VPS_PASSWORD:-}" ]; then
             echo "❌ VPS_PASSWORD GitHub-Secret fehlt"
-            echo "   Bitte unter Settings → Secrets → Actions als 'VPS_PASSWORD' hinterlegen."
             exit 1
           fi
           echo "✅ VPS_PASSWORD ist gesetzt (${#VPS_PASSWORD} Zeichen)"
@@ -63,241 +63,107 @@ jobs:
 
       # ─────────────────────────────────────────────────────────────────────
       # 🛡️ STEP 1: PRE-DEPLOY MENSAENA-HEALTH-CHECK
-      # Mensaena MUSS vor unserem Deploy laufen — wenn nicht, ist etwas anderes
-      # kaputt und wir würden den Fehler fälschlich uns zuschreiben.
       # ─────────────────────────────────────────────────────────────────────
       - name: 🛡️ Pre-Deploy Mensaena-Health-Check
         env:
           VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
         run: |
           set -euo pipefail
-          echo "→ Prüfe ob Mensaena's LiveKit-Container läuft …"
-          MENSAENA_STATUS=$(sshpass -p "$VPS_PASSWORD" ssh \
+          echo "→ Mensaena-Container müssen laufen (livekit-caddy-1, livekit-livekit-1)"
+          STATUS=$(sshpass -p "$VPS_PASSWORD" ssh \
             -o StrictHostKeyChecking=no \
             -o ConnectTimeout=30 \
             -o PasswordAuthentication=yes \
             ${VPS_USER}@${VPS_HOST} \
-            "docker ps --filter 'name=livekit' --format '{{.Names}}: {{.Status}}' | grep -v 'livekit-weltenbibliothek\|traefik-weltenbibliothek' || echo 'KEIN_MENSAENA_CONTAINER'")
-          echo "Mensaena-Status: $MENSAENA_STATUS"
-          if [ "$MENSAENA_STATUS" = "KEIN_MENSAENA_CONTAINER" ]; then
-            echo "ℹ️  Kein Mensaena-LiveKit-Container gefunden — Deploy fährt fort"
-          else
-            echo "✅ Mensaena läuft (vor Deploy): $MENSAENA_STATUS"
+            "docker ps --format '{{.Names}}: {{.Status}}' | grep -E '^(livekit-caddy-1|livekit-livekit-1):'")
+          echo "$STATUS"
+          if ! echo "$STATUS" | grep -q "^livekit-caddy-1: Up"; then
+            echo "❌ Mensaena's Caddy (livekit-caddy-1) läuft nicht — Abbruch"
+            exit 1
           fi
-          # Liste alle bestehenden LiveKit-Container für Audit-Trail
-          echo ""
-          echo "→ Vollständige LiveKit-Container-Liste (vor Deploy):"
-          sshpass -p "$VPS_PASSWORD" ssh \
-            -o StrictHostKeyChecking=no \
-            -o ConnectTimeout=30 \
-            -o PasswordAuthentication=yes \
-            ${VPS_USER}@${VPS_HOST} \
-            "docker ps -a --filter 'name=livekit' --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'" || true
+          if ! echo "$STATUS" | grep -q "^livekit-livekit-1: Up"; then
+            echo "❌ Mensaena's LiveKit (livekit-livekit-1) läuft nicht — Abbruch"
+            exit 1
+          fi
+          echo "✅ Mensaena healthy (Caddy + LiveKit beide Up)"
 
       # ─────────────────────────────────────────────────────────────────────
       # 🛡️ STEP 2: PORT-KONFLIKT-CHECK
-      # Stelle sicher dass die Ports die WB nutzen will NICHT von Mensaena
-      # belegt sind (außer von WB selber bei einem Re-Deploy).
+      # WB nutzt 7980 (TCP, lokal), 7981 (TCP), 60001-65000 (UDP)
       # ─────────────────────────────────────────────────────────────────────
       - name: 🛡️ Port-Konflikt-Check
         env:
           VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
         run: |
           set -euo pipefail
-          echo "→ Prüfe ob WB-Ports (7891, 7892, 7981, 60001-65000) frei sind …"
+          echo "→ Prüfe ob WB-Ports (7980, 7981, 60001) frei sind …"
           CONFLICTS=$(sshpass -p "$VPS_PASSWORD" ssh \
             -o StrictHostKeyChecking=no \
             -o ConnectTimeout=30 \
             -o PasswordAuthentication=yes \
             ${VPS_USER}@${VPS_HOST} \
-            "ss -tulnp 2>/dev/null | grep -E ':(7891|7892|7981|60001) ' | grep -v 'docker-proxy.*livekit-weltenbibliothek\|docker-proxy.*traefik-weltenbibliothek' || true")
+            "ss -tulnp 2>/dev/null | grep -E ':(7980|7981|60001) ' | grep -v 'docker-proxy.*livekit-weltenbibliothek' || true")
           if [ -n "$CONFLICTS" ]; then
-            echo "❌ Port-Konflikt erkannt — andere Prozesse belegen unsere Ports:"
+            echo "❌ Port-Konflikt erkannt:"
             echo "$CONFLICTS"
-            echo ""
-            echo "   Kein Auto-Stop — bitte manuell prüfen und beheben."
             exit 1
           fi
-          echo "✅ Alle WB-Ports frei (oder von WB-Containern selbst belegt)"
+          echo "✅ Alle WB-Ports frei"
 
       # ─────────────────────────────────────────────────────────────────────
-      # 🛡️ STEP 3: CERT-PFAD ERMITTELN
+      # 🛡️ STEP 3: CADDYFILE LOKALISIEREN
+      # Inspect Caddy-Container → finde Caddyfile-Mount auf dem Host
       # ─────────────────────────────────────────────────────────────────────
-      - name: 🔍 Cert-Pfad auf VPS ermitteln (read-only Lookup)
+      - name: 🔍 Caddyfile-Pfad ermitteln
         env:
           VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
-          WB_CERT_PATH_OVERRIDE: ${{ secrets.WB_CERT_PATH }}
         run: |
           set -euo pipefail
-
-          # Falls Secret WB_CERT_PATH gesetzt → diesen Pfad direkt verifizieren.
-          if [ -n "${WB_CERT_PATH_OVERRIDE:-}" ]; then
-            echo "→ Override aus Secret WB_CERT_PATH: ${WB_CERT_PATH_OVERRIDE}"
-            VERIFIED=$(sshpass -p "$VPS_PASSWORD" ssh \
-              -o StrictHostKeyChecking=no \
-              -o ConnectTimeout=30 \
-              -o PasswordAuthentication=yes \
-              ${VPS_USER}@${VPS_HOST} \
-              "if [ -f '${WB_CERT_PATH_OVERRIDE}/fullchain.pem' ] && [ -f '${WB_CERT_PATH_OVERRIDE}/privkey.pem' ]; then echo OK; else echo FAIL; fi")
-            if [ "$VERIFIED" = "OK" ]; then
-              echo "✅ Override-Pfad existiert und enthält fullchain.pem + privkey.pem"
-              echo "WB_CERT_PATH=${WB_CERT_PATH_OVERRIDE}" >> $GITHUB_ENV
-              exit 0
-            fi
-            echo "⚠️  Override-Pfad ungültig — fahre mit Auto-Suche fort"
-          fi
-
-          # Auto-Suche: erweitert um Caddy-, Docker-, und Hostinger-typische Pfade.
-          # READ-ONLY — wir lesen nur, ändern nichts.
-          CERT_PATH=$(sshpass -p "$VPS_PASSWORD" ssh \
+          echo "→ Mensaena-Caddyfile auf Host suchen …"
+          CADDYFILE=$(sshpass -p "$VPS_PASSWORD" ssh \
             -o StrictHostKeyChecking=no \
             -o ConnectTimeout=30 \
             -o PasswordAuthentication=yes \
             ${VPS_USER}@${VPS_HOST} \
-            "set +e
-
-             # 1. Standard Let's-Encrypt-Pfade
-             for d in \
-               /etc/letsencrypt/live/srv1438024.hstgr.cloud \
-               /etc/letsencrypt/live/${WB_DOMAIN} \
-               /etc/letsencrypt/live/livekit.srv1438024.hstgr.cloud \
-               /etc/letsencrypt/live/livekit-wb.srv1438024.hstgr.cloud \
-               /etc/ssl/hostinger \
-               /etc/ssl/certs/hostinger; do
-               if [ -f \"\$d/fullchain.pem\" ] && [ -f \"\$d/privkey.pem\" ]; then
-                 echo \"\$d\"
-                 exit 0
-               fi
-             done
-
-             # 2. Caddy-Storage (sehr wahrscheinlich, weil Mensaena via Caddy ACME)
-             # Caddy speichert Certs als <hostname>.crt / <hostname>.key
-             for base in \
-               /var/lib/caddy/.local/share/caddy/certificates/acme-v02.api.letsencrypt.org-directory \
-               /var/lib/caddy/.local/share/caddy/certificates \
-               /root/.local/share/caddy/certificates/acme-v02.api.letsencrypt.org-directory \
-               /docker/caddy/data/caddy/certificates \
-               /docker/mensaena/caddy/data/caddy/certificates; do
-               if [ -d \"\$base\" ]; then
-                 # Suche nach Cert-Dateien für unsere Domain
-                 for hostname in srv1438024.hstgr.cloud livekit.srv1438024.hstgr.cloud livekit-wb.srv1438024.hstgr.cloud; do
-                   for sub in \"\$base/\$hostname\" \"\$base\"/*\"/\$hostname\"; do
-                     if [ -f \"\$sub/\$hostname.crt\" ] && [ -f \"\$sub/\$hostname.key\" ]; then
-                       echo \"CADDY:\$sub:\$hostname\"
-                       exit 0
-                     fi
-                   done
-                 done
-               fi
-             done
-
-             # 3. Docker Volumes von Mensaena (häufig namens caddy_data, caddy-data)
-             for vol in \$(docker volume ls --format '{{.Name}}' 2>/dev/null | grep -iE 'caddy|cert|ssl|tls'); do
-               mp=\$(docker volume inspect \"\$vol\" --format '{{.Mountpoint}}' 2>/dev/null)
-               if [ -d \"\$mp\" ]; then
-                 # Suche darin nach unserer Domain
-                 found=\$(find \"\$mp\" -name 'srv1438024.hstgr.cloud.crt' 2>/dev/null | head -1)
-                 if [ -n \"\$found\" ]; then
-                   echo \"DOCKER_VOL:\$(dirname \$found):srv1438024.hstgr.cloud\"
-                   exit 0
-                 fi
-               fi
-             done
-
-             # 4. Allgemeine find-Suche mit Timeout — letzte Option
-             timeout 60 find /etc /var /docker /opt /srv -maxdepth 7 \\
-               \\( -name 'fullchain.pem' -o -name 'srv1438024.hstgr.cloud.crt' \\) 2>/dev/null \\
-               | while read f; do
-                 case \"\$f\" in
-                   *fullchain.pem*)
-                     d=\$(dirname \"\$f\")
-                     [ -f \"\$d/privkey.pem\" ] || continue
-                     if openssl x509 -in \"\$f\" -noout -text 2>/dev/null | grep -q 'srv1438024.hstgr.cloud'; then
-                       echo \"\$d\"
-                       exit 0
-                     fi
-                     ;;
-                   *srv1438024.hstgr.cloud.crt*)
-                     d=\$(dirname \"\$f\")
-                     keyfile=\$(basename \"\$f\" .crt).key
-                     [ -f \"\$d/\$keyfile\" ] || continue
-                     echo \"CADDY:\$d:srv1438024.hstgr.cloud\"
-                     exit 0
-                     ;;
-                 esac
-               done
-
-             # 5. Welche Reverse-Proxies + Cert-Pfade nutzt der VPS überhaupt? (Diagnose)
-             echo 'DIAGNOSTIC_BEGIN' >&2
-             echo '--- Docker Container ---' >&2
-             docker ps --format 'table {{.Names}}\t{{.Image}}\t{{.Ports}}' 2>/dev/null | head -20 >&2
-             echo '--- Docker Volumes (cert-related) ---' >&2
-             docker volume ls 2>/dev/null | grep -iE 'caddy|cert|ssl|tls|nginx' >&2 || echo '(keine)' >&2
-             echo '--- /etc/letsencrypt/live ---' >&2
-             ls -la /etc/letsencrypt/live 2>/dev/null >&2 || echo '(nicht vorhanden)' >&2
-             echo '--- /docker/* ---' >&2
-             ls /docker 2>/dev/null >&2 || echo '(nicht vorhanden)' >&2
-             echo 'DIAGNOSTIC_END' >&2
-
-             echo 'NOTFOUND'") || true
-          echo "Gefundener Cert-Pfad: $CERT_PATH"
-
-          if [ "$CERT_PATH" = "NOTFOUND" ] || [ -z "$CERT_PATH" ]; then
+            "docker inspect ${CADDY_CONTAINER} --format '{{range .Mounts}}{{if or (eq .Destination \"/etc/caddy/Caddyfile\") (eq .Destination \"/Caddyfile\")}}{{.Source}}{{end}}{{end}}' 2>/dev/null")
+          echo "Gefundener Caddyfile-Pfad: $CADDYFILE"
+          if [ -z "$CADDYFILE" ] || [ "$CADDYFILE" = "" ]; then
             echo ""
-            echo "❌ Kein Hostinger-Wildcard-Cert auf dem VPS gefunden."
-            echo ""
-            echo "   Diagnose-Ausgabe oben prüfen — listet alle Docker-Container,"
-            echo "   Volumes und /etc/letsencrypt/-Inhalte auf."
-            echo ""
-            echo "   Mögliche Lösungen:"
-            echo "   1. Cert-Pfad manuell als WB_CERT_PATH GitHub-Secret setzen"
-            echo "      (z.B. /var/lib/caddy/.local/share/caddy/certificates/...)"
-            echo "   2. Hostinger-Cert nach /etc/letsencrypt/live/srv1438024.hstgr.cloud/"
-            echo "      kopieren (mit fullchain.pem + privkey.pem)"
-            echo "   3. Eigenen Cert via certbot --dns-cloudflare oder --manual generieren"
+            echo "❌ Caddyfile nicht via Volume-Mount findbar."
+            echo "   Diagnostic:"
+            sshpass -p "$VPS_PASSWORD" ssh \
+              -o StrictHostKeyChecking=no \
+              -o ConnectTimeout=30 \
+              -o PasswordAuthentication=yes \
+              ${VPS_USER}@${VPS_HOST} \
+              "docker inspect ${CADDY_CONTAINER} --format '{{range .Mounts}}{{.Source}} -> {{.Destination}}{{println}}{{end}}'"
             exit 1
           fi
-
-          # Sonderfall: Caddy-/Docker-Vol-Pfade haben anderes Naming
-          # Format: CADDY:<dir>:<hostname> oder DOCKER_VOL:<dir>:<hostname>
-          case "$CERT_PATH" in
-            CADDY:*|DOCKER_VOL:*)
-              CERT_DIR=$(echo "$CERT_PATH" | cut -d: -f2)
-              HOSTNAME=$(echo "$CERT_PATH" | cut -d: -f3)
-              echo "✅ Caddy/Docker-Cert gefunden: $CERT_DIR (hostname: $HOSTNAME)"
-              # Auf VPS Symlinks fullchain.pem/privkey.pem zu Caddy-Naming erstellen
-              # (read-only Mount erwartet diese Namen — wir machen einen schreibenden
-              # Bootstrap-Schritt nur in einem WB-eigenen Verzeichnis)
-              sshpass -p "$VPS_PASSWORD" ssh \
-                -o StrictHostKeyChecking=no \
-                -o ConnectTimeout=30 \
-                -o PasswordAuthentication=yes \
-                ${VPS_USER}@${VPS_HOST} \
-                "set -euo pipefail
-                 mkdir -p /docker/livekit-wb/cert-link
-                 ln -sf '${CERT_DIR}/${HOSTNAME}.crt' /docker/livekit-wb/cert-link/fullchain.pem
-                 ln -sf '${CERT_DIR}/${HOSTNAME}.key' /docker/livekit-wb/cert-link/privkey.pem
-                 echo '✅ Symlinks angelegt in /docker/livekit-wb/cert-link/'"
-              echo "WB_CERT_PATH=/docker/livekit-wb/cert-link" >> $GITHUB_ENV
-              ;;
-            *)
-              echo "✅ Standard-Cert-Pfad: $CERT_PATH"
-              echo "WB_CERT_PATH=$CERT_PATH" >> $GITHUB_ENV
-              ;;
-          esac
+          # Validierung: Datei existiert + ist lesbar
+          EXISTS=$(sshpass -p "$VPS_PASSWORD" ssh \
+            -o StrictHostKeyChecking=no \
+            -o ConnectTimeout=30 \
+            -o PasswordAuthentication=yes \
+            ${VPS_USER}@${VPS_HOST} \
+            "[ -f '${CADDYFILE}' ] && echo OK || echo MISSING")
+          if [ "$EXISTS" != "OK" ]; then
+            echo "❌ Caddyfile-Pfad ${CADDYFILE} existiert nicht"
+            exit 1
+          fi
+          echo "✅ Caddyfile gefunden: ${CADDYFILE}"
+          echo "MENSAENA_CADDYFILE=${CADDYFILE}" >> $GITHUB_ENV
 
       # ─────────────────────────────────────────────────────────────────────
-      # STEP 4: INFRA-FILES NACH /docker/livekit-wb/ KOPIEREN
-      # WICHTIG: NUR /docker/livekit-wb/ — niemals /docker/livekit/ (das ist Mensaena!)
+      # STEP 4: WB-LIVEKIT-CONTAINER STARTEN (intern auf 127.0.0.1:7980)
       # ─────────────────────────────────────────────────────────────────────
-      - name: 📦 Infra-Files nach /docker/livekit-wb/ deployen (NICHT /docker/livekit/)
+      - name: 📦 WB-Infra deployen + Container starten
         env:
           VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
         run: |
           set -euo pipefail
-          # Sicherheitscheck — VPS_DIR muss livekit-wb enthalten, NIE nur livekit
+          # Sicherheit: VPS_DIR muss livekit-wb enthalten
           if [[ "${VPS_DIR}" != *livekit-wb* ]]; then
-            echo "❌ VPS_DIR='${VPS_DIR}' enthält kein 'livekit-wb' — abbruch zum Schutz von Mensaena"
+            echo "❌ VPS_DIR='${VPS_DIR}' enthält kein 'livekit-wb' — abbruch"
             exit 1
           fi
 
@@ -310,7 +176,7 @@ jobs:
             "mkdir -p ${VPS_DIR} && chmod 700 ${VPS_DIR}"
 
           # Files kopieren
-          for f in docker-compose.yml traefik.yml dynamic.yml livekit.yaml; do
+          for f in docker-compose.yml livekit.yaml caddy-snippet.caddy; do
             echo "→ Kopiere $f → ${VPS_DIR}/$f …"
             sshpass -p "$VPS_PASSWORD" scp \
               -o StrictHostKeyChecking=no \
@@ -326,20 +192,9 @@ jobs:
             -o ConnectTimeout=30 \
             -o PasswordAuthentication=yes \
             ${VPS_USER}@${VPS_HOST} \
-            "chmod 600 ${VPS_DIR}/livekit.yaml && chmod 644 ${VPS_DIR}/{docker-compose.yml,traefik.yml,dynamic.yml}"
+            "chmod 600 ${VPS_DIR}/livekit.yaml && chmod 644 ${VPS_DIR}/{docker-compose.yml,caddy-snippet.caddy}"
 
-          echo "✅ Files deployed nach ${VPS_DIR}"
-
-      # ─────────────────────────────────────────────────────────────────────
-      # STEP 5: WB-CONTAINER STARTEN
-      # WICHTIG: Nutzt -f mit explizitem Pfad → kann Mensaena's compose nicht
-      # versehentlich treffen.
-      # ─────────────────────────────────────────────────────────────────────
-      - name: 🐳 WB-Container starten (isoliert)
-        env:
-          VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
-        run: |
-          set -euo pipefail
+          # WB-Container starten
           sshpass -p "$VPS_PASSWORD" ssh \
             -o StrictHostKeyChecking=no \
             -o ConnectTimeout=30 \
@@ -347,84 +202,158 @@ jobs:
             ${VPS_USER}@${VPS_HOST} \
             "set -euo pipefail
              cd ${VPS_DIR}
-             # WB_CERT_PATH als Env in Compose-Aufruf — wird in docker-compose.yml als Volume-Mount genutzt
-             export WB_CERT_PATH='${WB_CERT_PATH}'
-             echo \"→ Cert-Mount: \$WB_CERT_PATH\"
              docker compose pull
              docker compose up -d --remove-orphans
-             echo '⏳ Warte 8s auf Container-Start …'
+             echo '⏳ Warte 8s …'
              sleep 8
-             echo '→ Status:'
              docker compose ps
-             echo ''
-             echo '→ Letzte Logs (livekit):'
              docker compose logs --tail=15 livekit"
 
       # ─────────────────────────────────────────────────────────────────────
+      # 🛡️ STEP 5: CADDYFILE ADDITIV ERWEITERN (mit Backup + Rollback)
+      # Mensaena's Caddyfile bekommt einen neuen Block zwischen
+      # `# >>> WB-LIVEKIT-BEGIN` und `# <<< WB-LIVEKIT-END` markern.
+      # Idempotent — bei Re-Deploy wird der Block ersetzt.
+      # ─────────────────────────────────────────────────────────────────────
+      - name: 🛡️ Mensaena-Caddyfile additiv um WB-Site erweitern
+        env:
+          VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
+        run: |
+          set -euo pipefail
+
+          # Snippet-Inhalt zum VPS schicken (live aus dem Repo)
+          # Wir kopieren es als separate Datei und merge'n dort.
+          SNIPPET_B64=$(base64 -w 0 < infra/livekit-wb/caddy-snippet.caddy)
+
+          sshpass -p "$VPS_PASSWORD" ssh \
+            -o StrictHostKeyChecking=no \
+            -o ConnectTimeout=30 \
+            -o PasswordAuthentication=yes \
+            ${VPS_USER}@${VPS_HOST} \
+            "set -euo pipefail
+
+             CADDYFILE='${MENSAENA_CADDYFILE}'
+             BACKUP_DIR='${VPS_DIR}/caddyfile-backups'
+             mkdir -p \"\$BACKUP_DIR\"
+             TS=\$(date +%Y%m%d-%H%M%S)
+             BACKUP=\"\$BACKUP_DIR/Caddyfile.\$TS.bak\"
+
+             # 1. Backup
+             cp \"\$CADDYFILE\" \"\$BACKUP\"
+             echo '✅ Backup angelegt: '\"\$BACKUP\"
+
+             # 2. Snippet auf VPS dekodieren
+             SNIPPET_FILE='${VPS_DIR}/caddy-snippet.caddy'
+             # (kommt schon mit deploy)
+
+             # 3. Block-Modifikation: zwischen BEGIN/END Markern ersetzen.
+             # Falls Marker noch nicht vorhanden → am Ende anhängen.
+             if grep -q '^# >>> WB-LIVEKIT-BEGIN' \"\$CADDYFILE\"; then
+               echo '→ Bestehenden WB-Block ersetzen (idempotent)'
+               # Schneide Block raus mit awk
+               awk '
+                 /^# >>> WB-LIVEKIT-BEGIN/ { skip=1; next }
+                 /^# <<< WB-LIVEKIT-END/ { skip=0; next }
+                 !skip { print }
+               ' \"\$CADDYFILE\" > \"\$CADDYFILE.tmp\"
+               mv \"\$CADDYFILE.tmp\" \"\$CADDYFILE\"
+             else
+               echo '→ Erste WB-Site-Definition — wird angehängt'
+             fi
+
+             # 4. WB-Snippet (nur den Block, nicht den Header) anhängen
+             # Snippet enthält bereits BEGIN/END-Marker
+             echo '' >> \"\$CADDYFILE\"
+             grep -A 9999 '^# >>> WB-LIVEKIT-BEGIN' \"\$SNIPPET_FILE\" | \
+               grep -B 9999 '^# <<< WB-LIVEKIT-END' >> \"\$CADDYFILE\"
+             echo '✅ WB-Block in Caddyfile geschrieben'
+
+             # 5. Caddy validate (Syntax-Check) BEVOR reload
+             echo '→ Caddy validate …'
+             if ! docker exec ${CADDY_CONTAINER} caddy validate --config /etc/caddy/Caddyfile 2>&1; then
+               echo '❌ Caddyfile-Syntax invalide — ROLLBACK auf Backup'
+               cp \"\$BACKUP\" \"\$CADDYFILE\"
+               # Verifikation
+               if ! docker exec ${CADDY_CONTAINER} caddy validate --config /etc/caddy/Caddyfile 2>&1; then
+                 echo '❌❌❌ Auch Backup ist invalide — VPS in undefiniertem State, manuelle Hilfe nötig'
+                 exit 2
+               fi
+               echo '✅ Backup-State wiederhergestellt'
+               exit 1
+             fi
+             echo '✅ Caddy validate OK'
+
+             # 6. Caddy reload (graceful, kein Restart)
+             echo '→ Caddy reload (graceful) …'
+             if ! docker exec ${CADDY_CONTAINER} caddy reload --config /etc/caddy/Caddyfile 2>&1; then
+               echo '❌ Caddy reload fehlgeschlagen — ROLLBACK auf Backup'
+               cp \"\$BACKUP\" \"\$CADDYFILE\"
+               docker exec ${CADDY_CONTAINER} caddy reload --config /etc/caddy/Caddyfile || true
+               exit 1
+             fi
+             echo '✅ Caddy reloaded'"
+
+      # ─────────────────────────────────────────────────────────────────────
       # 🛡️ STEP 6: POST-DEPLOY MENSAENA-CHECK
-      # Mensaena MUSS nach unserem Deploy noch laufen. Wenn nicht → Alarm.
       # ─────────────────────────────────────────────────────────────────────
       - name: 🛡️ Post-Deploy Mensaena-Health-Check
         env:
           VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
         run: |
           set -euo pipefail
-          echo "→ Prüfe ob Mensaena's LiveKit-Container nach Deploy noch läuft …"
-          MENSAENA_STATUS=$(sshpass -p "$VPS_PASSWORD" ssh \
+          echo "→ Mensaena muss weiterhin laufen + extern erreichbar sein"
+          STATUS=$(sshpass -p "$VPS_PASSWORD" ssh \
             -o StrictHostKeyChecking=no \
             -o ConnectTimeout=30 \
             -o PasswordAuthentication=yes \
             ${VPS_USER}@${VPS_HOST} \
-            "docker ps --filter 'name=livekit' --format '{{.Names}}: {{.Status}}' | grep -v 'livekit-weltenbibliothek\|traefik-weltenbibliothek' || echo 'KEIN_MENSAENA_CONTAINER'")
-          echo "Mensaena-Status (post-deploy): $MENSAENA_STATUS"
-
-          if [ "$MENSAENA_STATUS" = "KEIN_MENSAENA_CONTAINER" ]; then
-            echo "ℹ️  Kein Mensaena-Container vorher und nachher — OK"
-          else
-            # Falls Mensaena vorhanden war: prüfe dass Status "Up …" ist
-            if echo "$MENSAENA_STATUS" | grep -q ': Up'; then
-              echo "✅ Mensaena läuft weiterhin"
-            else
-              echo "❌❌❌ MENSAENA NICHT MEHR HEALTHY — POSSIBLE COLLATERAL DAMAGE!"
-              echo "   Status: $MENSAENA_STATUS"
-              echo "   → WB-Deploy wird FAILED markiert, damit Alarm geht"
-              exit 1
-            fi
+            "docker ps --format '{{.Names}}: {{.Status}}' | grep -E '^(livekit-caddy-1|livekit-livekit-1):'")
+          if ! echo "$STATUS" | grep -q "^livekit-caddy-1: Up"; then
+            echo "❌❌❌ MENSAENA-CADDY NICHT MEHR HEALTHY!"
+            echo "$STATUS"
+            exit 1
           fi
+          if ! echo "$STATUS" | grep -q "^livekit-livekit-1: Up"; then
+            echo "❌❌❌ MENSAENA-LIVEKIT NICHT MEHR HEALTHY!"
+            echo "$STATUS"
+            exit 1
+          fi
+          echo "✅ Mensaena beide Container weiterhin Up"
 
-          # HTTP-Check Mensaena von außen
           echo ""
-          echo "→ Mensaena von außen erreichbar? ${MENSAENA_HEALTH_URL}"
-          MENSAENA_HTTP=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 10 \
-            "${MENSAENA_HEALTH_URL}" || echo "000")
-          echo "HTTP $MENSAENA_HTTP"
-          # 503 ist akzeptabel (war auch vorher so wenn Mensaena 503 lieferte)
-          # 000 (Timeout) wäre neu und schlecht
-          if [ "$MENSAENA_HTTP" = "000" ]; then
-            echo "⚠️  Mensaena timeoutet jetzt — möglicher Schaden"
-            echo "   (vorher: Status nicht gemessen — kein Vergleich möglich)"
-          fi
+          echo "→ Mensaena von außen testen: ${MENSAENA_HEALTH_URL}"
+          for i in 1 2 3; do
+            HTTP=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 10 "${MENSAENA_HEALTH_URL}" || echo "000")
+            echo "Versuch $i: HTTP $HTTP"
+            if [ "$HTTP" != "000" ]; then
+              echo "✅ Mensaena extern erreichbar (HTTP $HTTP)"
+              exit 0
+            fi
+            sleep 3
+          done
+          echo "⚠️  Mensaena-Health-URL timeoutet — bitte manuell prüfen"
 
       # ─────────────────────────────────────────────────────────────────────
-      # STEP 7: WB-HEALTH-CHECK
+      # STEP 7: WB-HEALTH-CHECK (mit Cert-Generierung-Wartezeit)
       # ─────────────────────────────────────────────────────────────────────
-      - name: 🩺 WB-Health-Check
+      - name: 🩺 WB-Health-Check (Caddy generiert Cert beim ersten Aufruf)
         run: |
           set -euo pipefail
-          echo "→ Test https://${WB_DOMAIN}:7892/ …"
-          for i in 1 2 3 4 5; do
-            HTTP=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 10 \
-              "https://${WB_DOMAIN}:7892/" || echo "000")
+          echo "→ Test https://${WB_DOMAIN}/ …"
+          echo "   (Caddy holt sich Cert via ACME beim ersten Hit — kann 30-60s dauern)"
+          for i in 1 2 3 4 5 6 7 8 9 10; do
+            HTTP=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 15 \
+              "https://${WB_DOMAIN}/" || echo "000")
             echo "Versuch $i: HTTP $HTTP"
-            # LiveKit antwortet auf GET / mit 200/404/426 — alles != 000/503 ist OK
-            if [ "$HTTP" != "000" ] && [ "$HTTP" != "503" ]; then
+            if [ "$HTTP" != "000" ] && [ "$HTTP" != "525" ] && [ "$HTTP" != "526" ]; then
               echo "✅ WB-LiveKit erreichbar (HTTP $HTTP)"
               exit 0
             fi
-            sleep 5
+            sleep 8
           done
-          echo "❌ WB-LiveKit antwortet nicht — Logs prüfen via SSH:"
-          echo "   ssh ${VPS_USER}@${VPS_HOST} 'docker compose -f ${VPS_DIR}/docker-compose.yml logs'"
+          echo "❌ WB-LiveKit antwortet nicht. Möglicherweise hat Caddy noch kein Cert."
+          echo "   Bitte manuell prüfen: ssh ${VPS_USER}@${VPS_HOST}"
+          echo "   docker logs ${CADDY_CONTAINER} --tail=30"
           exit 1
 
       - name: 📝 Zusammenfassung
@@ -433,8 +362,7 @@ jobs:
           echo "## 🎥 LiveKit-WB Deployment" >> $GITHUB_STEP_SUMMARY
           echo "- VPS: \`${VPS_HOST}\`" >> $GITHUB_STEP_SUMMARY
           echo "- WB-Domain: \`${WB_DOMAIN}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- WB-URL: \`wss://${WB_DOMAIN}:7892\`" >> $GITHUB_STEP_SUMMARY
-          echo "- Cert-Pfad: \`${WB_CERT_PATH:-(nicht ermittelt)}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- Verzeichnis: \`${VPS_DIR}\` (getrennt von Mensaena's \`/docker/livekit/\`)" >> $GITHUB_STEP_SUMMARY
-          echo "- WB-Container: \`livekit-weltenbibliothek\` + \`traefik-weltenbibliothek\`" >> $GITHUB_STEP_SUMMARY
-          echo "- Mensaena-Schutz: Pre/Post-Health-Check + Port-Konflikt-Check aktiv" >> $GITHUB_STEP_SUMMARY
+          echo "- WB-URL: \`wss://${WB_DOMAIN}\` (Standard-Port 443 via Mensaena's Caddy)" >> $GITHUB_STEP_SUMMARY
+          echo "- Caddyfile: \`${MENSAENA_CADDYFILE:-(nicht ermittelt)}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- WB-Container: \`livekit-weltenbibliothek\` (intern Port 7980)" >> $GITHUB_STEP_SUMMARY
+          echo "- Mensaena-Schutz: Pre/Post-Health-Check + Caddyfile-Backup + Auto-Rollback" >> $GITHUB_STEP_SUMMARY

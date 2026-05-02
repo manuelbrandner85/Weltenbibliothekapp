@@ -26,7 +26,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
-      LIVEKIT_URL: wss://livekit-wb.srv1438024.hstgr.cloud:7892
+      LIVEKIT_URL: wss://livekit-wb.srv1438024.hstgr.cloud
       WB_KEY: wb-a9b26485d407e7dc2043
       WB_SECRET: f9c57648d1756868aa7c124b545c029bcb2569b5bf82c1fa5058eefc4efc21d1
 

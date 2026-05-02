@@ -32,7 +32,7 @@ jobs:
       # Secrets sollten via GitHub-Secrets überschrieben werden — Fallback hier nur für Bootstrap
       LIVEKIT_API_KEY: ${{ secrets.LIVEKIT_API_KEY || 'wb-a9b26485d407e7dc2043' }}
       LIVEKIT_API_SECRET: ${{ secrets.LIVEKIT_API_SECRET || 'f9c57648d1756868aa7c124b545c029bcb2569b5bf82c1fa5058eefc4efc21d1' }}
-      LIVEKIT_URL: ${{ secrets.LIVEKIT_URL || 'wss://livekit-wb.srv1438024.hstgr.cloud:7892' }}
+      LIVEKIT_URL: ${{ secrets.LIVEKIT_URL || 'wss://livekit-wb.srv1438024.hstgr.cloud' }}
 
     steps:
       - name: 📥 Checkout

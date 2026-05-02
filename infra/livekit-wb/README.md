@@ -2,56 +2,70 @@
 
 Eigene LiveKit-Instanz auf dem Hostinger-VPS, **strikt getrennt** von Mensaena's
 LiveKit. Diese README dokumentiert die Trennung und alle Mensaena-Schutzmaßnahmen.
-<!-- re-deploy-trigger: 2026-05-02-1 -->
 
 ## Architektur
 
 ```
 Hostinger VPS (72.62.154.95)
 │
-├── Mensaena (UNVERÄNDERT, NICHT BERÜHREN)
-│   ├── Web-Server (irgendein Reverse Proxy) → Ports 80/443
-│   ├── /docker/livekit/        → Mensaena's livekit.yaml + compose
-│   └── Mensaena's livekit-Container → port 7880 intern, UDP 50000–60000, TCP 7881
+├── Mensaena's Caddy (livekit-caddy-1) — Reverse-Proxy auf Ports 80/443
+│   ├── Site `livekit.srv1438024.hstgr.cloud` → Mensaena's LiveKit
+│   └── Site `livekit-wb.srv1438024.hstgr.cloud` → WB-LiveKit (NEU, additiv)
+│       └── proxied auf 127.0.0.1:7980 (WB-Container intern)
+│
+├── Mensaena's LiveKit (livekit-livekit-1) — Port 7880 intern, UDP 50000–60000
 │
 └── Weltenbibliothek (DIESES SETUP)
-    ├── /docker/livekit-wb/     → Eigene Konfiguration
-    ├── livekit-weltenbibliothek-Container → Port 7980 intern, UDP 60001–65000, TCP 7981
-    └── traefik-weltenbibliothek → Ports 7891/7892, eigener Reverse Proxy
-        └── Domain: livekit-wb.srv1438024.hstgr.cloud:7892
+    ├── /docker/livekit-wb/ — eigenes Verzeichnis (kein Overlap mit Mensaena)
+    ├── livekit-weltenbibliothek-Container — Port 7980 intern, UDP 60001–65000, TCP 7981
+    └── KEIN eigener Reverse-Proxy — Caddy von Mensaena macht's via Snippet
 ```
 
 ## Trennungs-Garantien (Mensaena-Schutz)
 
 | Aspekt | Mensaena | WB | Konflikt? |
 |---|---|---|---|
-| Verzeichnis | `/docker/livekit/` | `/docker/livekit-wb/` | ❌ Nein |
-| Container-Name | `livekit` (oder ähnlich) | `livekit-weltenbibliothek` | ❌ Nein |
-| Web-Ports | 80/443 (TCP) | 7891/7892 (TCP) | ❌ Nein |
+| Verzeichnis | (eigenes) | `/docker/livekit-wb/` | ❌ Nein |
+| Container-Name | `livekit-livekit-1`, `livekit-caddy-1` | `livekit-weltenbibliothek` | ❌ Nein |
+| Web-Ports | 80/443 (TCP, via Caddy) | nur intern 127.0.0.1:7980 | ❌ Nein |
 | RTC-TCP | 7881 | 7981 | ❌ Nein |
 | RTC-UDP-Range | 50000–60000 | 60001–65000 | ❌ Nein |
 | TURN UDP | 5350/3479 (vermutl.) | **deaktiviert** | ❌ Nein |
 | LiveKit intern | 7880 | 7980 | ❌ Nein |
-| API-Key | `mensaena-...` | `wb-...` | ❌ Nein |
-| Docker-Network | (Mensaena's eigenes) | `livekit-wb-net` | ❌ Nein |
-| TLS-Cert | (eigene Verwaltung) | Read-only-Mount (`:ro`) | ❌ Nein |
+| API-Key | `mensaena-…` | `wb-…` | ❌ Nein |
+| Docker-Network | (eigenes) | `livekit-wb-net` | ❌ Nein |
+| TLS-Cert | Caddy ACME (eigener) | Caddy ACME (eigener für `livekit-wb.*`) | ❌ Nein |
 | Domain | `livekit.srv1438024…` | `livekit-wb.srv1438024…` | ❌ Nein |
+
+## Caddy-Snippet — Mensaena-additiv
+
+`caddy-snippet.caddy` enthält die Site-Definition für `livekit-wb.*`. Der Workflow
+`deploy_livekit_wb.yml` fügt sie zwischen den Markern `# >>> WB-LIVEKIT-BEGIN` und
+`# <<< WB-LIVEKIT-END` in Mensaena's Caddyfile ein.
+
+**Sicherheit:**
+- ✅ **Backup vor jedem Edit** (`/docker/livekit-wb/caddyfile-backups/Caddyfile.<ts>.bak`)
+- ✅ **Idempotent** — bei Re-Deploy wird der Block ersetzt, nicht angehängt
+- ✅ **Caddy-Validate vor Reload** — Syntax-Fehler = kein Reload, Backup wird wiederhergestellt
+- ✅ **Caddy-Reload statt Restart** — Mensaena hat 0s Downtime
+- ✅ **Auto-Rollback** bei Reload-Fehler — alter Caddyfile-State wird wiederhergestellt
 
 ## Was die WB-Workflows NIEMALS dürfen
 
-- ❌ `/docker/livekit/` modifizieren (das ist Mensaena's Verzeichnis)
 - ❌ Mensaena's Container restarten/stoppen
 - ❌ Mensaena's `livekit.yaml` lesen, schreiben oder überschreiben
-- ❌ Ports 80/443 belegen
+- ❌ Mensaena's Site-Definitionen in der Caddyfile ändern
+- ❌ Eigene Ports 80/443 belegen (würde Caddy blockieren)
 - ❌ UDP-Range 50000–60000 oder 5350/3479 belegen
 - ❌ Mensaena's API-Key in WB-Configs einbauen
 
 ## Was die WB-Workflows DÜRFEN
 
-- ✅ Read-only Mount des Hostinger-Wildcard-Certs (`/etc/letsencrypt/live/…/`)
 - ✅ Eigenes Verzeichnis `/docker/livekit-wb/` schreiben
-- ✅ Eigene Container `livekit-weltenbibliothek` und `traefik-weltenbibliothek` starten/stoppen
-- ✅ Eigene Ports 7891/7892/7981/60001-65000 belegen
+- ✅ Eigenen Container `livekit-weltenbibliothek` starten/stoppen
+- ✅ Eigene Ports 7980 (lokal), 7981 (TCP), 60001-65000 (UDP) belegen
+- ✅ Mensaena's Caddyfile **additiv** zwischen WB-BEGIN/END-Markern erweitern
+- ✅ `caddy reload` (graceful) auslösen
 
 ## Deploy
 
@@ -60,31 +74,35 @@ Per CI: Änderung an `infra/livekit-wb/**` triggert `deploy_livekit_wb.yml`.
 Manuell auf VPS:
 ```bash
 cd /docker/livekit-wb
-docker compose up -d         # Starten
-docker compose ps            # Status
-docker compose logs -f       # Logs live
-docker compose restart       # Restart (Mensaena nicht betroffen)
-docker compose down          # Stoppen (Mensaena nicht betroffen)
+docker compose up -d           # WB-Container starten
+docker compose ps              # Status
+docker compose logs -f         # Logs live
+docker compose down            # Stoppen (Mensaena nicht betroffen)
 ```
 
-## Deployment-Health-Checks (im Workflow)
+Caddy-Reload (manuell):
+```bash
+docker exec livekit-caddy-1 caddy reload --config /etc/caddy/Caddyfile
+```
 
-Der `deploy_livekit_wb.yml`-Workflow macht vor und nach jedem Deploy:
+## Deployment-Schritte (im Workflow)
 
-1. **Pre-Deploy**: Listet alle LiveKit-Container auf — Mensaena muss laufen
-2. **Port-Konflikt-Check**: Sicherstellen dass 7891/7892/7981 frei sind
-3. **Cert-Pfad-Lookup**: Hostinger-Wildcard-Cert finden (read-only Mount)
-4. **WB-Container starten**
-5. **Post-Deploy Mensaena-Check**: Mensaena muss noch healthy sein, sonst FAIL
-6. **WB-Health-Check**: Eigener Container reagiert auf https://…:7892
+`deploy_livekit_wb.yml`:
 
-Wenn Mensaena nach unserem Deploy nicht mehr läuft, **failt der Workflow
-absichtlich rot** — damit kein versehentlicher Schaden bestehen bleibt.
+1. **Pre-Deploy**: Mensaena's Caddy + LiveKit müssen laufen
+2. **Port-Konflikt-Check**: 7980/7981/60001 frei
+3. **Caddyfile-Pfad ermitteln** via `docker inspect`
+4. **WB-Container starten** (intern auf 127.0.0.1:7980)
+5. **Caddyfile additiv erweitern** mit Backup + Validate + Reload + Rollback
+6. **Post-Deploy Mensaena-Check** — beide Container weiter Up + extern erreichbar
+7. **WB-Health-Check** — `https://livekit-wb.srv1438024.hstgr.cloud`
+
+Wenn Mensaena nach dem Deploy nicht mehr healthy ist, **failt der Workflow rot**.
 
 ## URL-Schema
 
 ```
-WB-LiveKit-URL:  wss://livekit-wb.srv1438024.hstgr.cloud:7892
+WB-LiveKit-URL:  wss://livekit-wb.srv1438024.hstgr.cloud   (Standard-Port 443)
 WB-Token-URL:    https://adtviduaftdquvfjpojb.supabase.co/functions/v1/livekit-token
 ```
 
@@ -96,7 +114,7 @@ Edge Function generiert das Token mit dem WB-Key (HMAC-SHA256).
 | Secret | Wo | Wofür |
 |---|---|---|
 | `wb-a9b26485d407e7dc2043` (Key) | livekit.yaml + Edge Function + Worker | LiveKit API Identität |
-| `f9c576...` (Secret) | livekit.yaml + Edge Function + Worker | JWT-Signing |
+| `f9c576…` (Secret) | livekit.yaml + Edge Function + Worker | JWT-Signing |
 | `LIVEKIT_URL` | Edge Function + Worker + App | Server-Endpunkt |
 
 GitHub-Secrets (überschreiben Defaults):

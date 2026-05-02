@@ -131,7 +131,7 @@ class ApiConfig {
   // Wenn nicht konfiguriert → isLivekitEnabled = false.
   static const String livekitUrl = String.fromEnvironment(
     'LIVEKIT_URL',
-    defaultValue: 'wss://livekit-wb.srv1438024.hstgr.cloud:7892',
+    defaultValue: 'wss://livekit-wb.srv1438024.hstgr.cloud',
   );
 
   /// Token-Endpoint: Supabase Edge Function (direkt, kein Cloudflare-Umweg).

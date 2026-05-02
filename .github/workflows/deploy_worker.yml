@@ -11,7 +11,7 @@ name: ☁️ Cloudflare Worker deployen
 # Optional (Fallback-Werte eingebettet, zeigen auf WB-eigene Instanz):
 #   LIVEKIT_API_KEY                 — Standard: wb-a9b26485d407e7dc2043
 #   LIVEKIT_API_SECRET              — Standard: f9c57648d1756868aa7c124b545c029bcb2569b5bf82c1fa5058eefc4efc21d1
-#   LIVEKIT_URL                     — Standard: wss://livekit-wb.srv1438024.hstgr.cloud:7892
+#   LIVEKIT_URL                     — Standard: wss://livekit-wb.srv1438024.hstgr.cloud
 
 on:
   push:
@@ -52,7 +52,7 @@ jobs:
           FCM_SERVICE_ACCOUNT_JSON: ${{ secrets.FCM_SERVICE_ACCOUNT_JSON }}
           WB_KEY: ${{ secrets.LIVEKIT_API_KEY || 'wb-a9b26485d407e7dc2043' }}
           WB_SECRET: ${{ secrets.LIVEKIT_API_SECRET || 'f9c57648d1756868aa7c124b545c029bcb2569b5bf82c1fa5058eefc4efc21d1' }}
-          WB_URL: ${{ secrets.LIVEKIT_URL || 'wss://livekit-wb.srv1438024.hstgr.cloud:7892' }}
+          WB_URL: ${{ secrets.LIVEKIT_URL || 'wss://livekit-wb.srv1438024.hstgr.cloud' }}
         working-directory: workers
         run: |
           set -euo pipefail

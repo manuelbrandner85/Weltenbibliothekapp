@@ -2,35 +2,38 @@ name: livekit-weltenbibliothek
 
 # Weltenbibliothek LiveKit-Server — eigene Instanz, getrennt von Mensaena.
 # - Eigener API-Key (wb-...), keine Vermischung mit Mensaena
-# - Eigene Ports 7891/7892 (HTTP/HTTPS) und 7981 (RTC TCP), keine Kollision mit Mensaena
+# - LiveKit-Container hört auf Host-Port 7980 (nicht 7880 = LiveKit-Default)
 # - UDP-Media-Range 60001-65000 (Mensaena nutzt 50000-60000) → KEIN Overlap
 # - KEIN TURN-Server in WB (Mensaena könnte 5350/3479 belegen) → STUN-only
-# - TLS-Cert vom Host gemountet (Hostinger-Wildcard *.srv1438024.hstgr.cloud)
+# - KEIN eigener Reverse-Proxy mehr — Mensaena's Caddy macht das Routing
+#   für `livekit-wb.srv1438024.hstgr.cloud` → 127.0.0.1:7980 (additive Caddy-Config)
 #
 # MENSAENA-SAFETY-LISTE (vor jedem manuellen Eingriff lesen!):
-#   ✓ Eigener Container-Name `livekit-weltenbibliothek` (Mensaena: anders)
+#   ✓ Eigener Container-Name `livekit-weltenbibliothek` (Mensaena: livekit-livekit-1)
 #   ✓ Eigenes Docker-Network `livekit-wb-net` (kein Cross-Talk)
 #   ✓ Eigene Host-Ports — KEINE Überschneidung mit 80/443 (Mensaena Web)
-#   ✓ Cert-Volume ist :ro (read-only) — kann Mensaena's Cert nicht überschreiben
-#   ✓ Verzeichnis /docker/livekit-wb/ (Mensaena: /docker/livekit/)
+#   ✓ Verzeichnis /docker/livekit-wb/ (Mensaena: andere Lokation)
 #
 # Starten:  docker compose -f /docker/livekit-wb/docker-compose.yml up -d
 # Stoppen:  docker compose -f /docker/livekit-wb/docker-compose.yml down
 # Logs:     docker compose -f /docker/livekit-wb/docker-compose.yml logs -f
-# Restart:  docker compose -f /docker/livekit-wb/docker-compose.yml restart livekit
 
 services:
 
   # ── LiveKit Medienserver ───────────────────────────────────────────────────
+  # Hört intern auf 7980 (HTTP, kein TLS)
+  # Mensaena's Caddy terminiert TLS und proxied https://livekit-wb.* → 127.0.0.1:7980
   livekit:
     image: livekit/livekit-server:v1.7
     container_name: livekit-weltenbibliothek
     restart: unless-stopped
     ports:
-      # WebRTC Media — UDP-Range 60001-65000 disjunkt zu Mensaena (50000-60000)
-      - "60001-65000:60001-65000/udp"
+      # HTTP/WS-Signal — Mensaena's Caddy proxied hierhin
+      - "127.0.0.1:7980:7980/tcp"
       # RTC TCP-Fallback (für Clients hinter strengen Firewalls)
       - "7981:7981/tcp"
+      # WebRTC Media — UDP-Range 60001-65000 (disjunkt zu Mensaena 50000-60000)
+      - "60001-65000:60001-65000/udp"
       # KEIN TURN-Server (UDP 5350/3479) — Mensaena könnte dort belegen
     volumes:
       - ./livekit.yaml:/etc/livekit.yaml:ro
@@ -43,28 +46,6 @@ services:
       timeout: 10s
       retries: 5
       start_period: 10s
-
-  # ── Traefik Reverse Proxy + TLS ────────────────────────────────────────────
-  # Eigene Ports 7891 (HTTP) / 7892 (HTTPS/WSS) — keine Kollision mit Mensaena (80/443)
-  # TLS-Cert wird vom Host gemountet (z.B. /etc/letsencrypt/live/srv1438024.hstgr.cloud/)
-  traefik:
-    image: traefik:v3.1
-    container_name: traefik-weltenbibliothek
-    restart: unless-stopped
-    ports:
-      - "7891:7891/tcp"    # HTTP (Redirect → HTTPS)
-      - "7892:7892/tcp"    # HTTPS / WSS — hier verbindet sich der LiveKit-Client
-    volumes:
-      - ./traefik.yml:/etc/traefik/traefik.yml:ro
-      - ./dynamic.yml:/etc/traefik/dynamic.yml:ro
-      # Hostinger-Wildcard-Cert vom Host READ-ONLY gemountet
-      # Pfad wird vom Deploy-Workflow ermittelt (mehrere Standard-Lokationen geprüft)
-      - ${WB_CERT_PATH:-/etc/letsencrypt/live/srv1438024.hstgr.cloud}:/certs:ro
-    networks:
-      - livekit-wb-net
-    depends_on:
-      livekit:
-        condition: service_healthy
 
 networks:
   livekit-wb-net:
