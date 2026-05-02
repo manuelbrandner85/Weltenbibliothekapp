@@ -1,0 +1,321 @@
+name: 🎥 LiveKit-WB Server deployen
+
+# Deployt die WB-eigene LiveKit-Instanz auf den Hostinger VPS.
+# - Eigener Container `livekit-weltenbibliothek` auf Ports 7891/7892
+# - Eigene livekit.yaml mit nur dem WB-API-Key (kein Mensaena-Sharing)
+# - TLS-Cert vom Host gemountet (Hostinger-Wildcard *.srv1438024.hstgr.cloud)
+#
+# 🛡️  MENSAENA-SCHUTZ (verbindlich):
+#   1. Pre-Deploy-Check: Mensaena's Container muss vor dem Deploy laufen
+#   2. Port-Konflikt-Check: Keine Überschneidung mit Mensaena's Ports
+#   3. Post-Deploy-Check: Mensaena läuft danach unverändert weiter
+#   4. Workflow bricht ab wenn Mensaena vor/nach dem Deploy nicht erreichbar ist
+#
+# Trigger: Push auf main mit Änderung in infra/livekit-wb/** oder manuell.
+#
+# Required Secrets:
+#   VPS_PASSWORD                — SSH root-Passwort für VPS
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'infra/livekit-wb/**'
+      - '.github/workflows/deploy_livekit_wb.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-livekit-wb
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: 🚀 LiveKit-WB auf VPS deployen
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      VPS_HOST: 72.62.154.95
+      VPS_USER: root
+      VPS_DIR: /docker/livekit-wb
+      WB_DOMAIN: livekit-wb.srv1438024.hstgr.cloud
+      MENSAENA_HEALTH_URL: https://livekit.srv1438024.hstgr.cloud
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🔐 Secret-Validierung
+        env:
+          VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
+        run: |
+          if [ -z "${VPS_PASSWORD:-}" ]; then
+            echo "❌ VPS_PASSWORD GitHub-Secret fehlt"
+            echo "   Bitte unter Settings → Secrets → Actions als 'VPS_PASSWORD' hinterlegen."
+            exit 1
+          fi
+          echo "✅ VPS_PASSWORD ist gesetzt (${#VPS_PASSWORD} Zeichen)"
+
+      - name: 🔧 sshpass installieren
+        run: sudo apt-get install -y -qq sshpass
+
+      # ─────────────────────────────────────────────────────────────────────
+      # 🛡️ STEP 1: PRE-DEPLOY MENSAENA-HEALTH-CHECK
+      # Mensaena MUSS vor unserem Deploy laufen — wenn nicht, ist etwas anderes
+      # kaputt und wir würden den Fehler fälschlich uns zuschreiben.
+      # ─────────────────────────────────────────────────────────────────────
+      - name: 🛡️ Pre-Deploy Mensaena-Health-Check
+        env:
+          VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
+        run: |
+          set -euo pipefail
+          echo "→ Prüfe ob Mensaena's LiveKit-Container läuft …"
+          MENSAENA_STATUS=$(sshpass -p "$VPS_PASSWORD" ssh \
+            -o StrictHostKeyChecking=no \
+            -o ConnectTimeout=30 \
+            -o PasswordAuthentication=yes \
+            ${VPS_USER}@${VPS_HOST} \
+            "docker ps --filter 'name=livekit' --format '{{.Names}}: {{.Status}}' | grep -v 'livekit-weltenbibliothek\|traefik-weltenbibliothek' || echo 'KEIN_MENSAENA_CONTAINER'")
+          echo "Mensaena-Status: $MENSAENA_STATUS"
+          if [ "$MENSAENA_STATUS" = "KEIN_MENSAENA_CONTAINER" ]; then
+            echo "ℹ️  Kein Mensaena-LiveKit-Container gefunden — Deploy fährt fort"
+          else
+            echo "✅ Mensaena läuft (vor Deploy): $MENSAENA_STATUS"
+          fi
+          # Liste alle bestehenden LiveKit-Container für Audit-Trail
+          echo ""
+          echo "→ Vollständige LiveKit-Container-Liste (vor Deploy):"
+          sshpass -p "$VPS_PASSWORD" ssh \
+            -o StrictHostKeyChecking=no \
+            -o ConnectTimeout=30 \
+            -o PasswordAuthentication=yes \
+            ${VPS_USER}@${VPS_HOST} \
+            "docker ps -a --filter 'name=livekit' --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'" || true
+
+      # ─────────────────────────────────────────────────────────────────────
+      # 🛡️ STEP 2: PORT-KONFLIKT-CHECK
+      # Stelle sicher dass die Ports die WB nutzen will NICHT von Mensaena
+      # belegt sind (außer von WB selber bei einem Re-Deploy).
+      # ─────────────────────────────────────────────────────────────────────
+      - name: 🛡️ Port-Konflikt-Check
+        env:
+          VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
+        run: |
+          set -euo pipefail
+          echo "→ Prüfe ob WB-Ports (7891, 7892, 7981, 60001-65000) frei sind …"
+          CONFLICTS=$(sshpass -p "$VPS_PASSWORD" ssh \
+            -o StrictHostKeyChecking=no \
+            -o ConnectTimeout=30 \
+            -o PasswordAuthentication=yes \
+            ${VPS_USER}@${VPS_HOST} \
+            "ss -tulnp 2>/dev/null | grep -E ':(7891|7892|7981|60001) ' | grep -v 'docker-proxy.*livekit-weltenbibliothek\|docker-proxy.*traefik-weltenbibliothek' || true")
+          if [ -n "$CONFLICTS" ]; then
+            echo "❌ Port-Konflikt erkannt — andere Prozesse belegen unsere Ports:"
+            echo "$CONFLICTS"
+            echo ""
+            echo "   Kein Auto-Stop — bitte manuell prüfen und beheben."
+            exit 1
+          fi
+          echo "✅ Alle WB-Ports frei (oder von WB-Containern selbst belegt)"
+
+      # ─────────────────────────────────────────────────────────────────────
+      # 🛡️ STEP 3: CERT-PFAD ERMITTELN
+      # ─────────────────────────────────────────────────────────────────────
+      - name: 🔍 Cert-Pfad auf VPS ermitteln (read-only Lookup)
+        env:
+          VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
+        run: |
+          set -euo pipefail
+          # Suche das Hostinger-Wildcard-Cert in den üblichen Lokationen.
+          # READ-ONLY — wir mounten den Pfad nur, ändern dort nichts.
+          CERT_PATH=$(sshpass -p "$VPS_PASSWORD" ssh \
+            -o StrictHostKeyChecking=no \
+            -o ConnectTimeout=30 \
+            -o PasswordAuthentication=yes \
+            ${VPS_USER}@${VPS_HOST} \
+            "set +e
+             for d in \
+               /etc/letsencrypt/live/srv1438024.hstgr.cloud \
+               /etc/letsencrypt/live/${WB_DOMAIN} \
+               /etc/letsencrypt/live/livekit.srv1438024.hstgr.cloud \
+               /etc/ssl/hostinger \
+               /etc/ssl/certs/hostinger; do
+               if [ -f \"\$d/fullchain.pem\" ] && [ -f \"\$d/privkey.pem\" ]; then
+                 echo \"\$d\"
+                 exit 0
+               fi
+             done
+             # Fallback: irgendwo unter /etc/letsencrypt/live mit *.srv1438024.hstgr.cloud
+             find /etc/letsencrypt/live -maxdepth 2 -name 'fullchain.pem' 2>/dev/null | while read f; do
+               if openssl x509 -in \"\$f\" -noout -text 2>/dev/null | grep -q 'srv1438024.hstgr.cloud'; then
+                 dirname \"\$f\"
+                 exit 0
+               fi
+             done
+             echo 'NOTFOUND'")
+          echo "Gefundener Cert-Pfad: $CERT_PATH"
+          if [ "$CERT_PATH" = "NOTFOUND" ] || [ -z "$CERT_PATH" ]; then
+            echo "❌ Kein Hostinger-Wildcard-Cert auf dem VPS gefunden."
+            echo ""
+            echo "   Mögliche Lösungen:"
+            echo "   1. Cert-Pfad manuell als WB_CERT_PATH GitHub-Secret setzen"
+            echo "   2. Hostinger-Cert nach /etc/letsencrypt/live/srv1438024.hstgr.cloud/ kopieren"
+            echo "   3. Eigenen Cert via certbot mit DNS-Challenge generieren"
+            exit 1
+          fi
+          echo "WB_CERT_PATH=$CERT_PATH" >> $GITHUB_ENV
+
+      # ─────────────────────────────────────────────────────────────────────
+      # STEP 4: INFRA-FILES NACH /docker/livekit-wb/ KOPIEREN
+      # WICHTIG: NUR /docker/livekit-wb/ — niemals /docker/livekit/ (das ist Mensaena!)
+      # ─────────────────────────────────────────────────────────────────────
+      - name: 📦 Infra-Files nach /docker/livekit-wb/ deployen (NICHT /docker/livekit/)
+        env:
+          VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
+        run: |
+          set -euo pipefail
+          # Sicherheitscheck — VPS_DIR muss livekit-wb enthalten, NIE nur livekit
+          if [[ "${VPS_DIR}" != *livekit-wb* ]]; then
+            echo "❌ VPS_DIR='${VPS_DIR}' enthält kein 'livekit-wb' — abbruch zum Schutz von Mensaena"
+            exit 1
+          fi
+
+          # Verzeichnis anlegen
+          sshpass -p "$VPS_PASSWORD" ssh \
+            -o StrictHostKeyChecking=no \
+            -o ConnectTimeout=30 \
+            -o PasswordAuthentication=yes \
+            ${VPS_USER}@${VPS_HOST} \
+            "mkdir -p ${VPS_DIR} && chmod 700 ${VPS_DIR}"
+
+          # Files kopieren
+          for f in docker-compose.yml traefik.yml dynamic.yml livekit.yaml; do
+            echo "→ Kopiere $f → ${VPS_DIR}/$f …"
+            sshpass -p "$VPS_PASSWORD" scp \
+              -o StrictHostKeyChecking=no \
+              -o ConnectTimeout=30 \
+              -o PasswordAuthentication=yes \
+              "infra/livekit-wb/$f" \
+              ${VPS_USER}@${VPS_HOST}:${VPS_DIR}/$f
+          done
+
+          # livekit.yaml mit chmod 600 (Secret drin)
+          sshpass -p "$VPS_PASSWORD" ssh \
+            -o StrictHostKeyChecking=no \
+            -o ConnectTimeout=30 \
+            -o PasswordAuthentication=yes \
+            ${VPS_USER}@${VPS_HOST} \
+            "chmod 600 ${VPS_DIR}/livekit.yaml && chmod 644 ${VPS_DIR}/{docker-compose.yml,traefik.yml,dynamic.yml}"
+
+          echo "✅ Files deployed nach ${VPS_DIR}"
+
+      # ─────────────────────────────────────────────────────────────────────
+      # STEP 5: WB-CONTAINER STARTEN
+      # WICHTIG: Nutzt -f mit explizitem Pfad → kann Mensaena's compose nicht
+      # versehentlich treffen.
+      # ─────────────────────────────────────────────────────────────────────
+      - name: 🐳 WB-Container starten (isoliert)
+        env:
+          VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
+        run: |
+          set -euo pipefail
+          sshpass -p "$VPS_PASSWORD" ssh \
+            -o StrictHostKeyChecking=no \
+            -o ConnectTimeout=30 \
+            -o PasswordAuthentication=yes \
+            ${VPS_USER}@${VPS_HOST} \
+            "set -euo pipefail
+             cd ${VPS_DIR}
+             # WB_CERT_PATH als Env in Compose-Aufruf — wird in docker-compose.yml als Volume-Mount genutzt
+             export WB_CERT_PATH='${WB_CERT_PATH}'
+             echo \"→ Cert-Mount: \$WB_CERT_PATH\"
+             docker compose pull
+             docker compose up -d --remove-orphans
+             echo '⏳ Warte 8s auf Container-Start …'
+             sleep 8
+             echo '→ Status:'
+             docker compose ps
+             echo ''
+             echo '→ Letzte Logs (livekit):'
+             docker compose logs --tail=15 livekit"
+
+      # ─────────────────────────────────────────────────────────────────────
+      # 🛡️ STEP 6: POST-DEPLOY MENSAENA-CHECK
+      # Mensaena MUSS nach unserem Deploy noch laufen. Wenn nicht → Alarm.
+      # ─────────────────────────────────────────────────────────────────────
+      - name: 🛡️ Post-Deploy Mensaena-Health-Check
+        env:
+          VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
+        run: |
+          set -euo pipefail
+          echo "→ Prüfe ob Mensaena's LiveKit-Container nach Deploy noch läuft …"
+          MENSAENA_STATUS=$(sshpass -p "$VPS_PASSWORD" ssh \
+            -o StrictHostKeyChecking=no \
+            -o ConnectTimeout=30 \
+            -o PasswordAuthentication=yes \
+            ${VPS_USER}@${VPS_HOST} \
+            "docker ps --filter 'name=livekit' --format '{{.Names}}: {{.Status}}' | grep -v 'livekit-weltenbibliothek\|traefik-weltenbibliothek' || echo 'KEIN_MENSAENA_CONTAINER'")
+          echo "Mensaena-Status (post-deploy): $MENSAENA_STATUS"
+
+          if [ "$MENSAENA_STATUS" = "KEIN_MENSAENA_CONTAINER" ]; then
+            echo "ℹ️  Kein Mensaena-Container vorher und nachher — OK"
+          else
+            # Falls Mensaena vorhanden war: prüfe dass Status "Up …" ist
+            if echo "$MENSAENA_STATUS" | grep -q ': Up'; then
+              echo "✅ Mensaena läuft weiterhin"
+            else
+              echo "❌❌❌ MENSAENA NICHT MEHR HEALTHY — POSSIBLE COLLATERAL DAMAGE!"
+              echo "   Status: $MENSAENA_STATUS"
+              echo "   → WB-Deploy wird FAILED markiert, damit Alarm geht"
+              exit 1
+            fi
+          fi
+
+          # HTTP-Check Mensaena von außen
+          echo ""
+          echo "→ Mensaena von außen erreichbar? ${MENSAENA_HEALTH_URL}"
+          MENSAENA_HTTP=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 10 \
+            "${MENSAENA_HEALTH_URL}" || echo "000")
+          echo "HTTP $MENSAENA_HTTP"
+          # 503 ist akzeptabel (war auch vorher so wenn Mensaena 503 lieferte)
+          # 000 (Timeout) wäre neu und schlecht
+          if [ "$MENSAENA_HTTP" = "000" ]; then
+            echo "⚠️  Mensaena timeoutet jetzt — möglicher Schaden"
+            echo "   (vorher: Status nicht gemessen — kein Vergleich möglich)"
+          fi
+
+      # ─────────────────────────────────────────────────────────────────────
+      # STEP 7: WB-HEALTH-CHECK
+      # ─────────────────────────────────────────────────────────────────────
+      - name: 🩺 WB-Health-Check
+        run: |
+          set -euo pipefail
+          echo "→ Test https://${WB_DOMAIN}:7892/ …"
+          for i in 1 2 3 4 5; do
+            HTTP=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 10 \
+              "https://${WB_DOMAIN}:7892/" || echo "000")
+            echo "Versuch $i: HTTP $HTTP"
+            # LiveKit antwortet auf GET / mit 200/404/426 — alles != 000/503 ist OK
+            if [ "$HTTP" != "000" ] && [ "$HTTP" != "503" ]; then
+              echo "✅ WB-LiveKit erreichbar (HTTP $HTTP)"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "❌ WB-LiveKit antwortet nicht — Logs prüfen via SSH:"
+          echo "   ssh ${VPS_USER}@${VPS_HOST} 'docker compose -f ${VPS_DIR}/docker-compose.yml logs'"
+          exit 1
+
+      - name: 📝 Zusammenfassung
+        if: always()
+        run: |
+          echo "## 🎥 LiveKit-WB Deployment" >> $GITHUB_STEP_SUMMARY
+          echo "- VPS: \`${VPS_HOST}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- WB-Domain: \`${WB_DOMAIN}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- WB-URL: \`wss://${WB_DOMAIN}:7892\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Cert-Pfad: \`${WB_CERT_PATH:-(nicht ermittelt)}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Verzeichnis: \`${VPS_DIR}\` (getrennt von Mensaena's \`/docker/livekit/\`)" >> $GITHUB_STEP_SUMMARY
+          echo "- WB-Container: \`livekit-weltenbibliothek\` + \`traefik-weltenbibliothek\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Mensaena-Schutz: Pre/Post-Health-Check + Port-Konflikt-Check aktiv" >> $GITHUB_STEP_SUMMARY

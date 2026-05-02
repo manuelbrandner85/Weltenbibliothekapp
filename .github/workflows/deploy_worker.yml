@@ -1,17 +1,17 @@
 name: ☁️ Cloudflare Worker deployen
 
 # Deployt den API-Worker automatisch bei jeder Änderung an `workers/**`.
-# Setzt FCM/Supabase/LiveKit-Secrets und aktualisiert livekit.yaml auf dem VPS.
+# Setzt FCM/Supabase/LiveKit-Secrets im Cloudflare-Worker.
+# Mensaena-LiveKit wird NIEMALS angefasst — WB hat eigene Instanz (siehe deploy_livekit_wb.yml).
 #
 # Required GitHub Secrets:
 #   CLOUDFLARE_API_TOKEN            — Wrangler-Deploy-Token
 #   SUPABASE_SERVICE_ROLE_KEY       — Supabase Service-Role JWT
 #   FCM_SERVICE_ACCOUNT_JSON        — Firebase Service-Account JSON (optional)
-#   VPS_PASSWORD                    — SSH root-Passwort für VPS (optional)
-# Optional (Fallback-Werte eingebettet):
+# Optional (Fallback-Werte eingebettet, zeigen auf WB-eigene Instanz):
 #   LIVEKIT_API_KEY                 — Standard: wb-a9b26485d407e7dc2043
 #   LIVEKIT_API_SECRET              — Standard: f9c57648d1756868aa7c124b545c029bcb2569b5bf82c1fa5058eefc4efc21d1
-#   LIVEKIT_URL                     — Standard: wss://livekit.srv1438024.hstgr.cloud
+#   LIVEKIT_URL                     — Standard: wss://livekit-wb.srv1438024.hstgr.cloud:7892
 
 on:
   push:
@@ -52,7 +52,7 @@ jobs:
           FCM_SERVICE_ACCOUNT_JSON: ${{ secrets.FCM_SERVICE_ACCOUNT_JSON }}
           WB_KEY: ${{ secrets.LIVEKIT_API_KEY || 'wb-a9b26485d407e7dc2043' }}
           WB_SECRET: ${{ secrets.LIVEKIT_API_SECRET || 'f9c57648d1756868aa7c124b545c029bcb2569b5bf82c1fa5058eefc4efc21d1' }}
-          WB_URL: ${{ secrets.LIVEKIT_URL || 'wss://livekit.srv1438024.hstgr.cloud' }}
+          WB_URL: ${{ secrets.LIVEKIT_URL || 'wss://livekit-wb.srv1438024.hstgr.cloud:7892' }}
         working-directory: workers
         run: |
           set -euo pipefail
@@ -94,40 +94,8 @@ jobs:
           npx -y wrangler@3 deploy
           echo "✅ Worker deployed — Cron-Trigger aktiv"
 
-      - name: 🖥 livekit.yaml auf VPS aktualisieren (WB-Key hinzufügen)
-        # Schreibt Mensaena + WB-Key in livekit.yaml und restartet den Container.
-        # continue-on-error: VPS-Fail blockiert nicht den Worker-Deploy.
-        continue-on-error: true
-        env:
-          VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
-          WB_KEY: ${{ secrets.LIVEKIT_API_KEY || 'wb-a9b26485d407e7dc2043' }}
-          WB_SECRET: ${{ secrets.LIVEKIT_API_SECRET || 'f9c57648d1756868aa7c124b545c029bcb2569b5bf82c1fa5058eefc4efc21d1' }}
-        run: |
-          set -euo pipefail
-          if [ -z "${VPS_PASSWORD:-}" ]; then
-            echo "⚠️  VPS_PASSWORD Secret fehlt — VPS livekit.yaml Update übersprungen"
-            exit 0
-          fi
-          echo "ℹ️  VPS_PASSWORD ist gesetzt (${#VPS_PASSWORD} Zeichen) — SSH wird versucht"
-
-          sudo apt-get install -y -qq sshpass
-
-          # Single-line printf um YAML-Einrückungsprobleme zu vermeiden
-          YAML_B64=$(printf 'port: 7880\nredis:\n  address: 127.0.0.1:6379\nkeys:\n  mensaena-6dd99c8f63b0: d92c860810313cd704b8959854d4225611fcb1291456603b86a0adcff2cb2a6e\n  %s: %s\nrtc:\n  tcp_port: 7881\n  port_range_start: 50000\n  port_range_end: 60000\n  use_external_ip: true\nroom:\n  auto_create: true\n  empty_timeout: 300\nlogging:\n  level: info\n' "${WB_KEY}" "${WB_SECRET}" | base64 | tr -d '\n')
-
-          sshpass -p "$VPS_PASSWORD" ssh \
-            -o StrictHostKeyChecking=no \
-            -o ConnectTimeout=30 \
-            -o PasswordAuthentication=yes \
-            ${VPS_USER}@${VPS_HOST} \
-            "set -euo pipefail
-             mkdir -p /docker/livekit
-             printf '%s' '${YAML_B64}' | base64 -d > /docker/livekit/livekit.yaml
-             echo '✅ livekit.yaml geschrieben'
-             if docker ps --format '{{.Names}}' | grep -q livekit; then
-               cd /docker/livekit && docker compose restart livekit
-               sleep 5 && docker compose ps
-             else
-               echo 'ℹ️  LiveKit-Container nicht aktiv'
-             fi"
-          echo "✅ VPS livekit.yaml aktualisiert"
+      # HINWEIS: Der frühere Step "livekit.yaml auf VPS aktualisieren" wurde entfernt.
+      # Er hatte Mensaena's livekit.yaml überschrieben, um WB's Key dort einzutragen
+      # (shared-instance-Modell). Seit dem Wechsel zu einer eigenen WB-Instanz
+      # (siehe deploy_livekit_wb.yml) ist das nicht mehr nötig — und Mensaena's
+      # Container darf NIEMALS mehr von einem WB-Workflow modifiziert werden.

@@ -1,0 +1,45 @@
+# LiveKit-Server-Konfiguration — Weltenbibliothek
+#
+# Eigene Instanz, getrennt von Mensaena (kein gemeinsamer Container/Key/Port).
+# Container hört intern auf Port 7980 (HTTP) — Traefik terminiert TLS auf 7892.
+#
+# WICHTIG: Dieser File enthält das WB-API-Secret im Klartext.
+#   - Auf dem VPS unter /docker/livekit-wb/livekit.yaml mit chmod 600 gespeichert
+#   - Wird per `deploy_livekit_wb.yml` Workflow deployed
+#   - Niemals lokal ändern und committen — Secret-Update läuft über Workflow
+#
+# MENSAENA-SCHUTZ:
+#   - Port 7980 statt LiveKit-Default 7880 → keine Kollision falls Mensaena auf 7880 publiziert
+#   - tcp_port 7981 statt 7881 → gleicher Grund
+#   - Media-UDP-Range 60001–65000 → kein Overlap mit Mensaena (50000–60000)
+#   - KEIN TURN-Server in WB → keine UDP-5350/3479-Kollision
+
+port: 7980
+
+# API-Keys: nur WB. Kein Mensaena-Key, keine Vermischung.
+keys:
+  wb-a9b26485d407e7dc2043: f9c57648d1756868aa7c124b545c029bcb2569b5bf82c1fa5058eefc4efc21d1
+
+# WebRTC Media-Konfiguration
+# Range 60001–65000 sicher disjunkt von Mensaena (50000–60000)
+rtc:
+  tcp_port: 7981
+  port_range_start: 60001
+  port_range_end: 65000
+  use_external_ip: true
+
+# Räume werden automatisch angelegt wenn der erste User joint.
+# empty_timeout: Raum wird gelöscht 5 min nachdem letzter Teilnehmer geht.
+room:
+  auto_create: true
+  empty_timeout: 300
+  max_participants: 50
+
+logging:
+  level: info
+  json: false
+
+# Audio-Defaults — sinnvolle Werte für Sprach-Calls
+audio:
+  active_level: 35
+  min_score: 6.0
