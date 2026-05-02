@@ -597,6 +597,27 @@ chore(deps): Dependencies aktualisiert
     Angelegt mit 15 Spalten, 3 Indexes, updated_at-Trigger, 4 RLS-Policies,
     Realtime-Publication, anon/authenticated Grants. apply_migrations.yml aktualisiert.
 
+- [x] **PR #65 — WB eigene LiveKit-Instanz, getrennt von Mensaena** (2026-05-02, Patch ✓):
+  - Umstellung von „shared LiveKit mit Mensaena" auf vollständig eigenständige
+    WB-Instanz auf demselben Hostinger-VPS — eigene Subdomain, eigene Container,
+    eigene Keys. Mensaena darf NICHT angefasst werden.
+  - **Neue URL**: `wss://livekit-wb.srv1438024.hstgr.cloud:7892` (ersetzt
+    `wss://livekit.srv1438024.hstgr.cloud` aus dem alten Shared-Setup)
+  - **Infra (`infra/livekit-wb/`)**: livekit.yaml (nur WB-Key, Port 7980 intern,
+    UDP 60001-65000 disjunkt von Mensaena, KEIN TURN), traefik.yml (Ports
+    7891/7892, ACME raus, mounted-cert), dynamic.yml (Routing), docker-compose.yml
+    (eigener Container `livekit-weltenbibliothek`, read-only Cert-Mount), README.md
+    (Mensaena-Safety-Liste)
+  - **Neuer Workflow `deploy_livekit_wb.yml`**: SSH-Deploy mit Pre/Post-Mensaena-
+    Health-Check, Port-Konflikt-Check, Cert-Pfad-Lookup, fail-rot wenn Mensaena
+    nicht mehr healthy ist
+  - **`deploy_worker.yml` aufgeräumt**: Der gefährliche Step der Mensaena's
+    livekit.yaml überschrieben hat ist KOMPLETT ENTFERNT. Mensaena bleibt jetzt
+    vollständig unangetastet.
+  - Trennung: `/docker/livekit-wb/` (WB) vs `/docker/livekit/` (Mensaena),
+    Container-Name `livekit-weltenbibliothek`, eigenes Network `livekit-wb-net`,
+    keine Port-Überschneidungen mit Mensaena (80/443 + 50000-60000 UDP + 7880/7881)
+
 ### ⚠️ Noch ausstehend / bekannte Probleme
 
 1. **SQL-Migrationen**: `apply_migrations.yml` läuft automatisch bei jedem main-Push.
