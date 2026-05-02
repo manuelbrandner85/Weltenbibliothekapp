@@ -156,12 +156,7 @@ class LiveKitCallService extends ChangeNotifier {
         throw Exception('Keine LiveKit-Server-URL verfügbar.');
       }
 
-      final room = Room(
-        roomOptions: const RoomOptions(
-          adaptiveStream: true,
-          dynacast: true,
-        ),
-      );
+      final room = Room();
       _room = room;
 
       await room.connect(livekitUrl, token);
@@ -278,16 +273,17 @@ class LiveKitCallService extends ChangeNotifier {
     try {
       if (target) {
         // Foreground-Service starten (Android-Pflicht für Screen-Capture).
-        const config = FlutterBackgroundAndroidConfig(
-          notificationTitle: 'Bildschirm wird geteilt',
-          notificationText: 'Weltenbibliothek teilt deinen Bildschirm im Anruf.',
-          notificationImportance: AndroidNotificationImportance.normal,
-          enableWifiLock: true,
-        );
         try {
           final hasPerms = await FlutterBackground.hasPermissions;
           if (!hasPerms) {
-            await FlutterBackground.initialize(androidConfig: config);
+            await FlutterBackground.initialize(
+              androidConfig: const FlutterBackgroundAndroidConfig(
+                notificationTitle: 'Bildschirm wird geteilt',
+                notificationText:
+                    'Weltenbibliothek teilt deinen Bildschirm im Anruf.',
+                enableWifiLock: true,
+              ),
+            );
           }
           await FlutterBackground.enableBackgroundExecution();
         } catch (e) {
@@ -307,24 +303,14 @@ class LiveKitCallService extends ChangeNotifier {
     }
   }
 
-  /// Hand heben / senken. Setzt Participant-Attribute, andere Teilnehmer
-  /// können das in ihrer UI zeigen.
+  /// Hand heben / senken. Toggelt aktuell nur den lokalen UI-State —
+  /// Cross-Participant-Sync (DataChannel-Broadcast) kommt in Folge-PR
+  /// wenn die exakte LiveKit-API-Form für die installierte Version
+  /// verifiziert ist.
   Future<void> toggleHandRaised() async {
-    final lp = _room?.localParticipant;
-    if (lp == null) return;
-    final target = !_handRaised;
-    try {
-      await lp.setAttributes({
-        'handRaised': target ? 'true' : 'false',
-        'handRaisedAt':
-            target ? DateTime.now().millisecondsSinceEpoch.toString() : '',
-      });
-      _handRaised = target;
-      notifyListeners();
-    } catch (e) {
-      _errorMessage = _friendlyError(e);
-      notifyListeners();
-    }
+    if (!isConnected) return;
+    _handRaised = !_handRaised;
+    notifyListeners();
   }
 
   // ── Pin / Auto-Speaker-Focus (UI-state, kein LiveKit-API-Call) ────────────
