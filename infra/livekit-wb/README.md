@@ -128,3 +128,4 @@ GitHub-Secrets umziehen + Keys rotieren. Siehe Audit-Findings.
 <!-- selfhost-trigger: 20260502-204804 -->
 <!-- selfhost-trigger: 20260502-215606 -->
 <!-- selfhost-trigger: 20260502-220206 -->
+<!-- selfhost-trigger: 20260502-233019 -->
