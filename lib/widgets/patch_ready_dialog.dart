@@ -121,13 +121,21 @@ class _PatchReadyDialogState extends State<PatchReadyDialog> {
             FutureBuilder<String?>(
               future: _changelogFuture,
               builder: (context, snap) {
-                if (!snap.hasData || snap.data == null) {
+                if (snap.connectionState == ConnectionState.waiting) {
+                  return const Padding(
+                    padding: EdgeInsets.only(top: 16),
+                    child: _ChangelogSkeleton(),
+                  );
+                }
+                if (!snap.hasData || snap.data == null || snap.data!.trim().isEmpty) {
                   return const SizedBox.shrink();
                 }
+                final items = _parseChangelog(snap.data!);
+                if (items.isEmpty) return const SizedBox.shrink();
                 return Padding(
                   padding: const EdgeInsets.only(top: 16),
                   child: Container(
-                    padding: const EdgeInsets.all(14),
+                    padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
                     decoration: BoxDecoration(
                       color: const Color(0xFF00E5FF).withValues(alpha: 0.07),
                       borderRadius: BorderRadius.circular(12),
@@ -140,11 +148,8 @@ class _PatchReadyDialogState extends State<PatchReadyDialog> {
                       children: [
                         Row(
                           children: [
-                            const Icon(
-                              Icons.list_alt_rounded,
-                              color: Color(0xFF00E5FF),
-                              size: 14,
-                            ),
+                            const Icon(Icons.auto_awesome_rounded,
+                                color: Color(0xFF00E5FF), size: 14),
                             const SizedBox(width: 6),
                             Text(
                               'Was ist neu',
@@ -156,13 +161,16 @@ class _PatchReadyDialogState extends State<PatchReadyDialog> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          snap.data!,
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.75),
-                            fontSize: 12,
-                            height: 1.6,
+                        const SizedBox(height: 10),
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxHeight: 160),
+                          child: SingleChildScrollView(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: items
+                                  .map((e) => _ChangelogItem(entry: e))
+                                  .toList(),
+                            ),
                           ),
                         ),
                       ],
@@ -246,17 +254,151 @@ class _PatchReadyDialogState extends State<PatchReadyDialog> {
 
   Future<void> _closeApp(BuildContext context) async {
     if (Platform.isAndroid) {
-      // V6: Native auto-restart via AlarmManager (schedules relaunch + kills process).
-      // Falls back to manual close on old APKs that don't have the Kotlin handler.
       final handled = await RestartService.restartApp();
       if (!handled) {
         SystemNavigator.pop();
         await Future.delayed(const Duration(milliseconds: 300));
         exit(0);
       }
-      // If handled: Kotlin already scheduled restart + will call System.exit(0) in 50ms.
     } else {
       if (context.mounted) Navigator.of(context).pop();
     }
+  }
+}
+
+// ── Changelog-Parsing ──────────────────────────────────────────────────────
+
+class _ChangelogEntry {
+  final IconData icon;
+  final Color color;
+  final String text;
+  const _ChangelogEntry({required this.icon, required this.color, required this.text});
+}
+
+List<_ChangelogEntry> _parseChangelog(String raw) {
+  final lines = raw
+      .split('\n')
+      .map((l) => l.trim())
+      .where((l) => l.isNotEmpty)
+      .toList();
+
+  return lines.map((line) {
+    // Erkennt "type(scope): beschreibung" oder "type: beschreibung"
+    final typeMatch = RegExp(r'^(\w+)(?:\([^)]*\))?:\s*(.+)$').firstMatch(line);
+    if (typeMatch != null) {
+      final type = typeMatch.group(1)!.toLowerCase();
+      final description = typeMatch.group(2)!;
+      final (icon, color) = _iconForType(type);
+      return _ChangelogEntry(
+        icon: icon,
+        color: color,
+        text: _capitalize(description),
+      );
+    }
+    // Kein Präfix → allgemeine Änderung
+    return _ChangelogEntry(
+      icon: Icons.circle_rounded,
+      color: const Color(0xFF00E5FF),
+      text: _capitalize(line),
+    );
+  }).toList();
+}
+
+(IconData, Color) _iconForType(String type) {
+  switch (type) {
+    case 'feat':
+    case 'feature':
+      return (Icons.auto_awesome_rounded, Color(0xFF69F0AE)); // Grün
+    case 'fix':
+    case 'bugfix':
+      return (Icons.build_circle_rounded, Color(0xFF40C4FF)); // Blau
+    case 'style':
+    case 'ui':
+      return (Icons.palette_rounded, Color(0xFFE040FB)); // Lila
+    case 'perf':
+      return (Icons.speed_rounded, Color(0xFFFFD740)); // Gelb
+    case 'security':
+      return (Icons.shield_rounded, Color(0xFFFF6E40)); // Orange
+    case 'refactor':
+      return (Icons.recycling_rounded, Color(0xFF80DEEA)); // Cyan
+    case 'docs':
+      return (Icons.description_rounded, Color(0xFFB0BEC5)); // Grau
+    default:
+      return (Icons.check_circle_rounded, Color(0xFF00E5FF)); // Standard
+  }
+}
+
+String _capitalize(String s) =>
+    s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
+
+// ── Changelog-Item Widget ──────────────────────────────────────────────────
+
+class _ChangelogItem extends StatelessWidget {
+  final _ChangelogEntry entry;
+  const _ChangelogItem({required this.entry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(entry.icon, color: entry.color, size: 14),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              entry.text,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.88),
+                fontSize: 13,
+                height: 1.4,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Loading-Skeleton ───────────────────────────────────────────────────────
+
+class _ChangelogSkeleton extends StatelessWidget {
+  const _ChangelogSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF00E5FF).withValues(alpha: 0.07),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFF00E5FF).withValues(alpha: 0.25)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: List.generate(3, (i) => Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Row(
+            children: [
+              Container(width: 14, height: 14,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(7))),
+              const SizedBox(width: 8),
+              Container(
+                height: 12,
+                width: 140.0 - i * 20,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+              ),
+            ],
+          ),
+        )),
+      ),
+    );
   }
 }
