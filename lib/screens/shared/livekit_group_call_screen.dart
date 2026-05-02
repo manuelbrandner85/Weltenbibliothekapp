@@ -355,7 +355,7 @@ class _ControlBar extends StatelessWidget {
   void _comingSoon(BuildContext context, String label) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('$label kommt im nächsten Update.'),
+        content: Text('$label folgt in Kürze.'),
         duration: const Duration(seconds: 2),
         behavior: SnackBarBehavior.floating,
       ),
@@ -597,8 +597,7 @@ class _ConnectedPlaceholder extends StatelessWidget {
             ),
             const SizedBox(height: WbDesign.space32),
             Text(
-              'Weitere Teilnehmer werden hier erscheinen.\n'
-              'Mikro, Kamera und Bildschirm-Teilen kommen im nächsten Update.',
+              'Weitere Teilnehmer erscheinen hier sobald sie beitreten.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: WbDesign.textTertiary,
