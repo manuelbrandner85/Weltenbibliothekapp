@@ -124,3 +124,4 @@ GitHub-Secrets (überschreiben Defaults):
 ⚠️ Die LiveKit-Keys liegen aktuell auch im Klartext in den Workflow-Dateien als
 Fallback. Das ist **historisch gewachsen** und sollte langfristig in echte
 GitHub-Secrets umziehen + Keys rotieren. Siehe Audit-Findings.
+<!-- re-deploy-trigger: 2026-05-02-2 (nach Hostinger-Whitelist) -->
