@@ -2,6 +2,7 @@
 
 Eigene LiveKit-Instanz auf dem Hostinger-VPS, **strikt getrennt** von Mensaena's
 LiveKit. Diese README dokumentiert die Trennung und alle Mensaena-Schutzmaßnahmen.
+<!-- re-deploy-trigger: 2026-05-02-1 -->
 
 ## Architektur
 
