@@ -126,20 +126,42 @@ jobs:
       - name: 🔍 Cert-Pfad auf VPS ermitteln (read-only Lookup)
         env:
           VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
+          WB_CERT_PATH_OVERRIDE: ${{ secrets.WB_CERT_PATH }}
         run: |
           set -euo pipefail
-          # Suche das Hostinger-Wildcard-Cert in den üblichen Lokationen.
-          # READ-ONLY — wir mounten den Pfad nur, ändern dort nichts.
+
+          # Falls Secret WB_CERT_PATH gesetzt → diesen Pfad direkt verifizieren.
+          if [ -n "${WB_CERT_PATH_OVERRIDE:-}" ]; then
+            echo "→ Override aus Secret WB_CERT_PATH: ${WB_CERT_PATH_OVERRIDE}"
+            VERIFIED=$(sshpass -p "$VPS_PASSWORD" ssh \
+              -o StrictHostKeyChecking=no \
+              -o ConnectTimeout=30 \
+              -o PasswordAuthentication=yes \
+              ${VPS_USER}@${VPS_HOST} \
+              "if [ -f '${WB_CERT_PATH_OVERRIDE}/fullchain.pem' ] && [ -f '${WB_CERT_PATH_OVERRIDE}/privkey.pem' ]; then echo OK; else echo FAIL; fi")
+            if [ "$VERIFIED" = "OK" ]; then
+              echo "✅ Override-Pfad existiert und enthält fullchain.pem + privkey.pem"
+              echo "WB_CERT_PATH=${WB_CERT_PATH_OVERRIDE}" >> $GITHUB_ENV
+              exit 0
+            fi
+            echo "⚠️  Override-Pfad ungültig — fahre mit Auto-Suche fort"
+          fi
+
+          # Auto-Suche: erweitert um Caddy-, Docker-, und Hostinger-typische Pfade.
+          # READ-ONLY — wir lesen nur, ändern nichts.
           CERT_PATH=$(sshpass -p "$VPS_PASSWORD" ssh \
             -o StrictHostKeyChecking=no \
             -o ConnectTimeout=30 \
             -o PasswordAuthentication=yes \
             ${VPS_USER}@${VPS_HOST} \
             "set +e
+
+             # 1. Standard Let's-Encrypt-Pfade
              for d in \
                /etc/letsencrypt/live/srv1438024.hstgr.cloud \
                /etc/letsencrypt/live/${WB_DOMAIN} \
                /etc/letsencrypt/live/livekit.srv1438024.hstgr.cloud \
+               /etc/letsencrypt/live/livekit-wb.srv1438024.hstgr.cloud \
                /etc/ssl/hostinger \
                /etc/ssl/certs/hostinger; do
                if [ -f \"\$d/fullchain.pem\" ] && [ -f \"\$d/privkey.pem\" ]; then
@@ -147,25 +169,122 @@ jobs:
                  exit 0
                fi
              done
-             # Fallback: irgendwo unter /etc/letsencrypt/live mit *.srv1438024.hstgr.cloud
-             find /etc/letsencrypt/live -maxdepth 2 -name 'fullchain.pem' 2>/dev/null | while read f; do
-               if openssl x509 -in \"\$f\" -noout -text 2>/dev/null | grep -q 'srv1438024.hstgr.cloud'; then
-                 dirname \"\$f\"
-                 exit 0
+
+             # 2. Caddy-Storage (sehr wahrscheinlich, weil Mensaena via Caddy ACME)
+             # Caddy speichert Certs als <hostname>.crt / <hostname>.key
+             for base in \
+               /var/lib/caddy/.local/share/caddy/certificates/acme-v02.api.letsencrypt.org-directory \
+               /var/lib/caddy/.local/share/caddy/certificates \
+               /root/.local/share/caddy/certificates/acme-v02.api.letsencrypt.org-directory \
+               /docker/caddy/data/caddy/certificates \
+               /docker/mensaena/caddy/data/caddy/certificates; do
+               if [ -d \"\$base\" ]; then
+                 # Suche nach Cert-Dateien für unsere Domain
+                 for hostname in srv1438024.hstgr.cloud livekit.srv1438024.hstgr.cloud livekit-wb.srv1438024.hstgr.cloud; do
+                   for sub in \"\$base/\$hostname\" \"\$base\"/*\"/\$hostname\"; do
+                     if [ -f \"\$sub/\$hostname.crt\" ] && [ -f \"\$sub/\$hostname.key\" ]; then
+                       echo \"CADDY:\$sub:\$hostname\"
+                       exit 0
+                     fi
+                   done
+                 done
                fi
              done
-             echo 'NOTFOUND'")
+
+             # 3. Docker Volumes von Mensaena (häufig namens caddy_data, caddy-data)
+             for vol in \$(docker volume ls --format '{{.Name}}' 2>/dev/null | grep -iE 'caddy|cert|ssl|tls'); do
+               mp=\$(docker volume inspect \"\$vol\" --format '{{.Mountpoint}}' 2>/dev/null)
+               if [ -d \"\$mp\" ]; then
+                 # Suche darin nach unserer Domain
+                 found=\$(find \"\$mp\" -name 'srv1438024.hstgr.cloud.crt' 2>/dev/null | head -1)
+                 if [ -n \"\$found\" ]; then
+                   echo \"DOCKER_VOL:\$(dirname \$found):srv1438024.hstgr.cloud\"
+                   exit 0
+                 fi
+               fi
+             done
+
+             # 4. Allgemeine find-Suche mit Timeout — letzte Option
+             timeout 60 find /etc /var /docker /opt /srv -maxdepth 7 \\
+               \\( -name 'fullchain.pem' -o -name 'srv1438024.hstgr.cloud.crt' \\) 2>/dev/null \\
+               | while read f; do
+                 case \"\$f\" in
+                   *fullchain.pem*)
+                     d=\$(dirname \"\$f\")
+                     [ -f \"\$d/privkey.pem\" ] || continue
+                     if openssl x509 -in \"\$f\" -noout -text 2>/dev/null | grep -q 'srv1438024.hstgr.cloud'; then
+                       echo \"\$d\"
+                       exit 0
+                     fi
+                     ;;
+                   *srv1438024.hstgr.cloud.crt*)
+                     d=\$(dirname \"\$f\")
+                     keyfile=\$(basename \"\$f\" .crt).key
+                     [ -f \"\$d/\$keyfile\" ] || continue
+                     echo \"CADDY:\$d:srv1438024.hstgr.cloud\"
+                     exit 0
+                     ;;
+                 esac
+               done
+
+             # 5. Welche Reverse-Proxies + Cert-Pfade nutzt der VPS überhaupt? (Diagnose)
+             echo 'DIAGNOSTIC_BEGIN' >&2
+             echo '--- Docker Container ---' >&2
+             docker ps --format 'table {{.Names}}\t{{.Image}}\t{{.Ports}}' 2>/dev/null | head -20 >&2
+             echo '--- Docker Volumes (cert-related) ---' >&2
+             docker volume ls 2>/dev/null | grep -iE 'caddy|cert|ssl|tls|nginx' >&2 || echo '(keine)' >&2
+             echo '--- /etc/letsencrypt/live ---' >&2
+             ls -la /etc/letsencrypt/live 2>/dev/null >&2 || echo '(nicht vorhanden)' >&2
+             echo '--- /docker/* ---' >&2
+             ls /docker 2>/dev/null >&2 || echo '(nicht vorhanden)' >&2
+             echo 'DIAGNOSTIC_END' >&2
+
+             echo 'NOTFOUND'") || true
           echo "Gefundener Cert-Pfad: $CERT_PATH"
+
           if [ "$CERT_PATH" = "NOTFOUND" ] || [ -z "$CERT_PATH" ]; then
+            echo ""
             echo "❌ Kein Hostinger-Wildcard-Cert auf dem VPS gefunden."
+            echo ""
+            echo "   Diagnose-Ausgabe oben prüfen — listet alle Docker-Container,"
+            echo "   Volumes und /etc/letsencrypt/-Inhalte auf."
             echo ""
             echo "   Mögliche Lösungen:"
             echo "   1. Cert-Pfad manuell als WB_CERT_PATH GitHub-Secret setzen"
-            echo "   2. Hostinger-Cert nach /etc/letsencrypt/live/srv1438024.hstgr.cloud/ kopieren"
-            echo "   3. Eigenen Cert via certbot mit DNS-Challenge generieren"
+            echo "      (z.B. /var/lib/caddy/.local/share/caddy/certificates/...)"
+            echo "   2. Hostinger-Cert nach /etc/letsencrypt/live/srv1438024.hstgr.cloud/"
+            echo "      kopieren (mit fullchain.pem + privkey.pem)"
+            echo "   3. Eigenen Cert via certbot --dns-cloudflare oder --manual generieren"
             exit 1
           fi
-          echo "WB_CERT_PATH=$CERT_PATH" >> $GITHUB_ENV
+
+          # Sonderfall: Caddy-/Docker-Vol-Pfade haben anderes Naming
+          # Format: CADDY:<dir>:<hostname> oder DOCKER_VOL:<dir>:<hostname>
+          case "$CERT_PATH" in
+            CADDY:*|DOCKER_VOL:*)
+              CERT_DIR=$(echo "$CERT_PATH" | cut -d: -f2)
+              HOSTNAME=$(echo "$CERT_PATH" | cut -d: -f3)
+              echo "✅ Caddy/Docker-Cert gefunden: $CERT_DIR (hostname: $HOSTNAME)"
+              # Auf VPS Symlinks fullchain.pem/privkey.pem zu Caddy-Naming erstellen
+              # (read-only Mount erwartet diese Namen — wir machen einen schreibenden
+              # Bootstrap-Schritt nur in einem WB-eigenen Verzeichnis)
+              sshpass -p "$VPS_PASSWORD" ssh \
+                -o StrictHostKeyChecking=no \
+                -o ConnectTimeout=30 \
+                -o PasswordAuthentication=yes \
+                ${VPS_USER}@${VPS_HOST} \
+                "set -euo pipefail
+                 mkdir -p /docker/livekit-wb/cert-link
+                 ln -sf '${CERT_DIR}/${HOSTNAME}.crt' /docker/livekit-wb/cert-link/fullchain.pem
+                 ln -sf '${CERT_DIR}/${HOSTNAME}.key' /docker/livekit-wb/cert-link/privkey.pem
+                 echo '✅ Symlinks angelegt in /docker/livekit-wb/cert-link/'"
+              echo "WB_CERT_PATH=/docker/livekit-wb/cert-link" >> $GITHUB_ENV
+              ;;
+            *)
+              echo "✅ Standard-Cert-Pfad: $CERT_PATH"
+              echo "WB_CERT_PATH=$CERT_PATH" >> $GITHUB_ENV
+              ;;
+          esac
 
       # ─────────────────────────────────────────────────────────────────────
       # STEP 4: INFRA-FILES NACH /docker/livekit-wb/ KOPIEREN
