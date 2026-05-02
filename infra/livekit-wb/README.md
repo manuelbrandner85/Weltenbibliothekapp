@@ -126,3 +126,4 @@ Fallback. Das ist **historisch gewachsen** und sollte langfristig in echte
 GitHub-Secrets umziehen + Keys rotieren. Siehe Audit-Findings.
 <!-- re-deploy-trigger: 2026-05-02-2 (nach Hostinger-Whitelist) -->
 <!-- selfhost-trigger: 20260502-204804 -->
+<!-- selfhost-trigger: 20260502-215606 -->
