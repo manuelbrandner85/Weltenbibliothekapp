@@ -118,13 +118,14 @@ class LiveKitCallService extends ChangeNotifier {
         throw Exception('Nicht angemeldet — bitte erneut einloggen.');
       }
 
-      // Token vom Worker holen
+      // Token von Supabase Edge Function holen (direkt, kein Cloudflare)
       final tokenRes = await http
           .post(
             Uri.parse(ApiConfig.livekitTokenUrl),
             headers: {
               'Content-Type': 'application/json',
               'Authorization': 'Bearer $accessToken',
+              'apikey': ApiConfig.supabaseAnonKey,
             },
             body: jsonEncode({
               'roomName': roomName,

@@ -126,15 +126,17 @@ class ApiConfig {
   // ──────────────────────────────────────────────────────────────
   // 🎥 LIVEKIT (Video-Gruppencall, Self-Hosted auf Hostinger)
   // ──────────────────────────────────────────────────────────────
+  // Token wird via Supabase Edge Function generiert (kein Cloudflare nötig).
   // URL kommt zur Build-Zeit über `--dart-define=LIVEKIT_URL=wss://...`.
-  // Token wird via Cloudflare Worker generiert (HMAC-SHA256), Secrets bleiben
-  // serverseitig. Wenn nicht konfiguriert → isLivekitEnabled = false und
-  // Voice-Buttons zeigen einen "nicht verfügbar"-Hinweis statt zu crashen.
+  // Wenn nicht konfiguriert → isLivekitEnabled = false.
   static const String livekitUrl = String.fromEnvironment(
     'LIVEKIT_URL',
-    defaultValue: '',
+    defaultValue: 'wss://livekit.srv1438024.hstgr.cloud',
   );
-  static String get livekitTokenUrl => '$workerUrl/api/livekit/token';
+
+  /// Token-Endpoint: Supabase Edge Function (direkt, kein Cloudflare-Umweg).
+  static String get livekitTokenUrl =>
+      '$supabaseUrl/functions/v1/livekit-token';
   static bool get isLivekitEnabled => livekitUrl.isNotEmpty;
   static String get cloudSyncApiUrl => '$workerUrl/api/sync';
   static String get websocketUrl =>

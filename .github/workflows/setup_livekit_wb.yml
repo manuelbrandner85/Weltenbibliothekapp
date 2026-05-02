@@ -1,7 +1,12 @@
-name: 🔧 LiveKit — Weltenbibliothek einrichten
+name: 🔧 LiveKit — Worker-Secrets sicherstellen
 
-# Richtet WB-API-Key in bestehendem LiveKit ein + Cloudflare-Worker-Secrets.
-# Idempotent: läuft auf jedem main-Push, ist aber harmlos wenn schon konfiguriert.
+# Setzt LIVEKIT_API_KEY/SECRET/URL als Cloudflare-Worker-Secrets auf
+# jedem main-Push — idempotent, stellt sicher dass der Token-Endpoint
+# immer die richtigen Keys kennt, auch nach Worker-Redeploys.
+#
+# HINWEIS: VPS-Konfiguration (livekit.yaml) wird NICHT mehr per SSH
+# geschrieben — die Konfiguration ist im docker-compose.yml der
+# LiveKit-Container eingebettet (via Hostinger API gepflegt).
 
 on:
   workflow_dispatch:
@@ -10,19 +15,17 @@ on:
 
 concurrency:
   group: livekit-setup
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 permissions:
   contents: read
 
 jobs:
   setup:
-    name: 🔑 WB LiveKit-Key + Worker-Setup
+    name: 🔑 Worker LiveKit-Secrets setzen
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 10
     env:
-      VPS_HOST: 72.62.154.95
-      VPS_USER: root
       LIVEKIT_URL: wss://livekit.srv1438024.hstgr.cloud
       WB_KEY: wb-a9b26485d407e7dc2043
       WB_SECRET: f9c57648d1756868aa7c124b545c029bcb2569b5bf82c1fa5058eefc4efc21d1
@@ -31,43 +34,15 @@ jobs:
       - name: 📥 Checkout
         uses: actions/checkout@v4
 
+      - name: 🟩 Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
       - name: 🔑 Secret maskieren
         run: echo "::add-mask::f9c57648d1756868aa7c124b545c029bcb2569b5bf82c1fa5058eefc4efc21d1"
 
-      - name: 🖥 livekit.yaml auf VPS aktualisieren
-        # VPS_PASSWORD fehlt → Schritt wird übersprungen, Worker-Setup läuft weiter
-        continue-on-error: true
-        env:
-          VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
-        run: |
-          set -euo pipefail
-          if [ -z "${VPS_PASSWORD:-}" ]; then
-            echo "⚠️  VPS_PASSWORD Secret fehlt — VPS livekit.yaml Update übersprungen"
-            exit 0
-          fi
-
-          sudo apt-get install -y -qq sshpass
-
-          YAML_B64=$(printf 'port: 7880\nredis:\n  address: 127.0.0.1:6379\nkeys:\n  mensaena-6dd99c8f63b0: d92c860810313cd704b8959854d4225611fcb1291456603b86a0adcff2cb2a6e\n  %s: %s\nrtc:\n  tcp_port: 7881\n  port_range_start: 50000\n  port_range_end: 60000\n  use_external_ip: true\nroom:\n  auto_create: true\n  empty_timeout: 300\nlogging:\n  level: info\n' "${WB_KEY}" "${WB_SECRET}" | base64 | tr -d '\n')
-
-          sshpass -p "$VPS_PASSWORD" ssh \
-            -o StrictHostKeyChecking=no \
-            -o ConnectTimeout=30 \
-            -o PasswordAuthentication=yes \
-            ${VPS_USER}@${VPS_HOST} \
-            "set -euo pipefail
-             mkdir -p /docker/livekit
-             printf '%s' '${YAML_B64}' | base64 -d > /docker/livekit/livekit.yaml
-             echo '✅ livekit.yaml geschrieben'
-             if docker ps --format '{{.Names}}' | grep -q livekit; then
-               cd /docker/livekit && docker compose restart livekit
-               sleep 5 && docker compose ps
-             else
-               echo 'ℹ️  LiveKit-Container nicht aktiv'
-             fi"
-          echo "✅ VPS livekit.yaml aktualisiert"
-
-      - name: ☁️ Cloudflare Worker-Secrets setzen + deployen
+      - name: ☁️ Worker-Secrets setzen
         working-directory: workers
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -77,17 +52,16 @@ jobs:
             echo "❌ CLOUDFLARE_API_TOKEN fehlt — Worker-Setup übersprungen"
             exit 1
           fi
-          npm install -g wrangler@latest --silent 2>&1 | tail -2
-          echo "${WB_KEY}"      | wrangler secret put LIVEKIT_API_KEY
-          echo "${WB_SECRET}"   | wrangler secret put LIVEKIT_API_SECRET
-          echo "${LIVEKIT_URL}" | wrangler secret put LIVEKIT_URL
-          wrangler deploy
-          echo "✅ Worker deployed"
+          echo "→ LIVEKIT_API_KEY setzen (${WB_KEY})…"
+          printf '%s' "${WB_KEY}"      | npx -y wrangler@3 secret put LIVEKIT_API_KEY
+          echo "→ LIVEKIT_API_SECRET setzen…"
+          printf '%s' "${WB_SECRET}"   | npx -y wrangler@3 secret put LIVEKIT_API_SECRET
+          echo "→ LIVEKIT_URL setzen (${LIVEKIT_URL})…"
+          printf '%s' "${LIVEKIT_URL}" | npx -y wrangler@3 secret put LIVEKIT_URL
+          echo "✅ Alle LiveKit-Secrets gesetzt"
 
       - name: 📝 Zusammenfassung
         run: |
-          echo "## ✅ LiveKit WB-Setup abgeschlossen" >> $GITHUB_STEP_SUMMARY
+          echo "## ✅ LiveKit Worker-Secrets gesetzt" >> $GITHUB_STEP_SUMMARY
           echo "- LiveKit URL: \`${LIVEKIT_URL}\`" >> $GITHUB_STEP_SUMMARY
           echo "- WB API Key: \`${WB_KEY}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- Mensaena-Key unverändert ✅" >> $GITHUB_STEP_SUMMARY
-          echo "- Worker deployed ✅" >> $GITHUB_STEP_SUMMARY
