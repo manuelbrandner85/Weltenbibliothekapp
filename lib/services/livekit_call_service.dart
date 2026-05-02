@@ -93,6 +93,7 @@ class LiveKitCallService extends ChangeNotifier {
         .toList();
   }
 
+
   // ── Connection-Lifecycle ───────────────────────────────────────────────────
 
   /// Tritt einem LiveKit-Raum bei. Wirft eine Exception mit deutscher
@@ -199,6 +200,7 @@ class LiveKitCallService extends ChangeNotifier {
         if (kDebugMode) debugPrint('⚠️ setPreferSpeakerOutput failed: $e');
       }
 
+
       _setState(LiveKitConnectionState.connected);
       _startDurationTimer();
     } catch (e) {
@@ -238,6 +240,14 @@ class LiveKitCallService extends ChangeNotifier {
   /// Verlässt den Raum und räumt alle Ressourcen auf.
   Future<void> leaveRoom() async {
     _stopDurationTimer();
+
+    // Bildschirm-Teilen: Foreground-Service stoppen falls aktiv
+    if (_screenShareEnabled) {
+      try {
+        await FlutterBackground.disableBackgroundExecution();
+      } catch (_) {}
+    }
+
     try {
       await _listener?.dispose();
     } catch (_) {}
