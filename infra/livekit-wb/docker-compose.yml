@@ -32,8 +32,9 @@ services:
       - "127.0.0.1:7980:7980/tcp"
       # RTC TCP-Fallback (für Clients hinter strengen Firewalls)
       - "7981:7981/tcp"
-      # WebRTC Media — UDP-Range 60001-65000 (disjunkt zu Mensaena 50000-60000)
-      - "60001-65000:60001-65000/udp"
+      # WebRTC Media — KLEINE UDP-Range 60001-60100 (50 simultane Rooms)
+      # Größere Range würde tausende docker-proxy-Prozesse erzeugen → RAM-Tod
+      - "60001-60100:60001-60100/udp"
       # KEIN TURN-Server (UDP 5350/3479) — Mensaena könnte dort belegen
     volumes:
       - ./livekit.yaml:/etc/livekit.yaml:ro

@@ -25,7 +25,7 @@ keys:
 rtc:
   tcp_port: 7981
   port_range_start: 60001
-  port_range_end: 65000
+  port_range_end: 60100
   use_external_ip: true
 
 # Räume werden automatisch angelegt wenn der erste User joint.
