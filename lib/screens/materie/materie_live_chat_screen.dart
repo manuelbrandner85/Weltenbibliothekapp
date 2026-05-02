@@ -1274,7 +1274,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
               if (!ApiConfig.isLivekitEnabled) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text('Video-Call ist serverseitig noch nicht aktiviert.'),
+                    content: Text('Sprach-Anruf ist serverseitig noch nicht aktiviert.'),
                     duration: Duration(seconds: 3),
                   ),
                 );
@@ -1292,7 +1292,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
                 ),
               );
             },
-            tooltip: 'Video / Voice Chat',
+            tooltip: 'Sprach- & Video-Chat',
           ),
           if (_username.isNotEmpty)
             IconButton(

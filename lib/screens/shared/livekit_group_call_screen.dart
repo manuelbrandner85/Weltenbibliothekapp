@@ -155,6 +155,7 @@ class _LiveKitGroupCallScreenState
               ),
               _ControlBar(
                 world: widget.world,
+                service: svc,
                 onLeave: () async {
                   if (await _confirmLeave()) await _leaveAndPop();
                 },
@@ -342,9 +343,14 @@ class _TopBar extends StatelessWidget {
 
 class _ControlBar extends StatelessWidget {
   final String world;
+  final LiveKitCallService service;
   final VoidCallback onLeave;
 
-  const _ControlBar({required this.world, required this.onLeave});
+  const _ControlBar({
+    required this.world,
+    required this.service,
+    required this.onLeave,
+  });
 
   void _comingSoon(BuildContext context, String label) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -358,6 +364,8 @@ class _ControlBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isConnected = service.isConnected;
+    final accent = WbDesign.accent(world);
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: WbDesign.space12,
@@ -375,33 +383,53 @@ class _ControlBar extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             _CtrlButton(
-              icon: Icons.mic_off_rounded,
-              label: 'Mikro',
-              onTap: () => _comingSoon(context, 'Mikrofon-Toggle'),
+              icon: service.micEnabled
+                  ? Icons.mic_rounded
+                  : Icons.mic_off_rounded,
+              label: 'Mikrofon',
+              activeColor: service.micEnabled ? accent : null,
+              onTap: isConnected
+                  ? () => service.toggleMicrophone()
+                  : null,
             ),
             _CtrlButton(
-              icon: Icons.videocam_off_rounded,
-              label: 'Video',
-              onTap: () => _comingSoon(context, 'Kamera-Toggle'),
+              icon: service.cameraEnabled
+                  ? Icons.videocam_rounded
+                  : Icons.videocam_off_rounded,
+              label: 'Kamera',
+              activeColor: service.cameraEnabled ? accent : null,
+              onTap: isConnected ? () => service.toggleCamera() : null,
             ),
             _CtrlButton(
-              icon: Icons.screen_share_rounded,
-              label: 'Teilen',
-              onTap: () => _comingSoon(context, 'Bildschirm-Teilen'),
+              icon: service.screenShareEnabled
+                  ? Icons.stop_screen_share_rounded
+                  : Icons.screen_share_rounded,
+              label: 'Bildschirm',
+              activeColor: service.screenShareEnabled ? accent : null,
+              onTap: isConnected
+                  ? () => service.toggleScreenShare()
+                  : null,
             ),
             _CtrlButton(
-              icon: Icons.front_hand_rounded,
-              label: 'Hand',
-              onTap: () => _comingSoon(context, 'Hand-Heben'),
+              icon: service.handRaised
+                  ? Icons.front_hand_rounded
+                  : Icons.front_hand_outlined,
+              label: 'Hand heben',
+              activeColor: service.handRaised ? accent : null,
+              onTap: isConnected
+                  ? () => service.toggleHandRaised()
+                  : null,
             ),
             _CtrlButton(
               icon: Icons.chat_bubble_outline_rounded,
-              label: 'Chat',
-              onTap: () => _comingSoon(context, 'In-Call-Chat'),
+              label: 'Nachrichten',
+              onTap: isConnected
+                  ? () => _comingSoon(context, 'Anruf-Chat')
+                  : null,
             ),
             _CtrlButton(
               icon: Icons.call_end_rounded,
-              label: 'Beenden',
+              label: 'Auflegen',
               danger: true,
               onTap: onLeave,
             ),
@@ -415,20 +443,29 @@ class _ControlBar extends StatelessWidget {
 class _CtrlButton extends StatelessWidget {
   final IconData icon;
   final String label;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   final bool danger;
+  final Color? activeColor;
 
   const _CtrlButton({
     required this.icon,
     required this.label,
     required this.onTap,
     this.danger = false,
+    this.activeColor,
   });
 
   @override
   Widget build(BuildContext context) {
-    final bg = danger ? const Color(0xFFFF1744) : Colors.white.withValues(alpha: 0.10);
-    final fg = Colors.white;
+    final disabled = onTap == null;
+    final Color bg = danger
+        ? const Color(0xFFFF1744)
+        : (activeColor != null
+            ? activeColor!.withValues(alpha: 0.30)
+            : Colors.white.withValues(alpha: 0.10));
+    final Color fg = disabled
+        ? Colors.white.withValues(alpha: 0.35)
+        : Colors.white;
     return Semantics(
       label: label,
       button: true,
@@ -443,14 +480,22 @@ class _CtrlButton extends StatelessWidget {
               decoration: BoxDecoration(
                 color: bg,
                 shape: BoxShape.circle,
-                border: Border.all(color: WbDesign.borderSubtle),
+                border: Border.all(
+                  color: activeColor ?? WbDesign.borderSubtle,
+                  width: activeColor != null ? 1.5 : 1,
+                ),
               ),
               child: Icon(icon, color: fg, size: 24),
             ),
             const SizedBox(height: 4),
             Text(
               label,
-              style: TextStyle(color: WbDesign.textTertiary, fontSize: 10),
+              style: TextStyle(
+                color: disabled
+                    ? WbDesign.textTertiary.withValues(alpha: 0.5)
+                    : WbDesign.textTertiary,
+                fontSize: 10,
+              ),
             ),
           ],
         ),
