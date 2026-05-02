@@ -38,8 +38,3 @@ room:
 logging:
   level: info
   json: false
-
-# Audio-Defaults — sinnvolle Werte für Sprach-Calls
-audio:
-  active_level: 35
-  min_score: 6.0
