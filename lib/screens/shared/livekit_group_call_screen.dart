@@ -1,22 +1,18 @@
-/// 🎥 LIVEKIT GROUP CALL SCREEN
+/// 🎥 LIVEKIT GROUP CALL SCREEN — Komplett-Rebuild
 ///
-/// Vollbild-Screen für LiveKit-Video-Gruppencalls — angelehnt an die
-/// Mensaena LiveRoomModal UI, aber im Weltenbibliothek-Home-Stil mit
-/// welt-spezifischen Akzenten (Energie = Lila, Materie = Blau).
+/// Professionelle Vollbild-UI für LiveKit Audio-/Video-Gruppencalls.
+/// Welt-spezifisches Design (Energie = Lila, Materie = Blau).
 ///
-/// **Aktueller Funktionsumfang (Phase 4 von 2 Live-Phasen):**
-///   - Vollbild-Layout mit Top-Bar, Participant-Grid, Control-Bar
-///   - Welt-aware Farben/Gradients (WbDesign-Tokens)
-///   - Connection-State-Indicator (animiert pulsierend bei reconnecting)
-///   - Call-Timer (live aus Service)
-///   - Verlassen-Button mit Bestätigung
-///   - Platzhalter für Mic/Cam/Screen/Hand/Reactions/Chat
-///     (wird in Phase 5 mit echten LiveKit-Calls verdrahtet)
-///
-/// Das Screen ist bewusst defensiv — wenn LiveKit nicht konfiguriert ist
-/// oder Verbindung scheitert, kommt der User mit klarer deutscher
-/// Fehlermeldung zurück statt in einem leeren Screen festzustecken.
+/// Architektur:
+///   - `_ParticipantGrid` — responsive Kacheln für alle Teilnehmer
+///   - `_ParticipantTile` — Einzelkachel mit Avatar, Mic-State, Sprech-Animation
+///   - `_TopBar` — Glassmorphic Overlay: Raum, Timer, Teilnehmerzahl
+///   - `_ControlBar` — 5 Aktionsbuttons + Auflegen
+///   - `_StatusView` — Connecting / Error / Disconnected State
 library;
+
+import 'dart:math' as math;
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -25,17 +21,14 @@ import '../../config/wb_design.dart';
 import '../../providers/livekit_call_provider.dart';
 import '../../services/livekit_call_service.dart';
 
+// ═══════════════════════════════════════════════════════════════════════════
+// PUBLIC SCREEN WIDGET
+// ═══════════════════════════════════════════════════════════════════════════
+
 class LiveKitGroupCallScreen extends ConsumerStatefulWidget {
-  /// Eindeutige Raum-ID (Konvention: `wb-<world>-<slug>`).
   final String roomName;
-
-  /// `'energie'` oder `'materie'` — bestimmt Farbschema.
   final String world;
-
-  /// Anzeigename des lokalen Teilnehmers.
   final String displayName;
-
-  /// Avatar-URL (optional — fällt sonst auf Initialen zurück).
   final String? avatarUrl;
 
   const LiveKitGroupCallScreen({
@@ -52,14 +45,29 @@ class LiveKitGroupCallScreen extends ConsumerStatefulWidget {
 }
 
 class _LiveKitGroupCallScreenState
-    extends ConsumerState<LiveKitGroupCallScreen> {
+    extends ConsumerState<LiveKitGroupCallScreen>
+    with TickerProviderStateMixin {
   bool _hasJoined = false;
   bool _isLeaving = false;
+  late final AnimationController _bgController;
+  late final Animation<double> _bgAnimation;
 
   @override
   void initState() {
     super.initState();
+    _bgController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 6),
+    )..repeat(reverse: true);
+    _bgAnimation = CurvedAnimation(parent: _bgController, curve: Curves.easeInOut);
+
     WidgetsBinding.instance.addPostFrameCallback((_) => _join());
+  }
+
+  @override
+  void dispose() {
+    _bgController.dispose();
+    super.dispose();
   }
 
   Future<void> _join() async {
@@ -72,8 +80,7 @@ class _LiveKitGroupCallScreenState
         displayName: widget.displayName,
       );
       if (mounted) setState(() => _hasJoined = true);
-    } catch (e) {
-      // Service hat den Fehler bereits in state.errorMessage geschrieben.
+    } catch (_) {
       if (mounted) setState(() {});
     }
   }
@@ -90,35 +97,47 @@ class _LiveKitGroupCallScreenState
     final accent = WbDesign.accent(widget.world);
     final result = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: WbDesign.surface(widget.world),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(WbDesign.radiusCard),
-        ),
-        title: const Text(
-          'Call verlassen?',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-        content: Text(
-          'Möchtest du den Anruf wirklich beenden?',
-          style: TextStyle(color: WbDesign.textSecondary),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text(
-              'Abbrechen',
-              style: TextStyle(color: WbDesign.textTertiary),
+      barrierColor: Colors.black.withValues(alpha: 0.75),
+      builder: (ctx) => BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: AlertDialog(
+          backgroundColor: WbDesign.surface(widget.world),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(WbDesign.radiusLarge),
+            side: BorderSide(color: WbDesign.borderMedium),
+          ),
+          title: const Text(
+            'Anruf beenden?',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 17,
             ),
           ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFFFF1744),
-            ),
-            child: const Text('Verlassen'),
+          content: Text(
+            'Möchtest du den laufenden Anruf wirklich verlassen?',
+            style: TextStyle(color: WbDesign.textSecondary, height: 1.5),
           ),
-        ],
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text('Abbrechen',
+                  style: TextStyle(color: WbDesign.textTertiary)),
+            ),
+            FilledButton.icon(
+              onPressed: () => Navigator.pop(ctx, true),
+              icon: const Icon(Icons.call_end_rounded, size: 16),
+              label: const Text('Verlassen'),
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFFFF1744),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(WbDesign.radiusMedium),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
     return result ?? false;
@@ -129,6 +148,7 @@ class _LiveKitGroupCallScreenState
     final svc = ref.watch(livekitCallProvider);
     final state = svc.connectionState;
     final accent = WbDesign.accent(widget.world);
+    final bg = WbDesign.background(widget.world);
 
     return PopScope(
       canPop: false,
@@ -137,47 +157,64 @@ class _LiveKitGroupCallScreenState
         if (await _confirmLeave()) await _leaveAndPop();
       },
       child: Scaffold(
-        backgroundColor: WbDesign.background(widget.world),
-        body: SafeArea(
-          child: Column(
+        backgroundColor: bg,
+        body: AnimatedBuilder(
+          animation: _bgAnimation,
+          builder: (_, child) => Stack(
+            fit: StackFit.expand,
             children: [
-              _TopBar(
-                roomName: widget.roomName,
+              // Animierter Hintergrund-Glow
+              _AnimatedBackground(
                 world: widget.world,
-                state: state,
-                callDurationSeconds: svc.callDurationSeconds,
-                onClose: () async {
-                  if (await _confirmLeave()) await _leaveAndPop();
-                },
+                animation: _bgAnimation,
+                accent: accent,
               ),
-              Expanded(
-                child: _buildBody(state, svc, accent),
-              ),
-              _ControlBar(
-                world: widget.world,
-                service: svc,
-                onLeave: () async {
-                  if (await _confirmLeave()) await _leaveAndPop();
-                },
-              ),
+              child!,
             ],
+          ),
+          child: SafeArea(
+            child: Column(
+              children: [
+                _TopBar(
+                  roomName: widget.roomName,
+                  world: widget.world,
+                  state: state,
+                  callDurationSeconds: svc.callDurationSeconds,
+                  participantCount: svc.totalParticipantCount,
+                  onClose: () async {
+                    if (await _confirmLeave()) await _leaveAndPop();
+                  },
+                ),
+                Expanded(child: _buildBody(state, svc, accent)),
+                _ControlBar(
+                  world: widget.world,
+                  service: svc,
+                  onLeave: () async {
+                    if (await _confirmLeave()) await _leaveAndPop();
+                  },
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildBody(LiveKitConnectionState state, LiveKitCallService svc,
-      Color accent) {
+  Widget _buildBody(
+    LiveKitConnectionState state,
+    LiveKitCallService svc,
+    Color accent,
+  ) {
     switch (state) {
       case LiveKitConnectionState.connecting:
       case LiveKitConnectionState.reconnecting:
         return _StatusView(
-          icon: Icons.cloud_sync_rounded,
+          icon: Icons.cell_tower_rounded,
           title: state == LiveKitConnectionState.reconnecting
               ? 'Verbindung wird wiederhergestellt …'
-              : 'Verbinde mit dem Call …',
-          subtitle: 'Raum: ${widget.roomName}',
+              : 'Verbinde mit dem Anruf …',
+          subtitle: 'Raum: ${_roomDisplayName(widget.roomName)}',
           accent: accent,
           showSpinner: true,
         );
@@ -194,20 +231,99 @@ class _LiveKitGroupCallScreenState
           },
         );
       case LiveKitConnectionState.disconnected:
+        if (!_hasJoined) {
+          return _StatusView(
+            icon: Icons.cell_tower_rounded,
+            title: 'Verbinde …',
+            subtitle: 'Raum: ${_roomDisplayName(widget.roomName)}',
+            accent: accent,
+            showSpinner: true,
+          );
+        }
         return _StatusView(
           icon: Icons.call_end_rounded,
-          title: 'Nicht verbunden',
-          subtitle: 'Tippe unten auf das Plus um beizutreten.',
+          title: 'Verbindung getrennt',
+          subtitle: 'Der Anruf wurde beendet oder die Verbindung\nwurde unterbrochen.',
           accent: WbDesign.textTertiary,
+          showRetry: true,
+          onRetry: () {
+            setState(() => _hasJoined = false);
+            _join();
+          },
         );
       case LiveKitConnectionState.connected:
-        return _ConnectedPlaceholder(
+        return _ParticipantGrid(
           world: widget.world,
-          displayName: widget.displayName,
-          avatarUrl: widget.avatarUrl,
+          localName: widget.displayName,
+          localAvatarUrl: widget.avatarUrl,
+          remoteNames: svc.remoteParticipantNames,
+          micEnabled: svc.micEnabled,
+          cameraEnabled: svc.cameraEnabled,
+          accent: accent,
         );
     }
   }
+
+  String _roomDisplayName(String r) {
+    final parts = r.split('-');
+    if (parts.length >= 3) {
+      final last = parts.skip(2).join(' ');
+      return last.isNotEmpty ? '${last[0].toUpperCase()}${last.substring(1)}' : r;
+    }
+    return r;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ANIMATED BACKGROUND
+// ═══════════════════════════════════════════════════════════════════════════
+
+class _AnimatedBackground extends StatelessWidget {
+  final String world;
+  final Animation<double> animation;
+  final Color accent;
+
+  const _AnimatedBackground({
+    required this.world,
+    required this.animation,
+    required this.accent,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      painter: _BgPainter(animation.value, accent),
+    );
+  }
+}
+
+class _BgPainter extends CustomPainter {
+  final double t;
+  final Color accent;
+
+  _BgPainter(this.t, this.accent);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..style = PaintingStyle.fill;
+    // Subtile Glow-Orbe
+    for (var i = 0; i < 3; i++) {
+      final angle = (i * math.pi * 2 / 3) + t * math.pi * 0.5;
+      final x = size.width * 0.5 + math.cos(angle) * size.width * 0.3;
+      final y = size.height * 0.4 + math.sin(angle) * size.height * 0.2;
+      final radius = size.width * (0.25 + t * 0.05);
+      paint.shader = RadialGradient(
+        colors: [
+          accent.withValues(alpha: 0.06 + t * 0.02),
+          accent.withValues(alpha: 0),
+        ],
+      ).createShader(Rect.fromCircle(center: Offset(x, y), radius: radius));
+      canvas.drawCircle(Offset(x, y), radius, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _BgPainter old) => old.t != t;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -219,6 +335,7 @@ class _TopBar extends StatelessWidget {
   final String world;
   final LiveKitConnectionState state;
   final int callDurationSeconds;
+  final int participantCount;
   final VoidCallback onClose;
 
   const _TopBar({
@@ -226,19 +343,21 @@ class _TopBar extends StatelessWidget {
     required this.world,
     required this.state,
     required this.callDurationSeconds,
+    required this.participantCount,
     required this.onClose,
   });
 
   String _formatDuration(int s) {
-    final m = (s ~/ 60).toString().padLeft(2, '0');
+    final h = s ~/ 3600;
+    final m = (s % 3600 ~/ 60).toString().padLeft(2, '0');
     final sec = (s % 60).toString().padLeft(2, '0');
-    return '$m:$sec';
+    return h > 0 ? '$h:$m:$sec' : '$m:$sec';
   }
 
-  Color _stateColor() {
+  Color _dotColor() {
     switch (state) {
       case LiveKitConnectionState.connected:
-        return const Color(0xFF66BB6A);
+        return const Color(0xFF4CAF50);
       case LiveKitConnectionState.reconnecting:
       case LiveKitConnectionState.connecting:
         return const Color(0xFFFFB300);
@@ -249,80 +368,10 @@ class _TopBar extends StatelessWidget {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(
-        WbDesign.space12,
-        WbDesign.space8,
-        WbDesign.space12,
-        WbDesign.space12,
-      ),
-      decoration: BoxDecoration(
-        color: WbDesign.surface(world),
-        border: Border(
-          bottom: BorderSide(color: WbDesign.borderSubtle),
-        ),
-      ),
-      child: Row(
-        children: [
-          // Status-Punkt (pulsiert wenn reconnecting/connecting)
-          _PulsingDot(color: _stateColor(), pulse: state != LiveKitConnectionState.connected),
-          const SizedBox(width: WbDesign.space8),
-          // Raum-Name + Timer
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _displayRoom(roomName),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  state == LiveKitConnectionState.connected
-                      ? _formatDuration(callDurationSeconds)
-                      : _stateLabel(state),
-                  style: TextStyle(
-                    color: WbDesign.textTertiary,
-                    fontSize: 11,
-                    fontFeatures: const [FontFeature.tabularFigures()],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Schließen
-          IconButton(
-            tooltip: 'Schließen',
-            onPressed: onClose,
-            icon: const Icon(Icons.close_rounded, color: Colors.white, size: 22),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _displayRoom(String r) {
-    // 'wb-energie-meditation' → 'Meditation'
-    final parts = r.split('-');
-    if (parts.length >= 3) {
-      final last = parts.skip(2).join(' ');
-      return last.isNotEmpty
-          ? '${last[0].toUpperCase()}${last.substring(1)}'
-          : r;
-    }
-    return r;
-  }
-
-  String _stateLabel(LiveKitConnectionState s) {
-    switch (s) {
+  String _stateLabel() {
+    switch (state) {
+      case LiveKitConnectionState.connected:
+        return _formatDuration(callDurationSeconds);
       case LiveKitConnectionState.connecting:
         return 'Verbinde …';
       case LiveKitConnectionState.reconnecting:
@@ -331,14 +380,390 @@ class _TopBar extends StatelessWidget {
         return 'Fehler';
       case LiveKitConnectionState.disconnected:
         return 'Nicht verbunden';
-      case LiveKitConnectionState.connected:
-        return 'Verbunden';
     }
+  }
+
+  String _roomDisplayName(String r) {
+    final parts = r.split('-');
+    if (parts.length >= 3) {
+      final last = parts.skip(2).join(' ');
+      return last.isNotEmpty ? '${last[0].toUpperCase()}${last.substring(1)}' : r;
+    }
+    return r;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = WbDesign.accent(world);
+    return ClipRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(16, 10, 8, 10),
+          decoration: BoxDecoration(
+            color: WbDesign.surface(world).withValues(alpha: 0.85),
+            border: Border(
+              bottom: BorderSide(
+                color: accent.withValues(alpha: 0.15),
+              ),
+            ),
+          ),
+          child: Row(
+            children: [
+              // Status-Dot
+              _PulsingDot(
+                color: _dotColor(),
+                pulse: state == LiveKitConnectionState.connecting ||
+                    state == LiveKitConnectionState.reconnecting,
+              ),
+              const SizedBox(width: 10),
+              // Raum-Info
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      _roomDisplayName(roomName),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: -0.2,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      _stateLabel(),
+                      style: TextStyle(
+                        color: state == LiveKitConnectionState.connected
+                            ? const Color(0xFF4CAF50)
+                            : WbDesign.textTertiary,
+                        fontSize: 11,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Teilnehmer-Badge
+              if (participantCount > 0)
+                Container(
+                  margin: const EdgeInsets.only(right: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(WbDesign.radiusPill),
+                    border: Border.all(color: accent.withValues(alpha: 0.25)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.people_rounded,
+                          size: 13, color: accent),
+                      const SizedBox(width: 4),
+                      Text(
+                        '$participantCount',
+                        style: TextStyle(
+                          color: accent,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              // Schließen
+              SizedBox(
+                width: 40,
+                height: 40,
+                child: IconButton(
+                  tooltip: 'Schließen',
+                  onPressed: onClose,
+                  icon: Icon(
+                    Icons.close_rounded,
+                    color: WbDesign.textTertiary,
+                    size: 20,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// CONTROL BAR (Mic/Cam/Screen/Hand/React/Chat/Leave)
+// PARTICIPANT GRID
+// ═══════════════════════════════════════════════════════════════════════════
+
+class _ParticipantGrid extends StatelessWidget {
+  final String world;
+  final String localName;
+  final String? localAvatarUrl;
+  final List<String> remoteNames;
+  final bool micEnabled;
+  final bool cameraEnabled;
+  final Color accent;
+
+  const _ParticipantGrid({
+    required this.world,
+    required this.localName,
+    required this.localAvatarUrl,
+    required this.remoteNames,
+    required this.micEnabled,
+    required this.cameraEnabled,
+    required this.accent,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final allNames = [localName, ...remoteNames];
+    final count = allNames.length;
+
+    if (count == 1) {
+      return Padding(
+        padding: const EdgeInsets.all(20),
+        child: _ParticipantTile(
+          name: allNames[0],
+          isLocal: true,
+          micEnabled: micEnabled,
+          world: world,
+          accent: accent,
+          isSolo: true,
+        ),
+      );
+    }
+
+    final crossCount = count <= 2 ? 2 : (count <= 4 ? 2 : 3);
+    final tiles = List.generate(count, (i) {
+      final isLocal = i == 0;
+      return _ParticipantTile(
+        name: allNames[i],
+        isLocal: isLocal,
+        micEnabled: isLocal ? micEnabled : true,
+        world: world,
+        accent: accent,
+        isSolo: false,
+      );
+    });
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+      child: GridView.count(
+        crossAxisCount: crossCount,
+        crossAxisSpacing: 8,
+        mainAxisSpacing: 8,
+        physics: const NeverScrollableScrollPhysics(),
+        shrinkWrap: true,
+        children: tiles,
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PARTICIPANT TILE
+// ═══════════════════════════════════════════════════════════════════════════
+
+class _ParticipantTile extends StatefulWidget {
+  final String name;
+  final bool isLocal;
+  final bool micEnabled;
+  final String world;
+  final Color accent;
+  final bool isSolo;
+
+  const _ParticipantTile({
+    required this.name,
+    required this.isLocal,
+    required this.micEnabled,
+    required this.world,
+    required this.accent,
+    required this.isSolo,
+  });
+
+  @override
+  State<_ParticipantTile> createState() => _ParticipantTileState();
+}
+
+class _ParticipantTileState extends State<_ParticipantTile>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pulseCtrl;
+  late final Animation<double> _pulseAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    );
+    _pulseAnim = Tween<double>(begin: 0.95, end: 1.05).animate(
+      CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut),
+    );
+    if (widget.micEnabled) _pulseCtrl.repeat(reverse: true);
+  }
+
+  @override
+  void didUpdateWidget(covariant _ParticipantTile old) {
+    super.didUpdateWidget(old);
+    if (widget.micEnabled && !_pulseCtrl.isAnimating) {
+      _pulseCtrl.repeat(reverse: true);
+    } else if (!widget.micEnabled && _pulseCtrl.isAnimating) {
+      _pulseCtrl.stop();
+      _pulseCtrl.animateTo(0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _pulseCtrl.dispose();
+    super.dispose();
+  }
+
+  String _initials(String name) {
+    final parts = name.trim().split(RegExp(r'\s+'));
+    if (parts.isEmpty || parts.first.isEmpty) return '?';
+    if (parts.length == 1) return parts.first[0].toUpperCase();
+    return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final initials = _initials(widget.name);
+    final avatarSize = widget.isSolo ? 110.0 : 64.0;
+    final fontSize = widget.isSolo ? 40.0 : 24.0;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: WbDesign.surface(widget.world).withValues(alpha: 0.7),
+        borderRadius: BorderRadius.circular(WbDesign.radiusCard),
+        border: Border.all(
+          color: widget.micEnabled
+              ? widget.accent.withValues(alpha: 0.35)
+              : WbDesign.borderSubtle,
+          width: widget.micEnabled ? 1.5 : 1,
+        ),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // Avatar mit Sprech-Glow
+          AnimatedBuilder(
+            animation: _pulseAnim,
+            builder: (_, child) => Transform.scale(
+              scale: widget.micEnabled ? _pulseAnim.value : 1.0,
+              child: child,
+            ),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                // Glow Ring
+                if (widget.micEnabled)
+                  Container(
+                    width: avatarSize + 16,
+                    height: avatarSize + 16,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: widget.accent.withValues(alpha: 0.35),
+                          blurRadius: 20,
+                          spreadRadius: 4,
+                        ),
+                      ],
+                    ),
+                  ),
+                // Avatar
+                Container(
+                  width: avatarSize,
+                  height: avatarSize,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: WbDesign.hero(widget.world),
+                  ),
+                  child: Center(
+                    child: Text(
+                      initials,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: fontSize,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          // Name
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Text(
+              widget.isLocal ? '${widget.name} (Du)' : widget.name,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: widget.isSolo ? 16 : 12,
+                fontWeight: FontWeight.w600,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+            ),
+          ),
+          const SizedBox(height: 6),
+          // Mic-Status Badge
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: widget.micEnabled
+                  ? widget.accent.withValues(alpha: 0.15)
+                  : Colors.white.withValues(alpha: 0.06),
+              borderRadius: BorderRadius.circular(WbDesign.radiusPill),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  widget.micEnabled ? Icons.mic_rounded : Icons.mic_off_rounded,
+                  size: 11,
+                  color: widget.micEnabled
+                      ? widget.accent
+                      : WbDesign.textTertiary,
+                ),
+                const SizedBox(width: 3),
+                Text(
+                  widget.micEnabled ? 'Mikrofon an' : 'Stummgeschaltet',
+                  style: TextStyle(
+                    color: widget.micEnabled
+                        ? widget.accent
+                        : WbDesign.textTertiary,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CONTROL BAR
 // ═══════════════════════════════════════════════════════════════════════════
 
 class _ControlBar extends StatelessWidget {
@@ -352,258 +777,186 @@ class _ControlBar extends StatelessWidget {
     required this.onLeave,
   });
 
-  void _comingSoon(BuildContext context, String label) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$label folgt in Kürze.'),
-        duration: const Duration(seconds: 2),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final isConnected = service.isConnected;
     final accent = WbDesign.accent(world);
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: WbDesign.space12,
-        vertical: WbDesign.space12,
-      ),
-      decoration: BoxDecoration(
-        color: WbDesign.surfaceAlt(world),
-        border: Border(
-          top: BorderSide(color: WbDesign.borderSubtle),
-        ),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            _CtrlButton(
-              icon: service.micEnabled
-                  ? Icons.mic_rounded
-                  : Icons.mic_off_rounded,
-              label: 'Mikrofon',
-              activeColor: service.micEnabled ? accent : null,
-              onTap: isConnected
-                  ? () => service.toggleMicrophone()
-                  : null,
+
+    return ClipRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: Container(
+          decoration: BoxDecoration(
+            color: WbDesign.surfaceAlt(world).withValues(alpha: 0.90),
+            border: Border(
+              top: BorderSide(color: WbDesign.borderMedium),
             ),
-            _CtrlButton(
-              icon: service.cameraEnabled
-                  ? Icons.videocam_rounded
-                  : Icons.videocam_off_rounded,
-              label: 'Kamera',
-              activeColor: service.cameraEnabled ? accent : null,
-              onTap: isConnected ? () => service.toggleCamera() : null,
+          ),
+          child: SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  // Mikrofon
+                  _CtrlBtn(
+                    icon: service.micEnabled
+                        ? Icons.mic_rounded
+                        : Icons.mic_off_rounded,
+                    label: service.micEnabled ? 'Mikrofon' : 'Stumm',
+                    active: service.micEnabled,
+                    activeColor: accent,
+                    enabled: isConnected,
+                    onTap: () => service.toggleMicrophone(),
+                  ),
+                  // Kamera
+                  _CtrlBtn(
+                    icon: service.cameraEnabled
+                        ? Icons.videocam_rounded
+                        : Icons.videocam_off_rounded,
+                    label: service.cameraEnabled ? 'Kamera an' : 'Kamera aus',
+                    active: service.cameraEnabled,
+                    activeColor: accent,
+                    enabled: isConnected,
+                    onTap: () => service.toggleCamera(),
+                  ),
+                  // Bildschirm teilen
+                  _CtrlBtn(
+                    icon: service.screenShareEnabled
+                        ? Icons.stop_screen_share_rounded
+                        : Icons.present_to_all_rounded,
+                    label: service.screenShareEnabled ? 'Stop' : 'Teilen',
+                    active: service.screenShareEnabled,
+                    activeColor: accent,
+                    enabled: isConnected,
+                    onTap: () => service.toggleScreenShare(),
+                  ),
+                  // Hand heben
+                  _CtrlBtn(
+                    icon: service.handRaised
+                        ? Icons.front_hand_rounded
+                        : Icons.front_hand_outlined,
+                    label: service.handRaised ? 'Hand gesenkt' : 'Hand heben',
+                    active: service.handRaised,
+                    activeColor: const Color(0xFFFFB300),
+                    enabled: isConnected,
+                    onTap: () => service.toggleHandRaised(),
+                  ),
+                  // Auflegen
+                  _CtrlBtn(
+                    icon: Icons.call_end_rounded,
+                    label: 'Auflegen',
+                    active: false,
+                    enabled: true,
+                    isDanger: true,
+                    onTap: onLeave,
+                  ),
+                ],
+              ),
             ),
-            _CtrlButton(
-              icon: service.screenShareEnabled
-                  ? Icons.stop_screen_share_rounded
-                  : Icons.screen_share_rounded,
-              label: 'Bildschirm',
-              activeColor: service.screenShareEnabled ? accent : null,
-              onTap: isConnected
-                  ? () => service.toggleScreenShare()
-                  : null,
-            ),
-            _CtrlButton(
-              icon: service.handRaised
-                  ? Icons.front_hand_rounded
-                  : Icons.front_hand_outlined,
-              label: 'Hand heben',
-              activeColor: service.handRaised ? accent : null,
-              onTap: isConnected
-                  ? () => service.toggleHandRaised()
-                  : null,
-            ),
-            _CtrlButton(
-              icon: Icons.chat_bubble_outline_rounded,
-              label: 'Nachrichten',
-              onTap: isConnected
-                  ? () => _comingSoon(context, 'Anruf-Chat')
-                  : null,
-            ),
-            _CtrlButton(
-              icon: Icons.call_end_rounded,
-              label: 'Auflegen',
-              danger: true,
-              onTap: onLeave,
-            ),
-          ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _CtrlButton extends StatelessWidget {
+class _CtrlBtn extends StatelessWidget {
   final IconData icon;
   final String label;
-  final VoidCallback? onTap;
-  final bool danger;
+  final bool active;
   final Color? activeColor;
+  final bool enabled;
+  final bool isDanger;
+  final VoidCallback? onTap;
 
-  const _CtrlButton({
+  const _CtrlBtn({
     required this.icon,
     required this.label,
-    required this.onTap,
-    this.danger = false,
+    required this.active,
+    required this.enabled,
     this.activeColor,
+    this.isDanger = false,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final disabled = onTap == null;
-    final Color bg = danger
+    final Color bg = isDanger
         ? const Color(0xFFFF1744)
-        : (activeColor != null
-            ? activeColor!.withValues(alpha: 0.30)
-            : Colors.white.withValues(alpha: 0.10));
-    final Color fg = disabled
-        ? Colors.white.withValues(alpha: 0.35)
-        : Colors.white;
+        : (active && activeColor != null
+            ? activeColor!.withValues(alpha: 0.22)
+            : Colors.white.withValues(alpha: 0.08));
+    final Color iconColor = !enabled
+        ? Colors.white.withValues(alpha: 0.25)
+        : isDanger
+            ? Colors.white
+            : (active && activeColor != null ? activeColor! : Colors.white);
+    final Color labelColor = !enabled
+        ? WbDesign.textDisabled
+        : (active && activeColor != null
+            ? activeColor!
+            : WbDesign.textTertiary);
+
     return Semantics(
       label: label,
       button: true,
       child: GestureDetector(
-        onTap: onTap,
+        onTap: enabled ? onTap : null,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 52,
-              height: 52,
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: 54,
+              height: 54,
               decoration: BoxDecoration(
                 color: bg,
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: activeColor ?? WbDesign.borderSubtle,
-                  width: activeColor != null ? 1.5 : 1,
+                  color: isDanger
+                      ? Colors.transparent
+                      : (active && activeColor != null
+                          ? activeColor!.withValues(alpha: 0.40)
+                          : WbDesign.borderMedium),
+                  width: 1.5,
                 ),
+                boxShadow: isDanger
+                    ? [
+                        BoxShadow(
+                          color:
+                              const Color(0xFFFF1744).withValues(alpha: 0.40),
+                          blurRadius: 16,
+                          spreadRadius: 2,
+                        ),
+                      ]
+                    : (active && activeColor != null
+                        ? [
+                            BoxShadow(
+                              color: activeColor!.withValues(alpha: 0.25),
+                              blurRadius: 12,
+                              spreadRadius: 1,
+                            ),
+                          ]
+                        : null),
               ),
-              child: Icon(icon, color: fg, size: 24),
+              child: Icon(icon, color: iconColor, size: 22),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 5),
             Text(
               label,
               style: TextStyle(
-                color: disabled
-                    ? WbDesign.textTertiary.withValues(alpha: 0.5)
-                    : WbDesign.textTertiary,
-                fontSize: 10,
+                color: labelColor,
+                fontSize: 9.5,
+                fontWeight:
+                    active ? FontWeight.w700 : FontWeight.w400,
               ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// CONNECTED PLACEHOLDER (echter Grid kommt in Folge-PR)
-// ═══════════════════════════════════════════════════════════════════════════
-
-class _ConnectedPlaceholder extends StatelessWidget {
-  final String world;
-  final String displayName;
-  final String? avatarUrl;
-
-  const _ConnectedPlaceholder({
-    required this.world,
-    required this.displayName,
-    this.avatarUrl,
-  });
-
-  String _initials(String name) {
-    final parts = name.trim().split(RegExp(r'\s+'));
-    if (parts.isEmpty) return '?';
-    if (parts.length == 1) {
-      return parts.first.isNotEmpty
-          ? parts.first[0].toUpperCase()
-          : '?';
-    }
-    return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final accent = WbDesign.accent(world);
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(WbDesign.space24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Avatar-Kreis
-            Container(
-              width: 120,
-              height: 120,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: WbDesign.hero(world),
-                boxShadow: [
-                  BoxShadow(
-                    color: accent.withValues(alpha: 0.30),
-                    blurRadius: 40,
-                    spreadRadius: 4,
-                  ),
-                ],
-              ),
-              child: Center(
-                child: Text(
-                  _initials(displayName),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 44,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: WbDesign.space20),
-            Text(
-              displayName,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: WbDesign.space12),
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: WbDesign.space12,
-                vertical: WbDesign.space8,
-              ),
-              decoration: BoxDecoration(
-                color: accent.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(WbDesign.radiusPill),
-                border: Border.all(color: accent.withValues(alpha: 0.30)),
-              ),
-              child: Text(
-                'Verbunden — du bist im Call',
-                style: TextStyle(
-                  color: accent,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            const SizedBox(height: WbDesign.space32),
-            Text(
-              'Weitere Teilnehmer erscheinen hier sobald sie beitreten.',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                color: WbDesign.textTertiary,
-                fontSize: 12,
-                height: 1.5,
-              ),
+              maxLines: 1,
             ),
           ],
         ),
@@ -613,7 +966,7 @@ class _ConnectedPlaceholder extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// STATUS VIEW (Connecting/Error/Disconnected)
+// STATUS VIEW (Connecting / Error / Disconnected)
 // ═══════════════════════════════════════════════════════════════════════════
 
 class _StatusView extends StatelessWidget {
@@ -639,62 +992,72 @@ class _StatusView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(WbDesign.space24),
+        padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            // Icon-Kreis
             Container(
-              width: 84,
-              height: 84,
+              width: 88,
+              height: 88,
               decoration: BoxDecoration(
-                color: accent.withValues(alpha: 0.10),
+                color: accent.withValues(alpha: 0.08),
                 shape: BoxShape.circle,
-                border: Border.all(color: accent.withValues(alpha: 0.30)),
+                border: Border.all(
+                  color: accent.withValues(alpha: 0.25),
+                  width: 1.5,
+                ),
               ),
-              child: Icon(icon, color: accent, size: 38),
+              child: Icon(icon, color: accent, size: 40),
             ),
-            const SizedBox(height: WbDesign.space20),
+            const SizedBox(height: 24),
             Text(
               title,
               textAlign: TextAlign.center,
               style: const TextStyle(
                 color: Colors.white,
-                fontSize: 16,
+                fontSize: 17,
                 fontWeight: FontWeight.bold,
+                letterSpacing: -0.2,
               ),
             ),
-            const SizedBox(height: WbDesign.space8),
+            const SizedBox(height: 10),
             Text(
               subtitle,
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: WbDesign.textTertiary,
                 fontSize: 13,
-                height: 1.4,
+                height: 1.5,
               ),
             ),
             if (showSpinner) ...[
-              const SizedBox(height: WbDesign.space20),
+              const SizedBox(height: 28),
               SizedBox(
-                width: 28,
-                height: 28,
+                width: 32,
+                height: 32,
                 child: CircularProgressIndicator(
-                  strokeWidth: 2.4,
+                  strokeWidth: 2.5,
                   valueColor: AlwaysStoppedAnimation(accent),
                 ),
               ),
             ],
             if (showRetry && onRetry != null) ...[
-              const SizedBox(height: WbDesign.space20),
+              const SizedBox(height: 28),
               FilledButton.icon(
                 onPressed: onRetry,
                 icon: const Icon(Icons.refresh_rounded, size: 18),
-                label: const Text('Erneut versuchen'),
+                label: const Text(
+                  'Erneut versuchen',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
                 style: FilledButton.styleFrom(
                   backgroundColor: accent,
                   foregroundColor: Colors.white,
+                  minimumSize: const Size(180, 48),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(WbDesign.radiusMedium),
+                    borderRadius:
+                        BorderRadius.circular(WbDesign.radiusMedium),
                   ),
                 ),
               ),
@@ -713,6 +1076,7 @@ class _StatusView extends StatelessWidget {
 class _PulsingDot extends StatefulWidget {
   final Color color;
   final bool pulse;
+
   const _PulsingDot({required this.color, required this.pulse});
 
   @override
@@ -722,22 +1086,29 @@ class _PulsingDot extends StatefulWidget {
 class _PulsingDotState extends State<_PulsingDot>
     with SingleTickerProviderStateMixin {
   late final AnimationController _ctrl;
+  late final Animation<double> _anim;
 
   @override
   void initState() {
     super.initState();
     _ctrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 900),
+      duration: const Duration(milliseconds: 800),
     );
-    if (widget.pulse) _ctrl.repeat(reverse: true);
+    _anim = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _ctrl, curve: Curves.easeOut),
+    );
+    if (widget.pulse) _ctrl.repeat();
   }
 
   @override
   void didUpdateWidget(covariant _PulsingDot old) {
     super.didUpdateWidget(old);
-    if (widget.pulse && !_ctrl.isAnimating) _ctrl.repeat(reverse: true);
-    if (!widget.pulse && _ctrl.isAnimating) _ctrl.stop();
+    if (widget.pulse && !_ctrl.isAnimating) _ctrl.repeat();
+    if (!widget.pulse && _ctrl.isAnimating) {
+      _ctrl.stop();
+      _ctrl.reset();
+    }
   }
 
   @override
@@ -748,37 +1119,35 @@ class _PulsingDotState extends State<_PulsingDot>
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _ctrl,
-      builder: (_, __) {
-        final scale = 1.0 + (_ctrl.value * 0.6);
-        return SizedBox(
-          width: 16,
-          height: 16,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              if (widget.pulse)
-                Container(
-                  width: 16 * scale,
-                  height: 16 * scale,
-                  decoration: BoxDecoration(
-                    color: widget.color.withValues(alpha: 0.25 * (1 - _ctrl.value)),
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              Container(
-                width: 8,
-                height: 8,
+    return SizedBox(
+      width: 16,
+      height: 16,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          if (widget.pulse)
+            AnimatedBuilder(
+              animation: _anim,
+              builder: (_, __) => Container(
+                width: 16 * (0.5 + _anim.value),
+                height: 16 * (0.5 + _anim.value),
                 decoration: BoxDecoration(
-                  color: widget.color,
+                  color:
+                      widget.color.withValues(alpha: 0.35 * (1 - _anim.value)),
                   shape: BoxShape.circle,
                 ),
               ),
-            ],
+            ),
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(
+              color: widget.color,
+              shape: BoxShape.circle,
+            ),
           ),
-        );
-      },
+        ],
+      ),
     );
   }
 }

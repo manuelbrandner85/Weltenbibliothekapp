@@ -79,5 +79,8 @@ jobs:
           run_sql "v41 complete_notifications" \
             supabase/migrations/20260421_v41_complete_notifications.sql
 
+          run_sql "v42 community_posts Tabelle" \
+            supabase/migrations/20260502_v42_community_posts.sql
+
           echo ""
           echo "🎉 Alle Migrationen erfolgreich angewendet"
