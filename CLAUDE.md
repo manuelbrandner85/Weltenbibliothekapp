@@ -574,40 +574,53 @@ chore(deps): Dependencies aktualisiert
     Avatar-Hero im Welt-Gradient, PopScope). Voice-Buttons in beiden Chat-Screens
     öffnen direkt den LiveKitGroupCallScreen.
   - **GitHub Release v5.39.0** wurde automatisch gebaut und veröffentlicht ✓
-  - **Noch offen**: echte mic/cam/screen/hand-Toggles (warten auf live Server-Test)
+- [x] **PR #63 — Benutzerfreundlicher Changelog im Update-Dialog** (2026-05-02):
+  - Commit-Typ (feat/fix/style/perf) → passendes Icon + Farbe
+  - Technische Präfixe automatisch entfernt, Beschreibungen groß geschrieben
+  - Scrollbar bei vielen Einträgen, Lade-Skeleton, leerer Zustand sauber ausgeblendet
+  - Token-Generierung auf **Supabase Edge Function** migriert (`livekit-token`) —
+    HMAC-SHA256-JWT, 4h TTL, Supabase Auth-Validierung. Deployed und ACTIVE auf Supabase.
+    LiveKit-Secrets (API-Key/Secret/URL) automatisch via CI gesetzt.
+- [x] **PR #64 — LiveKit Komplett-Rebuild + community_posts-Fix** (2026-05-02, Patch ✓):
+  - **`livekit_group_call_screen.dart` vollständig neu geschrieben** (1154 Zeilen):
+    `_AnimatedBackground` (3 rotierende Glow-Orbe via dart:math),
+    `_ParticipantGrid` (responsiv: 1=Solo, 2=nebeneinander, 3-6=2col, 7+=3col),
+    `_ParticipantTile` (Pulse-Animation bei Mic aktiv, Glow-Ring, Mic-Status-Badge),
+    `_TopBar` (BackdropFilter.blur, Teilnehmer-Badge, Timer in grün/tabular-digits),
+    `_ControlBar` (BackdropFilter.blur, 5 deutsche Buttons: Mikrofon/Kamera/Bildschirm/Hand/Auflegen),
+    `_CtrlBtn` (AnimatedContainer mit Glow-BoxShadow für active/danger States),
+    `_StatusView` (Connecting-Spinner, Error-Retry, Disconnect-Retry),
+    Bestätigungsdialog mit BackdropFilter-Hintergrund
+  - Stabilitäts-Fixes: Room-Events korrekt, Speakerphone nach Connect, Teilnehmer-Counter,
+    Listener-Cleanup in leaveRoom()/dispose()
+  - **v42 Migration `community_posts`** — Tabelle fehlte komplett in DB.
+    Angelegt mit 15 Spalten, 3 Indexes, updated_at-Trigger, 4 RLS-Policies,
+    Realtime-Publication, anon/authenticated Grants. apply_migrations.yml aktualisiert.
 
 ### ⚠️ Noch ausstehend / bekannte Probleme
 
 1. **SQL-Migrationen**: `apply_migrations.yml` läuft automatisch bei jedem main-Push.
    - `supabase/migrations/20260402_v12_missing_tool_tables.sql` (7 Tool-Tabellen) — noch manuell via SQL-Editor nötig, da nicht in apply_migrations.yml enthalten
-   - v37 + v38 werden automatisch per CI angewendet
+   - v37, v38, v39, v40, v41, v42 werden automatisch per CI angewendet
 
 2. **544 info-level Issues** (keine Errors/Warnings):
    - `use_build_context_synchronously` in mehreren Screens
    - `unused_field` Warnungen (nicht kritisch)
    - `deprecated_member_use` (Radio-Widgets, alte APIs)
 
-3. **🎥 LiveKit-Migration Phase 1-5 abgeschlossen** (v5.39.0+, PR #55+56, 2026-04-29):
+3. **🎥 LiveKit vollständig implementiert** (v5.39.0+, PR #55+56+64):
    - flutter_webrtc komplett entfernt — alle 17 alten WebRTC-Dateien gelöscht
-   - livekit_client + flutter_background als neue Dependencies
-   - Worker hat `/api/livekit/token` Endpoint (HMAC-SHA256-JWT, 4h TTL,
-     Mensaena-kompatibel mit roomJoin/canPublish/canSubscribe/canPublishData
-     + canPublishSources camera/microphone/screen_share)
-   - `LiveKitCallService` (lib/services/) — join/leave + Pin/AutoSpeakerFocus State
-   - `livekit_call_provider.dart` (Riverpod) für State-Sharing in der UI
-   - `lib/screens/shared/livekit_group_call_screen.dart` — Vollbild-Call-UI im Welt-Stil:
-     TopBar (Raum, Timer, Pulsing-Dot), _ControlBar (6 Buttons), _StatusView,
-     _ConnectedPlaceholder mit Avatar-Hero im Welt-Gradient, PopScope mit Bestätigung
+   - livekit_client + flutter_background als Dependencies
+   - **Supabase Edge Function `livekit-token`** deployed + ACTIVE (Supabase, version 1).
+     Token-Generierung via HMAC-SHA256-JWT, 4h TTL, roomJoin/canPublish/canSubscribe.
+     LiveKit-Secrets in Supabase Edge Runtime via CI gesetzt.
+   - `LiveKitCallService` — join/leave, alle Track-Toggles (Mic/Cam/Screen/Hand)
+   - `livekit_call_provider.dart` (Riverpod) für State-Sharing
+   - `livekit_group_call_screen.dart` — professionelle Vollbild-UI (1154 Zeilen),
+     animierter Hintergrund, responsives Teilnehmer-Grid, Glassmorphic TopBar/ControlBar
    - Voice-Buttons in beiden Chat-Screens öffnen direkt `LiveKitGroupCallScreen`
-     (Mic/Cam/Screen/Hand/Chat zeigen aktuell „kommt im nächsten Update" SnackBar)
-   - **⏳ Pending — Folge-PR**: Echte Track-Toggles (mic/cam/screen/hand/chat)
-     im LiveKitCallService — wartet auf live LiveKit-Server-Test
-   - **Server-Setup**: User muss eigenen LiveKit-Docker auf Hostinger
-     hochziehen (getrennt von Mensaena-Container, eigene Ports/Keys/Domain).
-     Anleitung in `docs/LIVEKIT_SERVER_SETUP.md`.
-   - **Build**: Native Änderung → neuer APK-Release nötig (5.39.0+20260424). ✓ RELEASED
-     `--dart-define=LIVEKIT_URL=wss://livekit-wb.deine-domain.de` beim Build.
-   - GitHub-Secrets nötig: `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`, `LIVEKIT_URL`.
+   - LiveKit-Server läuft auf `livekit.srv1438024.hstgr.cloud` (Hostinger VPS)
+   - GitHub-Secrets gesetzt: `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`, `LIVEKIT_URL`
 
 4. **Push-Notifications** (Cloudflare-basiert, nicht Firebase) – Registrierung funktioniert,
    Delivery-Test aussteht
