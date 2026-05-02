@@ -48,6 +48,25 @@ jobs:
       - name: 📥 Checkout
         uses: actions/checkout@v4
 
+      - name: 🌐 Runner Public IP ermitteln (für Hostinger-Firewall)
+        run: |
+          set -euo pipefail
+          echo "==================================================="
+          echo "  GITHUB ACTIONS RUNNER PUBLIC IP"
+          echo "==================================================="
+          IP4=$(curl -sS --max-time 10 https://api.ipify.org || echo "?")
+          IP6=$(curl -sS --max-time 10 https://api6.ipify.org || echo "?")
+          echo "IPv4: ${IP4}"
+          echo "IPv6: ${IP6}"
+          echo "==================================================="
+          echo ""
+          echo "👉 Falls der nächste SSH-Connect timeoutet, gib diese"
+          echo "   IPv4 der Hostinger-KI/-Firewall zum Whitelisten."
+          echo ""
+          echo "## 🌐 Runner Public IP" >> $GITHUB_STEP_SUMMARY
+          echo "- IPv4: \`${IP4}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- IPv6: \`${IP6}\`" >> $GITHUB_STEP_SUMMARY
+
       - name: 🔐 Secret-Validierung
         env:
           VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
