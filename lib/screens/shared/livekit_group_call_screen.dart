@@ -196,15 +196,22 @@ class _LiveKitGroupCallScreenState
       case LiveKitConnectionState.disconnected:
         return _StatusView(
           icon: Icons.call_end_rounded,
-          title: 'Nicht verbunden',
-          subtitle: 'Tippe unten auf das Plus um beizutreten.',
+          title: 'Verbindung getrennt',
+          subtitle: 'Tippe auf "Erneut versuchen" um wieder beizutreten.',
           accent: WbDesign.textTertiary,
+          showRetry: true,
+          onRetry: () {
+            setState(() => _hasJoined = false);
+            _join();
+          },
         );
       case LiveKitConnectionState.connected:
         return _ConnectedPlaceholder(
           world: widget.world,
           displayName: widget.displayName,
           avatarUrl: widget.avatarUrl,
+          remoteCount: svc.remoteParticipantCount,
+          remoteNames: svc.remoteParticipantNames,
         );
     }
   }
@@ -512,11 +519,15 @@ class _ConnectedPlaceholder extends StatelessWidget {
   final String world;
   final String displayName;
   final String? avatarUrl;
+  final int remoteCount;
+  final List<String> remoteNames;
 
   const _ConnectedPlaceholder({
     required this.world,
     required this.displayName,
     this.avatarUrl,
+    this.remoteCount = 0,
+    this.remoteNames = const [],
   });
 
   String _initials(String name) {
@@ -596,15 +607,61 @@ class _ConnectedPlaceholder extends StatelessWidget {
               ),
             ),
             const SizedBox(height: WbDesign.space32),
-            Text(
-              'Weitere Teilnehmer erscheinen hier sobald sie beitreten.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: WbDesign.textTertiary,
-                fontSize: 12,
-                height: 1.5,
+            if (remoteCount == 0)
+              Text(
+                'Weitere Teilnehmer erscheinen hier sobald sie beitreten.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: WbDesign.textTertiary,
+                  fontSize: 12,
+                  height: 1.5,
+                ),
+              )
+            else ...[
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: WbDesign.space12,
+                  vertical: WbDesign.space8,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.06),
+                  borderRadius: BorderRadius.circular(WbDesign.radiusPill),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.group_rounded,
+                        size: 14, color: accent),
+                    const SizedBox(width: 6),
+                    Text(
+                      remoteCount == 1
+                          ? '1 weiterer Teilnehmer'
+                          : '$remoteCount weitere Teilnehmer',
+                      style: TextStyle(
+                        color: WbDesign.textSecondary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
+              if (remoteNames.isNotEmpty) ...[
+                const SizedBox(height: WbDesign.space8),
+                Text(
+                  remoteNames.take(5).join(' · ') +
+                      (remoteNames.length > 5
+                          ? ' · +${remoteNames.length - 5}'
+                          : ''),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: WbDesign.textTertiary,
+                    fontSize: 11,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ],
           ],
         ),
       ),

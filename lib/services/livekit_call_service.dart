@@ -3,10 +3,10 @@
 /// Kapselt die Token-Beschaffung, Room-Connect-Logik und Track-Toggles
 /// (Mikrofon, Kamera, Bildschirm-Teilen, Hand heben).
 ///
-/// **Token-Flow** (1:1 wie Mensaena):
+/// **Token-Flow:**
 ///   1. Client holt Supabase-Access-Token aus aktueller Session
-///   2. POST /api/livekit/token mit { roomName, displayName }
-///   3. Worker antwortet mit { token, url }
+///   2. POST /functions/v1/livekit-token mit { roomName, displayName }
+///   3. Supabase Edge Function antwortet mit { token, url }
 ///   4. Room.connect(url, token) → live
 ///
 /// **Track-Flow** (Phase 2):
@@ -40,6 +40,7 @@ class LiveKitCallService extends ChangeNotifier {
   LiveKitCallService();
 
   Room? _room;
+  EventsListener<RoomEvent>? _listener;
   Timer? _durationTimer;
 
   // ── State ──────────────────────────────────────────────────────────────────
@@ -75,6 +76,22 @@ class LiveKitCallService extends ChangeNotifier {
   bool get cameraEnabled => _cameraEnabled;
   bool get screenShareEnabled => _screenShareEnabled;
   bool get handRaised => _handRaised;
+
+  /// Anzahl der entfernten Teilnehmer (ohne lokalen User).
+  int get remoteParticipantCount => _room?.remoteParticipants.length ?? 0;
+
+  /// Gesamt-Teilnehmerzahl inkl. lokalem User.
+  int get totalParticipantCount =>
+      remoteParticipantCount + (_room?.localParticipant != null ? 1 : 0);
+
+  /// Liste der entfernten Teilnehmer-Namen für UI-Anzeige.
+  List<String> get remoteParticipantNames {
+    final r = _room;
+    if (r == null) return const [];
+    return r.remoteParticipants.values
+        .map((p) => p.name.isNotEmpty ? p.name : (p.identity))
+        .toList();
+  }
 
   // ── Connection-Lifecycle ───────────────────────────────────────────────────
 
@@ -160,6 +177,10 @@ class LiveKitCallService extends ChangeNotifier {
       final room = Room();
       _room = room;
 
+      // Room-Events abonnieren — UI muss State-Wechsel widerspiegeln
+      // (Disconnect, Reconnect, Teilnehmer-Wechsel).
+      _attachRoomListener(room);
+
       await room.connect(livekitUrl, token);
 
       // Mikrofon direkt beim Beitritt aktivieren — User soll standardmäßig
@@ -169,6 +190,13 @@ class LiveKitCallService extends ChangeNotifier {
         _micEnabled = true;
       } catch (e) {
         if (kDebugMode) debugPrint('⚠️ setMicrophoneEnabled fehlgeschlagen: $e');
+      }
+
+      // Speakerphone an — sonst hört User durch Hörmuschel statt Lautsprecher
+      try {
+        await Hardware.instance.setPreferSpeakerOutput(true);
+      } catch (e) {
+        if (kDebugMode) debugPrint('⚠️ setPreferSpeakerOutput failed: $e');
       }
 
       _setState(LiveKitConnectionState.connected);
@@ -185,9 +213,35 @@ class LiveKitCallService extends ChangeNotifier {
     }
   }
 
+  /// Hängt sich an Room-Events: Disconnect/Reconnect/Participant-Wechsel.
+  /// Wichtig damit die UI bei Netz-Drops nicht "verbunden" suggeriert.
+  void _attachRoomListener(Room room) {
+    _listener?.dispose();
+    final listener = room.createListener();
+    _listener = listener;
+
+    listener.on<RoomReconnectingEvent>((_) {
+      _setState(LiveKitConnectionState.reconnecting);
+    });
+    listener.on<RoomReconnectedEvent>((_) {
+      _setState(LiveKitConnectionState.connected);
+    });
+    listener.on<RoomDisconnectedEvent>((_) {
+      _stopDurationTimer();
+      _connectionState = LiveKitConnectionState.disconnected;
+      notifyListeners();
+    });
+    listener.on<ParticipantConnectedEvent>((_) => notifyListeners());
+    listener.on<ParticipantDisconnectedEvent>((_) => notifyListeners());
+  }
+
   /// Verlässt den Raum und räumt alle Ressourcen auf.
   Future<void> leaveRoom() async {
     _stopDurationTimer();
+    try {
+      await _listener?.dispose();
+    } catch (_) {}
+    _listener = null;
 
     // Bildschirm-Teilen: Foreground-Service stoppen falls aktiv
     if (_screenShareEnabled) {
@@ -371,6 +425,9 @@ class LiveKitCallService extends ChangeNotifier {
   @override
   void dispose() {
     _stopDurationTimer();
+    try {
+      _listener?.dispose();
+    } catch (_) {}
     try {
       _room?.disconnect();
     } catch (_) {}
