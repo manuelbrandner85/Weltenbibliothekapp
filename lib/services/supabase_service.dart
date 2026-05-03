@@ -599,8 +599,11 @@ class SupabaseChatService {
     if (mediaUrl != null && mediaUrl.isNotEmpty) {
       insertData['media_url'] = mediaUrl;
     }
-    if (replyToId != null && replyToId.isNotEmpty) {
-      insertData['reply_to_id'] = replyToId;
+    // Defensive trim — leerer/whitespace-only String würde sonst als FK
+    // weitergegeben und vom Postgres-Constraint mit kryptischem Fehler abgewiesen.
+    final cleanReplyId = replyToId?.trim() ?? '';
+    if (cleanReplyId.isNotEmpty) {
+      insertData['reply_to_id'] = cleanReplyId;
       // Snapshot auf max. 280 Zeichen kürzen (Telegram-Style Quote).
       final snippet = (replyToContent ?? '').trim();
       insertData['reply_to_content'] =
@@ -857,7 +860,17 @@ class SupabaseChatService {
             if (onRead != null) {
               final readBy = updated['read_by'];
               if (readBy is List && readBy.isNotEmpty) {
-                onRead(updated['id'] as String, readBy.last as String);
+                // Defensive: read_by kann UUIDs als String oder als andere
+                // Typen enthalten — niemals direkt casten, sonst crashed
+                // der ganze Realtime-Subscriber.
+                final lastReader = readBy.last;
+                final reader = lastReader is String
+                    ? lastReader
+                    : lastReader?.toString();
+                final id = updated['id'];
+                if (reader != null && reader.isNotEmpty && id is String) {
+                  onRead(id, reader);
+                }
               }
             }
             // Auch als Nachrichtenupdate weiterleiten (z.B. für edits)
