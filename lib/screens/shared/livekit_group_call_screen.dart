@@ -818,13 +818,17 @@ class _ParticipantGrid extends StatelessWidget {
       );
     });
 
+    // Bundle 5.3: childAspectRatio explizit + scrollbar wenn mehr als
+    // crossCount × 3 Tiles. Vorher: NeverScrollable + shrinkWrap → bei
+    // ≥6 Teilnehmern Overflow-Stripes, kein Scroll.
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
       child: GridView.count(
         crossAxisCount: crossCount,
         crossAxisSpacing: 8,
         mainAxisSpacing: 8,
-        physics: const NeverScrollableScrollPhysics(),
+        childAspectRatio: 0.85, // ~140px hoch bei ~165px Breite
+        physics: const ClampingScrollPhysics(),
         shrinkWrap: true,
         children: tiles,
       ),
@@ -887,8 +891,10 @@ class _ParticipantTileState extends State<_ParticipantTile>
     if (widget.micEnabled && !_pulseCtrl.isAnimating) {
       _pulseCtrl.repeat(reverse: true);
     } else if (!widget.micEnabled && _pulseCtrl.isAnimating) {
+      // Bundle 5.9: animateTo(0) macht 1-Frame-Animation, flackert bei
+      // schnellem Mic-Toggle. Sofort auf 0 setzen via .value.
       _pulseCtrl.stop();
-      _pulseCtrl.animateTo(0);
+      _pulseCtrl.value = 0;
     }
   }
 
@@ -1074,7 +1080,13 @@ class _ParticipantTileState extends State<_ParticipantTile>
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8),
             child: Text(
-              widget.isLocal ? '${widget.name} (Du)' : widget.name,
+              () {
+                final n = widget.name.trim();
+                if (widget.isLocal) {
+                  return n.isEmpty ? 'Du' : '$n (Du)';
+                }
+                return n.isEmpty ? 'Mitglied' : n;
+              }(),
               style: TextStyle(
                 color: Colors.white,
                 fontSize: widget.isSolo ? 16 : 12,
@@ -1168,9 +1180,13 @@ class _ParticipantTileState extends State<_ParticipantTile>
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
-                      widget.isLocal
-                          ? '${widget.name} (Du)'
-                          : widget.name,
+                      () {
+                        final n = widget.name.trim();
+                        if (widget.isLocal) {
+                          return n.isEmpty ? 'Du' : '$n (Du)';
+                        }
+                        return n.isEmpty ? 'Mitglied' : n;
+                      }(),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -1235,7 +1251,7 @@ class _ControlBar extends StatelessWidget {
                     icon: service.micEnabled
                         ? Icons.mic_rounded
                         : Icons.mic_off_rounded,
-                    label: service.micEnabled ? 'Mikrofon' : 'Stumm',
+                    label: service.micEnabled ? 'Stumm' : 'Mikrofon',
                     active: service.micEnabled,
                     activeColor: accent,
                     enabled: isConnected,
@@ -1246,7 +1262,7 @@ class _ControlBar extends StatelessWidget {
                     icon: service.cameraEnabled
                         ? Icons.videocam_rounded
                         : Icons.videocam_off_rounded,
-                    label: service.cameraEnabled ? 'Kamera an' : 'Kamera aus',
+                    label: service.cameraEnabled ? 'Kamera aus' : 'Kamera an',
                     active: service.cameraEnabled,
                     activeColor: accent,
                     enabled: isConnected,
@@ -1278,7 +1294,7 @@ class _ControlBar extends StatelessWidget {
                     icon: service.handRaised
                         ? Icons.front_hand_rounded
                         : Icons.front_hand_outlined,
-                    label: service.handRaised ? 'Hand gesenkt' : 'Hand heben',
+                    label: service.handRaised ? 'Hand senken' : 'Hand heben',
                     active: service.handRaised,
                     activeColor: const Color(0xFFFFB300),
                     enabled: isConnected,

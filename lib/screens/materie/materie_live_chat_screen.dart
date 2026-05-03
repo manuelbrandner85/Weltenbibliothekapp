@@ -3226,10 +3226,17 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
                     ),
 
                   // 🎤 VOICE MESSAGE or 📷 IMAGE or 💬 TEXT
-                  if (msg['mediaType'] == 'voice' || (msg['message']?.toString().startsWith('🎤 Sprachnachricht') == true && msg['mediaUrl'] != null))
+                  // FIX: sowohl camelCase (lokal optimistisch) als auch
+                  // snake_case (Realtime) berücksichtigen — vorher 100%
+                  // Mismatch bei Realtime → leerer/grauer Container.
+                  if (() {
+                    final t = (msg['mediaType'] ?? msg['message_type'])?.toString();
+                    final url = (msg['mediaUrl'] ?? msg['media_url'])?.toString();
+                    return t == 'voice' && url != null && url.isNotEmpty;
+                  }())
                     // 🎵 VOICE MESSAGE PLAYER
                     ChatVoicePlayer(
-                      audioUrl: msg['mediaUrl'] ?? '',
+                      audioUrl: (msg['mediaUrl'] ?? msg['media_url'] ?? '').toString(),
                       duration: Duration(seconds: int.tryParse(
                         msg['message']?.toString()
                           .replaceAll('🎤 Sprachnachricht (', '')
@@ -3238,33 +3245,41 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
                       ) ?? 0),
                       accentColor: const Color(0xFF2196F3),
                     )
-                  else if (msg['mediaType'] == 'image' && msg['mediaUrl'] != null)
+                  else if (() {
+                    final t = (msg['mediaType'] ?? msg['message_type'])?.toString();
+                    final url = (msg['mediaUrl'] ?? msg['media_url'])?.toString();
+                    return t == 'image' && url != null && url.isNotEmpty;
+                  }())
                     // Feature #15: Tappable image with hero → fullscreen viewer
-                    GestureDetector(
-                      onTap: () => ChatImageViewer.open(
-                        context,
-                        imageUrl: msg['mediaUrl']!,
-                        heroTag: 'chat-img-${msg['id'] ?? msg['timestamp']}',
-                        accentColor: const Color(0xFFE53935),
-                      ),
-                      child: Hero(
-                        tag: 'chat-img-${msg['id'] ?? msg['timestamp']}',
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: CachedNetworkImage(
-                            imageUrl: msg['mediaUrl']!,
-                            width: 200,
-                            fit: BoxFit.cover,
-                            errorWidget: (context, url, error) => Container(
+                    Builder(builder: (_) {
+                      final url = (msg['mediaUrl'] ?? msg['media_url']).toString();
+                      return GestureDetector(
+                        onTap: () => ChatImageViewer.open(
+                          context,
+                          imageUrl: url,
+                          heroTag: 'chat-img-${msg['id'] ?? msg['timestamp']}',
+                          accentColor: const Color(0xFFE53935),
+                        ),
+                        child: Hero(
+                          tag: 'chat-img-${msg['id'] ?? msg['timestamp']}',
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: CachedNetworkImage(
+                              imageUrl: url,
                               width: 200,
-                              height: 150,
-                              color: Colors.grey[700],
-                              child: const Icon(Icons.broken_image, size: 48),
+                              height: 200,
+                              fit: BoxFit.cover,
+                              errorWidget: (context, _, __) => Container(
+                                width: 200,
+                                height: 150,
+                                color: Colors.grey[700],
+                                child: const Icon(Icons.broken_image, size: 48),
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    )
+                      );
+                    })
                   else
                     // Regular Text Message (Markdown-Light + klickbare Links)
                     ChatMarkdownText(
@@ -3292,9 +3307,17 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
                       if (isOwn) ...[
                         const SizedBox(width: 4),
                         Builder(builder: (_) {
-                          // Server schreibt read_by als Array. Doppelhaken
-                          // wird blau, sobald MINDESTENS ein anderer User
-                          // (außer Sender) gelesen hat.
+                          // Bundle 5.5: Optimistisch gequeuete Nachricht
+                          // zeigt Clock — sonst Doppelhaken. Server schreibt
+                          // read_by als Array; blau wenn jemand anderes
+                          // gelesen hat.
+                          if (msg['is_pending'] == true) {
+                            return Icon(
+                              Icons.access_time_rounded,
+                              size: 14,
+                              color: Colors.white.withValues(alpha: 0.6),
+                            );
+                          }
                           final readBy = msg['read_by'];
                           final readers = readBy is List
                               ? readBy.where((r) =>

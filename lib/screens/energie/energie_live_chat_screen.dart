@@ -2161,8 +2161,15 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                 snippet: text.length > 80 ? '${text.substring(0, 77)}…' : text,
               );
             }
-            // Feature #17: generate smart reply suggestions
-            if (mounted) setState(() => _smartReplies = _generateSmartReplies(text));
+            // Feature #17: Smart-Replies nur regenerieren wenn der User sie
+            // GERADE NICHT angetippt hat — flackerten vorher pro Fremd-Msg.
+            // Bundle 5.6: Lass die alte Liste stehen wenn _replyingTo aktiv
+            // ist oder Input-Feld fokussiert.
+            if (mounted &&
+                _replyingTo == null &&
+                !_inputFocusNode.hasFocus) {
+              setState(() => _smartReplies = _generateSmartReplies(text));
+            }
           }
           _scrollToBottomIfAtEnd();
         }
@@ -3333,10 +3340,14 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                     ),
 
                   // 🎤 VOICE MESSAGE or 📷 IMAGE or 💬 TEXT
-                  if (msg['mediaType'] == 'voice' || (msg['message']?.toString().startsWith('🎤 Sprachnachricht') == true && msg['mediaUrl'] != null))
+                  if (() {
+                    final t = (msg['mediaType'] ?? msg['message_type'])?.toString();
+                    final url = (msg['mediaUrl'] ?? msg['media_url'])?.toString();
+                    return t == 'voice' && url != null && url.isNotEmpty;
+                  }())
                     // 🎵 VOICE MESSAGE PLAYER
                     ChatVoicePlayer(
-                      audioUrl: msg['mediaUrl'] ?? '',
+                      audioUrl: (msg['mediaUrl'] ?? msg['media_url'] ?? '').toString(),
                       duration: Duration(seconds: int.tryParse(
                         msg['message']?.toString()
                           .replaceAll('🎤 Sprachnachricht (', '')
@@ -3345,33 +3356,41 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                       ) ?? 0),
                       accentColor: const Color(0xFF9B51E0),
                     )
-                  else if (msg['mediaType'] == 'image' && msg['mediaUrl'] != null)
+                  else if (() {
+                    final t = (msg['mediaType'] ?? msg['message_type'])?.toString();
+                    final url = (msg['mediaUrl'] ?? msg['media_url'])?.toString();
+                    return t == 'image' && url != null && url.isNotEmpty;
+                  }())
                     // Feature #15: Tappable image with hero → fullscreen viewer
-                    GestureDetector(
-                      onTap: () => ChatImageViewer.open(
-                        context,
-                        imageUrl: msg['mediaUrl']!,
-                        heroTag: 'chat-img-${msg['id'] ?? msg['timestamp']}',
-                        accentColor: const Color(0xFF9B51E0),
-                      ),
-                      child: Hero(
-                        tag: 'chat-img-${msg['id'] ?? msg['timestamp']}',
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: CachedNetworkImage(
-                            imageUrl: msg['mediaUrl']!,
-                            width: 200,
-                            fit: BoxFit.cover,
-                            errorWidget: (context, url, error) => Container(
+                    Builder(builder: (_) {
+                      final url = (msg['mediaUrl'] ?? msg['media_url']).toString();
+                      return GestureDetector(
+                        onTap: () => ChatImageViewer.open(
+                          context,
+                          imageUrl: url,
+                          heroTag: 'chat-img-${msg['id'] ?? msg['timestamp']}',
+                          accentColor: const Color(0xFF9B51E0),
+                        ),
+                        child: Hero(
+                          tag: 'chat-img-${msg['id'] ?? msg['timestamp']}',
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: CachedNetworkImage(
+                              imageUrl: url,
                               width: 200,
-                              height: 150,
-                              color: const Color(0xFF2A2A3E),
-                              child: const Icon(Icons.broken_image, size: 48),
+                              height: 200,
+                              fit: BoxFit.cover,
+                              errorWidget: (context, _, __) => Container(
+                                width: 200,
+                                height: 150,
+                                color: const Color(0xFF2A2A3E),
+                                child: const Icon(Icons.broken_image, size: 48),
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    )
+                      );
+                    })
                   else
                     // Regular Text Message (Markdown-Light + klickbare Links)
                     ChatMarkdownText(

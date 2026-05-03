@@ -55,16 +55,22 @@ class LiveKitMiniBar extends ConsumerWidget {
             svc.roomName != null &&
             svc.world != null;
 
-        return AnimatedSlide(
-          offset: shouldShow ? Offset.zero : const Offset(0, -1.5),
-          duration: const Duration(milliseconds: 250),
-          curve: Curves.easeOutCubic,
-          child: AnimatedOpacity(
-            opacity: shouldShow ? 1.0 : 0.0,
-            duration: const Duration(milliseconds: 200),
-            child: shouldShow
-                ? _MiniBarContent(svc: svc)
-                : const SizedBox.shrink(),
+        // Bundle 5.8: IgnorePointer wenn die Bar während des Slide-
+        // Animations-Übergangs nicht sichtbar sein soll — sonst blockt
+        // sie ~80px oben am Screen für Touches darunter.
+        return IgnorePointer(
+          ignoring: !shouldShow,
+          child: AnimatedSlide(
+            offset: shouldShow ? Offset.zero : const Offset(0, -1.5),
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOutCubic,
+            child: AnimatedOpacity(
+              opacity: shouldShow ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 200),
+              child: shouldShow
+                  ? _MiniBarContent(svc: svc)
+                  : const SizedBox.shrink(),
+            ),
           ),
         );
       },
@@ -162,7 +168,8 @@ class _MiniBarContent extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          'Live · ${svc.totalParticipantCount} ${svc.totalParticipantCount == 1 ? "Teilnehmer" : "Teilnehmer"}',
+                          'Live · ${svc.totalParticipantCount} '
+                          '${svc.totalParticipantCount == 1 ? "Teilnehmer:in" : "Teilnehmer:innen"}',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(

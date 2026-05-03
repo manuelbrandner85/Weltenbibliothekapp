@@ -520,7 +520,9 @@ class SupabaseChatService {
     required String message,
     String? username,
     String? avatarUrl,
+    String? avatarEmoji,
     String? messageType,
+    String? mediaUrl,
     bool allowAnonymous = true,
     String? replyToId,
     String? replyToContent,
@@ -562,7 +564,15 @@ class SupabaseChatService {
     };
     if (user != null) insertData['user_id'] = user.id;
     if (effectiveAvatar != null) insertData['avatar_url'] = effectiveAvatar;
+    if (avatarEmoji != null && avatarEmoji.isNotEmpty) {
+      insertData['avatar_emoji'] = avatarEmoji;
+    }
     if (messageType != null) insertData['message_type'] = messageType;
+    // 🆕 mediaUrl wurde vorher komplett verschluckt → Image/Voice-Messages
+    // landeten ohne URL in der DB, UI zeigte „leere" Nachrichten.
+    if (mediaUrl != null && mediaUrl.isNotEmpty) {
+      insertData['media_url'] = mediaUrl;
+    }
     if (replyToId != null && replyToId.isNotEmpty) {
       insertData['reply_to_id'] = replyToId;
       // Snapshot auf max. 280 Zeichen kürzen (Telegram-Style Quote).
