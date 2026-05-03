@@ -453,7 +453,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
     final cursorPos = _messageController.selection.baseOffset;
 
     // ✨ Batch-5: Draft persistieren
-    ChatDraftService.instance.set(_selectedRoom, text);
+    ChatDraftService.instance.set(_fullRoomId, text);
 
     // 🎤➤ UPDATE BUTTON STATE: Voice/Send
     if (mounted) {
@@ -557,12 +557,12 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
     }
 
     // 🛑 Batch-4: Rate-Limit + Slow-Mode (Client-Side Spambremse)
-    if (!ChatRateLimitService.instance.canSend(_selectedRoom)) {
+    if (!ChatRateLimitService.instance.canSend(_fullRoomId)) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              ChatRateLimitService.instance.cooldownMessage(_selectedRoom),
+              ChatRateLimitService.instance.cooldownMessage(_fullRoomId),
             ),
             backgroundColor: const Color(0xFF7C4DFF),
             duration: const Duration(seconds: 2),
@@ -571,7 +571,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
       }
       return;
     }
-    ChatRateLimitService.instance.recordSend(_selectedRoom);
+    ChatRateLimitService.instance.recordSend(_fullRoomId);
     HapticFeedbackService().messageSent();
 
     setState(() => _isSending = true);
@@ -582,11 +582,13 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
       final isOnline = offlineService.isOnline;
       
       if (!isOnline) {
-        // Queue message for later
+        // Queue message for later — _fullRoomId, damit beim Replay derselbe
+        // Raum getroffen wird wie online (z.B. 'energie-meditation' statt
+        // 'meditation').
         final queueId = await offlineService.queueAction(
           type: OfflineActionType.sendMessage,
           data: {
-            'roomId': _selectedRoom,
+            'roomId': _fullRoomId,
             'realm': 'energie',
             'userId': _userId,
             'username': _username,
@@ -620,7 +622,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
         }
 
         _messageController.clear();
-        ChatDraftService.instance.clear(_selectedRoom);
+        ChatDraftService.instance.clear(_fullRoomId);
         return;
       }
       
@@ -641,7 +643,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
       );
 
       _messageController.clear();
-      ChatDraftService.instance.clear(_selectedRoom);
+      ChatDraftService.instance.clear(_fullRoomId);
 
       // 🔴 Optimistic add – Realtime-Subscription deduplicated via ID.
       //    Verhindert Flicker durch redundanten Full-Reload.
@@ -2881,7 +2883,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
   Future<void> _switchToRoom(String roomId) async {
     if (roomId == _selectedRoom || !mounted) return;
     HapticFeedback.selectionClick();
-    ChatDraftService.instance.set(_selectedRoom, _messageController.text);
+    ChatDraftService.instance.set(_fullRoomId, _messageController.text);
     RecentRoomsService.instance.touch('energie', roomId);
     setState(() {
       _selectedRoom = roomId;
@@ -2891,7 +2893,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
       _newMessagesCount = 0;
       _isAtBottom = true;
     });
-    _messageController.text = ChatDraftService.instance.get(_selectedRoom);
+    _messageController.text = ChatDraftService.instance.get(_fullRoomId);
     UnreadTrackerService.instance.markSeen(_fullRoomId);
     // Voice-Service-switchRoom entfällt — LiveKit nutzt eigene Room-Logik.
     await _refreshPresence();
@@ -3266,7 +3268,13 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                 radius: 18,
                 backgroundColor: const Color(0xFF9B51E0).withValues(alpha: 0.2),
                 child: Text(
-                  msg['avatar']?.toString() ?? '👤',
+                  // Realtime-Payload von Supabase nutzt snake_case
+                  // (avatar_emoji); local-optimistic Inserts können auch
+                  // camelCase oder den 'avatar'-Alias enthalten.
+                  msg['avatar']?.toString()
+                      ?? msg['avatar_emoji']?.toString()
+                      ?? msg['avatarEmoji']?.toString()
+                      ?? '👤',
                   style: const TextStyle(fontSize: 16),
                 ),
               )
@@ -3853,7 +3861,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
               onLongPress: () => _showRoomPreview(roomId, room),
               onTap: () async {
                 if (roomId != _selectedRoom) {
-                  ChatDraftService.instance.set(_selectedRoom, _messageController.text);
+                  ChatDraftService.instance.set(_fullRoomId, _messageController.text);
                   if (mounted) {
                     RecentRoomsService.instance.touch('energie', roomId);
                     setState(() {
@@ -3865,7 +3873,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                       _isAtBottom = true;
                     });
                   }
-                  _messageController.text = ChatDraftService.instance.get(_selectedRoom);
+                  _messageController.text = ChatDraftService.instance.get(_fullRoomId);
                   UnreadTrackerService.instance.markSeen(_fullRoomId);
                   // Voice-Service-switchRoom entfällt — LiveKit nutzt eigene Room-Logik.
                   await _refreshPresence();

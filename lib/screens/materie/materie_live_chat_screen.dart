@@ -572,7 +572,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
       case 'geschichte':
         screen = HistoryTimelineScreen(roomId: _selectedRoom);
         break;
-      case 'ufos':
+      case 'ufo':
         screen = UfoSightingsScreen(roomId: _selectedRoom);
         break;
       case 'verschwoerungen':
@@ -895,11 +895,11 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
               );
             }
 
-            // Upload to Cloudflare
+            // Upload to Cloudflare — _fullRoomId konsistent zu sendChatMessage.
             final audioUrl = await _api.uploadVoiceMessage(
               filePath: audioPath,
               userId: _userId,
-              roomId: _selectedRoom,
+              roomId: _fullRoomId,
               realm: 'materie',
             );
 
@@ -1040,14 +1040,16 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
       );
       
       if (result['success'] == true && result['url'] != null) {
-        // Send message with image URL
+        // Send message with image URL — avatarUrl mitschicken, damit
+        // hochgeladene Profilbilder auch bei Bild-Posts erscheinen.
         await _api.sendChatMessage(
           roomId: _fullRoomId, // 'materie-politik' etc.
           realm: 'materie',
           userId: _userId,
           username: _username,
-          message: '📷 Bild', // Text for image message
+          message: '📷 Bild',
           avatarEmoji: _avatar,
+          avatarUrl: _avatarUrl,
           mediaType: 'image',
           mediaUrl: result['url'],
         );
@@ -3145,7 +3147,11 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
                 radius: 18,
                 backgroundColor: Colors.red.withValues(alpha: 0.2),
                 child: Text(
-                  msg['avatarEmoji']?.toString() ?? '👤',
+                  // Sowohl camelCase (lokal optimistisch) als auch
+                  // snake_case (Realtime von Supabase) berücksichtigen.
+                  msg['avatarEmoji']?.toString()
+                      ?? msg['avatar_emoji']?.toString()
+                      ?? '👤',
                   style: const TextStyle(fontSize: 16),
                 ),
               )
@@ -3268,13 +3274,25 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
                       ),
                       if (isOwn) ...[
                         const SizedBox(width: 4),
-                        Icon(
-                          Icons.done_all,
-                          size: 14,
-                          color: msg['read'] == true 
-                              ? Colors.blue 
-                              : Colors.white.withValues(alpha: 0.6),
-                        ),
+                        Builder(builder: (_) {
+                          // Server schreibt read_by als Array. Doppelhaken
+                          // wird blau, sobald MINDESTENS ein anderer User
+                          // (außer Sender) gelesen hat.
+                          final readBy = msg['read_by'];
+                          final readers = readBy is List
+                              ? readBy.where((r) =>
+                                      r != null && r.toString() != _userId)
+                                  .length
+                              : 0;
+                          final isRead = readers > 0 || msg['read'] == true;
+                          return Icon(
+                            Icons.done_all,
+                            size: 14,
+                            color: isRead
+                                ? Colors.blue
+                                : Colors.white.withValues(alpha: 0.6),
+                          );
+                        }),
                       ],
                     ],
                   ),

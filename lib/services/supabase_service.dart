@@ -463,7 +463,11 @@ class SupabaseChatService {
       _instance ??= SupabaseChatService._();
   SupabaseChatService._();
 
-  RealtimeChannel? _activeChannel;
+  /// Per-Room Channels. Vorher war das ein einziges `_activeChannel` —
+  /// der wurde beim Wechsel zwischen Materie/Energie-Welt jeweils gekappt
+  /// und die andere Welt verlor still ihre Realtime-Verbindung.
+  /// Jetzt: Map keyed by roomId, jede Welt behält ihre eigene Subscription.
+  final Map<String, RealtimeChannel> _channels = {};
 
   /// Nachrichten für einen Raum laden (letzte 50).
   /// Sortiert aufsteigend nach created_at (ältere zuerst → neueste unten).
@@ -628,7 +632,9 @@ class SupabaseChatService {
     void Function(Map<String, dynamic>)? onUpdate,
     void Function(String messageId)? onDelete,
   }) {
-    _activeChannel?.unsubscribe();
+    // Wenn dieselbe Welt nochmal subscribed → erst alte Channel kappen,
+    // damit keine doppelten Callbacks (z.B. nach Hot-Reload).
+    _channels.remove(roomId)?.unsubscribe();
 
     final filter = PostgresChangeFilter(
       type: PostgresChangeFilterType.eq,
@@ -636,7 +642,7 @@ class SupabaseChatService {
       value: roomId,
     );
 
-    _activeChannel = supabase
+    final channel = supabase
         .channel('chat_room_$roomId')
         .onPostgresChanges(
           event: PostgresChangeEvent.insert,
@@ -659,15 +665,17 @@ class SupabaseChatService {
           },
         )
         .onPostgresChanges(
-          // DELETE-Filter auf room_id geht nicht zuverlässig (oldRecord ist
-          // bei REPLICA IDENTITY FULL komplett, sonst nur PK). Daher ohne
-          // Filter und im Callback auf room_id prüfen.
+          // DELETE-Filter auf room_id ist über Realtime nicht zuverlässig,
+          // weil oldRecord bei DEFAULT REPLICA IDENTITY nur den PK enthält.
+          // FIX: WENN room_id im Payload fehlt → konservativ skippen (sonst
+          // löschen wir Messages aus FREMDEN Räumen aus dem lokalen State).
           event: PostgresChangeEvent.delete,
           schema: 'public',
           table: 'chat_messages',
           callback: (payload) {
             final old = Map<String, dynamic>.from(payload.oldRecord);
-            if (old['room_id'] != null && old['room_id'] != roomId) return;
+            // Strict: nur löschen wenn room_id explizit zu unserem Raum passt.
+            if (old['room_id'] != roomId) return;
             final id = old['id']?.toString();
             if (id == null || id.isEmpty) return;
             if (kDebugMode) debugPrint('🗑️ [Chat] DELETE $id in $roomId');
@@ -676,17 +684,29 @@ class SupabaseChatService {
         )
         .subscribe();
 
+    _channels[roomId] = channel;
     if (kDebugMode) debugPrint('🔌 [Chat] Subscribed: $roomId');
-    return _activeChannel!;
+    return channel;
   }
 
-  /// Subscription beenden.
-  Future<void> unsubscribe() async {
-    if (_activeChannel != null) {
-      await _activeChannel!.unsubscribe();
-      _activeChannel = null;
-      if (kDebugMode) debugPrint('🔌 [Chat] Unsubscribed');
+  /// Subscription beenden — optional auf einen spezifischen Raum begrenzt.
+  /// Ohne Argument werden ALLE aktiven Subscriptions gekappt (z.B. bei
+  /// Logout).
+  Future<void> unsubscribe([String? roomId]) async {
+    if (roomId != null) {
+      final ch = _channels.remove(roomId);
+      if (ch != null) {
+        await ch.unsubscribe();
+        if (kDebugMode) debugPrint('🔌 [Chat] Unsubscribed: $roomId');
+      }
+      return;
     }
+    final all = List.of(_channels.values);
+    _channels.clear();
+    for (final ch in all) {
+      await ch.unsubscribe();
+    }
+    if (kDebugMode) debugPrint('🔌 [Chat] Unsubscribed all (${all.length})');
   }
 
   /// Chat-Räume laden.
@@ -748,7 +768,9 @@ class SupabaseChatService {
     bool isTyping = true,
   }) async {
     try {
-      _activeChannel?.sendBroadcastMessage(
+      // Broadcast auf den Channel des spezifischen Raums senden, nicht
+      // mehr auf einen Singleton.
+      _channels[roomId]?.sendBroadcastMessage(
         event: 'typing',
         payload: {
           'userId': userId,
@@ -769,7 +791,7 @@ class SupabaseChatService {
     void Function(String userId, String username, bool isTyping)? onTyping,
     void Function(String messageId, String userId)? onRead,
   }) {
-    _activeChannel?.unsubscribe();
+    _channels.remove(roomId)?.unsubscribe();
 
     var channel = supabase
         .channel('chat_room_$roomId')
@@ -823,10 +845,11 @@ class SupabaseChatService {
       );
     }
 
-    _activeChannel = channel.subscribe();
+    final subscribed = channel.subscribe();
+    _channels[roomId] = subscribed;
 
     if (kDebugMode) debugPrint('🔌 [Chat] Full-Subscribe: $roomId');
-    return _activeChannel!;
+    return subscribed;
   }
 }
 

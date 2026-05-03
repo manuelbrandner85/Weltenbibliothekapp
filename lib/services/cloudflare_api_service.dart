@@ -1087,10 +1087,9 @@ class CloudflareApiService {
       
       final response = await http.post(
         Uri.parse('$reactionsApiUrl/chat/messages/$messageId/reactions'),
-        headers: _headers,
+        headers: _authedHeaders, // 🔐 X-Supabase-Auth → Worker verifiziert
         body: json.encode({
           'emoji': emoji,
-          'username': username,
         }),
       ).timeout(const Duration(seconds: 5));
       
@@ -1127,11 +1126,8 @@ class CloudflareApiService {
       }
       
       final response = await http.delete(
-        Uri.parse('$reactionsApiUrl/chat/messages/$messageId/reactions/$emoji'),
-        headers: {
-          ..._headers,
-          'X-Username': username,
-        },
+        Uri.parse('$reactionsApiUrl/chat/messages/$messageId/reactions/${Uri.encodeComponent(emoji)}'),
+        headers: _authedHeaders, // 🔐 X-Supabase-Auth → Worker prüft Owner
       ).timeout(const Duration(seconds: 5));
       
       if (response.statusCode == 200) {
@@ -1156,7 +1152,7 @@ class CloudflareApiService {
   Future<Map<String, dynamic>> getMessageReactions(String messageId) async {
     final response = await http.get(
       Uri.parse('$reactionsApiUrl/chat/messages/$messageId/reactions'),
-      headers: _headers,
+      headers: _authedHeaders,
     );
     
     if (response.statusCode == 200) {
@@ -1169,8 +1165,8 @@ class CloudflareApiService {
   /// Get user's reactions for a message
   Future<List<String>> getUserReactions(String messageId, String username) async {
     final response = await http.get(
-      Uri.parse('$reactionsApiUrl/chat/messages/$messageId/reactions/user/$username'),
-      headers: _headers,
+      Uri.parse('$reactionsApiUrl/chat/messages/$messageId/reactions/user/${Uri.encodeComponent(username)}'),
+      headers: _authedHeaders,
     );
     
     if (response.statusCode == 200) {

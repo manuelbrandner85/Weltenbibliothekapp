@@ -1061,6 +1061,101 @@ export default {
       }
     }
 
+    // ── Chat-Reactions (Bundle 2.1: 404-Mismatch fix) ─────────
+    // Flutter-Client ruft /chat/messages/:id/reactions* auf, der vorhandene
+    // /messages/:id/react-Handler war ein anderer Pfad → all 4 Endpoints
+    // fielen still auf 404. Hier: Auth-pflichtig + Supabase-direct.
+    if (path.startsWith('/chat/messages/') && path.includes('/reactions')) {
+      const auth = await verifyAuth(request, env);
+      if (!auth) {
+        return errorResponse('Authentifizierung erforderlich', 401);
+      }
+      const svcKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY || '';
+      // Pfade:
+      //   POST /chat/messages/:id/reactions          { emoji }
+      //   GET  /chat/messages/:id/reactions
+      //   DELETE /chat/messages/:id/reactions/:emoji
+      //   GET  /chat/messages/:id/reactions/user/:username
+      const segs = path.split('/'); // ['', 'chat', 'messages', ':id', 'reactions', maybe :emoji or 'user']
+      const messageId = segs[3];
+      if (!messageId) return errorResponse('messageId fehlt', 400);
+
+      try {
+        if (method === 'POST' && segs.length === 5) {
+          const body = await request.json().catch(() => ({}));
+          const emoji = (body.emoji || '').trim();
+          if (!emoji) return errorResponse('emoji fehlt', 400);
+          // Idempotent: Upsert auf (message_id, user_id, emoji)
+          const res = await fetch(`${SUPABASE_URL}/rest/v1/message_reactions`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': svcKey,
+              'Authorization': `Bearer ${svcKey}`,
+              'Prefer': 'resolution=merge-duplicates,return=representation',
+            },
+            body: JSON.stringify({
+              message_id: messageId,
+              user_id: auth.userId,
+              username: auth.username,
+              emoji,
+            }),
+          });
+          const data = await res.json().catch(() => ({}));
+          return jsonResponse(data, res.ok ? 201 : res.status);
+        }
+        if (method === 'GET' && segs.length === 5) {
+          const supaPath = `/rest/v1/message_reactions?select=emoji,username,user_id,created_at&message_id=eq.${messageId}&order=created_at.asc`;
+          const res = await fetch(`${SUPABASE_URL}${supaPath}`, {
+            method: 'GET',
+            headers: { 'apikey': svcKey, 'Authorization': `Bearer ${svcKey}` },
+          });
+          const rows = await res.json().catch(() => []);
+          // Aggregat-Form: { '👍': ['user1','user2'], ... }
+          const grouped = {};
+          if (Array.isArray(rows)) {
+            for (const r of rows) {
+              const e = r.emoji || '';
+              if (!grouped[e]) grouped[e] = [];
+              grouped[e].push(r.username || 'Anonym');
+            }
+          }
+          return jsonResponse({ reactions: grouped, raw: rows });
+        }
+        if (method === 'DELETE' && segs[4] === 'reactions' && segs.length === 6) {
+          const emoji = decodeURIComponent(segs[5] || '');
+          if (!emoji) return errorResponse('emoji fehlt', 400);
+          const res = await fetch(
+            `${SUPABASE_URL}/rest/v1/message_reactions?message_id=eq.${messageId}&user_id=eq.${auth.userId}&emoji=eq.${encodeURIComponent(emoji)}`,
+            {
+              method: 'DELETE',
+              headers: { 'apikey': svcKey, 'Authorization': `Bearer ${svcKey}` },
+            },
+          );
+          if (!res.ok) {
+            const txt = await res.text().catch(() => '');
+            return errorResponse(`Reaktion-Delete fehlgeschlagen: ${res.status} ${txt}`, res.status);
+          }
+          return jsonResponse({ success: true });
+        }
+        if (method === 'GET' && segs[5] === 'user') {
+          const username = decodeURIComponent(segs[6] || '');
+          if (!username) return errorResponse('username fehlt', 400);
+          const supaPath = `/rest/v1/message_reactions?select=emoji&message_id=eq.${messageId}&username=eq.${encodeURIComponent(username)}`;
+          const res = await fetch(`${SUPABASE_URL}${supaPath}`, {
+            method: 'GET',
+            headers: { 'apikey': svcKey, 'Authorization': `Bearer ${svcKey}` },
+          });
+          const rows = await res.json().catch(() => []);
+          const emojis = Array.isArray(rows) ? rows.map(r => r.emoji).filter(Boolean) : [];
+          return jsonResponse({ emojis });
+        }
+        return errorResponse('Pfad nicht erkannt', 404);
+      } catch (e) {
+        return errorResponse(`Reactions-Fehler: ${e.message}`);
+      }
+    }
+
     // ── Voice-Upload ──────────────────────────────────────────
     if (path === '/api/chat/voice-upload' && method === 'POST') {
       try {
