@@ -1,8 +1,11 @@
-name: 🎥 LiveKit WB — Container deployen
+name: 🎥 LiveKit WB — Container deployen (SSH / manuell)
 
-# Deployt die WB-eigene LiveKit-Instanz (livekit-weltenbibliothek) auf den
-# Hostinger VPS. Fügt den Caddy-Snippet für livekit-wb.srv1438024.hstgr.cloud
-# in Mensaena's Caddyfile ein und startet/aktualisiert den Container.
+# HINWEIS: Dieser Workflow ist nur noch für manuellen SSH-Deploy gedacht.
+# Auto-Deploy bei infra/livekit-wb/** Änderungen läuft über
+# deploy_livekit_wb_local.yml (Self-Hosted Runner auf VPS, kein SSH nötig).
+#
+# Port 22 von GitHub Actions zur VPS ist geblockt → SSH-Deploy schlägt fehl.
+# Nur manuell via workflow_dispatch ausführen wenn VPS-SSH explizit freigegeben.
 #
 # Required Secrets:
 #   VPS_PASSWORD          — SSH root-Passwort für VPS 72.62.154.95
@@ -11,11 +14,6 @@ name: 🎥 LiveKit WB — Container deployen
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - 'infra/livekit-wb/**'
-      - '.github/workflows/deploy_livekit_wb.yml'
 
 permissions:
   contents: read
