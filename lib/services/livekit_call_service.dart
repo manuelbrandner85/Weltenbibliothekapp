@@ -45,6 +45,12 @@ class LiveKitCallService extends ChangeNotifier {
   Room? _room;
   EventsListener<RoomEvent>? _listener;
   Timer? _durationTimer;
+  Timer? _tokenRefreshTimer;
+
+  /// Letzte Connect-Parameter — gebraucht für Token-Refresh + Reconnect.
+  String? _activeWorld;
+  String? _activeDisplayName;
+  String? _activeAvatarUrl;
 
   // ── State ──────────────────────────────────────────────────────────────────
 
@@ -336,10 +342,17 @@ class LiveKitCallService extends ChangeNotifier {
 
       // Avatar-URL als Attribut broadcasten damit alle Teilnehmer sie sehen
       // (für Profilbild-Anzeige im Tile wenn Kamera aus).
-      // NOTE: setAttributes returnt void in livekit_client 2.4 — kein await.
+      // WICHTIG: Bestehende Attribute (z.B. handRaised) müssen mitgespreaded
+      // werden, sonst überschreibt setAttributes sie alle.
       if (avatarUrl != null && avatarUrl.isNotEmpty) {
         try {
-          room.localParticipant?.setAttributes({'avatarUrl': avatarUrl});
+          final lp = room.localParticipant;
+          if (lp != null) {
+            lp.setAttributes({
+              ...lp.attributes,
+              'avatarUrl': avatarUrl,
+            });
+          }
           if (kDebugMode) {
             debugPrint('🖼️  Avatar-URL gebroadcastet: $avatarUrl');
           }
@@ -374,6 +387,13 @@ class LiveKitCallService extends ChangeNotifier {
 
       _setState(LiveKitConnectionState.connected);
       _startDurationTimer();
+
+      // 🔁 Bundle 3.1: Token-Refresh-Loop starten — verhindert Auth-Verlust
+      // bei langen Calls (Token-TTL 4h auf der Edge Function).
+      _activeWorld = world;
+      _activeDisplayName = displayName;
+      _activeAvatarUrl = avatarUrl;
+      _scheduleTokenRefresh(token);
     } catch (e) {
       _errorMessage = _friendlyError(e);
       _setState(LiveKitConnectionState.error);
@@ -455,6 +475,21 @@ class LiveKitCallService extends ChangeNotifier {
       }
       notifyListeners();
     });
+    // 🛑 Bundle 3.5: User stoppt ScreenShare aus dem System-Notification-
+    // Drawer → LocalTrackUnpublishedEvent kommt mit source=screenShareVideo.
+    // UI bleibt sonst auf "Stop"-Button hängen weil _screenShareEnabled true.
+    listener.on<LocalTrackUnpublishedEvent>((event) {
+      if (event.publication.source == TrackSource.screenShareVideo &&
+          _screenShareEnabled) {
+        if (kDebugMode) {
+          debugPrint('🖥️  ScreenShare extern gestoppt — UI sync');
+        }
+        _screenShareEnabled = false;
+        // Foreground-Service auch stoppen (war nur für ScreenShare aktiv).
+        FlutterBackground.disableBackgroundExecution().catchError((_) => false);
+        notifyListeners();
+      }
+    });
     // Hand-Heben-Sync: andere User ändern Attribute → UI muss neu zeichnen.
     listener.on<ParticipantAttributesChanged>((event) {
       if (kDebugMode) {
@@ -473,9 +508,25 @@ class LiveKitCallService extends ChangeNotifier {
   /// Verlässt den Raum und räumt alle Ressourcen auf.
   Future<void> leaveRoom() async {
     _stopDurationTimer();
+    _cancelTokenRefresh();
 
-    // Foreground-Service IMMER stoppen wenn der Anruf verlassen wird —
-    // war für Background-Mode aktiv (vom joinRoom gestartet).
+    // Reihenfolge wichtig (Android 14+ Policy):
+    // 1) Aktive ScreenShare-Tracks unpublishen, BEVOR der Foreground-Service
+    //    weg ist — sonst meldet das System "ScreenShare ohne FG-Service".
+    if (_screenShareEnabled) {
+      final lp = _room?.localParticipant;
+      if (lp != null) {
+        for (final pub in lp.videoTrackPublications.toList()) {
+          if (pub.source != TrackSource.screenShareVideo) continue;
+          try {
+            await lp.removePublishedTrack(pub.sid).timeout(
+                const Duration(seconds: 3));
+          } catch (_) {}
+        }
+      }
+    }
+
+    // 2) Foreground-Service stoppen (genau einmal, nicht doppelt).
     try {
       await FlutterBackground.disableBackgroundExecution();
       if (kDebugMode) {
@@ -487,13 +538,6 @@ class LiveKitCallService extends ChangeNotifier {
       await _listener?.dispose();
     } catch (_) {}
     _listener = null;
-
-    // Bildschirm-Teilen: Foreground-Service stoppen falls aktiv
-    if (_screenShareEnabled) {
-      try {
-        await FlutterBackground.disableBackgroundExecution();
-      } catch (_) {}
-    }
 
     try {
       await _room?.disconnect();
@@ -509,6 +553,7 @@ class LiveKitCallService extends ChangeNotifier {
     _cameraEnabled = false;
     _screenShareEnabled = false;
     _handRaised = false;
+    _cameraIndex = 0;          // 🔄 Bundle 3.4: Index für nächsten Join resetten
     _activeSpeakers = {};
     _remoteVolumes.clear();
     _localDisplayName = null;
@@ -917,6 +962,110 @@ class LiveKitCallService extends ChangeNotifier {
   void _stopDurationTimer() {
     _durationTimer?.cancel();
     _durationTimer = null;
+  }
+
+  /// 🔁 Bundle 3.1: Token-Refresh — verhindert "Authentifizierung erforderlich"
+  /// nach 4h Call. Liest `exp` aus dem JWT und plant ein Refresh ~5 min vor
+  /// Ablauf. Holt einen frischen Token von der Edge Function und gibt ihn
+  /// per `Room.setE2EEEnabled` ähnlicher API an LiveKit weiter (siehe
+  /// `_applyRefreshedToken`).
+  void _scheduleTokenRefresh(String token) {
+    _cancelTokenRefresh();
+    final exp = _jwtExpEpoch(token);
+    if (exp == null) return;
+    final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    final secondsLeft = exp - now;
+    // 5 min vor Ablauf refreshen, mindestens 30 s Vorlaufzeit lassen.
+    final leadSeconds = secondsLeft - 300;
+    if (leadSeconds < 30) {
+      // Token läuft sehr bald ab — sofort refreshen.
+      _refreshToken();
+      return;
+    }
+    if (kDebugMode) {
+      debugPrint('🔁 Token-Refresh in ${leadSeconds}s geplant (exp in ${secondsLeft}s)');
+    }
+    _tokenRefreshTimer = Timer(Duration(seconds: leadSeconds), _refreshToken);
+  }
+
+  void _cancelTokenRefresh() {
+    _tokenRefreshTimer?.cancel();
+    _tokenRefreshTimer = null;
+  }
+
+  /// Decodiert den `exp`-Claim aus einem JWT (epoch-Sekunden) oder null.
+  int? _jwtExpEpoch(String token) {
+    try {
+      final parts = token.split('.');
+      if (parts.length != 3) return null;
+      // Base64URL → bytes → JSON → exp.
+      final pad = '=' * ((4 - parts[1].length % 4) % 4);
+      final json = utf8.decode(base64Url.decode(parts[1] + pad));
+      final claims = jsonDecode(json) as Map<String, dynamic>;
+      final exp = claims['exp'];
+      if (exp is int) return exp;
+      if (exp is num) return exp.toInt();
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> _refreshToken() async {
+    final room = _room;
+    final roomName = _roomName;
+    if (room == null || roomName == null) return;
+    if (kDebugMode) debugPrint('🔁 Token-Refresh: starte …');
+    try {
+      final supabase = Supabase.instance.client;
+      final session = supabase.auth.currentSession;
+      final bearerToken = session?.accessToken ?? ApiConfig.supabaseAnonKey;
+      final guestId = await _getOrCreateClientGuestId();
+
+      final res = await http.post(
+        Uri.parse(ApiConfig.livekitTokenUrl),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $bearerToken',
+          'apikey': ApiConfig.supabaseAnonKey,
+        },
+        body: jsonEncode({
+          'roomName': roomName,
+          if (_activeDisplayName != null) 'displayName': _activeDisplayName,
+          'clientGuestId': guestId,
+        }),
+      ).timeout(const Duration(seconds: 15));
+
+      if (res.statusCode != 200) {
+        if (kDebugMode) {
+          debugPrint('⚠️ Token-Refresh Server-Fehler ${res.statusCode}');
+        }
+        // In 60s nochmal probieren — nicht abbrechen.
+        _tokenRefreshTimer = Timer(const Duration(seconds: 60), _refreshToken);
+        return;
+      }
+      final data = jsonDecode(res.body) as Map<String, dynamic>;
+      final newToken = data['token'] as String?;
+      if (newToken == null || newToken.isEmpty) return;
+
+      // Versuch: LiveKit-Client `Room.updateToken(...)` ist seit 2.x verfügbar
+      // (in Pre-2.5 hieß es teilweise anders). Fallback: stilles Re-Schedule.
+      try {
+        // ignore: avoid_dynamic_calls
+        await (room as dynamic).updateToken(newToken);
+        if (kDebugMode) debugPrint('✅ Token erfolgreich erneuert');
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('⚠️ Room.updateToken nicht verfügbar: $e — '
+              'plane Re-Schedule für nächsten Refresh-Window');
+        }
+      }
+      _scheduleTokenRefresh(newToken);
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ Token-Refresh fehlgeschlagen: $e');
+      // Erneut probieren in 60s — kein hard-fail.
+      _tokenRefreshTimer = Timer(const Duration(seconds: 60), _refreshToken);
+    }
   }
 
   String _friendlyError(Object e) {

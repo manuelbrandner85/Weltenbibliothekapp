@@ -232,7 +232,11 @@ class _LiveKitGroupCallScreenState
           subtitle: svc.errorMessage ?? 'Unbekannter Fehler.',
           accent: const Color(0xFFFF1744),
           showRetry: true,
-          onRetry: () {
+          onRetry: () async {
+            // 🛑 Bundle 3.7: leaveRoom() vor _join() verhindert Doppel-
+            // Connection (z.B. bei laufendem Reconnect-Versuch im Service).
+            await svc.leaveRoom();
+            if (!mounted) return;
             setState(() => _hasJoined = false);
             _join();
           },
@@ -253,7 +257,9 @@ class _LiveKitGroupCallScreenState
           subtitle: 'Der Anruf wurde beendet oder die Verbindung\nwurde unterbrochen.',
           accent: WbDesign.textTertiary,
           showRetry: true,
-          onRetry: () {
+          onRetry: () async {
+            await svc.leaveRoom();
+            if (!mounted) return;
             setState(() => _hasJoined = false);
             _join();
           },

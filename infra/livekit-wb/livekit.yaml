@@ -30,11 +30,15 @@ keys:
   wb-a9b26485d407e7dc2043: ${LIVEKIT_API_SECRET}
 
 # WebRTC Media-Konfiguration
-# Range 60001–65000 sicher disjunkt von Mensaena (50000–60000)
+# Range 60001–61000 (1000 Ports) — disjunkt von Mensaena (50000–60000).
+# Bei 50 max_participants × ~4 Tracks (Audio+Video+Screen+RTCP) braucht es
+# mind. 200 Ports. 100 Ports (alter Wert) waren chronisch zu wenig → Audio/
+# Video-Drops. 1000 Ports lassen Spielraum, bleiben aber RAM-verträglich
+# (docker-proxy-Memory ~1-1.5 MiB pro Port = ~1-1.5 GiB für 1000 Ports).
 rtc:
   tcp_port: 7981
   port_range_start: 60001
-  port_range_end: 60100
+  port_range_end: 61000
   use_external_ip: true
 
 # Räume werden automatisch angelegt wenn der erste User joint.

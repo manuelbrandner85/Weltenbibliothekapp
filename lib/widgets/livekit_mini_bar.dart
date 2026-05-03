@@ -83,6 +83,9 @@ class _MiniBarContent extends StatelessWidget {
   }
 
   void _expandToFull(BuildContext context) {
+    // 🛑 Bundle 3.6: Wenn der Vollbild-Screen schon offen ist (oder gerade
+    // animiert), nicht nochmal pushen — sonst stapeln sich mehrere Screens.
+    if (LiveKitScreenVisibility.instance.visible) return;
     final world = svc.world ?? 'materie';
     final roomName = svc.roomName ?? '';
     Navigator.of(context, rootNavigator: true).push(
