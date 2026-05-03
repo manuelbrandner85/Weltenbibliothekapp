@@ -1,12 +1,20 @@
 # LiveKit-Server-Konfiguration — Weltenbibliothek
 #
 # Eigene Instanz, getrennt von Mensaena (kein gemeinsamer Container/Key/Port).
-# Container hört intern auf Port 7980 (HTTP) — Traefik terminiert TLS auf 7892.
+# Container hört intern auf Port 7980 (HTTP). Mensaena's Caddy terminiert TLS.
 #
-# WICHTIG: Dieser File enthält das WB-API-Secret im Klartext.
-#   - Auf dem VPS unter /docker/livekit-wb/livekit.yaml mit chmod 600 gespeichert
-#   - Wird per `deploy_livekit_wb.yml` Workflow deployed
-#   - Niemals lokal ändern und committen — Secret-Update läuft über Workflow
+# 🔐 SECRET-HANDLING:
+#   - Dieser File enthält KEIN Secret mehr. Der API-Schlüssel-Wert wird
+#     per `${LIVEKIT_API_SECRET}` zur Deploy-Zeit von der `deploy_livekit_wb.yml`-
+#     Pipeline (envsubst) eingesetzt; die echte yaml mit Secret liegt
+#     ausschließlich auf /docker/livekit-wb/livekit.yaml (chmod 600).
+#   - Falls dieser File jemals ein Klartext-Secret enthielt: SOFORT rotieren!
+#     1. Neues Secret generieren: `openssl rand -hex 32`
+#     2. GitHub-Secret `LIVEKIT_API_SECRET` aktualisieren
+#     3. Supabase Edge-Function-Secret `LIVEKIT_API_SECRET` aktualisieren
+#     4. `deploy_livekit_wb.yml` neu triggern → Container restart
+#   - Secret-Lecks im Git: alte Werte mit `git log -p infra/livekit-wb/livekit.yaml`
+#     prüfen; wenn produktiv: rotieren + alten Wert dokumentiert als kompromittiert.
 #
 # MENSAENA-SCHUTZ:
 #   - Port 7980 statt LiveKit-Default 7880 → keine Kollision falls Mensaena auf 7880 publiziert
@@ -16,9 +24,10 @@
 
 port: 7980
 
-# API-Keys: nur WB. Kein Mensaena-Key, keine Vermischung.
+# API-Keys: Wert wird beim Deploy via envsubst aus dem GitHub-Secret
+# `LIVEKIT_API_SECRET` injiziert. Repo enthält ausschließlich den Platzhalter.
 keys:
-  wb-a9b26485d407e7dc2043: f9c57648d1756868aa7c124b545c029bcb2569b5bf82c1fa5058eefc4efc21d1
+  wb-a9b26485d407e7dc2043: ${LIVEKIT_API_SECRET}
 
 # WebRTC Media-Konfiguration
 # Range 60001–65000 sicher disjunkt von Mensaena (50000–60000)
@@ -29,10 +38,11 @@ rtc:
   use_external_ip: true
 
 # Räume werden automatisch angelegt wenn der erste User joint.
-# empty_timeout: Raum wird gelöscht 5 min nachdem letzter Teilnehmer geht.
+# empty_timeout: 0 → Raum wird SOFORT gelöscht sobald der letzte
+# Teilnehmer geht (kein Idle-Bestand, keine versehentlich offenen Räume).
 room:
   auto_create: true
-  empty_timeout: 300
+  empty_timeout: 1
   max_participants: 50
 
 logging:

@@ -102,6 +102,92 @@ async function countFromSupabase(env, table, filters = '') {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// 🔐 USER-AUTHENTICATION (Supabase JWT → Profile-Identity)
+// ═══════════════════════════════════════════════════════════════
+// Liest den vom Client mitgeschickten Supabase-Access-Token (entweder
+// im Authorization-Header oder im neuen X-Supabase-Auth-Header) und
+// verifiziert ihn gegen /auth/v1/user. Liefert die kanonische
+// {userId, username, role, isAdmin} aus dem profiles-Table.
+// Cache pro Request über `request._authCache` damit jeder Endpoint nur
+// einmal verifiziert.
+//
+// Rückgabe:
+//   - { userId, username, role, isAdmin } bei gültigem Token
+//   - null bei fehlendem oder ungültigem Token
+async function verifyAuth(request, env) {
+  if (request._authCache !== undefined) return request._authCache;
+
+  // Token-Quellen in Reihenfolge: X-Supabase-Auth (neu), Authorization
+  let token = '';
+  const xAuth = request.headers.get('X-Supabase-Auth') || '';
+  if (xAuth.startsWith('Bearer ')) token = xAuth.slice(7);
+  if (!token) {
+    const auth = request.headers.get('Authorization') || '';
+    if (auth.startsWith('Bearer ')) token = auth.slice(7);
+  }
+  if (!token) {
+    request._authCache = null;
+    return null;
+  }
+
+  // Wenn der Token der Anon-Key ist (häufig bei nicht-eingeloggten
+  // Calls), gilt er nicht als User-Auth.
+  const anonKey = env.SUPABASE_ANON_KEY || '';
+  if (token === anonKey) {
+    request._authCache = null;
+    return null;
+  }
+
+  try {
+    const userRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      method: 'GET',
+      headers: {
+        'apikey': anonKey,
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    if (!userRes.ok) {
+      request._authCache = null;
+      return null;
+    }
+    const user = await userRes.json().catch(() => null);
+    if (!user || !user.id) {
+      request._authCache = null;
+      return null;
+    }
+    // Profile-Lookup für username + role (Service-Role bypassed RLS,
+    // damit wir einen kanonischen Match bekommen).
+    const svcKey = env.SUPABASE_SERVICE_ROLE_KEY || anonKey;
+    const profRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/profiles?select=username,role&id=eq.${user.id}&limit=1`,
+      {
+        method: 'GET',
+        headers: {
+          'apikey': svcKey,
+          'Authorization': `Bearer ${svcKey}`,
+        },
+      },
+    );
+    const profArr = await profRes.json().catch(() => []);
+    const prof = Array.isArray(profArr) && profArr.length > 0 ? profArr[0] : null;
+    const role = prof?.role || 'user';
+    const isAdmin = ['admin', 'root_admin', 'root-admin', 'content_editor']
+      .includes(role);
+    const result = {
+      userId: user.id,
+      username: prof?.username || (user.email ? user.email.split('@')[0] : null),
+      role,
+      isAdmin,
+    };
+    request._authCache = result;
+    return result;
+  } catch (_e) {
+    request._authCache = null;
+    return null;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
 // 🔔 FCM PUSH DISPATCH (HTTP v1 API)
 // ═══════════════════════════════════════════════════════════════
 // Sendet Supabase `notification_queue`-Zeilen via Firebase Cloud Messaging.
@@ -739,6 +825,12 @@ export default {
       const limitParam = parseInt(url.searchParams.get('limit') || '50', 10);
 
       if (method === 'GET' && roomId) {
+        // 🔐 AUTH: GET muss authentifiziert sein, sonst kann jeder anonyme
+        // Client jeden Raum lesen (Service-Role umgeht RLS).
+        const auth = await verifyAuth(request, env);
+        if (!auth) {
+          return errorResponse('Authentifizierung erforderlich', 401);
+        }
         const anonKey = env.SUPABASE_ANON_KEY || '';
         const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || anonKey;
         // FIX: Explicit column list with avatar_emoji (added via migration v14/v15)
@@ -779,23 +871,23 @@ export default {
 
       if (method === 'POST') {
         try {
+          // 🔐 AUTH: POST muss authentifiziert sein. user_id und username
+          // werden NICHT mehr aus dem Body übernommen, sondern aus dem
+          // verifizierten Token-Profil (kein Impersonation mehr möglich).
+          const auth = await verifyAuth(request, env);
+          if (!auth) {
+            return errorResponse('Authentifizierung erforderlich', 401);
+          }
           const body = await request.json();
           const anonKey = env.SUPABASE_ANON_KEY || '';
-          // Use service role key so non-UUID user_ids and anonymous inserts work
           const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || anonKey;
-
-          // Sanitize userId: only keep valid UUIDs (must exist in auth.users due to FK)
-          const rawUserId = body.userId || body.user_id || null;
-          const isUUID = rawUserId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawUserId);
-          // Only use UUID if it's a valid format; null is allowed (user_id is nullable in DB)
-          const finalUserId = isUUID ? rawUserId : null;
 
           const insertBody = {
             room_id:      body.roomId || body.room_id || '',
-            user_id:      finalUserId,   // null if not a real auth UUID (DB allows NULL)
-            username:     body.username || 'Anonym',
+            user_id:      auth.userId,                           // 🔐 aus JWT
+            username:     auth.username || body.username || 'Anonym', // 🔐 aus profiles
             avatar_url:   body.avatarUrl || body.avatar_url || null,
-            avatar_emoji: body.avatarEmoji || body.avatar_emoji || null,  // ✅ Spalte existiert nach Migration v14
+            avatar_emoji: body.avatarEmoji || body.avatar_emoji || null,
             content:      body.message || body.content || '',
             message:      body.message || body.content || '',
             message_type: body.mediaType === 'audio' ? 'voice' : (body.mediaType === 'image' ? 'image' : 'text'),
@@ -834,16 +926,16 @@ export default {
       const messageId = path.replace('/api/chat/messages/', '');
       if (!messageId) return errorResponse('Nachrichten-ID fehlt', 400);
       try {
+        // 🔐 AUTH: PUT muss authentifiziert sein. isAdmin und username
+        // kommen aus dem verifizierten Profil, NICHT aus dem Body.
+        const auth = await verifyAuth(request, env);
+        if (!auth) {
+          return errorResponse('Authentifizierung erforderlich', 401);
+        }
         const body = await request.json().catch(() => ({}));
-        const { roomId, userId, username, message, realm, isAdmin } = body;
+        const { message } = body;
         const svcKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY || '';
 
-        // ✅ WICHTIG: App nutzt InvisibleAuth (custom IDs), NICHT Supabase Auth.
-        // user_id in der DB ist daher NULL. Wir identifizieren die Nachricht
-        // ausschließlich per message-ID + username-Prüfung für Sicherheit.
-        // Service-Role-Key umgeht RLS komplett.
-
-        // Erst prüfen ob die Nachricht dem User gehört (via username oder isAdmin)
         const checkRes = await fetch(
           `${SUPABASE_URL}/rest/v1/chat_messages?id=eq.${messageId}&select=id,username,user_id`,
           {
@@ -860,8 +952,12 @@ export default {
           return errorResponse('Nachricht nicht gefunden', 404);
         }
         const existingMsg = checkData[0];
-        // Sicherheitscheck: Username muss übereinstimmen (oder isAdmin)
-        if (!isAdmin && username && existingMsg.username !== username) {
+        // 🔐 Owner-Check: bevorzugt user_id-Match (Auth-UUID stimmt mit DB-Spalte
+        // überein), Fallback auf username für Legacy-Zeilen ohne user_id.
+        const ownsMsg =
+          (existingMsg.user_id && existingMsg.user_id === auth.userId) ||
+          (existingMsg.username && existingMsg.username === auth.username);
+        if (!auth.isAdmin && !ownsMsg) {
           return errorResponse('Keine Berechtigung zum Bearbeiten', 403);
         }
 
@@ -902,14 +998,15 @@ export default {
       const messageId = path.replace('/api/chat/messages/', '');
       if (!messageId) return errorResponse('Nachrichten-ID fehlt', 400);
       try {
-        const body = await request.json().catch(() => ({}));
-        const { userId, username, roomId, realm, isAdmin } = body;
+        // 🔐 AUTH: DELETE muss authentifiziert sein. isAdmin/username
+        // kommen aus dem verifizierten Profil, NICHT aus dem Body.
+        const auth = await verifyAuth(request, env);
+        if (!auth) {
+          return errorResponse('Authentifizierung erforderlich', 401);
+        }
         const svcKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY || '';
 
-        // ✅ WICHTIG: user_id in DB ist NULL (InvisibleAuth). 
-        // Authentifizierung via username-Prüfung + Service-Role-Key.
-        if (!isAdmin) {
-          // Prüfe ob Nachricht dem User gehört (via username)
+        if (!auth.isAdmin) {
           const checkRes = await fetch(
             `${SUPABASE_URL}/rest/v1/chat_messages?id=eq.${messageId}&select=id,username,user_id`,
             {
@@ -926,7 +1023,10 @@ export default {
             return errorResponse('Nachricht nicht gefunden', 404);
           }
           const existingMsg = checkData[0];
-          if (username && existingMsg.username !== username) {
+          const ownsMsg =
+            (existingMsg.user_id && existingMsg.user_id === auth.userId) ||
+            (existingMsg.username && existingMsg.username === auth.username);
+          if (!ownsMsg) {
             return errorResponse('Keine Berechtigung zum Löschen', 403);
           }
         }

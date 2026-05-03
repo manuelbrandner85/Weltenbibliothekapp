@@ -175,6 +175,28 @@ jobs:
       # ─────────────────────────────────────────────────────────────────────
       # STEP 4: WB-LIVEKIT-CONTAINER STARTEN (intern auf 127.0.0.1:7980)
       # ─────────────────────────────────────────────────────────────────────
+      - name: 🔐 livekit.yaml mit Secret-Injection vorbereiten
+        env:
+          LIVEKIT_API_SECRET: ${{ secrets.LIVEKIT_API_SECRET }}
+        run: |
+          set -euo pipefail
+          if [ -z "${LIVEKIT_API_SECRET:-}" ]; then
+            echo "❌ GitHub-Secret LIVEKIT_API_SECRET fehlt — abbruch"
+            echo "   Setze unter Settings → Secrets → Actions: LIVEKIT_API_SECRET"
+            exit 1
+          fi
+          echo "→ envsubst auf infra/livekit-wb/livekit.yaml — Secret-Platzhalter ersetzen"
+          # Nur LIVEKIT_API_SECRET ersetzen, andere $-Variablen unverändert lassen.
+          envsubst '${LIVEKIT_API_SECRET}' \
+            < infra/livekit-wb/livekit.yaml \
+            > /tmp/livekit.yaml
+          # Sanity-Check: Platzhalter darf nicht mehr im Output stehen
+          if grep -q '\${LIVEKIT_API_SECRET}' /tmp/livekit.yaml; then
+            echo "❌ envsubst hat den Platzhalter nicht ersetzt — abbruch"
+            exit 1
+          fi
+          echo "✅ /tmp/livekit.yaml ist deploy-ready (Secret eingesetzt, $(wc -c < /tmp/livekit.yaml) Bytes)"
+
       - name: 📦 WB-Infra deployen + Container starten
         env:
           VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
@@ -194,8 +216,15 @@ jobs:
             ${VPS_USER}@${VPS_HOST} \
             "mkdir -p ${VPS_DIR} && chmod 700 ${VPS_DIR}"
 
-          # Files kopieren
-          for f in docker-compose.yml livekit.yaml caddy-snippet.caddy; do
+          # Files kopieren — livekit.yaml kommt aus /tmp (Secret bereits eingesetzt)
+          echo "→ Kopiere /tmp/livekit.yaml (Secret-substituted) → ${VPS_DIR}/livekit.yaml …"
+          sshpass -p "$VPS_PASSWORD" scp \
+            -o StrictHostKeyChecking=no \
+            -o ConnectTimeout=30 \
+            -o PasswordAuthentication=yes \
+            /tmp/livekit.yaml \
+            ${VPS_USER}@${VPS_HOST}:${VPS_DIR}/livekit.yaml
+          for f in docker-compose.yml caddy-snippet.caddy; do
             echo "→ Kopiere $f → ${VPS_DIR}/$f …"
             sshpass -p "$VPS_PASSWORD" scp \
               -o StrictHostKeyChecking=no \

@@ -84,6 +84,24 @@ Deno.serve(async (req: Request) => {
       });
     }
 
+    // 🔐 Room-Validierung: nur App-eigene Rooms erlaubt.
+    // Akzeptiert: wb-materie-*, wb-energie-*, wb-shared-*
+    // Zeichen: a-z A-Z 0-9 _ -, max 64 Zeichen, kein Whitespace.
+    const roomPattern =
+      /^wb-(materie|energie|shared)-[a-zA-Z0-9_-]{1,48}$/;
+    if (!roomPattern.test(roomName)) {
+      return new Response(
+        JSON.stringify({
+          error:
+            "Ungültiger Raum-Name. Erlaubt sind nur App-Räume (wb-materie-*, wb-energie-*, wb-shared-*).",
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+
     const apiKey = Deno.env.get("LIVEKIT_API_KEY");
     const apiSecret = Deno.env.get("LIVEKIT_API_SECRET");
     const livekitUrl = Deno.env.get("LIVEKIT_URL") ?? "";
