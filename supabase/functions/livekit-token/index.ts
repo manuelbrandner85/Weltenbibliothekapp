@@ -7,33 +7,72 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
+/// Generiert eine eindeutige Guest-ID. Optional kann der Client einen
+/// stabilen clientGuestId mitgeben (z.B. UUID aus SharedPreferences) damit
+/// Reconnects als gleicher User auftauchen.
+///
+/// WICHTIG: Wenn zwei Gäste denselben displayName hätten (z.B. zwei
+/// "Mitglied"-User), würde gleiche Identity LiveKit dazu bringen den
+/// einen rauszuschmeißen. Daher hängen wir einen zufälligen Suffix an
+/// wenn kein clientGuestId mitgegeben wurde.
+function buildGuestId(
+  name: string,
+  clientGuestId: string | null,
+): string {
+  const safeName = name.replace(/[^a-zA-Z0-9]/g, "_").slice(0, 16);
+  if (clientGuestId && clientGuestId.length >= 8) {
+    return `guest-${safeName}-${clientGuestId.slice(0, 16)}`;
+  }
+  // Fallback: Zufallssuffix damit kein Identity-Clash
+  const rand = crypto.randomUUID().slice(0, 8);
+  return `guest-${safeName}-${rand}`;
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
   try {
+    // Auth-Modus erkennen:
+    // 1. Bearer-Token mit gültiger Supabase-Session → identity = user.id
+    // 2. apikey-Header (nur Anon-Key) → identity = guest-<datum>-<name>
+    // 3. Weder noch → 401
     const authHeader = req.headers.get("Authorization") ?? "";
-    if (!authHeader.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "Nicht authentifiziert" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    const apikey = req.headers.get("apikey") ?? "";
+    const expectedAnon = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+
+    let userId: string | null = null;
+    let userMeta: Record<string, unknown> = {};
+    let userEmail: string | null = null;
+
+    if (authHeader.startsWith("Bearer ")) {
+      // Supabase-User-Token → echten User holen
+      const supabase = createClient(
+        Deno.env.get("SUPABASE_URL") ?? "",
+        expectedAnon,
+        { global: { headers: { Authorization: authHeader } } },
+      );
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        userId = user.id;
+        userMeta = user.user_metadata ?? {};
+        userEmail = user.email ?? null;
+      }
+      // Bei ungültigem Token KEIN Hard-Fail mehr — fall back zu apikey-Modus
     }
 
-    // Supabase Client mit User-Token — User-ID + Metadata ermitteln
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-      { global: { headers: { Authorization: authHeader } } },
-    );
-
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) {
-      return new Response(JSON.stringify({ error: "Token ungültig" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    // Fallback: apikey muss vorhanden + korrekt sein
+    if (!userId) {
+      if (!apikey || apikey !== expectedAnon) {
+        return new Response(
+          JSON.stringify({ error: "Authentifizierung erforderlich" }),
+          {
+            status: 401,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
+      }
     }
 
     const body = await req.json().catch(() => ({}));
@@ -59,11 +98,19 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const meta = user.user_metadata ?? {};
-    const name = body.displayName ??
-      meta.username ??
-      meta.display_name ??
-      (user.email ? user.email.split("@")[0] : "Mitglied");
+    // Display-Name + Identity-Resolution
+    const displayName = body.displayName ??
+      (userMeta.username as string | undefined) ??
+      (userMeta.display_name as string | undefined) ??
+      (userEmail ? userEmail.split("@")[0] : "Mitglied");
+
+    // Wenn Client eine stabile guest-id mitgegeben hat (z.B. UUID aus
+    // SharedPreferences), nutzen wir die — sonst wird im buildGuestId ein
+    // Random-Suffix angehängt damit Identity-Clashes verhindert werden.
+    const clientGuestId = typeof body.clientGuestId === "string"
+      ? body.clientGuestId
+      : null;
+    const identity = userId ?? buildGuestId(displayName, clientGuestId);
 
     // JWT (HMAC-SHA256) — identisch zur bisherigen Cloudflare Worker Logik
     const b64url = (str: string) =>
@@ -73,17 +120,22 @@ Deno.serve(async (req: Request) => {
     const now = Math.floor(Date.now() / 1000);
     const payload = b64url(JSON.stringify({
       iss: apiKey,
-      sub: user.id,
-      name: name,
+      sub: identity,
+      name: displayName,
       nbf: now,
-      exp: now + 14400, // 4 Stunden — wie Mensaena
+      exp: now + 14400, // 4 Stunden
       video: {
         roomJoin: true,
         room: roomName,
         canPublish: true,
         canSubscribe: true,
         canPublishData: true,
-        canPublishSources: ["camera", "microphone", "screen_share", "screen_share_audio"],
+        canPublishSources: [
+          "camera",
+          "microphone",
+          "screen_share",
+          "screen_share_audio",
+        ],
       },
     }));
 
@@ -100,10 +152,16 @@ Deno.serve(async (req: Request) => {
       key,
       encoder.encode(`${header}.${payload}`),
     );
-    const signature = b64url(String.fromCharCode(...new Uint8Array(sigBytes)));
+    const signature = b64url(
+      String.fromCharCode(...new Uint8Array(sigBytes)),
+    );
 
     return new Response(
-      JSON.stringify({ token: `${header}.${payload}.${signature}`, url: livekitUrl }),
+      JSON.stringify({
+        token: `${header}.${payload}.${signature}`,
+        url: livekitUrl,
+        identity, // Hilfreich für Client-side Logging
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (e) {
@@ -116,4 +174,3 @@ Deno.serve(async (req: Request) => {
     );
   }
 });
-// trigger redeploy 20260503-005003

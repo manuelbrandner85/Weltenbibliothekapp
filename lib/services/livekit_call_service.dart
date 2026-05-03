@@ -17,12 +17,14 @@ library;
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math' show Random;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_background/flutter_background.dart';
 import 'package:http/http.dart' as http;
 import 'package:livekit_client/livekit_client.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart' as rtc;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -193,36 +195,39 @@ class LiveKitCallService extends ChangeNotifier {
 
       final supabase = Supabase.instance.client;
 
-      // Wenn keine Supabase-Session → automatisch anonyme Session erstellen
-      // (App unterstützt lokale-only User, aber LiveKit-Token-Generation
-      // braucht ein gültiges JWT). signInAnonymously erstellt schwachen
-      // Account ohne Email/Passwort — perfekt für Voice-Call-Identifikation.
-      if (supabase.auth.currentSession == null) {
-        if (kDebugMode) {
-          debugPrint('🔑 LiveKit: keine Supabase-Session → '
-              'erstelle anonyme Session …');
-        }
+      // Cleanup: Wenn ein früherer Auto-anonymous-Signin eine Anon-Session
+      // hinterlassen hat, melden wir sie ab — sie kann Realtime/Chat-Subscriptions
+      // mit unerwartetem Auth-State stören. Echte User-Sessions bleiben bestehen.
+      final existingUser = supabase.auth.currentUser;
+      if (existingUser != null && existingUser.isAnonymous) {
         try {
-          await supabase.auth.signInAnonymously();
+          await supabase.auth.signOut();
           if (kDebugMode) {
-            debugPrint('🔑 LiveKit: anonyme Session erstellt — '
-                'userId=${supabase.auth.currentUser?.id}');
+            debugPrint('🔑 LiveKit: alte anonyme Session abgemeldet '
+                '(behebt Realtime-Side-Effects)');
           }
         } catch (e) {
-          if (kDebugMode) {
-            debugPrint('⚠️ LiveKit: signInAnonymously failed — $e');
-          }
-          throw Exception(
-              'Konnte keine Anruf-Sitzung erstellen. Bitte App neu starten '
-              'und erneut versuchen.\nDetails: $e');
+          if (kDebugMode) debugPrint('⚠️ signOut anon failed: $e');
         }
       }
 
-      final accessToken = supabase.auth.currentSession?.accessToken;
-      if (accessToken == null || accessToken.isEmpty) {
-        throw Exception(
-            'Nicht angemeldet — bitte App neu starten und erneut versuchen.');
+      // Edge Function akzeptiert sowohl echten User-Bearer-Token als auch
+      // anon-key-only (Guest-Modus). Wir versuchen beide:
+      //   1. Wenn echte Session vorhanden: Bearer = User-Access-Token
+      //   2. Sonst: Bearer = Anon-Key (Edge-Function-Auth über apikey-Header)
+      // Damit funktioniert LiveKit auch ohne Supabase-Account und es wird
+      // KEIN automatischer Anonymous-Signup erzwungen.
+      final session = supabase.auth.currentSession;
+      final bearerToken =
+          session?.accessToken ?? ApiConfig.supabaseAnonKey;
+      if (kDebugMode) {
+        debugPrint('🔑 LiveKit token: ${session != null ? "user-session" : "guest (anon-key)"}');
       }
+
+      // Stabile Guest-ID (UUID-ähnlich, persistent in SharedPreferences)
+      // damit Reconnects als gleicher User auftauchen UND mehrere Geräte
+      // mit gleichem Display-Name nicht in Identity-Clash geraten.
+      final guestId = await _getOrCreateClientGuestId();
 
       // Token von Supabase Edge Function holen (direkt, kein Cloudflare)
       final tokenRes = await http
@@ -230,12 +235,13 @@ class LiveKitCallService extends ChangeNotifier {
             Uri.parse(ApiConfig.livekitTokenUrl),
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': 'Bearer $accessToken',
+              'Authorization': 'Bearer $bearerToken',
               'apikey': ApiConfig.supabaseAnonKey,
             },
             body: jsonEncode({
               'roomName': roomName,
               if (displayName != null) 'displayName': displayName,
+              'clientGuestId': guestId,
             }),
           )
           .timeout(const Duration(seconds: 15));
@@ -944,5 +950,30 @@ class LiveKitCallService extends ChangeNotifier {
       _room?.disconnect();
     } catch (_) {}
     super.dispose();
+  }
+
+  /// Holt oder erstellt eine stabile Guest-ID die in SharedPreferences
+  /// persistiert wird. Wird der Edge Function als clientGuestId mitgegeben
+  /// damit (a) Reconnects als gleicher User erkannt werden und (b) zwei
+  /// Geräte mit dem gleichen Display-Name nicht in Identity-Clash kommen.
+  static const _kGuestIdKey = 'wb.livekit.client_guest_id';
+
+  Future<String> _getOrCreateClientGuestId() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      String? id = prefs.getString(_kGuestIdKey);
+      if (id != null && id.length >= 8) return id;
+      // Erzeuge neue 16-stellige zufällige ID (URL-safe)
+      const alpha = 'abcdefghijklmnopqrstuvwxyz0123456789';
+      final rnd = Random.secure();
+      id = List.generate(16, (_) => alpha[rnd.nextInt(alpha.length)]).join();
+      await prefs.setString(_kGuestIdKey, id);
+      return id;
+    } catch (_) {
+      // Fallback: in-memory random (nicht persistent, aber besser als nichts)
+      const alpha = 'abcdefghijklmnopqrstuvwxyz0123456789';
+      final rnd = Random();
+      return List.generate(16, (_) => alpha[rnd.nextInt(alpha.length)]).join();
+    }
   }
 }
