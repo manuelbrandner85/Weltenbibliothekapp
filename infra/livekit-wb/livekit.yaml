@@ -40,6 +40,9 @@ rtc:
   port_range_start: 60001
   port_range_end: 61000
   use_external_ip: true
+  # Explizite externe IP — verhindert dass LiveKit interne Docker-IPs
+  # in ICE-Kandidaten bewirbt (was bei auto-detect manchmal scheitert).
+  node_ip: 72.62.154.95
 
 # Räume werden automatisch angelegt wenn der erste User joint.
 # empty_timeout: 0 → Raum wird SOFORT gelöscht sobald der letzte

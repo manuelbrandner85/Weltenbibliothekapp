@@ -134,9 +134,9 @@ class ApiConfig {
     defaultValue: 'wss://livekit-wb.srv1438024.hstgr.cloud',
   );
 
-  /// Token-Endpoint: Supabase Edge Function (direkt, kein Cloudflare-Umweg).
-  static String get livekitTokenUrl =>
-      '$supabaseUrl/functions/v1/livekit-token';
+  /// Token-Endpoint: Cloudflare Worker (zuverlässiger als Edge Function,
+  /// immer aktiv, hat LIVEKIT_API_KEY/SECRET/URL als Wrangler-Secrets).
+  static String get livekitTokenUrl => '$workerUrl/api/livekit/token';
   static bool get isLivekitEnabled => livekitUrl.isNotEmpty;
   static String get cloudSyncApiUrl => '$workerUrl/api/sync';
   static String get websocketUrl =>

@@ -374,13 +374,14 @@ class CloudflareApiService {
     if (kDebugMode) debugPrint('🔧 [Chat] Edit via Worker: $messageId');
     final response = await http.put(
       Uri.parse('$baseUrl/api/chat/messages/$messageId'),
-      headers: _authedHeaders, // 🔐 X-Supabase-Auth für Worker-Verifikation
+      headers: _authedHeaders,
       body: jsonEncode({
         'roomId': roomId,
         'realm': realm,
         'message': newMessage,
-        // userId/username/isAdmin werden vom Worker aus dem JWT bestimmt,
-        // Body-Werte werden ignoriert (Sicherheit).
+        'username': username, // Ownership-Check im Worker
+        'userId': userId,
+        if (isAdmin == true) 'isAdmin': true,
       }),
     );
     if (response.statusCode != 200) {
@@ -406,11 +407,13 @@ class CloudflareApiService {
     if (kDebugMode) debugPrint('🗑️ [Chat] Delete via Worker: $messageId');
     final response = await http.delete(
       Uri.parse('$baseUrl/api/chat/messages/$messageId'),
-      headers: _authedHeaders, // 🔐 X-Supabase-Auth für Worker-Verifikation
+      headers: _authedHeaders,
       body: jsonEncode({
         'roomId': roomId,
         'realm': realm,
-        // userId/username/isAdmin werden vom Worker aus dem JWT bestimmt.
+        'username': username, // Ownership-Check im Worker
+        'userId': userId,
+        if (isAdmin == true) 'isAdmin': true,
       }),
     );
     if (response.statusCode != 200) {
