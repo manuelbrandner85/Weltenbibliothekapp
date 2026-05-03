@@ -13,6 +13,7 @@ DROP POLICY IF EXISTS "chat_messages_own_update"           ON public.chat_messag
 DROP POLICY IF EXISTS "chat_messages_moderator_delete"     ON public.chat_messages;
 DROP POLICY IF EXISTS "chat_messages_select"               ON public.chat_messages;
 DROP POLICY IF EXISTS "chat_messages_insert"               ON public.chat_messages;
+DROP POLICY IF EXISTS "chat_messages_update"               ON public.chat_messages;
 DROP POLICY IF EXISTS "chat_messages_soft_delete"          ON public.chat_messages;
 DROP POLICY IF EXISTS "chat_messages_anon_select"          ON public.chat_messages;
 DROP POLICY IF EXISTS "chat_messages_anon_insert"          ON public.chat_messages;
