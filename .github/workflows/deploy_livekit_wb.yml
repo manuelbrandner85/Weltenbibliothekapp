@@ -79,33 +79,17 @@ jobs:
             -H "$AUTH" -H "Accept: application/json" \
             "$BASE/vps/virtual-machines" 2>/dev/null || echo '{"data":[]}')
 
-          VM_ID=$(echo "$VPS_JSON" | python3 -c "
-import sys,json
-data=json.load(sys.stdin).get('data',[])
-[print(v['id']) for v in data if v.get('main_ip')=='$VPS_HOST']
-" 2>/dev/null | head -1 || echo "")
+          VM_ID=$(echo "$VPS_JSON" | python3 -c "import sys,json;d=json.load(sys.stdin).get('data',[]); [print(v['id']) for v in d if v.get('main_ip')=='$VPS_HOST']" 2>/dev/null | head -1 || echo "")
           echo "→ VM-ID: $VM_ID"
 
-          # Firewall-ID aus VM-Info oder separatem Endpoint
-          FW_ID=$(echo "$VPS_JSON" | python3 -c "
-import sys,json
-data=json.load(sys.stdin).get('data',[])
-for v in data:
-  if v.get('main_ip')=='$VPS_HOST':
-    fw=v.get('firewall') or {}
-    print(fw.get('id','') if isinstance(fw,dict) else '')
-    break
-" 2>/dev/null | head -1 || echo "")
+          # Firewall-ID aus VM-Info
+          FW_ID=$(echo "$VPS_JSON" | python3 -c "import sys,json;d=json.load(sys.stdin).get('data',[]); [print((v.get('firewall') or {}).get('id','')) for v in d if v.get('main_ip')=='$VPS_HOST']" 2>/dev/null | head -1 || echo "")
 
           if [ -z "$FW_ID" ]; then
             FW_LIST=$(curl -sf --max-time 10 \
               -H "$AUTH" -H "Accept: application/json" \
               "$BASE/vps/firewall" 2>/dev/null || echo '{"data":[]}')
-            FW_ID=$(echo "$FW_LIST" | python3 -c "
-import sys,json
-data=json.load(sys.stdin).get('data',[])
-if data: print(data[0].get('id',''))
-" 2>/dev/null | head -1 || echo "")
+            FW_ID=$(echo "$FW_LIST" | python3 -c "import sys,json;d=json.load(sys.stdin).get('data',[]); print(d[0]['id'] if d else '')" 2>/dev/null | head -1 || echo "")
           fi
           echo "→ Firewall-ID: $FW_ID"
 
@@ -126,14 +110,7 @@ if data: print(data[0].get('id',''))
             2>/dev/null || echo "{}")
           echo "→ Regel-Response: $RULE_RESP"
 
-          RULE_ID=$(echo "$RULE_RESP" | python3 -c "
-import sys,json
-try:
-  d=json.load(sys.stdin)
-  r=d.get('data',d)
-  print(r.get('id','') if isinstance(r,dict) else '')
-except: print('')
-" 2>/dev/null | head -1 || echo "")
+          RULE_ID=$(echo "$RULE_RESP" | python3 -c "import sys,json;d=json.load(sys.stdin);r=d.get('data',d);print(r.get('id','') if isinstance(r,dict) else '')" 2>/dev/null | head -1 || echo "")
           echo "→ Regel-ID: $RULE_ID"
 
           # Firewall auf VPS synchronisieren/aktivieren
