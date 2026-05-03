@@ -574,19 +574,41 @@ class LiveKitCallService extends ChangeNotifier {
         debugPrint('📷 setCameraEnabled($target) …');
       }
 
-      // Hard-Timeout: Camera-Plugin kann auf manchen Geräten beim Off-Toggle
-      // hängen weil OS-Resource langsam released. Nach 5s geben wir auf
-      // und setzen den UI-State trotzdem — Track wird im Hintergrund
-      // freigegeben sobald OS bereit ist.
-      await lp.setCameraEnabled(target).timeout(
-        const Duration(seconds: 5),
-        onTimeout: () {
-          if (kDebugMode) {
-            debugPrint('⚠️ setCameraEnabled($target) Timeout nach 5s — '
-                'forciere UI-Update');
+      if (target) {
+        // Beim AN-Schalten: simpler Toggle mit Timeout
+        await lp.setCameraEnabled(true).timeout(
+          const Duration(seconds: 5),
+          onTimeout: () {
+            if (kDebugMode) {
+              debugPrint('⚠️ setCameraEnabled(true) Timeout');
+            }
+          },
+        );
+      } else {
+        // Beim AUS-Schalten: explicit unpublish + dispose vermeidet Hang
+        // weil setCameraEnabled(false) in livekit_client 2.4 manchmal
+        // auf langsame Camera-Resource-Release wartet.
+        for (final pub in lp.videoTrackPublications.toList()) {
+          if (pub.source != TrackSource.camera) continue;
+          try {
+            await lp.removePublishedTrack(pub.sid).timeout(
+              const Duration(seconds: 3),
+              onTimeout: () {
+                if (kDebugMode) debugPrint('⚠️ removePublishedTrack timeout');
+              },
+            );
+          } catch (e) {
+            if (kDebugMode) debugPrint('⚠️ removePublishedTrack: $e');
           }
-        },
-      );
+          // Track-Dispose im Hintergrund (await würde wieder hängen)
+          unawaited(Future.microtask(() async {
+            try {
+              await pub.track?.dispose();
+            } catch (_) {}
+          }));
+        }
+      }
+
       _cameraEnabled = target;
       if (kDebugMode) {
         debugPrint('📷 Camera ist jetzt ${target ? "AN" : "AUS"}');
@@ -603,19 +625,71 @@ class LiveKitCallService extends ChangeNotifier {
     }
   }
 
+  /// Aktueller Kamera-Index (0 = front, 1 = back). Wird beim switchCamera
+  /// rotiert damit nicht jedes Mal die gleiche Kamera ausgewählt wird.
+  int _cameraIndex = 0;
+
+  /// Wechselt zwischen Front- und Back-Kamera. Funktioniert nur wenn die
+  /// Kamera bereits aktiv ist.
+  Future<void> switchCamera() async {
+    final lp = _room?.localParticipant;
+    if (lp == null || !_cameraEnabled) return;
+    try {
+      // Finde aktiven Camera-Track
+      LocalVideoTrack? cameraTrack;
+      for (final pub in lp.videoTrackPublications) {
+        if (pub.source == TrackSource.camera && pub.track != null) {
+          cameraTrack = pub.track as LocalVideoTrack;
+          break;
+        }
+      }
+      if (cameraTrack == null) {
+        if (kDebugMode) debugPrint('📷 switchCamera: kein aktiver Track');
+        return;
+      }
+      // Hole alle verfügbaren Kameras (typisch: front + back)
+      final cameras = await Hardware.instance.cameras();
+      if (cameras.length < 2) {
+        _errorMessage = 'Nur eine Kamera verfügbar.';
+        notifyListeners();
+        return;
+      }
+      // Rotiere zur nächsten Kamera in der Liste
+      _cameraIndex = (_cameraIndex + 1) % cameras.length;
+      final next = cameras[_cameraIndex];
+      await cameraTrack.switchCamera(next.deviceId).timeout(
+        const Duration(seconds: 4),
+        onTimeout: () {
+          if (kDebugMode) debugPrint('⚠️ switchCamera Timeout');
+        },
+      );
+      if (kDebugMode) {
+        debugPrint('📷 Camera gewechselt → ${next.label} (${next.deviceId})');
+      }
+      notifyListeners();
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ switchCamera failed: $e');
+      _errorMessage = _friendlyError(e);
+      notifyListeners();
+    }
+  }
+
   /// Bildschirm teilen ein-/ausschalten. Auf Android ist dafür ein
   /// Foreground-Service mit MediaProjection-Permission nötig — den startet
   /// `flutter_background` automatisch.
   Future<void> toggleScreenShare() async {
     final lp = _room?.localParticipant;
     if (lp == null) return;
+    if (_screenShareToggleInFlight) return;
+    _screenShareToggleInFlight = true;
     final target = !_screenShareEnabled;
     try {
       if (target) {
-        // Foreground-Service starten (Android-Pflicht für Screen-Capture).
+        if (kDebugMode) debugPrint('🖥️  Bildschirm-Teilen wird angefragt …');
+        // Foreground-Service muss VOR setScreenShareEnabled laufen,
+        // sonst lehnt Android die MediaProjection ab.
         try {
-          final hasPerms = await FlutterBackground.hasPermissions;
-          if (!hasPerms) {
+          if (!await FlutterBackground.hasPermissions) {
             await FlutterBackground.initialize(
               androidConfig: const FlutterBackgroundAndroidConfig(
                 notificationTitle: 'Bildschirm wird geteilt',
@@ -625,23 +699,52 @@ class LiveKitCallService extends ChangeNotifier {
               ),
             );
           }
-          await FlutterBackground.enableBackgroundExecution();
+          final ok = await FlutterBackground.enableBackgroundExecution();
+          if (kDebugMode) {
+            debugPrint('🖥️  Foreground-Service: ${ok ? "OK" : "FAIL"}');
+          }
         } catch (e) {
-          if (kDebugMode) debugPrint('⚠️ Foreground-Service fehlgeschlagen: $e');
+          if (kDebugMode) {
+            debugPrint('⚠️ Foreground-Service init failed: $e — '
+                'Bildschirm-Teilen funktioniert vermutlich nicht');
+          }
         }
+        // setScreenShareEnabled triggert das System-Permission-Popup.
+        // Hard-Timeout: User könnte Popup ignorieren oder schließen.
+        await lp.setScreenShareEnabled(true).timeout(
+          const Duration(seconds: 30),
+          onTimeout: () {
+            if (kDebugMode) debugPrint('⚠️ setScreenShareEnabled Timeout');
+          },
+        );
       } else {
+        // Beim AUS-Schalten: ScreenShare-Track unpublishen
+        for (final pub in lp.videoTrackPublications.toList()) {
+          if (pub.source != TrackSource.screenShareVideo) continue;
+          try {
+            await lp.removePublishedTrack(pub.sid).timeout(
+                const Duration(seconds: 3));
+          } catch (_) {}
+        }
         try {
           await FlutterBackground.disableBackgroundExecution();
         } catch (_) {}
       }
-      await lp.setScreenShareEnabled(target);
       _screenShareEnabled = target;
+      if (kDebugMode) {
+        debugPrint('🖥️  Screen-Share ist jetzt ${target ? "AN" : "AUS"}');
+      }
       notifyListeners();
     } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ toggleScreenShare error: $e');
       _errorMessage = _friendlyError(e);
       notifyListeners();
+    } finally {
+      _screenShareToggleInFlight = false;
     }
   }
+
+  bool _screenShareToggleInFlight = false;
 
   /// Hand heben / senken. Sync via participant.setAttributes — alle
   /// Teilnehmer sehen den Status via ParticipantAttributesChangedEvent.

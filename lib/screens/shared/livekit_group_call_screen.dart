@@ -1226,6 +1226,16 @@ class _ControlBar extends StatelessWidget {
                     enabled: isConnected,
                     onTap: () => service.toggleCamera(),
                   ),
+                  // Kamera wechseln (Front/Back) — nur sichtbar wenn Camera an
+                  if (service.cameraEnabled)
+                    _CtrlBtn(
+                      icon: Icons.cameraswitch_rounded,
+                      label: 'Wechseln',
+                      active: false,
+                      activeColor: accent,
+                      enabled: isConnected,
+                      onTap: () => service.switchCamera(),
+                    ),
                   // Bildschirm teilen
                   _CtrlBtn(
                     icon: service.screenShareEnabled
