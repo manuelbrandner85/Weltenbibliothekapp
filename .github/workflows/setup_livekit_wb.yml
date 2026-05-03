@@ -79,12 +79,23 @@ jobs:
           WB_SECRET: ${{ secrets.LIVEKIT_API_SECRET }}
         run: |
           set -euo pipefail
-          echo "→ LIVEKIT_API_KEY setzen (${WB_KEY})…"
-          printf '%s' "${WB_KEY}"      | npx -y wrangler@3 secret put LIVEKIT_API_KEY
-          echo "→ LIVEKIT_API_SECRET setzen…"
-          printf '%s' "${WB_SECRET}"   | npx -y wrangler@3 secret put LIVEKIT_API_SECRET
-          echo "→ LIVEKIT_URL setzen (${LIVEKIT_URL})…"
-          printf '%s' "${LIVEKIT_URL}" | npx -y wrangler@3 secret put LIVEKIT_URL
+
+          # Alle 3 LiveKit-Secrets in EINEM bulk-Call setzen (verhindert Versions-Drift-Bug)
+          SECRETS_FILE=$(mktemp /tmp/wrangler_secrets.XXXXXX.json)
+          trap 'rm -f "$SECRETS_FILE"' EXIT
+
+          python3 -c "
+import json, os
+s = {
+    'LIVEKIT_API_KEY':    os.environ.get('WB_KEY', 'wb-a9b26485d407e7dc2043'),
+    'LIVEKIT_API_SECRET': os.environ['WB_SECRET'],
+    'LIVEKIT_URL':        os.environ.get('LIVEKIT_URL', 'wss://livekit-wb.srv1438024.hstgr.cloud'),
+}
+with open(os.environ['SECRETS_FILE'], 'w') as f:
+    json.dump(s, f)
+print('→ LIVEKIT_API_KEY / LIVEKIT_API_SECRET / LIVEKIT_URL via bulk …')
+"
+          npx -y wrangler@3 secret bulk "$SECRETS_FILE"
           echo "✅ Alle LiveKit-Secrets gesetzt"
 
       - name: 📝 Zusammenfassung

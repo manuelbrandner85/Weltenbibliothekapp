@@ -80,6 +80,9 @@ jobs:
           echo "✅ Worker deployed — Cron-Trigger aktiv"
 
       - name: 🔑 Worker-Secrets setzen
+        # Alle Secrets in EINEM bulk-Aufruf setzen.
+        # Mehrere einzelne `secret put` Calls erzeugen in Wrangler 3.x einen
+        # Versions-Drift-Error (zweiter Call sieht unveröffentlichte Draft-Version).
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -91,34 +94,45 @@ jobs:
         run: |
           set -euo pipefail
 
-          if [ -n "${SUPABASE_SERVICE_ROLE_KEY:-}" ]; then
-            echo "→ SUPABASE_SERVICE_ROLE_KEY setzen …"
-            printf '%s' "$SUPABASE_SERVICE_ROLE_KEY" | \
-              npx -y wrangler@3 secret put SUPABASE_SERVICE_ROLE_KEY
-          else
-            echo "⚠️  SUPABASE_SERVICE_ROLE_KEY fehlt (Admin-Operationen gehen nicht)"
-          fi
+          SECRETS_FILE=$(mktemp /tmp/wrangler_secrets.XXXXXX.json)
+          trap 'rm -f "$SECRETS_FILE"' EXIT
 
-          if [ -n "${FCM_SERVICE_ACCOUNT_JSON:-}" ]; then
-            echo "→ FCM_SERVICE_ACCOUNT setzen …"
-            printf '%s' "$FCM_SERVICE_ACCOUNT_JSON" | \
-              npx -y wrangler@3 secret put FCM_SERVICE_ACCOUNT
-          else
-            echo "ℹ️  FCM_SERVICE_ACCOUNT_JSON fehlt — Push-Dispatcher markiert Queue nur als 'sent'"
-          fi
+          python3 - <<'PYEOF'
+import json, os, sys
 
-          # 🎥 LiveKit-WB-Secrets — nur wenn GitHub-Secret gesetzt
-          if [ -n "${WB_SECRET:-}" ]; then
-            echo "→ LIVEKIT_API_KEY setzen (${WB_KEY}) …"
-            printf '%s' "${WB_KEY}" | npx -y wrangler@3 secret put LIVEKIT_API_KEY
-            echo "→ LIVEKIT_API_SECRET setzen …"
-            printf '%s' "${WB_SECRET}" | npx -y wrangler@3 secret put LIVEKIT_API_SECRET
-            echo "→ LIVEKIT_URL setzen (${WB_URL}) …"
-            printf '%s' "${WB_URL}" | npx -y wrangler@3 secret put LIVEKIT_URL
-            echo "✅ Alle LiveKit-WB-Secrets aktualisiert"
-          else
-            echo "ℹ️  LIVEKIT_API_SECRET nicht gesetzt — LiveKit-Secrets bleiben unverändert"
-            echo "   (alte Werte auf Cloudflare bleiben aktiv)"
+s = {}
+if os.environ.get('SUPABASE_SERVICE_ROLE_KEY'):
+    s['SUPABASE_SERVICE_ROLE_KEY'] = os.environ['SUPABASE_SERVICE_ROLE_KEY']
+    print("→ SUPABASE_SERVICE_ROLE_KEY")
+else:
+    print("⚠️  SUPABASE_SERVICE_ROLE_KEY fehlt (Admin-Operationen eingeschränkt)")
+
+if os.environ.get('FCM_SERVICE_ACCOUNT_JSON'):
+    s['FCM_SERVICE_ACCOUNT'] = os.environ['FCM_SERVICE_ACCOUNT_JSON']
+    print("→ FCM_SERVICE_ACCOUNT")
+else:
+    print("ℹ️  FCM_SERVICE_ACCOUNT_JSON fehlt — Push-Dispatcher markiert Queue nur als 'sent'")
+
+if os.environ.get('WB_SECRET'):
+    s['LIVEKIT_API_KEY']    = os.environ.get('WB_KEY', 'wb-a9b26485d407e7dc2043')
+    s['LIVEKIT_API_SECRET'] = os.environ['WB_SECRET']
+    s['LIVEKIT_URL']        = os.environ.get('WB_URL', 'wss://livekit-wb.srv1438024.hstgr.cloud')
+    print("→ LIVEKIT_API_KEY / LIVEKIT_API_SECRET / LIVEKIT_URL")
+else:
+    print("ℹ️  LIVEKIT_API_SECRET nicht gesetzt — LiveKit-Secrets bleiben unverändert")
+
+if not s:
+    print("⚠️  Keine Secrets zu setzen — übersprungen")
+    sys.exit(0)
+
+with open(os.environ['SECRETS_FILE'], 'w') as f:
+    json.dump(s, f)
+print(f"→ {len(s)} Secrets via wrangler secret bulk …")
+PYEOF
+
+          if [ -s "$SECRETS_FILE" ]; then
+            npx -y wrangler@3 secret bulk "$SECRETS_FILE"
+            echo "✅ Alle Secrets gesetzt ($(python3 -c "import json; print(len(json.load(open('$SECRETS_FILE'))))" 2>/dev/null || echo '?') Stück)"
           fi
 
       # HINWEIS: Der frühere Step "livekit.yaml auf VPS aktualisieren" wurde entfernt.
