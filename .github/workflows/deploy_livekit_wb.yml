@@ -5,12 +5,7 @@ name: 🎥 LiveKit WB — VPS konfigurieren
 #
 # Required Secrets:
 #   VPS_PASSWORD          — SSH root-Passwort für VPS 72.62.154.95
-#   HOSTINGER_API_TOKEN   — Hostinger API Token (für VPS-Statusprüfung + Fallback)
-#
-# WB LiveKit Key (eingebettet, kein Secret nötig — Key ist nicht sensibel):
-#   LIVEKIT_API_KEY    = wb-a9b26485d407e7dc2043
-#   LIVEKIT_API_SECRET = f9c57648d1756868aa7c124b545c029bcb2569b5bf82c1fa5058eefc4efc21d1
-#   LIVEKIT_URL        = wss://livekit.srv1438024.hstgr.cloud
+#   HOSTINGER_API_TOKEN   — Hostinger API Token (für VPS-Statusprüfung, optional)
 
 on:
   workflow_dispatch:
@@ -52,17 +47,14 @@ jobs:
             echo "ℹ️  HOSTINGER_API_TOKEN nicht gesetzt — Statusprüfung übersprungen"
             exit 0
           fi
-
           echo "→ VPS-Liste abrufen..."
           HTTP=$(curl -sS -o /tmp/vps_list.json -w "%{http_code}" \
             -H "Authorization: Bearer $HOSTINGER_API_TOKEN" \
             -H "Accept: application/json" \
             "https://api.hostinger.com/v1/vps/virtual-machines")
-
           echo "HTTP Status: $HTTP"
           if [ "$HTTP" = "200" ]; then
             echo "✅ Hostinger API erreichbar"
-            # VPS mit unserer IP suchen
             jq -r '.data[]? | "VM: \(.hostname // "?") (\(.main_ip // "?")), Status: \(.state // "?")"' \
               /tmp/vps_list.json 2>/dev/null || cat /tmp/vps_list.json
           else
@@ -79,106 +71,51 @@ jobs:
           if [ -z "${VPS_PASSWORD:-}" ]; then
             echo "❌ VPS_PASSWORD Secret fehlt"
             echo "   Unter Settings → Secrets → Actions als 'VPS_PASSWORD' hinterlegen"
-            echo "   VPS: ${VPS_HOST}, User: ${VPS_USER}"
             exit 1
           fi
 
-          # Python-Script erstellen (wird auf VPS ausgeführt)
-          cat > /tmp/wb_livekit_setup.py << 'PYEOF'
-import yaml
-import sys
-import os
+          # Script via echo-Zeilen erstellen (kein Heredoc = kein YAML-Syntaxfehler)
+          {
+            echo 'set -euo pipefail'
+            printf 'YAML_PATH=%s\n' "'${LIVEKIT_YAML}'"
+            printf 'WB_KEY=%s\n'    "'${WB_KEY}'"
+            printf 'WB_SECRET=%s\n' "'${WB_SECRET}'"
+            printf 'LIVEKIT_DIR=%s\n' "'${LIVEKIT_DIR}'"
+            echo 'if [ ! -f "$YAML_PATH" ]; then echo "❌ $YAML_PATH nicht gefunden"; exit 1; fi'
+            echo 'if grep -qF "$WB_KEY" "$YAML_PATH"; then echo "ℹ️  WB-Key bereits vorhanden"; exit 0; fi'
+            echo 'cp "$YAML_PATH" "$YAML_PATH.bak"'
+            printf "awk -v k=\"\$WB_KEY\" -v s=\"\$WB_SECRET\" '/^keys:/{print; print \"  \"k\": \"s; next}1' \"\$YAML_PATH.bak\" > \"\$YAML_PATH\"\n"
+            echo 'echo "✅ WB-Key hinzugefügt: $WB_KEY"'
+            echo 'cd "$LIVEKIT_DIR" && docker compose restart livekit && sleep 5 && docker compose ps'
+            echo 'echo "✅ Mensaena LiveKit neu gestartet"'
+          } > /tmp/wb_livekit_fix.sh
+          chmod +x /tmp/wb_livekit_fix.sh
 
-YAML_PATH = os.environ.get('LIVEKIT_YAML', '/docker/livekit/livekit.yaml')
-WB_KEY    = os.environ.get('WB_KEY', 'wb-a9b26485d407e7dc2043')
-WB_SECRET = os.environ.get('WB_SECRET', 'f9c57648d1756868aa7c124b545c029bcb2569b5bf82c1fa5058eefc4efc21d1')
-
-if not os.path.exists(YAML_PATH):
-    print(f'❌ {YAML_PATH} nicht gefunden!')
-    print('   Mensaena LiveKit läuft möglicherweise nicht auf diesem VPS.')
-    sys.exit(1)
-
-with open(YAML_PATH) as f:
-    config = yaml.safe_load(f) or {}
-
-if 'keys' not in config:
-    config['keys'] = {}
-
-if WB_KEY in config.get('keys', {}):
-    print(f'ℹ️  WB-Key bereits vorhanden — keine Änderung nötig')
-    sys.exit(0)
-
-config['keys'][WB_KEY] = WB_SECRET
-
-with open(YAML_PATH, 'w') as f:
-    yaml.dump(config, f, default_flow_style=False, allow_unicode=True)
-
-print(f'✅ WB-Key hinzugefügt: {WB_KEY}')
-sys.exit(42)
-PYEOF
-
-          # Script auf VPS kopieren
           sshpass -p "$VPS_PASSWORD" scp \
-            -o StrictHostKeyChecking=no \
-            -o ConnectTimeout=30 \
-            -o PasswordAuthentication=yes \
-            /tmp/wb_livekit_setup.py ${VPS_USER}@${VPS_HOST}:/tmp/wb_livekit_setup.py
+            -o StrictHostKeyChecking=no -o ConnectTimeout=30 -o PasswordAuthentication=yes \
+            /tmp/wb_livekit_fix.sh ${VPS_USER}@${VPS_HOST}:/tmp/wb_livekit_fix.sh
 
-          echo "✅ Script auf VPS übertragen"
-
-          # Script auf VPS ausführen
           sshpass -p "$VPS_PASSWORD" ssh \
-            -o StrictHostKeyChecking=no \
-            -o ConnectTimeout=30 \
-            -o PasswordAuthentication=yes \
-            ${VPS_USER}@${VPS_HOST} \
-            "export LIVEKIT_YAML='${LIVEKIT_YAML}' WB_KEY='${WB_KEY}' WB_SECRET='${WB_SECRET}'; \
-             python3 /tmp/wb_livekit_setup.py; \
-             EXIT_CODE=\$?; \
-             if [ \$EXIT_CODE -eq 42 ]; then \
-               echo '→ Starte Mensaena LiveKit neu...' && \
-               cd '${LIVEKIT_DIR}' && \
-               docker compose restart livekit && \
-               sleep 5 && \
-               docker compose ps && \
-               echo '✅ Mensaena LiveKit mit WB-Key neu gestartet'; \
-             elif [ \$EXIT_CODE -eq 0 ]; then \
-               echo '✅ Keine Änderung nötig — LiveKit läuft bereits mit WB-Key'; \
-             else \
-               exit \$EXIT_CODE; \
-             fi"
+            -o StrictHostKeyChecking=no -o ConnectTimeout=30 -o PasswordAuthentication=yes \
+            ${VPS_USER}@${VPS_HOST} "bash /tmp/wb_livekit_fix.sh"
 
           echo "✅ LiveKit WB-Konfiguration abgeschlossen"
 
       - name: 🩺 LiveKit-Verbindungstest
         continue-on-error: true
         run: |
-          echo "→ Prüfe LiveKit TCP-Erreichbarkeit..."
-          # WebSocket-Port 443 (WSS) testen
-          if timeout 10 bash -c "echo '' | nc -w 5 livekit.srv1438024.hstgr.cloud 443 2>/dev/null"; then
-            echo "✅ LiveKit Port 443 erreichbar"
-          else
-            echo "⚠️  Port 443 nicht via NC testbar (normales WSS-Verhalten)"
-          fi
-
-          # HTTP-Healthcheck auf Port 7880 (intern, nur wenn VPS-IP direkt erreichbar)
-          HTTP=$(curl -sS -o /dev/null -w "%{http_code}" \
-            --max-time 10 "http://${VPS_HOST}:7880" 2>/dev/null || echo "000")
+          HTTP=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 10 \
+            "http://${VPS_HOST}:7880" 2>/dev/null || echo "000")
           if [ "$HTTP" != "000" ]; then
             echo "✅ LiveKit HTTP-Endpoint antwortet (HTTP $HTTP)"
           else
-            echo "ℹ️  LiveKit-Port 7880 nicht direkt erreichbar (hinter Firewall/Traefik)"
+            echo "ℹ️  LiveKit-Port 7880 nicht direkt erreichbar (hinter Firewall)"
           fi
 
       - name: 📝 Zusammenfassung
         run: |
           echo "## 🎥 LiveKit WB — Konfiguration" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Einstellung | Wert |" >> $GITHUB_STEP_SUMMARY
           echo "|---|---|" >> $GITHUB_STEP_SUMMARY
           echo "| Server | \`wss://livekit.srv1438024.hstgr.cloud\` |" >> $GITHUB_STEP_SUMMARY
           echo "| WB API Key | \`${WB_KEY}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| livekit.yaml | \`${LIVEKIT_YAML}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Der WB-Key wurde zur Mensaena-LiveKit-Instanz hinzugefügt." >> $GITHUB_STEP_SUMMARY
-          echo "Clients verbinden sich via \`wss://livekit.srv1438024.hstgr.cloud\`." >> $GITHUB_STEP_SUMMARY
