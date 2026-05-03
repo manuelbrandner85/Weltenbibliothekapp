@@ -626,6 +626,14 @@ chore(deps): Dependencies aktualisiert
     `wrangler secret bulk` (jq-basiert) statt sequentieller `secret put` Calls
     (Wrangler 3.x Versions-Drift-Bug vermieden)
 
+- [x] **PR #71 — LiveKit Join-Fix + Release-APK + Chat-Ownership + Community Pill-Switcher** (2026-05-03, Patch ✓):
+  - **LiveKit `node_ip: 72.62.154.95`** in `livekit.yaml` — ohne explizite externe IP advertised LiveKit interne Docker-IPs als ICE-Kandidaten → Media-Streams konnten nicht aufgebaut werden. Fix: `rtc.node_ip` + `use_external_ip: true` in `infra/livekit-wb/livekit.yaml`.
+  - **Token-Endpoint → Cloudflare Worker** (`/api/livekit/token`) — war Supabase Edge Function, die möglicherweise fehlende Secrets hatte. Worker ist immer aktiv + hat LIVEKIT_API_KEY/SECRET als Wrangler-Secrets. `api_config.dart: livekitTokenUrl` umgestellt.
+  - **`deploy_livekit_wb.yml`**: Caddyfile-Pfad via `docker inspect` + python3-JSON-Parsing (statt Pfad-Raten); `caddy validate` vor `reload`; Re-Deploy-Trigger-Kommentar in README erzwingt Container-Neustart.
+  - **`build-apk.yml`**: `--debug` → `--release` mit Keystore-Signing aus `ANDROID_KEYSTORE_*` Secrets. Gilt dauerhaft — IMMER Release-APK, nie Debug.
+  - **Chat edit/delete Ownership-Fix**: `cloudflare_api_service.dart editChatMessage/deleteChatMessage` sendeten `username`/`userId` nicht im Body → Worker-Ownership-Check (`existingMsg.username !== username`) wurde silent übersprungen. Behoben.
+  - **Community Pill-Switcher**: Glassmorphischer AnimatedAlign-Switcher (260ms easeOutCubic) ersetzt 2px-TabBar-Indikator in `community_tab_modern.dart` (Materie, Blau) + `energie_community_tab_modern.dart` (Energie, Lila). Mit HapticFeedback + Unread-Badge + AnimatedSwitcher-Subtitle.
+
 - [x] **PR #65 — WB eigene LiveKit-Instanz, getrennt von Mensaena** (2026-05-02, Patch ✓):
   - Umstellung von „shared LiveKit mit Mensaena" auf vollständig eigenständige
     WB-Instanz auf demselben Hostinger-VPS — eigene Subdomain, eigene Container,
@@ -658,18 +666,19 @@ chore(deps): Dependencies aktualisiert
    - `unused_field` Warnungen (nicht kritisch)
    - `deprecated_member_use` (Radio-Widgets, alte APIs)
 
-3. **🎥 LiveKit vollständig implementiert** (v5.39.0+, PR #55+56+64):
+3. **🎥 LiveKit vollständig implementiert + Join-Fix** (v5.39.0+, PR #55+56+64+71):
    - flutter_webrtc komplett entfernt — alle 17 alten WebRTC-Dateien gelöscht
    - livekit_client + flutter_background als Dependencies
-   - **Supabase Edge Function `livekit-token`** deployed + ACTIVE (Supabase, version 1).
-     Token-Generierung via HMAC-SHA256-JWT, 4h TTL, roomJoin/canPublish/canSubscribe.
-     LiveKit-Secrets in Supabase Edge Runtime via CI gesetzt.
+   - **Token-Endpoint: Cloudflare Worker** `/api/livekit/token` (HMAC-SHA256-JWT, 4h TTL).
+     Supabase Edge Function `livekit-token` als Fallback vorhanden aber nicht primär.
+   - **`node_ip: 72.62.154.95`** in `livekit.yaml` — ICE-Kandidaten zeigen jetzt auf externe IP.
    - `LiveKitCallService` — join/leave, alle Track-Toggles (Mic/Cam/Screen/Hand)
    - `livekit_call_provider.dart` (Riverpod) für State-Sharing
    - `livekit_group_call_screen.dart` — professionelle Vollbild-UI (1154 Zeilen),
      animierter Hintergrund, responsives Teilnehmer-Grid, Glassmorphic TopBar/ControlBar
    - Voice-Buttons in beiden Chat-Screens öffnen direkt `LiveKitGroupCallScreen`
-   - LiveKit-Server läuft auf `livekit.srv1438024.hstgr.cloud` (Hostinger VPS)
+   - LiveKit-Server: `livekit-weltenbibliothek` Container auf Hostinger VPS, eigene Instanz,
+     erreichbar via `wss://livekit-wb.srv1438024.hstgr.cloud`
    - GitHub-Secrets gesetzt: `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`, `LIVEKIT_URL`
 
 4. **Push-Notifications** (Cloudflare-basiert, nicht Firebase) – Registrierung funktioniert,
