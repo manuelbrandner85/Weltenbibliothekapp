@@ -662,9 +662,12 @@ class LiveKitCallService extends ChangeNotifier {
           },
         );
       } else {
-        // Beim AUS-Schalten: explicit unpublish + dispose vermeidet Hang
-        // weil setCameraEnabled(false) in livekit_client 2.4 manchmal
-        // auf langsame Camera-Resource-Release wartet.
+        // Beim AUS-Schalten: explicit unpublish vermeidet Hang weil
+        // setCameraEnabled(false) in livekit_client 2.4 manchmal auf
+        // langsame Camera-Resource-Release wartet.
+        // Bundle 7.2: KEIN extra `track.dispose()` — `removePublishedTrack`
+        // disposed den Track selbst. Doppel-Dispose hat in der Vergangenheit
+        // Native-Crash-Reports erzeugt.
         for (final pub in lp.videoTrackPublications.toList()) {
           if (pub.source != TrackSource.camera) continue;
           try {
@@ -677,12 +680,6 @@ class LiveKitCallService extends ChangeNotifier {
           } catch (e) {
             if (kDebugMode) debugPrint('⚠️ removePublishedTrack: $e');
           }
-          // Track-Dispose im Hintergrund (await würde wieder hängen)
-          unawaited(Future.microtask(() async {
-            try {
-              await pub.track?.dispose();
-            } catch (_) {}
-          }));
         }
       }
 
@@ -913,17 +910,32 @@ class LiveKitCallService extends ChangeNotifier {
     }
     for (final pub in p.audioTrackPublications) {
       try {
-        if (v <= 0.0) {
-          // Mute: unsubscribe
-          if (pub.subscribed) {
+        // Bundle 7.1: API-defensiv — versuche zuerst die offizielle
+        // `subscribed`-Setter-API von livekit_client 2.x; fallback auf die
+        // dynamische unsubscribe()/subscribe()-Methode.
+        final wantSubscribed = v > 0.0;
+        if (pub.subscribed != wantSubscribed) {
+          var ok = false;
+          try {
             // ignore: avoid_dynamic_calls
-            await (pub as dynamic).unsubscribe();
-          }
-        } else {
-          // Unmute: subscribe wenn nicht abonniert
-          if (!pub.subscribed) {
-            // ignore: avoid_dynamic_calls
-            await (pub as dynamic).subscribe();
+            (pub as dynamic).subscribed = wantSubscribed;
+            ok = true;
+          } catch (_) {}
+          if (!ok) {
+            try {
+              if (wantSubscribed) {
+                // ignore: avoid_dynamic_calls
+                await (pub as dynamic).subscribe();
+              } else {
+                // ignore: avoid_dynamic_calls
+                await (pub as dynamic).unsubscribe();
+              }
+            } catch (e2) {
+              if (kDebugMode) {
+                debugPrint('⚠️ setRemoteVolume($identity, $v) — '
+                    'beide APIs fehlgeschlagen: $e2');
+              }
+            }
           }
         }
       } catch (e) {
