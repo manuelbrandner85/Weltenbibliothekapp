@@ -620,15 +620,23 @@ class LiveKitCallService extends ChangeNotifier {
           return;
         }
       }
+      bool timedOut = false;
       await lp.setMicrophoneEnabled(target).timeout(
         const Duration(seconds: 5),
         onTimeout: () {
+          timedOut = true;
           if (kDebugMode) {
-            debugPrint('⚠️ setMicrophoneEnabled($target) Timeout — '
-                'forciere UI-Update');
+            debugPrint('⚠️ setMicrophoneEnabled($target) Timeout');
           }
         },
       );
+      if (timedOut) {
+        _errorMessage =
+            'Mikrofon konnte nicht umgeschaltet werden. Bitte erneut versuchen.';
+        notifyListeners();
+        return;
+      }
+      _errorMessage = null; // Erfolg → alte Fehler löschen
       _micEnabled = target;
       notifyListeners();
     } catch (e) {
@@ -673,11 +681,14 @@ class LiveKitCallService extends ChangeNotifier {
         debugPrint('📷 setCameraEnabled($target) …');
       }
 
+      bool timedOut = false;
+      bool partialFailure = false;
       if (target) {
         // Beim AN-Schalten: simpler Toggle mit Timeout
         await lp.setCameraEnabled(true).timeout(
           const Duration(seconds: 5),
           onTimeout: () {
+            timedOut = true;
             if (kDebugMode) {
               debugPrint('⚠️ setCameraEnabled(true) Timeout');
             }
@@ -693,18 +704,30 @@ class LiveKitCallService extends ChangeNotifier {
         for (final pub in lp.videoTrackPublications.toList()) {
           if (pub.source != TrackSource.camera) continue;
           try {
+            bool unpublishTimedOut = false;
             await lp.removePublishedTrack(pub.sid).timeout(
               const Duration(seconds: 3),
               onTimeout: () {
+                unpublishTimedOut = true;
                 if (kDebugMode) debugPrint('⚠️ removePublishedTrack timeout');
               },
             );
+            if (unpublishTimedOut) partialFailure = true;
           } catch (e) {
+            partialFailure = true;
             if (kDebugMode) debugPrint('⚠️ removePublishedTrack: $e');
           }
         }
       }
 
+      if (timedOut || partialFailure) {
+        _errorMessage = target
+            ? 'Kamera konnte nicht aktiviert werden. Bitte erneut versuchen.'
+            : 'Kamera-Stream konnte nicht gestoppt werden. Bitte erneut versuchen.';
+        notifyListeners();
+        return;
+      }
+      _errorMessage = null; // Erfolg → alte Fehler löschen
       _cameraEnabled = target;
       if (kDebugMode) {
         debugPrint('📷 Camera ist jetzt ${target ? "AN" : "AUS"}');
@@ -748,14 +771,24 @@ class LiveKitCallService extends ChangeNotifier {
         notifyListeners();
         return;
       }
+      final prevIndex = _cameraIndex;
       _cameraIndex = (_cameraIndex + 1) % cameras.length;
       final next = cameras[_cameraIndex];
+      bool timedOut = false;
       await cameraTrack.switchCamera(next.deviceId).timeout(
         const Duration(seconds: 4),
         onTimeout: () {
+          timedOut = true;
           if (kDebugMode) debugPrint('⚠️ switchCamera Timeout');
         },
       );
+      if (timedOut) {
+        _cameraIndex = prevIndex; // Revert damit nächster Tap wieder versucht
+        _errorMessage = 'Kamera-Wechsel fehlgeschlagen. Bitte erneut versuchen.';
+        notifyListeners();
+        return;
+      }
+      _errorMessage = null;
       if (kDebugMode) {
         debugPrint('📷 Camera gewechselt → ${next.label}');
       }
@@ -811,12 +844,19 @@ class LiveKitCallService extends ChangeNotifier {
         }
         // setScreenShareEnabled triggert das System-Permission-Popup.
         // Hard-Timeout: User könnte Popup ignorieren oder schließen.
+        bool timedOut = false;
         await lp.setScreenShareEnabled(true).timeout(
           const Duration(seconds: 30),
           onTimeout: () {
+            timedOut = true;
             if (kDebugMode) debugPrint('⚠️ setScreenShareEnabled Timeout');
           },
         );
+        if (timedOut) {
+          _errorMessage = 'Bildschirm-Teilen abgebrochen oder verweigert.';
+          notifyListeners();
+          return;
+        }
       } else {
         // Beim AUS-Schalten: ScreenShare-Track unpublishen
         for (final pub in lp.videoTrackPublications.toList()) {
@@ -830,6 +870,7 @@ class LiveKitCallService extends ChangeNotifier {
           await FlutterBackground.disableBackgroundExecution();
         } catch (_) {}
       }
+      _errorMessage = null; // Erfolg → alte Fehler löschen
       _screenShareEnabled = target;
       if (kDebugMode) {
         debugPrint('🖥️  Screen-Share ist jetzt ${target ? "AN" : "AUS"}');
@@ -1029,7 +1070,16 @@ class LiveKitCallService extends ChangeNotifier {
   void _scheduleTokenRefresh(String token) {
     _cancelTokenRefresh();
     final exp = _jwtExpEpoch(token);
-    if (exp == null) return;
+    if (exp == null) {
+      // Fallback: Wenn exp nicht dekodierbar ist (malformed JWT), trotzdem
+      // refreshen — nach 3h30min — damit User nach 4h nicht silent disconnected.
+      if (kDebugMode) {
+        debugPrint('⚠️ Token-exp nicht dekodierbar → Fallback-Refresh in 3h30min');
+      }
+      _tokenRefreshTimer =
+          Timer(const Duration(hours: 3, minutes: 30), _refreshToken);
+      return;
+    }
     final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
     final secondsLeft = exp - now;
     // 5 min vor Ablauf refreshen, mindestens 30 s Vorlaufzeit lassen.
@@ -1149,6 +1199,9 @@ class LiveKitCallService extends ChangeNotifier {
   @override
   void dispose() {
     _stopDurationTimer();
+    // Token-Refresh-Timer war nicht abgebaut → Timer feuerte mit
+    // disposed Room/State weiter und hielt Service via Closure am Leben.
+    _cancelTokenRefresh();
     try {
       _listener?.dispose();
     } catch (_) {}

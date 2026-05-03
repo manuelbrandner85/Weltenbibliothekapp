@@ -1142,6 +1142,13 @@ export default {
         ? { 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}` }
         : { 'apikey': anonKey, 'Authorization': `Bearer ${anonKey}` };
 
+      // Body MUSS hier geparst werden — alle nachfolgenden Push-Handler
+      // referenzieren `body?.user_id`, ohne diese Zeile war `body` undefined
+      // (oder ReferenceError) und Subscribe/Unsubscribe schlugen fehl.
+      const body = (method === 'POST' || method === 'PUT' || method === 'PATCH')
+        ? await request.json().catch(() => ({}))
+        : {};
+
       // POST /api/push/subscribe
       if (method === 'POST' && (path.endsWith('/subscribe') || path.endsWith('/register'))) {
         const userId = body?.user_id || body?.userId;

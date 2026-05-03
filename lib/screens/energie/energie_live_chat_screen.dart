@@ -776,11 +776,11 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
               );
             }
 
-            // Upload to Cloudflare
+            // Upload to Cloudflare — _fullRoomId konsistent zu sendChatMessage.
             final audioUrl = await _api.uploadVoiceMessage(
               filePath: audioPath,
               userId: _userId,
-              roomId: _selectedRoom,
+              roomId: _fullRoomId,
               realm: 'energie',
             );
 
@@ -929,6 +929,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
           username: _username,
           message: '📷 Bild', // Text for image message
           avatarEmoji: _avatar,
+          avatarUrl: _avatarUrl,
           mediaType: 'image',
           mediaUrl: result['url'],
         );
