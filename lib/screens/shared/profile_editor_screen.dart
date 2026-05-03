@@ -43,6 +43,11 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
   bool _usernameChecking = false;
   String _lastCheckedUsername = '';
 
+  // Geladene Profile — werden für den Username-Check (Vergleich gegen
+  // bereits gespeicherten Namen) und beim Save (wasUsernameChanged?) gebraucht.
+  MaterieProfile? _materieProfile;
+  EnergieProfile? _energieProfile;
+
   /// Triggert nach 400ms Tipppause einen Server-Check.
   /// Bricht laufende Debounce-Timer ab.
   void _scheduleUsernameCheck(String value) {
@@ -441,6 +446,7 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
       
       if (widget.world == 'materie') {
         final profile = storage.getMaterieProfile();
+        _materieProfile = profile;
         if (profile != null) {
           _usernameController.text = profile.username;
           _nameController.text = profile.name ?? '';
@@ -450,6 +456,7 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
         }
       } else {
         final profile = storage.getEnergieProfile();
+        _energieProfile = profile;
         if (profile != null) {
           _usernameController.text = profile.username;
           _firstNameController.text = profile.firstName;

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
+import 'package:url_launcher/url_launcher.dart';
  // OpenClaw v2.0
 import '../config/wb_design.dart'; // 🎨 Design-Tokens
 import '../services/storage_service.dart';
@@ -295,11 +296,18 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                   const ThemeToggleWidget(),
                   
                   const SizedBox(height: 32),
-                  
+
                   // 📳 HAPTIC FEEDBACK EINSTELLUNGEN (NEU)
                   _buildSectionHeader('📳 HAPTIC FEEDBACK', Colors.orange),
                   const SizedBox(height: 12),
                   _buildHapticFeedbackCard(),
+
+                  const SizedBox(height: 32),
+
+                  // 🤝 MENSAENA — Schwester-Plattform für Nachbarschaftshilfe
+                  _buildSectionHeader('🤝 GEMEINSCHAFT', const Color(0xFF26A69A)),
+                  const SizedBox(height: 12),
+                  _buildMensaenaCard(),
                 ],
               ),
             ),
@@ -1368,6 +1376,116 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
         ),
       ),
     );
+  }
+
+  /// 🤝 Mensaena — Schwester-Plattform für Nachbarschaftshilfe.
+  /// Optionaler Banner der den User auf mensaena.de verlinkt. Bewusst
+  /// dezent gehalten damit es nicht aufdringlich wirkt.
+  Widget _buildMensaenaCard() {
+    const teal = Color(0xFF26A69A);
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [teal.withValues(alpha: 0.18), teal.withValues(alpha: 0.06)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: teal.withValues(alpha: 0.4), width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: teal.withValues(alpha: 0.25),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.handshake_rounded,
+                  color: teal,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Text(
+                  'Mensaena',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'Unsere Schwester-Plattform für echte Nachbarschaftshilfe — '
+            'Hilfe anbieten, Hilfe finden, Menschen in deiner Nähe '
+            'kennenlernen.',
+            style: TextStyle(
+              color: Colors.white70,
+              fontSize: 13,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _openMensaena,
+              icon: const Icon(Icons.open_in_new_rounded, size: 18),
+              label: const Text('Mensaena öffnen'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: teal,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                elevation: 0,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openMensaena() async {
+    final uri = Uri.parse('https://www.mensaena.de');
+    try {
+      final ok = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
+      if (!ok && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Konnte Mensaena nicht öffnen.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('⚠️ Mensaena-Launch fehlgeschlagen: $e');
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Konnte Mensaena nicht öffnen.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   @override
