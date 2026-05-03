@@ -291,12 +291,9 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
       }
     });
 
-    // 🔄 AUTO-REFRESH: Profil-Updates alle 30 Sekunden als Fallback (Realtime ist primär)
-    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
-      _loadMessages(silent: true); // ✅ Silent refresh - kein Flickering
-      _loadPolls(silent: true); // ✅ Silent refresh - kein Flickering
-      _loadUsernameFromProfile(); // Profil-Sync für Avatar-Updates
-    });
+    // Bundle 6.6: Auto-Refresh-Timer entfernt — Realtime ist primär,
+    // 30s-Polling war doppelter Server-Traffic. Profil/Polls werden
+    // bei Roomwechsel und beim manuellen Pull-to-Refresh nachgeladen.
 
     // Profil VOR Nachrichten laden → Username garantiert gesetzt wenn User schreibt.
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -463,10 +460,12 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
     try {
       final oldest = _messages.first;
       final cursor = (oldest['created_at'] ?? oldest['timestamp'])?.toString();
+      final cursorId = oldest['id']?.toString();
       if (cursor == null || cursor.isEmpty) return;
       final older = await SupabaseChatService.instance.getMessagesBefore(
         _fullRoomId,
         before: cursor,
+        beforeId: cursorId,
         limit: 50,
       );
       if (!mounted) return;

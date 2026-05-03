@@ -297,12 +297,10 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
       }
     });
 
-    // 🔄 Auto-Refresh alle 30 Sekunden als Fallback (Realtime ist primär)
-    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
-      _loadMessages(silent: true);
-      _loadUserData(); // 🆕 Profil-Sync
-      _loadPolls(silent: true); // 🆕 Polls-Sync
-    });
+    // Bundle 6.6: Auto-Refresh-Timer entfernt — Realtime erledigt das.
+    // Vorher: voller _loadMessages() alle 30s ZUSÄTZLICH zur Subscription
+    // → doppelter Server-Traffic, unnötiges Re-Rendering. Profil/Polls
+    // werden bei Roomwechsel + onResume nachgeladen.
 
     // Profil VOR Nachrichten laden → Username ist garantiert gesetzt wenn User schreibt.
     // addPostFrameCallback stellt sicher dass der erste Frame gebaut ist.
@@ -2094,10 +2092,12 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
     try {
       final oldest = _messages.first;
       final cursor = (oldest['created_at'] ?? oldest['timestamp'])?.toString();
+      final cursorId = oldest['id']?.toString();
       if (cursor == null || cursor.isEmpty) return;
       final older = await SupabaseChatService.instance.getMessagesBefore(
         _fullRoomId,
         before: cursor,
+        beforeId: cursorId,
         limit: 50,
       );
       if (!mounted) return;

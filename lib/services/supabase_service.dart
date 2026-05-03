@@ -490,20 +490,34 @@ class SupabaseChatService {
     }
   }
 
-  /// Pagination: Nachrichten älter als [before] (ISO-String) laden.
-  /// Rückgabe in aufsteigender Reihenfolge (ältere zuerst).
+  /// Pagination: Nachrichten älter als [before] laden.
+  /// Bundle 6.5: Tie-Breaking via `(created_at, id)` damit Nachrichten mit
+  /// identischem Timestamp nicht über Page-Boundaries verschwinden.
+  /// `beforeId` ist optional für die erste Seite.
   Future<List<Map<String, dynamic>>> getMessagesBefore(
     String roomId, {
     required String before,
+    String? beforeId,
     int limit = 50,
   }) async {
-    final response = await supabase
+    var query = supabase
         .from('chat_messages')
         .select()
         .eq('room_id', roomId)
-        .eq('is_deleted', false)
-        .lt('created_at', before)
+        .eq('is_deleted', false);
+    if (beforeId != null && beforeId.isNotEmpty) {
+      // Älter ALS (timestamp, id) — entweder strikt älterer Timestamp oder
+      // gleicher Timestamp + lexikographisch kleinere ID.
+      query = query.or(
+        'created_at.lt.$before,'
+        'and(created_at.eq.$before,id.lt.$beforeId)',
+      );
+    } else {
+      query = query.lt('created_at', before);
+    }
+    final response = await query
         .order('created_at', ascending: false)
+        .order('id', ascending: false)
         .limit(limit);
     return List<Map<String, dynamic>>.from(response.reversed.toList());
   }
