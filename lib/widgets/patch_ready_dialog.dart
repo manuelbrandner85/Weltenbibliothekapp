@@ -18,6 +18,7 @@ import 'package:flutter/services.dart';
 
 import '../services/restart_service.dart';
 import '../services/update_service.dart';
+import '../utils/changelog_translator.dart';
 
 class PatchReadyDialog extends StatefulWidget {
   final PatchCheckResult result;
@@ -104,20 +105,18 @@ class _PatchReadyDialogState extends State<PatchReadyDialog> {
                 letterSpacing: 0.2,
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
             Text(
-              'Ein neues Update wurde im Hintergrund heruntergeladen und '
-              'ist bereit zur Aktivierung.\n\n'
-              'Tippe auf "App neu starten" – die App startet automatisch neu '
-              'und das Update wird sofort aktiv.',
+              'Ein neues Update ist startklar — beim Neustart aktivieren wir '
+              'die Verbesserungen und Fehler-Fixes.',
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.8),
-                fontSize: 14,
+                color: Colors.white.withValues(alpha: 0.78),
+                fontSize: 13.5,
                 height: 1.5,
               ),
             ),
-            // Patch-Changelog aus Supabase (wenn vorhanden)
+            // Friendly-Changelog: Kategorisierte, übersetzte Liste
             FutureBuilder<String?>(
               future: _changelogFuture,
               builder: (context, snap) {
@@ -127,48 +126,59 @@ class _PatchReadyDialogState extends State<PatchReadyDialog> {
                     child: _ChangelogSkeleton(),
                   );
                 }
-                if (!snap.hasData || snap.data == null || snap.data!.trim().isEmpty) {
+                if (!snap.hasData ||
+                    snap.data == null ||
+                    snap.data!.trim().isEmpty) {
                   return const SizedBox.shrink();
                 }
-                final items = _parseChangelog(snap.data!);
-                if (items.isEmpty) return const SizedBox.shrink();
+                final friendly = parseFriendlyChangelog(snap.data!);
+                if (friendly.isEmpty) return const SizedBox.shrink();
+
                 return Padding(
-                  padding: const EdgeInsets.only(top: 16),
+                  padding: const EdgeInsets.only(top: 18),
                   child: Container(
-                    padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF00E5FF).withValues(alpha: 0.07),
-                      borderRadius: BorderRadius.circular(12),
+                      color: const Color(0xFF00E5FF).withValues(alpha: 0.06),
+                      borderRadius: BorderRadius.circular(14),
                       border: Border.all(
-                        color: const Color(0xFF00E5FF).withValues(alpha: 0.25),
+                        color: const Color(0xFF00E5FF)
+                            .withValues(alpha: 0.22),
                       ),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // Header
                         Row(
                           children: [
                             const Icon(Icons.auto_awesome_rounded,
-                                color: Color(0xFF00E5FF), size: 14),
+                                color: Color(0xFF00E5FF), size: 16),
                             const SizedBox(width: 6),
                             Text(
                               'Was ist neu',
                               style: TextStyle(
-                                color: const Color(0xFF00E5FF).withValues(alpha: 0.9),
-                                fontSize: 12,
+                                color: const Color(0xFF00E5FF)
+                                    .withValues(alpha: 0.95),
+                                fontSize: 13,
                                 fontWeight: FontWeight.w700,
+                                letterSpacing: 0.2,
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 10),
+                        const SizedBox(height: 12),
+                        // Kategorien
                         ConstrainedBox(
-                          constraints: const BoxConstraints(maxHeight: 160),
+                          constraints:
+                              const BoxConstraints(maxHeight: 240),
                           child: SingleChildScrollView(
                             child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: items
-                                  .map((e) => _ChangelogItem(entry: e))
+                              crossAxisAlignment:
+                                  CrossAxisAlignment.start,
+                              children: friendly.categories
+                                  .where((c) => !c.isEmpty)
+                                  .map((c) => _CategoryBlock(category: c))
                                   .toList(),
                             ),
                           ),
@@ -266,96 +276,84 @@ class _PatchReadyDialogState extends State<PatchReadyDialog> {
   }
 }
 
-// ── Changelog-Parsing ──────────────────────────────────────────────────────
+// ── Friendly-Changelog: Kategorie-Block ────────────────────────────────────
 
-class _ChangelogEntry {
-  final IconData icon;
-  final Color color;
-  final String text;
-  const _ChangelogEntry({required this.icon, required this.color, required this.text});
-}
-
-List<_ChangelogEntry> _parseChangelog(String raw) {
-  final lines = raw
-      .split('\n')
-      .map((l) => l.trim())
-      .where((l) => l.isNotEmpty)
-      .toList();
-
-  return lines.map((line) {
-    // Erkennt "type(scope): beschreibung" oder "type: beschreibung"
-    final typeMatch = RegExp(r'^(\w+)(?:\([^)]*\))?:\s*(.+)$').firstMatch(line);
-    if (typeMatch != null) {
-      final type = typeMatch.group(1)!.toLowerCase();
-      final description = typeMatch.group(2)!;
-      final (icon, color) = _iconForType(type);
-      return _ChangelogEntry(
-        icon: icon,
-        color: color,
-        text: _capitalize(description),
-      );
-    }
-    // Kein Präfix → allgemeine Änderung
-    return _ChangelogEntry(
-      icon: Icons.circle_rounded,
-      color: const Color(0xFF00E5FF),
-      text: _capitalize(line),
-    );
-  }).toList();
-}
-
-(IconData, Color) _iconForType(String type) {
-  switch (type) {
-    case 'feat':
-    case 'feature':
-      return (Icons.auto_awesome_rounded, Color(0xFF69F0AE)); // Grün
-    case 'fix':
-    case 'bugfix':
-      return (Icons.build_circle_rounded, Color(0xFF40C4FF)); // Blau
-    case 'style':
-    case 'ui':
-      return (Icons.palette_rounded, Color(0xFFE040FB)); // Lila
-    case 'perf':
-      return (Icons.speed_rounded, Color(0xFFFFD740)); // Gelb
-    case 'security':
-      return (Icons.shield_rounded, Color(0xFFFF6E40)); // Orange
-    case 'refactor':
-      return (Icons.recycling_rounded, Color(0xFF80DEEA)); // Cyan
-    case 'docs':
-      return (Icons.description_rounded, Color(0xFFB0BEC5)); // Grau
-    default:
-      return (Icons.check_circle_rounded, Color(0xFF00E5FF)); // Standard
-  }
-}
-
-String _capitalize(String s) =>
-    s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
-
-// ── Changelog-Item Widget ──────────────────────────────────────────────────
-
-class _ChangelogItem extends StatelessWidget {
-  final _ChangelogEntry entry;
-  const _ChangelogItem({required this.entry});
+class _CategoryBlock extends StatelessWidget {
+  final ChangelogCategory category;
+  const _CategoryBlock({required this.category});
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(entry.icon, color: entry.color, size: 14),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              entry.text,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.88),
-                fontSize: 13,
-                height: 1.4,
+          // Kategorie-Header
+          Row(
+            children: [
+              Text(
+                category.emoji,
+                style: const TextStyle(fontSize: 14),
               ),
-            ),
+              const SizedBox(width: 6),
+              Text(
+                category.title,
+                style: TextStyle(
+                  color: category.color.withValues(alpha: 0.95),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.1,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 6, vertical: 1),
+                decoration: BoxDecoration(
+                  color: category.color.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '${category.items.length}',
+                  style: TextStyle(
+                    color: category.color,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
           ),
+          const SizedBox(height: 6),
+          // Items
+          ...category.items.map((item) => Padding(
+                padding: const EdgeInsets.only(left: 4, top: 3, bottom: 3),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      margin: const EdgeInsets.only(top: 6, right: 8),
+                      width: 4,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: category.color.withValues(alpha: 0.7),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    Expanded(
+                      child: Text(
+                        item,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.88),
+                          fontSize: 12.5,
+                          height: 1.45,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              )),
         ],
       ),
     );
