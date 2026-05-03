@@ -1475,7 +1475,7 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> with TickerProvider
   void _showCheatCodes() {
     final TextEditingController codeController = TextEditingController();
     final List<String> unlockedCodes = [];
-    
+
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
@@ -1586,9 +1586,9 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> with TickerProvider
           ],
         ),
       ),
-    );
+    ).whenComplete(codeController.dispose);
   }
-  
+
   // v5.40 - 2.3: Achievements Dialog
   void _showAchievements() {
     showDialog(

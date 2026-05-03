@@ -377,7 +377,22 @@ class _CloudflareNotificationSettingsScreenState
 
   String _formatTimestamp(dynamic timestamp) {
     if (timestamp == null) return '';
-    final dt = DateTime.fromMillisecondsSinceEpoch(timestamp as int);
+    // Akzeptiert int (ms-Epoch), String (ISO oder Zahl) und DateTime
+    DateTime? dt;
+    if (timestamp is int) {
+      dt = DateTime.fromMillisecondsSinceEpoch(timestamp);
+    } else if (timestamp is DateTime) {
+      dt = timestamp;
+    } else if (timestamp is String) {
+      // Erst Zahl, sonst ISO-String
+      final asInt = int.tryParse(timestamp);
+      if (asInt != null) {
+        dt = DateTime.fromMillisecondsSinceEpoch(asInt);
+      } else {
+        dt = DateTime.tryParse(timestamp);
+      }
+    }
+    if (dt == null) return '';
     return '${dt.day}.${dt.month}.${dt.year} ${dt.hour}:${dt.minute.toString().padLeft(2, '0')}';
   }
 }

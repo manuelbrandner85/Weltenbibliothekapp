@@ -1101,78 +1101,107 @@ class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern> w
   Future<void> _editPost(CommunityPost post) async {
     final contentController = TextEditingController(text: post.content);
     final tagsController = TextEditingController(text: post.tags.join(', '));
-    
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: _kCardB,
-          title: const Text('Post bearbeiten', style: TextStyle(color: Colors.white)),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: contentController,
-                style: const TextStyle(color: Colors.white),
-                maxLines: 5,
-                decoration: const InputDecoration(
-                  labelText: 'Inhalt',
-                  labelStyle: TextStyle(color: Colors.white70),
-                  border: OutlineInputBorder(),
+
+    String newContent = '';
+    List<String> newTags = const [];
+    bool result = false;
+    try {
+      result = await showDialog<bool>(
+            context: context,
+            builder: (context) {
+              return AlertDialog(
+                backgroundColor: _kCardB,
+                title: const Text('Post bearbeiten',
+                    style: TextStyle(color: Colors.white)),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: contentController,
+                      style: const TextStyle(color: Colors.white),
+                      maxLines: 5,
+                      decoration: const InputDecoration(
+                        labelText: 'Inhalt',
+                        labelStyle: TextStyle(color: Colors.white70),
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: tagsController,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: const InputDecoration(
+                        labelText: 'Tags (mit Komma trennen)',
+                        labelStyle: TextStyle(color: Colors.white70),
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: tagsController,
-                style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(
-                  labelText: 'Tags (mit Komma trennen)',
-                  labelStyle: TextStyle(color: Colors.white70),
-                  border: OutlineInputBorder(),
-                ),
-              ),
-            ],
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text('Abbrechen'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    child: const Text('Speichern'),
+                  ),
+                ],
+              );
+            },
+          ) ??
+          false;
+      // Werte LESEN während Controller noch leben
+      newContent = contentController.text.trim();
+      newTags = tagsController.text
+          .split(',')
+          .map((t) => t.trim())
+          .where((t) => t.isNotEmpty)
+          .toList();
+    } finally {
+      contentController.dispose();
+      tagsController.dispose();
+    }
+
+    if (!result) return;
+
+    // Validation: leerer Content nicht zulassen
+    if (newContent.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('⚠️ Inhalt darf nicht leer sein'),
+            backgroundColor: Colors.orange,
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Abbrechen'),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Speichern'),
-            ),
-          ],
         );
-      },
-    );
-    
-    if (result == true) {
-      try {
-        final newContent = contentController.text.trim();
-        final newTags = tagsController.text.split(',').map((t) => t.trim()).where((t) => t.isNotEmpty).toList();
-        
-        await _communityService.editPost(
-          post.id,
-          content: newContent,
-          tags: newTags,
+      }
+      return;
+    }
+
+    try {
+      await _communityService.editPost(
+        post.id,
+        content: newContent,
+        tags: newTags,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Post bearbeitet!'),
+            backgroundColor: Colors.green,
+          ),
         );
-        
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('✅ Post bearbeitet!'),
-              backgroundColor: Colors.green,
-            ),
-          );
-          _loadData(); // Reload
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('❌ Fehler: $e'), backgroundColor: Colors.red),
-          );
-        }
+        _loadData(); // Reload
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('❌ Fehler: $e'),
+              backgroundColor: Colors.red),
+        );
       }
     }
   }

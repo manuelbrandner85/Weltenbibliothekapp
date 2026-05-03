@@ -1020,81 +1020,85 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
   /// ☁️ Restore from Cloud
   Future<void> _restoreFromCloud() async {
     HapticService.selectionClick();
-    
-    // Zeige Username-Dialog
-    final usernameController = TextEditingController();
-    
+
     if (!mounted) return;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('☁️ Aus Cloud wiederherstellen'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('Gib deinen Username ein:'),
-            const SizedBox(height: 16),
-            TextField(
-              controller: usernameController,
-              decoration: const InputDecoration(
-                hintText: 'Username',
-                border: OutlineInputBorder(),
+
+    // Username-Dialog mit Controller-Lifecycle in try/finally garantiert
+    final usernameController = TextEditingController();
+    String? username;
+    try {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('☁️ Aus Cloud wiederherstellen'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Gib deinen Username ein:'),
+              const SizedBox(height: 16),
+              TextField(
+                controller: usernameController,
+                decoration: const InputDecoration(
+                  hintText: 'Username',
+                  border: OutlineInputBorder(),
+                ),
               ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Abbrechen'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Wiederherstellen'),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Abbrechen'),
+      );
+      if (confirmed == true && usernameController.text.isNotEmpty) {
+        username = usernameController.text;
+      }
+    } finally {
+      usernameController.dispose();
+    }
+
+    if (username == null) return;
+
+    try {
+      final syncService = CloudflareSyncService();
+
+      // Restore Materie
+      final materieProfile = await syncService.restoreMaterieProfile(username);
+      if (materieProfile != null) {
+        await _storageService.saveMaterieProfile(materieProfile);
+      }
+
+      // Restore Energie
+      final energieProfile = await syncService.restoreEnergieProfile(username);
+      if (energieProfile != null) {
+        await _storageService.saveEnergieProfile(energieProfile);
+      }
+
+      await _loadProfiles();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Profile wiederhergestellt'),
+            backgroundColor: Colors.green,
           ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Wiederherstellen'),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Restore-Fehler: $e'),
+            backgroundColor: Colors.red,
           ),
-        ],
-      ),
-    );
-    
-    if (confirmed == true && usernameController.text.isNotEmpty) {
-      try {
-        final syncService = CloudflareSyncService();
-        
-        // Restore Materie
-        final materieProfile = await syncService.restoreMaterieProfile(
-          usernameController.text,
         );
-        if (materieProfile != null) {
-          await _storageService.saveMaterieProfile(materieProfile);
-        }
-        
-        // Restore Energie
-        final energieProfile = await syncService.restoreEnergieProfile(
-          usernameController.text,
-        );
-        if (energieProfile != null) {
-          await _storageService.saveEnergieProfile(energieProfile);
-        }
-        
-        await _loadProfiles();
-        
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('✅ Profile wiederhergestellt'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('❌ Restore-Fehler: $e'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
       }
     }
   }
@@ -1170,7 +1174,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                       if (value) {
                         await HapticFeedbackService().success();
                       }
-                      setState(() {}); // Rebuild to update UI
+                      if (mounted) setState(() {}); // Rebuild to update UI
                     },
                     activeThumbColor: Colors.orange,
                   ),
