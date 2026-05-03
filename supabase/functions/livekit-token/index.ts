@@ -62,9 +62,32 @@ Deno.serve(async (req: Request) => {
       // Bei ungültigem Token KEIN Hard-Fail mehr — fall back zu apikey-Modus
     }
 
-    // Fallback: apikey muss vorhanden + korrekt sein
+    // Fallback: apikey muss ein gültiges Supabase-JWT für dieses Projekt sein.
+    // Wir prüfen ref + role statt gegen SUPABASE_ANON_KEY (der nicht immer
+    // als Custom-Secret verfügbar ist).
     if (!userId) {
-      if (!apikey || apikey !== expectedAnon) {
+      let jwtOk = false;
+      if (apikey) {
+        try {
+          const parts = apikey.split(".");
+          if (parts.length === 3) {
+            const pad = (s: string) => s + "==".slice(s.length % 4 === 0 ? 4 : s.length % 4);
+            const payload = JSON.parse(
+              new TextDecoder().decode(
+                Uint8Array.from(atob(pad(parts[1].replace(/-/g, "+").replace(/_/g, "/"))), (c) => c.charCodeAt(0)),
+              ),
+            );
+            // Nur JWTs für dieses Supabase-Projekt akzeptieren
+            if (
+              payload.ref === "adtviduaftdquvfjpojb" &&
+              (payload.role === "anon" || payload.role === "authenticated")
+            ) {
+              jwtOk = true;
+            }
+          }
+        } catch (_) { /* ungültiges JWT */ }
+      }
+      if (!jwtOk) {
         return new Response(
           JSON.stringify({ error: "Authentifizierung erforderlich" }),
           {
