@@ -154,50 +154,103 @@ jobs:
           BASE="https://api.hostinger.com/v1"
           AUTH="Authorization: Bearer $HOSTINGER_API_TOKEN"
           FW_ID="${FIREWALL_ID}"
+          echo "→ Firewall-ID: $FW_ID"
 
-          # Bestehende Regeln auflisten — Duplikate vermeiden
-          EXISTING=$(curl -sf --max-time 15 \
+          # ── 1) Bestehende Regeln auflisten + komplett dumpen für Debug ───
+          EXISTING_RAW=$(curl -s --max-time 15 -w "\n__HTTP__%{http_code}" \
             -H "$AUTH" -H "Accept: application/json" \
-            "$BASE/vps/firewall/$FW_ID/rules" 2>/dev/null || echo '{"data":[]}')
+            "$BASE/vps/firewall/$FW_ID/rules" || echo $'\n__HTTP__000')
+          EXISTING_HTTP=$(echo "$EXISTING_RAW" | tail -1 | sed 's/__HTTP__//')
+          EXISTING=$(echo "$EXISTING_RAW" | sed '$d')
+          echo "→ GET /rules HTTP $EXISTING_HTTP"
+          echo "→ Bestehende Regeln (komplett):"
+          echo "$EXISTING" | python3 -m json.tool 2>/dev/null | head -100 || echo "$EXISTING" | head -c 2000
 
-          # Regel-Adder: idempotent. Args: protocol port-or-range
+          if [ "$EXISTING_HTTP" != "200" ]; then
+            echo "❌ Regel-Liste konnte nicht abgefragt werden — Hostinger API-Token prüfen!"
+            exit 1
+          fi
+
+          # ── 2) Regel-Adder: schickt POST, prüft HTTP-Status, fail-loud ──
+          ADDED_OR_OK=0
+          ATTEMPTED=0
           add_rule() {
             local proto="$1"
             local port="$2"
             local desc="$3"
-            # Existiert die Regel schon? (proto + port + source=any)
+            ATTEMPTED=$((ATTEMPTED+1))
+            echo ""
+            echo "── $desc ($proto $port) ──"
+
+            # Existenz-Check (mehrere mögliche Hostinger-Schemas akzeptieren).
+            # Single-line python wegen YAML-Block-Scalar (Heredoc bricht YAML).
             local exists
-            exists=$(echo "$EXISTING" | python3 -c "import sys,json; d=json.load(sys.stdin).get('data',[]); m=[r for r in d if str(r.get('protocol','')).upper()=='$proto' and str(r.get('port',''))=='$port' and str(r.get('source',''))=='any']; print('1' if m else '0')" 2>/dev/null || echo "0")
+            exists=$(echo "$EXISTING" | python3 -c "import sys,json; d=json.load(sys.stdin); rules=d if isinstance(d,list) else d.get('data',d.get('rules',[])); rules=rules if isinstance(rules,list) else []; hit=any(str(r.get('protocol','')).upper()=='$proto' and str(r.get('port',r.get('ports','')))=='$port' and str(r.get('source','')).lower() in ('any','all','') for r in rules); print('1' if hit else '0')" 2>/dev/null || echo "0")
             if [ "$exists" = "1" ]; then
-              echo "  ✓ $desc (Regel existiert bereits)"
+              echo "  ✓ Regel existiert bereits — keine Aktion"
+              ADDED_OR_OK=$((ADDED_OR_OK+1))
               return 0
             fi
+
+            local body="{\"protocol\":\"$proto\",\"port\":\"$port\",\"action\":\"accept\",\"source\":\"any\",\"sourceDetail\":\"any\"}"
+            echo "  → POST body: $body"
             local resp
-            resp=$(curl -s --max-time 15 -X POST \
+            resp=$(curl -s --max-time 15 -X POST -w "\n__HTTP__%{http_code}" \
               -H "$AUTH" -H "Content-Type: application/json" -H "Accept: application/json" \
               "$BASE/vps/firewall/$FW_ID/rules" \
-              -d "{\"protocol\":\"$proto\",\"port\":\"$port\",\"action\":\"accept\",\"source\":\"any\",\"sourceDetail\":\"any\"}" \
-              2>/dev/null || echo '{}')
-            if echo "$resp" | grep -qE '"id"|"data"'; then
-              echo "  ✅ $desc hinzugefügt"
-            else
-              # 422 = duplicate, ignorieren
-              echo "  ℹ️  $desc — Response: $(echo "$resp" | head -c 200)"
-            fi
+              -d "$body" || echo $'\n__HTTP__000')
+            local http_code=$(echo "$resp" | tail -1 | sed 's/__HTTP__//')
+            local body_resp=$(echo "$resp" | sed '$d')
+            echo "  → POST HTTP $http_code — Response: $(echo "$body_resp" | head -c 400)"
+
+            case "$http_code" in
+              200|201|204)
+                echo "  ✅ $desc erfolgreich hinzugefügt"
+                ADDED_OR_OK=$((ADDED_OR_OK+1))
+                ;;
+              409|422)
+                echo "  ✓ Regel war schon da (Server: duplicate) — OK"
+                ADDED_OR_OK=$((ADDED_OR_OK+1))
+                ;;
+              *)
+                echo "  ❌ FEHLER: konnte Regel nicht hinzufügen (HTTP $http_code)"
+                ;;
+            esac
           }
 
-          echo "→ Stelle sicher dass LiveKit-Media-Ports erreichbar sind …"
           add_rule "TCP" "7981"          "TCP 7981 (LiveKit RTC TCP-Fallback)"
           add_rule "UDP" "60001-61000"   "UDP 60001-61000 (LiveKit Media)"
 
-          # Firewall neu synchronisieren damit die Regeln auf der VPS aktiv werden
-          if [ -n "${VPS_VM_ID:-}" ]; then
-            curl -sf --max-time 15 -X POST \
-              -H "$AUTH" -H "Accept: application/json" \
-              "$BASE/vps/firewall/$FW_ID/activate/${VPS_VM_ID}" 2>/dev/null \
-              && echo "✅ Firewall-Regeln auf VPS synchronisiert" \
-              || echo "⚠️  Sync fehlgeschlagen (ggf. nicht nötig wenn schon aktiv)"
+          echo ""
+          echo "→ Ergebnis: $ADDED_OR_OK von $ATTEMPTED Regeln OK"
+          if [ "$ADDED_OR_OK" -lt "$ATTEMPTED" ]; then
+            echo "❌ Mindestens eine Firewall-Regel konnte nicht gesetzt werden — Build fail-loud"
+            exit 1
           fi
+
+          # ── 3) Firewall auf VPS aktivieren/synchronisieren ─────────────
+          if [ -n "${VPS_VM_ID:-}" ]; then
+            ACT_RESP=$(curl -s --max-time 15 -X POST -w "\n__HTTP__%{http_code}" \
+              -H "$AUTH" -H "Accept: application/json" \
+              "$BASE/vps/firewall/$FW_ID/activate/${VPS_VM_ID}" || echo $'\n__HTTP__000')
+            ACT_HTTP=$(echo "$ACT_RESP" | tail -1 | sed 's/__HTTP__//')
+            echo "→ Activate HTTP $ACT_HTTP"
+            case "$ACT_HTTP" in
+              200|201|204) echo "✅ Firewall auf VPS synchronisiert" ;;
+              409)         echo "✓  Firewall war schon aktiv (409)" ;;
+              *)           echo "⚠️  Sync HTTP $ACT_HTTP — manuell prüfen" ;;
+            esac
+          fi
+
+          # ── 4) Verifikation: GET /rules nach Update + check ────────────
+          echo ""
+          echo "→ Verifiziere dass Regeln jetzt aktiv sind …"
+          VERIFY=$(curl -s --max-time 15 -H "$AUTH" -H "Accept: application/json" \
+            "$BASE/vps/firewall/$FW_ID/rules" || echo '{"data":[]}')
+          # Single-line python (kein Heredoc wegen YAML-Block-Scalar)
+          echo "$VERIFY" | python3 -c "import sys,json; d=json.load(sys.stdin); rules=d if isinstance(d,list) else d.get('data',d.get('rules',[])); rules=rules if isinstance(rules,list) else []; tcp=any(str(r.get('protocol','')).upper()=='TCP' and str(r.get('port',''))=='7981' for r in rules); udp=any(str(r.get('protocol','')).upper()=='UDP' and str(r.get('port',''))=='60001-61000' for r in rules); print('  TCP 7981:           '+('✅ aktiv' if tcp else '❌ FEHLT')); print('  UDP 60001-61000:    '+('✅ aktiv' if udp else '❌ FEHLT')); sys.exit(0 if (tcp and udp) else 2)" \
+            && echo "✅ Verifikation OK — beide Regeln aktiv" \
+            || { echo "❌ Verifikation: nicht alle Regeln aktiv. Hostinger-UI prüfen!"; exit 1; }
 
       # ─────────────────────────────────────────────────────────────────────
       # STEP 2: Secrets prüfen
