@@ -113,10 +113,14 @@ class LiveKitCallService extends ChangeNotifier {
       remoteParticipantCount + (_room?.localParticipant != null ? 1 : 0);
 
   /// Liste der entfernten Teilnehmer-Namen für UI-Anzeige.
+  /// Sortiert nach Identity damit die Reihenfolge stabil bleibt wenn
+  /// Teilnehmer joinen/leaven (sonst springen Tiles im Grid hin und her).
   List<String> get remoteParticipantNames {
     final r = _room;
     if (r == null) return const [];
-    return r.remoteParticipants.values
+    final sorted = r.remoteParticipants.values.toList()
+      ..sort((a, b) => a.identity.compareTo(b.identity));
+    return sorted
         .map((p) => p.name.isNotEmpty ? p.name : (p.identity))
         .toList();
   }
@@ -135,12 +139,16 @@ class LiveKitCallService extends ChangeNotifier {
   }
 
   /// Liste aller Remote-Video-Tracks für UI — Reihenfolge stabil per identity.
-  /// Map: identity → VideoTrack (oder null wenn Cam aus).
+  /// LinkedHashMap behält die Insertion-Reihenfolge → wir sortieren beim
+  /// Befüllen nach Identity, damit das Grid synchron mit
+  /// `remoteParticipantNames` bleibt und Tiles nicht springen.
   Map<String, VideoTrack?> get remoteVideoTracks {
     final r = _room;
     if (r == null) return const {};
+    final sorted = r.remoteParticipants.values.toList()
+      ..sort((a, b) => a.identity.compareTo(b.identity));
     final map = <String, VideoTrack?>{};
-    for (final p in r.remoteParticipants.values) {
+    for (final p in sorted) {
       VideoTrack? track;
       for (final pub in p.videoTrackPublications) {
         if (pub.source == TrackSource.camera &&
@@ -313,6 +321,28 @@ class LiveKitCallService extends ChangeNotifier {
             'remoteParticipants=${room.remoteParticipants.length}');
       }
 
+      // Avatar-URL als Attribut SOFORT nach connect setzen — vor allen anderen
+      // async Operationen. Sonst sehen Remote-Teilnehmer den lokalen User
+      // bis zu mehrere Sekunden ohne Avatar (Race mit FG-Service-Init).
+      if (avatarUrl != null && avatarUrl.isNotEmpty) {
+        try {
+          final lp = room.localParticipant;
+          if (lp != null) {
+            lp.setAttributes({
+              ...lp.attributes,
+              'avatarUrl': avatarUrl,
+            });
+          }
+          if (kDebugMode) {
+            debugPrint('🖼️  Avatar-URL gebroadcastet: $avatarUrl');
+          }
+        } catch (e) {
+          if (kDebugMode) {
+            debugPrint('⚠️ Avatar-broadcast failed: $e');
+          }
+        }
+      }
+
       // Foreground-Service starten damit der Anruf weiter läuft wenn der
       // User die App minimiert (Standard-Verhalten von Android: kill ohne FG).
       try {
@@ -337,29 +367,6 @@ class LiveKitCallService extends ChangeNotifier {
       } catch (e) {
         if (kDebugMode) {
           debugPrint('⚠️ FlutterBackground init/enable failed: $e');
-        }
-      }
-
-      // Avatar-URL als Attribut broadcasten damit alle Teilnehmer sie sehen
-      // (für Profilbild-Anzeige im Tile wenn Kamera aus).
-      // WICHTIG: Bestehende Attribute (z.B. handRaised) müssen mitgespreaded
-      // werden, sonst überschreibt setAttributes sie alle.
-      if (avatarUrl != null && avatarUrl.isNotEmpty) {
-        try {
-          final lp = room.localParticipant;
-          if (lp != null) {
-            lp.setAttributes({
-              ...lp.attributes,
-              'avatarUrl': avatarUrl,
-            });
-          }
-          if (kDebugMode) {
-            debugPrint('🖼️  Avatar-URL gebroadcastet: $avatarUrl');
-          }
-        } catch (e) {
-          if (kDebugMode) {
-            debugPrint('⚠️ Avatar-broadcast failed: $e');
-          }
         }
       }
 
@@ -747,7 +754,9 @@ class LiveKitCallService extends ChangeNotifier {
       if (target) {
         if (kDebugMode) debugPrint('🖥️  Bildschirm-Teilen wird angefragt …');
         // Foreground-Service muss VOR setScreenShareEnabled laufen,
-        // sonst lehnt Android die MediaProjection ab.
+        // sonst lehnt Android 12+ die MediaProjection ab. Bei Fehler
+        // gar nicht erst versuchen (sonst silent fail mit Krypto-Fehler).
+        bool fgOk = false;
         try {
           if (!await FlutterBackground.hasPermissions) {
             await FlutterBackground.initialize(
@@ -759,15 +768,20 @@ class LiveKitCallService extends ChangeNotifier {
               ),
             );
           }
-          final ok = await FlutterBackground.enableBackgroundExecution();
+          fgOk = await FlutterBackground.enableBackgroundExecution();
           if (kDebugMode) {
-            debugPrint('🖥️  Foreground-Service: ${ok ? "OK" : "FAIL"}');
+            debugPrint('🖥️  Foreground-Service: ${fgOk ? "OK" : "FAIL"}');
           }
         } catch (e) {
           if (kDebugMode) {
-            debugPrint('⚠️ Foreground-Service init failed: $e — '
-                'Bildschirm-Teilen funktioniert vermutlich nicht');
+            debugPrint('⚠️ Foreground-Service init failed: $e');
           }
+        }
+        if (!fgOk) {
+          _errorMessage = 'Bildschirm-Teilen benötigt einen aktiven '
+              'Hintergrund-Dienst. Bitte App-Berechtigungen prüfen.';
+          notifyListeners();
+          return;
         }
         // setScreenShareEnabled triggert das System-Permission-Popup.
         // Hard-Timeout: User könnte Popup ignorieren oder schließen.
