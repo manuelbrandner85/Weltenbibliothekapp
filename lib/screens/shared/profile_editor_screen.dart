@@ -1,5 +1,8 @@
+import 'dart:async' show Timer;
+
 import 'package:flutter/material.dart';
 import '../../services/storage_service.dart';
+import '../../services/username_availability_service.dart';
 import 'package:flutter/services.dart'; // ✅ Für InputFormatters
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint, kIsWeb;
 import 'package:intl/intl.dart';
@@ -33,6 +36,103 @@ class ProfileEditorScreen extends ConsumerStatefulWidget {
 class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
   final _formKey = GlobalKey<FormState>();
   final _picker = ImagePicker();
+
+  // Username-Live-Check
+  Timer? _usernameDebounce;
+  UsernameCheckResult? _usernameCheck;
+  bool _usernameChecking = false;
+  String _lastCheckedUsername = '';
+
+  /// Triggert nach 400ms Tipppause einen Server-Check.
+  /// Bricht laufende Debounce-Timer ab.
+  void _scheduleUsernameCheck(String value) {
+    _usernameDebounce?.cancel();
+    final trimmed = value.trim();
+    // Wenn Eingabe = bereits gespeicherter Username → kein Check nötig
+    if (trimmed == _materieProfile?.username ||
+        trimmed == _energieProfile?.username) {
+      setState(() {
+        _usernameCheck = const UsernameCheckResult(
+          status: UsernameStatus.available,
+          message: 'Aktueller Benutzername.',
+        );
+        _usernameChecking = false;
+      });
+      return;
+    }
+    if (trimmed.isEmpty) {
+      setState(() {
+        _usernameCheck = null;
+        _usernameChecking = false;
+      });
+      return;
+    }
+    _usernameDebounce = Timer(const Duration(milliseconds: 450), () async {
+      if (!mounted) return;
+      setState(() => _usernameChecking = true);
+      final result =
+          await UsernameAvailabilityService.instance.check(trimmed);
+      if (!mounted || _usernameController.text.trim() != trimmed) return;
+      setState(() {
+        _usernameCheck = result;
+        _usernameChecking = false;
+        _lastCheckedUsername = trimmed;
+      });
+    });
+  }
+
+  Widget? _buildUsernameStatusIcon() {
+    if (_usernameChecking) {
+      return const Padding(
+        padding: EdgeInsets.all(14),
+        child: SizedBox(
+          width: 16,
+          height: 16,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      );
+    }
+    final status = _usernameCheck?.status;
+    if (status == null) return null;
+    switch (status) {
+      case UsernameStatus.available:
+        return const Icon(Icons.check_circle_rounded, color: Colors.green);
+      case UsernameStatus.taken:
+        return const Icon(Icons.cancel_rounded, color: Colors.red);
+      case UsernameStatus.invalidFormat:
+        return const Icon(Icons.warning_amber_rounded,
+            color: Colors.orange);
+      case UsernameStatus.checkFailed:
+        return const Icon(Icons.cloud_off_rounded, color: Colors.grey);
+    }
+  }
+
+  String? _buildUsernameHelperText() {
+    if (_usernameChecking) return 'Verfügbarkeit wird geprüft …';
+    return _usernameCheck?.message;
+  }
+
+  TextStyle? _buildUsernameHelperStyle() {
+    final status = _usernameCheck?.status;
+    Color? color;
+    switch (status) {
+      case UsernameStatus.available:
+        color = Colors.green;
+        break;
+      case UsernameStatus.taken:
+        color = Colors.red;
+        break;
+      case UsernameStatus.invalidFormat:
+        color = Colors.orange;
+        break;
+      case UsernameStatus.checkFailed:
+        color = Colors.grey;
+        break;
+      case null:
+        return null;
+    }
+    return TextStyle(color: color, fontSize: 12);
+  }
   
   // Gemeinsame Felder
   final _usernameController = TextEditingController();
@@ -173,7 +273,8 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
   void dispose() {
     // 🔄 AUTO-SAVE: Flush pending saves before dispose
     AutoSaveManager().flushAll();
-    
+
+    _usernameDebounce?.cancel();
     _usernameController.dispose();
     _passwordController.dispose();  // ✅ NEU
     _nameController.dispose();
@@ -374,13 +475,54 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
 
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
-    
+
+    // Pre-Save: finaler Username-Verfügbarkeits-Check (auch wenn User
+    // schnell auf Speichern klickt während Live-Check noch lief).
+    final desiredUsername = _usernameController.text.trim();
+    final wasUsernameChanged =
+        desiredUsername != (_materieProfile?.username ?? '') &&
+            desiredUsername != (_energieProfile?.username ?? '');
+    if (wasUsernameChanged) {
+      setState(() => _isSaving = true);
+      final result =
+          await UsernameAvailabilityService.instance.check(desiredUsername);
+      if (!mounted) return;
+      if (result.status == UsernameStatus.taken) {
+        setState(() {
+          _isSaving = false;
+          _usernameCheck = result;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ ${result.message}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+        return;
+      }
+      if (result.status == UsernameStatus.invalidFormat) {
+        setState(() {
+          _isSaving = false;
+          _usernameCheck = result;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('⚠️ ${result.message}'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+      // Bei checkFailed lassen wir durch — Insert-Conflict fängt es ggf. ab
+    }
+
     setState(() => _isSaving = true);
-    
+
     // 🔥 FIX: Track Admin-Status für Toast
     bool isAdmin = false;
     bool isRootAdmin = false;
-    
+
     try {
       final storage = StorageService();
       final syncService = ProfileSyncService(); // 🆕 Cloud-Sync Service
@@ -744,28 +886,32 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
                     
                     const SizedBox(height: 32),
                     
-                    // Username (für beide Welten)
+                    // Username (für beide Welten) — mit Live-Verfügbarkeits-Check
                     TextFormField(
                       controller: _usernameController,
                       decoration: InputDecoration(
                         labelText: 'Benutzername (Chat-Name)',
                         hintText: 'Dein Chat-Name',
                         prefixIcon: const Icon(Icons.person),
+                        suffixIcon: _buildUsernameStatusIcon(),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                         filled: true,
-                        fillColor: isDark 
-                            ? Colors.white.withValues(alpha: 0.05) 
+                        fillColor: isDark
+                            ? Colors.white.withValues(alpha: 0.05)
                             : Colors.white,
+                        helperText: _buildUsernameHelperText(),
+                        helperStyle: _buildUsernameHelperStyle(),
+                        helperMaxLines: 2,
                       ),
-                      // ✅ NEU: Username-Änderung überwachen
                       onChanged: (value) {
                         setState(() {
                           final username = value.trim();
-                          // Prüfe BEIDE Admin-Accounts: Weltenbibliothek UND Weltenbibliothekedit
-                          _isWeltenbibliothek = (username == 'Weltenbibliothek' || username == 'Weltenbibliothekedit');
+                          _isWeltenbibliothek = (username == 'Weltenbibliothek' ||
+                              username == 'Weltenbibliothekedit');
                         });
+                        _scheduleUsernameCheck(value);
                       },
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
@@ -774,6 +920,30 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
                         return null;
                       },
                     ),
+                    // Vorschläge bei vergebenem Namen
+                    if (_usernameCheck?.status == UsernameStatus.taken &&
+                        _usernameCheck!.suggestions.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 6,
+                        children: _usernameCheck!.suggestions
+                            .where((s) => s.length >= 3 && s.length <= 20)
+                            .map((s) => ActionChip(
+                                  label: Text(s),
+                                  avatar: const Icon(Icons.auto_awesome,
+                                      size: 14, color: Colors.amber),
+                                  onPressed: () {
+                                    _usernameController.text = s;
+                                    _usernameController.selection =
+                                        TextSelection.collapsed(
+                                            offset: s.length);
+                                    _scheduleUsernameCheck(s);
+                                  },
+                                ))
+                            .toList(),
+                      ),
+                    ],
                     
                     // ✅ NEU: Root-Admin Passwortfeld (conditional)
                     if (_isWeltenbibliothek) ...[
