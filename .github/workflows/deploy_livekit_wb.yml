@@ -1,19 +1,24 @@
-name: 🎥 LiveKit WB — Container deployen (SSH / manuell)
+name: 🎥 LiveKit WB — Container deployen
 
-# HINWEIS: Dieser Workflow ist nur noch für manuellen SSH-Deploy gedacht.
-# Auto-Deploy bei infra/livekit-wb/** Änderungen läuft über
-# deploy_livekit_wb_local.yml (Self-Hosted Runner auf VPS, kein SSH nötig).
+# Deployt die WB-eigene LiveKit-Instanz auf den Hostinger VPS.
 #
-# Port 22 von GitHub Actions zur VPS ist geblockt → SSH-Deploy schlägt fehl.
-# Nur manuell via workflow_dispatch ausführen wenn VPS-SSH explizit freigegeben.
+# SSH-Whitelist-Flow (automatisch):
+#   1. Runner-IP via Hostinger API in VPS-Firewall freischalten
+#   2. SCP + SSH mit VPS_PASSWORD
+#   3. Firewall-Regel nach Deploy wieder entfernen (cleanup)
 #
 # Required Secrets:
 #   VPS_PASSWORD          — SSH root-Passwort für VPS 72.62.154.95
-#   LIVEKIT_API_SECRET    — WB LiveKit API-Secret (wird in livekit.yaml injiziert)
-#   HOSTINGER_API_TOKEN   — Hostinger API Token (optional, für Status-Check)
+#   LIVEKIT_API_SECRET    — WB LiveKit API-Secret
+#   HOSTINGER_API_TOKEN   — Hostinger API Token (für Firewall-Whitelist)
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'infra/livekit-wb/**'
+      - '.github/workflows/deploy_livekit_wb.yml'
 
 permissions:
   contents: read
@@ -39,45 +44,134 @@ jobs:
       - name: 📦 Tools installieren
         run: sudo apt-get install -y -qq sshpass gettext-base jq
 
-      - name: 🌐 VPS-Status via Hostinger API prüfen
-        continue-on-error: true
+      # ─────────────────────────────────────────────────────────────────────
+      # STEP 1: Runner-IP via Hostinger API in VPS-Firewall freischalten
+      # Damit SSH (Port 22) von GitHub Actions zu VPS funktioniert.
+      # ─────────────────────────────────────────────────────────────────────
+      - name: 🔓 Runner-IP in Hostinger-Firewall freischalten
         env:
           HOSTINGER_API_TOKEN: ${{ secrets.HOSTINGER_API_TOKEN }}
         run: |
+          set -euo pipefail
           if [ -z "${HOSTINGER_API_TOKEN:-}" ]; then
-            echo "ℹ️  HOSTINGER_API_TOKEN nicht gesetzt — Status-Check übersprungen"
+            echo "⚠️  HOSTINGER_API_TOKEN nicht gesetzt — Whitelist übersprungen (SSH könnte scheitern)"
+            echo "FIREWALL_ID=" >> $GITHUB_ENV
+            echo "FIREWALL_RULE_ID=" >> $GITHUB_ENV
             exit 0
           fi
-          echo "→ Prüfe VPS-Status via Hostinger API…"
-          HTTP=$(curl -sS -o /tmp/vps_list.json -w "%{http_code}" \
-            -H "Authorization: Bearer $HOSTINGER_API_TOKEN" \
-            -H "Accept: application/json" \
-            "https://api.hostinger.com/v1/vps/virtual-machines")
-          echo "HTTP Status: $HTTP"
-          if [ "$HTTP" = "200" ]; then
-            jq -r '.data[]? | "VM: \(.hostname // "?") (\(.main_ip // "?")), Status: \(.state // "?")"' \
-              /tmp/vps_list.json 2>/dev/null || cat /tmp/vps_list.json
-          else
-            echo "⚠️  Hostinger API: HTTP $HTTP"
-            cat /tmp/vps_list.json || true
+
+          BASE="https://api.hostinger.com/v1"
+          AUTH="Authorization: Bearer $HOSTINGER_API_TOKEN"
+
+          # Runner-IP ermitteln
+          RUNNER_IP=$(curl -sf --max-time 10 https://api.ipify.org || \
+                      curl -sf --max-time 10 https://ifconfig.me || echo "")
+          if [ -z "$RUNNER_IP" ]; then
+            echo "⚠️  Runner-IP nicht ermittelbar — Whitelist übersprungen"
+            echo "FIREWALL_ID=" >> $GITHUB_ENV
+            echo "FIREWALL_RULE_ID=" >> $GITHUB_ENV
+            exit 0
+          fi
+          echo "→ Runner-IP: $RUNNER_IP"
+
+          # VPS-Info holen
+          VPS_JSON=$(curl -sf --max-time 15 \
+            -H "$AUTH" -H "Accept: application/json" \
+            "$BASE/vps/virtual-machines" 2>/dev/null || echo '{"data":[]}')
+
+          VM_ID=$(echo "$VPS_JSON" | python3 -c "
+import sys,json
+data=json.load(sys.stdin).get('data',[])
+[print(v['id']) for v in data if v.get('main_ip')=='$VPS_HOST']
+" 2>/dev/null | head -1 || echo "")
+          echo "→ VM-ID: $VM_ID"
+
+          # Firewall-ID aus VM-Info oder separatem Endpoint
+          FW_ID=$(echo "$VPS_JSON" | python3 -c "
+import sys,json
+data=json.load(sys.stdin).get('data',[])
+for v in data:
+  if v.get('main_ip')=='$VPS_HOST':
+    fw=v.get('firewall') or {}
+    print(fw.get('id','') if isinstance(fw,dict) else '')
+    break
+" 2>/dev/null | head -1 || echo "")
+
+          if [ -z "$FW_ID" ]; then
+            FW_LIST=$(curl -sf --max-time 10 \
+              -H "$AUTH" -H "Accept: application/json" \
+              "$BASE/vps/firewall" 2>/dev/null || echo '{"data":[]}')
+            FW_ID=$(echo "$FW_LIST" | python3 -c "
+import sys,json
+data=json.load(sys.stdin).get('data',[])
+if data: print(data[0].get('id',''))
+" 2>/dev/null | head -1 || echo "")
+          fi
+          echo "→ Firewall-ID: $FW_ID"
+
+          if [ -z "$FW_ID" ]; then
+            echo "⚠️  Kein Firewall-Objekt gefunden — versuche SSH ohne Whitelist"
+            echo "FIREWALL_ID=" >> $GITHUB_ENV
+            echo "FIREWALL_RULE_ID=" >> $GITHUB_ENV
+            exit 0
           fi
 
+          # Firewall-Regel hinzufügen: Port 22 TCP von Runner-IP
+          RULE_RESP=$(curl -sf --max-time 15 -X POST \
+            -H "$AUTH" \
+            -H "Content-Type: application/json" \
+            -H "Accept: application/json" \
+            "$BASE/vps/firewall/$FW_ID/rules" \
+            -d "{\"protocol\":\"TCP\",\"port\":\"22\",\"action\":\"accept\",\"source\":\"custom\",\"sourceDetail\":\"$RUNNER_IP\"}" \
+            2>/dev/null || echo "{}")
+          echo "→ Regel-Response: $RULE_RESP"
+
+          RULE_ID=$(echo "$RULE_RESP" | python3 -c "
+import sys,json
+try:
+  d=json.load(sys.stdin)
+  r=d.get('data',d)
+  print(r.get('id','') if isinstance(r,dict) else '')
+except: print('')
+" 2>/dev/null | head -1 || echo "")
+          echo "→ Regel-ID: $RULE_ID"
+
+          # Firewall auf VPS synchronisieren/aktivieren
+          if [ -n "$VM_ID" ]; then
+            curl -sf --max-time 15 -X POST \
+              -H "$AUTH" -H "Accept: application/json" \
+              "$BASE/vps/firewall/$FW_ID/activate/$VM_ID" 2>/dev/null \
+              && echo "✅ Firewall auf VPS synchronisiert" \
+              || echo "⚠️  Firewall-Sync fehlgeschlagen (ggf. nicht nötig)"
+          fi
+
+          echo "FIREWALL_ID=$FW_ID" >> $GITHUB_ENV
+          echo "FIREWALL_RULE_ID=${RULE_ID:-}" >> $GITHUB_ENV
+          echo "✅ Firewall-Regel hinzugefügt — warte 20s auf Propagierung"
+          sleep 20
+
+      # ─────────────────────────────────────────────────────────────────────
+      # STEP 2: Secrets prüfen
+      # ─────────────────────────────────────────────────────────────────────
       - name: 🔐 Secrets prüfen
         env:
           LIVEKIT_API_SECRET: ${{ secrets.LIVEKIT_API_SECRET }}
           VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
         run: |
           if [ -z "${VPS_PASSWORD:-}" ]; then
-            echo "❌ VPS_PASSWORD Secret fehlt — unter Settings → Secrets → Actions setzen"
+            echo "❌ VPS_PASSWORD fehlt — Settings → Secrets → Actions"
             exit 1
           fi
           if [ -z "${LIVEKIT_API_SECRET:-}" ]; then
-            echo "❌ LIVEKIT_API_SECRET Secret fehlt — unter Settings → Secrets → Actions setzen"
+            echo "❌ LIVEKIT_API_SECRET fehlt — Settings → Secrets → Actions"
             exit 1
           fi
-          echo "✅ Alle nötigen Secrets vorhanden"
+          echo "✅ Alle Secrets vorhanden"
 
-      - name: 🔧 livekit.yaml mit Secret befüllen
+      # ─────────────────────────────────────────────────────────────────────
+      # STEP 3: livekit.yaml mit Secret befüllen
+      # ─────────────────────────────────────────────────────────────────────
+      - name: 🔧 livekit.yaml befüllen
         env:
           LIVEKIT_API_SECRET: ${{ secrets.LIVEKIT_API_SECRET }}
         run: |
@@ -86,131 +180,136 @@ jobs:
             envsubst '${LIVEKIT_API_SECRET}' \
             < infra/livekit-wb/livekit.yaml \
             > /tmp/livekit-wb-filled.yaml
-          if grep -q '\${LIVEKIT_API_SECRET}' /tmp/livekit-wb-filled.yaml; then
-            echo "❌ envsubst hat Platzhalter nicht ersetzt"
-            exit 1
-          fi
+          grep -q '\${LIVEKIT_API_SECRET}' /tmp/livekit-wb-filled.yaml \
+            && { echo "❌ Platzhalter nicht ersetzt"; exit 1; } || true
           echo "✅ livekit.yaml befüllt"
 
-      - name: 📤 Dateien auf VPS hochladen
+      # ─────────────────────────────────────────────────────────────────────
+      # STEP 4: Dateien auf VPS hochladen
+      # ─────────────────────────────────────────────────────────────────────
+      - name: 📤 Dateien hochladen
         env:
           VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
         run: |
           set -euo pipefail
-          SCP="sshpass -p ${VPS_PASSWORD} scp -o StrictHostKeyChecking=no -o ConnectTimeout=30 -o PasswordAuthentication=yes"
+          SCP="sshpass -p ${VPS_PASSWORD} scp \
+            -o StrictHostKeyChecking=no \
+            -o ConnectTimeout=30 \
+            -o PasswordAuthentication=yes"
           T="${VPS_USER}@${VPS_HOST}"
-          $SCP /tmp/livekit-wb-filled.yaml           ${T}:/tmp/livekit-wb-filled.yaml
-          $SCP infra/livekit-wb/docker-compose.yml   ${T}:/tmp/livekit-wb-compose.yml
-          $SCP infra/livekit-wb/caddy-snippet.caddy  ${T}:/tmp/caddy-wb-snippet.caddy
+          $SCP /tmp/livekit-wb-filled.yaml          ${T}:/tmp/livekit-wb-filled.yaml
+          $SCP infra/livekit-wb/docker-compose.yml  ${T}:/tmp/livekit-wb-compose.yml
+          $SCP infra/livekit-wb/caddy-snippet.caddy ${T}:/tmp/caddy-wb-snippet.caddy
           echo "✅ Dateien hochgeladen"
 
-      - name: 🚀 Container deployen + Caddy konfigurieren (SSH)
+      # ─────────────────────────────────────────────────────────────────────
+      # STEP 5: Container deployen + Caddy konfigurieren
+      # ─────────────────────────────────────────────────────────────────────
+      - name: 🚀 Container deployen + Caddy konfigurieren
         env:
           VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
         run: |
           set -euo pipefail
-
-          # Remote-Script als Shell-Zeilen aufbauen (kein Heredoc = kein YAML-Fehler)
           {
             echo 'set -euo pipefail'
             echo 'DEPLOY_DIR=/docker/livekit-wb'
-            echo ''
-            echo '# 1. Verzeichnis + Konfiguration'
             echo 'mkdir -p "$DEPLOY_DIR"'
             echo 'cp /tmp/livekit-wb-filled.yaml "$DEPLOY_DIR/livekit.yaml"'
             echo 'chmod 600 "$DEPLOY_DIR/livekit.yaml"'
             echo 'cp /tmp/livekit-wb-compose.yml "$DEPLOY_DIR/docker-compose.yml"'
             echo 'echo "✅ Konfiguration nach $DEPLOY_DIR kopiert"'
             echo ''
-            echo '# 2. Caddyfile suchen — zuerst via docker inspect (zuverlässigster Weg)'
+            echo '# Caddyfile suchen'
             echo 'CADDY_FILE=""'
             echo 'CADDY_CTR=$(docker ps --format "{{.Names}}" 2>/dev/null | grep -iE "caddy" | head -1 || true)'
             echo 'if [ -n "$CADDY_CTR" ]; then'
-            echo '  echo "→ Caddy-Container: $CADDY_CTR"'
-            echo '  # Caddyfile-Host-Pfad via docker inspect ermitteln'
-            echo '  CADDY_FILE=$(docker inspect "$CADDY_CTR" 2>/dev/null \'
-            echo '    | python3 -c "import sys,json; m=json.load(sys.stdin)[0]; \\'
-            echo '      [print(b[\"Source\"]) for b in m.get(\"Mounts\",[]) \\'
-            echo '      if b.get(\"Destination\") == \"/etc/caddy/Caddyfile\"]" 2>/dev/null | head -1 || true)'
-            echo '  [ -n "$CADDY_FILE" ] && echo "→ Caddyfile via docker inspect: $CADDY_FILE"'
+            echo '  CADDY_FILE=$(docker inspect "$CADDY_CTR" 2>/dev/null | python3 -c "import sys,json; m=json.load(sys.stdin)[0]; [print(b[\"Source\"]) for b in m.get(\"Mounts\",[]) if b.get(\"Destination\")==\"/etc/caddy/Caddyfile\"]" 2>/dev/null | head -1 || true)'
             echo 'fi'
-            echo '# Fallback: bekannte Pfade durchsuchen'
             echo 'if [ -z "$CADDY_FILE" ]; then'
-            echo '  for f in /opt/livekit/Caddyfile /docker/livekit/Caddyfile /docker/caddy/Caddyfile /docker/mensaena/caddy/Caddyfile /etc/caddy/Caddyfile /opt/caddy/Caddyfile; do'
-            echo '    if [ -f "$f" ]; then CADDY_FILE="$f"; echo "→ Caddyfile (path-scan): $f"; break; fi'
+            echo '  for f in /opt/livekit/Caddyfile /docker/livekit/Caddyfile /docker/caddy/Caddyfile /etc/caddy/Caddyfile; do'
+            echo '    [ -f "$f" ] && { CADDY_FILE="$f"; break; }'
             echo '  done'
             echo 'fi'
-            echo 'if [ -z "$CADDY_FILE" ]; then'
-            echo '  CADDY_FILE=$(find /docker /home /opt -name "Caddyfile" 2>/dev/null | grep -v livekit-wb | head -1 || true)'
-            echo '  [ -n "$CADDY_FILE" ] && echo "→ Caddyfile (find): $CADDY_FILE"'
-            echo 'fi'
             echo ''
-            echo '# 3. Caddy-Snippet eintragen (idempotent) + validate vor reload'
+            echo '# Caddy-Snippet idempotent eintragen'
             echo 'if [ -n "$CADDY_FILE" ]; then'
             echo '  cp "$CADDY_FILE" "$CADDY_FILE.wb-bak"'
             echo '  sed -i "/# >>> WB-LIVEKIT-BEGIN/,/# <<< WB-LIVEKIT-END/d" "$CADDY_FILE"'
             echo '  cat /tmp/caddy-wb-snippet.caddy >> "$CADDY_FILE"'
-            echo '  echo "✅ Caddy-Snippet eingefügt"'
             echo '  if [ -n "$CADDY_CTR" ]; then'
-            echo '    # Validate vor reload — verhindert Reload mit kaputtem Config'
             echo '    if docker exec "$CADDY_CTR" caddy validate --config /etc/caddy/Caddyfile 2>&1; then'
-            echo '      if docker exec "$CADDY_CTR" caddy reload --config /etc/caddy/Caddyfile 2>&1; then'
-            echo '        echo "✅ Caddy validiert + reloaded"'
-            echo '      else'
-            echo '        cp "$CADDY_FILE.wb-bak" "$CADDY_FILE"'
-            echo '        echo "⚠️  Caddy-Reload fehlgeschlagen, Backup wiederhergestellt"'
-            echo '      fi'
+            echo '      docker exec "$CADDY_CTR" caddy reload --config /etc/caddy/Caddyfile 2>&1 && echo "✅ Caddy reloaded" || { cp "$CADDY_FILE.wb-bak" "$CADDY_FILE"; echo "⚠️ Reload fehlgeschlagen, Backup wiederhergestellt"; }'
             echo '    else'
             echo '      cp "$CADDY_FILE.wb-bak" "$CADDY_FILE"'
-            echo '      echo "❌ Caddy validate fehlgeschlagen — Backup wiederhergestellt, kein Reload"'
+            echo '      echo "❌ Caddy validate fehlgeschlagen — Rollback"'
             echo '    fi'
-            echo '  else'
-            echo '    echo "⚠️  Caddy-Container nicht gefunden — Snippet gespeichert, bitte manuell: caddy reload"'
             echo '  fi'
             echo 'else'
-            echo '  echo "⚠️  Kein Caddyfile gefunden — Snippet liegt unter /tmp/caddy-wb-snippet.caddy"'
-            echo '  echo "   Manuell: cat /tmp/caddy-wb-snippet.caddy >> /pfad/zu/Caddyfile && caddy reload"'
+            echo '  echo "⚠️ Kein Caddyfile gefunden"'
             echo 'fi'
             echo ''
-            echo '# 4. livekit-weltenbibliothek starten / aktualisieren'
+            echo '# Container starten'
             echo 'cd "$DEPLOY_DIR"'
             echo 'docker compose pull livekit'
             echo 'docker compose up -d livekit --remove-orphans'
             echo 'sleep 8'
-            echo 'echo "--- Container Status ---"'
             echo 'docker compose ps'
-            echo 'HEALTH=$(docker inspect livekit-weltenbibliothek --format "{{.State.Health.Status}}" 2>/dev/null || echo "n/a")'
-            echo 'echo "Health: $HEALTH"'
-            echo 'echo "✅ livekit-weltenbibliothek deployed auf $DEPLOY_DIR"'
+            echo 'echo "✅ livekit-weltenbibliothek deployed"'
           } > /tmp/wb_deploy_remote.sh
 
           sshpass -p "$VPS_PASSWORD" scp \
-            -o StrictHostKeyChecking=no -o ConnectTimeout=30 -o PasswordAuthentication=yes \
+            -o StrictHostKeyChecking=no -o ConnectTimeout=30 \
             /tmp/wb_deploy_remote.sh ${VPS_USER}@${VPS_HOST}:/tmp/wb_deploy_remote.sh
 
           sshpass -p "$VPS_PASSWORD" ssh \
-            -o StrictHostKeyChecking=no -o ConnectTimeout=30 -o PasswordAuthentication=yes \
+            -o StrictHostKeyChecking=no -o ConnectTimeout=30 \
             ${VPS_USER}@${VPS_HOST} "bash /tmp/wb_deploy_remote.sh"
 
-      - name: 🩺 LiveKit WB Verbindungstest
+      # ─────────────────────────────────────────────────────────────────────
+      # STEP 6: Health-Check
+      # ─────────────────────────────────────────────────────────────────────
+      - name: 🩺 LiveKit WB Health-Check
         continue-on-error: true
         run: |
           sleep 10
           HTTP=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 15 \
             "https://livekit-wb.srv1438024.hstgr.cloud" 2>/dev/null || echo "000")
-          if [ "$HTTP" != "000" ]; then
-            echo "✅ LiveKit WB antwortet (HTTP $HTTP)"
-          else
-            echo "ℹ️  livekit-wb.srv1438024.hstgr.cloud noch nicht erreichbar"
-            echo "   → Caddy-Snippet und DNS prüfen"
+          [ "$HTTP" != "000" ] \
+            && echo "✅ LiveKit WB antwortet (HTTP $HTTP)" \
+            || echo "ℹ️  livekit-wb noch nicht erreichbar — Caddy/DNS prüfen"
+
+      # ─────────────────────────────────────────────────────────────────────
+      # CLEANUP: Temporäre Firewall-Regel wieder entfernen
+      # Läuft immer (auch bei Fehler), damit kein dauerhaftes Loch entsteht.
+      # ─────────────────────────────────────────────────────────────────────
+      - name: 🔒 Temporäre Firewall-Regel entfernen
+        if: always()
+        env:
+          HOSTINGER_API_TOKEN: ${{ secrets.HOSTINGER_API_TOKEN }}
+        run: |
+          if [ -z "${HOSTINGER_API_TOKEN:-}" ] || \
+             [ -z "${FIREWALL_ID:-}" ] || \
+             [ -z "${FIREWALL_RULE_ID:-}" ]; then
+            echo "ℹ️  Kein Cleanup nötig (keine Regel gesetzt)"
+            exit 0
           fi
+          HTTP=$(curl -sf --max-time 15 -X DELETE \
+            -H "Authorization: Bearer $HOSTINGER_API_TOKEN" \
+            -H "Accept: application/json" \
+            "https://api.hostinger.com/v1/vps/firewall/${FIREWALL_ID}/rules/${FIREWALL_RULE_ID}" \
+            -w "%{http_code}" -o /dev/null 2>/dev/null || echo "000")
+          echo "→ DELETE HTTP $HTTP"
+          [ "$HTTP" = "204" ] || [ "$HTTP" = "200" ] \
+            && echo "✅ Temporäre Firewall-Regel entfernt" \
+            || echo "⚠️  Cleanup HTTP $HTTP — Regel ggf. manuell entfernen"
 
       - name: 📝 Zusammenfassung
+        if: always()
         run: |
-          echo "## 🎥 LiveKit WB — Deploy" >> $GITHUB_STEP_SUMMARY
-          echo "| Einstellung | Wert |" >> $GITHUB_STEP_SUMMARY
+          echo "## 🎥 LiveKit WB Deploy" >> $GITHUB_STEP_SUMMARY
+          echo "| | |" >> $GITHUB_STEP_SUMMARY
           echo "|---|---|" >> $GITHUB_STEP_SUMMARY
           echo "| Container | \`livekit-weltenbibliothek\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| Deploy-Pfad | \`/docker/livekit-wb/\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| VPS | \`$VPS_HOST\` |" >> $GITHUB_STEP_SUMMARY
           echo "| WSS-URL | \`wss://livekit-wb.srv1438024.hstgr.cloud\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| API Key | \`${WB_KEY}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| API Key | \`$WB_KEY\` |" >> $GITHUB_STEP_SUMMARY
