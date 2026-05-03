@@ -437,7 +437,7 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
       
       if (mounted) {
         Navigator.of(context).pop(true);
-        _showSuccess('✅ Post erfolgreich ${_scheduledFor != null ? "geplant" : "erstellt"}!');
+        _showSuccess('✅ Beitrag erfolgreich ${_scheduledFor != null ? "geplant" : "erstellt"}!');
       }
     } catch (e) {
       setState(() => _isPosting = false);
@@ -603,7 +603,7 @@ class _CreatePostDialogV2State extends State<CreatePostDialogV2> with SingleTick
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Post erstellen',
+                  'Beitrag erstellen',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,

@@ -337,7 +337,7 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
                 elevation: 0,
                 icon: const Icon(Icons.edit, color: Colors.white, size: 24),
                 label: const Text(
-                  'Post erstellen',
+                  'Beitrag erstellen',
                   style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
@@ -606,7 +606,7 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
         ),
         const SizedBox(width: 6),
         Text(
-          isActive ? '$recent neue Posts heute · Community aktiv' : 'Sei der Erste heute!',
+          isActive ? '$recent neue Beiträge heute · Community aktiv' : 'Sei der Erste heute!',
           style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 11),
         ),
       ]),
@@ -756,7 +756,7 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
       ),
       child: Row(
         children: [
-          _mStat(Icons.article_outlined, 'Posts', _posts.length, _mBlue, true),
+          _mStat(Icons.article_outlined, 'Beiträge', _posts.length, _mBlue, true),
           _mStat(Icons.comment_outlined, 'Komm.', _posts.fold(0, (s, p) => s + p.comments), _mCyan, true),
           _mStat(Icons.favorite_outline, 'Likes', _posts.fold(0, (s, p) => s + p.likes), _mAmber, true),
           _mStat(Icons.share_outlined, 'Geteilt', _posts.fold(0, (s, p) => s + (p.shares ?? 0)), _mGreen, false),
@@ -1099,13 +1099,13 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
     final difference = now.difference(timestamp);
     
     if (difference.inMinutes < 60) {
-      return 'vor ${difference.inMinutes}m';
+      return 'vor ${difference.inMinutes} Min';
     } else if (difference.inHours < 24) {
-      return 'vor ${difference.inHours}h';
+      return 'vor ${difference.inHours} Std';
     } else if (difference.inDays < 7) {
-      return 'vor ${difference.inDays}d';
+      return 'vor ${difference.inDays} T';
     } else {
-      return 'vor ${(difference.inDays / 7).floor()}w';
+      return 'vor ${(difference.inDays / 7).floor()} Wo';
     }
   }
 

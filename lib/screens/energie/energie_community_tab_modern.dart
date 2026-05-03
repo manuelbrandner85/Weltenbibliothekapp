@@ -368,7 +368,7 @@ class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern> w
                 elevation: 0,
                 icon: const Icon(Icons.auto_awesome, color: Colors.white, size: 24),
                 label: const Text(
-                  'Post erstellen',
+                  'Beitrag erstellen',
                   style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
@@ -454,7 +454,7 @@ class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern> w
                               Text('Keine Beiträge',
                                   style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 16)),
                               const SizedBox(height: 8),
-                              Text('Sei der Erste und erstelle einen Post!',
+                              Text('Sei der Erste und erstelle einen Beitrag!',
                                   style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 14)),
                             ],
                           ),
@@ -1055,7 +1055,7 @@ class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern> w
         ),
         const SizedBox(width: 6),
         Text(
-          isActive ? '$recent neue Posts heute · Community aktiv' : 'Sei der Erste heute!',
+          isActive ? '$recent neue Beiträge heute · Community aktiv' : 'Sei der Erste heute!',
           style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 11),
         ),
       ]),
@@ -1202,7 +1202,7 @@ class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern> w
             builder: (context) {
               return AlertDialog(
                 backgroundColor: _kCardB,
-                title: const Text('Post bearbeiten',
+                title: const Text('Beitrag bearbeiten',
                     style: TextStyle(color: Colors.white)),
                 content: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -1308,9 +1308,9 @@ class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern> w
       builder: (context) {
         return AlertDialog(
           backgroundColor: _kCardB,
-          title: const Text('Post löschen?', style: TextStyle(color: Colors.white)),
+          title: const Text('Beitrag löschen?', style: TextStyle(color: Colors.white)),
           content: const Text(
-            'Dieser Post wird dauerhaft gelöscht.',
+            'Dieser Beitrag wird dauerhaft gelöscht.',
             style: TextStyle(color: Colors.white70),
           ),
           actions: [
@@ -1481,13 +1481,13 @@ class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern> w
     final difference = now.difference(timestamp);
     
     if (difference.inMinutes < 60) {
-      return 'vor ${difference.inMinutes}m';
+      return 'vor ${difference.inMinutes} Min';
     } else if (difference.inHours < 24) {
-      return 'vor ${difference.inHours}h';
+      return 'vor ${difference.inHours} Std';
     } else if (difference.inDays < 7) {
-      return 'vor ${difference.inDays}d';
+      return 'vor ${difference.inDays} T';
     } else {
-      return 'vor ${(difference.inDays / 7).floor()}w';
+      return 'vor ${(difference.inDays / 7).floor()} Wo';
     }
   }
 
