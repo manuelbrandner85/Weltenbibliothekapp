@@ -179,9 +179,36 @@ class LiveKitCallService extends ChangeNotifier {
       }
 
       final supabase = Supabase.instance.client;
+
+      // Wenn keine Supabase-Session → automatisch anonyme Session erstellen
+      // (App unterstützt lokale-only User, aber LiveKit-Token-Generation
+      // braucht ein gültiges JWT). signInAnonymously erstellt schwachen
+      // Account ohne Email/Passwort — perfekt für Voice-Call-Identifikation.
+      if (supabase.auth.currentSession == null) {
+        if (kDebugMode) {
+          debugPrint('🔑 LiveKit: keine Supabase-Session → '
+              'erstelle anonyme Session …');
+        }
+        try {
+          await supabase.auth.signInAnonymously();
+          if (kDebugMode) {
+            debugPrint('🔑 LiveKit: anonyme Session erstellt — '
+                'userId=${supabase.auth.currentUser?.id}');
+          }
+        } catch (e) {
+          if (kDebugMode) {
+            debugPrint('⚠️ LiveKit: signInAnonymously failed — $e');
+          }
+          throw Exception(
+              'Konnte keine Anruf-Sitzung erstellen. Bitte App neu starten '
+              'und erneut versuchen.\nDetails: $e');
+        }
+      }
+
       final accessToken = supabase.auth.currentSession?.accessToken;
       if (accessToken == null || accessToken.isEmpty) {
-        throw Exception('Nicht angemeldet — bitte erneut einloggen.');
+        throw Exception(
+            'Nicht angemeldet — bitte App neu starten und erneut versuchen.');
       }
 
       // Token von Supabase Edge Function holen (direkt, kein Cloudflare)
