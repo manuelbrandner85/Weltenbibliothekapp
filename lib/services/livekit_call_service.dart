@@ -22,6 +22,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_background/flutter_background.dart';
 import 'package:http/http.dart' as http;
 import 'package:livekit_client/livekit_client.dart';
+import 'package:flutter_webrtc/flutter_webrtc.dart' as rtc;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -636,9 +637,10 @@ class LiveKitCallService extends ChangeNotifier {
     }
   }
 
-  /// Wechselt zwischen Front- und Back-Kamera. Funktioniert nur wenn die
-  /// Kamera bereits aktiv ist. Nutzt LiveKit's eingebauten no-arg-switchCamera
-  /// der automatisch zwischen front/back toggelt.
+  int _cameraIndex = 0;
+
+  /// Wechselt zwischen Front- und Back-Kamera. Nutzt flutter_webrtc um die
+  /// Geräte aufzuzählen, dann LocalVideoTrack.switchCamera(deviceId).
   Future<void> switchCamera() async {
     final lp = _room?.localParticipant;
     if (lp == null || !_cameraEnabled) return;
@@ -654,18 +656,24 @@ class LiveKitCallService extends ChangeNotifier {
         if (kDebugMode) debugPrint('📷 switchCamera: kein aktiver Track');
         return;
       }
-      // No-arg switchCamera: livekit_client wechselt automatisch zwischen
-      // den verfügbaren Kameras (typisch: front ↔ back).
-      // Returns Future<bool> in v2.4 (true = success).
-      final ok = await cameraTrack.switchCamera().timeout(
+      // Geräte via flutter_webrtc enumerieren (durch livekit_client mitgeliefert)
+      final devices = await rtc.navigator.mediaDevices.enumerateDevices();
+      final cameras = devices.where((d) => d.kind == 'videoinput').toList();
+      if (cameras.length < 2) {
+        _errorMessage = 'Nur eine Kamera verfügbar.';
+        notifyListeners();
+        return;
+      }
+      _cameraIndex = (_cameraIndex + 1) % cameras.length;
+      final next = cameras[_cameraIndex];
+      await cameraTrack.switchCamera(next.deviceId).timeout(
         const Duration(seconds: 4),
         onTimeout: () {
           if (kDebugMode) debugPrint('⚠️ switchCamera Timeout');
-          return false;
         },
       );
       if (kDebugMode) {
-        debugPrint('📷 Camera gewechselt: ${ok ? "OK" : "FAIL"}');
+        debugPrint('📷 Camera gewechselt → ${next.label}');
       }
       notifyListeners();
     } catch (e) {
@@ -817,6 +825,12 @@ class LiveKitCallService extends ChangeNotifier {
 
   /// Setzt lokal die Wiedergabe-Lautstärke für einen Remote-User.
   /// volume: 0.0 (stumm) bis 1.5 (laut), 1.0 = original.
+  ///
+  /// Implementierung in livekit_client 2.4:
+  /// - 0.0 → Audio-Track unsubscribe (User hört diesen Remote nicht mehr)
+  /// - > 0.0 → Audio-Track subscribe (default)
+  /// Volume-Slider zwischen 0..1.5 ist UI-State, echte stufenlose
+  /// Lautstärke-API ist in 2.4 nicht direkt exponiert.
   Future<void> setRemoteVolume(String identity, double volume) async {
     final v = volume.clamp(0.0, 1.5);
     _remoteVolumes[identity] = v;
@@ -834,7 +848,19 @@ class LiveKitCallService extends ChangeNotifier {
     }
     for (final pub in p.audioTrackPublications) {
       try {
-        (pub.track as RemoteAudioTrack?)?.setVolume(v);
+        if (v <= 0.0) {
+          // Mute: unsubscribe
+          if (pub.subscribed) {
+            // ignore: avoid_dynamic_calls
+            await (pub as dynamic).unsubscribe();
+          }
+        } else {
+          // Unmute: subscribe wenn nicht abonniert
+          if (!pub.subscribed) {
+            // ignore: avoid_dynamic_calls
+            await (pub as dynamic).subscribe();
+          }
+        }
       } catch (e) {
         if (kDebugMode) {
           debugPrint('⚠️ setRemoteVolume($identity, $v) failed: $e');
