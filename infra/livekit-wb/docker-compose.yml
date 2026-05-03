@@ -36,7 +36,11 @@ services:
       # Vorher 100 Ports → bei vollen Räumen Track-Drops (≈4 Ports/User).
       # 1000 Ports = ~1-1.5 GB docker-proxy RAM — vertretbar.
       - "60001-61000:60001-61000/udp"
-      # KEIN TURN-Server (UDP 5350/3479) — Mensaena könnte dort belegen
+      # TURN-Server — kritisch für User hinter symmetrischem NAT
+      # (Firmen-VPN, Mobilfunk-CGNAT, Hotel-WiFi). Ports disjunkt von
+      # Mensaena (3479/5350) → 3480/5352.
+      - "3480:3480/udp"
+      - "5352:5352/tcp"
     volumes:
       - ./livekit.yaml:/etc/livekit.yaml:ro
     command: --config /etc/livekit.yaml
