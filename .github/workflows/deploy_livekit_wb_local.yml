@@ -79,11 +79,24 @@ jobs:
       - name: 🛡️ Port-Konflikt-Check
         run: |
           set -euo pipefail
+
+          # Bei Re-Deploys läuft unser Container schon und hält die Ports.
+          # `ss -tulnp` zeigt nur "docker-proxy" + PID, keinen Container-Namen,
+          # deshalb können wir die eigenen Ports nicht per grep ausschließen.
+          # Workaround: wenn der WB-Container existiert, ist es ein Re-Deploy
+          # und wir skippen den Check (docker compose up -d kümmert sich um
+          # das saubere Recreate).
+          if docker ps -a --format '{{.Names}}' | grep -qx "${WB_CONTAINER}"; then
+            echo "ℹ️  Container ${WB_CONTAINER} existiert bereits — Re-Deploy, "
+            echo "    Port-Konflikt-Check übersprungen (Compose recreate handhabt das)"
+            exit 0
+          fi
+
+          # Erst-Deploy: prüfe ob ein FREMDER Prozess unsere Ports belegt
           CONFLICTS=$(ss -tulnp 2>/dev/null \
-            | grep -E ':(7980|7981|60001) ' \
-            | grep -v "docker-proxy.*${WB_CONTAINER}" || true)
+            | grep -E ':(7980|7981|60001) ' || true)
           if [ -n "$CONFLICTS" ]; then
-            echo "❌ Port-Konflikt:"
+            echo "❌ Port-Konflikt (kein WB-Container vorhanden, aber Ports belegt):"
             echo "$CONFLICTS"
             exit 1
           fi
