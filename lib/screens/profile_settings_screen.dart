@@ -276,20 +276,15 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                   
                   // DATENSCHUTZ-HINWEIS
                   _buildPrivacyNotice(),
-                  
+
                   const SizedBox(height: 32),
-                  
-                  // ☁️ CLOUD-SYNC SEKTION
-                  _buildSectionHeader('☁️ CLOUD-SYNC', Colors.cyan),
-                  const SizedBox(height: 12),
-                  _buildCloudSyncCard(),
-                  
-                  const SizedBox(height: 32),
-                  
-                  // Backend Health Monitor removed
-                  
-                  const SizedBox(height: 32),
-                  
+
+                  // (Cloud-Sync-Sektion entfernt — auf Wunsch des Users.
+                  // Profile-Daten werden weiterhin transparent über
+                  // Supabase synchronisiert, aber kein eigener Sync-Button
+                  // mehr im Profil. ProfileSyncService bleibt aktiv für
+                  // automatische Sync beim Speichern.)
+
                   // DESIGN-EINSTELLUNGEN
                   _buildSectionHeader('🎨 DESIGN', Colors.teal),
                   const SizedBox(height: 12),
@@ -827,7 +822,9 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     );
   }
   
-  /// ☁️ Cloud-Sync Card
+  /// ☁️ Cloud-Sync Card — NICHT MEHR im Profil-Layout sichtbar (entfernt
+  /// auf Wunsch des Users). Methode bleibt als Tot-Code zur Reaktivierung.
+  // ignore: unused_element
   Widget _buildCloudSyncCard() {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -1056,7 +1053,9 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     );
   }
   
-  /// ☁️ Sync to Cloud
+  /// ☁️ Sync to Cloud — UI entfernt, Methode bleibt erreichbar via
+  /// `_buildCloudSyncCard` falls Sektion wieder eingeblendet wird.
+  // ignore: unused_element
   Future<void> _syncToCloud() async {
     HapticService.selectionClick();
     
@@ -1085,6 +1084,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
   }
   
   /// ☁️ Restore from Cloud
+  // ignore: unused_element
   Future<void> _restoreFromCloud() async {
     HapticService.selectionClick();
 
