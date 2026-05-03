@@ -94,14 +94,18 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro> {
                   polylines: _buildLeyLines(),
                 ),
               
-              // MARKERS mit Clustering
-              MapClusteringHelper.createClusterLayer(
-                markers: _buildMarkers(),
-                clusterColor: const Color(0xFF9C27B0),
-                maxClusterRadius: MapClusteringHelper.calculateOptimalClusterRadius(
-                  _buildMarkers().length,
-                ),
-              ),
+              // MARKERS mit Clustering — _buildMarkers() nur 1× pro Build
+              // (vorher 2× → O(n²) bei vielen Markern)
+              () {
+                final markers = _buildMarkers();
+                return MapClusteringHelper.createClusterLayer(
+                  markers: markers,
+                  clusterColor: const Color(0xFF9C27B0),
+                  maxClusterRadius:
+                      MapClusteringHelper.calculateOptimalClusterRadius(
+                          markers.length),
+                );
+              }(),
             ],
           ),
           
@@ -374,8 +378,10 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro> {
   }
 
   Widget _buildDetailPanel() {
-    final location = _selectedLocation!;
-    
+    // Defensiv: kann zwischen setState und Build null werden (Race)
+    final location = _selectedLocation;
+    if (location == null) return const SizedBox.shrink();
+
     return Positioned(
       bottom: 0,
       left: 0,
