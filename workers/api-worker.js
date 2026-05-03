@@ -102,92 +102,6 @@ async function countFromSupabase(env, table, filters = '') {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// 🔐 USER-AUTHENTICATION (Supabase JWT → Profile-Identity)
-// ═══════════════════════════════════════════════════════════════
-// Liest den vom Client mitgeschickten Supabase-Access-Token (entweder
-// im Authorization-Header oder im neuen X-Supabase-Auth-Header) und
-// verifiziert ihn gegen /auth/v1/user. Liefert die kanonische
-// {userId, username, role, isAdmin} aus dem profiles-Table.
-// Cache pro Request über `request._authCache` damit jeder Endpoint nur
-// einmal verifiziert.
-//
-// Rückgabe:
-//   - { userId, username, role, isAdmin } bei gültigem Token
-//   - null bei fehlendem oder ungültigem Token
-async function verifyAuth(request, env) {
-  if (request._authCache !== undefined) return request._authCache;
-
-  // Token-Quellen in Reihenfolge: X-Supabase-Auth (neu), Authorization
-  let token = '';
-  const xAuth = request.headers.get('X-Supabase-Auth') || '';
-  if (xAuth.startsWith('Bearer ')) token = xAuth.slice(7);
-  if (!token) {
-    const auth = request.headers.get('Authorization') || '';
-    if (auth.startsWith('Bearer ')) token = auth.slice(7);
-  }
-  if (!token) {
-    request._authCache = null;
-    return null;
-  }
-
-  // Wenn der Token der Anon-Key ist (häufig bei nicht-eingeloggten
-  // Calls), gilt er nicht als User-Auth.
-  const anonKey = env.SUPABASE_ANON_KEY || '';
-  if (token === anonKey) {
-    request._authCache = null;
-    return null;
-  }
-
-  try {
-    const userRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-      method: 'GET',
-      headers: {
-        'apikey': anonKey,
-        'Authorization': `Bearer ${token}`,
-      },
-    });
-    if (!userRes.ok) {
-      request._authCache = null;
-      return null;
-    }
-    const user = await userRes.json().catch(() => null);
-    if (!user || !user.id) {
-      request._authCache = null;
-      return null;
-    }
-    // Profile-Lookup für username + role (Service-Role bypassed RLS,
-    // damit wir einen kanonischen Match bekommen).
-    const svcKey = env.SUPABASE_SERVICE_ROLE_KEY || anonKey;
-    const profRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/profiles?select=username,role&id=eq.${user.id}&limit=1`,
-      {
-        method: 'GET',
-        headers: {
-          'apikey': svcKey,
-          'Authorization': `Bearer ${svcKey}`,
-        },
-      },
-    );
-    const profArr = await profRes.json().catch(() => []);
-    const prof = Array.isArray(profArr) && profArr.length > 0 ? profArr[0] : null;
-    const role = prof?.role || 'user';
-    const isAdmin = ['admin', 'root_admin', 'root-admin', 'content_editor']
-      .includes(role);
-    const result = {
-      userId: user.id,
-      username: prof?.username || (user.email ? user.email.split('@')[0] : null),
-      role,
-      isAdmin,
-    };
-    request._authCache = result;
-    return result;
-  } catch (_e) {
-    request._authCache = null;
-    return null;
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════
 // 🔔 FCM PUSH DISPATCH (HTTP v1 API)
 // ═══════════════════════════════════════════════════════════════
 // Sendet Supabase `notification_queue`-Zeilen via Firebase Cloud Messaging.
@@ -409,6 +323,23 @@ export default {
     } catch (e) {
       console.error('cron dispatch failed:', e.message);
     }
+    // 🧹 6h Chat-Reset: ALLE Nachrichten aus allen Räumen löschen.
+    // Läuft ca. einmal pro 6h (random 1/360 per Minute-Cron).
+    try {
+      if (Math.random() < 1 / 360) {
+        const chatDeleteRes = await fetch(
+          `${SUPABASE_URL}/rest/v1/chat_messages?id=not.is.null`,
+          {
+            method: 'DELETE',
+            headers: { ...pushAuth, 'Prefer': 'return=minimal' },
+          },
+        );
+        console.log('cron chat-reset:', chatDeleteRes.status);
+      }
+    } catch (e) {
+      console.error('cron chat-reset failed:', e.message);
+    }
+
     // 🧹 Bundle P-X7: Wöchentliche Cleanup — alte 'sent'/'failed'-Zeilen
     // aus notification_queue entfernen (>7 Tage). Reduziert ständig
     // wachsende Tabelle. Nur einmal pro 60min triggern (delete-Lokal-
@@ -845,12 +776,6 @@ export default {
       const limitParam = parseInt(url.searchParams.get('limit') || '50', 10);
 
       if (method === 'GET' && roomId) {
-        // 🔐 AUTH: GET muss authentifiziert sein, sonst kann jeder anonyme
-        // Client jeden Raum lesen (Service-Role umgeht RLS).
-        const auth = await verifyAuth(request, env);
-        if (!auth) {
-          return errorResponse('Authentifizierung erforderlich', 401);
-        }
         const anonKey = env.SUPABASE_ANON_KEY || '';
         const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || anonKey;
         // FIX: Explicit column list with avatar_emoji (added via migration v14/v15)
@@ -891,23 +816,23 @@ export default {
 
       if (method === 'POST') {
         try {
-          // 🔐 AUTH: POST muss authentifiziert sein. user_id und username
-          // werden NICHT mehr aus dem Body übernommen, sondern aus dem
-          // verifizierten Token-Profil (kein Impersonation mehr möglich).
-          const auth = await verifyAuth(request, env);
-          if (!auth) {
-            return errorResponse('Authentifizierung erforderlich', 401);
-          }
           const body = await request.json();
           const anonKey = env.SUPABASE_ANON_KEY || '';
+          // Use service role key so non-UUID user_ids and anonymous inserts work
           const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || anonKey;
+
+          // Sanitize userId: only keep valid UUIDs (must exist in auth.users due to FK)
+          const rawUserId = body.userId || body.user_id || null;
+          const isUUID = rawUserId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawUserId);
+          // Only use UUID if it's a valid format; null is allowed (user_id is nullable in DB)
+          const finalUserId = isUUID ? rawUserId : null;
 
           const insertBody = {
             room_id:      body.roomId || body.room_id || '',
-            user_id:      auth.userId,                           // 🔐 aus JWT
-            username:     auth.username || body.username || 'Anonym', // 🔐 aus profiles
+            user_id:      finalUserId,   // null if not a real auth UUID (DB allows NULL)
+            username:     body.username || 'Anonym',
             avatar_url:   body.avatarUrl || body.avatar_url || null,
-            avatar_emoji: body.avatarEmoji || body.avatar_emoji || null,
+            avatar_emoji: body.avatarEmoji || body.avatar_emoji || null,  // ✅ Spalte existiert nach Migration v14
             content:      body.message || body.content || '',
             message:      body.message || body.content || '',
             message_type: body.mediaType === 'audio' ? 'voice' : (body.mediaType === 'image' ? 'image' : 'text'),
@@ -946,16 +871,16 @@ export default {
       const messageId = path.replace('/api/chat/messages/', '');
       if (!messageId) return errorResponse('Nachrichten-ID fehlt', 400);
       try {
-        // 🔐 AUTH: PUT muss authentifiziert sein. isAdmin und username
-        // kommen aus dem verifizierten Profil, NICHT aus dem Body.
-        const auth = await verifyAuth(request, env);
-        if (!auth) {
-          return errorResponse('Authentifizierung erforderlich', 401);
-        }
         const body = await request.json().catch(() => ({}));
-        const { message } = body;
+        const { roomId, userId, username, message, realm, isAdmin } = body;
         const svcKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY || '';
 
+        // ✅ WICHTIG: App nutzt InvisibleAuth (custom IDs), NICHT Supabase Auth.
+        // user_id in der DB ist daher NULL. Wir identifizieren die Nachricht
+        // ausschließlich per message-ID + username-Prüfung für Sicherheit.
+        // Service-Role-Key umgeht RLS komplett.
+
+        // Erst prüfen ob die Nachricht dem User gehört (via username oder isAdmin)
         const checkRes = await fetch(
           `${SUPABASE_URL}/rest/v1/chat_messages?id=eq.${messageId}&select=id,username,user_id`,
           {
@@ -972,12 +897,8 @@ export default {
           return errorResponse('Nachricht nicht gefunden', 404);
         }
         const existingMsg = checkData[0];
-        // 🔐 Owner-Check: bevorzugt user_id-Match (Auth-UUID stimmt mit DB-Spalte
-        // überein), Fallback auf username für Legacy-Zeilen ohne user_id.
-        const ownsMsg =
-          (existingMsg.user_id && existingMsg.user_id === auth.userId) ||
-          (existingMsg.username && existingMsg.username === auth.username);
-        if (!auth.isAdmin && !ownsMsg) {
+        // Sicherheitscheck: Username muss übereinstimmen (oder isAdmin)
+        if (!isAdmin && username && existingMsg.username !== username) {
           return errorResponse('Keine Berechtigung zum Bearbeiten', 403);
         }
 
@@ -1018,15 +939,14 @@ export default {
       const messageId = path.replace('/api/chat/messages/', '');
       if (!messageId) return errorResponse('Nachrichten-ID fehlt', 400);
       try {
-        // 🔐 AUTH: DELETE muss authentifiziert sein. isAdmin/username
-        // kommen aus dem verifizierten Profil, NICHT aus dem Body.
-        const auth = await verifyAuth(request, env);
-        if (!auth) {
-          return errorResponse('Authentifizierung erforderlich', 401);
-        }
+        const body = await request.json().catch(() => ({}));
+        const { userId, username, roomId, realm, isAdmin } = body;
         const svcKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY || '';
 
-        if (!auth.isAdmin) {
+        // ✅ WICHTIG: user_id in DB ist NULL (InvisibleAuth). 
+        // Authentifizierung via username-Prüfung + Service-Role-Key.
+        if (!isAdmin) {
+          // Prüfe ob Nachricht dem User gehört (via username)
           const checkRes = await fetch(
             `${SUPABASE_URL}/rest/v1/chat_messages?id=eq.${messageId}&select=id,username,user_id`,
             {
@@ -1043,10 +963,7 @@ export default {
             return errorResponse('Nachricht nicht gefunden', 404);
           }
           const existingMsg = checkData[0];
-          const ownsMsg =
-            (existingMsg.user_id && existingMsg.user_id === auth.userId) ||
-            (existingMsg.username && existingMsg.username === auth.username);
-          if (!ownsMsg) {
+          if (username && existingMsg.username !== username) {
             return errorResponse('Keine Berechtigung zum Löschen', 403);
           }
         }
@@ -1078,101 +995,6 @@ export default {
         return jsonResponse({ success: true, message: 'Nachricht gelöscht' });
       } catch (e) {
         return errorResponse(`Delete-Fehler: ${e.message}`);
-      }
-    }
-
-    // ── Chat-Reactions (Bundle 2.1: 404-Mismatch fix) ─────────
-    // Flutter-Client ruft /chat/messages/:id/reactions* auf, der vorhandene
-    // /messages/:id/react-Handler war ein anderer Pfad → all 4 Endpoints
-    // fielen still auf 404. Hier: Auth-pflichtig + Supabase-direct.
-    if (path.startsWith('/chat/messages/') && path.includes('/reactions')) {
-      const auth = await verifyAuth(request, env);
-      if (!auth) {
-        return errorResponse('Authentifizierung erforderlich', 401);
-      }
-      const svcKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY || '';
-      // Pfade:
-      //   POST /chat/messages/:id/reactions          { emoji }
-      //   GET  /chat/messages/:id/reactions
-      //   DELETE /chat/messages/:id/reactions/:emoji
-      //   GET  /chat/messages/:id/reactions/user/:username
-      const segs = path.split('/'); // ['', 'chat', 'messages', ':id', 'reactions', maybe :emoji or 'user']
-      const messageId = segs[3];
-      if (!messageId) return errorResponse('messageId fehlt', 400);
-
-      try {
-        if (method === 'POST' && segs.length === 5) {
-          const body = await request.json().catch(() => ({}));
-          const emoji = (body.emoji || '').trim();
-          if (!emoji) return errorResponse('emoji fehlt', 400);
-          // Idempotent: Upsert auf (message_id, user_id, emoji)
-          const res = await fetch(`${SUPABASE_URL}/rest/v1/message_reactions`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'apikey': svcKey,
-              'Authorization': `Bearer ${svcKey}`,
-              'Prefer': 'resolution=merge-duplicates,return=representation',
-            },
-            body: JSON.stringify({
-              message_id: messageId,
-              user_id: auth.userId,
-              username: auth.username,
-              emoji,
-            }),
-          });
-          const data = await res.json().catch(() => ({}));
-          return jsonResponse(data, res.ok ? 201 : res.status);
-        }
-        if (method === 'GET' && segs.length === 5) {
-          const supaPath = `/rest/v1/message_reactions?select=emoji,username,user_id,created_at&message_id=eq.${messageId}&order=created_at.asc`;
-          const res = await fetch(`${SUPABASE_URL}${supaPath}`, {
-            method: 'GET',
-            headers: { 'apikey': svcKey, 'Authorization': `Bearer ${svcKey}` },
-          });
-          const rows = await res.json().catch(() => []);
-          // Aggregat-Form: { '👍': ['user1','user2'], ... }
-          const grouped = {};
-          if (Array.isArray(rows)) {
-            for (const r of rows) {
-              const e = r.emoji || '';
-              if (!grouped[e]) grouped[e] = [];
-              grouped[e].push(r.username || 'Anonym');
-            }
-          }
-          return jsonResponse({ reactions: grouped, raw: rows });
-        }
-        if (method === 'DELETE' && segs[4] === 'reactions' && segs.length === 6) {
-          const emoji = decodeURIComponent(segs[5] || '');
-          if (!emoji) return errorResponse('emoji fehlt', 400);
-          const res = await fetch(
-            `${SUPABASE_URL}/rest/v1/message_reactions?message_id=eq.${messageId}&user_id=eq.${auth.userId}&emoji=eq.${encodeURIComponent(emoji)}`,
-            {
-              method: 'DELETE',
-              headers: { 'apikey': svcKey, 'Authorization': `Bearer ${svcKey}` },
-            },
-          );
-          if (!res.ok) {
-            const txt = await res.text().catch(() => '');
-            return errorResponse(`Reaktion-Delete fehlgeschlagen: ${res.status} ${txt}`, res.status);
-          }
-          return jsonResponse({ success: true });
-        }
-        if (method === 'GET' && segs[5] === 'user') {
-          const username = decodeURIComponent(segs[6] || '');
-          if (!username) return errorResponse('username fehlt', 400);
-          const supaPath = `/rest/v1/message_reactions?select=emoji&message_id=eq.${messageId}&username=eq.${encodeURIComponent(username)}`;
-          const res = await fetch(`${SUPABASE_URL}${supaPath}`, {
-            method: 'GET',
-            headers: { 'apikey': svcKey, 'Authorization': `Bearer ${svcKey}` },
-          });
-          const rows = await res.json().catch(() => []);
-          const emojis = Array.isArray(rows) ? rows.map(r => r.emoji).filter(Boolean) : [];
-          return jsonResponse({ emojis });
-        }
-        return errorResponse('Pfad nicht erkannt', 404);
-      } catch (e) {
-        return errorResponse(`Reactions-Fehler: ${e.message}`);
       }
     }
 

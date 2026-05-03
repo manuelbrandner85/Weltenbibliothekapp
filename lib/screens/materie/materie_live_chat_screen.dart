@@ -79,6 +79,7 @@ import '../../services/chat/recent_rooms_service.dart';
 import '../../services/chat/mention_notification_service.dart';
 import '../../services/chat/user_block_service.dart';
 import '../../services/chat/unread_tracker_service.dart';
+import '../../widgets/chat_animated_background.dart';
 
 /// MATERIE-WELT LIVE-CHAT - Cloudflare Edition
 class MaterieLiveChatScreen extends StatefulWidget {
@@ -1331,6 +1332,14 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
       body: SafeArea(
         child: Stack(
           children: [
+            // Animierter Hintergrund — identisch zum LiveKit-Screen
+            Positioned.fill(
+              child: ChatAnimatedBackground(
+                world: 'materie',
+                animation: _headerAuraCtrl,
+              ),
+            ),
+
             // Main content
             Builder(
               builder: (context) {

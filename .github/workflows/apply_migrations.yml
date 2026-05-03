@@ -82,5 +82,8 @@ jobs:
           run_sql "v42 community_posts Tabelle" \
             supabase/migrations/20260502_v42_community_posts.sql
 
+          run_sql "v43 chat_messages RLS-Fix (anon + authenticated)" \
+            supabase/migrations/20260503_v43_chat_anon_rls_fix.sql
+
           echo ""
           echo "🎉 Alle Migrationen erfolgreich angewendet"

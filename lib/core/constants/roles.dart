@@ -14,9 +14,10 @@ class AppRoles {
   
   static const String user = 'user';
   static const String admin = 'admin';
+  static const String moderator = 'moderator';
   static const String rootAdmin = 'root_admin';
   static const String rootAdminLegacy = 'root-admin'; // DB-Alias (dash-variant)
-  static const String contentEditor = 'content_editor';  // NEU: Nur Content-Management
+  static const String contentEditor = 'content_editor';
 
   // ============================================================================
   // ADMIN ACCOUNTS
@@ -39,8 +40,10 @@ class AppRoles {
   static bool _isRoot(String? r) => r == rootAdmin || r == rootAdminLegacy;
 
   /// Kann auf Admin-Dashboard zugreifen
+  static bool isModerator(String? role) => role == moderator;
+
   static bool canAccessAdminDashboard(String? role) =>
-      role == admin || _isRoot(role) || role == contentEditor;
+      role == admin || _isRoot(role) || role == contentEditor || role == moderator;
 
   /// Kann User verwalten (Erstellen, Löschen, Befördern)
   static bool canManageUsers(String? role) => _isRoot(role);
@@ -76,7 +79,7 @@ class AppRoles {
   
   /// Ist der User ein Admin (irgendeine Admin-Rolle)
   static bool isAdmin(String? role) =>
-      role == admin || _isRoot(role) || role == contentEditor;
+      role == admin || _isRoot(role) || role == contentEditor || role == moderator;
 
   /// Ist der User Root-Admin (volle Rechte)
   static bool isRootAdmin(String? role) => _isRoot(role);

@@ -1,0 +1,80 @@
+name: Build APK
+
+on:
+  push:
+    branches: [ main, genspark_ai_developer, 'claude/**' ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:  # Manueller Trigger
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.41.6'
+          channel: 'stable'
+          cache: true
+
+      - name: Flutter Pub Get
+        run: flutter pub get
+
+      - name: Flutter Analyze
+        run: flutter analyze --no-fatal-infos || true
+
+      - name: 🔔 google-services.json aus Secret (optional)
+        if: ${{ env.GOOGLE_SERVICES_JSON_BASE64 != '' }}
+        env:
+          GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
+        run: |
+          RAW="$GOOGLE_SERVICES_JSON_BASE64"
+          CLEANED=$(printf '%s' "$RAW" | tr -d '[:space:]')
+          if printf '%s' "$CLEANED" | base64 -d > android/app/google-services.json 2>/dev/null \
+               && jq -e .project_info.project_id android/app/google-services.json >/dev/null 2>&1; then
+            echo "✅ google-services.json injiziert"
+          else
+            echo "⚠️  Kein gültiges google-services.json — Firebase wird übersprungen"
+            rm -f android/app/google-services.json
+          fi
+
+      - name: Get Version
+        run: |
+          VERSION=$(grep 'version:' pubspec.yaml | head -1 | awk '{print $2}' | cut -d'+' -f1)
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+          echo "Building Weltenbibliothek v${VERSION}"
+
+      - name: Build Debug APK (PR Validation)
+        run: |
+          flutter build apk --debug \
+            --dart-define=APP_VERSION=${{ env.VERSION }} \
+            --dart-define=SUPABASE_URL=https://adtviduaftdquvfjpojb.supabase.co \
+            --dart-define=SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkdHZpZHVhZnRkcXV2Zmpwb2piIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxMzY3OTcsImV4cCI6MjA5MDcxMjc5N30.LPtmnjukb6o2CA16RDjoStqYb_1bipNULD4tgOfuD98 \
+            --dart-define=CLOUDFLARE_WORKER_URL=https://weltenbibliothek-api.brandy13062.workers.dev \
+            --dart-define=LIVEKIT_URL=wss://livekit-wb.srv1438024.hstgr.cloud
+
+      - name: Rename APK
+        run: |
+          cp build/app/outputs/flutter-apk/app-debug.apk \
+            "weltenbibliothek-v${VERSION}-debug.apk"
+          echo "--- APK Size ---"
+          ls -lh weltenbibliothek-v${VERSION}-debug.apk
+
+      - name: Upload Debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: weltenbibliothek-v${{ env.VERSION }}-debug
+          path: weltenbibliothek-v${{ env.VERSION }}-debug.apk
+          retention-days: 7

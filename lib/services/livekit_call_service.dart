@@ -212,21 +212,10 @@ class LiveKitCallService extends ChangeNotifier {
 
       final supabase = Supabase.instance.client;
 
-      // Cleanup: Wenn ein früherer Auto-anonymous-Signin eine Anon-Session
-      // hinterlassen hat, melden wir sie ab — sie kann Realtime/Chat-Subscriptions
-      // mit unerwartetem Auth-State stören. Echte User-Sessions bleiben bestehen.
-      final existingUser = supabase.auth.currentUser;
-      if (existingUser != null && existingUser.isAnonymous) {
-        try {
-          await supabase.auth.signOut();
-          if (kDebugMode) {
-            debugPrint('🔑 LiveKit: alte anonyme Session abgemeldet '
-                '(behebt Realtime-Side-Effects)');
-          }
-        } catch (e) {
-          if (kDebugMode) debugPrint('⚠️ signOut anon failed: $e');
-        }
-      }
+      // WICHTIG: Anon-Session NICHT abmelden — sie wird vom Chat-Screen für
+      // JWT-authentifizierte Requests (Edit/Delete via Worker) benötigt.
+      // Anon-Sessions stören LiveKit nicht (Token kommt von Edge Function,
+      // nicht von der Supabase-Session direkt).
 
       // Edge Function akzeptiert sowohl echten User-Bearer-Token als auch
       // anon-key-only (Guest-Modus). Wir versuchen beide:

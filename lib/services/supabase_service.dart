@@ -701,20 +701,17 @@ class SupabaseChatService {
           },
         )
         .onPostgresChanges(
-          // DELETE-Filter auf room_id ist über Realtime nicht zuverlässig,
-          // weil oldRecord bei DEFAULT REPLICA IDENTITY nur den PK enthält.
-          // FIX: WENN room_id im Payload fehlt → konservativ skippen (sonst
-          // löschen wir Messages aus FREMDEN Räumen aus dem lokalen State).
+          // DELETE: oldRecord enthält bei DEFAULT REPLICA IDENTITY nur den PK (id).
+          // room_id ist immer NULL im oldRecord — deshalb KEIN room_id-Filter.
+          // Ein fremdes DELETE einer unbekannten ID ist harmlos (removeWhere findet nichts).
           event: PostgresChangeEvent.delete,
           schema: 'public',
           table: 'chat_messages',
           callback: (payload) {
             final old = Map<String, dynamic>.from(payload.oldRecord);
-            // Strict: nur löschen wenn room_id explizit zu unserem Raum passt.
-            if (old['room_id'] != roomId) return;
             final id = old['id']?.toString();
             if (id == null || id.isEmpty) return;
-            if (kDebugMode) debugPrint('🗑️ [Chat] DELETE $id in $roomId');
+            if (kDebugMode) debugPrint('🗑️ [Chat] DELETE $id');
             onDelete?.call(id);
           },
         )

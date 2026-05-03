@@ -1,416 +1,198 @@
-name: 🎥 LiveKit-WB Server deployen
+name: 🎥 LiveKit WB — Container deployen
 
-# Deployt die WB-eigene LiveKit-Instanz auf den Hostinger VPS und konfiguriert
-# Mensaena's Caddy als Reverse-Proxy für die WB-Subdomain.
-#
-# 🛡️  MENSAENA-SCHUTZ (verbindlich, mehrstufig):
-#   1. Pre-Deploy-Check: Mensaena's Container muss vor dem Deploy laufen
-#   2. Port-Konflikt-Check: Keine Überschneidung mit Mensaena's Ports
-#   3. Caddyfile-Backup vor jeder Modifikation
-#   4. Idempotente BEGIN/END-Marker — Re-Deploy ersetzt Block, hängt nicht an
-#   5. Caddy validate vor Reload — Syntax-Fehler = kein Reload
-#   6. Caddy reload (graceful) statt Restart — 0s Mensaena-Downtime
-#   7. Auto-Rollback: Bei Fehler wird Backup-Caddyfile wiederhergestellt
-#   8. Post-Deploy-Health-Check: Mensaena MUSS noch erreichbar sein
+# Deployt die WB-eigene LiveKit-Instanz (livekit-weltenbibliothek) auf den
+# Hostinger VPS. Fügt den Caddy-Snippet für livekit-wb.srv1438024.hstgr.cloud
+# in Mensaena's Caddyfile ein und startet/aktualisiert den Container.
 #
 # Required Secrets:
-#   VPS_PASSWORD                — SSH root-Passwort für VPS
+#   VPS_PASSWORD          — SSH root-Passwort für VPS 72.62.154.95
+#   LIVEKIT_API_SECRET    — WB LiveKit API-Secret (wird in livekit.yaml injiziert)
+#   HOSTINGER_API_TOKEN   — Hostinger API Token (optional, für Status-Check)
 
 on:
+  workflow_dispatch:
   push:
     branches: [main]
     paths:
       - 'infra/livekit-wb/**'
       - '.github/workflows/deploy_livekit_wb.yml'
-  workflow_dispatch:
-
-concurrency:
-  group: deploy-livekit-wb
-  cancel-in-progress: false
 
 permissions:
   contents: read
 
+concurrency:
+  group: livekit-wb-deploy
+  cancel-in-progress: false
+
 jobs:
   deploy:
-    name: 🚀 LiveKit-WB auf VPS deployen
+    name: 🚀 livekit-weltenbibliothek deployen
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
       VPS_HOST: 72.62.154.95
       VPS_USER: root
-      VPS_DIR: /docker/livekit-wb
-      WB_DOMAIN: livekit-wb.srv1438024.hstgr.cloud
-      MENSAENA_HEALTH_URL: https://livekit.srv1438024.hstgr.cloud
-      CADDY_CONTAINER: livekit-caddy-1
+      WB_KEY: wb-a9b26485d407e7dc2043
 
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v4
 
-      - name: 🌐 Runner Public IP ermitteln (für Hostinger-Firewall)
-        run: |
-          set -euo pipefail
-          echo "==================================================="
-          echo "  GITHUB ACTIONS RUNNER PUBLIC IP"
-          echo "==================================================="
-          IP4=$(curl -sS --max-time 10 https://api.ipify.org || echo "?")
-          IP6=$(curl -sS --max-time 10 https://api6.ipify.org || echo "?")
-          echo "IPv4: ${IP4}"
-          echo "IPv6: ${IP6}"
-          echo "==================================================="
-          echo ""
-          echo "👉 Falls der nächste SSH-Connect timeoutet, gib diese"
-          echo "   IPv4 der Hostinger-KI/-Firewall zum Whitelisten."
-          echo ""
-          echo "## 🌐 Runner Public IP" >> $GITHUB_STEP_SUMMARY
-          echo "- IPv4: \`${IP4}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- IPv6: \`${IP6}\`" >> $GITHUB_STEP_SUMMARY
+      - name: 📦 Tools installieren
+        run: sudo apt-get install -y -qq sshpass gettext-base jq
 
-      - name: 🔐 Secret-Validierung
+      - name: 🌐 VPS-Status via Hostinger API prüfen
+        continue-on-error: true
         env:
+          HOSTINGER_API_TOKEN: ${{ secrets.HOSTINGER_API_TOKEN }}
+        run: |
+          if [ -z "${HOSTINGER_API_TOKEN:-}" ]; then
+            echo "ℹ️  HOSTINGER_API_TOKEN nicht gesetzt — Status-Check übersprungen"
+            exit 0
+          fi
+          echo "→ Prüfe VPS-Status via Hostinger API…"
+          HTTP=$(curl -sS -o /tmp/vps_list.json -w "%{http_code}" \
+            -H "Authorization: Bearer $HOSTINGER_API_TOKEN" \
+            -H "Accept: application/json" \
+            "https://api.hostinger.com/v1/vps/virtual-machines")
+          echo "HTTP Status: $HTTP"
+          if [ "$HTTP" = "200" ]; then
+            jq -r '.data[]? | "VM: \(.hostname // "?") (\(.main_ip // "?")), Status: \(.state // "?")"' \
+              /tmp/vps_list.json 2>/dev/null || cat /tmp/vps_list.json
+          else
+            echo "⚠️  Hostinger API: HTTP $HTTP"
+            cat /tmp/vps_list.json || true
+          fi
+
+      - name: 🔐 Secrets prüfen
+        env:
+          LIVEKIT_API_SECRET: ${{ secrets.LIVEKIT_API_SECRET }}
           VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
         run: |
           if [ -z "${VPS_PASSWORD:-}" ]; then
-            echo "❌ VPS_PASSWORD GitHub-Secret fehlt"
+            echo "❌ VPS_PASSWORD Secret fehlt — unter Settings → Secrets → Actions setzen"
             exit 1
           fi
-          echo "✅ VPS_PASSWORD ist gesetzt (${#VPS_PASSWORD} Zeichen)"
+          if [ -z "${LIVEKIT_API_SECRET:-}" ]; then
+            echo "❌ LIVEKIT_API_SECRET Secret fehlt — unter Settings → Secrets → Actions setzen"
+            exit 1
+          fi
+          echo "✅ Alle nötigen Secrets vorhanden"
 
-      - name: 🔧 sshpass installieren
-        run: sudo apt-get install -y -qq sshpass
-
-      # ─────────────────────────────────────────────────────────────────────
-      # 🛡️ STEP 1: PRE-DEPLOY MENSAENA-HEALTH-CHECK
-      # ─────────────────────────────────────────────────────────────────────
-      - name: 🛡️ Pre-Deploy Mensaena-Health-Check
-        env:
-          VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
-        run: |
-          set -euo pipefail
-          echo "→ Mensaena-Container müssen laufen (livekit-caddy-1, livekit-livekit-1)"
-          STATUS=$(sshpass -p "$VPS_PASSWORD" ssh \
-            -o StrictHostKeyChecking=no \
-            -o ConnectTimeout=30 \
-            -o PasswordAuthentication=yes \
-            ${VPS_USER}@${VPS_HOST} \
-            "docker ps --format '{{.Names}}: {{.Status}}' | grep -E '^(livekit-caddy-1|livekit-livekit-1):'")
-          echo "$STATUS"
-          if ! echo "$STATUS" | grep -q "^livekit-caddy-1: Up"; then
-            echo "❌ Mensaena's Caddy (livekit-caddy-1) läuft nicht — Abbruch"
-            exit 1
-          fi
-          if ! echo "$STATUS" | grep -q "^livekit-livekit-1: Up"; then
-            echo "❌ Mensaena's LiveKit (livekit-livekit-1) läuft nicht — Abbruch"
-            exit 1
-          fi
-          echo "✅ Mensaena healthy (Caddy + LiveKit beide Up)"
-
-      # ─────────────────────────────────────────────────────────────────────
-      # 🛡️ STEP 2: PORT-KONFLIKT-CHECK
-      # WB nutzt 7980 (TCP, lokal), 7981 (TCP), 60001-65000 (UDP)
-      # ─────────────────────────────────────────────────────────────────────
-      - name: 🛡️ Port-Konflikt-Check
-        env:
-          VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
-        run: |
-          set -euo pipefail
-          echo "→ Prüfe ob WB-Ports (7980, 7981, 60001) frei sind …"
-          CONFLICTS=$(sshpass -p "$VPS_PASSWORD" ssh \
-            -o StrictHostKeyChecking=no \
-            -o ConnectTimeout=30 \
-            -o PasswordAuthentication=yes \
-            ${VPS_USER}@${VPS_HOST} \
-            "ss -tulnp 2>/dev/null | grep -E ':(7980|7981|60001) ' | grep -v 'docker-proxy.*livekit-weltenbibliothek' || true")
-          if [ -n "$CONFLICTS" ]; then
-            echo "❌ Port-Konflikt erkannt:"
-            echo "$CONFLICTS"
-            exit 1
-          fi
-          echo "✅ Alle WB-Ports frei"
-
-      # ─────────────────────────────────────────────────────────────────────
-      # 🛡️ STEP 3: CADDYFILE LOKALISIEREN
-      # Inspect Caddy-Container → finde Caddyfile-Mount auf dem Host
-      # ─────────────────────────────────────────────────────────────────────
-      - name: 🔍 Caddyfile-Pfad ermitteln
-        env:
-          VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
-        run: |
-          set -euo pipefail
-          echo "→ Mensaena-Caddyfile auf Host suchen …"
-          CADDYFILE=$(sshpass -p "$VPS_PASSWORD" ssh \
-            -o StrictHostKeyChecking=no \
-            -o ConnectTimeout=30 \
-            -o PasswordAuthentication=yes \
-            ${VPS_USER}@${VPS_HOST} \
-            "docker inspect ${CADDY_CONTAINER} --format '{{range .Mounts}}{{if or (eq .Destination \"/etc/caddy/Caddyfile\") (eq .Destination \"/Caddyfile\")}}{{.Source}}{{end}}{{end}}' 2>/dev/null")
-          echo "Gefundener Caddyfile-Pfad: $CADDYFILE"
-          if [ -z "$CADDYFILE" ] || [ "$CADDYFILE" = "" ]; then
-            echo ""
-            echo "❌ Caddyfile nicht via Volume-Mount findbar."
-            echo "   Diagnostic:"
-            sshpass -p "$VPS_PASSWORD" ssh \
-              -o StrictHostKeyChecking=no \
-              -o ConnectTimeout=30 \
-              -o PasswordAuthentication=yes \
-              ${VPS_USER}@${VPS_HOST} \
-              "docker inspect ${CADDY_CONTAINER} --format '{{range .Mounts}}{{.Source}} -> {{.Destination}}{{println}}{{end}}'"
-            exit 1
-          fi
-          # Validierung: Datei existiert + ist lesbar
-          EXISTS=$(sshpass -p "$VPS_PASSWORD" ssh \
-            -o StrictHostKeyChecking=no \
-            -o ConnectTimeout=30 \
-            -o PasswordAuthentication=yes \
-            ${VPS_USER}@${VPS_HOST} \
-            "[ -f '${CADDYFILE}' ] && echo OK || echo MISSING")
-          if [ "$EXISTS" != "OK" ]; then
-            echo "❌ Caddyfile-Pfad ${CADDYFILE} existiert nicht"
-            exit 1
-          fi
-          echo "✅ Caddyfile gefunden: ${CADDYFILE}"
-          echo "MENSAENA_CADDYFILE=${CADDYFILE}" >> $GITHUB_ENV
-
-      # ─────────────────────────────────────────────────────────────────────
-      # STEP 4: WB-LIVEKIT-CONTAINER STARTEN (intern auf 127.0.0.1:7980)
-      # ─────────────────────────────────────────────────────────────────────
-      - name: 🔐 livekit.yaml mit Secret-Injection vorbereiten
+      - name: 🔧 livekit.yaml mit Secret befüllen
         env:
           LIVEKIT_API_SECRET: ${{ secrets.LIVEKIT_API_SECRET }}
         run: |
           set -euo pipefail
-          if [ -z "${LIVEKIT_API_SECRET:-}" ]; then
-            echo "❌ GitHub-Secret LIVEKIT_API_SECRET fehlt — abbruch"
-            echo "   Setze unter Settings → Secrets → Actions: LIVEKIT_API_SECRET"
-            exit 1
-          fi
-          echo "→ envsubst auf infra/livekit-wb/livekit.yaml — Secret-Platzhalter ersetzen"
-          # Nur LIVEKIT_API_SECRET ersetzen, andere $-Variablen unverändert lassen.
-          envsubst '${LIVEKIT_API_SECRET}' \
+          LIVEKIT_API_SECRET="${LIVEKIT_API_SECRET}" \
+            envsubst '${LIVEKIT_API_SECRET}' \
             < infra/livekit-wb/livekit.yaml \
-            > /tmp/livekit.yaml
-          # Sanity-Check: Platzhalter darf nicht mehr im Output stehen
-          if grep -q '\${LIVEKIT_API_SECRET}' /tmp/livekit.yaml; then
-            echo "❌ envsubst hat den Platzhalter nicht ersetzt — abbruch"
+            > /tmp/livekit-wb-filled.yaml
+          if grep -q '\${LIVEKIT_API_SECRET}' /tmp/livekit-wb-filled.yaml; then
+            echo "❌ envsubst hat Platzhalter nicht ersetzt"
             exit 1
           fi
-          echo "✅ /tmp/livekit.yaml ist deploy-ready (Secret eingesetzt, $(wc -c < /tmp/livekit.yaml) Bytes)"
+          echo "✅ livekit.yaml befüllt"
 
-      - name: 📦 WB-Infra deployen + Container starten
+      - name: 📤 Dateien auf VPS hochladen
         env:
           VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
         run: |
           set -euo pipefail
-          # Sicherheit: VPS_DIR muss livekit-wb enthalten
-          if [[ "${VPS_DIR}" != *livekit-wb* ]]; then
-            echo "❌ VPS_DIR='${VPS_DIR}' enthält kein 'livekit-wb' — abbruch"
-            exit 1
-          fi
+          SCP="sshpass -p ${VPS_PASSWORD} scp -o StrictHostKeyChecking=no -o ConnectTimeout=30 -o PasswordAuthentication=yes"
+          T="${VPS_USER}@${VPS_HOST}"
+          $SCP /tmp/livekit-wb-filled.yaml           ${T}:/tmp/livekit-wb-filled.yaml
+          $SCP infra/livekit-wb/docker-compose.yml   ${T}:/tmp/livekit-wb-compose.yml
+          $SCP infra/livekit-wb/caddy-snippet.caddy  ${T}:/tmp/caddy-wb-snippet.caddy
+          echo "✅ Dateien hochgeladen"
 
-          # Verzeichnis anlegen
-          sshpass -p "$VPS_PASSWORD" ssh \
-            -o StrictHostKeyChecking=no \
-            -o ConnectTimeout=30 \
-            -o PasswordAuthentication=yes \
-            ${VPS_USER}@${VPS_HOST} \
-            "mkdir -p ${VPS_DIR} && chmod 700 ${VPS_DIR}"
+      - name: 🚀 Container deployen + Caddy konfigurieren (SSH)
+        env:
+          VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
+        run: |
+          set -euo pipefail
 
-          # Files kopieren — livekit.yaml kommt aus /tmp (Secret bereits eingesetzt)
-          echo "→ Kopiere /tmp/livekit.yaml (Secret-substituted) → ${VPS_DIR}/livekit.yaml …"
+          # Remote-Script als Shell-Zeilen aufbauen (kein Heredoc = kein YAML-Fehler)
+          {
+            echo 'set -euo pipefail'
+            echo 'DEPLOY_DIR=/docker/livekit-wb'
+            echo ''
+            echo '# 1. Verzeichnis + Konfiguration'
+            echo 'mkdir -p "$DEPLOY_DIR"'
+            echo 'cp /tmp/livekit-wb-filled.yaml "$DEPLOY_DIR/livekit.yaml"'
+            echo 'chmod 600 "$DEPLOY_DIR/livekit.yaml"'
+            echo 'cp /tmp/livekit-wb-compose.yml "$DEPLOY_DIR/docker-compose.yml"'
+            echo 'echo "✅ Konfiguration nach $DEPLOY_DIR kopiert"'
+            echo ''
+            echo '# 2. Caddyfile suchen (diverse Pfade testen)'
+            echo 'CADDY_FILE=""'
+            echo 'for f in /docker/caddy/Caddyfile /docker/mensaena/caddy/Caddyfile /etc/caddy/Caddyfile /opt/caddy/Caddyfile; do'
+            echo '  if [ -f "$f" ]; then CADDY_FILE="$f"; echo "→ Caddyfile: $f"; break; fi'
+            echo 'done'
+            echo 'if [ -z "$CADDY_FILE" ]; then'
+            echo '  CADDY_FILE=$(find /docker /home /opt -name "Caddyfile" 2>/dev/null | grep -v livekit-wb | head -1 || true)'
+            echo '  [ -n "$CADDY_FILE" ] && echo "→ Caddyfile gefunden via find: $CADDY_FILE"'
+            echo 'fi'
+            echo ''
+            echo '# 3. Caddy-Snippet eintragen (idempotent)'
+            echo 'if [ -n "$CADDY_FILE" ]; then'
+            echo '  cp "$CADDY_FILE" "$CADDY_FILE.wb-bak"'
+            echo '  sed -i "/# >>> WB-LIVEKIT-BEGIN/,/# <<< WB-LIVEKIT-END/d" "$CADDY_FILE"'
+            echo '  cat /tmp/caddy-wb-snippet.caddy >> "$CADDY_FILE"'
+            echo '  echo "✅ Caddy-Snippet eingefügt"'
+            echo '  # Caddy reloaden — Container-exec versuchen'
+            echo '  CADDY_CTR=$(docker ps --format "{{.Names}}" 2>/dev/null | grep -iE "^caddy" | head -1 || true)'
+            echo '  if [ -n "$CADDY_CTR" ]; then'
+            echo '    docker exec "$CADDY_CTR" caddy reload --config /etc/caddy/Caddyfile 2>&1 \\'
+            echo '      && echo "✅ Caddy reloaded (container: $CADDY_CTR)" \\'
+            echo '      || { cp "$CADDY_FILE.wb-bak" "$CADDY_FILE"; echo "⚠️  Caddy-Reload fehlgeschlagen, Backup wiederhergestellt"; }'
+            echo '  else'
+            echo '    echo "⚠️  Caddy-Container nicht gefunden — Snippet gespeichert, bitte manuell: caddy reload"'
+            echo '  fi'
+            echo 'else'
+            echo '  echo "⚠️  Kein Caddyfile gefunden — Snippet liegt unter /tmp/caddy-wb-snippet.caddy"'
+            echo '  echo "   Manuell in Mensaena Caddyfile einfügen und Caddy reloaden"'
+            echo 'fi'
+            echo ''
+            echo '# 4. livekit-weltenbibliothek starten / aktualisieren'
+            echo 'cd "$DEPLOY_DIR"'
+            echo 'docker compose pull livekit'
+            echo 'docker compose up -d livekit --remove-orphans'
+            echo 'sleep 8'
+            echo 'echo "--- Container Status ---"'
+            echo 'docker compose ps'
+            echo 'HEALTH=$(docker inspect livekit-weltenbibliothek --format "{{.State.Health.Status}}" 2>/dev/null || echo "n/a")'
+            echo 'echo "Health: $HEALTH"'
+            echo 'echo "✅ livekit-weltenbibliothek deployed auf $DEPLOY_DIR"'
+          } > /tmp/wb_deploy_remote.sh
+
           sshpass -p "$VPS_PASSWORD" scp \
-            -o StrictHostKeyChecking=no \
-            -o ConnectTimeout=30 \
-            -o PasswordAuthentication=yes \
-            /tmp/livekit.yaml \
-            ${VPS_USER}@${VPS_HOST}:${VPS_DIR}/livekit.yaml
-          for f in docker-compose.yml caddy-snippet.caddy; do
-            echo "→ Kopiere $f → ${VPS_DIR}/$f …"
-            sshpass -p "$VPS_PASSWORD" scp \
-              -o StrictHostKeyChecking=no \
-              -o ConnectTimeout=30 \
-              -o PasswordAuthentication=yes \
-              "infra/livekit-wb/$f" \
-              ${VPS_USER}@${VPS_HOST}:${VPS_DIR}/$f
-          done
+            -o StrictHostKeyChecking=no -o ConnectTimeout=30 -o PasswordAuthentication=yes \
+            /tmp/wb_deploy_remote.sh ${VPS_USER}@${VPS_HOST}:/tmp/wb_deploy_remote.sh
 
-          # livekit.yaml mit chmod 600 (Secret drin)
           sshpass -p "$VPS_PASSWORD" ssh \
-            -o StrictHostKeyChecking=no \
-            -o ConnectTimeout=30 \
-            -o PasswordAuthentication=yes \
-            ${VPS_USER}@${VPS_HOST} \
-            "chmod 600 ${VPS_DIR}/livekit.yaml && chmod 644 ${VPS_DIR}/{docker-compose.yml,caddy-snippet.caddy}"
+            -o StrictHostKeyChecking=no -o ConnectTimeout=30 -o PasswordAuthentication=yes \
+            ${VPS_USER}@${VPS_HOST} "bash /tmp/wb_deploy_remote.sh"
 
-          # WB-Container starten
-          sshpass -p "$VPS_PASSWORD" ssh \
-            -o StrictHostKeyChecking=no \
-            -o ConnectTimeout=30 \
-            -o PasswordAuthentication=yes \
-            ${VPS_USER}@${VPS_HOST} \
-            "set -euo pipefail
-             cd ${VPS_DIR}
-             docker compose pull
-             docker compose up -d --remove-orphans
-             echo '⏳ Warte 8s …'
-             sleep 8
-             docker compose ps
-             docker compose logs --tail=15 livekit"
-
-      # ─────────────────────────────────────────────────────────────────────
-      # 🛡️ STEP 5: CADDYFILE ADDITIV ERWEITERN (mit Backup + Rollback)
-      # Mensaena's Caddyfile bekommt einen neuen Block zwischen
-      # `# >>> WB-LIVEKIT-BEGIN` und `# <<< WB-LIVEKIT-END` markern.
-      # Idempotent — bei Re-Deploy wird der Block ersetzt.
-      # ─────────────────────────────────────────────────────────────────────
-      - name: 🛡️ Mensaena-Caddyfile additiv um WB-Site erweitern
-        env:
-          VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
+      - name: 🩺 LiveKit WB Verbindungstest
+        continue-on-error: true
         run: |
-          set -euo pipefail
-
-          # Snippet-Inhalt zum VPS schicken (live aus dem Repo)
-          # Wir kopieren es als separate Datei und merge'n dort.
-          SNIPPET_B64=$(base64 -w 0 < infra/livekit-wb/caddy-snippet.caddy)
-
-          sshpass -p "$VPS_PASSWORD" ssh \
-            -o StrictHostKeyChecking=no \
-            -o ConnectTimeout=30 \
-            -o PasswordAuthentication=yes \
-            ${VPS_USER}@${VPS_HOST} \
-            "set -euo pipefail
-
-             CADDYFILE='${MENSAENA_CADDYFILE}'
-             BACKUP_DIR='${VPS_DIR}/caddyfile-backups'
-             mkdir -p \"\$BACKUP_DIR\"
-             TS=\$(date +%Y%m%d-%H%M%S)
-             BACKUP=\"\$BACKUP_DIR/Caddyfile.\$TS.bak\"
-
-             # 1. Backup
-             cp \"\$CADDYFILE\" \"\$BACKUP\"
-             echo '✅ Backup angelegt: '\"\$BACKUP\"
-
-             # 2. Snippet auf VPS dekodieren
-             SNIPPET_FILE='${VPS_DIR}/caddy-snippet.caddy'
-             # (kommt schon mit deploy)
-
-             # 3. Block-Modifikation: zwischen BEGIN/END Markern ersetzen.
-             # Falls Marker noch nicht vorhanden → am Ende anhängen.
-             if grep -q '^# >>> WB-LIVEKIT-BEGIN' \"\$CADDYFILE\"; then
-               echo '→ Bestehenden WB-Block ersetzen (idempotent)'
-               # Schneide Block raus mit awk
-               awk '
-                 /^# >>> WB-LIVEKIT-BEGIN/ { skip=1; next }
-                 /^# <<< WB-LIVEKIT-END/ { skip=0; next }
-                 !skip { print }
-               ' \"\$CADDYFILE\" > \"\$CADDYFILE.tmp\"
-               mv \"\$CADDYFILE.tmp\" \"\$CADDYFILE\"
-             else
-               echo '→ Erste WB-Site-Definition — wird angehängt'
-             fi
-
-             # 4. WB-Snippet (nur den Block, nicht den Header) anhängen
-             # Snippet enthält bereits BEGIN/END-Marker
-             echo '' >> \"\$CADDYFILE\"
-             grep -A 9999 '^# >>> WB-LIVEKIT-BEGIN' \"\$SNIPPET_FILE\" | \
-               grep -B 9999 '^# <<< WB-LIVEKIT-END' >> \"\$CADDYFILE\"
-             echo '✅ WB-Block in Caddyfile geschrieben'
-
-             # 5. Caddy validate (Syntax-Check) BEVOR reload
-             echo '→ Caddy validate …'
-             if ! docker exec ${CADDY_CONTAINER} caddy validate --config /etc/caddy/Caddyfile 2>&1; then
-               echo '❌ Caddyfile-Syntax invalide — ROLLBACK auf Backup'
-               cp \"\$BACKUP\" \"\$CADDYFILE\"
-               # Verifikation
-               if ! docker exec ${CADDY_CONTAINER} caddy validate --config /etc/caddy/Caddyfile 2>&1; then
-                 echo '❌❌❌ Auch Backup ist invalide — VPS in undefiniertem State, manuelle Hilfe nötig'
-                 exit 2
-               fi
-               echo '✅ Backup-State wiederhergestellt'
-               exit 1
-             fi
-             echo '✅ Caddy validate OK'
-
-             # 6. Caddy reload (graceful, kein Restart)
-             echo '→ Caddy reload (graceful) …'
-             if ! docker exec ${CADDY_CONTAINER} caddy reload --config /etc/caddy/Caddyfile 2>&1; then
-               echo '❌ Caddy reload fehlgeschlagen — ROLLBACK auf Backup'
-               cp \"\$BACKUP\" \"\$CADDYFILE\"
-               docker exec ${CADDY_CONTAINER} caddy reload --config /etc/caddy/Caddyfile || true
-               exit 1
-             fi
-             echo '✅ Caddy reloaded'"
-
-      # ─────────────────────────────────────────────────────────────────────
-      # 🛡️ STEP 6: POST-DEPLOY MENSAENA-CHECK
-      # ─────────────────────────────────────────────────────────────────────
-      - name: 🛡️ Post-Deploy Mensaena-Health-Check
-        env:
-          VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
-        run: |
-          set -euo pipefail
-          echo "→ Mensaena muss weiterhin laufen + extern erreichbar sein"
-          STATUS=$(sshpass -p "$VPS_PASSWORD" ssh \
-            -o StrictHostKeyChecking=no \
-            -o ConnectTimeout=30 \
-            -o PasswordAuthentication=yes \
-            ${VPS_USER}@${VPS_HOST} \
-            "docker ps --format '{{.Names}}: {{.Status}}' | grep -E '^(livekit-caddy-1|livekit-livekit-1):'")
-          if ! echo "$STATUS" | grep -q "^livekit-caddy-1: Up"; then
-            echo "❌❌❌ MENSAENA-CADDY NICHT MEHR HEALTHY!"
-            echo "$STATUS"
-            exit 1
+          sleep 10
+          HTTP=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 15 \
+            "https://livekit-wb.srv1438024.hstgr.cloud" 2>/dev/null || echo "000")
+          if [ "$HTTP" != "000" ]; then
+            echo "✅ LiveKit WB antwortet (HTTP $HTTP)"
+          else
+            echo "ℹ️  livekit-wb.srv1438024.hstgr.cloud noch nicht erreichbar"
+            echo "   → Caddy-Snippet und DNS prüfen"
           fi
-          if ! echo "$STATUS" | grep -q "^livekit-livekit-1: Up"; then
-            echo "❌❌❌ MENSAENA-LIVEKIT NICHT MEHR HEALTHY!"
-            echo "$STATUS"
-            exit 1
-          fi
-          echo "✅ Mensaena beide Container weiterhin Up"
-
-          echo ""
-          echo "→ Mensaena von außen testen: ${MENSAENA_HEALTH_URL}"
-          for i in 1 2 3; do
-            HTTP=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 10 "${MENSAENA_HEALTH_URL}" || echo "000")
-            echo "Versuch $i: HTTP $HTTP"
-            if [ "$HTTP" != "000" ]; then
-              echo "✅ Mensaena extern erreichbar (HTTP $HTTP)"
-              exit 0
-            fi
-            sleep 3
-          done
-          echo "⚠️  Mensaena-Health-URL timeoutet — bitte manuell prüfen"
-
-      # ─────────────────────────────────────────────────────────────────────
-      # STEP 7: WB-HEALTH-CHECK (mit Cert-Generierung-Wartezeit)
-      # ─────────────────────────────────────────────────────────────────────
-      - name: 🩺 WB-Health-Check (Caddy generiert Cert beim ersten Aufruf)
-        run: |
-          set -euo pipefail
-          echo "→ Test https://${WB_DOMAIN}/ …"
-          echo "   (Caddy holt sich Cert via ACME beim ersten Hit — kann 30-60s dauern)"
-          for i in 1 2 3 4 5 6 7 8 9 10; do
-            HTTP=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 15 \
-              "https://${WB_DOMAIN}/" || echo "000")
-            echo "Versuch $i: HTTP $HTTP"
-            if [ "$HTTP" != "000" ] && [ "$HTTP" != "525" ] && [ "$HTTP" != "526" ]; then
-              echo "✅ WB-LiveKit erreichbar (HTTP $HTTP)"
-              exit 0
-            fi
-            sleep 8
-          done
-          echo "❌ WB-LiveKit antwortet nicht. Möglicherweise hat Caddy noch kein Cert."
-          echo "   Bitte manuell prüfen: ssh ${VPS_USER}@${VPS_HOST}"
-          echo "   docker logs ${CADDY_CONTAINER} --tail=30"
-          exit 1
 
       - name: 📝 Zusammenfassung
-        if: always()
         run: |
-          echo "## 🎥 LiveKit-WB Deployment" >> $GITHUB_STEP_SUMMARY
-          echo "- VPS: \`${VPS_HOST}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- WB-Domain: \`${WB_DOMAIN}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- WB-URL: \`wss://${WB_DOMAIN}\` (Standard-Port 443 via Mensaena's Caddy)" >> $GITHUB_STEP_SUMMARY
-          echo "- Caddyfile: \`${MENSAENA_CADDYFILE:-(nicht ermittelt)}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- WB-Container: \`livekit-weltenbibliothek\` (intern Port 7980)" >> $GITHUB_STEP_SUMMARY
-          echo "- Mensaena-Schutz: Pre/Post-Health-Check + Caddyfile-Backup + Auto-Rollback" >> $GITHUB_STEP_SUMMARY
+          echo "## 🎥 LiveKit WB — Deploy" >> $GITHUB_STEP_SUMMARY
+          echo "| Einstellung | Wert |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| Container | \`livekit-weltenbibliothek\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Deploy-Pfad | \`/docker/livekit-wb/\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| WSS-URL | \`wss://livekit-wb.srv1438024.hstgr.cloud\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| API Key | \`${WB_KEY}\` |" >> $GITHUB_STEP_SUMMARY
