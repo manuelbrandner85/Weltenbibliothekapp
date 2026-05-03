@@ -237,8 +237,12 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
     _headerAuraCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 4))..repeat(reverse: true);
     _headerOrbitCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 15))..repeat();
 
-    // 🔥 Initialize User ID from UserService
-    _userId = UserService.getCurrentUserId();
+    // 🔥 Initialize User ID — bevorzugt Supabase-User-ID (matched die ID in
+    // chat_messages.user_id), Fallback InvisibleAuth.
+    // Bundle 4.3: Vorher wurde _userId zwischen initState und Profil-Load
+    // umgeschrieben — Race-Window in dem Realtime-INSERTs eigene Messages
+    // als "von anderen" zählten. Jetzt synchron mit Supabase-Session.
+    _userId = supabase.auth.currentUser?.id ?? UserService.getCurrentUserId();
 
     // 🔧 FIX 18: Set initial room from dashboard navigation
     _selectedRoom = widget.initialRoom ?? 'politik';
@@ -665,7 +669,11 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
     }
   }
 
+  /// Bundle 4.8: Doppel-Tap-Schutz analog zu Energie-Screen.
+  bool _isSending = false;
+
   Future<void> _sendMessage() async {
+    if (_isSending) return; // 🛑 zweiter Tap während Send läuft → ignore
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
 
@@ -712,6 +720,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
     }
     ChatRateLimitService.instance.recordSend(_fullRoomId);
     HapticFeedbackService().messageSent();
+    _isSending = true; // 🛑 Bundle 4.8: Lock vor I/O
 
     // 📡 OFFLINE-FIRST: Bei fehlender Verbindung Nachricht queuen + optimistisch
     //    mit Pending-Flag in die Liste einfügen.
@@ -752,6 +761,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
       }
       _messageController.clear();
       ChatDraftService.instance.clear(_fullRoomId);
+      _isSending = false; // 🔓 Offline-Pfad: Lock direkt freigeben
       return;
     }
 
@@ -807,6 +817,8 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
           ),
         );
       }
+    } finally {
+      _isSending = false; // 🔓 Bundle 4.8: Lock immer wieder freigeben
     }
   }
 
@@ -1074,7 +1086,12 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Upload fehlgeschlagen: ${e.toString().substring(0, 50)}...'),
+            content: Text(() {
+              // Bundle 4.7: substring(0, 50) crasht wenn Error kürzer.
+              final s = e.toString();
+              return '❌ Upload fehlgeschlagen: '
+                  '${s.length > 50 ? '${s.substring(0, 50)}…' : s}';
+            }()),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 3),
           ),

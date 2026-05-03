@@ -186,7 +186,10 @@ class _LiveKitGroupCallScreenState
                   roomName: widget.roomName,
                   world: widget.world,
                   state: state,
-                  callDurationSeconds: svc.callDurationSeconds,
+                  // Bundle 4.5: Notifier statt Wert übergeben — TopBar
+                  // rebuildet nur die Sekunden-Zelle, nicht den ganzen
+                  // Screen pro Sekunde.
+                  durationNotifier: svc.durationNotifier,
                   participantCount: svc.totalParticipantCount,
                   onClose: () async {
                     if (await _confirmLeave()) await _leaveAndPop();
@@ -456,7 +459,7 @@ class _TopBar extends StatelessWidget {
   final String roomName;
   final String world;
   final LiveKitConnectionState state;
-  final int callDurationSeconds;
+  final ValueNotifier<int> durationNotifier;
   final int participantCount;
   final VoidCallback onClose;
 
@@ -464,12 +467,12 @@ class _TopBar extends StatelessWidget {
     required this.roomName,
     required this.world,
     required this.state,
-    required this.callDurationSeconds,
+    required this.durationNotifier,
     required this.participantCount,
     required this.onClose,
   });
 
-  String _formatDuration(int s) {
+  static String _formatDuration(int s) {
     final h = s ~/ 3600;
     final m = (s % 3600 ~/ 60).toString().padLeft(2, '0');
     final sec = (s % 60).toString().padLeft(2, '0');
@@ -490,10 +493,12 @@ class _TopBar extends StatelessWidget {
     }
   }
 
-  String _stateLabel() {
+  /// Liefert das nicht-zeit-abhängige State-Label oder null wenn der
+  /// Caller eine Live-Sekunden-Anzeige rendern soll.
+  String? _staticStateLabel() {
     switch (state) {
       case LiveKitConnectionState.connected:
-        return _formatDuration(callDurationSeconds);
+        return null; // wird via ValueListenableBuilder gerendert
       case LiveKitConnectionState.connecting:
         return 'Verbinde …';
       case LiveKitConnectionState.reconnecting:
@@ -631,9 +636,9 @@ class _TopBar extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 6),
-                        Text(
-                          _stateLabel(),
-                          style: TextStyle(
+                        Builder(builder: (_) {
+                          final staticLabel = _staticStateLabel();
+                          final labelStyle = TextStyle(
                             color: state ==
                                     LiveKitConnectionState.connected
                                 ? const Color(0xFF4CAF50)
@@ -643,8 +648,18 @@ class _TopBar extends StatelessWidget {
                               FontFeature.tabularFigures()
                             ],
                             fontWeight: FontWeight.w600,
-                          ),
-                        ),
+                          );
+                          if (staticLabel != null) {
+                            return Text(staticLabel, style: labelStyle);
+                          }
+                          // Bundle 4.5: NUR die Sekundenanzeige rebuildet
+                          // pro Tick, nicht der ganze Screen.
+                          return ValueListenableBuilder<int>(
+                            valueListenable: durationNotifier,
+                            builder: (_, secs, __) =>
+                                Text(_formatDuration(secs), style: labelStyle),
+                          );
+                        }),
                       ],
                     ),
                   ],

@@ -47,6 +47,17 @@ class LiveKitCallService extends ChangeNotifier {
   Timer? _durationTimer;
   Timer? _tokenRefreshTimer;
 
+  /// Bundle 4.5/4.6: Granulare Notifier — UI-Komponenten lauschen nur auf
+  /// das, was sie wirklich brauchen. Vorher rief `notifyListeners()` bei
+  /// jedem Sekunden-Tick UND bei jedem ActiveSpeaker-Update den GANZEN
+  /// GroupCallScreen mit AnimatedBackground neu auf → Akku-Drain + Stottern.
+  /// Jetzt:
+  ///   - durationNotifier feuert pro Sekunde — nur das Timer-Label rebuildet
+  ///   - speakersNotifier feuert auf Sprecher-Wechsel — nur die Tile-Glows
+  final ValueNotifier<int> durationNotifier = ValueNotifier<int>(0);
+  final ValueNotifier<Set<String>> speakersNotifier =
+      ValueNotifier<Set<String>>(const <String>{});
+
   /// Letzte Connect-Parameter — gebraucht für Token-Refresh + Reconnect.
   String? _activeWorld;
   String? _activeDisplayName;
@@ -498,10 +509,11 @@ class LiveKitCallService extends ChangeNotifier {
       }
       notifyListeners();
     });
-    // Active-Speakers Update — UI highlightet wer grade redet
+    // Active-Speakers Update — UI highlightet wer grade redet.
+    // Bundle 4.6: Nur granular-Notifier feuern (nicht voller Screen-Rebuild).
     listener.on<ActiveSpeakersChangedEvent>((event) {
       _activeSpeakers = event.speakers.map((p) => p.identity).toSet();
-      notifyListeners();
+      speakersNotifier.value = _activeSpeakers;
     });
   }
 
@@ -555,6 +567,8 @@ class LiveKitCallService extends ChangeNotifier {
     _handRaised = false;
     _cameraIndex = 0;          // 🔄 Bundle 3.4: Index für nächsten Join resetten
     _activeSpeakers = {};
+    speakersNotifier.value = const <String>{};
+    durationNotifier.value = 0;
     _remoteVolumes.clear();
     _localDisplayName = null;
     _localAvatarUrl = null;
@@ -953,9 +967,11 @@ class LiveKitCallService extends ChangeNotifier {
   void _startDurationTimer() {
     _durationTimer?.cancel();
     _callDurationSeconds = 0;
+    durationNotifier.value = 0;
     _durationTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       _callDurationSeconds++;
-      notifyListeners();
+      // Nur den Duration-Notifier feuern → kein voller Screen-Rebuild mehr.
+      durationNotifier.value = _callDurationSeconds;
     });
   }
 

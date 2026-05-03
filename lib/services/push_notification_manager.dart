@@ -198,7 +198,10 @@ class PushNotificationManager with WidgetsBindingObserver {
   bool _subscribed = false;
   String? _fcmToken;
   DeepLinkHandler? _deepLinkHandler;
+  /// Dedup-Set für Notification-IDs. Begrenzt auf [_seenIdsMax] damit es
+  /// in Long-Running-Sessions nicht unbegrenzt wächst (Bundle 4.2).
   final Set<String> _seenIds = <String>{};
+  static const int _seenIdsMax = 200;
 
   // Gruppen-Zähler: roomId/type → Anzahl angezeigter Notifications
   final Map<String, int> _groupCounts = {};
@@ -409,6 +412,14 @@ class PushNotificationManager with WidgetsBindingObserver {
         if (item is! Map) continue;
         final id = item['id']?.toString();
         if (id == null || !_seenIds.add(id)) continue;
+        // Ringbuffer: bei Überlauf älteste Hälfte droppen.
+        if (_seenIds.length > _seenIdsMax) {
+          final keepFromIdx = _seenIds.length - (_seenIdsMax ~/ 2);
+          final keep = _seenIds.toList().sublist(keepFromIdx).toSet();
+          _seenIds
+            ..clear()
+            ..addAll(keep);
+        }
         await _showLocal(Map<String, dynamic>.from(item));
       }
     } catch (e) {

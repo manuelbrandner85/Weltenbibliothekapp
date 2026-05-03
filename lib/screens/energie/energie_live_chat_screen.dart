@@ -1901,6 +1901,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
     _refreshTimer?.cancel();
     _pendingSub?.cancel();
     _typingTimer?.cancel(); // 🆕
+    _typingService.dispose(); // 🧹 Bundle 4.1: StreamController nicht mehr leaken
     _messageController.dispose();
     _scrollController.removeListener(_onScroll); // ✨ Batch-1
     _scrollController.dispose();
