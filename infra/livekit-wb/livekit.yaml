@@ -44,6 +44,25 @@ rtc:
   # in ICE-Kandidaten bewirbt (was bei auto-detect manchmal scheitert).
   node_ip: 72.62.154.95
 
+# TURN-Server — KRITISCH für User hinter symmetrischem NAT
+# (Firmen-VPN, Mobilfunk-CGNAT, Hotel-WiFi). Ohne TURN können diese Clients
+# zwar ICE-Kandidaten austauschen, aber Media-Pakete kommen nicht durch
+# weil ihr NAT für jeden Ziel-Endpoint einen anderen Quell-Port nimmt.
+# TURN umgeht das indem alle Pakete über den Server gerelayed werden.
+#
+# Mensaena-Schutz: Mensaena nutzt 5350/3479 für TURN.
+# Wir nehmen 3480/5351 — disjunkt, kein Konflikt.
+#
+# external_tls: false — wir lassen Caddy NICHT TURN-TLS terminieren.
+# Stattdessen: TURN über UDP/TCP ohne TLS auf disjunkten Ports.
+# Das deckt 95% der User ab (TLS-only Firewalls sind selten).
+turn:
+  enabled: true
+  domain: livekit-wb.srv1438024.hstgr.cloud
+  tls_port: 5352          # ungenutzt ohne cert_file, aber LiveKit verlangt es
+  udp_port: 3480          # disjunkt von Mensaena's 3479
+  external_tls: false     # kein TLS-Terminator vorhanden → TURN-UDP only
+
 # Räume werden automatisch angelegt wenn der erste User joint.
 # empty_timeout: 0 → Raum wird SOFORT gelöscht sobald der letzte
 # Teilnehmer geht (kein Idle-Bestand, keine versehentlich offenen Räume).
