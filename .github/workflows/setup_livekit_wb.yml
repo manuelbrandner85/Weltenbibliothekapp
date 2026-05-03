@@ -41,18 +41,20 @@ jobs:
         with:
           node-version: '22'
 
-      - name: 🔐 Secret-Validierung
+      - name: 🔐 Secret-Status prüfen (soft-check)
+        id: secret_check
         env:
           WB_SECRET: ${{ secrets.LIVEKIT_API_SECRET }}
         run: |
           if [ -z "${WB_SECRET:-}" ]; then
-            echo "❌ GitHub-Secret LIVEKIT_API_SECRET fehlt"
-            echo "   Setze unter Settings → Secrets → Actions"
-            exit 1
+            echo "⚠️  LIVEKIT_API_SECRET nicht gesetzt — LiveKit-Secret-Refresh"
+            echo "   wird übersprungen. Setze unter Settings → Secrets → Actions."
+            echo "skip_livekit=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::add-mask::${WB_SECRET}"
+            echo "✅ LIVEKIT_API_SECRET gesetzt (${#WB_SECRET} Zeichen)"
+            echo "skip_livekit=false" >> "$GITHUB_OUTPUT"
           fi
-          echo "✅ LIVEKIT_API_SECRET ist gesetzt (${#WB_SECRET} Zeichen)"
-          # Maskieren damit wrangler-Output das Secret nicht in Logs leakt
-          echo "::add-mask::${WB_SECRET}"
 
       - name: 🚀 Worker deployen (latest Version sicherstellen)
         # Cloudflare lehnt `secret put` ab wenn die letzte Worker-Version
@@ -70,6 +72,7 @@ jobs:
           npx -y wrangler@3 deploy
 
       - name: ☁️ Worker-Secrets setzen
+        if: steps.secret_check.outputs.skip_livekit == 'false'
         working-directory: workers
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

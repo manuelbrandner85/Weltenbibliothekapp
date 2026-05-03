@@ -45,17 +45,23 @@ jobs:
         with:
           node-version: '22'
 
-      - name: 🔐 Secret-Validierung
+      - name: 🔐 Secret-Status prüfen (soft-check)
+        id: secret_check
         env:
           WB_SECRET: ${{ secrets.LIVEKIT_API_SECRET }}
         run: |
           if [ -z "${WB_SECRET:-}" ]; then
-            echo "❌ GitHub-Secret LIVEKIT_API_SECRET fehlt"
-            echo "   Setze unter Settings → Secrets → Actions"
-            exit 1
+            echo "⚠️  LIVEKIT_API_SECRET nicht gesetzt — LiveKit-Secret-Refresh"
+            echo "   wird übersprungen. Worker-Deploy läuft trotzdem;"
+            echo "   alte Cloudflare-Secrets bleiben aktiv."
+            echo "   Setze unter Settings → Secrets → Actions wenn du das"
+            echo "   LiveKit-Secret rotieren willst."
+            echo "skip_livekit=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::add-mask::${WB_SECRET}"
+            echo "✅ LIVEKIT_API_SECRET gesetzt (${#WB_SECRET} Zeichen)"
+            echo "skip_livekit=false" >> "$GITHUB_OUTPUT"
           fi
-          echo "✅ LIVEKIT_API_SECRET ist gesetzt (${#WB_SECRET} Zeichen)"
-          echo "::add-mask::${WB_SECRET}"
 
       - name: 🚀 Worker deployen (latest Version)
         # Cloudflare verlangt dass die latest Worker-Version deployed ist,
@@ -101,14 +107,19 @@ jobs:
             echo "ℹ️  FCM_SERVICE_ACCOUNT_JSON fehlt — Push-Dispatcher markiert Queue nur als 'sent'"
           fi
 
-          # 🎥 LiveKit-WB-Secrets — Secret aus GitHub-Secrets, kein Klartext mehr
-          echo "→ LIVEKIT_API_KEY setzen (${WB_KEY}) …"
-          printf '%s' "${WB_KEY}" | npx -y wrangler@3 secret put LIVEKIT_API_KEY
-          echo "→ LIVEKIT_API_SECRET setzen …"
-          printf '%s' "${WB_SECRET}" | npx -y wrangler@3 secret put LIVEKIT_API_SECRET
-          echo "→ LIVEKIT_URL setzen (${WB_URL}) …"
-          printf '%s' "${WB_URL}" | npx -y wrangler@3 secret put LIVEKIT_URL
-          echo "✅ Alle LiveKit-WB-Secrets gesetzt"
+          # 🎥 LiveKit-WB-Secrets — nur wenn GitHub-Secret gesetzt
+          if [ -n "${WB_SECRET:-}" ]; then
+            echo "→ LIVEKIT_API_KEY setzen (${WB_KEY}) …"
+            printf '%s' "${WB_KEY}" | npx -y wrangler@3 secret put LIVEKIT_API_KEY
+            echo "→ LIVEKIT_API_SECRET setzen …"
+            printf '%s' "${WB_SECRET}" | npx -y wrangler@3 secret put LIVEKIT_API_SECRET
+            echo "→ LIVEKIT_URL setzen (${WB_URL}) …"
+            printf '%s' "${WB_URL}" | npx -y wrangler@3 secret put LIVEKIT_URL
+            echo "✅ Alle LiveKit-WB-Secrets aktualisiert"
+          else
+            echo "ℹ️  LIVEKIT_API_SECRET nicht gesetzt — LiveKit-Secrets bleiben unverändert"
+            echo "   (alte Werte auf Cloudflare bleiben aktiv)"
+          fi
 
       # HINWEIS: Der frühere Step "livekit.yaml auf VPS aktualisieren" wurde entfernt.
       # Er hatte Mensaena's livekit.yaml überschrieben, um WB's Key dort einzutragen
