@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/favorite.dart';
 import 'achievement_service.dart';
@@ -21,7 +22,11 @@ class FavoritesService {
         _favorites = list
             .map((e) => Favorite.fromJson(e as Map<String, dynamic>))
             .toList();
-      } catch (_) {
+      } catch (e, st) {
+        if (kDebugMode) {
+          debugPrint('⚠️ FavoritesService: konnte Favoriten-JSON nicht parsen — '
+              'reset auf leere Liste. $e\n$st');
+        }
         _favorites = [];
       }
     }
@@ -171,7 +176,10 @@ class FavoritesService {
       try {
         await addFavorite(Favorite.fromJson(json));
         imported++;
-      } catch (_) {
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('⚠️ FavoritesService.import: skip 1 Eintrag — $e');
+        }
         continue;
       }
     }
@@ -205,6 +213,10 @@ class FavoritesService {
       AchievementService().incrementProgress('first_bookmark');
       AchievementService().incrementProgress('curator');
       AchievementService().incrementProgress('knowledge_seeker');
-    } catch (_) {}
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('⚠️ Achievement-Tracking fehlgeschlagen: $e');
+      }
+    }
   }
 }

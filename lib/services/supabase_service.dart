@@ -541,8 +541,11 @@ class SupabaseChatService {
           effectiveUsername = user.email!.split('@').first;
         }
         effectiveAvatar ??= profile?['avatar_url'] as String?;
-      } catch (_) {
+      } catch (e) {
         // Profil-Fetch fehlgeschlagen – fallen unten auf 'Anonym' zurück.
+        if (kDebugMode) {
+          debugPrint('⚠️ SupabaseService: Profil-Fetch failed — $e');
+        }
       }
     }
     if (effectiveUsername.isEmpty) effectiveUsername = 'Anonym';
