@@ -104,7 +104,12 @@ Deno.serve(async (req: Request) => {
 
     const apiKey = Deno.env.get("LIVEKIT_API_KEY");
     const apiSecret = Deno.env.get("LIVEKIT_API_SECRET");
-    const livekitUrl = Deno.env.get("LIVEKIT_URL") ?? "";
+    // livekit-wb.srv1438024.hstgr.cloud wurde nie deployed — Mensaena nutzen.
+    // Fallback korrigiert stale Supabase-Secrets die noch auf die alte URL zeigen.
+    const rawUrl = Deno.env.get("LIVEKIT_URL") ?? "";
+    const livekitUrl = (rawUrl && !rawUrl.includes("livekit-wb."))
+      ? rawUrl
+      : "wss://livekit.srv1438024.hstgr.cloud";
 
     if (!apiKey || !apiSecret) {
       return new Response(

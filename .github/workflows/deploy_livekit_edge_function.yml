@@ -29,9 +29,10 @@ jobs:
     env:
       SUPABASE_PROJECT_REF: adtviduaftdquvfjpojb
       # LiveKit: WB-Key auf Mensaena-Instanz (gleicher VPS, eigenes Key-Pair).
-      # URL = Mensaena-Server (WB-Key in livekit.yaml eingetragen via deploy_livekit_wb.yml).
+      # URL hardcoded auf Mensaena-Server — NICHT vom GitHub-Secret abhängig,
+      # da secrets.LIVEKIT_URL noch auf die alte nicht-existierende WB-Instanz zeigen könnte.
       LIVEKIT_API_KEY: ${{ secrets.LIVEKIT_API_KEY || 'wb-a9b26485d407e7dc2043' }}
-      LIVEKIT_URL: ${{ secrets.LIVEKIT_URL || 'wss://livekit.srv1438024.hstgr.cloud' }}
+      LIVEKIT_URL: 'wss://livekit.srv1438024.hstgr.cloud'
 
     steps:
       - name: 📥 Checkout
