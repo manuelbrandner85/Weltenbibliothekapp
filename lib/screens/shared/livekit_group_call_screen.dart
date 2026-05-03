@@ -275,7 +275,7 @@ class _LiveKitGroupCallScreenState
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// ANIMATED BACKGROUND
+// ANIMATED BACKGROUND — Welt-spezifisches Pattern
 // ═══════════════════════════════════════════════════════════════════════════
 
 class _AnimatedBackground extends StatelessWidget {
@@ -292,38 +292,141 @@ class _AnimatedBackground extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CustomPaint(
-      painter: _BgPainter(animation.value, accent),
+      painter: world == 'materie'
+          ? _MateriePainter(animation.value, accent)
+          : _EnergiePainter(animation.value, accent),
     );
   }
 }
 
-class _BgPainter extends CustomPainter {
+/// Materie — strukturiertes Hexagon-Grid mit pulsierenden Knotenpunkten.
+/// Symbolisiert die feste, strukturierte Natur der materiellen Welt.
+class _MateriePainter extends CustomPainter {
   final double t;
   final Color accent;
 
-  _BgPainter(this.t, this.accent);
+  _MateriePainter(this.t, this.accent);
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..style = PaintingStyle.fill;
-    // Subtile Glow-Orbe
-    for (var i = 0; i < 3; i++) {
-      final angle = (i * math.pi * 2 / 3) + t * math.pi * 0.5;
-      final x = size.width * 0.5 + math.cos(angle) * size.width * 0.3;
-      final y = size.height * 0.4 + math.sin(angle) * size.height * 0.2;
-      final radius = size.width * (0.25 + t * 0.05);
-      paint.shader = RadialGradient(
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.8
+      ..color = accent.withValues(alpha: 0.06);
+
+    // Hexagon-Grid (subtil)
+    const hexRadius = 60.0;
+    final hexHeight = hexRadius * math.sqrt(3);
+    final cols = (size.width / (hexRadius * 1.5)).ceil() + 1;
+    final rows = (size.height / hexHeight).ceil() + 1;
+
+    for (int row = 0; row < rows; row++) {
+      for (int col = 0; col < cols; col++) {
+        final x = col * hexRadius * 1.5;
+        final y = row * hexHeight + (col.isOdd ? hexHeight / 2 : 0);
+        _drawHex(canvas, paint, Offset(x, y), hexRadius);
+      }
+    }
+
+    // Pulsierende Glow-Punkte an Knotenpunkten
+    final pulsePaint = Paint()..style = PaintingStyle.fill;
+    for (var i = 0; i < 5; i++) {
+      final phase = (t + i * 0.2) % 1.0;
+      final angle = i * math.pi * 2 / 5 + t * math.pi * 0.3;
+      final x = size.width * 0.5 + math.cos(angle) * size.width * 0.35;
+      final y = size.height * 0.45 + math.sin(angle) * size.height * 0.25;
+      final radius = 80.0 + 40.0 * phase;
+      pulsePaint.shader = RadialGradient(
         colors: [
-          accent.withValues(alpha: 0.06 + t * 0.02),
+          accent.withValues(alpha: 0.10 * (1 - phase)),
           accent.withValues(alpha: 0),
         ],
       ).createShader(Rect.fromCircle(center: Offset(x, y), radius: radius));
-      canvas.drawCircle(Offset(x, y), radius, paint);
+      canvas.drawCircle(Offset(x, y), radius, pulsePaint);
+    }
+  }
+
+  void _drawHex(Canvas canvas, Paint paint, Offset center, double radius) {
+    final path = Path();
+    for (int i = 0; i < 6; i++) {
+      final angle = math.pi / 3 * i;
+      final px = center.dx + radius * math.cos(angle);
+      final py = center.dy + radius * math.sin(angle);
+      if (i == 0) {
+        path.moveTo(px, py);
+      } else {
+        path.lineTo(px, py);
+      }
+    }
+    path.close();
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _MateriePainter old) => old.t != t;
+}
+
+/// Energie — fließende Aurora-Wellen.
+/// Symbolisiert die fließende, sich wandelnde Natur der Energie.
+class _EnergiePainter extends CustomPainter {
+  final double t;
+  final Color accent;
+
+  _EnergiePainter(this.t, this.accent);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    // Mehrere überlagerte Sinus-Wellen erzeugen den Aurora-Effekt
+    for (int wave = 0; wave < 4; wave++) {
+      final path = Path();
+      final waveY = size.height * (0.3 + wave * 0.15);
+      final amplitude = 40.0 + wave * 15.0;
+      final frequency = 0.005 + wave * 0.001;
+      final phase = t * math.pi * 2 + wave * math.pi / 3;
+
+      path.moveTo(0, waveY);
+      for (double x = 0; x <= size.width; x += 4) {
+        final y = waveY + math.sin(x * frequency + phase) * amplitude;
+        path.lineTo(x, y);
+      }
+
+      // Aurora-Gradient: oben farbig, fließt nach unten aus
+      final paint = Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 80.0 + wave * 20.0
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 40)
+        ..shader = LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            accent.withValues(alpha: 0.04 + wave * 0.005),
+            accent.withValues(alpha: 0),
+          ],
+        ).createShader(Rect.fromLTWH(0, waveY - 60, size.width, 120));
+      canvas.drawPath(path, paint);
+    }
+
+    // Schwebende Licht-Partikel (Aura-Effekt)
+    final particlePaint = Paint()..style = PaintingStyle.fill;
+    for (var i = 0; i < 15; i++) {
+      final seed = i * 0.137;
+      final angle = (seed + t * 0.2) * math.pi * 2;
+      final radiusPercent = 0.2 + ((i * 7) % 60) / 100;
+      final x = size.width * 0.5 +
+          math.cos(angle) * size.width * radiusPercent;
+      final y = size.height * 0.5 +
+          math.sin(angle * 1.3) * size.height * radiusPercent;
+      final particleSize = 1.5 + math.sin(t * math.pi * 2 + i) * 0.8;
+      particlePaint.color = accent.withValues(alpha: 0.4);
+      canvas.drawCircle(Offset(x, y), particleSize, particlePaint);
+      // Glow
+      particlePaint.color = accent.withValues(alpha: 0.15);
+      canvas.drawCircle(Offset(x, y), particleSize * 3, particlePaint);
     }
   }
 
   @override
-  bool shouldRepaint(covariant _BgPainter old) => old.t != t;
+  bool shouldRepaint(covariant _EnergiePainter old) => old.t != t;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -395,56 +498,135 @@ class _TopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final accent = WbDesign.accent(world);
+    final isMaterie = world == 'materie';
     return ClipRect(
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
         child: Container(
-          padding: const EdgeInsets.fromLTRB(16, 10, 8, 10),
+          padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
           decoration: BoxDecoration(
-            color: WbDesign.surface(world).withValues(alpha: 0.85),
+            // Welt-spezifischer Top-Gradient
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                WbDesign.surface(world).withValues(alpha: 0.92),
+                WbDesign.surface(world).withValues(alpha: 0.78),
+              ],
+            ),
             border: Border(
               bottom: BorderSide(
-                color: accent.withValues(alpha: 0.15),
+                color: accent.withValues(alpha: 0.20),
+                width: 0.8,
               ),
             ),
+            boxShadow: [
+              BoxShadow(
+                color: accent.withValues(alpha: 0.06),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Row(
             children: [
-              // Status-Dot
-              _PulsingDot(
-                color: _dotColor(),
-                pulse: state == LiveKitConnectionState.connecting ||
-                    state == LiveKitConnectionState.reconnecting,
+              // Welt-Icon mit Aura
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: WbDesign.hero(world),
+                  boxShadow: [
+                    BoxShadow(
+                      color: accent.withValues(alpha: 0.45),
+                      blurRadius: 14,
+                      spreadRadius: 1,
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: Icon(
+                    isMaterie
+                        ? Icons.hexagon_rounded
+                        : Icons.auto_awesome_rounded,
+                    size: 20,
+                    color: Colors.white,
+                  ),
+                ),
               ),
-              const SizedBox(width: 10),
-              // Raum-Info
+              const SizedBox(width: 12),
+              // Raum-Info — mit Welt-Branding
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      _roomDisplayName(roomName),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: -0.2,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                    Row(
+                      children: [
+                        Text(
+                          _roomDisplayName(roomName),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: -0.2,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(width: 6),
+                        // Status-Dot direkt am Raumnamen
+                        _PulsingDot(
+                          color: _dotColor(),
+                          pulse: state ==
+                                  LiveKitConnectionState.connecting ||
+                              state ==
+                                  LiveKitConnectionState.reconnecting,
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      _stateLabel(),
-                      style: TextStyle(
-                        color: state == LiveKitConnectionState.connected
-                            ? const Color(0xFF4CAF50)
-                            : WbDesign.textTertiary,
-                        fontSize: 11,
-                        fontFeatures: const [FontFeature.tabularFigures()],
-                        fontWeight: FontWeight.w500,
-                      ),
+                    const SizedBox(height: 1),
+                    // Welt-Branding-Zeile
+                    Row(
+                      children: [
+                        Text(
+                          isMaterie
+                              ? 'Weltenbibliothek · Materie'
+                              : 'Weltenbibliothek · Energie',
+                          style: TextStyle(
+                            color: accent.withValues(alpha: 0.85),
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Container(
+                          width: 3,
+                          height: 3,
+                          decoration: BoxDecoration(
+                            color: WbDesign.textTertiary
+                                .withValues(alpha: 0.5),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          _stateLabel(),
+                          style: TextStyle(
+                            color: state ==
+                                    LiveKitConnectionState.connected
+                                ? const Color(0xFF4CAF50)
+                                : WbDesign.textTertiary,
+                            fontSize: 10,
+                            fontFeatures: const [
+                              FontFeature.tabularFigures()
+                            ],
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -642,22 +824,39 @@ class _ParticipantTileState extends State<_ParticipantTile>
     final initials = _initials(widget.name);
     final avatarSize = widget.isSolo ? 110.0 : 64.0;
     final fontSize = widget.isSolo ? 40.0 : 24.0;
+    final isMaterie = widget.world == 'materie';
 
     return Container(
       decoration: BoxDecoration(
-        color: WbDesign.surface(widget.world).withValues(alpha: 0.7),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            WbDesign.surface(widget.world).withValues(alpha: 0.78),
+            WbDesign.surface(widget.world).withValues(alpha: 0.55),
+          ],
+        ),
         borderRadius: BorderRadius.circular(WbDesign.radiusCard),
         border: Border.all(
           color: widget.micEnabled
-              ? widget.accent.withValues(alpha: 0.35)
+              ? widget.accent.withValues(alpha: 0.40)
               : WbDesign.borderSubtle,
           width: widget.micEnabled ? 1.5 : 1,
         ),
+        boxShadow: widget.micEnabled
+            ? [
+                BoxShadow(
+                  color: widget.accent.withValues(alpha: 0.10),
+                  blurRadius: 12,
+                  spreadRadius: 0,
+                ),
+              ]
+            : null,
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Avatar mit Sprech-Glow
+          // Avatar mit Sprech-Glow — welt-spezifisch
           AnimatedBuilder(
             animation: _pulseAnim,
             builder: (_, child) => Transform.scale(
@@ -667,22 +866,53 @@ class _ParticipantTileState extends State<_ParticipantTile>
             child: Stack(
               alignment: Alignment.center,
               children: [
-                // Glow Ring
+                // Welt-spezifischer Glow-Ring (Hexagon für Materie, mehrlagiger Halo für Energie)
                 if (widget.micEnabled)
-                  Container(
-                    width: avatarSize + 16,
-                    height: avatarSize + 16,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: widget.accent.withValues(alpha: 0.35),
-                          blurRadius: 20,
-                          spreadRadius: 4,
+                  isMaterie
+                      ? CustomPaint(
+                          size: Size(avatarSize + 24, avatarSize + 24),
+                          painter: _MaterieAvatarGlow(widget.accent),
+                        )
+                      : SizedBox(
+                          width: avatarSize + 28,
+                          height: avatarSize + 28,
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              // Doppelter Halo für Energie-Aura-Effekt
+                              Container(
+                                width: avatarSize + 24,
+                                height: avatarSize + 24,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: widget.accent
+                                          .withValues(alpha: 0.45),
+                                      blurRadius: 24,
+                                      spreadRadius: 4,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Container(
+                                width: avatarSize + 12,
+                                height: avatarSize + 12,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: widget.accent
+                                          .withValues(alpha: 0.30),
+                                      blurRadius: 12,
+                                      spreadRadius: 2,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ],
-                    ),
-                  ),
                 // Avatar
                 Container(
                   width: avatarSize,
@@ -1150,4 +1380,54 @@ class _PulsingDotState extends State<_PulsingDot>
       ),
     );
   }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// MATERIE AVATAR GLOW — Hexagon-Outline mit Glow
+// ═══════════════════════════════════════════════════════════════════════════
+
+class _MaterieAvatarGlow extends CustomPainter {
+  final Color accent;
+
+  _MaterieAvatarGlow(this.accent);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2 - 4;
+
+    // Hexagon-Pfad
+    final path = Path();
+    for (int i = 0; i < 6; i++) {
+      // -π/2 damit ein Eck oben ist
+      final angle = -math.pi / 2 + math.pi / 3 * i;
+      final px = center.dx + radius * math.cos(angle);
+      final py = center.dy + radius * math.sin(angle);
+      if (i == 0) {
+        path.moveTo(px, py);
+      } else {
+        path.lineTo(px, py);
+      }
+    }
+    path.close();
+
+    // Outer Glow
+    final glowPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 8
+      ..color = accent.withValues(alpha: 0.30)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
+    canvas.drawPath(path, glowPaint);
+
+    // Crisp Outline
+    final strokePaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2
+      ..color = accent.withValues(alpha: 0.85);
+    canvas.drawPath(path, strokePaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _MaterieAvatarGlow old) =>
+      old.accent != accent;
 }
