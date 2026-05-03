@@ -28,11 +28,10 @@ jobs:
     timeout-minutes: 10
     env:
       SUPABASE_PROJECT_REF: adtviduaftdquvfjpojb
-      # WB-eigene LiveKit-Instanz auf eigenem Port 7892
-      # 🔐 LIVEKIT_API_SECRET ist PFLICHT-GitHub-Secret — kein Default mehr.
-      # WB_KEY ist eine ID (nicht-geheim), Default ok.
+      # LiveKit: WB-Key auf Mensaena-Instanz (gleicher VPS, eigenes Key-Pair).
+      # URL = Mensaena-Server (WB-Key in livekit.yaml eingetragen via deploy_livekit_wb.yml).
       LIVEKIT_API_KEY: ${{ secrets.LIVEKIT_API_KEY || 'wb-a9b26485d407e7dc2043' }}
-      LIVEKIT_URL: ${{ secrets.LIVEKIT_URL || 'wss://livekit-wb.srv1438024.hstgr.cloud' }}
+      LIVEKIT_URL: ${{ secrets.LIVEKIT_URL || 'wss://livekit.srv1438024.hstgr.cloud' }}
 
     steps:
       - name: 📥 Checkout
