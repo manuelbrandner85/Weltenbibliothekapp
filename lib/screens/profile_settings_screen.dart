@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
  // OpenClaw v2.0
 import '../config/wb_design.dart'; // 🎨 Design-Tokens
 import '../services/storage_service.dart';
@@ -1334,6 +1335,10 @@ class _VersionInfoCardState extends State<_VersionInfoCard> {
     super.initState();
     UpdateService.instance.getCurrentPatchNumber().then((n) {
       if (mounted) setState(() => _patchNumber = n);
+    }).catchError((Object e, StackTrace st) {
+      if (kDebugMode) {
+        debugPrint('⚠️ getCurrentPatchNumber failed: $e\n$st');
+      }
     });
   }
 
