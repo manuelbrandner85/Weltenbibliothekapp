@@ -134,7 +134,55 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro> {
               ),
             ],
           ),
-          
+
+          // EMPTY-STATE Overlay wenn aktiver Filter 0 Treffer hat
+          if (_filteredLocations.isEmpty &&
+              (_searchQuery.isNotEmpty || _selectedCategory != null))
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 140,
+              left: 24,
+              right: 24,
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF04080F).withValues(alpha: 0.92),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                      color: const Color(0xFF2979FF).withValues(alpha: 0.4)),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.search_off_rounded,
+                        color: Color(0xFF2979FF), size: 32),
+                    const SizedBox(height: 8),
+                    Text(
+                      _searchQuery.isNotEmpty
+                          ? 'Keine Orte für "$_searchQuery" gefunden'
+                          : 'Keine Orte in dieser Kategorie',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextButton.icon(
+                      onPressed: () {
+                        setState(() {
+                          _searchQuery = '';
+                          _selectedCategory = null;
+                        });
+                      },
+                      icon: const Icon(Icons.clear_rounded, size: 16),
+                      label: const Text('Filter zurücksetzen'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
           // 🗺️ MAP LAYER SWITCHER (Bottom Left - Fixed Position)
           Positioned(
             bottom: 100,  // Über dem Info-Panel
