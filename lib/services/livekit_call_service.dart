@@ -64,6 +64,8 @@ class LiveKitCallService extends ChangeNotifier {
   String? _localAvatarUrl;
   String? get localAvatarUrl => _localAvatarUrl;
 
+  String? _localDisplayName;
+
   // ── Getters ────────────────────────────────────────────────────────────────
 
   Room? get room => _room;
@@ -71,6 +73,7 @@ class LiveKitCallService extends ChangeNotifier {
   bool get isConnected => _connectionState == LiveKitConnectionState.connected;
   String? get roomName => _roomName;
   String? get world => _world;
+  String? get localDisplayName => _localDisplayName;
   String? get errorMessage => _errorMessage;
   int get callDurationSeconds => _callDurationSeconds;
 
@@ -157,8 +160,9 @@ class LiveKitCallService extends ChangeNotifier {
     String? displayName,
     String? avatarUrl,
   }) async {
-    // Avatar-URL für später (wird via setAttributes an alle gebroadcastet)
+    // Avatar-URL + Display-Name für später (Mini-Bar & Re-Open)
     _localAvatarUrl = avatarUrl;
+    _localDisplayName = displayName;
     if (!ApiConfig.isLivekitEnabled) {
       throw Exception('Sprach-Anruf ist nicht konfiguriert (LIVEKIT_URL fehlt).');
     }
@@ -445,13 +449,16 @@ class LiveKitCallService extends ChangeNotifier {
       notifyListeners();
     });
     // Hand-Heben-Sync: andere User ändern Attribute → UI muss neu zeichnen.
-    // Nutze nur participant.attributes — garantiert vorhanden quer durch
-    // alle livekit_client-Versionen.
     listener.on<ParticipantAttributesChanged>((event) {
       if (kDebugMode) {
         debugPrint('🏷️  LiveKit: ${event.participant.identity} '
             'attributes=${event.participant.attributes}');
       }
+      notifyListeners();
+    });
+    // Active-Speakers Update — UI highlightet wer grade redet
+    listener.on<ActiveSpeakersChangedEvent>((event) {
+      _activeSpeakers = event.speakers.map((p) => p.identity).toSet();
       notifyListeners();
     });
   }
@@ -495,6 +502,10 @@ class LiveKitCallService extends ChangeNotifier {
     _cameraEnabled = false;
     _screenShareEnabled = false;
     _handRaised = false;
+    _activeSpeakers = {};
+    _remoteVolumes.clear();
+    _localDisplayName = null;
+    _localAvatarUrl = null;
     notifyListeners();
   }
 
@@ -625,17 +636,13 @@ class LiveKitCallService extends ChangeNotifier {
     }
   }
 
-  /// Aktueller Kamera-Index (0 = front, 1 = back). Wird beim switchCamera
-  /// rotiert damit nicht jedes Mal die gleiche Kamera ausgewählt wird.
-  int _cameraIndex = 0;
-
   /// Wechselt zwischen Front- und Back-Kamera. Funktioniert nur wenn die
-  /// Kamera bereits aktiv ist.
+  /// Kamera bereits aktiv ist. Nutzt LiveKit's eingebauten no-arg-switchCamera
+  /// der automatisch zwischen front/back toggelt.
   Future<void> switchCamera() async {
     final lp = _room?.localParticipant;
     if (lp == null || !_cameraEnabled) return;
     try {
-      // Finde aktiven Camera-Track
       LocalVideoTrack? cameraTrack;
       for (final pub in lp.videoTrackPublications) {
         if (pub.source == TrackSource.camera && pub.track != null) {
@@ -647,24 +654,18 @@ class LiveKitCallService extends ChangeNotifier {
         if (kDebugMode) debugPrint('📷 switchCamera: kein aktiver Track');
         return;
       }
-      // Hole alle verfügbaren Kameras (typisch: front + back)
-      final cameras = await Hardware.instance.cameras();
-      if (cameras.length < 2) {
-        _errorMessage = 'Nur eine Kamera verfügbar.';
-        notifyListeners();
-        return;
-      }
-      // Rotiere zur nächsten Kamera in der Liste
-      _cameraIndex = (_cameraIndex + 1) % cameras.length;
-      final next = cameras[_cameraIndex];
-      await cameraTrack.switchCamera(next.deviceId).timeout(
+      // No-arg switchCamera: livekit_client wechselt automatisch zwischen
+      // den verfügbaren Kameras (typisch: front ↔ back).
+      // Returns Future<bool> in v2.4 (true = success).
+      final ok = await cameraTrack.switchCamera().timeout(
         const Duration(seconds: 4),
         onTimeout: () {
           if (kDebugMode) debugPrint('⚠️ switchCamera Timeout');
+          return false;
         },
       );
       if (kDebugMode) {
-        debugPrint('📷 Camera gewechselt → ${next.label} (${next.deviceId})');
+        debugPrint('📷 Camera gewechselt: ${ok ? "OK" : "FAIL"}');
       }
       notifyListeners();
     } catch (e) {
@@ -797,6 +798,61 @@ class LiveKitCallService extends ChangeNotifier {
     final url = p.attributes['avatarUrl'];
     return (url != null && url.isNotEmpty) ? url : null;
   }
+
+  // ── Active-Speaker + Lautstärke + Pin ──────────────────────────────────
+
+  Set<String> _activeSpeakers = {};
+  Set<String> get activeSpeakers => _activeSpeakers;
+
+  bool isActiveSpeaker(String identity) =>
+      _activeSpeakers.contains(identity);
+
+  /// Lokal: pro Remote-Identity ein Multiplier 0.0..1.5 für Wiedergabe-Lautstärke.
+  /// Wert 0.0 = stumm, 1.0 = normal (default), 1.5 = lauter.
+  /// Wird NICHT gebroadcastet — rein lokal beim Hörer.
+  final Map<String, double> _remoteVolumes = {};
+
+  double remoteVolumeOf(String identity) =>
+      _remoteVolumes[identity] ?? 1.0;
+
+  /// Setzt lokal die Wiedergabe-Lautstärke für einen Remote-User.
+  /// volume: 0.0 (stumm) bis 1.5 (laut), 1.0 = original.
+  Future<void> setRemoteVolume(String identity, double volume) async {
+    final v = volume.clamp(0.0, 1.5);
+    _remoteVolumes[identity] = v;
+    final r = _room;
+    if (r == null) {
+      notifyListeners();
+      return;
+    }
+    final p = r.remoteParticipants.values
+        .where((p) => p.identity == identity)
+        .firstOrNull;
+    if (p == null) {
+      notifyListeners();
+      return;
+    }
+    for (final pub in p.audioTrackPublications) {
+      try {
+        (pub.track as RemoteAudioTrack?)?.setVolume(v);
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('⚠️ setRemoteVolume($identity, $v) failed: $e');
+        }
+      }
+    }
+    if (kDebugMode) debugPrint('🔊 Volume($identity) → $v');
+    notifyListeners();
+  }
+
+  /// Toggle: 0.0 ↔ 1.0
+  Future<void> toggleRemoteMute(String identity) async {
+    final cur = remoteVolumeOf(identity);
+    await setRemoteVolume(identity, cur > 0 ? 0.0 : 1.0);
+  }
+
+  bool isRemoteMutedLocally(String identity) =>
+      (_remoteVolumes[identity] ?? 1.0) <= 0.0;
 
   // ── Pin / Auto-Speaker-Focus (UI-state, kein LiveKit-API-Call) ────────────
 

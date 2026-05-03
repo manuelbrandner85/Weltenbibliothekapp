@@ -21,6 +21,7 @@ import 'package:livekit_client/livekit_client.dart' as lk;
 import '../../config/wb_design.dart';
 import '../../providers/livekit_call_provider.dart';
 import '../../services/livekit_call_service.dart';
+import '../../widgets/livekit_mini_bar.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // PUBLIC SCREEN WIDGET
@@ -62,11 +63,15 @@ class _LiveKitGroupCallScreenState
     )..repeat(reverse: true);
     _bgAnimation = CurvedAnimation(parent: _bgController, curve: Curves.easeInOut);
 
+    // Mini-Bar wird ausgeblendet solange dieser Screen sichtbar ist
+    LiveKitScreenVisibility.instance.setVisible(true);
+
     WidgetsBinding.instance.addPostFrameCallback((_) => _join());
   }
 
   @override
   void dispose() {
+    LiveKitScreenVisibility.instance.setVisible(false);
     _bgController.dispose();
     super.dispose();
   }
