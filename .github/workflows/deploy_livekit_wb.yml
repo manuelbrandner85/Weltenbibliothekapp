@@ -32,7 +32,6 @@ jobs:
     env:
       VPS_HOST: 72.62.154.95
       VPS_USER: root
-      WB_DEPLOY_DIR: /docker/livekit-wb
       WB_KEY: wb-a9b26485d407e7dc2043
 
     steps:
@@ -85,111 +84,87 @@ jobs:
           LIVEKIT_API_SECRET: ${{ secrets.LIVEKIT_API_SECRET }}
         run: |
           set -euo pipefail
-          # envsubst ersetzt ${LIVEKIT_API_SECRET} im Template
           LIVEKIT_API_SECRET="${LIVEKIT_API_SECRET}" \
             envsubst '${LIVEKIT_API_SECRET}' \
             < infra/livekit-wb/livekit.yaml \
             > /tmp/livekit-wb-filled.yaml
-          # Sanity-check: kein Platzhalter mehr im Output
           if grep -q '\${LIVEKIT_API_SECRET}' /tmp/livekit-wb-filled.yaml; then
             echo "❌ envsubst hat Platzhalter nicht ersetzt"
             exit 1
           fi
-          echo "✅ livekit.yaml mit Secret befüllt"
+          echo "✅ livekit.yaml befüllt"
 
       - name: 📤 Dateien auf VPS hochladen
         env:
           VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
         run: |
           set -euo pipefail
-          SSHPASS_OPTS="-p ${VPS_PASSWORD}"
-          SCP_OPTS="-o StrictHostKeyChecking=no -o ConnectTimeout=30 -o PasswordAuthentication=yes"
-          TARGET="${VPS_USER}@${VPS_HOST}"
-
-          sshpass $SSHPASS_OPTS scp $SCP_OPTS \
-            /tmp/livekit-wb-filled.yaml \
-            ${TARGET}:/tmp/livekit-wb-filled.yaml
-
-          sshpass $SSHPASS_OPTS scp $SCP_OPTS \
-            infra/livekit-wb/docker-compose.yml \
-            ${TARGET}:/tmp/livekit-wb-compose.yml
-
-          sshpass $SSHPASS_OPTS scp $SCP_OPTS \
-            infra/livekit-wb/caddy-snippet.caddy \
-            ${TARGET}:/tmp/caddy-wb-snippet.caddy
-
+          SCP="sshpass -p ${VPS_PASSWORD} scp -o StrictHostKeyChecking=no -o ConnectTimeout=30 -o PasswordAuthentication=yes"
+          T="${VPS_USER}@${VPS_HOST}"
+          $SCP /tmp/livekit-wb-filled.yaml           ${T}:/tmp/livekit-wb-filled.yaml
+          $SCP infra/livekit-wb/docker-compose.yml   ${T}:/tmp/livekit-wb-compose.yml
+          $SCP infra/livekit-wb/caddy-snippet.caddy  ${T}:/tmp/caddy-wb-snippet.caddy
           echo "✅ Dateien hochgeladen"
 
-      - name: 🚀 Container auf VPS deployen (SSH)
+      - name: 🚀 Container deployen + Caddy konfigurieren (SSH)
         env:
           VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
         run: |
           set -euo pipefail
 
+          # Remote-Script als Shell-Zeilen aufbauen (kein Heredoc = kein YAML-Fehler)
           {
             echo 'set -euo pipefail'
-            printf 'DEPLOY_DIR=%s\n' "'/docker/livekit-wb'"
+            echo 'DEPLOY_DIR=/docker/livekit-wb'
             echo ''
-            echo '# 1. Deploy-Verzeichnis anlegen'
+            echo '# 1. Verzeichnis + Konfiguration'
             echo 'mkdir -p "$DEPLOY_DIR"'
-            echo ''
-            echo '# 2. Konfiguration kopieren'
             echo 'cp /tmp/livekit-wb-filled.yaml "$DEPLOY_DIR/livekit.yaml"'
             echo 'chmod 600 "$DEPLOY_DIR/livekit.yaml"'
             echo 'cp /tmp/livekit-wb-compose.yml "$DEPLOY_DIR/docker-compose.yml"'
-            echo 'echo "✅ Konfiguration kopiert nach $DEPLOY_DIR"'
+            echo 'echo "✅ Konfiguration nach $DEPLOY_DIR kopiert"'
             echo ''
-            echo '# 3. Caddy-Snippet in Mensaena Caddyfile integrieren'
+            echo '# 2. Caddyfile suchen (diverse Pfade testen)'
             echo 'CADDY_FILE=""'
-            echo 'for f in /docker/caddy/Caddyfile /etc/caddy/Caddyfile /opt/caddy/Caddyfile /home/caddy/Caddyfile; do'
-            echo '  if [ -f "$f" ]; then CADDY_FILE="$f"; break; fi'
+            echo 'for f in /docker/caddy/Caddyfile /docker/mensaena/caddy/Caddyfile /etc/caddy/Caddyfile /opt/caddy/Caddyfile; do'
+            echo '  if [ -f "$f" ]; then CADDY_FILE="$f"; echo "→ Caddyfile: $f"; break; fi'
             echo 'done'
-            echo ''
-            echo 'if [ -z "${CADDY_FILE:-}" ]; then'
-            echo '  # Caddy-Container suchen und Pfad via docker inspect finden'
-            echo '  CADDY_CONTAINER=$(docker ps --format "{{.Names}}" | grep -i caddy | head -1 || true)'
-            echo '  if [ -n "${CADDY_CONTAINER:-}" ]; then'
-            echo '    MOUNTED=$(docker inspect "$CADDY_CONTAINER" --format '\''{{range .Mounts}}{{if contains .Destination "Caddyfile"}}{{.Source}}{{end}}{{end}}'\'' 2>/dev/null || true)'
-            echo '    if [ -n "${MOUNTED:-}" ]; then CADDY_FILE="$MOUNTED"; fi'
-            echo '  fi'
+            echo 'if [ -z "$CADDY_FILE" ]; then'
+            echo '  CADDY_FILE=$(find /docker /home /opt -name "Caddyfile" 2>/dev/null | grep -v livekit-wb | head -1 || true)'
+            echo '  [ -n "$CADDY_FILE" ] && echo "→ Caddyfile gefunden via find: $CADDY_FILE"'
             echo 'fi'
             echo ''
-            echo 'if [ -n "${CADDY_FILE:-}" ]; then'
-            echo '  echo "→ Caddyfile gefunden: $CADDY_FILE"'
-            echo '  cp "$CADDY_FILE" "$CADDY_FILE.wb-backup"'
-            echo '  # Alten WB-Block entfernen (idempotent)'
+            echo '# 3. Caddy-Snippet eintragen (idempotent)'
+            echo 'if [ -n "$CADDY_FILE" ]; then'
+            echo '  cp "$CADDY_FILE" "$CADDY_FILE.wb-bak"'
             echo '  sed -i "/# >>> WB-LIVEKIT-BEGIN/,/# <<< WB-LIVEKIT-END/d" "$CADDY_FILE"'
-            echo '  # Neuen Block anhängen'
             echo '  cat /tmp/caddy-wb-snippet.caddy >> "$CADDY_FILE"'
-            echo '  # Caddy-Config validieren + reloaden (kein Restart = 0s Downtime)'
-            echo '  CADDY_CONTAINER=$(docker ps --format "{{.Names}}" | grep -i caddy | head -1 || true)'
-            echo '  if [ -n "${CADDY_CONTAINER:-}" ]; then'
-            echo '    docker exec "$CADDY_CONTAINER" caddy validate --config /etc/caddy/Caddyfile 2>/dev/null \\'
-            echo '      && docker exec "$CADDY_CONTAINER" caddy reload --config /etc/caddy/Caddyfile \\'
-            echo '      && echo "✅ Caddy reloaded" \\'
-            echo '      || { cp "$CADDY_FILE.wb-backup" "$CADDY_FILE"; echo "⚠️  Caddy-Fehler — Backup wiederhergestellt"; }'
+            echo '  echo "✅ Caddy-Snippet eingefügt"'
+            echo '  # Caddy reloaden — Container-exec versuchen'
+            echo '  CADDY_CTR=$(docker ps --format "{{.Names}}" 2>/dev/null | grep -iE "^caddy" | head -1 || true)'
+            echo '  if [ -n "$CADDY_CTR" ]; then'
+            echo '    docker exec "$CADDY_CTR" caddy reload --config /etc/caddy/Caddyfile 2>&1 \\'
+            echo '      && echo "✅ Caddy reloaded (container: $CADDY_CTR)" \\'
+            echo '      || { cp "$CADDY_FILE.wb-bak" "$CADDY_FILE"; echo "⚠️  Caddy-Reload fehlgeschlagen, Backup wiederhergestellt"; }'
             echo '  else'
-            echo '    echo "⚠️  Caddy-Container nicht gefunden — Snippet in Caddyfile gespeichert, manuell reloaden"'
+            echo '    echo "⚠️  Caddy-Container nicht gefunden — Snippet gespeichert, bitte manuell: caddy reload"'
             echo '  fi'
             echo 'else'
-            echo '  echo "⚠️  Kein Caddyfile auf VPS gefunden"'
-            echo '  echo "   Caddy-Snippet liegt auf dem VPS unter /tmp/caddy-wb-snippet.caddy"'
-            echo '  echo "   Manuell in Mensaenas Caddyfile einfügen + Caddy reloaden"'
+            echo '  echo "⚠️  Kein Caddyfile gefunden — Snippet liegt unter /tmp/caddy-wb-snippet.caddy"'
+            echo '  echo "   Manuell in Mensaena Caddyfile einfügen und Caddy reloaden"'
             echo 'fi'
             echo ''
-            echo '# 4. livekit-weltenbibliothek Container starten / aktualisieren'
+            echo '# 4. livekit-weltenbibliothek starten / aktualisieren'
             echo 'cd "$DEPLOY_DIR"'
             echo 'docker compose pull livekit'
             echo 'docker compose up -d livekit --remove-orphans'
             echo 'sleep 8'
+            echo 'echo "--- Container Status ---"'
             echo 'docker compose ps'
-            echo ''
-            echo '# 5. Health-Check'
             echo 'HEALTH=$(docker inspect livekit-weltenbibliothek --format "{{.State.Health.Status}}" 2>/dev/null || echo "n/a")'
-            echo 'echo "Container-Status: $HEALTH"'
-            echo 'echo "✅ livekit-weltenbibliothek deployed"'
+            echo 'echo "Health: $HEALTH"'
+            echo 'echo "✅ livekit-weltenbibliothek deployed auf $DEPLOY_DIR"'
           } > /tmp/wb_deploy_remote.sh
-          chmod +x /tmp/wb_deploy_remote.sh
 
           sshpass -p "$VPS_PASSWORD" scp \
             -o StrictHostKeyChecking=no -o ConnectTimeout=30 -o PasswordAuthentication=yes \
@@ -209,7 +184,7 @@ jobs:
             echo "✅ LiveKit WB antwortet (HTTP $HTTP)"
           else
             echo "ℹ️  livekit-wb.srv1438024.hstgr.cloud noch nicht erreichbar"
-            echo "   → Caddy-Snippet prüfen und manuell reloaden falls nötig"
+            echo "   → Caddy-Snippet und DNS prüfen"
           fi
 
       - name: 📝 Zusammenfassung
@@ -220,5 +195,4 @@ jobs:
           echo "| Container | \`livekit-weltenbibliothek\` |" >> $GITHUB_STEP_SUMMARY
           echo "| Deploy-Pfad | \`/docker/livekit-wb/\` |" >> $GITHUB_STEP_SUMMARY
           echo "| WSS-URL | \`wss://livekit-wb.srv1438024.hstgr.cloud\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| VPS | \`${VPS_HOST}\` |" >> $GITHUB_STEP_SUMMARY
           echo "| API Key | \`${WB_KEY}\` |" >> $GITHUB_STEP_SUMMARY
