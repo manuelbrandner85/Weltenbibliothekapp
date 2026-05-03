@@ -128,10 +128,39 @@ class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern> w
       if (mounted) {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('❌ Fehler: $e')),
+          SnackBar(content: Text(_friendlyErrorMessage(e))),
         );
       }
     }
+  }
+
+  /// Mappt technische Exceptions auf nutzerfreundliche deutsche Texte.
+  String _friendlyErrorMessage(Object e) {
+    final s = e.toString();
+    if (s.contains('SocketException') ||
+        s.contains('Failed host lookup') ||
+        s.contains('Network is unreachable')) {
+      return '📡 Keine Internet-Verbindung — bitte WLAN/Mobilfunk prüfen.';
+    }
+    if (s.contains('TimeoutException') || s.contains('timed out')) {
+      return '⏱️ Server reagiert nicht — bitte später erneut versuchen.';
+    }
+    if (s.contains('401') || s.contains('Unauthorized')) {
+      return '🔒 Nicht angemeldet — bitte App neu starten und einloggen.';
+    }
+    if (s.contains('403') || s.contains('Forbidden')) {
+      return '🚫 Keine Berechtigung für diese Aktion.';
+    }
+    if (s.contains('404') || s.contains('Not Found')) {
+      return '🔍 Inhalt nicht gefunden.';
+    }
+    if (s.contains('500') ||
+        s.contains('502') ||
+        s.contains('503') ||
+        s.contains('Internal Server')) {
+      return '🛠️ Server überlastet — bitte gleich nochmal versuchen.';
+    }
+    return '⚠️ Beiträge konnten nicht geladen werden. Bitte erneut versuchen.';
   }
   
   // Feature 6 — Inline Bottom-Sheet statt Dialog

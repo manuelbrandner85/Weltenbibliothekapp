@@ -60,6 +60,42 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
   
   bool _isLoading = true;
   bool _isSaving = false;
+
+  /// True sobald der User irgendein Feld geändert hat. Wird vom
+  /// Form-onChanged-Handler gesetzt und nach erfolgreichem Speichern oder
+  /// erfolgtem Verwerfen-Bestätigung zurückgesetzt.
+  bool _hasUnsavedChanges = false;
+
+  /// PopScope-Bestätigung: warnt bevor User mit ungespeicherten Daten zurückgeht.
+  Future<bool> _confirmDiscardChanges() async {
+    if (!_hasUnsavedChanges) return true;
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Ungespeicherte Änderungen'),
+        content: const Text(
+          'Du hast Änderungen am Profil vorgenommen. '
+          'Wenn du jetzt zurück gehst, gehen sie verloren.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Bleiben'),
+          ),
+          FilledButton.tonal(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.red.withValues(alpha: 0.15),
+              foregroundColor: Colors.red,
+            ),
+            child: const Text('Verwerfen'),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
+  }
   
   // Emoji-Auswahl
   final List<String> _emojiOptions = [
@@ -544,12 +580,17 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
         
         // 🔄 AUTO-SAVE: Clear drafts after successful save
         AutoSaveManager().clearSavesForPrefix('profile_${widget.world}_');
-        
+
+        // PopScope: Dirty-Flag zurücksetzen damit Back-Navigation ohne Warnung geht
+        if (mounted) {
+          setState(() => _hasUnsavedChanges = false);
+        }
+
         if (kDebugMode) {
           debugPrint('🔄 Admin-State für "${widget.world}" wurde refreshed');
           debugPrint('🗑️ Auto-Save drafts cleared for ${widget.world}');
         }
-        
+
         Navigator.pop(context, true);
       }
     } catch (e) {
@@ -576,7 +617,16 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
         ? const Color(0xFF1E88E5) 
         : const Color(0xFF7E57C2);
     
-    return Scaffold(
+    return PopScope(
+      canPop: !_hasUnsavedChanges,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        final shouldPop = await _confirmDiscardChanges();
+        if (shouldPop && mounted) {
+          Navigator.of(context).pop();
+        }
+      },
+      child: Scaffold(
       backgroundColor: isDark ? const Color(0xFF0A0A0A) : Colors.grey[100],
       appBar: AppBar(
         title: Text(
@@ -591,6 +641,11 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
               padding: const EdgeInsets.all(20),
               child: Form(
                 key: _formKey,
+                onChanged: () {
+                  if (!_hasUnsavedChanges) {
+                    setState(() => _hasUnsavedChanges = true);
+                  }
+                },
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -1028,6 +1083,7 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
                 ),
               ),
             ),
+    ),
     );
   }
 
