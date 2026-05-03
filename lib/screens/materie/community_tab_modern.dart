@@ -162,93 +162,151 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
     if (result == true) _loadData();
   }
 
+  Widget _buildPillSwitcher() {
+    final isChat = _tabController.index == 1;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+      child: Container(
+        height: 48,
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        ),
+        child: Stack(
+          children: [
+            // Sliding pill
+            AnimatedAlign(
+              duration: const Duration(milliseconds: 260),
+              curve: Curves.easeOutCubic,
+              alignment: isChat ? Alignment.centerRight : Alignment.centerLeft,
+              child: FractionallySizedBox(
+                widthFactor: 0.5,
+                child: Container(
+                  margin: const EdgeInsets.all(3),
+                  decoration: BoxDecoration(
+                    color: _mBlue.withValues(alpha: 0.20),
+                    borderRadius: BorderRadius.circular(9),
+                    border: Border.all(color: _mBlue.withValues(alpha: 0.55)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: _mBlue.withValues(alpha: 0.18),
+                        blurRadius: 10,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            // Buttons
+            Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      _tabController.animateTo(0);
+                    },
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.article_rounded, size: 15,
+                            color: !isChat ? Colors.white : Colors.white38),
+                        const SizedBox(width: 6),
+                        Text('Beiträge',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: !isChat ? FontWeight.w700 : FontWeight.w400,
+                              color: !isChat ? Colors.white : Colors.white38,
+                              letterSpacing: 0.2,
+                            )),
+                      ],
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      _tabController.animateTo(1);
+                    },
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.chat_bubble_rounded, size: 15,
+                            color: isChat ? Colors.white : Colors.white38),
+                        const SizedBox(width: 6),
+                        Text('Live-Chat',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: isChat ? FontWeight.w700 : FontWeight.w400,
+                              color: isChat ? Colors.white : Colors.white38,
+                              letterSpacing: 0.2,
+                            )),
+                        ListenableBuilder(
+                          listenable: _notificationService,
+                          builder: (context, _) {
+                            final count = _notificationService.getTotalUnreadCount();
+                            if (count == 0) return const SizedBox.shrink();
+                            return Container(
+                              margin: const EdgeInsets.only(left: 5),
+                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                              decoration: BoxDecoration(
+                                color: Colors.red,
+                                borderRadius: BorderRadius.circular(6),
+                                boxShadow: [BoxShadow(color: Colors.red.withValues(alpha: 0.5), blurRadius: 4)],
+                              ),
+                              child: Text(count > 9 ? '9+' : '$count',
+                                  style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold)),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContextSubtitle() {
+    final isChat = _tabController.index == 1;
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 180),
+      child: Padding(
+        key: ValueKey(isChat),
+        padding: const EdgeInsets.only(left: 20, top: 6, bottom: 4),
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: Text(
+            isChat ? 'Echtzeit-Gespräche · Raum wählen' : '${_posts.length} Beiträge in der Community',
+            style: const TextStyle(fontSize: 11, color: Colors.white38, letterSpacing: 0.1),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: _mBg,
       body: Column(
         children: [
-        // 💬 TAB BAR: Posts vs Live Chat
-        Container(
-          color: _mBg,
-          child: TabBar(
-            controller: _tabController,
-            indicatorColor: _mBlue,
-            indicatorWeight: 2,
-            indicatorSize: TabBarIndicatorSize.label,
-            labelColor: Colors.white,
-            unselectedLabelColor: Colors.white38,
-            labelStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-            unselectedLabelStyle: const TextStyle(fontSize: 14),
-            dividerColor: Colors.white.withValues(alpha: 0.06),
-            tabs: [
-              const Tab(
-                icon: Icon(Icons.article),
-                text: 'Posts',
-              ),
-              Tab(
-                icon: Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    const Icon(Icons.chat_bubble),
-                    // 🔔 UNREAD BADGE
-                    Positioned(
-                      right: -6,
-                      top: -6,
-                      child: ListenableBuilder(
-                        listenable: _notificationService,
-                        builder: (context, _) {
-                          final count = _notificationService.getTotalUnreadCount();
-                          if (count == 0) return const SizedBox.shrink();
-                          
-                          return Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: BoxDecoration(
-                              color: Colors.red,
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.red.withValues(alpha: 0.5),
-                                  blurRadius: 4,
-                                ),
-                              ],
-                            ),
-                            constraints: const BoxConstraints(
-                              minWidth: 16,
-                              minHeight: 16,
-                            ),
-                            child: Center(
-                              child: Text(
-                                count > 9 ? '9+' : count.toString(),
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-                text: 'Live Chat',
-              ),
-            ],
-          ),
-        ),
-        
-        // 💬 TAB VIEW: Posts oder Chat
+        _buildPillSwitcher(),
+        _buildContextSubtitle(),
+        // TAB VIEW: Posts oder Chat
         Expanded(
           child: TabBarView(
             controller: _tabController,
             children: [
-              // TAB 1: Community Posts (Original)
               _buildPostsView(),
-              
-              // TAB 2: Live Chat (ACTIVATED!)
               const MaterieLiveChatScreen(),
             ],
           ),
