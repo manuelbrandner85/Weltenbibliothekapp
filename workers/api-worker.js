@@ -409,6 +409,26 @@ export default {
     } catch (e) {
       console.error('cron dispatch failed:', e.message);
     }
+    // 🧹 Bundle P-X7: Wöchentliche Cleanup — alte 'sent'/'failed'-Zeilen
+    // aus notification_queue entfernen (>7 Tage). Reduziert ständig
+    // wachsende Tabelle. Nur einmal pro 60min triggern (delete-Lokal-
+    // Spam-Schutz: random ~1/60).
+    try {
+      if (Math.random() < 1 / 60) {
+        const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+          .toISOString();
+        const cleanRes = await fetch(
+          `${SUPABASE_URL}/rest/v1/notification_queue?status=in.(sent,failed)&created_at=lt.${cutoff}`,
+          {
+            method: 'DELETE',
+            headers: { ...pushAuth, 'Prefer': 'return=minimal' },
+          },
+        );
+        console.log('cron queue-cleanup:', cleanRes.status);
+      }
+    } catch (e) {
+      console.error('cron queue-cleanup failed:', e.message);
+    }
   },
 
   async fetch(request, env, ctx) {

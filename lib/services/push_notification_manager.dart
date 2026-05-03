@@ -18,6 +18,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:http/http.dart' as http;
 import 'package:permission_handler/permission_handler.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/api_config.dart';
@@ -153,6 +154,21 @@ Future<void> fcmBackgroundHandler(RemoteMessage message) async {
     final id = message.messageId?.hashCode ??
         DateTime.now().millisecondsSinceEpoch.remainder(1 << 31);
     final type = data['type']?.toString() ?? '';
+    // Bundle P-E1: Type-Filter auch im Background-Handler. Vorher zeigte
+    // jeder FCM-Push durch — Master-Switch / Type-Toggles wirkten nur
+    // in-App. Hier nutzen wir SharedPreferences direkt (keine Singleton-
+    // Verfügbarkeit im Top-Level-Handler).
+    try {
+      final allowed = await _isPushTypeAllowedFromPrefs(type);
+      if (!allowed) {
+        if (kDebugMode) {
+          debugPrint('🔕 fcmBackgroundHandler: type=$type per Prefs blockiert');
+        }
+        return;
+      }
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ Pref-Check failed (zeige trotzdem): $e');
+    }
     try {
       await _localPlugin.show(
         id,
@@ -165,6 +181,47 @@ Future<void> fcmBackgroundHandler(RemoteMessage message) async {
       if (kDebugMode) debugPrint('⚠️ fcmBackgroundHandler localPlugin.show: $e');
     }
   }
+}
+
+/// Top-level Helper für Background-Handler — checkt Master-Switch + Type
+/// direkt aus SharedPreferences (PushPreferencesService-Singleton ist im
+/// Background-Isolate nicht verfügbar).
+Future<bool> _isPushTypeAllowedFromPrefs(String type) async {
+  final prefs = await SharedPreferences.getInstance();
+  // Master-Switch (default true wenn Pref nie gesetzt).
+  if (!(prefs.getBool('push_pref_master') ?? true)) return false;
+  // Mapping muss zu PushPreferencesService-Konstanten passen.
+  String? key;
+  switch (type) {
+    case 'chat_message':
+      key = 'push_pref_chat';
+      break;
+    case 'mention':
+      key = 'push_pref_mention';
+      break;
+    case 'reply':
+      key = 'push_pref_reply';
+      break;
+    case 'like':
+      key = 'push_pref_like';
+      break;
+    case 'comment':
+    case 'message':
+      key = 'push_pref_comment';
+      break;
+    case 'follow':
+      key = 'push_pref_follow';
+      break;
+    case 'article':
+      key = 'push_pref_article';
+      break;
+    case 'system':
+      key = 'push_pref_system';
+      break;
+    default:
+      return true;
+  }
+  return prefs.getBool(key) ?? true;
 }
 
 NotificationDetails _notifDetailsForType(String type, String body) {
@@ -548,6 +605,20 @@ class PushNotificationManager with WidgetsBindingObserver {
   // ── FCM Foreground / Opened ──────────────────────────────────────────────────
 
   void _onFcmForeground(RemoteMessage message) {
+    // Bundle P-E2: Dedup gegen In-App-Polling — wenn dieselbe Notif via
+    // FCM und 30s-Polling kommt, doppelt in der UI vermeiden.
+    final dedupKey = message.data['id']?.toString() ?? message.messageId;
+    if (dedupKey != null && !_seenIds.add(dedupKey)) {
+      if (kDebugMode) debugPrint('🔁 FCM-foreground dedup (id=$dedupKey)');
+      return;
+    }
+    if (_seenIds.length > _seenIdsMax) {
+      final keepFromIdx = _seenIds.length - (_seenIdsMax ~/ 2);
+      final keep = _seenIds.toList().sublist(keepFromIdx).toSet();
+      _seenIds
+        ..clear()
+        ..addAll(keep);
+    }
     final title = message.notification?.title ??
         message.data['title']?.toString() ??
         'Weltenbibliothek';
@@ -613,5 +684,34 @@ class PushNotificationManager with WidgetsBindingObserver {
     if (uid == null) return;
     _subscribed = false;
     await _registerSubscription(uid);
+  }
+
+  /// 🔕 Bundle P-E6: Push-Subscription des aktuellen Users deaktivieren.
+  /// Wird vor SignOut aufgerufen, damit der User nicht weiter Pushes
+  /// bekommt, wenn ein anderer User auf demselben Gerät einloggt.
+  Future<void> unsubscribeCurrent() async {
+    final uid = Supabase.instance.client.auth.currentUser?.id;
+    if (uid == null) {
+      _subscribed = false;
+      return;
+    }
+    try {
+      final endpoint = _fcmToken ?? 'local-$uid';
+      await http.post(
+        Uri.parse('${ApiConfig.workerUrl}/api/push/unsubscribe'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ${ApiConfig.supabaseAnonKey}',
+        },
+        body: jsonEncode({
+          'userId': uid,
+          'endpoint': endpoint,
+        }),
+      ).timeout(const Duration(seconds: 5));
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ unsubscribeCurrent failed: $e');
+    } finally {
+      _subscribed = false;
+    }
   }
 }

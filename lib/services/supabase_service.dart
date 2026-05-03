@@ -15,6 +15,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'sqlite_storage_service.dart';
+import 'push_notification_manager.dart';
 import '../config/api_config.dart';
 
 // ──────────────────────────────────────────────────────────────
@@ -125,6 +126,17 @@ class SupabaseAuthService {
 
   Future<void> signOut() async {
     if (kDebugMode) debugPrint('🚪 [Auth] SignOut');
+    // Bundle P-E6: Push-Token deaktivieren BEVOR Session gekappt wird,
+    // damit der Worker den User aus push_subscriptions auf inactive setzen
+    // kann. Sonst bekommt der nächste Login auf demselben Gerät noch
+    // Pushes für den vorigen User.
+    try {
+      await PushNotificationManager.instance
+          .unsubscribeCurrent()
+          .timeout(const Duration(seconds: 3));
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ Push-Unsubscribe vor SignOut: $e');
+    }
     await supabase.auth.signOut();
     await _clearLocalData();
   }
