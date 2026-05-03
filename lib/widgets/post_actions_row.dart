@@ -82,7 +82,7 @@ class _PostActionsRowState extends State<PostActionsRow> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('👍 Post geliked!'),
+            content: Text('👍 Beitrag geliked!'),
             duration: Duration(seconds: 1),
           ),
         );
@@ -124,7 +124,7 @@ class _PostActionsRowState extends State<PostActionsRow> {
           showDialog(
             context: context,
             builder: (context) => AlertDialog(
-              title: const Text('Post teilen'),
+              title: const Text('Beitrag teilen'),
               content: SelectableText(shareText),
               actions: [
                 TextButton(
@@ -153,7 +153,7 @@ class _PostActionsRowState extends State<PostActionsRow> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('✅ Post geteilt!'),
+              content: Text('✅ Beitrag geteilt!'),
               duration: Duration(seconds: 2),
             ),
           );
@@ -175,7 +175,7 @@ class _PostActionsRowState extends State<PostActionsRow> {
     
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(_isSaved ? '💾 Post gespeichert!' : '🗑️ Speicherung entfernt'),
+        content: Text(_isSaved ? '💾 Beitrag gespeichert!' : '🗑️ Speicherung entfernt'),
         duration: const Duration(seconds: 1),
       ),
     );

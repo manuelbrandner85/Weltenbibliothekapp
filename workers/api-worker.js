@@ -1344,32 +1344,68 @@ export default {
     //                                     leeren String und Client nutzt seinen eigenen)
     if (path === '/api/livekit/token' && method === 'POST') {
       try {
-        const authHeader = request.headers.get('Authorization') || '';
-        if (!authHeader.startsWith('Bearer ')) {
-          return jsonResponse({ error: 'Nicht authentifiziert' }, 401);
-        }
-        const supabaseToken = authHeader.slice(7);
-
-        // Supabase Auth verifizieren — User-ID + Metadata holen
-        const userRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-          headers: {
-            'apikey': env.SUPABASE_ANON_KEY || '',
-            'Authorization': `Bearer ${supabaseToken}`,
-          },
-        });
-        if (!userRes.ok) {
-          return jsonResponse({ error: 'Token ungültig' }, 401);
-        }
-        const user = await userRes.json();
-        if (!user || !user.id) {
-          return jsonResponse({ error: 'User nicht gefunden' }, 401);
-        }
-
+        // Body zuerst parsen — clientGuestId wird auch im Guest-Modus gebraucht
         const body = await request.json().catch(() => ({}));
         const roomName = body.roomName;
         if (!roomName || typeof roomName !== 'string') {
           return jsonResponse({ error: 'roomName fehlt' }, 400);
         }
+
+        // ── Auth-Modus ermitteln ──────────────────────────────────────
+        // 1) User-Modus: Bearer ist gültiger Supabase-Access-Token
+        // 2) Guest-Modus: Bearer fehlt ODER ist nur Anon-Key → identity
+        //    aus clientGuestId. Damit können sich auch nicht-eingeloggte
+        //    User in den Sprach-Anruf wählen (Polished UX-Anforderung).
+        let identity = null;
+        let displayName = body.displayName;
+        let isGuest = true;
+
+        const authHeader = request.headers.get('Authorization') || '';
+        const anonKey = env.SUPABASE_ANON_KEY || '';
+        if (authHeader.startsWith('Bearer ')) {
+          const supabaseToken = authHeader.slice(7);
+          // Anon-Key als Bearer = guest-mode (kein Round-Trip zu /auth/v1/user)
+          if (supabaseToken && supabaseToken !== anonKey) {
+            try {
+              const userRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+                headers: {
+                  'apikey': anonKey,
+                  'Authorization': `Bearer ${supabaseToken}`,
+                },
+              });
+              if (userRes.ok) {
+                const user = await userRes.json();
+                if (user && user.id) {
+                  identity = user.id;
+                  isGuest = false;
+                  const meta = user.user_metadata || {};
+                  if (!displayName) {
+                    displayName = meta.username
+                      || meta.display_name
+                      || (user.email ? user.email.split('@')[0] : null);
+                  }
+                }
+              }
+            } catch (_) {
+              // Network-Fehler beim Auth-Lookup → Guest-Fallback
+            }
+          }
+        }
+
+        if (isGuest) {
+          // Guest-Modus: stabile Identity aus clientGuestId (vom Client als
+          // SharedPreferences-UUID generiert, persistent über App-Restarts).
+          const guestId = (body.clientGuestId || '').toString().trim();
+          if (!guestId || guestId.length < 8) {
+            return jsonResponse(
+              { error: 'clientGuestId fehlt (für Gast-Modus erforderlich)' },
+              400,
+            );
+          }
+          identity = `guest-${guestId}`;
+        }
+
+        if (!displayName) displayName = 'Mitglied';
 
         const apiKey = env.LIVEKIT_API_KEY;
         const apiSecret = env.LIVEKIT_API_SECRET;
@@ -1380,22 +1416,20 @@ export default {
           );
         }
 
-        const meta = user.user_metadata || {};
-        const name = body.displayName
-          || meta.username
-          || meta.display_name
-          || (user.email ? user.email.split('@')[0] : 'Mitglied');
-
         // base64url-Encoding (RFC 7515) — JWT-Header/Payload/Signature
-        const b64url = (str) => btoa(str)
+        // UTF-8-sicher: btoa() wirft bei Multi-Byte-Chars (z.B. Umlauten in
+        // Display-Namen). Wir encoden zuerst zu Bytes, dann btoa über Latin-1.
+        const enc = new TextEncoder();
+        const b64urlBytes = (bytes) => btoa(String.fromCharCode(...bytes))
           .replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+        const b64url = (str) => b64urlBytes(enc.encode(str));
 
         const header = b64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
         const now = Math.floor(Date.now() / 1000);
         const payload = b64url(JSON.stringify({
           iss: apiKey,
-          sub: user.id,
-          name: name,
+          sub: identity,
+          name: displayName,
           nbf: now,
           exp: now + 14400, // 4 Stunden — wie Mensaena
           video: {
@@ -1413,11 +1447,10 @@ export default {
           },
         }));
 
-        // HMAC-SHA256 Signatur
-        const encoder = new TextEncoder();
+        // HMAC-SHA256 Signatur — nutzt denselben TextEncoder wie b64url
         const key = await crypto.subtle.importKey(
           'raw',
-          encoder.encode(apiSecret),
+          enc.encode(apiSecret),
           { name: 'HMAC', hash: 'SHA-256' },
           false,
           ['sign'],
@@ -1425,11 +1458,11 @@ export default {
         const sigBytes = await crypto.subtle.sign(
           'HMAC',
           key,
-          encoder.encode(`${header}.${payload}`),
+          enc.encode(`${header}.${payload}`),
         );
-        const signature = b64url(
-          String.fromCharCode(...new Uint8Array(sigBytes)),
-        );
+        // Signatur sind raw Bytes — b64urlBytes direkt verwenden, NICHT b64url
+        // (das würde durch UTF-8-Encoding Bytes >127 zu Multi-Byte expandieren).
+        const signature = b64urlBytes(new Uint8Array(sigBytes));
 
         return jsonResponse({
           token: `${header}.${payload}.${signature}`,
