@@ -79,6 +79,7 @@ class _LiveKitGroupCallScreenState
         roomName: widget.roomName,
         world: widget.world,
         displayName: widget.displayName,
+        avatarUrl: widget.avatarUrl,
       );
       if (mounted) setState(() => _hasJoined = true);
     } catch (_) {
@@ -264,6 +265,9 @@ class _LiveKitGroupCallScreenState
           localVideoTrack: svc.localVideoTrack,
           remoteVideoTracks: svc.remoteVideoTracks,
           remoteMicActive: svc.isRemoteMicActive,
+          localHandRaised: svc.handRaised,
+          remoteHandRaised: svc.isRemoteHandRaised,
+          remoteAvatarUrl: svc.remoteAvatarUrl,
         );
     }
   }
@@ -702,6 +706,9 @@ class _ParticipantGrid extends StatelessWidget {
   final lk.VideoTrack? localVideoTrack;
   final Map<String, lk.VideoTrack?> remoteVideoTracks;
   final bool Function(String) remoteMicActive;
+  final bool localHandRaised;
+  final bool Function(String) remoteHandRaised;
+  final String? Function(String) remoteAvatarUrl;
 
   const _ParticipantGrid({
     required this.world,
@@ -714,20 +721,35 @@ class _ParticipantGrid extends StatelessWidget {
     required this.localVideoTrack,
     required this.remoteVideoTracks,
     required this.remoteMicActive,
+    required this.localHandRaised,
+    required this.remoteHandRaised,
+    required this.remoteAvatarUrl,
   });
 
-  /// Map: index → (videoTrack, micActive) — index 0 = local
-  /// Returns null if no remote at that identity index.
-  ({lk.VideoTrack? video, bool mic}) _trackInfoFor(int index) {
+  /// Map: index → (videoTrack, micActive, handRaised, avatarUrl)
+  /// index 0 = local, 1+ = remote
+  ({lk.VideoTrack? video, bool mic, bool hand, String? avatar})
+      _trackInfoFor(int index) {
     if (index == 0) {
-      return (video: localVideoTrack, mic: micEnabled);
+      return (
+        video: localVideoTrack,
+        mic: micEnabled,
+        hand: localHandRaised,
+        avatar: localAvatarUrl,
+      );
     }
-    // Remote: identity entspricht der Reihenfolge in remoteParticipants
     final identities = remoteVideoTracks.keys.toList();
     final i = index - 1;
-    if (i >= identities.length) return (video: null, mic: false);
+    if (i >= identities.length) {
+      return (video: null, mic: false, hand: false, avatar: null);
+    }
     final id = identities[i];
-    return (video: remoteVideoTracks[id], mic: remoteMicActive(id));
+    return (
+      video: remoteVideoTracks[id],
+      mic: remoteMicActive(id),
+      hand: remoteHandRaised(id),
+      avatar: remoteAvatarUrl(id),
+    );
   }
 
   @override
@@ -747,6 +769,8 @@ class _ParticipantGrid extends StatelessWidget {
           accent: accent,
           isSolo: true,
           videoTrack: info.video,
+          handRaised: info.hand,
+          avatarUrl: info.avatar,
         ),
       );
     }
@@ -763,6 +787,8 @@ class _ParticipantGrid extends StatelessWidget {
         accent: accent,
         isSolo: false,
         videoTrack: info.video,
+        handRaised: info.hand,
+        avatarUrl: info.avatar,
       );
     });
 
@@ -792,6 +818,8 @@ class _ParticipantTile extends StatefulWidget {
   final Color accent;
   final bool isSolo;
   final lk.VideoTrack? videoTrack;
+  final bool handRaised;
+  final String? avatarUrl;
 
   const _ParticipantTile({
     required this.name,
@@ -801,6 +829,8 @@ class _ParticipantTile extends StatefulWidget {
     required this.accent,
     required this.isSolo,
     this.videoTrack,
+    this.handRaised = false,
+    this.avatarUrl,
   });
 
   @override
@@ -946,7 +976,7 @@ class _ParticipantTileState extends State<_ParticipantTile>
                             ],
                           ),
                         ),
-                // Avatar
+                // Avatar — Profilbild bevorzugt, Initialen als Fallback
                 Container(
                   width: avatarSize,
                   height: avatarSize,
@@ -954,18 +984,62 @@ class _ParticipantTileState extends State<_ParticipantTile>
                     shape: BoxShape.circle,
                     gradient: WbDesign.hero(widget.world),
                   ),
-                  child: Center(
-                    child: Text(
-                      initials,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: fontSize,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.5,
+                  clipBehavior: Clip.antiAlias,
+                  child: (widget.avatarUrl != null &&
+                          widget.avatarUrl!.isNotEmpty)
+                      ? Image.network(
+                          widget.avatarUrl!,
+                          fit: BoxFit.cover,
+                          width: avatarSize,
+                          height: avatarSize,
+                          errorBuilder: (_, __, ___) => Center(
+                            child: Text(
+                              initials,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: fontSize,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ),
+                        )
+                      : Center(
+                          child: Text(
+                            initials,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: fontSize,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                ),
+                // Hand-Raised-Badge oben rechts
+                if (widget.handRaised)
+                  Positioned(
+                    top: 0,
+                    right: 0,
+                    child: Container(
+                      width: 26,
+                      height: 26,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFFFB300),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Color(0x66FFB300),
+                            blurRadius: 8,
+                            spreadRadius: 1,
+                          ),
+                        ],
+                      ),
+                      child: const Center(
+                        child: Text('✋', style: TextStyle(fontSize: 14)),
                       ),
                     ),
                   ),
-                ),
               ],
             ),
           ),

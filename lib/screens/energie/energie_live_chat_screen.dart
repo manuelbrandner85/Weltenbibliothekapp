@@ -1444,7 +1444,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                     roomName: 'wb-energie-$_selectedRoom',
                     world: 'energie',
                     displayName: _username.isNotEmpty ? _username : 'Mitglied',
-                    avatarUrl: null,
+                    avatarUrl: _avatarUrl,
                   ),
                 ),
               );

@@ -1287,7 +1287,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
                     roomName: 'wb-materie-$_selectedRoom',
                     world: 'materie',
                     displayName: _username.isNotEmpty ? _username : 'Mitglied',
-                    avatarUrl: null,
+                    avatarUrl: _avatarUrl,
                   ),
                 ),
               );

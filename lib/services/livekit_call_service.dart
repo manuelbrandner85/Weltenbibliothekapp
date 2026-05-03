@@ -59,6 +59,11 @@ class LiveKitCallService extends ChangeNotifier {
   bool _screenShareEnabled = false;
   bool _handRaised = false;
 
+  /// Avatar-URL des lokalen Users — wird beim Connect via setAttributes
+  /// an alle Teilnehmer gebroadcastet damit ihre UI sie zeigen kann.
+  String? _localAvatarUrl;
+  String? get localAvatarUrl => _localAvatarUrl;
+
   // ── Getters ────────────────────────────────────────────────────────────────
 
   Room? get room => _room;
@@ -150,7 +155,10 @@ class LiveKitCallService extends ChangeNotifier {
     required String roomName,
     required String world,
     String? displayName,
+    String? avatarUrl,
   }) async {
+    // Avatar-URL für später (wird via setAttributes an alle gebroadcastet)
+    _localAvatarUrl = avatarUrl;
     if (!ApiConfig.isLivekitEnabled) {
       throw Exception('Sprach-Anruf ist nicht konfiguriert (LIVEKIT_URL fehlt).');
     }
@@ -288,6 +296,48 @@ class LiveKitCallService extends ChangeNotifier {
             'remoteParticipants=${room.remoteParticipants.length}');
       }
 
+      // Foreground-Service starten damit der Anruf weiter läuft wenn der
+      // User die App minimiert (Standard-Verhalten von Android: kill ohne FG).
+      try {
+        final hasPerms = await FlutterBackground.hasPermissions;
+        if (!hasPerms) {
+          await FlutterBackground.initialize(
+            androidConfig: const FlutterBackgroundAndroidConfig(
+              notificationTitle: 'Sprach-Anruf läuft',
+              notificationText:
+                  'Weltenbibliothek hält den Anruf im Hintergrund aktiv.',
+              notificationImportance: AndroidNotificationImportance.normal,
+              enableWifiLock: true,
+            ),
+          );
+        }
+        final ok = await FlutterBackground.enableBackgroundExecution();
+        if (kDebugMode) {
+          debugPrint(ok
+              ? '🌙 Background-Service aktiviert — Anruf läuft auch minimiert'
+              : '⚠️ Background-Service nicht aktivierbar (vermutl. Permission)');
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('⚠️ FlutterBackground init/enable failed: $e');
+        }
+      }
+
+      // Avatar-URL als Attribut broadcasten damit alle Teilnehmer sie sehen
+      // (für Profilbild-Anzeige im Tile wenn Kamera aus)
+      if (avatarUrl != null && avatarUrl.isNotEmpty) {
+        try {
+          await room.localParticipant?.setAttributes({'avatarUrl': avatarUrl});
+          if (kDebugMode) {
+            debugPrint('🖼️  Avatar-URL gebroadcastet: $avatarUrl');
+          }
+        } catch (e) {
+          if (kDebugMode) {
+            debugPrint('⚠️ Avatar-broadcast failed: $e');
+          }
+        }
+      }
+
       // Mikrofon direkt beim Beitritt aktivieren — User soll standardmäßig
       // im Anruf hörbar sein (nicht "stumm beigetreten").
       try {
@@ -393,18 +443,28 @@ class LiveKitCallService extends ChangeNotifier {
       }
       notifyListeners();
     });
+    // Hand-Heben-Sync: andere User ändern Attribute → UI muss neu zeichnen
+    listener.on<ParticipantAttributesChanged>((event) {
+      if (kDebugMode) {
+        debugPrint('🏷️  LiveKit: ${event.participant.identity} attributes='
+            '${event.changedAttributes}');
+      }
+      notifyListeners();
+    });
   }
 
   /// Verlässt den Raum und räumt alle Ressourcen auf.
   Future<void> leaveRoom() async {
     _stopDurationTimer();
 
-    // Bildschirm-Teilen: Foreground-Service stoppen falls aktiv
-    if (_screenShareEnabled) {
-      try {
-        await FlutterBackground.disableBackgroundExecution();
-      } catch (_) {}
-    }
+    // Foreground-Service IMMER stoppen wenn der Anruf verlassen wird —
+    // war für Background-Mode aktiv (vom joinRoom gestartet).
+    try {
+      await FlutterBackground.disableBackgroundExecution();
+      if (kDebugMode) {
+        debugPrint('🌙 Background-Service deaktiviert (Anruf verlassen)');
+      }
+    } catch (_) {}
 
     try {
       await _listener?.dispose();
@@ -437,11 +497,16 @@ class LiveKitCallService extends ChangeNotifier {
 
   // ── Track-Toggles ──────────────────────────────────────────────────────────
 
+  bool _micToggleInFlight = false;
+
   /// Mikrofon ein-/ausschalten. Wirft KEINE Exception — Fehler landen in
-  /// errorMessage damit die UI sie anzeigen kann.
+  /// errorMessage damit die UI sie anzeigen kann. Doppel-Tap-Schutz +
+  /// 5s Hard-Timeout damit UI nicht hängt wenn OS-Resource klemmt.
   Future<void> toggleMicrophone() async {
     final lp = _room?.localParticipant;
     if (lp == null) return;
+    if (_micToggleInFlight) return;
+    _micToggleInFlight = true;
     final target = !_micEnabled;
     try {
       if (target) {
@@ -453,20 +518,44 @@ class LiveKitCallService extends ChangeNotifier {
           return;
         }
       }
-      await lp.setMicrophoneEnabled(target);
+      await lp.setMicrophoneEnabled(target).timeout(
+        const Duration(seconds: 5),
+        onTimeout: () {
+          if (kDebugMode) {
+            debugPrint('⚠️ setMicrophoneEnabled($target) Timeout — '
+                'forciere UI-Update');
+          }
+        },
+      );
       _micEnabled = target;
       notifyListeners();
     } catch (e) {
       _errorMessage = _friendlyError(e);
       notifyListeners();
+    } finally {
+      _micToggleInFlight = false;
     }
   }
 
+  bool _cameraToggleInFlight = false;
+
   /// Kamera ein-/ausschalten. Fragt Permission beim ersten Aktivieren.
+  /// Doppel-Tap-Schutz + 5s Timeout damit UI nie ewig auf hängenden
+  /// Camera-Resource-Release wartet.
   Future<void> toggleCamera() async {
     final lp = _room?.localParticipant;
     if (lp == null) return;
+
+    // Doppel-Tap-Schutz: zweiter Tap während der erste läuft → ignoriere
+    if (_cameraToggleInFlight) {
+      if (kDebugMode) {
+        debugPrint('📷 toggleCamera: schon in flight, ignore');
+      }
+      return;
+    }
+    _cameraToggleInFlight = true;
     final target = !_cameraEnabled;
+
     try {
       if (target) {
         final status = await Permission.camera.request();
@@ -477,12 +566,37 @@ class LiveKitCallService extends ChangeNotifier {
           return;
         }
       }
-      await lp.setCameraEnabled(target);
+
+      if (kDebugMode) {
+        debugPrint('📷 setCameraEnabled($target) …');
+      }
+
+      // Hard-Timeout: Camera-Plugin kann auf manchen Geräten beim Off-Toggle
+      // hängen weil OS-Resource langsam released. Nach 5s geben wir auf
+      // und setzen den UI-State trotzdem — Track wird im Hintergrund
+      // freigegeben sobald OS bereit ist.
+      await lp.setCameraEnabled(target).timeout(
+        const Duration(seconds: 5),
+        onTimeout: () {
+          if (kDebugMode) {
+            debugPrint('⚠️ setCameraEnabled($target) Timeout nach 5s — '
+                'forciere UI-Update');
+          }
+        },
+      );
       _cameraEnabled = target;
+      if (kDebugMode) {
+        debugPrint('📷 Camera ist jetzt ${target ? "AN" : "AUS"}');
+      }
       notifyListeners();
     } catch (e) {
+      if (kDebugMode) {
+        debugPrint('⚠️ toggleCamera error: $e');
+      }
       _errorMessage = _friendlyError(e);
       notifyListeners();
+    } finally {
+      _cameraToggleInFlight = false;
     }
   }
 
@@ -526,14 +640,55 @@ class LiveKitCallService extends ChangeNotifier {
     }
   }
 
-  /// Hand heben / senken. Toggelt aktuell nur den lokalen UI-State —
-  /// Cross-Participant-Sync (DataChannel-Broadcast) kommt in Folge-PR
-  /// wenn die exakte LiveKit-API-Form für die installierte Version
-  /// verifiziert ist.
+  /// Hand heben / senken. Sync via participant.setAttributes — alle
+  /// Teilnehmer sehen den Status via ParticipantAttributesChangedEvent.
   Future<void> toggleHandRaised() async {
     if (!isConnected) return;
-    _handRaised = !_handRaised;
-    notifyListeners();
+    final lp = _room?.localParticipant;
+    if (lp == null) return;
+    final target = !_handRaised;
+    try {
+      await lp.setAttributes({
+        ...lp.attributes,
+        'handRaised': target ? 'true' : 'false',
+      });
+      _handRaised = target;
+      if (kDebugMode) {
+        debugPrint('✋ Hand ${target ? "gehoben" : "gesenkt"} '
+            '(broadcast an alle Teilnehmer)');
+      }
+      notifyListeners();
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('⚠️ toggleHandRaised setAttributes failed: $e');
+      }
+      _errorMessage = _friendlyError(e);
+      notifyListeners();
+    }
+  }
+
+  /// Prüft ob ein Remote-Teilnehmer die Hand gehoben hat (für UI).
+  bool isRemoteHandRaised(String identity) {
+    final r = _room;
+    if (r == null) return false;
+    final p = r.remoteParticipants.values
+        .where((p) => p.identity == identity)
+        .firstOrNull;
+    if (p == null) return false;
+    return p.attributes['handRaised'] == 'true';
+  }
+
+  /// Liefert die Avatar-URL eines Remote-Teilnehmers (aus Attributes).
+  /// Returns null wenn nicht gesetzt.
+  String? remoteAvatarUrl(String identity) {
+    final r = _room;
+    if (r == null) return null;
+    final p = r.remoteParticipants.values
+        .where((p) => p.identity == identity)
+        .firstOrNull;
+    if (p == null) return null;
+    final url = p.attributes['avatarUrl'];
+    return (url != null && url.isNotEmpty) ? url : null;
   }
 
   // ── Pin / Auto-Speaker-Focus (UI-state, kein LiveKit-API-Call) ────────────
