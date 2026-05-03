@@ -93,6 +93,54 @@ class LiveKitCallService extends ChangeNotifier {
         .toList();
   }
 
+  /// Lokaler Video-Track (Kamera) wenn aktiv — für UI-Rendering.
+  VideoTrack? get localVideoTrack {
+    final lp = _room?.localParticipant;
+    if (lp == null) return null;
+    for (final pub in lp.videoTrackPublications) {
+      // Nur Kamera-Track, nicht Screen-Share
+      if (pub.source == TrackSource.camera && pub.track != null) {
+        return pub.track as VideoTrack;
+      }
+    }
+    return null;
+  }
+
+  /// Liste aller Remote-Video-Tracks für UI — Reihenfolge stabil per identity.
+  /// Map: identity → VideoTrack (oder null wenn Cam aus).
+  Map<String, VideoTrack?> get remoteVideoTracks {
+    final r = _room;
+    if (r == null) return const {};
+    final map = <String, VideoTrack?>{};
+    for (final p in r.remoteParticipants.values) {
+      VideoTrack? track;
+      for (final pub in p.videoTrackPublications) {
+        if (pub.source == TrackSource.camera &&
+            pub.subscribed &&
+            pub.track != null) {
+          track = pub.track as VideoTrack;
+          break;
+        }
+      }
+      map[p.identity] = track;
+    }
+    return map;
+  }
+
+  /// Hat ein bestimmter Remote-Teilnehmer Mic aktiv?
+  bool isRemoteMicActive(String identity) {
+    final r = _room;
+    if (r == null) return false;
+    final p = r.remoteParticipants.values
+        .where((p) => p.identity == identity)
+        .firstOrNull;
+    if (p == null) return false;
+    for (final pub in p.audioTrackPublications) {
+      if (!pub.muted) return true;
+    }
+    return false;
+  }
+
 
   // ── Connection-Lifecycle ───────────────────────────────────────────────────
 
@@ -175,22 +223,56 @@ class LiveKitCallService extends ChangeNotifier {
         throw Exception('Keine LiveKit-Server-URL verfügbar.');
       }
 
-      final room = Room();
+      if (kDebugMode) {
+        debugPrint('🎥 LiveKit: connecting to $livekitUrl room=$roomName …');
+      }
+
+      final room = Room(
+        roomOptions: const RoomOptions(
+          adaptiveStream: true,
+          dynacast: true,
+          // Ohne defaultAudioPublishOptions kommt Mensaena-Default-Encoding
+          defaultAudioPublishOptions: AudioPublishOptions(
+            dtx: true, // Discontinuous Transmission — spart Bandbreite bei Stille
+          ),
+          defaultVideoPublishOptions: VideoPublishOptions(
+            simulcast: true,
+          ),
+        ),
+      );
       _room = room;
 
       // Room-Events abonnieren — UI muss State-Wechsel widerspiegeln
-      // (Disconnect, Reconnect, Teilnehmer-Wechsel).
+      // (Disconnect, Reconnect, Teilnehmer-Wechsel, neue Tracks).
       _attachRoomListener(room);
 
-      await room.connect(livekitUrl, token);
+      // Connect-Optionen mit Auto-Subscribe — sonst hören Teilnehmer einander nicht
+      await room.connect(
+        livekitUrl,
+        token,
+        connectOptions: const ConnectOptions(
+          autoSubscribe: true, // Remote-Tracks automatisch abonnieren
+        ),
+      );
+
+      if (kDebugMode) {
+        debugPrint('✅ LiveKit: connected — '
+            'localId=${room.localParticipant?.identity}, '
+            'remoteParticipants=${room.remoteParticipants.length}');
+      }
 
       // Mikrofon direkt beim Beitritt aktivieren — User soll standardmäßig
       // im Anruf hörbar sein (nicht "stumm beigetreten").
       try {
         await room.localParticipant?.setMicrophoneEnabled(true);
         _micEnabled = true;
+        if (kDebugMode) {
+          debugPrint('🎤 Mikrofon aktiviert');
+        }
       } catch (e) {
-        if (kDebugMode) debugPrint('⚠️ setMicrophoneEnabled fehlgeschlagen: $e');
+        if (kDebugMode) {
+          debugPrint('⚠️ setMicrophoneEnabled fehlgeschlagen: $e');
+        }
       }
 
       // Speakerphone an — sonst hört User durch Hörmuschel statt Lautsprecher
@@ -228,13 +310,62 @@ class LiveKitCallService extends ChangeNotifier {
     listener.on<RoomReconnectedEvent>((_) {
       _setState(LiveKitConnectionState.connected);
     });
-    listener.on<RoomDisconnectedEvent>((_) {
+    listener.on<RoomDisconnectedEvent>((event) {
+      if (kDebugMode) {
+        debugPrint('🔴 LiveKit: disconnected — reason=${event.reason}');
+      }
       _stopDurationTimer();
       _connectionState = LiveKitConnectionState.disconnected;
       notifyListeners();
     });
-    listener.on<ParticipantConnectedEvent>((_) => notifyListeners());
-    listener.on<ParticipantDisconnectedEvent>((_) => notifyListeners());
+    listener.on<ParticipantConnectedEvent>((event) {
+      if (kDebugMode) {
+        debugPrint('👤 LiveKit: participant joined — '
+            '${event.participant.identity} (${event.participant.name})');
+      }
+      notifyListeners();
+    });
+    listener.on<ParticipantDisconnectedEvent>((event) {
+      if (kDebugMode) {
+        debugPrint('👤 LiveKit: participant left — ${event.participant.identity}');
+      }
+      notifyListeners();
+    });
+    // Track-Events damit UI auf Cam-On/Off + Audio reagiert
+    listener.on<TrackSubscribedEvent>((event) {
+      if (kDebugMode) {
+        debugPrint('🎵 LiveKit: subscribed track '
+            '${event.publication.kind} from ${event.participant.identity}');
+      }
+      notifyListeners();
+    });
+    listener.on<TrackUnsubscribedEvent>((event) {
+      if (kDebugMode) {
+        debugPrint('🎵 LiveKit: unsubscribed ${event.publication.kind} '
+            'from ${event.participant.identity}');
+      }
+      notifyListeners();
+    });
+    listener.on<TrackPublishedEvent>((event) {
+      if (kDebugMode) {
+        debugPrint('📤 LiveKit: published ${event.publication.kind} '
+            'by ${event.participant.identity}');
+      }
+      notifyListeners();
+    });
+    listener.on<TrackUnpublishedEvent>((event) {
+      if (kDebugMode) {
+        debugPrint('📤 LiveKit: unpublished ${event.publication.kind} '
+            'by ${event.participant.identity}');
+      }
+      notifyListeners();
+    });
+    listener.on<LocalTrackPublishedEvent>((event) {
+      if (kDebugMode) {
+        debugPrint('📤 LiveKit: LOCAL published ${event.publication.kind}');
+      }
+      notifyListeners();
+    });
   }
 
   /// Verlässt den Raum und räumt alle Ressourcen auf.

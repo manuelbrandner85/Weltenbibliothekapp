@@ -16,6 +16,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:livekit_client/livekit_client.dart' as lk;
 
 import '../../config/wb_design.dart';
 import '../../providers/livekit_call_provider.dart';
@@ -260,6 +261,9 @@ class _LiveKitGroupCallScreenState
           micEnabled: svc.micEnabled,
           cameraEnabled: svc.cameraEnabled,
           accent: accent,
+          localVideoTrack: svc.localVideoTrack,
+          remoteVideoTracks: svc.remoteVideoTracks,
+          remoteMicActive: svc.isRemoteMicActive,
         );
     }
   }
@@ -695,6 +699,9 @@ class _ParticipantGrid extends StatelessWidget {
   final bool micEnabled;
   final bool cameraEnabled;
   final Color accent;
+  final lk.VideoTrack? localVideoTrack;
+  final Map<String, lk.VideoTrack?> remoteVideoTracks;
+  final bool Function(String) remoteMicActive;
 
   const _ParticipantGrid({
     required this.world,
@@ -704,7 +711,24 @@ class _ParticipantGrid extends StatelessWidget {
     required this.micEnabled,
     required this.cameraEnabled,
     required this.accent,
+    required this.localVideoTrack,
+    required this.remoteVideoTracks,
+    required this.remoteMicActive,
   });
+
+  /// Map: index → (videoTrack, micActive) — index 0 = local
+  /// Returns null if no remote at that identity index.
+  ({lk.VideoTrack? video, bool mic}) _trackInfoFor(int index) {
+    if (index == 0) {
+      return (video: localVideoTrack, mic: micEnabled);
+    }
+    // Remote: identity entspricht der Reihenfolge in remoteParticipants
+    final identities = remoteVideoTracks.keys.toList();
+    final i = index - 1;
+    if (i >= identities.length) return (video: null, mic: false);
+    final id = identities[i];
+    return (video: remoteVideoTracks[id], mic: remoteMicActive(id));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -712,15 +736,17 @@ class _ParticipantGrid extends StatelessWidget {
     final count = allNames.length;
 
     if (count == 1) {
+      final info = _trackInfoFor(0);
       return Padding(
         padding: const EdgeInsets.all(20),
         child: _ParticipantTile(
           name: allNames[0],
           isLocal: true,
-          micEnabled: micEnabled,
+          micEnabled: info.mic,
           world: world,
           accent: accent,
           isSolo: true,
+          videoTrack: info.video,
         ),
       );
     }
@@ -728,13 +754,15 @@ class _ParticipantGrid extends StatelessWidget {
     final crossCount = count <= 2 ? 2 : (count <= 4 ? 2 : 3);
     final tiles = List.generate(count, (i) {
       final isLocal = i == 0;
+      final info = _trackInfoFor(i);
       return _ParticipantTile(
         name: allNames[i],
         isLocal: isLocal,
-        micEnabled: isLocal ? micEnabled : true,
+        micEnabled: info.mic,
         world: world,
         accent: accent,
         isSolo: false,
+        videoTrack: info.video,
       );
     });
 
@@ -763,6 +791,7 @@ class _ParticipantTile extends StatefulWidget {
   final String world;
   final Color accent;
   final bool isSolo;
+  final lk.VideoTrack? videoTrack;
 
   const _ParticipantTile({
     required this.name,
@@ -771,6 +800,7 @@ class _ParticipantTile extends StatefulWidget {
     required this.world,
     required this.accent,
     required this.isSolo,
+    this.videoTrack,
   });
 
   @override
@@ -825,6 +855,7 @@ class _ParticipantTileState extends State<_ParticipantTile>
     final avatarSize = widget.isSolo ? 110.0 : 64.0;
     final fontSize = widget.isSolo ? 40.0 : 24.0;
     final isMaterie = widget.world == 'materie';
+    final hasVideo = widget.videoTrack != null;
 
     return Container(
       decoration: BoxDecoration(
@@ -853,7 +884,9 @@ class _ParticipantTileState extends State<_ParticipantTile>
               ]
             : null,
       ),
-      child: Column(
+      child: hasVideo
+          ? _buildVideoView()
+          : Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           // Avatar mit Sprech-Glow — welt-spezifisch
@@ -984,6 +1017,71 @@ class _ParticipantTileState extends State<_ParticipantTile>
                   ),
                 ),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Video-View Layout — Vollformat-Video mit Name + Mic-Status overlay.
+  Widget _buildVideoView() {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(WbDesign.radiusCard),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Video-Renderer
+          lk.VideoTrackRenderer(
+            widget.videoTrack!,
+            fit: lk.VideoViewFit.cover,
+          ),
+          // Bottom overlay: Name + Mic-Status
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.transparent,
+                    Colors.black.withValues(alpha: 0.7),
+                  ],
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    widget.micEnabled
+                        ? Icons.mic_rounded
+                        : Icons.mic_off_rounded,
+                    size: 14,
+                    color: widget.micEnabled
+                        ? widget.accent
+                        : Colors.white60,
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      widget.isLocal
+                          ? '${widget.name} (Du)'
+                          : widget.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
