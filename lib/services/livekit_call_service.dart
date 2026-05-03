@@ -306,14 +306,27 @@ class LiveKitCallService extends ChangeNotifier {
       // (Disconnect, Reconnect, Teilnehmer-Wechsel, neue Tracks).
       _attachRoomListener(room);
 
-      // Connect-Optionen mit Auto-Subscribe — sonst hören Teilnehmer einander nicht
-      await room.connect(
-        livekitUrl,
-        token,
-        connectOptions: const ConnectOptions(
-          autoSubscribe: true, // Remote-Tracks automatisch abonnieren
-        ),
-      );
+      // Connect-Optionen mit Auto-Subscribe — sonst hören Teilnehmer einander nicht.
+      // Hard-Timeout 30s: ohne den hängt die UI bei NAT/Firewall-Problemen
+      // ewig in "verbinde..." weil LiveKit intern endlos retried.
+      await room
+          .connect(
+            livekitUrl,
+            token,
+            connectOptions: const ConnectOptions(
+              autoSubscribe: true, // Remote-Tracks automatisch abonnieren
+            ),
+          )
+          .timeout(
+            const Duration(seconds: 30),
+            onTimeout: () {
+              throw Exception(
+                'Verbindung zum Sprach-Server fehlgeschlagen — '
+                'wahrscheinlich blockiert dein Netzwerk WebRTC. '
+                'Versuche es mit WLAN/Mobilfunk-Wechsel.',
+              );
+            },
+          );
 
       if (kDebugMode) {
         debugPrint('✅ LiveKit: connected — '
@@ -431,6 +444,19 @@ class LiveKitCallService extends ChangeNotifier {
         debugPrint('🔴 LiveKit: disconnected — reason=${event.reason}');
       }
       _stopDurationTimer();
+      // Wenn Disconnect mit ICE-/Connection-Reason kommt, klare User-Meldung
+      // setzen damit die UI nicht nur leer "getrennt" zeigt.
+      final reasonStr = event.reason?.toString() ?? '';
+      if (_connectionState == LiveKitConnectionState.connecting ||
+          _connectionState == LiveKitConnectionState.reconnecting) {
+        if (reasonStr.contains('iceFailure') ||
+            reasonStr.contains('signalClose') ||
+            reasonStr.contains('peerConnection')) {
+          _errorMessage = 'Sprach-Verbindung wurde getrennt — '
+              'wahrscheinlich blockiert dein Netzwerk WebRTC. '
+              'Versuche es im WLAN oder mit Mobilfunk-Wechsel.';
+        }
+      }
       _connectionState = LiveKitConnectionState.disconnected;
       notifyListeners();
     });

@@ -124,8 +124,80 @@ jobs:
 
           echo "FIREWALL_ID=$FW_ID" >> $GITHUB_ENV
           echo "FIREWALL_RULE_ID=${RULE_ID:-}" >> $GITHUB_ENV
+          echo "VPS_VM_ID=${VM_ID:-}" >> $GITHUB_ENV
           echo "✅ Firewall-Regel hinzugefügt — warte 20s auf Propagierung"
           sleep 20
+
+      # ─────────────────────────────────────────────────────────────────────
+      # STEP 1b: PERSISTENTE Media-Ports öffnen (idempotent)
+      #
+      # WICHTIG: Ohne diese Regeln blockiert die Hostinger-Firewall die
+      # WebRTC-Media-Pakete und Clients bleiben "verbinde …" hängen, sobald
+      # ihr NAT keine direkte Punch-Through-Verbindung hat (sehr häufig auf
+      # Mobilfunk/CGNAT, Firmen-WLAN, Hotel-WLAN).
+      #
+      # Geöffnet werden:
+      #   - TCP 7981 (LiveKit RTC TCP-Fallback) für strikte Firewalls
+      #   - UDP 60001-61000 (LiveKit Media-Range) für direktes WebRTC
+      #
+      # Diese Regeln werden NICHT im Cleanup wieder entfernt — sie sind
+      # permanent nötig damit die App im Feld funktioniert.
+      # Idempotent: wenn die Regel bereits existiert, wird sie nicht doppelt
+      # hinzugefügt (Hostinger API liefert dann 422, wir akzeptieren das).
+      # ─────────────────────────────────────────────────────────────────────
+      - name: 🌐 Persistente LiveKit-Media-Firewall-Regeln
+        if: env.FIREWALL_ID != ''
+        env:
+          HOSTINGER_API_TOKEN: ${{ secrets.HOSTINGER_API_TOKEN }}
+        run: |
+          set -euo pipefail
+          BASE="https://api.hostinger.com/v1"
+          AUTH="Authorization: Bearer $HOSTINGER_API_TOKEN"
+          FW_ID="${FIREWALL_ID}"
+
+          # Bestehende Regeln auflisten — Duplikate vermeiden
+          EXISTING=$(curl -sf --max-time 15 \
+            -H "$AUTH" -H "Accept: application/json" \
+            "$BASE/vps/firewall/$FW_ID/rules" 2>/dev/null || echo '{"data":[]}')
+
+          # Regel-Adder: idempotent. Args: protocol port-or-range
+          add_rule() {
+            local proto="$1"
+            local port="$2"
+            local desc="$3"
+            # Existiert die Regel schon? (proto + port + source=any)
+            local exists
+            exists=$(echo "$EXISTING" | python3 -c "import sys,json; d=json.load(sys.stdin).get('data',[]); m=[r for r in d if str(r.get('protocol','')).upper()=='$proto' and str(r.get('port',''))=='$port' and str(r.get('source',''))=='any']; print('1' if m else '0')" 2>/dev/null || echo "0")
+            if [ "$exists" = "1" ]; then
+              echo "  ✓ $desc (Regel existiert bereits)"
+              return 0
+            fi
+            local resp
+            resp=$(curl -s --max-time 15 -X POST \
+              -H "$AUTH" -H "Content-Type: application/json" -H "Accept: application/json" \
+              "$BASE/vps/firewall/$FW_ID/rules" \
+              -d "{\"protocol\":\"$proto\",\"port\":\"$port\",\"action\":\"accept\",\"source\":\"any\",\"sourceDetail\":\"any\"}" \
+              2>/dev/null || echo '{}')
+            if echo "$resp" | grep -qE '"id"|"data"'; then
+              echo "  ✅ $desc hinzugefügt"
+            else
+              # 422 = duplicate, ignorieren
+              echo "  ℹ️  $desc — Response: $(echo "$resp" | head -c 200)"
+            fi
+          }
+
+          echo "→ Stelle sicher dass LiveKit-Media-Ports erreichbar sind …"
+          add_rule "TCP" "7981"          "TCP 7981 (LiveKit RTC TCP-Fallback)"
+          add_rule "UDP" "60001-61000"   "UDP 60001-61000 (LiveKit Media)"
+
+          # Firewall neu synchronisieren damit die Regeln auf der VPS aktiv werden
+          if [ -n "${VPS_VM_ID:-}" ]; then
+            curl -sf --max-time 15 -X POST \
+              -H "$AUTH" -H "Accept: application/json" \
+              "$BASE/vps/firewall/$FW_ID/activate/${VPS_VM_ID}" 2>/dev/null \
+              && echo "✅ Firewall-Regeln auf VPS synchronisiert" \
+              || echo "⚠️  Sync fehlgeschlagen (ggf. nicht nötig wenn schon aktiv)"
+          fi
 
       # ─────────────────────────────────────────────────────────────────────
       # STEP 2: Secrets prüfen
