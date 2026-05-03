@@ -324,10 +324,11 @@ class LiveKitCallService extends ChangeNotifier {
       }
 
       // Avatar-URL als Attribut broadcasten damit alle Teilnehmer sie sehen
-      // (für Profilbild-Anzeige im Tile wenn Kamera aus)
+      // (für Profilbild-Anzeige im Tile wenn Kamera aus).
+      // NOTE: setAttributes returnt void in livekit_client 2.4 — kein await.
       if (avatarUrl != null && avatarUrl.isNotEmpty) {
         try {
-          await room.localParticipant?.setAttributes({'avatarUrl': avatarUrl});
+          room.localParticipant?.setAttributes({'avatarUrl': avatarUrl});
           if (kDebugMode) {
             debugPrint('🖼️  Avatar-URL gebroadcastet: $avatarUrl');
           }
@@ -443,11 +444,13 @@ class LiveKitCallService extends ChangeNotifier {
       }
       notifyListeners();
     });
-    // Hand-Heben-Sync: andere User ändern Attribute → UI muss neu zeichnen
+    // Hand-Heben-Sync: andere User ändern Attribute → UI muss neu zeichnen.
+    // Nutze nur participant.attributes — garantiert vorhanden quer durch
+    // alle livekit_client-Versionen.
     listener.on<ParticipantAttributesChanged>((event) {
       if (kDebugMode) {
-        debugPrint('🏷️  LiveKit: ${event.participant.identity} attributes='
-            '${event.changedAttributes}');
+        debugPrint('🏷️  LiveKit: ${event.participant.identity} '
+            'attributes=${event.participant.attributes}');
       }
       notifyListeners();
     });
@@ -648,7 +651,8 @@ class LiveKitCallService extends ChangeNotifier {
     if (lp == null) return;
     final target = !_handRaised;
     try {
-      await lp.setAttributes({
+      // setAttributes returnt void in livekit_client 2.4 — kein await
+      lp.setAttributes({
         ...lp.attributes,
         'handRaised': target ? 'true' : 'false',
       });
