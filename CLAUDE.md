@@ -597,6 +597,35 @@ chore(deps): Dependencies aktualisiert
     Angelegt mit 15 Spalten, 3 Indexes, updated_at-Trigger, 4 RLS-Policies,
     Realtime-Publication, anon/authenticated Grants. apply_migrations.yml aktualisiert.
 
+- [x] **Chat+LiveKit Tief-Audit (2026-05-03, 7 Bundles, Patch ✓)**:
+  - **Bundle 1 — Worker Auth**: `verifyAuth()` Supabase-JWT-Middleware im Worker,
+    Chat-Endpunkte (GET/POST/PUT/DELETE) verlangen `X-Supabase-Auth` Header,
+    `_authedHeaders` in `CloudflareApiService`
+  - **Bundle 2 — Supabase Realtime**: `SupabaseChatService._channels: Map<String, RealtimeChannel>`
+    statt Singleton; `subscribeToRoom/Full()` Map-basiert; DELETE-Filter prüft `room_id`;
+    `sendMessage()` speichert `media_url`+`avatar_emoji`; Pagination mit `beforeId`
+  - **Bundle 3 — LiveKit Token-Refresh**: `_scheduleTokenRefresh()`, `_refreshToken()`,
+    `_jwtExpEpoch()` — Token wird 5min vor Ablauf automatisch erneuert (kein
+    "Authentifizierung erforderlich" mehr nach 4h)
+  - **Bundle 4 — Memory/Dispose-Fixes**: `ValueNotifier<int>` für Duration,
+    `ValueNotifier<Set<String>>` für Speakers; `_cancelTokenRefresh()` in leaveRoom/dispose;
+    `_cameraIndex = 0` Reset; `LocalTrackUnpublishedEvent` für ScreenShare-Stop
+  - **Bundle 5 — Gray-Box-Fix + UI**: `sendMessage()` übergibt `mediaUrl`+`avatarEmoji`
+    korrekt; Bubble-Conditions prüfen camelCase+snake_case; Button-Labels deutsch;
+    Grid `childAspectRatio: 0.85`; Tile-Fallbacks 'Du'/'Mitglied'
+  - **Bundle 6 — Auto-Refresh/Pagination**: Auto-Refresh-Timer entfernt;
+    `count=exact` für CountOption; Pagination Tie-Break via `beforeId`;
+    `getMessages` → `order(ascending:true)` statt `.reversed`
+  - **Bundle 7 — Defensive API**: `setRemoteVolume()` versucht `subscribed` setter,
+    Fallback dynamic; `setAttributes` mit Spread; Track-Toggle ohne `dispose()`
+  - **Bundle P — Push Quick-Wins**: FCM Background-Filter nach PushPrefs,
+    `_seenIds` Ringbuffer (200), Logout → `unsubscribeCurrent()`, Queue-Cleanup >7 Tage
+  - **LiveKit empty_timeout: 1s** — Raum schließt sofort wenn letzter User geht
+  - **Profil Cloud-Sync entfernt** aus `profile_settings_screen.dart`
+  - **CI Fixes**: Soft-Skip für `LIVEKIT_API_SECRET` in 3 Workflows;
+    `wrangler secret bulk` (jq-basiert) statt sequentieller `secret put` Calls
+    (Wrangler 3.x Versions-Drift-Bug vermieden)
+
 - [x] **PR #65 — WB eigene LiveKit-Instanz, getrennt von Mensaena** (2026-05-02, Patch ✓):
   - Umstellung von „shared LiveKit mit Mensaena" auf vollständig eigenständige
     WB-Instanz auf demselben Hostinger-VPS — eigene Subdomain, eigene Container,
@@ -648,8 +677,8 @@ chore(deps): Dependencies aktualisiert
 
 5. **Profile Avatar Upload** – Supabase Storage-Integration teilweise, braucht Produktionstest
 
-6. **Community Likes/Favorites** – implementiert, aber Like-State aus Datenbank laden
-   (derzeit immer `false` als Initialwert)
+6. **Community Likes/Favorites** – Like-State wird aus `CommunityInteractionService`
+   Cache geladen (nicht mehr immer false); echter DB-Load bei erstem Aufruf via isLiked()
 
 7. **APK Build** – Kein Android SDK in Sandbox verfügbar, Build lokal oder via CI/CD nötig
 
