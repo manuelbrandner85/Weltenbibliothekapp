@@ -93,47 +93,45 @@ jobs:
         working-directory: workers
         run: |
           set -euo pipefail
-
           SECRETS_FILE=$(mktemp /tmp/wrangler_secrets.XXXXXX.json)
           trap 'rm -f "$SECRETS_FILE"' EXIT
 
-          python3 - <<'PYEOF'
-import json, os, sys
+          # JSON mit jq aufbauen (sicheres Escaping, kein Heredoc nötig)
+          PAYLOAD='{}'
 
-s = {}
-if os.environ.get('SUPABASE_SERVICE_ROLE_KEY'):
-    s['SUPABASE_SERVICE_ROLE_KEY'] = os.environ['SUPABASE_SERVICE_ROLE_KEY']
-    print("→ SUPABASE_SERVICE_ROLE_KEY")
-else:
-    print("⚠️  SUPABASE_SERVICE_ROLE_KEY fehlt (Admin-Operationen eingeschränkt)")
-
-if os.environ.get('FCM_SERVICE_ACCOUNT_JSON'):
-    s['FCM_SERVICE_ACCOUNT'] = os.environ['FCM_SERVICE_ACCOUNT_JSON']
-    print("→ FCM_SERVICE_ACCOUNT")
-else:
-    print("ℹ️  FCM_SERVICE_ACCOUNT_JSON fehlt — Push-Dispatcher markiert Queue nur als 'sent'")
-
-if os.environ.get('WB_SECRET'):
-    s['LIVEKIT_API_KEY']    = os.environ.get('WB_KEY', 'wb-a9b26485d407e7dc2043')
-    s['LIVEKIT_API_SECRET'] = os.environ['WB_SECRET']
-    s['LIVEKIT_URL']        = os.environ.get('WB_URL', 'wss://livekit-wb.srv1438024.hstgr.cloud')
-    print("→ LIVEKIT_API_KEY / LIVEKIT_API_SECRET / LIVEKIT_URL")
-else:
-    print("ℹ️  LIVEKIT_API_SECRET nicht gesetzt — LiveKit-Secrets bleiben unverändert")
-
-if not s:
-    print("⚠️  Keine Secrets zu setzen — übersprungen")
-    sys.exit(0)
-
-with open(os.environ['SECRETS_FILE'], 'w') as f:
-    json.dump(s, f)
-print(f"→ {len(s)} Secrets via wrangler secret bulk …")
-PYEOF
-
-          if [ -s "$SECRETS_FILE" ]; then
-            npx -y wrangler@3 secret bulk "$SECRETS_FILE"
-            echo "✅ Alle Secrets gesetzt ($(python3 -c "import json; print(len(json.load(open('$SECRETS_FILE'))))" 2>/dev/null || echo '?') Stück)"
+          if [ -n "${SUPABASE_SERVICE_ROLE_KEY:-}" ]; then
+            echo "→ SUPABASE_SERVICE_ROLE_KEY"
+            PAYLOAD=$(printf '%s' "$PAYLOAD" | jq --arg v "$SUPABASE_SERVICE_ROLE_KEY" '. + {SUPABASE_SERVICE_ROLE_KEY: $v}')
+          else
+            echo "⚠️  SUPABASE_SERVICE_ROLE_KEY fehlt"
           fi
+
+          if [ -n "${FCM_SERVICE_ACCOUNT_JSON:-}" ]; then
+            echo "→ FCM_SERVICE_ACCOUNT"
+            PAYLOAD=$(printf '%s' "$PAYLOAD" | jq --arg v "$FCM_SERVICE_ACCOUNT_JSON" '. + {FCM_SERVICE_ACCOUNT: $v}')
+          else
+            echo "ℹ️  FCM_SERVICE_ACCOUNT_JSON fehlt — Push-Dispatcher markiert Queue nur als 'sent'"
+          fi
+
+          if [ -n "${WB_SECRET:-}" ]; then
+            echo "→ LIVEKIT_API_KEY / LIVEKIT_API_SECRET / LIVEKIT_URL"
+            PAYLOAD=$(printf '%s' "$PAYLOAD" | jq \
+              --arg k "${WB_KEY}" --arg s "${WB_SECRET}" --arg u "${WB_URL}" \
+              '. + {LIVEKIT_API_KEY: $k, LIVEKIT_API_SECRET: $s, LIVEKIT_URL: $u}')
+          else
+            echo "ℹ️  LIVEKIT_API_SECRET nicht gesetzt — LiveKit-Secrets bleiben unverändert"
+          fi
+
+          if [ "$PAYLOAD" = '{}' ]; then
+            echo "⚠️  Keine Secrets zu setzen — übersprungen"
+            exit 0
+          fi
+
+          COUNT=$(printf '%s' "$PAYLOAD" | jq 'keys | length')
+          echo "→ $COUNT Secrets via wrangler secret bulk …"
+          printf '%s' "$PAYLOAD" > "$SECRETS_FILE"
+          npx -y wrangler@3 secret bulk "$SECRETS_FILE"
+          echo "✅ Alle $COUNT Secrets gesetzt"
 
       # HINWEIS: Der frühere Step "livekit.yaml auf VPS aktualisieren" wurde entfernt.
       # Er hatte Mensaena's livekit.yaml überschrieben, um WB's Key dort einzutragen

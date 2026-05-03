@@ -84,17 +84,14 @@ jobs:
           SECRETS_FILE=$(mktemp /tmp/wrangler_secrets.XXXXXX.json)
           trap 'rm -f "$SECRETS_FILE"' EXIT
 
-          python3 -c "
-import json, os
-s = {
-    'LIVEKIT_API_KEY':    os.environ.get('WB_KEY', 'wb-a9b26485d407e7dc2043'),
-    'LIVEKIT_API_SECRET': os.environ['WB_SECRET'],
-    'LIVEKIT_URL':        os.environ.get('LIVEKIT_URL', 'wss://livekit-wb.srv1438024.hstgr.cloud'),
-}
-with open(os.environ['SECRETS_FILE'], 'w') as f:
-    json.dump(s, f)
-print('→ LIVEKIT_API_KEY / LIVEKIT_API_SECRET / LIVEKIT_URL via bulk …')
-"
+          echo "→ LIVEKIT_API_KEY / LIVEKIT_API_SECRET / LIVEKIT_URL via bulk …"
+          jq -n \
+            --arg k "${WB_KEY}" \
+            --arg s "${WB_SECRET}" \
+            --arg u "${LIVEKIT_URL}" \
+            '{LIVEKIT_API_KEY: $k, LIVEKIT_API_SECRET: $s, LIVEKIT_URL: $u}' \
+            > "$SECRETS_FILE"
+
           npx -y wrangler@3 secret bulk "$SECRETS_FILE"
           echo "✅ Alle LiveKit-Secrets gesetzt"
 
