@@ -28,11 +28,10 @@ jobs:
     timeout-minutes: 10
     env:
       SUPABASE_PROJECT_REF: adtviduaftdquvfjpojb
-      # LiveKit: WB-Key auf Mensaena-Instanz (gleicher VPS, eigenes Key-Pair).
-      # URL hardcoded auf Mensaena-Server — NICHT vom GitHub-Secret abhängig,
-      # da secrets.LIVEKIT_URL noch auf die alte nicht-existierende WB-Instanz zeigen könnte.
+      # LiveKit: WB-eigene Instanz auf Hostinger VPS (livekit-weltenbibliothek Container).
+      # URL = livekit-wb.srv1438024.hstgr.cloud (via Mensaena's Caddy → Port 7980).
       LIVEKIT_API_KEY: ${{ secrets.LIVEKIT_API_KEY || 'wb-a9b26485d407e7dc2043' }}
-      LIVEKIT_URL: 'wss://livekit.srv1438024.hstgr.cloud'
+      LIVEKIT_URL: ${{ secrets.LIVEKIT_URL || 'wss://livekit-wb.srv1438024.hstgr.cloud' }}
 
     steps:
       - name: 📥 Checkout

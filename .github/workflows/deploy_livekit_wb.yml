@@ -1,17 +1,20 @@
-name: 🎥 LiveKit WB — VPS konfigurieren
+name: 🎥 LiveKit WB — Container deployen
 
-# Fügt den Weltenbibliothek-API-Key zur Mensaena-LiveKit-Instanz hinzu
-# (idempotent — ändert nichts wenn der Key bereits vorhanden ist).
+# Deployt die WB-eigene LiveKit-Instanz (livekit-weltenbibliothek) auf den
+# Hostinger VPS. Fügt den Caddy-Snippet für livekit-wb.srv1438024.hstgr.cloud
+# in Mensaena's Caddyfile ein und startet/aktualisiert den Container.
 #
 # Required Secrets:
 #   VPS_PASSWORD          — SSH root-Passwort für VPS 72.62.154.95
-#   HOSTINGER_API_TOKEN   — Hostinger API Token (für VPS-Statusprüfung, optional)
+#   LIVEKIT_API_SECRET    — WB LiveKit API-Secret (wird in livekit.yaml injiziert)
+#   HOSTINGER_API_TOKEN   — Hostinger API Token (optional, für Status-Check)
 
 on:
   workflow_dispatch:
   push:
     branches: [main]
     paths:
+      - 'infra/livekit-wb/**'
       - '.github/workflows/deploy_livekit_wb.yml'
 
 permissions:
@@ -23,20 +26,21 @@ concurrency:
 
 jobs:
   deploy:
-    name: 🔑 WB-Key in Mensaena LiveKit eintragen
+    name: 🚀 livekit-weltenbibliothek deployen
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
       VPS_HOST: 72.62.154.95
       VPS_USER: root
+      WB_DEPLOY_DIR: /docker/livekit-wb
       WB_KEY: wb-a9b26485d407e7dc2043
-      WB_SECRET: f9c57648d1756868aa7c124b545c029bcb2569b5bf82c1fa5058eefc4efc21d1
-      LIVEKIT_YAML: /docker/livekit/livekit.yaml
-      LIVEKIT_DIR: /docker/livekit
 
     steps:
-      - name: 📦 sshpass + jq installieren
-        run: sudo apt-get install -y -qq sshpass jq
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 📦 Tools installieren
+        run: sudo apt-get install -y -qq sshpass gettext-base jq
 
       - name: 🌐 VPS-Status via Hostinger API prüfen
         continue-on-error: true
@@ -44,17 +48,16 @@ jobs:
           HOSTINGER_API_TOKEN: ${{ secrets.HOSTINGER_API_TOKEN }}
         run: |
           if [ -z "${HOSTINGER_API_TOKEN:-}" ]; then
-            echo "ℹ️  HOSTINGER_API_TOKEN nicht gesetzt — Statusprüfung übersprungen"
+            echo "ℹ️  HOSTINGER_API_TOKEN nicht gesetzt — Status-Check übersprungen"
             exit 0
           fi
-          echo "→ VPS-Liste abrufen..."
+          echo "→ Prüfe VPS-Status via Hostinger API…"
           HTTP=$(curl -sS -o /tmp/vps_list.json -w "%{http_code}" \
             -H "Authorization: Bearer $HOSTINGER_API_TOKEN" \
             -H "Accept: application/json" \
             "https://api.hostinger.com/v1/vps/virtual-machines")
           echo "HTTP Status: $HTTP"
           if [ "$HTTP" = "200" ]; then
-            echo "✅ Hostinger API erreichbar"
             jq -r '.data[]? | "VM: \(.hostname // "?") (\(.main_ip // "?")), Status: \(.state // "?")"' \
               /tmp/vps_list.json 2>/dev/null || cat /tmp/vps_list.json
           else
@@ -62,60 +65,160 @@ jobs:
             cat /tmp/vps_list.json || true
           fi
 
-      - name: 🔑 WB-Key zu livekit.yaml hinzufügen (SSH)
+      - name: 🔐 Secrets prüfen
+        env:
+          LIVEKIT_API_SECRET: ${{ secrets.LIVEKIT_API_SECRET }}
+          VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
+        run: |
+          if [ -z "${VPS_PASSWORD:-}" ]; then
+            echo "❌ VPS_PASSWORD Secret fehlt — unter Settings → Secrets → Actions setzen"
+            exit 1
+          fi
+          if [ -z "${LIVEKIT_API_SECRET:-}" ]; then
+            echo "❌ LIVEKIT_API_SECRET Secret fehlt — unter Settings → Secrets → Actions setzen"
+            exit 1
+          fi
+          echo "✅ Alle nötigen Secrets vorhanden"
+
+      - name: 🔧 livekit.yaml mit Secret befüllen
+        env:
+          LIVEKIT_API_SECRET: ${{ secrets.LIVEKIT_API_SECRET }}
+        run: |
+          set -euo pipefail
+          # envsubst ersetzt ${LIVEKIT_API_SECRET} im Template
+          LIVEKIT_API_SECRET="${LIVEKIT_API_SECRET}" \
+            envsubst '${LIVEKIT_API_SECRET}' \
+            < infra/livekit-wb/livekit.yaml \
+            > /tmp/livekit-wb-filled.yaml
+          # Sanity-check: kein Platzhalter mehr im Output
+          if grep -q '\${LIVEKIT_API_SECRET}' /tmp/livekit-wb-filled.yaml; then
+            echo "❌ envsubst hat Platzhalter nicht ersetzt"
+            exit 1
+          fi
+          echo "✅ livekit.yaml mit Secret befüllt"
+
+      - name: 📤 Dateien auf VPS hochladen
+        env:
+          VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
+        run: |
+          set -euo pipefail
+          SSHPASS_OPTS="-p ${VPS_PASSWORD}"
+          SCP_OPTS="-o StrictHostKeyChecking=no -o ConnectTimeout=30 -o PasswordAuthentication=yes"
+          TARGET="${VPS_USER}@${VPS_HOST}"
+
+          sshpass $SSHPASS_OPTS scp $SCP_OPTS \
+            /tmp/livekit-wb-filled.yaml \
+            ${TARGET}:/tmp/livekit-wb-filled.yaml
+
+          sshpass $SSHPASS_OPTS scp $SCP_OPTS \
+            infra/livekit-wb/docker-compose.yml \
+            ${TARGET}:/tmp/livekit-wb-compose.yml
+
+          sshpass $SSHPASS_OPTS scp $SCP_OPTS \
+            infra/livekit-wb/caddy-snippet.caddy \
+            ${TARGET}:/tmp/caddy-wb-snippet.caddy
+
+          echo "✅ Dateien hochgeladen"
+
+      - name: 🚀 Container auf VPS deployen (SSH)
         env:
           VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
         run: |
           set -euo pipefail
 
-          if [ -z "${VPS_PASSWORD:-}" ]; then
-            echo "❌ VPS_PASSWORD Secret fehlt"
-            echo "   Unter Settings → Secrets → Actions als 'VPS_PASSWORD' hinterlegen"
-            exit 1
-          fi
-
-          # Script via echo-Zeilen erstellen (kein Heredoc = kein YAML-Syntaxfehler)
           {
             echo 'set -euo pipefail'
-            printf 'YAML_PATH=%s\n' "'${LIVEKIT_YAML}'"
-            printf 'WB_KEY=%s\n'    "'${WB_KEY}'"
-            printf 'WB_SECRET=%s\n' "'${WB_SECRET}'"
-            printf 'LIVEKIT_DIR=%s\n' "'${LIVEKIT_DIR}'"
-            echo 'if [ ! -f "$YAML_PATH" ]; then echo "❌ $YAML_PATH nicht gefunden"; exit 1; fi'
-            echo 'if grep -qF "$WB_KEY" "$YAML_PATH"; then echo "ℹ️  WB-Key bereits vorhanden"; exit 0; fi'
-            echo 'cp "$YAML_PATH" "$YAML_PATH.bak"'
-            printf "awk -v k=\"\$WB_KEY\" -v s=\"\$WB_SECRET\" '/^keys:/{print; print \"  \"k\": \"s; next}1' \"\$YAML_PATH.bak\" > \"\$YAML_PATH\"\n"
-            echo 'echo "✅ WB-Key hinzugefügt: $WB_KEY"'
-            echo 'cd "$LIVEKIT_DIR" && docker compose restart livekit && sleep 5 && docker compose ps'
-            echo 'echo "✅ Mensaena LiveKit neu gestartet"'
-          } > /tmp/wb_livekit_fix.sh
-          chmod +x /tmp/wb_livekit_fix.sh
+            printf 'DEPLOY_DIR=%s\n' "'/docker/livekit-wb'"
+            echo ''
+            echo '# 1. Deploy-Verzeichnis anlegen'
+            echo 'mkdir -p "$DEPLOY_DIR"'
+            echo ''
+            echo '# 2. Konfiguration kopieren'
+            echo 'cp /tmp/livekit-wb-filled.yaml "$DEPLOY_DIR/livekit.yaml"'
+            echo 'chmod 600 "$DEPLOY_DIR/livekit.yaml"'
+            echo 'cp /tmp/livekit-wb-compose.yml "$DEPLOY_DIR/docker-compose.yml"'
+            echo 'echo "✅ Konfiguration kopiert nach $DEPLOY_DIR"'
+            echo ''
+            echo '# 3. Caddy-Snippet in Mensaena Caddyfile integrieren'
+            echo 'CADDY_FILE=""'
+            echo 'for f in /docker/caddy/Caddyfile /etc/caddy/Caddyfile /opt/caddy/Caddyfile /home/caddy/Caddyfile; do'
+            echo '  if [ -f "$f" ]; then CADDY_FILE="$f"; break; fi'
+            echo 'done'
+            echo ''
+            echo 'if [ -z "${CADDY_FILE:-}" ]; then'
+            echo '  # Caddy-Container suchen und Pfad via docker inspect finden'
+            echo '  CADDY_CONTAINER=$(docker ps --format "{{.Names}}" | grep -i caddy | head -1 || true)'
+            echo '  if [ -n "${CADDY_CONTAINER:-}" ]; then'
+            echo '    MOUNTED=$(docker inspect "$CADDY_CONTAINER" --format '\''{{range .Mounts}}{{if contains .Destination "Caddyfile"}}{{.Source}}{{end}}{{end}}'\'' 2>/dev/null || true)'
+            echo '    if [ -n "${MOUNTED:-}" ]; then CADDY_FILE="$MOUNTED"; fi'
+            echo '  fi'
+            echo 'fi'
+            echo ''
+            echo 'if [ -n "${CADDY_FILE:-}" ]; then'
+            echo '  echo "→ Caddyfile gefunden: $CADDY_FILE"'
+            echo '  cp "$CADDY_FILE" "$CADDY_FILE.wb-backup"'
+            echo '  # Alten WB-Block entfernen (idempotent)'
+            echo '  sed -i "/# >>> WB-LIVEKIT-BEGIN/,/# <<< WB-LIVEKIT-END/d" "$CADDY_FILE"'
+            echo '  # Neuen Block anhängen'
+            echo '  cat /tmp/caddy-wb-snippet.caddy >> "$CADDY_FILE"'
+            echo '  # Caddy-Config validieren + reloaden (kein Restart = 0s Downtime)'
+            echo '  CADDY_CONTAINER=$(docker ps --format "{{.Names}}" | grep -i caddy | head -1 || true)'
+            echo '  if [ -n "${CADDY_CONTAINER:-}" ]; then'
+            echo '    docker exec "$CADDY_CONTAINER" caddy validate --config /etc/caddy/Caddyfile 2>/dev/null \\'
+            echo '      && docker exec "$CADDY_CONTAINER" caddy reload --config /etc/caddy/Caddyfile \\'
+            echo '      && echo "✅ Caddy reloaded" \\'
+            echo '      || { cp "$CADDY_FILE.wb-backup" "$CADDY_FILE"; echo "⚠️  Caddy-Fehler — Backup wiederhergestellt"; }'
+            echo '  else'
+            echo '    echo "⚠️  Caddy-Container nicht gefunden — Snippet in Caddyfile gespeichert, manuell reloaden"'
+            echo '  fi'
+            echo 'else'
+            echo '  echo "⚠️  Kein Caddyfile auf VPS gefunden"'
+            echo '  echo "   Caddy-Snippet liegt auf dem VPS unter /tmp/caddy-wb-snippet.caddy"'
+            echo '  echo "   Manuell in Mensaenas Caddyfile einfügen + Caddy reloaden"'
+            echo 'fi'
+            echo ''
+            echo '# 4. livekit-weltenbibliothek Container starten / aktualisieren'
+            echo 'cd "$DEPLOY_DIR"'
+            echo 'docker compose pull livekit'
+            echo 'docker compose up -d livekit --remove-orphans'
+            echo 'sleep 8'
+            echo 'docker compose ps'
+            echo ''
+            echo '# 5. Health-Check'
+            echo 'HEALTH=$(docker inspect livekit-weltenbibliothek --format "{{.State.Health.Status}}" 2>/dev/null || echo "n/a")'
+            echo 'echo "Container-Status: $HEALTH"'
+            echo 'echo "✅ livekit-weltenbibliothek deployed"'
+          } > /tmp/wb_deploy_remote.sh
+          chmod +x /tmp/wb_deploy_remote.sh
 
           sshpass -p "$VPS_PASSWORD" scp \
             -o StrictHostKeyChecking=no -o ConnectTimeout=30 -o PasswordAuthentication=yes \
-            /tmp/wb_livekit_fix.sh ${VPS_USER}@${VPS_HOST}:/tmp/wb_livekit_fix.sh
+            /tmp/wb_deploy_remote.sh ${VPS_USER}@${VPS_HOST}:/tmp/wb_deploy_remote.sh
 
           sshpass -p "$VPS_PASSWORD" ssh \
             -o StrictHostKeyChecking=no -o ConnectTimeout=30 -o PasswordAuthentication=yes \
-            ${VPS_USER}@${VPS_HOST} "bash /tmp/wb_livekit_fix.sh"
+            ${VPS_USER}@${VPS_HOST} "bash /tmp/wb_deploy_remote.sh"
 
-          echo "✅ LiveKit WB-Konfiguration abgeschlossen"
-
-      - name: 🩺 LiveKit-Verbindungstest
+      - name: 🩺 LiveKit WB Verbindungstest
         continue-on-error: true
         run: |
-          HTTP=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 10 \
-            "http://${VPS_HOST}:7880" 2>/dev/null || echo "000")
+          sleep 10
+          HTTP=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 15 \
+            "https://livekit-wb.srv1438024.hstgr.cloud" 2>/dev/null || echo "000")
           if [ "$HTTP" != "000" ]; then
-            echo "✅ LiveKit HTTP-Endpoint antwortet (HTTP $HTTP)"
+            echo "✅ LiveKit WB antwortet (HTTP $HTTP)"
           else
-            echo "ℹ️  LiveKit-Port 7880 nicht direkt erreichbar (hinter Firewall)"
+            echo "ℹ️  livekit-wb.srv1438024.hstgr.cloud noch nicht erreichbar"
+            echo "   → Caddy-Snippet prüfen und manuell reloaden falls nötig"
           fi
 
       - name: 📝 Zusammenfassung
         run: |
-          echo "## 🎥 LiveKit WB — Konfiguration" >> $GITHUB_STEP_SUMMARY
+          echo "## 🎥 LiveKit WB — Deploy" >> $GITHUB_STEP_SUMMARY
           echo "| Einstellung | Wert |" >> $GITHUB_STEP_SUMMARY
           echo "|---|---|" >> $GITHUB_STEP_SUMMARY
-          echo "| Server | \`wss://livekit.srv1438024.hstgr.cloud\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| WB API Key | \`${WB_KEY}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Container | \`livekit-weltenbibliothek\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Deploy-Pfad | \`/docker/livekit-wb/\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| WSS-URL | \`wss://livekit-wb.srv1438024.hstgr.cloud\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| VPS | \`${VPS_HOST}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| API Key | \`${WB_KEY}\` |" >> $GITHUB_STEP_SUMMARY
