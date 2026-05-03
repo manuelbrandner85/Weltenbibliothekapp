@@ -3188,6 +3188,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
             ),
           ),
           IconButton(
+            tooltip: 'Antwort abbrechen',
             icon: const Icon(Icons.close, color: Colors.grey),
             onPressed: () {
               if (mounted) {

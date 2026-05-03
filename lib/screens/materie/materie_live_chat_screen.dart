@@ -3067,6 +3067,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
             ),
           ),
           IconButton(
+            tooltip: 'Antwort abbrechen',
             icon: const Icon(Icons.close, color: Colors.grey),
             onPressed: () {
               if (mounted) {

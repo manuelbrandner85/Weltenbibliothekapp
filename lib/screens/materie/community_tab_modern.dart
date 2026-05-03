@@ -867,15 +867,19 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
                 ),
                 // Feature 9 — Bookmark
                 IconButton(
+                  tooltip: isBookmarked
+                      ? 'Lesezeichen entfernen'
+                      : 'Lesezeichen hinzufügen',
                   icon: Icon(
                     isBookmarked ? Icons.bookmark : Icons.bookmark_border,
                     color: isBookmarked ? _mAmber : Colors.white38, size: 22,
                   ),
                   onPressed: () => _toggleBookmark(post.id),
                   padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                  constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
                 ),
                 IconButton(
+                  tooltip: 'Mehr Optionen',
                   icon: Icon(Icons.more_vert, color: Colors.white.withValues(alpha: 0.45), size: 20),
                   onPressed: () => showModalBottomSheet(
                     context: context,

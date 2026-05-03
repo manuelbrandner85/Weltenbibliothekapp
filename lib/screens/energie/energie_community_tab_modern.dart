@@ -716,6 +716,9 @@ class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern> w
                 ),
                 // Feature 9 — Bookmark-Icon
                 IconButton(
+                  tooltip: isBookmarked
+                      ? 'Lesezeichen entfernen'
+                      : 'Lesezeichen hinzufügen',
                   icon: Icon(
                     isBookmarked ? Icons.bookmark : Icons.bookmark_border,
                     color: isBookmarked ? _kGold : Colors.white38,
@@ -726,7 +729,9 @@ class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern> w
                   constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
                 ),
                 IconButton(
-                  icon: Icon(Icons.more_vert, color: Colors.white.withValues(alpha: 0.5), size: 20),
+                  tooltip: 'Mehr Optionen',
+                  icon: Icon(Icons.more_vert,
+                      color: Colors.white.withValues(alpha: 0.5), size: 20),
                   onPressed: () => _showPostMenu(context, post),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
@@ -1268,21 +1273,65 @@ class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern> w
     
     if (confirm == true) {
       try {
+        // Snapshot vor dem Löschen — für Undo
+        final snapshot = post;
+
         await _communityService.deletePost(post.id, currentUsername);
-        
+
         if (mounted) {
+          _loadData(); // Reload sofort
+
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('✅ Post gelöscht!'),
-              backgroundColor: Colors.green,
+            SnackBar(
+              content: const Text('🗑️ Post gelöscht'),
+              backgroundColor: Colors.grey[800],
+              duration: const Duration(seconds: 5),
+              action: SnackBarAction(
+                label: 'Rückgängig',
+                textColor: _kPurpleL,
+                onPressed: () async {
+                  // Post neu erstellen (neue ID, gleicher Inhalt)
+                  try {
+                    await _communityService.createPost(
+                      username: currentUsername,
+                      content: snapshot.content,
+                      tags: snapshot.tags,
+                      worldType: WorldType.energie,
+                      authorAvatar: snapshot.authorAvatar,
+                      mediaUrl: snapshot.mediaUrl,
+                      mediaType: snapshot.mediaType,
+                    );
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('✅ Post wiederhergestellt'),
+                          backgroundColor: Colors.green,
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                      _loadData();
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(_friendlyErrorMessage(e)),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  }
+                },
+              ),
             ),
           );
-          _loadData(); // Reload
         }
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('❌ Fehler: $e'), backgroundColor: Colors.red),
+            SnackBar(
+                content: Text(_friendlyErrorMessage(e)),
+                backgroundColor: Colors.red),
           );
         }
       }
