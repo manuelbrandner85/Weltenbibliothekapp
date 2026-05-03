@@ -7,11 +7,11 @@ name: ☁️ Cloudflare Worker deployen
 # Required GitHub Secrets:
 #   CLOUDFLARE_API_TOKEN            — Wrangler-Deploy-Token
 #   SUPABASE_SERVICE_ROLE_KEY       — Supabase Service-Role JWT
+#   LIVEKIT_API_SECRET              — LiveKit API-Secret (PFLICHT, kein Default mehr)
 #   FCM_SERVICE_ACCOUNT_JSON        — Firebase Service-Account JSON (optional)
-# Optional (Fallback-Werte eingebettet, zeigen auf WB-eigene Instanz):
-#   LIVEKIT_API_KEY                 — Standard: wb-a9b26485d407e7dc2043
-#   LIVEKIT_API_SECRET              — Standard: f9c57648d1756868aa7c124b545c029bcb2569b5bf82c1fa5058eefc4efc21d1
-#   LIVEKIT_URL                     — Standard: wss://livekit-wb.srv1438024.hstgr.cloud
+# Optional mit Fallback (NICHT-Geheim — nur ID/URL):
+#   LIVEKIT_API_KEY                 — Default: wb-a9b26485d407e7dc2043
+#   LIVEKIT_URL                     — Default: wss://livekit-wb.srv1438024.hstgr.cloud
 
 on:
   push:
@@ -45,14 +45,24 @@ jobs:
         with:
           node-version: '22'
 
-      - name: 🔑 Worker-Secrets setzen
+      - name: 🔐 Secret-Validierung
+        env:
+          WB_SECRET: ${{ secrets.LIVEKIT_API_SECRET }}
+        run: |
+          if [ -z "${WB_SECRET:-}" ]; then
+            echo "❌ GitHub-Secret LIVEKIT_API_SECRET fehlt"
+            echo "   Setze unter Settings → Secrets → Actions"
+            exit 1
+          fi
+          echo "✅ LIVEKIT_API_SECRET ist gesetzt (${#WB_SECRET} Zeichen)"
+          echo "::add-mask::${WB_SECRET}"
+
+      - name: 🚀 Worker deployen (latest Version)
+        # Cloudflare verlangt dass die latest Worker-Version deployed ist,
+        # bevor `secret put` läuft (sonst Versions-Drift-Error). Deshalb
+        # ZUERST deploy, danach Secrets.
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          FCM_SERVICE_ACCOUNT_JSON: ${{ secrets.FCM_SERVICE_ACCOUNT_JSON }}
-          WB_KEY: ${{ secrets.LIVEKIT_API_KEY || 'wb-a9b26485d407e7dc2043' }}
-          WB_SECRET: ${{ secrets.LIVEKIT_API_SECRET || 'f9c57648d1756868aa7c124b545c029bcb2569b5bf82c1fa5058eefc4efc21d1' }}
-          WB_URL: ${{ secrets.LIVEKIT_URL || 'wss://livekit-wb.srv1438024.hstgr.cloud' }}
         working-directory: workers
         run: |
           set -euo pipefail
@@ -60,6 +70,20 @@ jobs:
             echo "❌ CLOUDFLARE_API_TOKEN Secret fehlt — Deploy übersprungen"
             exit 1
           fi
+          npx -y wrangler@3 deploy
+          echo "✅ Worker deployed — Cron-Trigger aktiv"
+
+      - name: 🔑 Worker-Secrets setzen
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          FCM_SERVICE_ACCOUNT_JSON: ${{ secrets.FCM_SERVICE_ACCOUNT_JSON }}
+          WB_KEY: ${{ secrets.LIVEKIT_API_KEY || 'wb-a9b26485d407e7dc2043' }}
+          WB_SECRET: ${{ secrets.LIVEKIT_API_SECRET }}
+          WB_URL: ${{ secrets.LIVEKIT_URL || 'wss://livekit-wb.srv1438024.hstgr.cloud' }}
+        working-directory: workers
+        run: |
+          set -euo pipefail
 
           if [ -n "${SUPABASE_SERVICE_ROLE_KEY:-}" ]; then
             echo "→ SUPABASE_SERVICE_ROLE_KEY setzen …"
@@ -77,7 +101,7 @@ jobs:
             echo "ℹ️  FCM_SERVICE_ACCOUNT_JSON fehlt — Push-Dispatcher markiert Queue nur als 'sent'"
           fi
 
-          # 🎥 LiveKit-WB-Secrets — Fallback-Werte eingebettet, werden immer gesetzt
+          # 🎥 LiveKit-WB-Secrets — Secret aus GitHub-Secrets, kein Klartext mehr
           echo "→ LIVEKIT_API_KEY setzen (${WB_KEY}) …"
           printf '%s' "${WB_KEY}" | npx -y wrangler@3 secret put LIVEKIT_API_KEY
           echo "→ LIVEKIT_API_SECRET setzen …"
@@ -85,14 +109,6 @@ jobs:
           echo "→ LIVEKIT_URL setzen (${WB_URL}) …"
           printf '%s' "${WB_URL}" | npx -y wrangler@3 secret put LIVEKIT_URL
           echo "✅ Alle LiveKit-WB-Secrets gesetzt"
-
-      - name: 🚀 Deploy
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        working-directory: workers
-        run: |
-          npx -y wrangler@3 deploy
-          echo "✅ Worker deployed — Cron-Trigger aktiv"
 
       # HINWEIS: Der frühere Step "livekit.yaml auf VPS aktualisieren" wurde entfernt.
       # Er hatte Mensaena's livekit.yaml überschrieben, um WB's Key dort einzutragen

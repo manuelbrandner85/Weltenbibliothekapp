@@ -25,10 +25,12 @@ jobs:
     name: 🔑 Worker LiveKit-Secrets setzen
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # 🔐 Secrets kommen ausschließlich aus GitHub-Secrets — keine Klartext-
+    # Werte mehr im Repo. WB_KEY ist nur eine ID (kein Secret), daher als
+    # Default ok; WB_SECRET MUSS gesetzt sein.
     env:
-      LIVEKIT_URL: wss://livekit-wb.srv1438024.hstgr.cloud
-      WB_KEY: wb-a9b26485d407e7dc2043
-      WB_SECRET: f9c57648d1756868aa7c124b545c029bcb2569b5bf82c1fa5058eefc4efc21d1
+      LIVEKIT_URL: ${{ secrets.LIVEKIT_URL || 'wss://livekit-wb.srv1438024.hstgr.cloud' }}
+      WB_KEY: ${{ secrets.LIVEKIT_API_KEY || 'wb-a9b26485d407e7dc2043' }}
 
     steps:
       - name: 📥 Checkout
@@ -39,10 +41,22 @@ jobs:
         with:
           node-version: '22'
 
-      - name: 🔑 Secret maskieren
-        run: echo "::add-mask::f9c57648d1756868aa7c124b545c029bcb2569b5bf82c1fa5058eefc4efc21d1"
+      - name: 🔐 Secret-Validierung
+        env:
+          WB_SECRET: ${{ secrets.LIVEKIT_API_SECRET }}
+        run: |
+          if [ -z "${WB_SECRET:-}" ]; then
+            echo "❌ GitHub-Secret LIVEKIT_API_SECRET fehlt"
+            echo "   Setze unter Settings → Secrets → Actions"
+            exit 1
+          fi
+          echo "✅ LIVEKIT_API_SECRET ist gesetzt (${#WB_SECRET} Zeichen)"
+          # Maskieren damit wrangler-Output das Secret nicht in Logs leakt
+          echo "::add-mask::${WB_SECRET}"
 
-      - name: ☁️ Worker-Secrets setzen
+      - name: 🚀 Worker deployen (latest Version sicherstellen)
+        # Cloudflare lehnt `secret put` ab wenn die letzte Worker-Version
+        # nicht deployed ist (Versions-Drift). Daher zuerst deploy.
         working-directory: workers
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -52,6 +66,16 @@ jobs:
             echo "❌ CLOUDFLARE_API_TOKEN fehlt — Worker-Setup übersprungen"
             exit 1
           fi
+          echo "→ wrangler deploy (idempotent, sichert latest version) …"
+          npx -y wrangler@3 deploy
+
+      - name: ☁️ Worker-Secrets setzen
+        working-directory: workers
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          WB_SECRET: ${{ secrets.LIVEKIT_API_SECRET }}
+        run: |
+          set -euo pipefail
           echo "→ LIVEKIT_API_KEY setzen (${WB_KEY})…"
           printf '%s' "${WB_KEY}"      | npx -y wrangler@3 secret put LIVEKIT_API_KEY
           echo "→ LIVEKIT_API_SECRET setzen…"
