@@ -4,6 +4,7 @@ import '../../../core/storage/unified_storage_service.dart';
 import '../../../services/sqlite_storage_service.dart';
 import '../../../core/constants/roles.dart';
 import '../../../services/supabase_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show AuthChangeEvent;
 
 /// 🔐 ADMIN STATE – Single Source of Truth
 ///
@@ -13,6 +14,7 @@ import '../../../services/supabase_service.dart';
 class AdminState {
   final bool isAdmin;
   final bool isRootAdmin;
+  final bool isModerator;
   final String world;
   final bool backendVerified;
   final String? username;
@@ -21,6 +23,7 @@ class AdminState {
   const AdminState({
     required this.isAdmin,
     required this.isRootAdmin,
+    required this.isModerator,
     required this.world,
     required this.backendVerified,
     this.username,
@@ -30,18 +33,18 @@ class AdminState {
   static AdminState empty(String world) => AdminState(
         isAdmin: false,
         isRootAdmin: false,
+        isModerator: false,
         world: world,
         backendVerified: false,
         username: null,
         role: null,
       );
 
-  /// Offline-Cache: Rolle kommt aus Hive (gesetzt beim letzten Supabase-Load).
-  /// Kein Username-basierter Admin-Bypass mehr.
   factory AdminState.fromCache(String world, String? username, String? role) {
     return AdminState(
       isAdmin: AppRoles.isAdmin(role),
       isRootAdmin: AppRoles.isRootAdmin(role),
+      isModerator: AppRoles.isModerator(role),
       world: world,
       backendVerified: false,
       username: username,
@@ -52,6 +55,7 @@ class AdminState {
   AdminState copyWith({
     bool? isAdmin,
     bool? isRootAdmin,
+    bool? isModerator,
     bool? backendVerified,
     String? username,
     String? role,
@@ -59,6 +63,7 @@ class AdminState {
     return AdminState(
       isAdmin: isAdmin ?? this.isAdmin,
       isRootAdmin: isRootAdmin ?? this.isRootAdmin,
+      isModerator: isModerator ?? this.isModerator,
       world: world,
       backendVerified: backendVerified ?? this.backendVerified,
       username: username ?? this.username,
@@ -92,6 +97,13 @@ class AdminStateNotifier extends StateNotifier<AdminState> {
 
   AdminStateNotifier(this.ref, this.world) : super(AdminState.empty(world)) {
     load();
+    supabase.auth.onAuthStateChange.listen((data) {
+      if (data.event == AuthChangeEvent.signedIn ||
+          data.event == AuthChangeEvent.signedOut ||
+          data.event == AuthChangeEvent.tokenRefreshed) {
+        load();
+      }
+    });
   }
 
   Future<void> load() async {
@@ -124,6 +136,7 @@ class AdminStateNotifier extends StateNotifier<AdminState> {
           state = AdminState(
             isAdmin: AppRoles.isAdmin(role),
             isRootAdmin: AppRoles.isRootAdmin(role),
+            isModerator: AppRoles.isModerator(role),
             world: world,
             backendVerified: true,
             username: username,

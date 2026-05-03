@@ -113,10 +113,11 @@ class LiveKitCallService extends ChangeNotifier {
       }
 
       final supabase = Supabase.instance.client;
-      final accessToken = supabase.auth.currentSession?.accessToken;
-      if (accessToken == null || accessToken.isEmpty) {
-        throw Exception('Nicht angemeldet — bitte erneut einloggen.');
-      }
+
+      // WICHTIG: Anon-Session NICHT abmelden — sie wird vom Chat-Screen für
+      // JWT-authentifizierte Requests (Edit/Delete via Worker) benötigt.
+      // Anon-Sessions stören LiveKit nicht (Token kommt von Edge Function,
+      // nicht von der Supabase-Session direkt).
 
       // Token von Supabase Edge Function holen (direkt, kein Cloudflare)
       final tokenRes = await http
