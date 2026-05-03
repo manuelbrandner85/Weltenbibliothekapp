@@ -298,12 +298,10 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
       }
     });
 
-    // 🔄 Auto-Refresh alle 30 Sekunden als Fallback (Realtime ist primär)
-    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
-      _loadMessages(silent: true);
-      _loadUserData(); // 🆕 Profil-Sync
-      _loadPolls(silent: true); // 🆕 Polls-Sync
-    });
+    // Bundle 6.6: Auto-Refresh-Timer entfernt — Realtime erledigt das.
+    // Vorher: voller _loadMessages() alle 30s ZUSÄTZLICH zur Subscription
+    // → doppelter Server-Traffic, unnötiges Re-Rendering. Profil/Polls
+    // werden bei Roomwechsel + onResume nachgeladen.
 
     // Profil VOR Nachrichten laden → Username ist garantiert gesetzt wenn User schreibt.
     // addPostFrameCallback stellt sicher dass der erste Frame gebaut ist.
@@ -454,7 +452,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
     final cursorPos = _messageController.selection.baseOffset;
 
     // ✨ Batch-5: Draft persistieren
-    ChatDraftService.instance.set(_selectedRoom, text);
+    ChatDraftService.instance.set(_fullRoomId, text);
 
     // 🎤➤ UPDATE BUTTON STATE: Voice/Send
     if (mounted) {
@@ -558,12 +556,12 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
     }
 
     // 🛑 Batch-4: Rate-Limit + Slow-Mode (Client-Side Spambremse)
-    if (!ChatRateLimitService.instance.canSend(_selectedRoom)) {
+    if (!ChatRateLimitService.instance.canSend(_fullRoomId)) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              ChatRateLimitService.instance.cooldownMessage(_selectedRoom),
+              ChatRateLimitService.instance.cooldownMessage(_fullRoomId),
             ),
             backgroundColor: const Color(0xFF7C4DFF),
             duration: const Duration(seconds: 2),
@@ -572,7 +570,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
       }
       return;
     }
-    ChatRateLimitService.instance.recordSend(_selectedRoom);
+    ChatRateLimitService.instance.recordSend(_fullRoomId);
     HapticFeedbackService().messageSent();
 
     setState(() => _isSending = true);
@@ -583,11 +581,13 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
       final isOnline = offlineService.isOnline;
       
       if (!isOnline) {
-        // Queue message for later
+        // Queue message for later — _fullRoomId, damit beim Replay derselbe
+        // Raum getroffen wird wie online (z.B. 'energie-meditation' statt
+        // 'meditation').
         final queueId = await offlineService.queueAction(
           type: OfflineActionType.sendMessage,
           data: {
-            'roomId': _selectedRoom,
+            'roomId': _fullRoomId,
             'realm': 'energie',
             'userId': _userId,
             'username': _username,
@@ -621,7 +621,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
         }
 
         _messageController.clear();
-        ChatDraftService.instance.clear(_selectedRoom);
+        ChatDraftService.instance.clear(_fullRoomId);
         return;
       }
       
@@ -642,7 +642,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
       );
 
       _messageController.clear();
-      ChatDraftService.instance.clear(_selectedRoom);
+      ChatDraftService.instance.clear(_fullRoomId);
 
       // 🔴 Optimistic add – Realtime-Subscription deduplicated via ID.
       //    Verhindert Flicker durch redundanten Full-Reload.
@@ -1445,7 +1445,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                     roomName: 'wb-energie-$_selectedRoom',
                     world: 'energie',
                     displayName: _username.isNotEmpty ? _username : 'Mitglied',
-                    avatarUrl: null,
+                    avatarUrl: _avatarUrl,
                   ),
                 ),
               );
@@ -1908,6 +1908,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
     _refreshTimer?.cancel();
     _pendingSub?.cancel();
     _typingTimer?.cancel(); // 🆕
+    _typingService.dispose(); // 🧹 Bundle 4.1: StreamController nicht mehr leaken
     _messageController.dispose();
     _scrollController.removeListener(_onScroll); // ✨ Batch-1
     _scrollController.dispose();
@@ -2100,10 +2101,12 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
     try {
       final oldest = _messages.first;
       final cursor = (oldest['created_at'] ?? oldest['timestamp'])?.toString();
+      final cursorId = oldest['id']?.toString();
       if (cursor == null || cursor.isEmpty) return;
       final older = await SupabaseChatService.instance.getMessagesBefore(
         _fullRoomId,
         before: cursor,
+        beforeId: cursorId,
         limit: 50,
       );
       if (!mounted) return;
@@ -2167,8 +2170,15 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                 snippet: text.length > 80 ? '${text.substring(0, 77)}…' : text,
               );
             }
-            // Feature #17: generate smart reply suggestions
-            if (mounted) setState(() => _smartReplies = _generateSmartReplies(text));
+            // Feature #17: Smart-Replies nur regenerieren wenn der User sie
+            // GERADE NICHT angetippt hat — flackerten vorher pro Fremd-Msg.
+            // Bundle 5.6: Lass die alte Liste stehen wenn _replyingTo aktiv
+            // ist oder Input-Feld fokussiert.
+            if (mounted &&
+                _replyingTo == null &&
+                !_inputFocusNode.hasFocus) {
+              setState(() => _smartReplies = _generateSmartReplies(text));
+            }
           }
           _scrollToBottomIfAtEnd();
         }
@@ -2890,7 +2900,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
   Future<void> _switchToRoom(String roomId) async {
     if (roomId == _selectedRoom || !mounted) return;
     HapticFeedback.selectionClick();
-    ChatDraftService.instance.set(_selectedRoom, _messageController.text);
+    ChatDraftService.instance.set(_fullRoomId, _messageController.text);
     RecentRoomsService.instance.touch('energie', roomId);
     setState(() {
       _selectedRoom = roomId;
@@ -2900,7 +2910,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
       _newMessagesCount = 0;
       _isAtBottom = true;
     });
-    _messageController.text = ChatDraftService.instance.get(_selectedRoom);
+    _messageController.text = ChatDraftService.instance.get(_fullRoomId);
     UnreadTrackerService.instance.markSeen(_fullRoomId);
     // Voice-Service-switchRoom entfällt — LiveKit nutzt eigene Room-Logik.
     await _refreshPresence();
@@ -3197,6 +3207,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
             ),
           ),
           IconButton(
+            tooltip: 'Antwort abbrechen',
             icon: const Icon(Icons.close, color: Colors.grey),
             onPressed: () {
               if (mounted) {
@@ -3274,7 +3285,13 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                 radius: 18,
                 backgroundColor: const Color(0xFF9B51E0).withValues(alpha: 0.2),
                 child: Text(
-                  msg['avatar']?.toString() ?? '👤',
+                  // Realtime-Payload von Supabase nutzt snake_case
+                  // (avatar_emoji); local-optimistic Inserts können auch
+                  // camelCase oder den 'avatar'-Alias enthalten.
+                  msg['avatar']?.toString()
+                      ?? msg['avatar_emoji']?.toString()
+                      ?? msg['avatarEmoji']?.toString()
+                      ?? '👤',
                   style: const TextStyle(fontSize: 16),
                 ),
               )
@@ -3332,10 +3349,14 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                     ),
 
                   // 🎤 VOICE MESSAGE or 📷 IMAGE or 💬 TEXT
-                  if (msg['mediaType'] == 'voice' || (msg['message']?.toString().startsWith('🎤 Sprachnachricht') == true && msg['mediaUrl'] != null))
+                  if (() {
+                    final t = (msg['mediaType'] ?? msg['message_type'])?.toString();
+                    final url = (msg['mediaUrl'] ?? msg['media_url'])?.toString();
+                    return t == 'voice' && url != null && url.isNotEmpty;
+                  }())
                     // 🎵 VOICE MESSAGE PLAYER
                     ChatVoicePlayer(
-                      audioUrl: msg['mediaUrl'] ?? '',
+                      audioUrl: (msg['mediaUrl'] ?? msg['media_url'] ?? '').toString(),
                       duration: Duration(seconds: int.tryParse(
                         msg['message']?.toString()
                           .replaceAll('🎤 Sprachnachricht (', '')
@@ -3344,33 +3365,41 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                       ) ?? 0),
                       accentColor: const Color(0xFF9B51E0),
                     )
-                  else if (msg['mediaType'] == 'image' && msg['mediaUrl'] != null)
+                  else if (() {
+                    final t = (msg['mediaType'] ?? msg['message_type'])?.toString();
+                    final url = (msg['mediaUrl'] ?? msg['media_url'])?.toString();
+                    return t == 'image' && url != null && url.isNotEmpty;
+                  }())
                     // Feature #15: Tappable image with hero → fullscreen viewer
-                    GestureDetector(
-                      onTap: () => ChatImageViewer.open(
-                        context,
-                        imageUrl: msg['mediaUrl']!,
-                        heroTag: 'chat-img-${msg['id'] ?? msg['timestamp']}',
-                        accentColor: const Color(0xFF9B51E0),
-                      ),
-                      child: Hero(
-                        tag: 'chat-img-${msg['id'] ?? msg['timestamp']}',
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: CachedNetworkImage(
-                            imageUrl: msg['mediaUrl']!,
-                            width: 200,
-                            fit: BoxFit.cover,
-                            errorWidget: (context, url, error) => Container(
+                    Builder(builder: (_) {
+                      final url = (msg['mediaUrl'] ?? msg['media_url']).toString();
+                      return GestureDetector(
+                        onTap: () => ChatImageViewer.open(
+                          context,
+                          imageUrl: url,
+                          heroTag: 'chat-img-${msg['id'] ?? msg['timestamp']}',
+                          accentColor: const Color(0xFF9B51E0),
+                        ),
+                        child: Hero(
+                          tag: 'chat-img-${msg['id'] ?? msg['timestamp']}',
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: CachedNetworkImage(
+                              imageUrl: url,
                               width: 200,
-                              height: 150,
-                              color: const Color(0xFF2A2A3E),
-                              child: const Icon(Icons.broken_image, size: 48),
+                              height: 200,
+                              fit: BoxFit.cover,
+                              errorWidget: (context, _, __) => Container(
+                                width: 200,
+                                height: 150,
+                                color: const Color(0xFF2A2A3E),
+                                child: const Icon(Icons.broken_image, size: 48),
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    )
+                      );
+                    })
                   else
                     // Regular Text Message (Markdown-Light + klickbare Links)
                     ChatMarkdownText(
@@ -3861,7 +3890,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
               onLongPress: () => _showRoomPreview(roomId, room),
               onTap: () async {
                 if (roomId != _selectedRoom) {
-                  ChatDraftService.instance.set(_selectedRoom, _messageController.text);
+                  ChatDraftService.instance.set(_fullRoomId, _messageController.text);
                   if (mounted) {
                     RecentRoomsService.instance.touch('energie', roomId);
                     setState(() {
@@ -3873,7 +3902,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                       _isAtBottom = true;
                     });
                   }
-                  _messageController.text = ChatDraftService.instance.get(_selectedRoom);
+                  _messageController.text = ChatDraftService.instance.get(_fullRoomId);
                   UnreadTrackerService.instance.markSeen(_fullRoomId);
                   // Voice-Service-switchRoom entfällt — LiveKit nutzt eigene Room-Logik.
                   await _refreshPresence();

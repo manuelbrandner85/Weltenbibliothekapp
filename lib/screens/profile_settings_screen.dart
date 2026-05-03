@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
+import 'package:url_launcher/url_launcher.dart';
  // OpenClaw v2.0
 import '../config/wb_design.dart'; // 🎨 Design-Tokens
 import '../services/storage_service.dart';
@@ -34,8 +36,29 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
   
   MaterieProfile? _materieProfile;
   EnergieProfile? _energieProfile;
-  
+
   bool _isLoading = true;
+  bool _isUploadingAvatar = false;
+
+  /// Mappt technische Avatar-Upload-Errors auf nutzerfreundliche deutsche Texte.
+  String _avatarErrorMessage(Object e) {
+    final s = e.toString().toLowerCase();
+    if (s.contains('socket') ||
+        s.contains('failed host lookup') ||
+        s.contains('network')) {
+      return '📡 Keine Internet-Verbindung — bitte WLAN/Mobilfunk prüfen.';
+    }
+    if (s.contains('timeout') || s.contains('timed out')) {
+      return '⏱️ Upload-Timeout — bitte später erneut versuchen.';
+    }
+    if (s.contains('413') || s.contains('too large')) {
+      return '📏 Bild zu groß — bitte ein kleineres wählen (max 5 MB).';
+    }
+    if (s.contains('401') || s.contains('unauthorized')) {
+      return '🔒 Nicht angemeldet — bitte App neu starten und einloggen.';
+    }
+    return '⚠️ Upload fehlgeschlagen — bitte später erneut versuchen.';
+  }
   
   @override
   void initState() {
@@ -253,31 +276,33 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                   
                   // DATENSCHUTZ-HINWEIS
                   _buildPrivacyNotice(),
-                  
+
                   const SizedBox(height: 32),
-                  
-                  // ☁️ CLOUD-SYNC SEKTION
-                  _buildSectionHeader('☁️ CLOUD-SYNC', Colors.cyan),
-                  const SizedBox(height: 12),
-                  _buildCloudSyncCard(),
-                  
-                  const SizedBox(height: 32),
-                  
-                  // Backend Health Monitor removed
-                  
-                  const SizedBox(height: 32),
-                  
+
+                  // (Cloud-Sync-Sektion entfernt — auf Wunsch des Users.
+                  // Profile-Daten werden weiterhin transparent über
+                  // Supabase synchronisiert, aber kein eigener Sync-Button
+                  // mehr im Profil. ProfileSyncService bleibt aktiv für
+                  // automatische Sync beim Speichern.)
+
                   // DESIGN-EINSTELLUNGEN
                   _buildSectionHeader('🎨 DESIGN', Colors.teal),
                   const SizedBox(height: 12),
                   const ThemeToggleWidget(),
                   
                   const SizedBox(height: 32),
-                  
+
                   // 📳 HAPTIC FEEDBACK EINSTELLUNGEN (NEU)
                   _buildSectionHeader('📳 HAPTIC FEEDBACK', Colors.orange),
                   const SizedBox(height: 12),
                   _buildHapticFeedbackCard(),
+
+                  const SizedBox(height: 32),
+
+                  // 🤝 MENSAENA — Schwester-Plattform für Nachbarschaftshilfe
+                  _buildSectionHeader('🤝 GEMEINSCHAFT', const Color(0xFF26A69A)),
+                  const SizedBox(height: 12),
+                  _buildMensaenaCard(),
                 ],
               ),
             ),
@@ -337,30 +362,54 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
           Row(
             children: [
               GestureDetector(
-                onTap: () async {
-                  final source = await AvatarUploadService.showImageSourceDialog(context);
-                  if (source != null && mounted) {
-                    final avatarService = AvatarUploadService();
-                    final file = source == ImageSource.gallery
-                        ? await avatarService.pickImageFromGallery()
-                        : await avatarService.pickImageFromCamera();
-                    
-                    if (file != null && mounted) {
-                      // ✅ Upload avatar to server
-                      final userId = supabase.auth.currentUser?.id 
-                          ?? _materieProfile?.userId 
-                          ?? _energieProfile?.userId 
-                          ?? 'anonymous';
-                      final avatarService = AvatarUploadService();
-                      final url = await avatarService.uploadAvatar(file, userId);
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(url != null ? '✅ Avatar hochgeladen!' : '⚠️ Upload fehlgeschlagen – lokal gespeichert')),
-                        );
-                      }
-                    }
-                  }
-                },
+                onTap: _isUploadingAvatar
+                    ? null
+                    : () async {
+                        final source =
+                            await AvatarUploadService.showImageSourceDialog(
+                                context);
+                        if (source == null || !mounted) return;
+
+                        final avatarService = AvatarUploadService();
+                        final file = source == ImageSource.gallery
+                            ? await avatarService.pickImageFromGallery()
+                            : await avatarService.pickImageFromCamera();
+                        if (file == null || !mounted) return;
+
+                        setState(() => _isUploadingAvatar = true);
+                        try {
+                          final userId = supabase.auth.currentUser?.id ??
+                              _materieProfile?.userId ??
+                              _energieProfile?.userId ??
+                              'anonymous';
+                          final url =
+                              await avatarService.uploadAvatar(file, userId);
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(url != null
+                                  ? '✅ Avatar hochgeladen'
+                                  : '⚠️ Upload fehlgeschlagen — bitte später erneut versuchen'),
+                              backgroundColor:
+                                  url != null ? Colors.green : Colors.orange,
+                              duration: const Duration(seconds: 3),
+                            ),
+                          );
+                        } catch (e) {
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(_avatarErrorMessage(e)),
+                              backgroundColor: Colors.red,
+                              duration: const Duration(seconds: 4),
+                            ),
+                          );
+                        } finally {
+                          if (mounted) {
+                            setState(() => _isUploadingAvatar = false);
+                          }
+                        }
+                      },
                 child: Stack(
                   children: [
                     Container(
@@ -371,13 +420,24 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                           colors: [Color(0xFF2196F3), Color(0xFF00BCD4)],
                         ),
                         shape: BoxShape.circle,
-                        border: Border.all(color: WbDesign.materieBlue, width: 2),
+                        border: Border.all(
+                            color: WbDesign.materieBlue, width: 2),
                       ),
-                      child: const Center(
-                        child: Text(
-                          '🔵',
-                          style: TextStyle(fontSize: 28),
-                        ),
+                      child: Center(
+                        child: _isUploadingAvatar
+                            ? const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.5,
+                                  valueColor: AlwaysStoppedAnimation(
+                                      Colors.white),
+                                ),
+                              )
+                            : const Text(
+                                '🔵',
+                                style: TextStyle(fontSize: 28),
+                              ),
                       ),
                     ),
                     Positioned(
@@ -390,8 +450,10 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                           shape: BoxShape.circle,
                           border: Border.all(color: Colors.white, width: 2),
                         ),
-                        child: const Icon(
-                          Icons.camera_alt,
+                        child: Icon(
+                          _isUploadingAvatar
+                              ? Icons.hourglass_top_rounded
+                              : Icons.camera_alt,
                           size: 12,
                           color: Colors.white,
                         ),
@@ -760,7 +822,9 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     );
   }
   
-  /// ☁️ Cloud-Sync Card
+  /// ☁️ Cloud-Sync Card — NICHT MEHR im Profil-Layout sichtbar (entfernt
+  /// auf Wunsch des Users). Methode bleibt als Tot-Code zur Reaktivierung.
+  // ignore: unused_element
   Widget _buildCloudSyncCard() {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -989,7 +1053,9 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     );
   }
   
-  /// ☁️ Sync to Cloud
+  /// ☁️ Sync to Cloud — UI entfernt, Methode bleibt erreichbar via
+  /// `_buildCloudSyncCard` falls Sektion wieder eingeblendet wird.
+  // ignore: unused_element
   Future<void> _syncToCloud() async {
     HapticService.selectionClick();
     
@@ -1018,83 +1084,88 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
   }
   
   /// ☁️ Restore from Cloud
+  // ignore: unused_element
   Future<void> _restoreFromCloud() async {
     HapticService.selectionClick();
-    
-    // Zeige Username-Dialog
-    final usernameController = TextEditingController();
-    
+
     if (!mounted) return;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('☁️ Aus Cloud wiederherstellen'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('Gib deinen Username ein:'),
-            const SizedBox(height: 16),
-            TextField(
-              controller: usernameController,
-              decoration: const InputDecoration(
-                hintText: 'Username',
-                border: OutlineInputBorder(),
+
+    // Username-Dialog mit Controller-Lifecycle in try/finally garantiert
+    final usernameController = TextEditingController();
+    String? username;
+    try {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('☁️ Aus Cloud wiederherstellen'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Gib deinen Username ein:'),
+              const SizedBox(height: 16),
+              TextField(
+                controller: usernameController,
+                decoration: const InputDecoration(
+                  hintText: 'Username',
+                  border: OutlineInputBorder(),
+                ),
               ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Abbrechen'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Wiederherstellen'),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Abbrechen'),
+      );
+      if (confirmed == true && usernameController.text.isNotEmpty) {
+        username = usernameController.text;
+      }
+    } finally {
+      usernameController.dispose();
+    }
+
+    if (username == null) return;
+
+    try {
+      final syncService = CloudflareSyncService();
+
+      // Restore Materie
+      final materieProfile = await syncService.restoreMaterieProfile(username);
+      if (materieProfile != null) {
+        await _storageService.saveMaterieProfile(materieProfile);
+      }
+
+      // Restore Energie
+      final energieProfile = await syncService.restoreEnergieProfile(username);
+      if (energieProfile != null) {
+        await _storageService.saveEnergieProfile(energieProfile);
+      }
+
+      await _loadProfiles();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Profile wiederhergestellt'),
+            backgroundColor: Colors.green,
           ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Wiederherstellen'),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Restore-Fehler: $e'),
+            backgroundColor: Colors.red,
           ),
-        ],
-      ),
-    );
-    
-    if (confirmed == true && usernameController.text.isNotEmpty) {
-      try {
-        final syncService = CloudflareSyncService();
-        
-        // Restore Materie
-        final materieProfile = await syncService.restoreMaterieProfile(
-          usernameController.text,
         );
-        if (materieProfile != null) {
-          await _storageService.saveMaterieProfile(materieProfile);
-        }
-        
-        // Restore Energie
-        final energieProfile = await syncService.restoreEnergieProfile(
-          usernameController.text,
-        );
-        if (energieProfile != null) {
-          await _storageService.saveEnergieProfile(energieProfile);
-        }
-        
-        await _loadProfiles();
-        
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('✅ Profile wiederhergestellt'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('❌ Restore-Fehler: $e'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
       }
     }
   }
@@ -1170,7 +1241,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                       if (value) {
                         await HapticFeedbackService().success();
                       }
-                      setState(() {}); // Rebuild to update UI
+                      if (mounted) setState(() {}); // Rebuild to update UI
                     },
                     activeThumbColor: Colors.orange,
                   ),
@@ -1307,6 +1378,116 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     );
   }
 
+  /// 🤝 Mensaena — Schwester-Plattform für Nachbarschaftshilfe.
+  /// Optionaler Banner der den User auf mensaena.de verlinkt. Bewusst
+  /// dezent gehalten damit es nicht aufdringlich wirkt.
+  Widget _buildMensaenaCard() {
+    const teal = Color(0xFF26A69A);
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [teal.withValues(alpha: 0.18), teal.withValues(alpha: 0.06)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: teal.withValues(alpha: 0.4), width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: teal.withValues(alpha: 0.25),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.handshake_rounded,
+                  color: teal,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Text(
+                  'Mensaena',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'Unsere Schwester-Plattform für echte Nachbarschaftshilfe — '
+            'Hilfe anbieten, Hilfe finden, Menschen in deiner Nähe '
+            'kennenlernen.',
+            style: TextStyle(
+              color: Colors.white70,
+              fontSize: 13,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _openMensaena,
+              icon: const Icon(Icons.open_in_new_rounded, size: 18),
+              label: const Text('Mensaena öffnen'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: teal,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                elevation: 0,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openMensaena() async {
+    final uri = Uri.parse('https://www.mensaena.de');
+    try {
+      final ok = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
+      if (!ok && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Konnte Mensaena nicht öffnen.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('⚠️ Mensaena-Launch fehlgeschlagen: $e');
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Konnte Mensaena nicht öffnen.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   void dispose() {
     // 🧹 PHASE B: Proper resource disposal
@@ -1330,6 +1511,10 @@ class _VersionInfoCardState extends State<_VersionInfoCard> {
     super.initState();
     UpdateService.instance.getCurrentPatchNumber().then((n) {
       if (mounted) setState(() => _patchNumber = n);
+    }).catchError((Object e, StackTrace st) {
+      if (kDebugMode) {
+        debugPrint('⚠️ getCurrentPatchNumber failed: $e\n$st');
+      }
     });
   }
 

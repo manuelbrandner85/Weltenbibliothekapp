@@ -12,6 +12,7 @@ import 'services/sqlite_storage_service.dart'; // 🗄️ SQLITE LOCAL STORAGE
 // import 'firebase_options.dart';
 import 'screens/intro_image_screen.dart';
 import 'screens/portal_home_screen.dart'; // 🌀 Portal (NACH Tutorial)
+import 'widgets/livekit_mini_bar.dart'; // 📞 Mini-Bar für aktiven LiveKit-Call
 import 'screens/energie_world_screen.dart'; // ✅ FIXED: Correct path
 import 'screens/energie/achievements_screen.dart';
 import 'screens/daily_challenges_screen.dart';  // 🎯 Daily Challenges
@@ -333,6 +334,21 @@ class _WeltenbibliothekAppState extends State<WeltenbibliothekApp> {
             Locale('en', 'US'), // Englisch als Fallback
           ],
           locale: const Locale('de', 'DE'),
+          // Mini-Bar für aktiven Sprach-Anruf wird ÜBER allen Screens injiziert
+          // damit User während Live in der App weiternavigieren kann.
+          builder: (context, child) {
+            return Stack(
+              children: [
+                child ?? const SizedBox.shrink(),
+                const Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  child: LiveKitMiniBar(),
+                ),
+              ],
+            );
+          },
           // ✅ FIXED: DIREKT ZUM PORTAL - KEIN INTRO, KEINE CHECKS
           // UpdateGate zeigt beim ersten Frame + bei App-Resume Update-Meldungen
           // (Release-Update-Dialog / OTA-Patch-Bereit-Banner)

@@ -163,10 +163,15 @@ class CommunityInteractionService {
 
     try {
       final supabase = Supabase.instance.client;
+      // Bundle 6.8: count=exact statt alle Rows ziehen + clientseitig
+      // zählen. Bei 10k Likes vorher 10k Rows ins Frontend → jetzt nur 1 Zahl.
       final result = await supabase
-          .from('likes').select('id').eq('article_id', postId)
+          .from('likes')
+          .select('id')
+          .eq('article_id', postId)
+          .count(CountOption.exact)
           .timeout(const Duration(seconds: 10));
-      final count = (result as List).length;
+      final count = result.count;
       await prefs.setInt(countKey, count);
       return count;
     } catch (e) {

@@ -62,12 +62,28 @@ class CloudflareApiService {
     final headers = <String, String>{
       'Content-Type': 'application/json',
     };
-    
+
     // Add Authorization if token is available
     if (apiToken.isNotEmpty) {
       headers['Authorization'] = 'Bearer $apiToken';
     }
-    
+
+    return headers;
+  }
+
+  /// 🔐 Headers PLUS Supabase-User-JWT für Endpunkte die User-Identität
+  /// vom Worker verifizieren (Chat-Send/Edit/Delete/Get).
+  /// Header `X-Supabase-Auth` damit der bestehende `Authorization`-Header
+  /// (Cloudflare-API-Token) nicht überschrieben wird.
+  Map<String, String> get _authedHeaders {
+    final headers = Map<String, String>.from(_headers);
+    try {
+      final session = supabase.auth.currentSession;
+      final accessToken = session?.accessToken;
+      if (accessToken != null && accessToken.isNotEmpty) {
+        headers['X-Supabase-Auth'] = 'Bearer $accessToken';
+      }
+    } catch (_) {/* no session — endpoint will reject */}
     return headers;
   }
 
@@ -197,7 +213,7 @@ class CloudflareApiService {
 
     try {
       final response = await http
-          .get(uri, headers: _headers)
+          .get(uri, headers: _authedHeaders)
           .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
@@ -286,7 +302,9 @@ class CloudflareApiService {
         message: message,
         username: username,
         avatarUrl: avatarUrl,
+        avatarEmoji: avatarEmoji,
         messageType: messageType,
+        mediaUrl: mediaUrl,
         allowAnonymous: true,
         replyToId: replyToId,
         replyToContent: replyToContent,
@@ -356,14 +374,13 @@ class CloudflareApiService {
     if (kDebugMode) debugPrint('🔧 [Chat] Edit via Worker: $messageId');
     final response = await http.put(
       Uri.parse('$baseUrl/api/chat/messages/$messageId'),
-      headers: const {'Content-Type': 'application/json'},
+      headers: _authedHeaders, // 🔐 X-Supabase-Auth für Worker-Verifikation
       body: jsonEncode({
-        'userId': userId,
-        'username': username,
         'roomId': roomId,
         'realm': realm,
         'message': newMessage,
-        'isAdmin': isAdmin ?? false,
+        // userId/username/isAdmin werden vom Worker aus dem JWT bestimmt,
+        // Body-Werte werden ignoriert (Sicherheit).
       }),
     );
     if (response.statusCode != 200) {
@@ -389,13 +406,11 @@ class CloudflareApiService {
     if (kDebugMode) debugPrint('🗑️ [Chat] Delete via Worker: $messageId');
     final response = await http.delete(
       Uri.parse('$baseUrl/api/chat/messages/$messageId'),
-      headers: const {'Content-Type': 'application/json'},
+      headers: _authedHeaders, // 🔐 X-Supabase-Auth für Worker-Verifikation
       body: jsonEncode({
-        'userId': userId,
-        'username': username,
         'roomId': roomId,
         'realm': realm,
-        'isAdmin': isAdmin ?? false,
+        // userId/username/isAdmin werden vom Worker aus dem JWT bestimmt.
       }),
     );
     if (response.statusCode != 200) {
@@ -1074,10 +1089,9 @@ class CloudflareApiService {
       
       final response = await http.post(
         Uri.parse('$reactionsApiUrl/chat/messages/$messageId/reactions'),
-        headers: _headers,
+        headers: _authedHeaders, // 🔐 X-Supabase-Auth → Worker verifiziert
         body: json.encode({
           'emoji': emoji,
-          'username': username,
         }),
       ).timeout(const Duration(seconds: 5));
       
@@ -1114,11 +1128,8 @@ class CloudflareApiService {
       }
       
       final response = await http.delete(
-        Uri.parse('$reactionsApiUrl/chat/messages/$messageId/reactions/$emoji'),
-        headers: {
-          ..._headers,
-          'X-Username': username,
-        },
+        Uri.parse('$reactionsApiUrl/chat/messages/$messageId/reactions/${Uri.encodeComponent(emoji)}'),
+        headers: _authedHeaders, // 🔐 X-Supabase-Auth → Worker prüft Owner
       ).timeout(const Duration(seconds: 5));
       
       if (response.statusCode == 200) {
@@ -1143,7 +1154,7 @@ class CloudflareApiService {
   Future<Map<String, dynamic>> getMessageReactions(String messageId) async {
     final response = await http.get(
       Uri.parse('$reactionsApiUrl/chat/messages/$messageId/reactions'),
-      headers: _headers,
+      headers: _authedHeaders,
     );
     
     if (response.statusCode == 200) {
@@ -1156,8 +1167,8 @@ class CloudflareApiService {
   /// Get user's reactions for a message
   Future<List<String>> getUserReactions(String messageId, String username) async {
     final response = await http.get(
-      Uri.parse('$reactionsApiUrl/chat/messages/$messageId/reactions/user/$username'),
-      headers: _headers,
+      Uri.parse('$reactionsApiUrl/chat/messages/$messageId/reactions/user/${Uri.encodeComponent(username)}'),
+      headers: _authedHeaders,
     );
     
     if (response.statusCode == 200) {

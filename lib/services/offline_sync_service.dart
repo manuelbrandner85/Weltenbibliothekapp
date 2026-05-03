@@ -323,10 +323,23 @@ class OfflineSyncService extends ChangeNotifier {
       return false;
     }
     if (currentUserId != queuedUserId) {
-      if (kDebugMode) {
-        debugPrint('⚠️  OfflineSync: queued user $queuedUserId != current $currentUserId — skipping');
+      // Bundle 4.4: Vorher hart-droppen — riskant wenn User kurz in
+      // anonymer Session ist (z.B. zwischen Logout-Trigger und Re-Login).
+      // Jetzt: erst nach 5 Versuchen mit fremdem User droppen, sonst
+      // deferred (return false → Action bleibt in Queue, nächster Tick
+      // versucht erneut sobald der echte User wieder eingeloggt ist).
+      if (action.retryCount >= 5) {
+        if (kDebugMode) {
+          debugPrint('⚠️  OfflineSync: $queuedUserId ≠ $currentUserId nach '
+              '5 Versuchen → drop');
+        }
+        return true;
       }
-      return true; // drop from queue, don't retry under wrong identity
+      if (kDebugMode) {
+        debugPrint('⏸  OfflineSync: $queuedUserId ≠ $currentUserId '
+            '(${action.retryCount}/5) → defer');
+      }
+      return false;
     }
     try {
       switch (action.type) {

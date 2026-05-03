@@ -28,16 +28,32 @@ jobs:
     timeout-minutes: 10
     env:
       SUPABASE_PROJECT_REF: adtviduaftdquvfjpojb
-      LIVEKIT_API_KEY: wb-a9b26485d407e7dc2043
-      LIVEKIT_API_SECRET: f9c57648d1756868aa7c124b545c029bcb2569b5bf82c1fa5058eefc4efc21d1
-      LIVEKIT_URL: wss://livekit.srv1438024.hstgr.cloud
+      # WB-eigene LiveKit-Instanz auf eigenem Port 7892
+      # 🔐 LIVEKIT_API_SECRET ist PFLICHT-GitHub-Secret — kein Default mehr.
+      # WB_KEY ist eine ID (nicht-geheim), Default ok.
+      LIVEKIT_API_KEY: ${{ secrets.LIVEKIT_API_KEY || 'wb-a9b26485d407e7dc2043' }}
+      LIVEKIT_URL: ${{ secrets.LIVEKIT_URL || 'wss://livekit-wb.srv1438024.hstgr.cloud' }}
 
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v4
 
-      - name: 🔑 Secret maskieren
-        run: echo "::add-mask::f9c57648d1756868aa7c124b545c029bcb2569b5bf82c1fa5058eefc4efc21d1"
+      - name: 🔐 Secret-Status prüfen (soft-check)
+        id: secret_check
+        env:
+          LIVEKIT_API_SECRET: ${{ secrets.LIVEKIT_API_SECRET }}
+        run: |
+          if [ -z "${LIVEKIT_API_SECRET:-}" ]; then
+            echo "⚠️  LIVEKIT_API_SECRET nicht gesetzt — Supabase-Secret-Refresh"
+            echo "   wird übersprungen. Edge Function wird trotzdem deployed."
+            echo "   Setze unter Settings → Secrets → Actions."
+            echo "skip_livekit=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::add-mask::${LIVEKIT_API_SECRET}"
+            echo "::add-mask::${{ env.LIVEKIT_API_KEY }}"
+            echo "✅ LIVEKIT_API_SECRET gesetzt (${#LIVEKIT_API_SECRET} Zeichen)"
+            echo "skip_livekit=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: 🟩 Node.js 22
         uses: actions/setup-node@v4
@@ -45,8 +61,12 @@ jobs:
           node-version: '22'
 
       - name: 🔐 LiveKit-Secrets in Supabase setzen
+        if: steps.secret_check.outputs.skip_livekit == 'false'
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          # Secret muss in dieser Step explizit angefordert werden seit
+          # der Default-Value vom Job-Level entfernt wurde (Bundle Sec).
+          LIVEKIT_API_SECRET: ${{ secrets.LIVEKIT_API_SECRET }}
         run: |
           set -euo pipefail
           if [ -z "${SUPABASE_ACCESS_TOKEN:-}" ]; then

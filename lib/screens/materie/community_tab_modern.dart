@@ -329,19 +329,84 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
             SliverToBoxAdapter(
               child: _buildSectionTitle('🔥 Neueste Beiträge', subtitle: 'Fakten & Recherchen'),
             ),
-            _isLoading
-                ? SliverPadding(
-                    padding: const EdgeInsets.all(16),
-                    sliver: SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                        (_, __) => LoadingSkeletons.postCard(), childCount: 3,
-                      ),
-                    ),
-                  )
-                : SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 80),
-                    sliver: SliverToBoxAdapter(child: _buildMasonryGrid(filtered)),
+            if (_isLoading)
+              SliverPadding(
+                padding: const EdgeInsets.all(16),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (_, __) => LoadingSkeletons.postCard(),
+                    childCount: 3,
                   ),
+                ),
+              )
+            else if (filtered.isEmpty)
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 88,
+                        height: 88,
+                        decoration: BoxDecoration(
+                          color: _mRed.withValues(alpha: 0.08),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: _mRed.withValues(alpha: 0.30),
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Icon(Icons.forum_rounded,
+                            color: _mRed, size: 40),
+                      ),
+                      const SizedBox(height: 20),
+                      const Text(
+                        'Noch keine Beiträge',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: -0.2,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        _selectedView == 'alle'
+                            ? 'Sei der Erste und teile eine Recherche, einen Fakt oder eine Beobachtung mit der Community.'
+                            : 'In dieser Kategorie gibt es noch nichts.\nWähle "Alle" oder erstelle den ersten Beitrag.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.65),
+                          fontSize: 13,
+                          height: 1.5,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      FilledButton.icon(
+                        onPressed: _showCreatePostDialogV2,
+                        icon: const Icon(Icons.add_rounded, size: 20),
+                        label: const Text('Beitrag erstellen'),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: _mRed,
+                          foregroundColor: Colors.white,
+                          minimumSize: const Size(200, 48),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(12, 0, 12, 80),
+                sliver: SliverToBoxAdapter(
+                    child: _buildMasonryGrid(filtered)),
+              ),
           ],
         ),
       ),
@@ -802,15 +867,19 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
                 ),
                 // Feature 9 — Bookmark
                 IconButton(
+                  tooltip: isBookmarked
+                      ? 'Lesezeichen entfernen'
+                      : 'Lesezeichen hinzufügen',
                   icon: Icon(
                     isBookmarked ? Icons.bookmark : Icons.bookmark_border,
                     color: isBookmarked ? _mAmber : Colors.white38, size: 22,
                   ),
                   onPressed: () => _toggleBookmark(post.id),
                   padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                  constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
                 ),
                 IconButton(
+                  tooltip: 'Mehr Optionen',
                   icon: Icon(Icons.more_vert, color: Colors.white.withValues(alpha: 0.45), size: 20),
                   onPressed: () => showModalBottomSheet(
                     context: context,

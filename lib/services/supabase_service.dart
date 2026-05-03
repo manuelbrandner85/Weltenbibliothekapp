@@ -15,6 +15,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'sqlite_storage_service.dart';
+import 'push_notification_manager.dart';
 import '../config/api_config.dart';
 
 // ──────────────────────────────────────────────────────────────
@@ -125,6 +126,17 @@ class SupabaseAuthService {
 
   Future<void> signOut() async {
     if (kDebugMode) debugPrint('🚪 [Auth] SignOut');
+    // Bundle P-E6: Push-Token deaktivieren BEVOR Session gekappt wird,
+    // damit der Worker den User aus push_subscriptions auf inactive setzen
+    // kann. Sonst bekommt der nächste Login auf demselben Gerät noch
+    // Pushes für den vorigen User.
+    try {
+      await PushNotificationManager.instance
+          .unsubscribeCurrent()
+          .timeout(const Duration(seconds: 3));
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ Push-Unsubscribe vor SignOut: $e');
+    }
     await supabase.auth.signOut();
     await _clearLocalData();
   }
@@ -463,7 +475,11 @@ class SupabaseChatService {
       _instance ??= SupabaseChatService._();
   SupabaseChatService._();
 
-  RealtimeChannel? _activeChannel;
+  /// Per-Room Channels. Vorher war das ein einziges `_activeChannel` —
+  /// der wurde beim Wechsel zwischen Materie/Energie-Welt jeweils gekappt
+  /// und die andere Welt verlor still ihre Realtime-Verbindung.
+  /// Jetzt: Map keyed by roomId, jede Welt behält ihre eigene Subscription.
+  final Map<String, RealtimeChannel> _channels = {};
 
   /// Nachrichten für einen Raum laden (letzte 50).
   /// Sortiert aufsteigend nach created_at (ältere zuerst → neueste unten).
@@ -486,20 +502,34 @@ class SupabaseChatService {
     }
   }
 
-  /// Pagination: Nachrichten älter als [before] (ISO-String) laden.
-  /// Rückgabe in aufsteigender Reihenfolge (ältere zuerst).
+  /// Pagination: Nachrichten älter als [before] laden.
+  /// Bundle 6.5: Tie-Breaking via `(created_at, id)` damit Nachrichten mit
+  /// identischem Timestamp nicht über Page-Boundaries verschwinden.
+  /// `beforeId` ist optional für die erste Seite.
   Future<List<Map<String, dynamic>>> getMessagesBefore(
     String roomId, {
     required String before,
+    String? beforeId,
     int limit = 50,
   }) async {
-    final response = await supabase
+    var query = supabase
         .from('chat_messages')
         .select()
         .eq('room_id', roomId)
-        .eq('is_deleted', false)
-        .lt('created_at', before)
+        .eq('is_deleted', false);
+    if (beforeId != null && beforeId.isNotEmpty) {
+      // Älter ALS (timestamp, id) — entweder strikt älterer Timestamp oder
+      // gleicher Timestamp + lexikographisch kleinere ID.
+      query = query.or(
+        'created_at.lt.$before,'
+        'and(created_at.eq.$before,id.lt.$beforeId)',
+      );
+    } else {
+      query = query.lt('created_at', before);
+    }
+    final response = await query
         .order('created_at', ascending: false)
+        .order('id', ascending: false)
         .limit(limit);
     return List<Map<String, dynamic>>.from(response.reversed.toList());
   }
@@ -516,7 +546,9 @@ class SupabaseChatService {
     required String message,
     String? username,
     String? avatarUrl,
+    String? avatarEmoji,
     String? messageType,
+    String? mediaUrl,
     bool allowAnonymous = true,
     String? replyToId,
     String? replyToContent,
@@ -541,8 +573,11 @@ class SupabaseChatService {
           effectiveUsername = user.email!.split('@').first;
         }
         effectiveAvatar ??= profile?['avatar_url'] as String?;
-      } catch (_) {
+      } catch (e) {
         // Profil-Fetch fehlgeschlagen – fallen unten auf 'Anonym' zurück.
+        if (kDebugMode) {
+          debugPrint('⚠️ SupabaseService: Profil-Fetch failed — $e');
+        }
       }
     }
     if (effectiveUsername.isEmpty) effectiveUsername = 'Anonym';
@@ -555,7 +590,15 @@ class SupabaseChatService {
     };
     if (user != null) insertData['user_id'] = user.id;
     if (effectiveAvatar != null) insertData['avatar_url'] = effectiveAvatar;
+    if (avatarEmoji != null && avatarEmoji.isNotEmpty) {
+      insertData['avatar_emoji'] = avatarEmoji;
+    }
     if (messageType != null) insertData['message_type'] = messageType;
+    // 🆕 mediaUrl wurde vorher komplett verschluckt → Image/Voice-Messages
+    // landeten ohne URL in der DB, UI zeigte „leere" Nachrichten.
+    if (mediaUrl != null && mediaUrl.isNotEmpty) {
+      insertData['media_url'] = mediaUrl;
+    }
     if (replyToId != null && replyToId.isNotEmpty) {
       insertData['reply_to_id'] = replyToId;
       // Snapshot auf max. 280 Zeichen kürzen (Telegram-Style Quote).
@@ -625,7 +668,9 @@ class SupabaseChatService {
     void Function(Map<String, dynamic>)? onUpdate,
     void Function(String messageId)? onDelete,
   }) {
-    _activeChannel?.unsubscribe();
+    // Wenn dieselbe Welt nochmal subscribed → erst alte Channel kappen,
+    // damit keine doppelten Callbacks (z.B. nach Hot-Reload).
+    _channels.remove(roomId)?.unsubscribe();
 
     final filter = PostgresChangeFilter(
       type: PostgresChangeFilterType.eq,
@@ -633,7 +678,7 @@ class SupabaseChatService {
       value: roomId,
     );
 
-    _activeChannel = supabase
+    final channel = supabase
         .channel('chat_room_$roomId')
         .onPostgresChanges(
           event: PostgresChangeEvent.insert,
@@ -656,11 +701,9 @@ class SupabaseChatService {
           },
         )
         .onPostgresChanges(
-          // Mit DEFAULT REPLICA IDENTITY enthält oldRecord nur den PK (id).
-          // Wir prüfen daher NICHT auf room_id (wäre immer null → Drop).
-          // Der Chat-Screen-Callback darf nur bekannte IDs entfernen —
-          // unbekannte IDs (andere Räume) werden im Screen-State nicht
-          // gefunden und sind daher harmlos.
+          // DELETE: oldRecord enthält bei DEFAULT REPLICA IDENTITY nur den PK (id).
+          // room_id ist immer NULL im oldRecord — deshalb KEIN room_id-Filter.
+          // Ein fremdes DELETE einer unbekannten ID ist harmlos (removeWhere findet nichts).
           event: PostgresChangeEvent.delete,
           schema: 'public',
           table: 'chat_messages',
@@ -674,17 +717,29 @@ class SupabaseChatService {
         )
         .subscribe();
 
+    _channels[roomId] = channel;
     if (kDebugMode) debugPrint('🔌 [Chat] Subscribed: $roomId');
-    return _activeChannel!;
+    return channel;
   }
 
-  /// Subscription beenden.
-  Future<void> unsubscribe() async {
-    if (_activeChannel != null) {
-      await _activeChannel!.unsubscribe();
-      _activeChannel = null;
-      if (kDebugMode) debugPrint('🔌 [Chat] Unsubscribed');
+  /// Subscription beenden — optional auf einen spezifischen Raum begrenzt.
+  /// Ohne Argument werden ALLE aktiven Subscriptions gekappt (z.B. bei
+  /// Logout).
+  Future<void> unsubscribe([String? roomId]) async {
+    if (roomId != null) {
+      final ch = _channels.remove(roomId);
+      if (ch != null) {
+        await ch.unsubscribe();
+        if (kDebugMode) debugPrint('🔌 [Chat] Unsubscribed: $roomId');
+      }
+      return;
     }
+    final all = List.of(_channels.values);
+    _channels.clear();
+    for (final ch in all) {
+      await ch.unsubscribe();
+    }
+    if (kDebugMode) debugPrint('🔌 [Chat] Unsubscribed all (${all.length})');
   }
 
   /// Chat-Räume laden.
@@ -746,7 +801,9 @@ class SupabaseChatService {
     bool isTyping = true,
   }) async {
     try {
-      _activeChannel?.sendBroadcastMessage(
+      // Broadcast auf den Channel des spezifischen Raums senden, nicht
+      // mehr auf einen Singleton.
+      _channels[roomId]?.sendBroadcastMessage(
         event: 'typing',
         payload: {
           'userId': userId,
@@ -767,7 +824,7 @@ class SupabaseChatService {
     void Function(String userId, String username, bool isTyping)? onTyping,
     void Function(String messageId, String userId)? onRead,
   }) {
-    _activeChannel?.unsubscribe();
+    _channels.remove(roomId)?.unsubscribe();
 
     var channel = supabase
         .channel('chat_room_$roomId')
@@ -821,10 +878,11 @@ class SupabaseChatService {
       );
     }
 
-    _activeChannel = channel.subscribe();
+    final subscribed = channel.subscribe();
+    _channels[roomId] = subscribed;
 
     if (kDebugMode) debugPrint('🔌 [Chat] Full-Subscribe: $roomId');
-    return _activeChannel!;
+    return subscribed;
   }
 }
 

@@ -103,71 +103,84 @@ class _DreamJournalScreenState extends State<DreamJournalScreen> {
             );
             return;
           }
-          // Simple add dialog (kompakt wegen Token-Limit)
-          final result = await showDialog<bool>(
-            context: context,
-            builder: (context) {
-              final titleCtrl = TextEditingController();
-              final descCtrl = TextEditingController();
-              bool isLucid = false;
-              return StatefulBuilder(
-                builder: (context, setState) => AlertDialog(
-                  backgroundColor: const Color(0xFF1A1A2E),
-                  title: const Text('💫 Traum hinzufügen', style: TextStyle(color: Colors.white)),
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      TextField(
-                        controller: titleCtrl,
-                        style: const TextStyle(color: Colors.white),
-                        decoration: const InputDecoration(
-                          labelText: 'Titel',
-                          labelStyle: TextStyle(color: Colors.white70),
+          // Controller außerhalb showDialog → try/finally garantiert dispose
+          final titleCtrl = TextEditingController();
+          final descCtrl = TextEditingController();
+          bool result = false;
+          try {
+            result = await showDialog<bool>(
+                  context: context,
+                  builder: (context) {
+                    bool isLucid = false;
+                    return StatefulBuilder(
+                      builder: (context, setLocalState) => AlertDialog(
+                        backgroundColor: const Color(0xFF1A1A2E),
+                        title: const Text('💫 Traum hinzufügen',
+                            style: TextStyle(color: Colors.white)),
+                        content: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            TextField(
+                              controller: titleCtrl,
+                              style: const TextStyle(color: Colors.white),
+                              decoration: const InputDecoration(
+                                labelText: 'Titel',
+                                labelStyle: TextStyle(color: Colors.white70),
+                              ),
+                            ),
+                            TextField(
+                              controller: descCtrl,
+                              style: const TextStyle(color: Colors.white),
+                              maxLines: 3,
+                              decoration: const InputDecoration(
+                                labelText: 'Beschreibung',
+                                labelStyle: TextStyle(color: Colors.white70),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            CheckboxListTile(
+                              title: const Text('Luzider Traum',
+                                  style: TextStyle(color: Colors.white)),
+                              value: isLucid,
+                              onChanged: (val) =>
+                                  setLocalState(() => isLucid = val ?? false),
+                            ),
+                          ],
                         ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            child: const Text('Abbrechen'),
+                          ),
+                          ElevatedButton(
+                            onPressed: () async {
+                              final dreamId = await _toolsService.createDream(
+                                roomId: widget.roomId,
+                                userId: _userId,
+                                username: _username,
+                                title: titleCtrl.text,
+                                description: descCtrl.text,
+                                lucid: isLucid,
+                              );
+                              if (context.mounted) {
+                                Navigator.pop(context, dreamId != null);
+                              }
+                            },
+                            style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF9C27B0)),
+                            child: const Text('Hinzufügen'),
+                          ),
+                        ],
                       ),
-                      TextField(
-                        controller: descCtrl,
-                        style: const TextStyle(color: Colors.white),
-                        maxLines: 3,
-                        decoration: const InputDecoration(
-                          labelText: 'Beschreibung',
-                          labelStyle: TextStyle(color: Colors.white70),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      CheckboxListTile(
-                        title: const Text('Luzider Traum', style: TextStyle(color: Colors.white)),
-                        value: isLucid,
-                        onChanged: (val) => setState(() => isLucid = val ?? false),
-                      ),
-                    ],
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Abbrechen'),
-                    ),
-                    ElevatedButton(
-                      onPressed: () async {
-                        final dreamId = await _toolsService.createDream(
-                          roomId: widget.roomId,
-                          userId: _userId,
-                          username: _username,
-                          title: titleCtrl.text,
-                          description: descCtrl.text,
-                          lucid: isLucid,
-                        );
-                        if (context.mounted) Navigator.pop(context, dreamId != null);
-                      },
-                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF9C27B0)),
-                      child: const Text('Hinzufügen'),
-                    ),
-                  ],
-                ),
-              );
-            },
-          );
-          if (result == true) _loadDreams();
+                    );
+                  },
+                ) ??
+                false;
+          } finally {
+            titleCtrl.dispose();
+            descCtrl.dispose();
+          }
+          if (result) _loadDreams();
         },
         backgroundColor: const Color(0xFF9C27B0),
         icon: const Icon(Icons.add),

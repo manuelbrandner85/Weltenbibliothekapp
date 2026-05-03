@@ -238,8 +238,12 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
     _headerAuraCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 4))..repeat(reverse: true);
     _headerOrbitCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 15))..repeat();
 
-    // 🔥 Initialize User ID from UserService
-    _userId = UserService.getCurrentUserId();
+    // 🔥 Initialize User ID — bevorzugt Supabase-User-ID (matched die ID in
+    // chat_messages.user_id), Fallback InvisibleAuth.
+    // Bundle 4.3: Vorher wurde _userId zwischen initState und Profil-Load
+    // umgeschrieben — Race-Window in dem Realtime-INSERTs eigene Messages
+    // als "von anderen" zählten. Jetzt synchron mit Supabase-Session.
+    _userId = supabase.auth.currentUser?.id ?? UserService.getCurrentUserId();
 
     // 🔧 FIX 18: Set initial room from dashboard navigation
     _selectedRoom = widget.initialRoom ?? 'politik';
@@ -288,12 +292,9 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
       }
     });
 
-    // 🔄 AUTO-REFRESH: Profil-Updates alle 30 Sekunden als Fallback (Realtime ist primär)
-    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
-      _loadMessages(silent: true); // ✅ Silent refresh - kein Flickering
-      _loadPolls(silent: true); // ✅ Silent refresh - kein Flickering
-      _loadUsernameFromProfile(); // Profil-Sync für Avatar-Updates
-    });
+    // Bundle 6.6: Auto-Refresh-Timer entfernt — Realtime ist primär,
+    // 30s-Polling war doppelter Server-Traffic. Profil/Polls werden
+    // bei Roomwechsel und beim manuellen Pull-to-Refresh nachgeladen.
 
     // Profil VOR Nachrichten laden → Username garantiert gesetzt wenn User schreibt.
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -460,10 +461,12 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
     try {
       final oldest = _messages.first;
       final cursor = (oldest['created_at'] ?? oldest['timestamp'])?.toString();
+      final cursorId = oldest['id']?.toString();
       if (cursor == null || cursor.isEmpty) return;
       final older = await SupabaseChatService.instance.getMessagesBefore(
         _fullRoomId,
         before: cursor,
+        beforeId: cursorId,
         limit: 50,
       );
       if (!mounted) return;
@@ -573,7 +576,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
       case 'geschichte':
         screen = HistoryTimelineScreen(roomId: _selectedRoom);
         break;
-      case 'ufos':
+      case 'ufo':
         screen = UfoSightingsScreen(roomId: _selectedRoom);
         break;
       case 'verschwoerungen':
@@ -666,7 +669,11 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
     }
   }
 
+  /// Bundle 4.8: Doppel-Tap-Schutz analog zu Energie-Screen.
+  bool _isSending = false;
+
   Future<void> _sendMessage() async {
+    if (_isSending) return; // 🛑 zweiter Tap während Send läuft → ignore
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
 
@@ -713,6 +720,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
     }
     ChatRateLimitService.instance.recordSend(_fullRoomId);
     HapticFeedbackService().messageSent();
+    _isSending = true; // 🛑 Bundle 4.8: Lock vor I/O
 
     // 📡 OFFLINE-FIRST: Bei fehlender Verbindung Nachricht queuen + optimistisch
     //    mit Pending-Flag in die Liste einfügen.
@@ -753,6 +761,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
       }
       _messageController.clear();
       ChatDraftService.instance.clear(_fullRoomId);
+      _isSending = false; // 🔓 Offline-Pfad: Lock direkt freigeben
       return;
     }
 
@@ -808,6 +817,8 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
           ),
         );
       }
+    } finally {
+      _isSending = false; // 🔓 Bundle 4.8: Lock immer wieder freigeben
     }
   }
 
@@ -896,11 +907,11 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
               );
             }
 
-            // Upload to Cloudflare
+            // Upload to Cloudflare — _fullRoomId konsistent zu sendChatMessage.
             final audioUrl = await _api.uploadVoiceMessage(
               filePath: audioPath,
               userId: _userId,
-              roomId: _selectedRoom,
+              roomId: _fullRoomId,
               realm: 'materie',
             );
 
@@ -1041,14 +1052,16 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
       );
       
       if (result['success'] == true && result['url'] != null) {
-        // Send message with image URL
+        // Send message with image URL — avatarUrl mitschicken, damit
+        // hochgeladene Profilbilder auch bei Bild-Posts erscheinen.
         await _api.sendChatMessage(
           roomId: _fullRoomId, // 'materie-politik' etc.
           realm: 'materie',
           userId: _userId,
           username: _username,
-          message: '📷 Bild', // Text for image message
+          message: '📷 Bild',
           avatarEmoji: _avatar,
+          avatarUrl: _avatarUrl,
           mediaType: 'image',
           mediaUrl: result['url'],
         );
@@ -1073,7 +1086,12 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
         ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Upload fehlgeschlagen: ${e.toString().substring(0, 50)}...'),
+            content: Text(() {
+              // Bundle 4.7: substring(0, 50) crasht wenn Error kürzer.
+              final s = e.toString();
+              return '❌ Upload fehlgeschlagen: '
+                  '${s.length > 50 ? '${s.substring(0, 50)}…' : s}';
+            }()),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 3),
           ),
@@ -1288,7 +1306,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
                     roomName: 'wb-materie-$_selectedRoom',
                     world: 'materie',
                     displayName: _username.isNotEmpty ? _username : 'Mitglied',
-                    avatarUrl: null,
+                    avatarUrl: _avatarUrl,
                   ),
                 ),
               );
@@ -3076,6 +3094,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
             ),
           ),
           IconButton(
+            tooltip: 'Antwort abbrechen',
             icon: const Icon(Icons.close, color: Colors.grey),
             onPressed: () {
               if (mounted) {
@@ -3153,7 +3172,11 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
                 radius: 18,
                 backgroundColor: Colors.red.withValues(alpha: 0.2),
                 child: Text(
-                  msg['avatarEmoji']?.toString() ?? '👤',
+                  // Sowohl camelCase (lokal optimistisch) als auch
+                  // snake_case (Realtime von Supabase) berücksichtigen.
+                  msg['avatarEmoji']?.toString()
+                      ?? msg['avatar_emoji']?.toString()
+                      ?? '👤',
                   style: const TextStyle(fontSize: 16),
                 ),
               )
@@ -3211,10 +3234,17 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
                     ),
 
                   // 🎤 VOICE MESSAGE or 📷 IMAGE or 💬 TEXT
-                  if (msg['mediaType'] == 'voice' || (msg['message']?.toString().startsWith('🎤 Sprachnachricht') == true && msg['mediaUrl'] != null))
+                  // FIX: sowohl camelCase (lokal optimistisch) als auch
+                  // snake_case (Realtime) berücksichtigen — vorher 100%
+                  // Mismatch bei Realtime → leerer/grauer Container.
+                  if (() {
+                    final t = (msg['mediaType'] ?? msg['message_type'])?.toString();
+                    final url = (msg['mediaUrl'] ?? msg['media_url'])?.toString();
+                    return t == 'voice' && url != null && url.isNotEmpty;
+                  }())
                     // 🎵 VOICE MESSAGE PLAYER
                     ChatVoicePlayer(
-                      audioUrl: msg['mediaUrl'] ?? '',
+                      audioUrl: (msg['mediaUrl'] ?? msg['media_url'] ?? '').toString(),
                       duration: Duration(seconds: int.tryParse(
                         msg['message']?.toString()
                           .replaceAll('🎤 Sprachnachricht (', '')
@@ -3223,33 +3253,41 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
                       ) ?? 0),
                       accentColor: const Color(0xFF2196F3),
                     )
-                  else if (msg['mediaType'] == 'image' && msg['mediaUrl'] != null)
+                  else if (() {
+                    final t = (msg['mediaType'] ?? msg['message_type'])?.toString();
+                    final url = (msg['mediaUrl'] ?? msg['media_url'])?.toString();
+                    return t == 'image' && url != null && url.isNotEmpty;
+                  }())
                     // Feature #15: Tappable image with hero → fullscreen viewer
-                    GestureDetector(
-                      onTap: () => ChatImageViewer.open(
-                        context,
-                        imageUrl: msg['mediaUrl']!,
-                        heroTag: 'chat-img-${msg['id'] ?? msg['timestamp']}',
-                        accentColor: const Color(0xFFE53935),
-                      ),
-                      child: Hero(
-                        tag: 'chat-img-${msg['id'] ?? msg['timestamp']}',
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: CachedNetworkImage(
-                            imageUrl: msg['mediaUrl']!,
-                            width: 200,
-                            fit: BoxFit.cover,
-                            errorWidget: (context, url, error) => Container(
+                    Builder(builder: (_) {
+                      final url = (msg['mediaUrl'] ?? msg['media_url']).toString();
+                      return GestureDetector(
+                        onTap: () => ChatImageViewer.open(
+                          context,
+                          imageUrl: url,
+                          heroTag: 'chat-img-${msg['id'] ?? msg['timestamp']}',
+                          accentColor: const Color(0xFFE53935),
+                        ),
+                        child: Hero(
+                          tag: 'chat-img-${msg['id'] ?? msg['timestamp']}',
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: CachedNetworkImage(
+                              imageUrl: url,
                               width: 200,
-                              height: 150,
-                              color: Colors.grey[700],
-                              child: const Icon(Icons.broken_image, size: 48),
+                              height: 200,
+                              fit: BoxFit.cover,
+                              errorWidget: (context, _, __) => Container(
+                                width: 200,
+                                height: 150,
+                                color: Colors.grey[700],
+                                child: const Icon(Icons.broken_image, size: 48),
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    )
+                      );
+                    })
                   else
                     // Regular Text Message (Markdown-Light + klickbare Links)
                     ChatMarkdownText(
@@ -3276,13 +3314,33 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
                       ),
                       if (isOwn) ...[
                         const SizedBox(width: 4),
-                        Icon(
-                          Icons.done_all,
-                          size: 14,
-                          color: msg['read'] == true 
-                              ? Colors.blue 
-                              : Colors.white.withValues(alpha: 0.6),
-                        ),
+                        Builder(builder: (_) {
+                          // Bundle 5.5: Optimistisch gequeuete Nachricht
+                          // zeigt Clock — sonst Doppelhaken. Server schreibt
+                          // read_by als Array; blau wenn jemand anderes
+                          // gelesen hat.
+                          if (msg['is_pending'] == true) {
+                            return Icon(
+                              Icons.access_time_rounded,
+                              size: 14,
+                              color: Colors.white.withValues(alpha: 0.6),
+                            );
+                          }
+                          final readBy = msg['read_by'];
+                          final readers = readBy is List
+                              ? readBy.where((r) =>
+                                      r != null && r.toString() != _userId)
+                                  .length
+                              : 0;
+                          final isRead = readers > 0 || msg['read'] == true;
+                          return Icon(
+                            Icons.done_all,
+                            size: 14,
+                            color: isRead
+                                ? Colors.blue
+                                : Colors.white.withValues(alpha: 0.6),
+                          );
+                        }),
                       ],
                     ],
                   ),

@@ -128,10 +128,39 @@ class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern> w
       if (mounted) {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('❌ Fehler: $e')),
+          SnackBar(content: Text(_friendlyErrorMessage(e))),
         );
       }
     }
+  }
+
+  /// Mappt technische Exceptions auf nutzerfreundliche deutsche Texte.
+  String _friendlyErrorMessage(Object e) {
+    final s = e.toString();
+    if (s.contains('SocketException') ||
+        s.contains('Failed host lookup') ||
+        s.contains('Network is unreachable')) {
+      return '📡 Keine Internet-Verbindung — bitte WLAN/Mobilfunk prüfen.';
+    }
+    if (s.contains('TimeoutException') || s.contains('timed out')) {
+      return '⏱️ Server reagiert nicht — bitte später erneut versuchen.';
+    }
+    if (s.contains('401') || s.contains('Unauthorized')) {
+      return '🔒 Nicht angemeldet — bitte App neu starten und einloggen.';
+    }
+    if (s.contains('403') || s.contains('Forbidden')) {
+      return '🚫 Keine Berechtigung für diese Aktion.';
+    }
+    if (s.contains('404') || s.contains('Not Found')) {
+      return '🔍 Inhalt nicht gefunden.';
+    }
+    if (s.contains('500') ||
+        s.contains('502') ||
+        s.contains('503') ||
+        s.contains('Internal Server')) {
+      return '🛠️ Server überlastet — bitte gleich nochmal versuchen.';
+    }
+    return '⚠️ Beiträge konnten nicht geladen werden. Bitte erneut versuchen.';
   }
   
   // Feature 6 — Inline Bottom-Sheet statt Dialog
@@ -687,6 +716,9 @@ class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern> w
                 ),
                 // Feature 9 — Bookmark-Icon
                 IconButton(
+                  tooltip: isBookmarked
+                      ? 'Lesezeichen entfernen'
+                      : 'Lesezeichen hinzufügen',
                   icon: Icon(
                     isBookmarked ? Icons.bookmark : Icons.bookmark_border,
                     color: isBookmarked ? _kGold : Colors.white38,
@@ -694,13 +726,15 @@ class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern> w
                   ),
                   onPressed: () => _toggleBookmark(post.id),
                   padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                  constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
                 ),
                 IconButton(
-                  icon: Icon(Icons.more_vert, color: Colors.white.withValues(alpha: 0.5), size: 20),
+                  tooltip: 'Mehr Optionen',
+                  icon: Icon(Icons.more_vert,
+                      color: Colors.white.withValues(alpha: 0.5), size: 20),
                   onPressed: () => _showPostMenu(context, post),
                   padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                  constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
                 ),
               ],
             ),
@@ -1101,78 +1135,107 @@ class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern> w
   Future<void> _editPost(CommunityPost post) async {
     final contentController = TextEditingController(text: post.content);
     final tagsController = TextEditingController(text: post.tags.join(', '));
-    
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: _kCardB,
-          title: const Text('Post bearbeiten', style: TextStyle(color: Colors.white)),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: contentController,
-                style: const TextStyle(color: Colors.white),
-                maxLines: 5,
-                decoration: const InputDecoration(
-                  labelText: 'Inhalt',
-                  labelStyle: TextStyle(color: Colors.white70),
-                  border: OutlineInputBorder(),
+
+    String newContent = '';
+    List<String> newTags = const [];
+    bool result = false;
+    try {
+      result = await showDialog<bool>(
+            context: context,
+            builder: (context) {
+              return AlertDialog(
+                backgroundColor: _kCardB,
+                title: const Text('Post bearbeiten',
+                    style: TextStyle(color: Colors.white)),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: contentController,
+                      style: const TextStyle(color: Colors.white),
+                      maxLines: 5,
+                      decoration: const InputDecoration(
+                        labelText: 'Inhalt',
+                        labelStyle: TextStyle(color: Colors.white70),
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: tagsController,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: const InputDecoration(
+                        labelText: 'Tags (mit Komma trennen)',
+                        labelStyle: TextStyle(color: Colors.white70),
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: tagsController,
-                style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(
-                  labelText: 'Tags (mit Komma trennen)',
-                  labelStyle: TextStyle(color: Colors.white70),
-                  border: OutlineInputBorder(),
-                ),
-              ),
-            ],
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text('Abbrechen'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    child: const Text('Speichern'),
+                  ),
+                ],
+              );
+            },
+          ) ??
+          false;
+      // Werte LESEN während Controller noch leben
+      newContent = contentController.text.trim();
+      newTags = tagsController.text
+          .split(',')
+          .map((t) => t.trim())
+          .where((t) => t.isNotEmpty)
+          .toList();
+    } finally {
+      contentController.dispose();
+      tagsController.dispose();
+    }
+
+    if (!result) return;
+
+    // Validation: leerer Content nicht zulassen
+    if (newContent.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('⚠️ Inhalt darf nicht leer sein'),
+            backgroundColor: Colors.orange,
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Abbrechen'),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Speichern'),
-            ),
-          ],
         );
-      },
-    );
-    
-    if (result == true) {
-      try {
-        final newContent = contentController.text.trim();
-        final newTags = tagsController.text.split(',').map((t) => t.trim()).where((t) => t.isNotEmpty).toList();
-        
-        await _communityService.editPost(
-          post.id,
-          content: newContent,
-          tags: newTags,
+      }
+      return;
+    }
+
+    try {
+      await _communityService.editPost(
+        post.id,
+        content: newContent,
+        tags: newTags,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Post bearbeitet!'),
+            backgroundColor: Colors.green,
+          ),
         );
-        
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('✅ Post bearbeitet!'),
-              backgroundColor: Colors.green,
-            ),
-          );
-          _loadData(); // Reload
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('❌ Fehler: $e'), backgroundColor: Colors.red),
-          );
-        }
+        _loadData(); // Reload
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('❌ Fehler: $e'),
+              backgroundColor: Colors.red),
+        );
       }
     }
   }
@@ -1210,21 +1273,65 @@ class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern> w
     
     if (confirm == true) {
       try {
+        // Snapshot vor dem Löschen — für Undo
+        final snapshot = post;
+
         await _communityService.deletePost(post.id, currentUsername);
-        
+
         if (mounted) {
+          _loadData(); // Reload sofort
+
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('✅ Post gelöscht!'),
-              backgroundColor: Colors.green,
+            SnackBar(
+              content: const Text('🗑️ Post gelöscht'),
+              backgroundColor: Colors.grey[800],
+              duration: const Duration(seconds: 5),
+              action: SnackBarAction(
+                label: 'Rückgängig',
+                textColor: _kPurpleL,
+                onPressed: () async {
+                  // Post neu erstellen (neue ID, gleicher Inhalt)
+                  try {
+                    await _communityService.createPost(
+                      username: currentUsername,
+                      content: snapshot.content,
+                      tags: snapshot.tags,
+                      worldType: WorldType.energie,
+                      authorAvatar: snapshot.authorAvatar,
+                      mediaUrl: snapshot.mediaUrl,
+                      mediaType: snapshot.mediaType,
+                    );
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('✅ Post wiederhergestellt'),
+                          backgroundColor: Colors.green,
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                      _loadData();
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(_friendlyErrorMessage(e)),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  }
+                },
+              ),
             ),
           );
-          _loadData(); // Reload
         }
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('❌ Fehler: $e'), backgroundColor: Colors.red),
+            SnackBar(
+                content: Text(_friendlyErrorMessage(e)),
+                backgroundColor: Colors.red),
           );
         }
       }

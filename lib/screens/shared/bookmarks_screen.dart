@@ -249,37 +249,52 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
   }
 
   Widget _buildEmptyState() {
+    final isFiltered =
+        _searchQuery.isNotEmpty || _selectedCategory != null;
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            _searchQuery.isNotEmpty || _selectedCategory != null
-                ? Icons.search_off
-                : Icons.bookmark_border,
-            size: 64,
-            color: Colors.grey,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            _searchQuery.isNotEmpty || _selectedCategory != null
-                ? 'Keine passenden Bookmarks gefunden'
-                : 'Noch keine Bookmarks',
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              isFiltered ? Icons.search_off : Icons.bookmark_border,
+              size: 64,
+              color: Colors.grey,
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            _searchQuery.isNotEmpty || _selectedCategory != null
-                ? 'Versuche eine andere Suche'
-                : 'Speichere interessante Recherchen',
-            style: TextStyle(
-              color: Colors.grey[600],
+            const SizedBox(height: 16),
+            Text(
+              isFiltered
+                  ? 'Keine passenden Bookmarks gefunden'
+                  : 'Noch keine Bookmarks',
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: 8),
+            Text(
+              isFiltered
+                  ? 'Versuche eine andere Suche oder lösche den Filter.'
+                  : 'Speichere interessante Recherchen mit dem Lesezeichen-Symbol — sie erscheinen dann hier.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey[600], height: 1.4),
+            ),
+            if (isFiltered) ...[
+              const SizedBox(height: 20),
+              OutlinedButton.icon(
+                onPressed: () {
+                  setState(() {
+                    _searchQuery = '';
+                    _selectedCategory = null;
+                  });
+                },
+                icon: const Icon(Icons.clear_rounded, size: 18),
+                label: const Text('Filter zurücksetzen'),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }

@@ -1,0 +1,38 @@
+# ───────────────────────────────────────────────────────────────────────────
+# WB-LIVEKIT-SNIPPET — additiv zu Mensaena's Caddyfile
+# ───────────────────────────────────────────────────────────────────────────
+#
+# Dieser Snippet wird vom Workflow `deploy_livekit_wb.yml` zwischen den Markern
+# `# >>> WB-LIVEKIT-BEGIN` und `# <<< WB-LIVEKIT-END` in Mensaena's Caddyfile
+# eingefügt. Idempotent: bei Re-Deploys wird der Block ersetzt, nicht angehängt.
+#
+# Caddy generiert automatisch ein ACME-Cert für die neue Subdomain.
+# Reverse-Proxy zum WB-LiveKit-Container (hört auf 127.0.0.1:7980).
+#
+# Mensaena-Schutz:
+#   - Snippet ändert NICHTS an Mensaena's Site-Definitionen
+#   - Caddyfile-Backup wird vor jedem Edit angelegt
+#   - Caddy-Validate vor Reload — bei Syntax-Fehler kein Reload
+#   - Reload statt Restart — 0s Downtime für Mensaena
+#   - Bei Fehler: Backup wird wiederhergestellt, Caddy reloaded auf alten State
+
+# >>> WB-LIVEKIT-BEGIN
+livekit-wb.srv1438024.hstgr.cloud {
+    # WebSocket / HTTP zu LiveKit-Container (intern auf Port 7980)
+    reverse_proxy 127.0.0.1:7980 {
+        # WebSocket-Support für LiveKit Signal-Channel
+        header_up Host {host}
+        header_up X-Real-IP {remote_host}
+        # Lange Timeouts für Calls (4h max)
+        transport http {
+            read_timeout 4h
+            write_timeout 4h
+        }
+    }
+
+    log {
+        output file /var/log/caddy/livekit-wb.log
+        format console
+    }
+}
+# <<< WB-LIVEKIT-END

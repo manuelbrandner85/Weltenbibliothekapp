@@ -83,6 +83,7 @@ class _GeopolitikMapScreenState extends State<GeopolitikMapScreen>
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
+
         backgroundColor: const Color(0xFF1A1A2E),
         title: const Text('🎭 Geopolitisches Ereignis', style: TextStyle(color: Colors.red)),
         content: Column(
@@ -144,7 +145,11 @@ class _GeopolitikMapScreenState extends State<GeopolitikMapScreen>
           ),
         ],
       ),
-    );
+    ).whenComplete(() {
+      // Controller-Lifecycle: dispose nach Dialog-Schließen
+      titleCtrl.dispose();
+      descCtrl.dispose();
+    });
   }
 
   @override

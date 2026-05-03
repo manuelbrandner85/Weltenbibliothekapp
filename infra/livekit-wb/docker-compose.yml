@@ -1,64 +1,55 @@
 name: livekit-weltenbibliothek
 
-# Weltenbibliothek LiveKit-Server
-# Läuft auf eigenen Ports (7891/7892) — kein Konflikt mit bestehendem Caddy/Mensaena.
-# TLS via Traefik + Cloudflare DNS-01 ACME (kein Port 80/443 nötig).
+# Weltenbibliothek LiveKit-Server — eigene Instanz, getrennt von Mensaena.
+# - Eigener API-Key (wb-...), keine Vermischung mit Mensaena
+# - LiveKit-Container hört auf Host-Port 7980 (nicht 7880 = LiveKit-Default)
+# - UDP-Media-Range 60001-65000 (Mensaena nutzt 50000-60000) → KEIN Overlap
+# - KEIN TURN-Server in WB (Mensaena könnte 5350/3479 belegen) → STUN-only
+# - KEIN eigener Reverse-Proxy mehr — Mensaena's Caddy macht das Routing
+#   für `livekit-wb.srv1438024.hstgr.cloud` → 127.0.0.1:7980 (additive Caddy-Config)
 #
-# Starten: docker compose up -d
-# Stoppen: docker compose down
-# Logs:    docker compose logs -f
+# MENSAENA-SAFETY-LISTE (vor jedem manuellen Eingriff lesen!):
+#   ✓ Eigener Container-Name `livekit-weltenbibliothek` (Mensaena: livekit-livekit-1)
+#   ✓ Eigenes Docker-Network `livekit-wb-net` (kein Cross-Talk)
+#   ✓ Eigene Host-Ports — KEINE Überschneidung mit 80/443 (Mensaena Web)
+#   ✓ Verzeichnis /docker/livekit-wb/ (Mensaena: andere Lokation)
+#
+# Starten:  docker compose -f /docker/livekit-wb/docker-compose.yml up -d
+# Stoppen:  docker compose -f /docker/livekit-wb/docker-compose.yml down
+# Logs:     docker compose -f /docker/livekit-wb/docker-compose.yml logs -f
 
 services:
 
   # ── LiveKit Medienserver ───────────────────────────────────────────────────
+  # Hört intern auf 7980 (HTTP, kein TLS)
+  # Mensaena's Caddy terminiert TLS und proxied https://livekit-wb.* → 127.0.0.1:7980
   livekit:
     image: livekit/livekit-server:v1.7
     container_name: livekit-weltenbibliothek
     restart: unless-stopped
     ports:
-      - "5350:5350/udp"                    # TURN UDP
-      - "3479:3479/udp"                    # TURN UDP (alternativ)
-      - "4443:4443/tcp"                    # TURN TLS
-      - "60001-65000:60001-65000/udp"      # WebRTC Media-Ports
+      # HTTP/WS-Signal — Mensaena's Caddy proxied hierhin
+      - "127.0.0.1:7980:7980/tcp"
+      # RTC TCP-Fallback (für Clients hinter strengen Firewalls)
+      - "7981:7981/tcp"
+      # WebRTC Media — UDP-Range 60001-61000 (1000 Ports).
+      # Vorher 100 Ports → bei vollen Räumen Track-Drops (≈4 Ports/User).
+      # 1000 Ports = ~1-1.5 GB docker-proxy RAM — vertretbar.
+      - "60001-61000:60001-61000/udp"
+      # KEIN TURN-Server (UDP 5350/3479) — Mensaena könnte dort belegen
     volumes:
       - ./livekit.yaml:/etc/livekit.yaml:ro
     command: --config /etc/livekit.yaml
     networks:
       - livekit-wb-net
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:7880"]
+      test: ["CMD", "wget", "-qO-", "http://localhost:7980"]
       interval: 30s
       timeout: 10s
       retries: 5
       start_period: 10s
 
-  # ── Traefik Reverse Proxy + TLS ────────────────────────────────────────────
-  # Eigene Ports 7891 (HTTP) / 7892 (HTTPS/WSS) → kein Konflikt mit Port 80/443
-  # ACME DNS-01 via Cloudflare → kein Port-80-Zugriff nötig
-  traefik:
-    image: traefik:v3.1
-    container_name: traefik-weltenbibliothek
-    restart: unless-stopped
-    ports:
-      - "7891:7891/tcp"    # HTTP (optional, für Redirect)
-      - "7892:7892/tcp"    # HTTPS / WSS — hier verbindet sich der LiveKit-Client
-    environment:
-      - CF_DNS_API_TOKEN=${CLOUDFLARE_DNS_API_TOKEN}
-    volumes:
-      - ./traefik.yml:/etc/traefik/traefik.yml:ro
-      - ./dynamic.yml:/etc/traefik/dynamic.yml:ro
-      - traefik-wb-acme:/acme
-    networks:
-      - livekit-wb-net
-    depends_on:
-      livekit:
-        condition: service_healthy
-
 networks:
   livekit-wb-net:
     name: livekit-wb-net
     driver: bridge
-
-volumes:
-  traefik-wb-acme:
-    name: traefik-wb-acme

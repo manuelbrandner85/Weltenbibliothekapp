@@ -41,7 +41,9 @@ class BackendHealthService {
       _checkGroupToolsApi(),
     ];
 
-    final statuses = await Future.wait(futures);
+    // eagerError:false — wenn 1 Health-Check failt, lassen wir die anderen
+    // ihre Ergebnisse liefern statt alle zu verwerfen
+    final statuses = await Future.wait(futures, eagerError: false);
     
     results['Community API'] = statuses[0];
     results['Main API'] = statuses[1];

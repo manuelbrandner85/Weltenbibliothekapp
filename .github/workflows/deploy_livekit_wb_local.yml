@@ -1,0 +1,242 @@
+name: 🎥 LiveKit-WB Deploy (Self-Hosted Runner)
+
+# Self-Hosted-Runner-Variante des LiveKit-WB-Deploys.
+# Läuft direkt AUF dem VPS — kein SSH, keine Hostinger-Firewall-Probleme.
+#
+# Vorteile gegenüber deploy_livekit_wb.yml:
+#   - Keine Runner-IP-Blockaden mehr
+#   - Schnelleres Deployment (lokale Operationen statt SSH-Wrapper)
+#   - Sicherer (kein VPS_PASSWORD im GitHub-Secret nötig)
+#   - Stabiler (keine Network-Drops mid-deploy)
+#
+# Voraussetzungen:
+#   - Self-Hosted-Runner auf dem VPS installiert (siehe scripts/setup_github_runner.sh)
+#   - Runner hat Docker-Group-Zugriff
+#   - Runner kann nach /docker/livekit-wb/ schreiben
+#   - Runner hat ACL-Schreibrecht auf Mensaena's Caddyfile (additiv)
+#
+# 🛡️ MENSAENA-SCHUTZ:
+#   - Pre/Post-Health-Check für Mensaena's Container
+#   - Caddyfile-Backup vor jeder Änderung
+#   - Idempotente BEGIN/END-Marker
+#   - Caddy validate vor Reload, Auto-Rollback bei Fehler
+#   - Caddy reload statt Restart (0s Downtime)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'infra/livekit-wb/**'
+      - '.github/workflows/deploy_livekit_wb_local.yml'
+
+concurrency:
+  group: deploy-livekit-wb
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: 🚀 LiveKit-WB Deploy (lokal auf VPS)
+    runs-on: self-hosted
+    timeout-minutes: 15
+    env:
+      WB_DIR: /docker/livekit-wb
+      WB_DOMAIN: livekit-wb.srv1438024.hstgr.cloud
+      MENSAENA_HEALTH_URL: https://livekit.srv1438024.hstgr.cloud
+      CADDY_CONTAINER: livekit-caddy-1
+      WB_CONTAINER: livekit-weltenbibliothek
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      # ─────────────────────────────────────────────────────────────────────
+      # 🛡️ STEP 1: PRE-DEPLOY MENSAENA-HEALTH-CHECK
+      # ─────────────────────────────────────────────────────────────────────
+      - name: 🛡️ Pre-Deploy Mensaena-Health-Check
+        run: |
+          set -euo pipefail
+          echo "→ Mensaena-Container müssen laufen"
+          STATUS=$(docker ps --format '{{.Names}}: {{.Status}}' \
+            | grep -E '^(livekit-caddy-1|livekit-livekit-1):' || true)
+          echo "$STATUS"
+          if ! echo "$STATUS" | grep -q "^livekit-caddy-1: Up"; then
+            echo "❌ Mensaena's Caddy (livekit-caddy-1) läuft nicht — Abbruch"
+            exit 1
+          fi
+          if ! echo "$STATUS" | grep -q "^livekit-livekit-1: Up"; then
+            echo "❌ Mensaena's LiveKit (livekit-livekit-1) läuft nicht — Abbruch"
+            exit 1
+          fi
+          echo "✅ Mensaena healthy"
+
+      # ─────────────────────────────────────────────────────────────────────
+      # 🛡️ STEP 2: PORT-KONFLIKT-CHECK
+      # ─────────────────────────────────────────────────────────────────────
+      - name: 🛡️ Port-Konflikt-Check
+        run: |
+          set -euo pipefail
+          CONFLICTS=$(ss -tulnp 2>/dev/null \
+            | grep -E ':(7980|7981|60001) ' \
+            | grep -v "docker-proxy.*${WB_CONTAINER}" || true)
+          if [ -n "$CONFLICTS" ]; then
+            echo "❌ Port-Konflikt:"
+            echo "$CONFLICTS"
+            exit 1
+          fi
+          echo "✅ Alle WB-Ports frei"
+
+      # ─────────────────────────────────────────────────────────────────────
+      # STEP 3: CADDYFILE-PFAD ERMITTELN
+      # ─────────────────────────────────────────────────────────────────────
+      - name: 🔍 Caddyfile-Pfad ermitteln
+        run: |
+          set -euo pipefail
+          CADDYFILE=$(docker inspect ${CADDY_CONTAINER} --format \
+            '{{range .Mounts}}{{if or (eq .Destination "/etc/caddy/Caddyfile") (eq .Destination "/Caddyfile")}}{{.Source}}{{end}}{{end}}')
+          if [ -z "$CADDYFILE" ] || [ ! -f "$CADDYFILE" ]; then
+            echo "❌ Caddyfile-Mount nicht findbar"
+            docker inspect ${CADDY_CONTAINER} --format \
+              '{{range .Mounts}}{{.Source}} -> {{.Destination}}{{println}}{{end}}'
+            exit 1
+          fi
+          echo "✅ Caddyfile: $CADDYFILE"
+          echo "MENSAENA_CADDYFILE=$CADDYFILE" >> $GITHUB_ENV
+
+      # ─────────────────────────────────────────────────────────────────────
+      # STEP 4: WB-INFRA + CONTAINER STARTEN
+      # ─────────────────────────────────────────────────────────────────────
+      - name: 📦 WB-Infra deployen + Container starten
+        run: |
+          set -euo pipefail
+          if [[ "${WB_DIR}" != *livekit-wb* ]]; then
+            echo "❌ WB_DIR='${WB_DIR}' enthält kein 'livekit-wb' — abbruch"
+            exit 1
+          fi
+          mkdir -p "${WB_DIR}"
+          for f in docker-compose.yml livekit.yaml caddy-snippet.caddy; do
+            cp -f "infra/livekit-wb/${f}" "${WB_DIR}/${f}"
+          done
+          chmod 600 "${WB_DIR}/livekit.yaml"
+          chmod 644 "${WB_DIR}"/{docker-compose.yml,caddy-snippet.caddy}
+
+          cd "${WB_DIR}"
+          docker compose pull
+          docker compose up -d --remove-orphans
+          echo "⏳ Warte 8s …"
+          sleep 8
+          docker compose ps
+          docker compose logs --tail=15 livekit
+
+      # ─────────────────────────────────────────────────────────────────────
+      # 🛡️ STEP 5: CADDYFILE ADDITIV ERWEITERN
+      # ─────────────────────────────────────────────────────────────────────
+      - name: 🛡️ Mensaena-Caddyfile additiv um WB-Site erweitern
+        run: |
+          set -euo pipefail
+          BACKUP_DIR="${WB_DIR}/caddyfile-backups"
+          mkdir -p "$BACKUP_DIR"
+          TS=$(date +%Y%m%d-%H%M%S)
+          BACKUP="$BACKUP_DIR/Caddyfile.$TS.bak"
+
+          cp "$MENSAENA_CADDYFILE" "$BACKUP"
+          echo "✅ Backup: $BACKUP"
+
+          if grep -q '^# >>> WB-LIVEKIT-BEGIN' "$MENSAENA_CADDYFILE"; then
+            echo "→ Bestehenden WB-Block ersetzen (idempotent)"
+            awk '
+              /^# >>> WB-LIVEKIT-BEGIN/ { skip=1; next }
+              /^# <<< WB-LIVEKIT-END/ { skip=0; next }
+              !skip { print }
+            ' "$MENSAENA_CADDYFILE" > "$MENSAENA_CADDYFILE.tmp"
+            mv "$MENSAENA_CADDYFILE.tmp" "$MENSAENA_CADDYFILE"
+          else
+            echo "→ Erste WB-Site-Definition — wird angehängt"
+          fi
+
+          echo '' >> "$MENSAENA_CADDYFILE"
+          grep -A 9999 '^# >>> WB-LIVEKIT-BEGIN' "${WB_DIR}/caddy-snippet.caddy" \
+            | grep -B 9999 '^# <<< WB-LIVEKIT-END' >> "$MENSAENA_CADDYFILE"
+          echo "✅ WB-Block in Caddyfile geschrieben"
+
+          # Caddy validate
+          if ! docker exec ${CADDY_CONTAINER} caddy validate --config /etc/caddy/Caddyfile 2>&1; then
+            echo "❌ Syntax-Fehler — ROLLBACK"
+            cp "$BACKUP" "$MENSAENA_CADDYFILE"
+            docker exec ${CADDY_CONTAINER} caddy validate --config /etc/caddy/Caddyfile || \
+              { echo "❌❌❌ Auch Backup invalide — manuelle Hilfe!"; exit 2; }
+            exit 1
+          fi
+          echo "✅ Caddy validate OK"
+
+          # Caddy reload (graceful)
+          if ! docker exec ${CADDY_CONTAINER} caddy reload --config /etc/caddy/Caddyfile 2>&1; then
+            echo "❌ Reload fehlgeschlagen — ROLLBACK"
+            cp "$BACKUP" "$MENSAENA_CADDYFILE"
+            docker exec ${CADDY_CONTAINER} caddy reload --config /etc/caddy/Caddyfile || true
+            exit 1
+          fi
+          echo "✅ Caddy reloaded"
+
+      # ─────────────────────────────────────────────────────────────────────
+      # 🛡️ STEP 6: POST-DEPLOY MENSAENA-CHECK
+      # ─────────────────────────────────────────────────────────────────────
+      - name: 🛡️ Post-Deploy Mensaena-Health-Check
+        run: |
+          set -euo pipefail
+          STATUS=$(docker ps --format '{{.Names}}: {{.Status}}' \
+            | grep -E '^(livekit-caddy-1|livekit-livekit-1):')
+          if ! echo "$STATUS" | grep -q "^livekit-caddy-1: Up"; then
+            echo "❌❌❌ MENSAENA-CADDY NICHT MEHR HEALTHY!"
+            echo "$STATUS"
+            exit 1
+          fi
+          if ! echo "$STATUS" | grep -q "^livekit-livekit-1: Up"; then
+            echo "❌❌❌ MENSAENA-LIVEKIT NICHT MEHR HEALTHY!"
+            echo "$STATUS"
+            exit 1
+          fi
+          echo "✅ Mensaena beide Container weiterhin Up"
+
+          # Extern erreichbar?
+          for i in 1 2 3; do
+            HTTP=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 10 \
+              "${MENSAENA_HEALTH_URL}" || echo "000")
+            echo "Mensaena ext. Test $i: HTTP $HTTP"
+            [ "$HTTP" != "000" ] && break
+            sleep 3
+          done
+
+      # ─────────────────────────────────────────────────────────────────────
+      # STEP 7: WB-HEALTH-CHECK
+      # ─────────────────────────────────────────────────────────────────────
+      - name: 🩺 WB-Health-Check (Caddy generiert Cert beim ersten Aufruf)
+        run: |
+          set -euo pipefail
+          echo "→ Test https://${WB_DOMAIN}/ …"
+          for i in 1 2 3 4 5 6 7 8 9 10; do
+            HTTP=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 15 \
+              "https://${WB_DOMAIN}/" || echo "000")
+            echo "Versuch $i: HTTP $HTTP"
+            if [ "$HTTP" != "000" ] && [ "$HTTP" != "525" ] && [ "$HTTP" != "526" ]; then
+              echo "✅ WB-LiveKit erreichbar (HTTP $HTTP)"
+              exit 0
+            fi
+            sleep 8
+          done
+          echo "❌ WB-LiveKit antwortet nicht — Caddy/Cert prüfen:"
+          docker logs ${CADDY_CONTAINER} --tail=30
+          exit 1
+
+      - name: 📝 Zusammenfassung
+        if: always()
+        run: |
+          echo "## 🎥 LiveKit-WB Deployment (Self-Hosted)" >> $GITHUB_STEP_SUMMARY
+          echo "- Runner: \`self-hosted\` (auf VPS)" >> $GITHUB_STEP_SUMMARY
+          echo "- WB-Domain: \`${WB_DOMAIN}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- WB-URL: \`wss://${WB_DOMAIN}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Caddyfile: \`${MENSAENA_CADDYFILE:-(nicht ermittelt)}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- WB-Container: \`${WB_CONTAINER}\` (intern Port 7980)" >> $GITHUB_STEP_SUMMARY
