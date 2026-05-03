@@ -35,8 +35,29 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
   
   MaterieProfile? _materieProfile;
   EnergieProfile? _energieProfile;
-  
+
   bool _isLoading = true;
+  bool _isUploadingAvatar = false;
+
+  /// Mappt technische Avatar-Upload-Errors auf nutzerfreundliche deutsche Texte.
+  String _avatarErrorMessage(Object e) {
+    final s = e.toString().toLowerCase();
+    if (s.contains('socket') ||
+        s.contains('failed host lookup') ||
+        s.contains('network')) {
+      return '📡 Keine Internet-Verbindung — bitte WLAN/Mobilfunk prüfen.';
+    }
+    if (s.contains('timeout') || s.contains('timed out')) {
+      return '⏱️ Upload-Timeout — bitte später erneut versuchen.';
+    }
+    if (s.contains('413') || s.contains('too large')) {
+      return '📏 Bild zu groß — bitte ein kleineres wählen (max 5 MB).';
+    }
+    if (s.contains('401') || s.contains('unauthorized')) {
+      return '🔒 Nicht angemeldet — bitte App neu starten und einloggen.';
+    }
+    return '⚠️ Upload fehlgeschlagen — bitte später erneut versuchen.';
+  }
   
   @override
   void initState() {
@@ -338,30 +359,54 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
           Row(
             children: [
               GestureDetector(
-                onTap: () async {
-                  final source = await AvatarUploadService.showImageSourceDialog(context);
-                  if (source != null && mounted) {
-                    final avatarService = AvatarUploadService();
-                    final file = source == ImageSource.gallery
-                        ? await avatarService.pickImageFromGallery()
-                        : await avatarService.pickImageFromCamera();
-                    
-                    if (file != null && mounted) {
-                      // ✅ Upload avatar to server
-                      final userId = supabase.auth.currentUser?.id 
-                          ?? _materieProfile?.userId 
-                          ?? _energieProfile?.userId 
-                          ?? 'anonymous';
-                      final avatarService = AvatarUploadService();
-                      final url = await avatarService.uploadAvatar(file, userId);
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(url != null ? '✅ Avatar hochgeladen!' : '⚠️ Upload fehlgeschlagen – lokal gespeichert')),
-                        );
-                      }
-                    }
-                  }
-                },
+                onTap: _isUploadingAvatar
+                    ? null
+                    : () async {
+                        final source =
+                            await AvatarUploadService.showImageSourceDialog(
+                                context);
+                        if (source == null || !mounted) return;
+
+                        final avatarService = AvatarUploadService();
+                        final file = source == ImageSource.gallery
+                            ? await avatarService.pickImageFromGallery()
+                            : await avatarService.pickImageFromCamera();
+                        if (file == null || !mounted) return;
+
+                        setState(() => _isUploadingAvatar = true);
+                        try {
+                          final userId = supabase.auth.currentUser?.id ??
+                              _materieProfile?.userId ??
+                              _energieProfile?.userId ??
+                              'anonymous';
+                          final url =
+                              await avatarService.uploadAvatar(file, userId);
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(url != null
+                                  ? '✅ Avatar hochgeladen'
+                                  : '⚠️ Upload fehlgeschlagen — bitte später erneut versuchen'),
+                              backgroundColor:
+                                  url != null ? Colors.green : Colors.orange,
+                              duration: const Duration(seconds: 3),
+                            ),
+                          );
+                        } catch (e) {
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(_avatarErrorMessage(e)),
+                              backgroundColor: Colors.red,
+                              duration: const Duration(seconds: 4),
+                            ),
+                          );
+                        } finally {
+                          if (mounted) {
+                            setState(() => _isUploadingAvatar = false);
+                          }
+                        }
+                      },
                 child: Stack(
                   children: [
                     Container(
@@ -372,13 +417,24 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                           colors: [Color(0xFF2196F3), Color(0xFF00BCD4)],
                         ),
                         shape: BoxShape.circle,
-                        border: Border.all(color: WbDesign.materieBlue, width: 2),
+                        border: Border.all(
+                            color: WbDesign.materieBlue, width: 2),
                       ),
-                      child: const Center(
-                        child: Text(
-                          '🔵',
-                          style: TextStyle(fontSize: 28),
-                        ),
+                      child: Center(
+                        child: _isUploadingAvatar
+                            ? const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.5,
+                                  valueColor: AlwaysStoppedAnimation(
+                                      Colors.white),
+                                ),
+                              )
+                            : const Text(
+                                '🔵',
+                                style: TextStyle(fontSize: 28),
+                              ),
                       ),
                     ),
                     Positioned(
@@ -391,8 +447,10 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                           shape: BoxShape.circle,
                           border: Border.all(color: Colors.white, width: 2),
                         ),
-                        child: const Icon(
-                          Icons.camera_alt,
+                        child: Icon(
+                          _isUploadingAvatar
+                              ? Icons.hourglass_top_rounded
+                              : Icons.camera_alt,
                           size: 12,
                           color: Colors.white,
                         ),
