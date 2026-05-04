@@ -655,36 +655,83 @@ chore(deps): Dependencies aktualisiert
     Container-Name `livekit-weltenbibliothek`, eigenes Network `livekit-wb-net`,
     keine Port-Überschneidungen mit Mensaena (80/443 + 50000-60000 UDP + 7880/7881)
 
+- [x] **PR #97 — B10.3 Picture-in-Picture (PiP)** (2026-05-04, nativer Release nötig):
+  - PiP-Modus für Android via `LiveKitMiniBar`-Widget + `MainActivity.kt` `enterPictureInPictureMode()`
+
+- [x] **PR #98 — ControlBar Redesign: Icon-Fix + 4-Button-Layout** (2026-05-04, Patch ✓):
+  - Chinese-Character-Bug gefixt: kaputte `_rounded` Icon-Varianten ersetzt
+  - ControlBar auf 4 Buttons: Mikrofon (PTT), Kamera, Mehr⋯, Auflegen
+
+- [x] **PR #99 — B10.6 Raumstimmung + B10.8 Spatial Audio** (2026-05-04, Patch ✓):
+  - 5 Themes (standard/netzwerk/kosmos/mandala/kristall), welt-gefiltert, via TopBar auswählbar
+  - `AudioFeedbackService` mit `ValueNotifier<RoomTheme>` + synthetisierten WAV-Tönen
+  - Spatial Audio visual-only (livekit_client 2.5.4 hat kein `setVolume()` im Flutter SDK)
+
+- [x] **PR #100 — Recording + ControlBar 4-Button-Finale** (2026-05-04, Patch ✓):
+  - **Recording**: `RecordingService` + Worker-Endpoints `/api/livekit/recording/start|stop`
+    - Admin-JWT (roomAdmin), LiveKit Egress API (`StartRoomCompositeEgress`/`StopEgress`)
+    - R2/S3-Output wenn `LIVEKIT_EGRESS_S3_*` Secrets gesetzt, sonst lokale Datei
+    - Blinkender REC-Badge in TopBar, Aufnahme-Tile im Optionen-Sheet
+    - ⚠️ Benötigt LiveKit Egress Runner Container auf dem VPS
+  - **ControlBar finale Lösung** (4 Buttons, immer sichtbar):
+    - Mikrofon | Kamera | Optionen | Auflegen
+    - `_SmartMehrButton`: `Icons.tune_rounded`, zeigt Mini-Dots für aktive Features
+      (Kamera=grün, Bildschirm=blau, Hand=gelb, Co-Watch=lila), Zahl-Badge für Chat
+    - Alle Sekundär-Aktionen im Optionen-Sheet: Chat, Hand, Bildschirm, Reaktion,
+      Co-Watch, Aufnahme, Kamera drehen, Raumstimmung, Spatial Audio
+
+- [x] **PR #101 — B8-B12 + B10.6/8 + Recording + 4-Bug-Fixes** (2026-05-04, Patch ✓):
+  - **4 Merge-Konflikt-Bereinigungen** in `livekit_group_call_screen.dart`:
+    - Duplikate Imports entfernt (cowatch, incall, livekit, live_caption, etc.)
+    - Orphan `child: SafeArea(` Fragment vor korrektem AnimatedBuilder-child entfernt
+    - ViewMode-Label-Duplikat, Caption-Icon-Duplikat, Mic/Kamera-Label-Duplikate bereinigt
+  - **Bug 1 — Chat schreiben/bearbeiten/löschen**: v44-Migration erstellt alle App-Räume
+    idempotent (`ON CONFLICT DO NOTHING`) — behebt FK-Constraint-Fehler bei room_id;
+    `apply_migrations.yml` läuft v44 automatisch bei jedem main-Push
+  - **Bug 2 — Profilbild-Upload**: Worker `/api/avatar/upload` unterstützt jetzt JSON+base64
+    (Flutter-Client sendet `{user_id, image_data: base64}`, Worker dekodiert via `atob()`);
+    speichert URL direkt in `profiles.avatar_url` via PATCH
+  - **Bug 3 — Push wenn jemand live geht**: `voice_sessions` Tabelle in Supabase (v44 Migration);
+    Supabase-Trigger `trg_voice_session_joined` schreibt in `notification_queue`;
+    `VoiceSessionService` (neu) meldet join/leave via Worker `/api/voice/session/join|leave`;
+    `livekit_call_service.dart` ruft join/leave automatisch auf
+  - **Bug 4 — Live-Banner wie Telegram**: `live_room_banner.dart` (neues Widget);
+    Supabase Realtime-Abo auf `voice_sessions` für die aktive Welt;
+    Blinkender roter Punkt, Teilnehmer-Namen, "Beitreten"-Button;
+    In Materie- und Energie-Chat-Screen eingebunden direkt unter `ChatStatusBanner`
+  - **Worker**: `/api/voice/sessions?world=X` (GET aktive Sessions),
+    `/api/voice/session/join` (POST), `/api/voice/session/leave` (POST)
+
 ### ⚠️ Noch ausstehend / bekannte Probleme
 
 1. **SQL-Migrationen**: `apply_migrations.yml` läuft automatisch bei jedem main-Push.
    - `supabase/migrations/20260402_v12_missing_tool_tables.sql` (7 Tool-Tabellen) — noch manuell via SQL-Editor nötig, da nicht in apply_migrations.yml enthalten
-   - v37, v38, v39, v40, v41, v42 werden automatisch per CI angewendet
+   - v37-v44 werden automatisch per CI angewendet (v44 = Chat-Räume + voice_sessions)
 
-2. **544 info-level Issues** (keine Errors/Warnings):
+2. **info-level Issues** (keine Errors/Warnings):
    - `use_build_context_synchronously` in mehreren Screens
    - `unused_field` Warnungen (nicht kritisch)
    - `deprecated_member_use` (Radio-Widgets, alte APIs)
 
-3. **🎥 LiveKit vollständig implementiert + Join-Fix** (v5.39.0+, PR #55+56+64+71):
-   - flutter_webrtc komplett entfernt — alle 17 alten WebRTC-Dateien gelöscht
-   - livekit_client + flutter_background als Dependencies
-   - **Token-Endpoint: Cloudflare Worker** `/api/livekit/token` (HMAC-SHA256-JWT, 4h TTL).
-     Supabase Edge Function `livekit-token` als Fallback vorhanden aber nicht primär.
-   - **`node_ip: 72.62.154.95`** in `livekit.yaml` — ICE-Kandidaten zeigen jetzt auf externe IP.
-   - `LiveKitCallService` — join/leave, alle Track-Toggles (Mic/Cam/Screen/Hand)
-   - `livekit_call_provider.dart` (Riverpod) für State-Sharing
-   - `livekit_group_call_screen.dart` — professionelle Vollbild-UI (1154 Zeilen),
-     animierter Hintergrund, responsives Teilnehmer-Grid, Glassmorphic TopBar/ControlBar
-   - Voice-Buttons in beiden Chat-Screens öffnen direkt `LiveKitGroupCallScreen`
-   - LiveKit-Server: `livekit-weltenbibliothek` Container auf Hostinger VPS, eigene Instanz,
-     erreichbar via `wss://livekit-wb.srv1438024.hstgr.cloud`
-   - GitHub-Secrets gesetzt: `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`, `LIVEKIT_URL`
+3. **🎥 LiveKit vollständig implementiert** (v5.39.0+, PR #55+56+64+71+97+98+99+100+101):
+   - flutter_webrtc entfernt, livekit_client + flutter_background als Dependencies
+   - **Token-Endpoint: Cloudflare Worker** `/api/livekit/token` (HMAC-SHA256-JWT, 4h TTL)
+   - `LiveKitCallService` — join/leave, Track-Toggles, Token-Refresh, VoiceSession-Tracking
+   - `livekit_group_call_screen.dart` — animierter Hintergrund (5 Themes via B10.6),
+     responsives Grid, **ControlBar: 4 Buttons** (Mikrofon | Kamera | Optionen | Auflegen)
+   - `_SmartMehrButton`: Mini-Dots für aktive Features + Chat-Zahl-Badge
+   - Optionen-Sheet: Chat, Hand, Bildschirm, Reaktion, Co-Watch, Aufnahme, Raumstimmung, Spatial Audio
+   - Recording: `RecordingService` + Worker `/api/livekit/recording/start|stop` (Egress API)
+   - Live-Banner: `live_room_banner.dart` via Supabase Realtime `voice_sessions`
+   - LiveKit-Server: `livekit-weltenbibliothek` auf Hostinger VPS, eigene Instanz
+   - **Noch ausstehend: B10.7 3D-Avatar** (braucht Assets + evtl. neues Package)
+   - **Recording-Voraussetzung**: LiveKit Egress Runner Container auf VPS nötig
 
-4. **Push-Notifications** (Cloudflare-basiert, nicht Firebase) – Registrierung funktioniert,
-   Delivery-Test aussteht
+4. **Push-Notifications wenn jemand live geht**: Supabase-Trigger `trg_voice_session_joined`
+   schreibt in `notification_queue` — wird via FCM/In-App zugestellt (v44 Migration)
 
-5. **Profile Avatar Upload** – Supabase Storage-Integration teilweise, braucht Produktionstest
+5. **Profile Avatar Upload**: Worker `/api/avatar/upload` fixed — unterstützt JSON+base64.
+   Supabase Storage-Bucket `avatars` muss existieren (public, keine RLS auf GET).
 
 6. **Community Likes/Favorites** – Like-State wird aus `CommunityInteractionService`
    Cache geladen (nicht mehr immer false); echter DB-Load bei erstem Aufruf via isLiked()
