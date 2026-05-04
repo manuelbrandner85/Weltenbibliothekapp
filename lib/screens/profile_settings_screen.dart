@@ -385,10 +385,11 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                           final url =
                               await avatarService.uploadAvatar(file, userId);
                           if (!mounted) return;
+                          if (url != null) setState(() => _avatarUrl = url);
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text(url != null
-                                  ? '✅ Avatar hochgeladen'
+                                  ? '✅ Profilbild gespeichert'
                                   : '⚠️ Upload fehlgeschlagen — bitte später erneut versuchen'),
                               backgroundColor:
                                   url != null ? Colors.green : Colors.orange,
@@ -566,8 +567,9 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                       final avatarSvc = AvatarUploadService();
                       final url = await avatarSvc.uploadAvatar(file, userId);
                       if (mounted) {
+                        if (url != null) setState(() => _avatarUrl = url);
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(url != null ? '✅ Avatar hochgeladen!' : '⚠️ Upload fehlgeschlagen')),
+                          SnackBar(content: Text(url != null ? '✅ Profilbild gespeichert' : '⚠️ Upload fehlgeschlagen')),
                         );
                       }
                     }

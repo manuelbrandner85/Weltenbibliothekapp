@@ -88,5 +88,8 @@ jobs:
           run_sql "v44 Chat-Räume sicherstellen + voice_sessions" \
             supabase/migrations/20260504_v44_chat_rooms_ensure_and_voice_sessions.sql
 
+          run_sql "v45 avatars Storage-Bucket + RLS-Policies" \
+            supabase/migrations/20260504_v45_avatars_bucket.sql
+
           echo ""
           echo "🎉 Alle Migrationen erfolgreich angewendet"
