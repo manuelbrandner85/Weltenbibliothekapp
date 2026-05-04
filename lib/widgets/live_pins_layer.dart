@@ -6,7 +6,9 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
+// hide Path: latlong2 hat eigenes Path-Objekt das Flutter's Canvas-Path
+// überschattet → CustomPainter würde nicht kompilieren
+import 'package:latlong2/latlong.dart' hide Path;
 
 import '../services/live_map_pins_service.dart';
 
