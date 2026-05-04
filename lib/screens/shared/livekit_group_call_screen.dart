@@ -1445,16 +1445,22 @@ class _ControlBar extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  // Mikrofon
+                  // Mikrofon (Tap = Toggle, Long-Press = PTT)
                   _CtrlBtn(
                     icon: service.micEnabled
                         ? Icons.mic_rounded
                         : Icons.mic_off_rounded,
-                    label: service.micEnabled ? 'Stumm' : 'Mikrofon',
-                    active: service.micEnabled,
-                    activeColor: accent,
+                    label: service.pttActive
+                        ? 'PTT aktiv'
+                        : (service.micEnabled ? 'Stumm' : 'Mikrofon'),
+                    active: service.micEnabled || service.pttActive,
+                    activeColor: service.pttActive
+                        ? const Color(0xFF00E676) // grüner PTT-Glow
+                        : accent,
                     enabled: isConnected,
                     onTap: () => service.toggleMicrophone(),
+                    onLongPressStart: () => service.pttPress(),
+                    onLongPressEnd: () => service.pttRelease(),
                   ),
                   // Kamera
                   _CtrlBtn(
@@ -1639,6 +1645,9 @@ class _CtrlBtn extends StatelessWidget {
   final bool enabled;
   final bool isDanger;
   final VoidCallback? onTap;
+  // 🎙️ B12: Push-to-Talk Long-Press
+  final VoidCallback? onLongPressStart;
+  final VoidCallback? onLongPressEnd;
 
   const _CtrlBtn({
     required this.icon,
@@ -1648,6 +1657,8 @@ class _CtrlBtn extends StatelessWidget {
     this.activeColor,
     this.isDanger = false,
     this.onTap,
+    this.onLongPressStart,
+    this.onLongPressEnd,
   });
 
   @override
@@ -1673,6 +1684,12 @@ class _CtrlBtn extends StatelessWidget {
       button: true,
       child: GestureDetector(
         onTap: enabled ? onTap : null,
+        onLongPressStart: (enabled && onLongPressStart != null)
+            ? (_) => onLongPressStart!()
+            : null,
+        onLongPressEnd: (enabled && onLongPressEnd != null)
+            ? (_) => onLongPressEnd!()
+            : null,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

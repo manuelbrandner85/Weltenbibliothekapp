@@ -879,6 +879,24 @@ class LiveKitCallService extends ChangeNotifier {
     }
   }
 
+  // 🎙️ B12: Push-to-Talk
+  bool _pttActive = false;
+  bool get pttActive => _pttActive;
+
+  Future<void> pttPress() async {
+    if (_pttActive) return;
+    _pttActive = true;
+    notifyListeners();
+    if (!_micEnabled) await toggleMicrophone();
+  }
+
+  Future<void> pttRelease() async {
+    if (!_pttActive) return;
+    _pttActive = false;
+    notifyListeners();
+    if (_micEnabled) await toggleMicrophone();
+  }
+
   bool _cameraToggleInFlight = false;
 
   /// Kamera ein-/ausschalten. Fragt Permission beim ersten Aktivieren.
