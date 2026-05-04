@@ -655,6 +655,31 @@ chore(deps): Dependencies aktualisiert
     Container-Name `livekit-weltenbibliothek`, eigenes Network `livekit-wb-net`,
     keine Port-Überschneidungen mit Mensaena (80/443 + 50000-60000 UDP + 7880/7881)
 
+- [x] **PR #97 — B10.3 Picture-in-Picture (PiP)** (2026-05-04, nativer Release nötig):
+  - PiP-Modus für Android via `LiveKitMiniBar`-Widget + `MainActivity.kt` `enterPictureInPictureMode()`
+
+- [x] **PR #98 — ControlBar Redesign: Icon-Fix + 4-Button-Layout** (2026-05-04, Patch ✓):
+  - Chinese-Character-Bug gefixt: kaputte `_rounded` Icon-Varianten ersetzt
+  - ControlBar auf 4 Buttons: Mikrofon (PTT), Kamera, Mehr⋯, Auflegen
+
+- [x] **PR #99 — B10.6 Raumstimmung + B10.8 Spatial Audio** (2026-05-04, Patch ✓):
+  - 5 Themes (standard/netzwerk/kosmos/mandala/kristall), welt-gefiltert, via TopBar auswählbar
+  - `AudioFeedbackService` mit `ValueNotifier<RoomTheme>` + synthetisierten WAV-Tönen
+  - Spatial Audio visual-only (livekit_client 2.5.4 hat kein `setVolume()` im Flutter SDK)
+
+- [x] **PR #100 — Recording + ControlBar 4-Button-Finale** (2026-05-04, Patch ✓):
+  - **Recording**: `RecordingService` + Worker-Endpoints `/api/livekit/recording/start|stop`
+    - Admin-JWT (roomAdmin), LiveKit Egress API (`StartRoomCompositeEgress`/`StopEgress`)
+    - R2/S3-Output wenn `LIVEKIT_EGRESS_S3_*` Secrets gesetzt, sonst lokale Datei
+    - Blinkender REC-Badge in TopBar, Aufnahme-Tile im Optionen-Sheet
+    - ⚠️ Benötigt LiveKit Egress Runner Container auf dem VPS
+  - **ControlBar finale Lösung** (4 Buttons, immer sichtbar):
+    - Mikrofon | Kamera | Optionen | Auflegen
+    - `_SmartMehrButton`: `Icons.tune_rounded`, zeigt Mini-Dots für aktive Features
+      (Kamera=grün, Bildschirm=blau, Hand=gelb, Co-Watch=lila), Zahl-Badge für Chat
+    - Alle Sekundär-Aktionen im Optionen-Sheet: Chat, Hand, Bildschirm, Reaktion,
+      Co-Watch, Aufnahme, Kamera drehen, Raumstimmung, Spatial Audio
+
 ### ⚠️ Noch ausstehend / bekannte Probleme
 
 1. **SQL-Migrationen**: `apply_migrations.yml` läuft automatisch bei jedem main-Push.
@@ -666,20 +691,18 @@ chore(deps): Dependencies aktualisiert
    - `unused_field` Warnungen (nicht kritisch)
    - `deprecated_member_use` (Radio-Widgets, alte APIs)
 
-3. **🎥 LiveKit vollständig implementiert + Join-Fix** (v5.39.0+, PR #55+56+64+71):
-   - flutter_webrtc komplett entfernt — alle 17 alten WebRTC-Dateien gelöscht
-   - livekit_client + flutter_background als Dependencies
-   - **Token-Endpoint: Cloudflare Worker** `/api/livekit/token` (HMAC-SHA256-JWT, 4h TTL).
-     Supabase Edge Function `livekit-token` als Fallback vorhanden aber nicht primär.
-   - **`node_ip: 72.62.154.95`** in `livekit.yaml` — ICE-Kandidaten zeigen jetzt auf externe IP.
-   - `LiveKitCallService` — join/leave, alle Track-Toggles (Mic/Cam/Screen/Hand)
-   - `livekit_call_provider.dart` (Riverpod) für State-Sharing
-   - `livekit_group_call_screen.dart` — professionelle Vollbild-UI (1154 Zeilen),
-     animierter Hintergrund, responsives Teilnehmer-Grid, Glassmorphic TopBar/ControlBar
-   - Voice-Buttons in beiden Chat-Screens öffnen direkt `LiveKitGroupCallScreen`
-   - LiveKit-Server: `livekit-weltenbibliothek` Container auf Hostinger VPS, eigene Instanz,
-     erreichbar via `wss://livekit-wb.srv1438024.hstgr.cloud`
-   - GitHub-Secrets gesetzt: `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`, `LIVEKIT_URL`
+3. **🎥 LiveKit vollständig implementiert** (v5.39.0+, PR #55+56+64+71+97+98+99+100):
+   - flutter_webrtc entfernt, livekit_client + flutter_background als Dependencies
+   - **Token-Endpoint: Cloudflare Worker** `/api/livekit/token` (HMAC-SHA256-JWT, 4h TTL)
+   - `LiveKitCallService` — join/leave, Track-Toggles, Token-Refresh
+   - `livekit_group_call_screen.dart` — animierter Hintergrund (5 Themes via B10.6),
+     responsives Grid, **ControlBar: 4 Buttons** (Mikrofon | Kamera | Optionen | Auflegen)
+   - `_SmartMehrButton`: Mini-Dots für aktive Features + Chat-Zahl-Badge
+   - Optionen-Sheet: Chat, Hand, Bildschirm, Reaktion, Co-Watch, Aufnahme, Raumstimmung, Spatial Audio
+   - Recording: `RecordingService` + Worker `/api/livekit/recording/start|stop` (Egress API)
+   - LiveKit-Server: `livekit-weltenbibliothek` auf Hostinger VPS, eigene Instanz
+   - **Noch ausstehend: B10.7 3D-Avatar** (braucht Assets + evtl. neues Package)
+   - **Recording-Voraussetzung**: LiveKit Egress Runner Container auf VPS nötig
 
 4. **Push-Notifications** (Cloudflare-basiert, nicht Firebase) – Registrierung funktioniert,
    Delivery-Test aussteht
