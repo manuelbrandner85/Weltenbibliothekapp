@@ -5,6 +5,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'dart:async';
 import '../../config/api_config.dart';
 import '../shared/livekit_prejoin_screen.dart';
+import 'kaninchenbau/kaninchenbau_screen.dart';
 import '../../services/supabase_service.dart'; // 🔥 supabase Auth
 import 'package:supabase_flutter/supabase_flutter.dart' show RealtimeChannel;
 import '../../services/cloudflare_api_service.dart';
@@ -596,9 +597,6 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
           builder: (_) => KaninchenbauScreen(initialTopic: topic),
         ),
       );
-    }
-    return;
-      Navigator.of(context).push(MaterialPageRoute(builder: (ctx) => screen!));
     }
   }
 
