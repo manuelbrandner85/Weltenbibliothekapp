@@ -91,5 +91,8 @@ jobs:
           run_sql "v45 avatars Storage-Bucket + RLS-Policies" \
             supabase/migrations/20260504_v45_avatars_bucket.sql
 
+          run_sql "v46 Notification-Fixes (voice recipient_id→user_id, community_posts Triggers)" \
+            supabase/migrations/20260504_v46_notification_fixes.sql
+
           echo ""
           echo "🎉 Alle Migrationen erfolgreich angewendet"

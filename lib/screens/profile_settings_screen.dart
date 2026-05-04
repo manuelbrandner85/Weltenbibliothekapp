@@ -39,6 +39,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
 
   bool _isLoading = true;
   bool _isUploadingAvatar = false;
+  String? _avatarUrl;
 
   /// Mappt technische Avatar-Upload-Errors auf nutzerfreundliche deutsche Texte.
   String _avatarErrorMessage(Object e) {
