@@ -1628,6 +1628,95 @@ export default {
       }
     }
 
+    // ── Voice-Session Tracking ────────────────────────────────
+    // POST /api/voice/session/join   { roomName, world, userId, username, displayName }
+    // POST /api/voice/session/leave  { sessionId }
+    // GET  /api/voice/sessions?world=materie  → aktive Sessions
+
+    if (path === '/api/voice/session/join' && method === 'POST') {
+      try {
+        const body = await request.json().catch(() => ({}));
+        const { roomName, world, userId, username, displayName } = body;
+        if (!roomName || !world) return errorResponse('roomName + world erforderlich', 400);
+
+        const anonKey = env.SUPABASE_ANON_KEY || '';
+        const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || anonKey;
+
+        const res = await fetch(
+          `${SUPABASE_URL}/rest/v1/voice_sessions`,
+          {
+            method: 'POST',
+            headers: {
+              'apikey': anonKey,
+              'Authorization': `Bearer ${serviceKey}`,
+              'Content-Type': 'application/json',
+              'Prefer': 'return=representation',
+            },
+            body: JSON.stringify({
+              room_name: roomName,
+              world,
+              user_id: userId || null,
+              username: username || 'Unbekannt',
+              display_name: displayName || username || 'Unbekannt',
+              is_active: true,
+            }),
+          }
+        );
+        const data = await res.json().catch(() => []);
+        return jsonResponse(Array.isArray(data) ? data[0] : data);
+      } catch (e) {
+        return errorResponse(`Session-Join-Fehler: ${e.message}`);
+      }
+    }
+
+    if (path === '/api/voice/session/leave' && method === 'POST') {
+      try {
+        const body = await request.json().catch(() => ({}));
+        const { sessionId, userId, roomName } = body;
+
+        const anonKey = env.SUPABASE_ANON_KEY || '';
+        const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || anonKey;
+
+        // Session per ID oder per userId+roomName beenden
+        let queryStr = sessionId
+          ? `id=eq.${encodeURIComponent(sessionId)}`
+          : `user_id=eq.${encodeURIComponent(userId)}&room_name=eq.${encodeURIComponent(roomName)}&is_active=eq.true`;
+
+        await fetch(
+          `${SUPABASE_URL}/rest/v1/voice_sessions?${queryStr}`,
+          {
+            method: 'PATCH',
+            headers: {
+              'apikey': anonKey,
+              'Authorization': `Bearer ${serviceKey}`,
+              'Content-Type': 'application/json',
+              'Prefer': 'return=minimal',
+            },
+            body: JSON.stringify({ is_active: false, left_at: new Date().toISOString() }),
+          }
+        );
+        return jsonResponse({ status: 'left' });
+      } catch (e) {
+        return errorResponse(`Session-Leave-Fehler: ${e.message}`);
+      }
+    }
+
+    if (path === '/api/voice/sessions' && method === 'GET') {
+      try {
+        const world = url.searchParams.get('world') || '';
+        const anonKey = env.SUPABASE_ANON_KEY || '';
+        const worldFilter = world ? `&world=eq.${encodeURIComponent(world)}` : '';
+        const res = await fetch(
+          `${SUPABASE_URL}/rest/v1/voice_sessions?is_active=eq.true${worldFilter}&select=id,room_name,world,username,display_name,joined_at&order=joined_at.desc`,
+          { headers: { 'apikey': anonKey, 'Authorization': `Bearer ${anonKey}` } }
+        );
+        const data = await res.json().catch(() => []);
+        return jsonResponse(data);
+      } catch (e) {
+        return errorResponse(`Session-List-Fehler: ${e.message}`);
+      }
+    }
+
     // ── Statistiken ───────────────────────────────────────────
     if (path === '/api/statistics' || path.startsWith('/api/statistics')) {
       try {
@@ -2059,19 +2148,46 @@ export default {
     }
 
     // ── Avatar Upload ─────────────────────────────────────────
+    // Unterstützt zwei Formate:
+    //   1. multipart/form-data  mit field 'file' oder 'avatar'
+    //   2. application/json     mit { user_id, image_data: base64 }  ← Flutter-Client
     if (path === '/api/avatar/upload' && method === 'POST') {
       try {
-        const formData = await request.formData();
-        const file = formData.get('file') || formData.get('avatar');
-        const userId = formData.get('userId') || formData.get('user_id') || 'unknown';
-        if (!file) return errorResponse('Keine Datei', 400);
-
         const anonKey = env.SUPABASE_ANON_KEY || '';
         const authHeader = request.headers.get('Authorization') || `Bearer ${anonKey}`;
-        const ext = (file.name || 'avatar.jpg').split('.').pop() || 'jpg';
+        const contentType = request.headers.get('Content-Type') || '';
+
+        let fileBytes;
+        let userId;
+        let mimeType = 'image/jpeg';
+
+        if (contentType.includes('application/json')) {
+          // Flutter-Client sendet JSON mit base64-encodiertem Bild
+          const body = await request.json();
+          userId = body.user_id || body.userId || 'unknown';
+          const b64 = body.image_data || body.imageData || '';
+          if (!b64) return errorResponse('Kein Bild-Daten im JSON', 400);
+          // base64 → Uint8Array
+          const binaryStr = atob(b64);
+          fileBytes = new Uint8Array(binaryStr.length);
+          for (let i = 0; i < binaryStr.length; i++) fileBytes[i] = binaryStr.charCodeAt(i);
+          // Bildformat aus ersten Bytes erkennen (JPEG / PNG / WebP)
+          if (fileBytes[0] === 0x89 && fileBytes[1] === 0x50) mimeType = 'image/png';
+          else if (fileBytes[0] === 0x52 && fileBytes[1] === 0x49) mimeType = 'image/webp';
+        } else {
+          // multipart/form-data
+          const formData = await request.formData();
+          const file = formData.get('file') || formData.get('avatar');
+          userId = formData.get('userId') || formData.get('user_id') || 'unknown';
+          if (!file) return errorResponse('Keine Datei', 400);
+          fileBytes = new Uint8Array(await file.arrayBuffer());
+          mimeType = file.type || 'image/jpeg';
+        }
+
+        const ext = mimeType === 'image/png' ? 'png' : mimeType === 'image/webp' ? 'webp' : 'jpg';
         const fileName = `${userId}/avatar.${ext}`;
 
-        // Direkt in Supabase Storage hochladen
+        // In Supabase Storage hochladen (upsert → überschreibt altes Bild)
         const uploadRes = await fetch(
           `${SUPABASE_URL}/storage/v1/object/avatars/${fileName}`,
           {
@@ -2079,15 +2195,33 @@ export default {
             headers: {
               'apikey': anonKey,
               'Authorization': authHeader,
-              'Content-Type': file.type || 'image/jpeg',
+              'Content-Type': mimeType,
               'x-upsert': 'true',
             },
-            body: file.stream(),
+            body: fileBytes,
           }
         );
         const data = await uploadRes.json().catch(() => ({}));
         const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/avatars/${fileName}`;
-        return jsonResponse({ url: publicUrl, path: fileName, ...data });
+
+        // Avatar-URL auch in profiles.avatar_url speichern
+        if (userId && userId !== 'unknown') {
+          await fetch(
+            `${SUPABASE_URL}/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}`,
+            {
+              method: 'PATCH',
+              headers: {
+                'apikey': anonKey,
+                'Authorization': `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY || anonKey}`,
+                'Content-Type': 'application/json',
+                'Prefer': 'return=minimal',
+              },
+              body: JSON.stringify({ avatar_url: publicUrl }),
+            }
+          ).catch(() => null);
+        }
+
+        return jsonResponse({ avatar_url: publicUrl, url: publicUrl, path: fileName, ...data });
       } catch (e) {
         return errorResponse(`Avatar-Upload-Fehler: ${e.message}`);
       }

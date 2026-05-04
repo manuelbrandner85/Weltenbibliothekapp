@@ -33,6 +33,7 @@ import 'audio_feedback_service.dart';
 import 'cowatch_service.dart';
 import 'incall_chat_service.dart';
 import 'live_caption_service.dart';
+import 'voice_session_service.dart';
 
 /// Verbindungs-Phasen — granular damit die UI passende Indicator zeigen kann.
 enum LiveKitConnectionState {
@@ -589,6 +590,16 @@ class LiveKitCallService extends ChangeNotifier {
       _activeDisplayName = displayName;
       _activeAvatarUrl = avatarUrl;
       _scheduleTokenRefresh(token);
+
+      // 🎤 Voice-Session registrieren (Live-Banner + Push-Notification)
+      final lp3 = room.localParticipant;
+      VoiceSessionService.instance.joinSession(
+        roomName: roomName,
+        world: world,
+        userId: lp3?.identity,
+        username: lp3?.identity ?? displayName,
+        displayName: displayName ?? lp3?.identity,
+      ).ignore();
     } catch (e) {
       _errorMessage = _friendlyError(e);
       _setState(LiveKitConnectionState.error);
@@ -839,6 +850,12 @@ class LiveKitCallService extends ChangeNotifier {
     InCallChatService.instance.detachRoom();
     // 🔊 B10.8: AudioFeedback-Service trennen
     AudioFeedbackService.instance.detachRoom();
+    // 🎤 Voice-Session beenden (Live-Banner + Push)
+    final lp4 = _room?.localParticipant;
+    VoiceSessionService.instance.leaveSession(
+      roomName: _roomName,
+      userId: lp4?.identity,
+    ).ignore();
 
     try {
       await _room?.disconnect();

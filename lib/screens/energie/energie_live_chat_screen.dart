@@ -80,6 +80,7 @@ import '../../services/chat/mention_notification_service.dart';
 import '../../services/chat/user_block_service.dart';
 import '../../services/chat/unread_tracker_service.dart';
 import '../../widgets/chat_animated_background.dart';
+import '../../widgets/live_room_banner.dart';
 // 📷 Image Picker
 
 /// ✅ EINFACHER ENERGIE LIVE CHAT - MIT ALLEN 11 FEATURES!
@@ -1503,6 +1504,23 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                   ChatStatusBanner(
                     reconnecting: _reconnecting,
                     worldColor: const Color(0xFF9B51E0),
+                  ),
+                  // 📺 Live-Anruf-Banner (wie Telegram) — zeigt aktive Räume
+                  LiveRoomBanner(
+                    world: 'energie',
+                    currentRoomName: _fullRoomId,
+                    onJoin: (roomName) => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => LiveKitPreJoinScreen(
+                          roomName: 'wb-$roomName',
+                          world: 'energie',
+                          displayName:
+                              _username.isNotEmpty ? _username : 'Mitglied',
+                          avatarUrl: _avatarUrl,
+                        ),
+                      ),
+                    ),
                   ),
                   // 🔍 SEARCH MODE
                   if (_showSearch)

@@ -85,5 +85,8 @@ jobs:
           run_sql "v43 chat_messages RLS-Fix (anon + authenticated)" \
             supabase/migrations/20260503_v43_chat_anon_rls_fix.sql
 
+          run_sql "v44 Chat-Räume sicherstellen + voice_sessions" \
+            supabase/migrations/20260504_v44_chat_rooms_ensure_and_voice_sessions.sql
+
           echo ""
           echo "🎉 Alle Migrationen erfolgreich angewendet"

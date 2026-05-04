@@ -299,12 +299,6 @@ class _LiveKitGroupCallScreenState
               ],
             ),
             child: SafeArea(
-              child: Column(
-                children: [
-                  _TopBar(
-            ],
-          ),
-          child: SafeArea(
             child: Column(
               children: [
                 _TopBar(
@@ -1724,18 +1718,12 @@ class _TopBar extends StatelessWidget {
                     ? Icons.grid_view_rounded
                     : Icons.account_box_rounded,
                 label: 'Ansicht',
-                    ? Icons.view_quilt_rounded
-                    : Icons.grid_view_rounded,
-                label: viewMode == LiveKitViewMode.speaker
-                    ? 'Ansicht'
-                    : 'Ansicht',
                 active: viewMode == LiveKitViewMode.speaker,
                 accent: accent,
                 onTap: onToggleViewMode,
               ),
               // 🎙️ B8: Untertitel
               _TopBarBtn(
-                icon: Icons.closed_caption_rounded,
                 icon: captionsEnabled
                     ? Icons.closed_caption_rounded
                     : Icons.closed_caption_disabled_rounded,
@@ -2769,7 +2757,6 @@ class _ControlBar extends StatelessWidget {
                         : Icons.mic_off_rounded,
                     label: service.pttActive
                         ? 'Sprechtaste'
-                        : (service.micEnabled ? 'Mikrofon' : 'Stumm'),
                         : (service.micEnabled ? 'Mikrofon an' : 'Stummschalten'),
                     active: service.micEnabled || service.pttActive,
                     activeColor: service.pttActive
@@ -2785,7 +2772,6 @@ class _ControlBar extends StatelessWidget {
                     icon: service.cameraEnabled
                         ? Icons.videocam_rounded
                         : Icons.videocam_off_rounded,
-                    label: service.cameraEnabled ? 'Kamera' : 'Kamera aus',
                     label: service.cameraEnabled ? 'Kamera an' : 'Kamera aus',
                     active: service.cameraEnabled,
                     activeColor: accent,

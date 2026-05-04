@@ -80,6 +80,9 @@ import '../../services/chat/mention_notification_service.dart';
 import '../../services/chat/user_block_service.dart';
 import '../../services/chat/unread_tracker_service.dart';
 import '../../widgets/chat_animated_background.dart';
+import '../../widgets/live_room_banner.dart';
+import '../shared/livekit_group_call_screen.dart';
+import '../../providers/livekit_call_provider.dart';
 
 /// MATERIE-WELT LIVE-CHAT - Cloudflare Edition
 class MaterieLiveChatScreen extends StatefulWidget {
@@ -1364,6 +1367,23 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
                   ChatStatusBanner(
                     reconnecting: _reconnecting,
                     worldColor: Colors.red,
+                  ),
+                  // 📺 Live-Anruf-Banner (wie Telegram) — zeigt aktive Räume
+                  LiveRoomBanner(
+                    world: 'materie',
+                    currentRoomName: _fullRoomId,
+                    onJoin: (roomName) => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => LiveKitPreJoinScreen(
+                          roomName: 'wb-$roomName',
+                          world: 'materie',
+                          displayName:
+                              _username.isNotEmpty ? _username : 'Mitglied',
+                          avatarUrl: _avatarUrl,
+                        ),
+                      ),
+                    ),
                   ),
                   // 🔍 SEARCH MODE
                   if (_showSearch)
