@@ -22,6 +22,8 @@
 #   - Media-UDP-Range 60001–65000 → kein Overlap mit Mensaena (50000–60000)
 #   - KEIN TURN-Server in WB → keine UDP-5350/3479-Kollision
 
+# force-deploy-trigger: 2026-05-04 — beide Deploy-Workflows triggern damit
+# der Container nach #75/#76 mit --force-recreate sauber neu startet.
 port: 7980
 
 # API-Keys: Wert wird beim Deploy via envsubst aus dem GitHub-Secret

@@ -138,11 +138,35 @@ jobs:
 
           cd "${WB_DIR}"
           docker compose pull
-          docker compose up -d --remove-orphans
-          echo "⏳ Warte 8s …"
-          sleep 8
+          # --force-recreate: Container IMMER neu starten, auch wenn Image/Config
+          # äußerlich gleich aussieht. Verhindert dass ein im Restart-Loop
+          # hängender Container "ignoriert" wird weil compose denkt er läuft.
+          docker compose up -d --remove-orphans --force-recreate
+          echo "⏳ Warte 10s auf Container-Start …"
+          sleep 10
           docker compose ps
-          docker compose logs --tail=15 livekit
+          echo ""
+          echo "── Letzte 30 Container-Log-Zeilen ─────────────────────────"
+          docker compose logs --tail=30 livekit
+          echo ""
+          # Container-Health prüfen: muss UP sein, nicht "Restarting"
+          STATE=$(docker inspect --format '{{.State.Status}}' livekit-weltenbibliothek 2>/dev/null || echo "missing")
+          echo "→ Container-State: $STATE"
+          if [ "$STATE" != "running" ]; then
+            echo "❌ Container ist nicht 'running' (State: $STATE) — Deploy gescheitert"
+            echo "→ Letzte 100 Log-Zeilen für Diagnose:"
+            docker compose logs --tail=100 livekit || true
+            exit 1
+          fi
+          # Signaling-Endpoint testen — Server muss HTTP antworten (auch 404 ist ok,
+          # zeigt dass der HTTP-Stack lebt)
+          HTTP=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 http://127.0.0.1:7980 || echo "000")
+          if [ "$HTTP" = "000" ]; then
+            echo "❌ LiveKit-Signaling-Endpoint antwortet nicht (HTTP 000)"
+            docker compose logs --tail=100 livekit || true
+            exit 1
+          fi
+          echo "✅ LiveKit-Signaling antwortet (HTTP $HTTP)"
 
       # ─────────────────────────────────────────────────────────────────────
       # 🛡️ STEP 5: CADDYFILE ADDITIV ERWEITERN
