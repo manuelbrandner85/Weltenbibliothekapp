@@ -158,6 +158,23 @@ jobs:
 
           cd "${WB_DIR}"
           docker compose pull
+
+          # ── Stale-Container-Cleanup vor Recreate ───────────────────────
+          # docker compose --force-recreate benennt den alten Container
+          # temporär um auf "<hash>_<name>". Wenn der vorige Deploy mitten
+          # darin abgestürzt ist (Push abgebrochen, OOM, etc.), bleibt der
+          # umbenannte Container hängen und blockiert den neuen Namen.
+          # Wir killen alles was "livekit-weltenbibliothek" oder
+          # "livekit-wb-coturn" heißt (auch mit Hash-Prefix), bevor compose
+          # up läuft. Mensaena's Container (livekit-livekit-1, livekit-caddy-1)
+          # werden NICHT angefasst — anchor-grep sorgt dafür.
+          STALE=$(docker ps -a --format '{{.ID}} {{.Names}}' \
+            | awk '$2 ~ /(^|_)livekit-weltenbibliothek$|(^|_)livekit-wb-coturn$/ {print $1}' || true)
+          if [ -n "$STALE" ]; then
+            echo "→ Stale-Container gefunden, force-rm:"
+            echo "$STALE" | xargs -r docker rm -f 2>&1 | sed 's/^/  /'
+          fi
+
           # --force-recreate: Container IMMER neu starten, auch wenn Image/Config
           # äußerlich gleich aussieht. Verhindert dass ein im Restart-Loop
           # hängender Container "ignoriert" wird weil compose denkt er läuft.
