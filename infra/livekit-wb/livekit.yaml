@@ -46,6 +46,17 @@ rtc:
   # Explizite externe IP — verhindert dass LiveKit interne Docker-IPs
   # in ICE-Kandidaten bewirbt (was bei auto-detect manchmal scheitert).
   node_ip: 72.62.154.95
+  # Externer coturn-TURN-Server — LiveKit schickt diese Credentials im
+  # Join-Response an alle Clients. Deckt symmetrisches NAT ab
+  # (Mobilfunk-CGNAT, Firmen-VPN, Hotel-WLAN). Coturn läuft als separater
+  # Container im gleichen docker-compose (livekit-wb-coturn).
+  # KEIN LiveKit-internal TURN (braucht TLS-Cert) — coturn ist plain UDP/TCP.
+  ice_servers:
+    - urls:
+        - turn:72.62.154.95:3478?transport=udp
+        - turn:72.62.154.95:3478?transport=tcp
+      username: wb-turn-2026
+      credential: WbCoturnRelay_a9b26485d407e7dc
 
 # TURN-Server bewusst DEAKTIVIERT — siehe Lessons-Learned.
 #

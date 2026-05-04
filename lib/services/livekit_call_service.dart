@@ -460,6 +460,8 @@ class LiveKitCallService extends ChangeNotifier {
               autoSubscribe: true,
               rtcConfiguration: const RTCConfiguration(
                 iceServers: [
+                  // Primärer TURN-Relay (coturn auf WB-VPS) —
+                  // pflichtmäßig für Mobilfunk-CGNAT + symmetrisches NAT.
                   RTCIceServer(
                     urls: [
                       'turn:72.62.154.95:3478?transport=udp',
@@ -468,18 +470,27 @@ class LiveKitCallService extends ChangeNotifier {
                     username: 'wb-turn-2026',
                     credential: 'WbCoturnRelay_a9b26485d407e7dc',
                   ),
-                  RTCIceServer(urls: ['stun:stun.l.google.com:19302']),
+                  // STUN-Fallbacks für initiale Public-IP-Erkennung.
+                  // Mehrere Server erhöhen Zuverlässigkeit wenn einer
+                  // in bestimmten Ländern blockiert ist.
+                  RTCIceServer(urls: [
+                    'stun:stun.l.google.com:19302',
+                    'stun:stun1.l.google.com:19302',
+                  ]),
+                  RTCIceServer(urls: ['stun:stun.cloudflare.com:3478']),
                 ],
               ),
             ),
           )
           .timeout(
-            const Duration(seconds: 60),
+            // 90s statt 60s — TURN-ICE-Gathering braucht auf sehr
+            // langsamen Mobilfunkverbindungen (2G/Edge) bis zu 40s.
+            const Duration(seconds: 90),
             onTimeout: () {
               throw Exception(
                 'Verbindung zum Sprach-Server fehlgeschlagen — '
-                'wahrscheinlich blockiert dein Netzwerk WebRTC. '
-                'Versuche es mit WLAN/Mobilfunk-Wechsel.',
+                'dein Netzwerk blockiert möglicherweise WebRTC. '
+                'Bitte WLAN oder Mobilfunk wechseln und erneut versuchen.',
               );
             },
           );
