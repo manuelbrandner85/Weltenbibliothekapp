@@ -680,6 +680,25 @@ chore(deps): Dependencies aktualisiert
     - Alle Sekundär-Aktionen im Optionen-Sheet: Chat, Hand, Bildschirm, Reaktion,
       Co-Watch, Aufnahme, Kamera drehen, Raumstimmung, Spatial Audio
 
+- [x] **PR #103 — v44 Migration idempotent (ALTER PUBLICATION)** (2026-05-04, Patch ✓):
+  - `apply_migrations.yml` schlug mit HTTP 400 fehl: `voice_sessions` war bereits in `supabase_realtime`
+  - Fix: `DO $$`-Block prüft `pg_publication_tables` vor `ALTER PUBLICATION ADD TABLE`
+
+- [x] **PR #104 — Community-Posts schreiben/bearbeiten/löschen** (2026-05-04, Patch ✓):
+  - `createPost/editPost/deletePost` riefen nicht-existente Cloudflare-Worker-Endpoints auf
+  - Kein JWT, camelCase-Felder, fehlender `user_id` → silent fails
+  - Fix: Alle Write-Ops direkt via Supabase Client (Auth+RLS automatisch)
+  - `streamPosts()` war bereits korrekt (Supabase Realtime)
+
+- [x] **PR #105 — TURN-Relay für Mobilfunk/CGNAT** (2026-05-04, Patch ✓):
+  - Mobilfunk-User (CGNAT/symmetrisches NAT) konnten LiveKit nicht joinen
+  - `livekit.yaml` hatte kein `rtc.ice_servers` → kein TURN im Join-Response
+  - `coturn`-Container möglicherweise nie deployed (kein trigger seit Hinzufügung)
+  - Fix Server: `rtc.ice_servers` mit coturn-Creds in `livekit.yaml`
+    → triggert `deploy_livekit_wb.yml` → coturn deployed + Ports 3478/61001-62000 geöffnet
+  - Fix Client: Cloudflare STUN als Fallback, Timeout 60s→90s
+
+
 - [x] **PR #102 — Kaninchenbau-Tools + LiveStream ControlBar-Finale** (2026-05-04, Patch ✓):
   - **6 Materie-Tools komplett neu** mit echten kostenlosen APIs:
     - UFO Sichtungen: NASA Fireballs + OpenSky ADS-B (3 Tabs)
@@ -729,7 +748,7 @@ chore(deps): Dependencies aktualisiert
    - `unused_field` Warnungen (nicht kritisch)
    - `deprecated_member_use` (Radio-Widgets, alte APIs)
 
-3. **🎥 LiveKit vollständig implementiert** (v5.39.0+, PR #55+56+64+71+97+98+99+100+101+102):
+3. **🎥 LiveKit vollständig implementiert** (v5.39.0+, PR #55+56+64+71+97+98+99+100+101+102+105):
    - flutter_webrtc entfernt, livekit_client + flutter_background als Dependencies
    - **Token-Endpoint: Cloudflare Worker** `/api/livekit/token` (HMAC-SHA256-JWT, 4h TTL)
    - `LiveKitCallService` — join/leave, Track-Toggles, Token-Refresh, VoiceSession-Tracking
