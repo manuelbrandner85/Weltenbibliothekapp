@@ -25,8 +25,10 @@ import '../../services/cowatch_service.dart';
 import '../../services/incall_chat_service.dart';
 import '../../services/livekit_call_service.dart';
 import '../../services/live_caption_service.dart';
+import '../../services/pip_service.dart';
 import '../../services/soundscape_service.dart';
 import '../../widgets/cowatch_panel.dart';
+import '../../widgets/pip_overlay.dart';
 import '../../widgets/incall_chat_panel.dart';
 import '../../widgets/live_caption_overlay.dart';
 import '../../widgets/livekit_mini_bar.dart';
@@ -77,6 +79,9 @@ class _LiveKitGroupCallScreenState
   StreamSubscription<CoWatchEvent>? _coWatchSub;
   // 💬 In-Call-Chat
   bool _chatVisible = false;
+  // 📺 B10.3: PiP
+  bool _pipActive = false;
+  StreamSubscription<bool>? _pipSub;
   late final AnimationController _bgController;
   late final Animation<double> _bgAnimation;
 
@@ -93,6 +98,12 @@ class _LiveKitGroupCallScreenState
     LiveKitScreenVisibility.instance.setVisible(true);
 
     WidgetsBinding.instance.addPostFrameCallback((_) => _join());
+
+    // 📺 B10.3: PiP-Modus-Wechsel lauschen
+    _pipSub = PipService.instance.onPipModeChanged.listen((active) {
+      if (!mounted) return;
+      setState(() => _pipActive = active);
+    });
 
     // 📺 B10.4: CoWatch-Events vom Remote empfangen
     _coWatchSub = CoWatchService.instance.eventStream.listen((event) {
@@ -113,6 +124,7 @@ class _LiveKitGroupCallScreenState
 
   @override
   void dispose() {
+    _pipSub?.cancel();
     _coWatchSub?.cancel();
     LiveKitScreenVisibility.instance.setVisible(false);
     _bgController.dispose();
@@ -204,10 +216,25 @@ class _LiveKitGroupCallScreenState
     final accent = WbDesign.accent(widget.world);
     final bg = WbDesign.background(widget.world);
 
+    // 📺 B10.3: Im PiP-Modus nur minimale UI anzeigen
+    if (_pipActive) {
+      return PipOverlay(
+        world: widget.world,
+        localName: widget.displayName,
+        localAvatarUrl: widget.avatarUrl,
+        service: svc,
+      );
+    }
+
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) async {
         if (didPop) return;
+        // Back-Taste → PiP statt Anruf beenden (wenn unterstützt)
+        if (PipService.instance.isSupported) {
+          await PipService.instance.enterPip();
+          return;
+        }
         if (await _confirmLeave()) await _leaveAndPop();
       },
       child: Scaffold(

@@ -50,6 +50,7 @@ import 'services/push_notification_manager.dart'; // 🔔 PUSH NOTIFICATIONS (FC
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'widgets/update_gate.dart'; // 🔔 In-App Update-Meldungen (Release + OTA-Patch)
+import 'services/pip_service.dart'; // 📺 B10.3 PiP
 
 /// Global navigator key — needed by PushNotificationManager to deep-link into
 /// routes from outside the widget tree (notification tap).
@@ -98,6 +99,9 @@ void main() async {
   
   // 📡 OFFLINE SYNC - Initialize (NEW Phase 3)
   await OfflineSyncService().initialize();
+
+  // 📺 PiP-SERVICE - MethodChannel-Handler registrieren
+  await PipService.instance.init();
 
   // 🔔 PUSH NOTIFICATION MANAGER - Auto-Register + in-app polling
   // (fire-and-forget; init itself is awaitable but non-critical)
