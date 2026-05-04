@@ -55,7 +55,7 @@ import 'history_timeline_screen.dart'; // 🏛️ Geschichte-Zeitleiste
 import 'geopolitik_map_screen.dart'; // 🎭 Geopolitik-Kartierung
 import 'conspiracy_network_screen.dart'; // 👁️ Verbindungsnetz
 import 'research_archive_screen.dart'; // 🔬 Forschungs-Archiv
-import 'alternative_healing_screen.dart'; // 💚 Alternative Gesundheit
+// alternative_healing_screen → moved to energie world (lib/screens/energie/)
 // ✨ Batch-1 Chat-Erweiterungen
 import '../../widgets/chat/chat_markdown_text.dart';
 import '../../widgets/chat/chat_emoji_picker_button.dart';
@@ -587,7 +587,8 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
         screen = ResearchArchiveScreen(roomId: _selectedRoom);
         break;
       case 'gesundheit':
-        screen = AlternativeHealingScreen(roomId: _selectedRoom);
+        // Gesundheits-Recherche: kritische Medizin-Studien (PubMed/OpenAlex)
+        screen = ResearchArchiveScreen(roomId: _selectedRoom);
         break;
     }
     

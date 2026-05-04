@@ -1,11 +1,13 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
+import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 import '../../services/group_tools_service.dart';
 import '../../services/user_service.dart';
 import '../../services/free_api_service.dart';
 
-/// 🏛️ GESCHICHTE-ZEITLEISTE — Community + Wikidata Live-Recherche
+/// GESCHICHTE-ZEITLEISTE — Community + Wikidata Live-Recherche + "Heute in der Geschichte"
 class HistoryTimelineScreen extends StatefulWidget {
   final String roomId;
 
@@ -32,6 +34,10 @@ class _HistoryTimelineScreenState extends State<HistoryTimelineScreen>
   final _wikiCtrl = TextEditingController(text: 'Tartaria ancient civilization');
   String _wikiQuery = 'Tartaria ancient civilization';
 
+  // Heute in der Geschichte
+  List<Map<String, dynamic>> _todayEvents = [];
+  bool _loadingToday = false;
+
   final Map<String, dynamic> _categories = {
     'all': {'name': 'Alle', 'color': Colors.white, 'icon': '📜'},
     'tartaria': {'name': 'Tartaria', 'color': Colors.amber, 'icon': '🏛️'},
@@ -45,9 +51,10 @@ class _HistoryTimelineScreenState extends State<HistoryTimelineScreen>
   @override
   void initState() {
     super.initState();
-    _tabCtrl = TabController(length: 2, vsync: this);
+    _tabCtrl = TabController(length: 3, vsync: this);
     _loadEvents();
     _loadWikidata();
+    _loadOnThisDay();
   }
 
   @override
@@ -69,7 +76,7 @@ class _HistoryTimelineScreenState extends State<HistoryTimelineScreen>
         });
       }
     } catch (e) {
-      if (kDebugMode) debugPrint('⚠️ history load: $e');
+      if (kDebugMode) debugPrint('history load: $e');
       if (mounted) setState(() => _isLoading = false);
     }
   }
@@ -81,40 +88,63 @@ class _HistoryTimelineScreenState extends State<HistoryTimelineScreen>
     if (mounted) setState(() { _wikiResults = result; _loadingWiki = false; });
   }
 
+  Future<void> _loadOnThisDay() async {
+    final now = DateTime.now();
+    final mm = now.month.toString().padLeft(2, '0');
+    final dd = now.day.toString().padLeft(2, '0');
+    setState(() => _loadingToday = true);
+    try {
+      final res = await http.get(
+        Uri.parse('https://history.muffinlabs.com/date/$mm/$dd'),
+        headers: {'Accept': 'application/json'},
+      ).timeout(const Duration(seconds: 10));
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body) as Map<String, dynamic>;
+        final events = (data['data']?['Events'] as List? ?? []);
+        if (mounted) setState(() {
+          _todayEvents = events
+              .take(25)
+              .map((e) => {
+                    'year': int.tryParse(e['year']?.toString() ?? '') ?? 0,
+                    'text': e['text'] as String? ?? '',
+                  })
+              .toList();
+          _loadingToday = false;
+        });
+      } else {
+        if (mounted) setState(() => _loadingToday = false);
+      }
+    } catch (e) {
+      if (kDebugMode) debugPrint('OnThisDay load: $e');
+      if (mounted) setState(() => _loadingToday = false);
+    }
+  }
+
   List<Map<String, dynamic>> get _filteredEvents {
     if (_selectedCategory == 'all') return _events;
     return _events.where((e) => e['category'] == _selectedCategory).toList();
   }
 
+  String get _todayLabel {
+    final now = DateTime.now();
+    const months = [
+      '', 'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
+      'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'
+    ];
+    return '${now.day}. ${months[now.month]}';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0D1B2A),
-      appBar: AppBar(
-        title: const Text('🏛️ Geschichte-Zeitleiste'),
-        backgroundColor: const Color(0xFF1B263B),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () { _loadEvents(); _loadWikidata(); },
-          ),
-        ],
-        bottom: TabBar(
-          controller: _tabCtrl,
-          indicatorColor: Colors.amber,
-          labelColor: Colors.amber,
-          unselectedLabelColor: Colors.white54,
-          tabs: const [
-            Tab(text: 'Community'),
-            Tab(text: '🌐 Wikidata'),
-          ],
-        ),
-      ),
+      backgroundColor: const Color(0xFF0D0505),
+      appBar: _buildAppBar(),
       body: TabBarView(
         controller: _tabCtrl,
         children: [
           _buildCommunityTab(),
           _buildWikidataTab(),
+          _buildTodayTab(),
         ],
       ),
       floatingActionButton: _tabCtrl.index == 0
@@ -129,6 +159,81 @@ class _HistoryTimelineScreenState extends State<HistoryTimelineScreen>
     );
   }
 
+  PreferredSizeWidget _buildAppBar() {
+    return PreferredSize(
+      preferredSize: const Size.fromHeight(kToolbarHeight + 48),
+      child: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF1A0D00), Color(0xFF0D0D1A)],
+          ),
+          border: Border(bottom: BorderSide(color: Color(0x33FFAB00), width: 1)),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              SizedBox(
+                height: kToolbarHeight,
+                child: Row(
+                  children: [
+                    const SizedBox(width: 4),
+                    BackButton(color: Colors.white70),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Geschichte-Zeitleiste',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 17,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            'Heute: $_todayLabel',
+                            style: TextStyle(
+                              color: Colors.amber.withValues(alpha: 0.7),
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.refresh, color: Colors.white70),
+                      onPressed: () {
+                        _loadEvents();
+                        _loadWikidata();
+                        _loadOnThisDay();
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              TabBar(
+                controller: _tabCtrl,
+                indicatorColor: Colors.amber,
+                indicatorWeight: 3,
+                labelColor: Colors.amber,
+                unselectedLabelColor: Colors.white54,
+                tabs: [
+                  const Tab(text: 'Community'),
+                  const Tab(text: 'Wikidata'),
+                  Tab(text: 'Heute'),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   // ── Tab 1: Community Zeitleiste ──────────────────────────────────────────
 
   Widget _buildCommunityTab() {
@@ -138,7 +243,7 @@ class _HistoryTimelineScreenState extends State<HistoryTimelineScreen>
         // Kategorie-Filter
         Container(
           height: 60,
-          color: const Color(0xFF1A1A2E),
+          color: const Color(0xFF0D0505),
           child: ListView(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
@@ -155,23 +260,26 @@ class _HistoryTimelineScreenState extends State<HistoryTimelineScreen>
                     decoration: BoxDecoration(
                       color: isSelected
                           ? (data['color'] as Color).withValues(alpha: 0.2)
-                          : Colors.transparent,
+                          : Colors.white.withValues(alpha: 0.04),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: isSelected ? data['color'] as Color : Colors.grey[700]!,
-                        width: 2,
+                        color: isSelected
+                            ? data['color'] as Color
+                            : Colors.white.withValues(alpha: 0.1),
+                        width: isSelected ? 2 : 1,
                       ),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(data['icon'] as String, style: const TextStyle(fontSize: 18)),
+                        Text(data['icon'] as String, style: const TextStyle(fontSize: 16)),
                         const SizedBox(width: 6),
                         Text(
                           data['name'] as String,
                           style: TextStyle(
                             color: isSelected ? data['color'] as Color : Colors.white70,
                             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            fontSize: 12,
                           ),
                         ),
                       ],
@@ -242,17 +350,23 @@ class _HistoryTimelineScreenState extends State<HistoryTimelineScreen>
                                       ),
                                       child: Center(
                                         child: Text(catData['icon'] as String,
-                                            style: const TextStyle(fontSize: 20)),
+                                            style: const TextStyle(fontSize: 18)),
                                       ),
                                     ),
                                     if (index < filteredEvents.length - 1)
-                                      Container(width: 2, height: 60, color: Colors.white24),
+                                      Container(width: 2, height: 60,
+                                          color: Colors.white.withValues(alpha: 0.1)),
                                   ],
                                 ),
                                 const SizedBox(width: 16),
                                 Expanded(
-                                  child: Card(
-                                    color: const Color(0xFF1A1A2E),
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withValues(alpha: 0.05),
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border.all(
+                                          color: Colors.white.withValues(alpha: 0.08)),
+                                    ),
                                     child: Padding(
                                       padding: const EdgeInsets.all(16),
                                       child: Column(
@@ -369,7 +483,7 @@ class _HistoryTimelineScreenState extends State<HistoryTimelineScreen>
 
   Widget _buildWikiSearchBar() {
     return Container(
-      color: const Color(0xFF0D1B2A),
+      color: const Color(0xFF0D0505),
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
       child: Row(
         children: [
@@ -381,10 +495,14 @@ class _HistoryTimelineScreenState extends State<HistoryTimelineScreen>
                 hintText: 'z.B. Tartaria, Atlantis, Mud Flood…',
                 hintStyle: const TextStyle(color: Colors.white38, fontSize: 13),
                 filled: true,
-                fillColor: const Color(0xFF1A1A2E),
+                fillColor: Colors.white.withValues(alpha: 0.05),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: BorderSide.none,
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
                 ),
                 prefixIcon: const Icon(Icons.travel_explore, color: Colors.amber),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 12),
@@ -412,8 +530,8 @@ class _HistoryTimelineScreenState extends State<HistoryTimelineScreen>
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.amber.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
+        color: Colors.amber.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
       ),
       child: Row(
@@ -437,12 +555,15 @@ class _HistoryTimelineScreenState extends State<HistoryTimelineScreen>
   }
 
   Widget _buildWikiCard(WikidataEntry entry) {
-    return Card(
-      color: const Color(0xFF1A1A2E),
+    return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      ),
       child: InkWell(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(16),
         onTap: () async {
           final uri = Uri.tryParse(entry.url);
           if (uri != null) await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -454,7 +575,7 @@ class _HistoryTimelineScreenState extends State<HistoryTimelineScreen>
               Container(
                 width: 36, height: 36,
                 decoration: BoxDecoration(
-                  color: Colors.amber.withValues(alpha: 0.15),
+                  color: Colors.amber.withValues(alpha: 0.12),
                   shape: BoxShape.circle,
                 ),
                 child: const Center(child: Text('🏛️', style: TextStyle(fontSize: 18))),
@@ -492,6 +613,171 @@ class _HistoryTimelineScreenState extends State<HistoryTimelineScreen>
     );
   }
 
+  // ── Tab 3: Heute in der Geschichte ──────────────────────────────────────
+
+  Widget _buildTodayTab() {
+    return Column(
+      children: [
+        // Header-Banner mit heutigem Datum
+        Container(
+          width: double.infinity,
+          margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.amber.withValues(alpha: 0.15), Colors.orange.withValues(alpha: 0.08)],
+            ),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
+          ),
+          child: Row(
+            children: [
+              const Text('📅', style: TextStyle(fontSize: 28)),
+              const SizedBox(width: 14),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Heute in der Geschichte',
+                    style: TextStyle(
+                      color: Colors.amber,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                    ),
+                  ),
+                  Text(
+                    _todayLabel,
+                    style: TextStyle(
+                      color: Colors.amber.withValues(alpha: 0.7),
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+              const Spacer(),
+              if (!_loadingToday)
+                Text(
+                  '${_todayEvents.length}',
+                  style: const TextStyle(
+                    color: Colors.amber,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: _loadingToday
+              ? const Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircularProgressIndicator(color: Colors.amber),
+                      SizedBox(height: 16),
+                      Text('Lade historische Ereignisse…',
+                          style: TextStyle(color: Colors.white54)),
+                    ],
+                  ),
+                )
+              : _todayEvents.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.history, size: 48, color: Colors.white24),
+                          const SizedBox(height: 12),
+                          const Text('Keine Daten verfügbar',
+                              style: TextStyle(color: Colors.white54)),
+                          const SizedBox(height: 8),
+                          TextButton(
+                            onPressed: _loadOnThisDay,
+                            child: const Text('Neu laden',
+                                style: TextStyle(color: Colors.amber)),
+                          ),
+                        ],
+                      ),
+                    )
+                  : RefreshIndicator(
+                      onRefresh: _loadOnThisDay,
+                      color: Colors.amber,
+                      child: ListView.builder(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                        itemCount: _todayEvents.length,
+                        itemBuilder: (ctx, i) => _buildTodayCard(_todayEvents[i], i),
+                      ),
+                    ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTodayCard(Map<String, dynamic> event, int index) {
+    final year = event['year'] as int;
+    final text = event['text'] as String;
+
+    // Jahres-Farbe je nach Epoche
+    Color yearColor;
+    if (year < 0) {
+      yearColor = Colors.purple;
+    } else if (year < 1000) {
+      yearColor = Colors.blue;
+    } else if (year < 1800) {
+      yearColor = Colors.teal;
+    } else if (year < 1950) {
+      yearColor = Colors.amber;
+    } else {
+      yearColor = Colors.orange;
+    }
+
+    final yearLabel = year < 0 ? '${year.abs()} v. Chr.' : '$year';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Jahr-Badge prominent links
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                color: yearColor.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: yearColor.withValues(alpha: 0.4)),
+              ),
+              child: Text(
+                yearLabel,
+                style: TextStyle(
+                  color: yearColor,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                ),
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                text,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  height: 1.5,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   // ── Dialog: Ereignis hinzufügen ──────────────────────────────────────────
 
   void _showAddEventDialog() {
@@ -505,7 +791,8 @@ class _HistoryTimelineScreenState extends State<HistoryTimelineScreen>
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           backgroundColor: const Color(0xFF1A1A2E),
-          title: const Text('📜 Historisches Ereignis', style: TextStyle(color: Colors.amber)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Text('Historisches Ereignis', style: TextStyle(color: Colors.amber)),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -618,7 +905,7 @@ class _HistoryTimelineScreenState extends State<HistoryTimelineScreen>
                   // ignore: use_build_context_synchronously
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                        content: Text('✅ Ereignis hinzugefügt!'),
+                        content: Text('Ereignis hinzugefügt!'),
                         backgroundColor: Colors.green),
                   );
                   _loadEvents();
@@ -626,7 +913,7 @@ class _HistoryTimelineScreenState extends State<HistoryTimelineScreen>
                   // ignore: use_build_context_synchronously
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                        content: Text('❌ Fehler: $e'), backgroundColor: Colors.red),
+                        content: Text('Fehler: $e'), backgroundColor: Colors.red),
                   );
                 }
               },

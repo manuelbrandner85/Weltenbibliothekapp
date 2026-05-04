@@ -29,6 +29,7 @@ import 'astral_journal_screen.dart'; // 🌙 Astrales Tagebuch Screen
 import 'chakra_scan_screen.dart'; // 💎 Chakra Scan Screen
 import 'dream_journal_screen.dart'; // 💫 Traum-Tagebuch Screen
 import 'frequency_session_screen.dart'; // 🎵 Frequenz-Sessions Screen
+import 'alternative_healing_screen.dart'; // 🌿 Natürliche Heilmethoden
 import '../../widgets/enhanced_message_bubble.dart'; // 💬 Enhanced Message Bubble
 import '../../widgets/message_reactions_widget.dart'; // 😀 Message Reactions
 import '../../widgets/message_edit_widget.dart'; // ✏️ Message Edit
@@ -1205,7 +1206,16 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
       );
       return;
     }
-    
+
+    if (_selectedRoom == 'heilung') {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => AlternativeHealingScreen(roomId: _selectedRoom),
+        ),
+      );
+      return;
+    }
+
     // 🚧 Fallback: Info-Dialog
     showDialog(
       context: context,
