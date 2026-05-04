@@ -698,6 +698,7 @@ chore(deps): Dependencies aktualisiert
     → triggert `deploy_livekit_wb.yml` → coturn deployed + Ports 3478/61001-62000 geöffnet
   - Fix Client: Cloudflare STUN als Fallback, Timeout 60s→90s
 
+
 - [x] **PR #102 — Kaninchenbau-Tools + LiveStream ControlBar-Finale** (2026-05-04, Patch ✓):
   - **6 Materie-Tools komplett neu** mit echten kostenlosen APIs:
     - UFO Sichtungen: NASA Fireballs + OpenSky ADS-B (3 Tabs)
