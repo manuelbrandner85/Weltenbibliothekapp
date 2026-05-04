@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../utils/map_clustering_helper.dart'; // 🗺️ MARKER-CLUSTERING
 import '../../models/materie_location_detail.dart'; // ✅ MODEL
 import '../../models/location_category.dart'; // ✅ ENUM
 import '../../data/materie_locations.dart'; // ✅ DATA
+import '../../services/live_map_pins_service.dart'; // 📍 B7: Live-Pins
+import '../../widgets/live_pins_layer.dart'; // 📍 B7: Live-Pins-Marker
 
 class MaterieKarteTabPro extends StatefulWidget {
   const MaterieKarteTabPro({super.key});
@@ -98,6 +101,9 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro> {
               initialZoom: 4.0,
               minZoom: 2.0,
               maxZoom: 18.0,
+              // 📍 B7: Long-Press auf die Karte → Live-Pin-Modal öffnen
+              onLongPress: (tapPos, latlng) =>
+                  _showLivePinModal(context, latlng),
             ),
             children: [
               // 🗺️ DYNAMIC TILE LAYER (based on _currentMapLayer)
@@ -106,7 +112,10 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro> {
                 userAgentPackageName: 'com.dualrealms.knowledge',
                 maxZoom: 19,
               ),
-              
+
+              // 📍 B7: Live-Pins-Layer (gepulste Marker, auto-expire 5min)
+              const LivePinsLayer(world: 'materie', accent: Color(0xFF2979FF)),
+
               // Marker Layer mit Clustering
               MapClusteringHelper.createClusterLayer(
                 markers: _filteredLocations.map((location) {
@@ -1190,7 +1199,162 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro> {
         return '🔥 Epstein'; // Gesonderte Kategorie
     }
   }
-  
+
+  // ───────────────────────────────────────────────────────────────────
+  // 📍 BUNDLE 7: LIVE MAP PINS (Materie-USP)
+  // ───────────────────────────────────────────────────────────────────
+  Future<void> _showLivePinModal(BuildContext context, LatLng latlng) async {
+    final controller = TextEditingController();
+    final accent = const Color(0xFF2979FF);
+    final user = Supabase.instance.client.auth.currentUser;
+    final userMeta = user?.userMetadata ?? const {};
+    final authorName = (userMeta['username'] as String?) ??
+        (userMeta['display_name'] as String?) ??
+        user?.email?.split('@').first ??
+        'Anonym';
+    final avatarUrl = userMeta['avatar_url'] as String?;
+
+    final result = await showModalBottomSheet<String?>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF0A1020),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.fromLTRB(
+          20,
+          16,
+          20,
+          MediaQuery.of(ctx).viewInsets.bottom + 24,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 36,
+              height: 4,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Icon(Icons.location_on_rounded, color: accent, size: 22),
+                const SizedBox(width: 8),
+                const Text(
+                  'Live-Pin senden',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '${latlng.latitude.toStringAsFixed(4)}°, ${latlng.longitude.toStringAsFixed(4)}°  ·  Verschwindet nach 5 Min',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.5),
+                fontSize: 11,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
+            const SizedBox(height: 14),
+            TextField(
+              controller: controller,
+              autofocus: true,
+              maxLength: 80,
+              style: const TextStyle(color: Colors.white, fontSize: 14),
+              decoration: InputDecoration(
+                hintText: 'Was willst du markieren? (optional)',
+                hintStyle: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.4),
+                  fontSize: 14,
+                ),
+                filled: true,
+                fillColor: accent.withValues(alpha: 0.06),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide:
+                      BorderSide(color: accent.withValues(alpha: 0.25)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: accent, width: 1.5),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide:
+                      BorderSide(color: accent.withValues(alpha: 0.25)),
+                ),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                Expanded(
+                  child: TextButton(
+                    onPressed: () => Navigator.pop(ctx, null),
+                    child: Text(
+                      'Abbrechen',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.6),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  flex: 2,
+                  child: ElevatedButton.icon(
+                    onPressed: () =>
+                        Navigator.pop(ctx, controller.text.trim()),
+                    icon: const Icon(Icons.send_rounded, size: 18),
+                    label: const Text('Pin senden'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: accent,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (result == null || !mounted) return;
+
+    await LiveMapPinsService.instance.sendPin(
+      world: 'materie',
+      lat: latlng.latitude,
+      lon: latlng.longitude,
+      label: result,
+      authorName: authorName,
+      authorAvatarUrl: avatarUrl,
+    );
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('📍 Live-Pin gesendet — alle sehen ihn live'),
+          backgroundColor: accent,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
   // 🗺️ MAP LAYER FUNCTIONS
   String _getMapLayerUrl() {
     switch (_currentMapLayer) {
