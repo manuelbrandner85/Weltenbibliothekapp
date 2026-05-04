@@ -21,6 +21,8 @@ import 'package:livekit_client/livekit_client.dart' as lk;
 import '../../config/wb_design.dart';
 import '../../providers/livekit_call_provider.dart';
 import '../../services/livekit_call_service.dart';
+import '../../services/live_caption_service.dart';
+import '../../widgets/live_caption_overlay.dart';
 import '../../widgets/livekit_mini_bar.dart';
 import '../../widgets/livekit_reactions_overlay.dart';
 
@@ -56,6 +58,7 @@ class _LiveKitGroupCallScreenState
     with TickerProviderStateMixin {
   bool _hasJoined = false;
   bool _isLeaving = false;
+  bool _captionsEnabled = false;
   late final AnimationController _bgController;
   late final Animation<double> _bgAnimation;
 
@@ -187,6 +190,9 @@ class _LiveKitGroupCallScreenState
               // (Body + ControlBar) damit Emojis durchgängig nach oben
               // floaten können. IgnorePointer schützt Touch-Events.
               LiveKitReactionsOverlay(reactions: svc.reactionsStream),
+              // 🎙️ B8: Caption-Overlay (liegt über allem, unter Reactions)
+              if (_captionsEnabled)
+                LiveCaptionOverlay(service: LiveCaptionService.instance),
             ],
           ),
           child: SafeArea(
@@ -205,6 +211,11 @@ class _LiveKitGroupCallScreenState
                   onToggleAudioOnly: () => svc.toggleAudioOnlyMode(),
                   viewMode: svc.viewMode,
                   onToggleViewMode: () => svc.toggleViewMode(),
+                  captionsEnabled: _captionsEnabled,
+                  onToggleCaptions: () async {
+                    final nowOn = await LiveCaptionService.instance.toggle();
+                    if (mounted) setState(() => _captionsEnabled = nowOn);
+                  },
                   onClose: () async {
                     if (await _confirmLeave()) await _leaveAndPop();
                   },
@@ -305,6 +316,7 @@ class _LiveKitGroupCallScreenState
                 activeSpeakers: speakers,
                 qualityFor: svc.connectionQualityFor,
                 pinnedIdentity: svc.pinnedIdentity,
+                onSpotlight: (id) => svc.sendSpotlight(id),
               );
             }
             return _ParticipantGrid(
@@ -324,6 +336,7 @@ class _LiveKitGroupCallScreenState
               remoteAvatarUrl: svc.remoteAvatarUrl,
               activeSpeakers: speakers,
               qualityFor: svc.connectionQualityFor,
+              onSpotlight: (id) => svc.sendSpotlight(id),
             );
           },
         );
@@ -510,6 +523,9 @@ class _TopBar extends StatelessWidget {
   // 🔁 B6: Layout-Toggle (gallery / speaker-view)
   final LiveKitViewMode viewMode;
   final VoidCallback onToggleViewMode;
+  // 🎙️ B8: Live-Untertitel
+  final bool captionsEnabled;
+  final VoidCallback onToggleCaptions;
   final VoidCallback onClose;
 
   const _TopBar({
@@ -522,6 +538,8 @@ class _TopBar extends StatelessWidget {
     required this.onToggleAudioOnly,
     required this.viewMode,
     required this.onToggleViewMode,
+    required this.captionsEnabled,
+    required this.onToggleCaptions,
     required this.onClose,
   });
 
@@ -768,6 +786,24 @@ class _TopBar extends StatelessWidget {
                   ),
                 ),
               ),
+              // 🎙️ B8: Live-Untertitel-Toggle
+              SizedBox(
+                width: 38,
+                height: 38,
+                child: IconButton(
+                  tooltip: captionsEnabled
+                      ? 'Untertitel aus'
+                      : 'Live-Untertitel an',
+                  onPressed: onToggleCaptions,
+                  icon: Icon(
+                    captionsEnabled
+                        ? Icons.closed_caption_rounded
+                        : Icons.closed_caption_disabled_rounded,
+                    color: captionsEnabled ? accent : WbDesign.textTertiary,
+                    size: 20,
+                  ),
+                ),
+              ),
               // 🎧 Audio-Only-Modus-Toggle (Akku/Bandbreite-Sparmodus)
               SizedBox(
                 width: 38,
@@ -831,6 +867,8 @@ class _ParticipantGrid extends StatelessWidget {
   final LiveKitParticipantQuality Function(String) qualityFor;
   // 🌌 B3: aktive Sprecher (Identities-Set) für Aura-Glow
   final Set<String> activeSpeakers;
+  // 🔦 B11: Spotlight-Callback (identity → für alle pinnen)
+  final void Function(String identity)? onSpotlight;
 
   const _ParticipantGrid({
     required this.world,
@@ -849,6 +887,7 @@ class _ParticipantGrid extends StatelessWidget {
     required this.remoteAvatarUrl,
     required this.qualityFor,
     this.activeSpeakers = const <String>{},
+    this.onSpotlight,
   });
 
   /// Map: index → (videoTrack, micActive, handRaised, avatarUrl)
@@ -914,8 +953,13 @@ class _ParticipantGrid extends StatelessWidget {
       final id = isLocal
           ? (localIdentity ?? '')
           : (i - 1 < identitiesSorted.length ? identitiesSorted[i - 1] : '');
+      final name = allNames[i];
+      // 🔦 B11: Long-Press nur für Remote-Teilnehmer (lokaler pinnt sich nicht selbst)
+      final spotlight = (!isLocal && id.isNotEmpty && onSpotlight != null)
+          ? () => _showSpotlightSheet(context, name, id, accent, onSpotlight!)
+          : null;
       return _ParticipantTile(
-        name: allNames[i],
+        name: name,
         isLocal: isLocal,
         micEnabled: info.mic,
         world: world,
@@ -928,6 +972,7 @@ class _ParticipantGrid extends StatelessWidget {
         quality: id.isEmpty
             ? LiveKitParticipantQuality.unknown
             : qualityFor(id),
+        onLongPress: spotlight,
       );
     });
 
@@ -967,6 +1012,8 @@ class _ParticipantTile extends StatefulWidget {
   final LiveKitParticipantQuality quality;
   // 🌌 B3: aktiver Sprecher → animierte Aura um's Tile
   final bool isActiveSpeaker;
+  // 🔦 B11: Long-Press → Spotlight-Aktion
+  final VoidCallback? onLongPress;
 
   const _ParticipantTile({
     required this.name,
@@ -980,6 +1027,7 @@ class _ParticipantTile extends StatefulWidget {
     this.avatarUrl,
     this.quality = LiveKitParticipantQuality.unknown,
     this.isActiveSpeaker = false,
+    this.onLongPress,
   });
 
   @override
@@ -1058,39 +1106,48 @@ class _ParticipantTileState extends State<_ParticipantTile>
 
     // 🌌 B3: Aktive-Sprecher-Aura — pulsierender Welt-farbiger Ring
     // umschließt das Tile wenn die Person grade redet.
-    if (!widget.isActiveSpeaker) return tileWithQuality;
+    Widget result;
+    if (!widget.isActiveSpeaker) {
+      result = tileWithQuality;
+    } else {
+      result = AnimatedBuilder(
+        animation: _pulseAnim,
+        builder: (_, __) {
+          final t = _pulseAnim.value; // 0.95..1.05
+          final c1 = isMaterie
+              ? const Color(0xFFE53935) // materie rot
+              : const Color(0xFF7C4DFF); // energie lila
+          final c2 = isMaterie
+              ? const Color(0xFF2979FF) // materie blau
+              : const Color(0xFF00E5FF); // energie cyan
+          final auraColor = Color.lerp(c1, c2, t) ?? widget.accent;
+          return Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(WbDesign.radiusCard + 4),
+              boxShadow: [
+                BoxShadow(
+                  color: auraColor.withValues(alpha: 0.55),
+                  blurRadius: 16 + (t * 8),
+                  spreadRadius: 2 + (t * 2),
+                ),
+                BoxShadow(
+                  color: auraColor.withValues(alpha: 0.18),
+                  blurRadius: 32 + (t * 16),
+                  spreadRadius: 6 + (t * 4),
+                ),
+              ],
+            ),
+            child: tileWithQuality,
+          );
+        },
+      );
+    }
 
-    return AnimatedBuilder(
-      animation: _pulseAnim,
-      builder: (_, __) {
-        final t = _pulseAnim.value; // 0.95..1.05
-        final c1 = isMaterie
-            ? const Color(0xFFE53935) // materie rot
-            : const Color(0xFF7C4DFF); // energie lila
-        final c2 = isMaterie
-            ? const Color(0xFF2979FF) // materie blau
-            : const Color(0xFF00E5FF); // energie cyan
-        final auraColor = Color.lerp(c1, c2, t) ?? widget.accent;
-        return Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(WbDesign.radiusCard + 4),
-            boxShadow: [
-              BoxShadow(
-                color: auraColor.withValues(alpha: 0.55),
-                blurRadius: 16 + (t * 8),
-                spreadRadius: 2 + (t * 2),
-              ),
-              BoxShadow(
-                color: auraColor.withValues(alpha: 0.18),
-                blurRadius: 32 + (t * 16),
-                spreadRadius: 6 + (t * 4),
-              ),
-            ],
-          ),
-          child: tileWithQuality,
-        );
-      },
-    );
+    // 🔦 B11: Long-Press wrappen wenn Callback vorhanden
+    if (widget.onLongPress != null) {
+      return GestureDetector(onLongPress: widget.onLongPress, child: result);
+    }
+    return result;
   }
 
   Widget _buildTileBody(BuildContext context, String initials, double avatarSize,
@@ -1422,16 +1479,22 @@ class _ControlBar extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  // Mikrofon
+                  // Mikrofon (Tap = Toggle, Long-Press = PTT)
                   _CtrlBtn(
                     icon: service.micEnabled
                         ? Icons.mic_rounded
                         : Icons.mic_off_rounded,
-                    label: service.micEnabled ? 'Stumm' : 'Mikrofon',
-                    active: service.micEnabled,
-                    activeColor: accent,
+                    label: service.pttActive
+                        ? 'PTT aktiv'
+                        : (service.micEnabled ? 'Stumm' : 'Mikrofon'),
+                    active: service.micEnabled || service.pttActive,
+                    activeColor: service.pttActive
+                        ? const Color(0xFF00E676) // grüner PTT-Glow
+                        : accent,
                     enabled: isConnected,
                     onTap: () => service.toggleMicrophone(),
+                    onLongPressStart: () => service.pttPress(),
+                    onLongPressEnd: () => service.pttRelease(),
                   ),
                   // Kamera
                   _CtrlBtn(
@@ -1616,6 +1679,9 @@ class _CtrlBtn extends StatelessWidget {
   final bool enabled;
   final bool isDanger;
   final VoidCallback? onTap;
+  // 🎙️ B12: Push-to-Talk Long-Press
+  final VoidCallback? onLongPressStart;
+  final VoidCallback? onLongPressEnd;
 
   const _CtrlBtn({
     required this.icon,
@@ -1625,6 +1691,8 @@ class _CtrlBtn extends StatelessWidget {
     this.activeColor,
     this.isDanger = false,
     this.onTap,
+    this.onLongPressStart,
+    this.onLongPressEnd,
   });
 
   @override
@@ -1650,6 +1718,12 @@ class _CtrlBtn extends StatelessWidget {
       button: true,
       child: GestureDetector(
         onTap: enabled ? onTap : null,
+        onLongPressStart: (enabled && onLongPressStart != null)
+            ? (_) => onLongPressStart!()
+            : null,
+        onLongPressEnd: (enabled && onLongPressEnd != null)
+            ? (_) => onLongPressEnd!()
+            : null,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -2010,6 +2084,61 @@ class _QualityDot extends StatelessWidget {
 // Aktiver/gepinnter Sprecher GROSS oben, andere als kleiner Strip unten.
 // ═══════════════════════════════════════════════════════════════════════════
 
+// 🔦 B11: Spotlight-Bottom-Sheet — zeigt "Für alle pinnen" Option
+void _showSpotlightSheet(
+  BuildContext context,
+  String name,
+  String identity,
+  Color accent,
+  void Function(String) onSpotlight,
+) {
+  showModalBottomSheet(
+    context: context,
+    backgroundColor: const Color(0xFF0D0D1A),
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (_) => Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 36,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 16),
+          ListTile(
+            leading: CircleAvatar(
+              backgroundColor: accent.withValues(alpha: 0.15),
+              child: Icon(Icons.push_pin_rounded, color: accent),
+            ),
+            title: Text(
+              'Für alle pinnen',
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            subtitle: Text(
+              '$name wird für alle Teilnehmer hervorgehoben',
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.55)),
+            ),
+            onTap: () {
+              Navigator.pop(context);
+              onSpotlight(identity);
+            },
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
 class _SpeakerView extends StatelessWidget {
   final String world;
   final String localName;
@@ -2027,6 +2156,8 @@ class _SpeakerView extends StatelessWidget {
   final Set<String> activeSpeakers;
   final LiveKitParticipantQuality Function(String) qualityFor;
   final String? pinnedIdentity;
+  // 🔦 B11: Spotlight-Callback
+  final void Function(String identity)? onSpotlight;
 
   const _SpeakerView({
     required this.world,
@@ -2045,6 +2176,7 @@ class _SpeakerView extends StatelessWidget {
     required this.activeSpeakers,
     required this.qualityFor,
     required this.pinnedIdentity,
+    this.onSpotlight,
   });
 
   @override
@@ -2146,6 +2278,9 @@ class _SpeakerView extends StatelessWidget {
                     avatar = remoteAvatarUrl(id);
                     video = remoteVideoTracks[id];
                   }
+                  final spotlight = (!isLocal && id.isNotEmpty && onSpotlight != null)
+                      ? () => _showSpotlightSheet(context, name, id, accent, onSpotlight!)
+                      : null;
                   return SizedBox(
                     width: 95,
                     child: _ParticipantTile(
@@ -2163,6 +2298,7 @@ class _SpeakerView extends StatelessWidget {
                       quality: id.isEmpty
                           ? LiveKitParticipantQuality.unknown
                           : qualityFor(id),
+                      onLongPress: spotlight,
                     ),
                   );
                 },

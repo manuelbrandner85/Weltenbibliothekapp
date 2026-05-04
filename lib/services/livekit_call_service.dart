@@ -29,6 +29,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/api_config.dart';
+import 'live_caption_service.dart';
 
 /// Verbindungs-Phasen — granular damit die UI passende Indicator zeigen kann.
 enum LiveKitConnectionState {
@@ -558,6 +559,16 @@ class LiveKitCallService extends ChangeNotifier {
       _setState(LiveKitConnectionState.connected);
       _startDurationTimer();
 
+      // 🎙️ B8: Caption-Service mit Raum verknüpfen
+      final lp2 = room.localParticipant;
+      if (lp2 != null) {
+        LiveCaptionService.instance.attachRoom(
+          room,
+          lp2.identity,
+          displayName ?? lp2.identity,
+        );
+      }
+
       // 🔁 Bundle 3.1: Token-Refresh-Loop starten — verhindert Auth-Verlust
       // bei langen Calls (Token-TTL 4h auf der Edge Function).
       _activeWorld = world;
@@ -687,6 +698,28 @@ class LiveKitCallService extends ChangeNotifier {
         final data = jsonDecode(raw);
         if (data is! Map) return;
         final type = data['type'];
+
+        // 🔦 B11: Spotlight — Host pinnt Teilnehmer für alle
+        if (type == 'spotlight') {
+          final identity = data['identity'] as String?;
+          _pinnedIdentity = identity;
+          _autoSpeakerFocus = false;
+          notifyListeners();
+          return;
+        }
+        if (type == 'spotlight_clear') {
+          _pinnedIdentity = null;
+          _autoSpeakerFocus = true;
+          notifyListeners();
+          return;
+        }
+
+        // 🎙️ B8: Caption-Event → LiveCaptionService weiterleiten
+        if (type == 'caption') {
+          LiveCaptionService.instance.handleIncomingData(data, event.participant);
+          return;
+        }
+
         if (type != 'reaction') return;
         final emoji = data['emoji'];
         if (emoji is! String || emoji.isEmpty) return;
@@ -770,6 +803,9 @@ class LiveKitCallService extends ChangeNotifier {
       await _listener?.dispose();
     } catch (_) {}
     _listener = null;
+
+    // 🎙️ B8: Caption-Service vom Raum trennen
+    LiveCaptionService.instance.detachRoom();
 
     try {
       await _room?.disconnect();
@@ -861,6 +897,24 @@ class LiveKitCallService extends ChangeNotifier {
     } finally {
       _micToggleInFlight = false;
     }
+  }
+
+  // 🎙️ B12: Push-to-Talk
+  bool _pttActive = false;
+  bool get pttActive => _pttActive;
+
+  Future<void> pttPress() async {
+    if (_pttActive) return;
+    _pttActive = true;
+    notifyListeners();
+    if (!_micEnabled) await toggleMicrophone();
+  }
+
+  Future<void> pttRelease() async {
+    if (!_pttActive) return;
+    _pttActive = false;
+    notifyListeners();
+    if (_micEnabled) await toggleMicrophone();
   }
 
   bool _cameraToggleInFlight = false;
@@ -1261,6 +1315,26 @@ class LiveKitCallService extends ChangeNotifier {
 
   void setAutoSpeakerFocus(bool enabled) {
     _autoSpeakerFocus = enabled;
+    notifyListeners();
+  }
+
+  // 🔦 B11: Spotlight — pinnt Teilnehmer für ALLE via DataChannel
+  Future<void> sendSpotlight(String? identity) async {
+    final lp = _room?.localParticipant;
+    if (lp == null) return;
+    final payload = jsonEncode(
+      identity != null
+          ? {'type': 'spotlight', 'identity': identity}
+          : {'type': 'spotlight_clear'},
+    );
+    try {
+      await lp.publishData(utf8.encode(payload), reliable: true);
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ sendSpotlight failed: $e');
+    }
+    // Lokal sofort anwenden
+    _pinnedIdentity = identity;
+    _autoSpeakerFocus = identity == null;
     notifyListeners();
   }
 
