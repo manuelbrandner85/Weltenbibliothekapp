@@ -41,9 +41,10 @@ class LiveKitGroupCallScreen extends ConsumerStatefulWidget {
   final String world;
   final String displayName;
   final String? avatarUrl;
-  // 🛋️ B5: kommt aus Pre-Join-Lobby. Wenn true → Kamera bleibt aus,
-  // Audio-Only-Mode aktiv beim Join.
+  // 🛋️ B5: kommt aus Pre-Join-Lobby.
   final bool audioOnly;
+  // Wenn false → stumm beitreten (Zuhörer-Modus), User kann Mic später an/aus schalten.
+  final bool initialMicEnabled;
 
   const LiveKitGroupCallScreen({
     super.key,
@@ -52,6 +53,7 @@ class LiveKitGroupCallScreen extends ConsumerStatefulWidget {
     required this.displayName,
     this.avatarUrl,
     this.audioOnly = false,
+    this.initialMicEnabled = true,
   });
 
   @override
@@ -128,6 +130,7 @@ class _LiveKitGroupCallScreenState
         displayName: widget.displayName,
         avatarUrl: widget.avatarUrl,
         audioOnly: widget.audioOnly,
+        initialMicEnabled: widget.initialMicEnabled,
       );
       if (mounted) setState(() => _hasJoined = true);
     } catch (_) {
