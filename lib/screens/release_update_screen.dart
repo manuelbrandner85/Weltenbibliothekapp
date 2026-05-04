@@ -24,6 +24,7 @@ import 'package:flutter/services.dart';
 
 import '../services/apk_download_service.dart';
 import '../services/update_service.dart';
+import '../utils/changelog_translator.dart';
 
 enum _UpdateStage { idle, downloading, downloaded, installing, error }
 
@@ -377,14 +378,11 @@ class _ReleaseUpdateScreenState extends State<ReleaseUpdateScreen> {
                       fontWeight: FontWeight.w700)),
             ],
           ),
-          const SizedBox(height: 10),
-          Text(
-            widget.info.changelog!.trim(),
-            style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.85),
-                fontSize: 13.5,
-                height: 1.5),
-          ),
+          const SizedBox(height: 12),
+          // User-freundliche Changelog-Übersetzung — keine technischen
+          // Commit-Messages mehr, sondern verständliche Beschreibungen
+          // gruppiert nach Neue Funktionen / Verbessert / Behoben.
+          _FriendlyChangelogView(raw: widget.info.changelog!.trim()),
         ],
       ),
     );
@@ -708,5 +706,66 @@ class _ReleaseUpdateScreenState extends State<ReleaseUpdateScreen> {
       return '${(bytes / 1024 / 1024).toStringAsFixed(1)} MB';
     }
     return '${(bytes / 1024 / 1024 / 1024).toStringAsFixed(2)} GB';
+  }
+}
+
+/// Rendert einen rohen Changelog-String (Git-Commits) als 3 Kategorien
+/// mit nutzerfreundlichen Texten (Neue Funktionen / Verbessert / Behoben).
+class _FriendlyChangelogView extends StatelessWidget {
+  final String raw;
+  const _FriendlyChangelogView({required this.raw});
+
+  @override
+  Widget build(BuildContext context) {
+    final friendly = parseFriendlyChangelog(raw);
+    if (friendly.isEmpty) {
+      return Text(
+        'Keine sichtbaren Änderungen für diese Version.',
+        style: TextStyle(
+          color: Colors.white.withValues(alpha: 0.6),
+          fontSize: 13,
+          fontStyle: FontStyle.italic,
+        ),
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final cat in friendly.categories)
+          if (!cat.isEmpty) ...[
+            Padding(
+              padding: const EdgeInsets.only(top: 4, bottom: 6),
+              child: Row(
+                children: [
+                  Text(cat.emoji, style: const TextStyle(fontSize: 14)),
+                  const SizedBox(width: 6),
+                  Text(
+                    cat.title,
+                    style: TextStyle(
+                      color: cat.color,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            for (final item in cat.items)
+              Padding(
+                padding: const EdgeInsets.only(left: 6, bottom: 4),
+                child: Text(
+                  '•  $item',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.85),
+                    fontSize: 13.5,
+                    height: 1.4,
+                  ),
+                ),
+              ),
+            const SizedBox(height: 6),
+          ],
+      ],
+    );
   }
 }
