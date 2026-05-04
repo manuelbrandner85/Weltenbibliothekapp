@@ -21,6 +21,7 @@ import 'package:livekit_client/livekit_client.dart' as lk;
 
 import '../../config/wb_design.dart';
 import '../../providers/livekit_call_provider.dart';
+import '../../services/audio_feedback_service.dart';
 import '../../services/cowatch_service.dart';
 import '../../services/incall_chat_service.dart';
 import '../../services/livekit_call_service.dart';
@@ -77,6 +78,8 @@ class _LiveKitGroupCallScreenState
   StreamSubscription<CoWatchEvent>? _coWatchSub;
   // 💬 In-Call-Chat
   bool _chatVisible = false;
+  // 🎨 B10.6: Raumstimmung (AudioFeedbackService hält den aktuellen Theme)
+  // kein lokaler State — wir lesen direkt aus AudioFeedbackService.themeNotifier
   late final AnimationController _bgController;
   late final Animation<double> _bgAnimation;
 
@@ -212,17 +215,20 @@ class _LiveKitGroupCallScreenState
       },
       child: Scaffold(
         backgroundColor: bg,
-        body: AnimatedBuilder(
-          animation: _bgAnimation,
-          builder: (_, child) => Stack(
-            fit: StackFit.expand,
-            children: [
-              // Animierter Hintergrund-Glow
-              _AnimatedBackground(
-                world: widget.world,
-                animation: _bgAnimation,
-                accent: accent,
-              ),
+        body: ValueListenableBuilder<RoomTheme>(
+          valueListenable: AudioFeedbackService.instance.themeNotifier,
+          builder: (_, theme, __) => AnimatedBuilder(
+            animation: _bgAnimation,
+            builder: (_, child) => Stack(
+              fit: StackFit.expand,
+              children: [
+                // 🎨 B10.6: Raumstimmung — Hintergrund wechselt je nach Theme
+                _AnimatedBackground(
+                  world: widget.world,
+                  animation: _bgAnimation,
+                  accent: accent,
+                  theme: theme,
+                ),
               child!,
               // 💖 Bundle 4: Floating-Reactions-Overlay liegt ÜBER allem
               // (Body + ControlBar) damit Emojis durchgängig nach oben
@@ -261,12 +267,12 @@ class _LiveKitGroupCallScreenState
                     onClose: () => setState(() => _chatVisible = false),
                   ),
                 ),
-            ],
-          ),
-          child: SafeArea(
-            child: Column(
-              children: [
-                _TopBar(
+              ],
+            ),
+            child: SafeArea(
+              child: Column(
+                children: [
+                  _TopBar(
                   roomName: widget.roomName,
                   world: widget.world,
                   state: state,
@@ -337,7 +343,8 @@ class _LiveKitGroupCallScreenState
                     if (await _confirmLeave()) await _leaveAndPop();
                   },
                 ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -470,20 +477,36 @@ class _AnimatedBackground extends StatelessWidget {
   final String world;
   final Animation<double> animation;
   final Color accent;
+  final RoomTheme theme;
 
   const _AnimatedBackground({
     required this.world,
     required this.animation,
     required this.accent,
+    this.theme = RoomTheme.standard,
   });
 
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(
-      painter: world == 'materie'
-          ? _MateriePainter(animation.value, accent)
-          : _EnergiePainter(animation.value, accent),
-    );
+    final t = animation.value;
+    CustomPainter painter;
+
+    switch (theme) {
+      case RoomTheme.netzwerk:
+        painter = _NetzwerkPainter(t, accent);
+      case RoomTheme.kosmos:
+        painter = _KosmosPainter(t, accent);
+      case RoomTheme.mandala:
+        painter = _MandalaPainter(t, accent);
+      case RoomTheme.kristall:
+        painter = _KristallPainter(t, accent);
+      case RoomTheme.standard:
+        painter = world == 'materie'
+            ? _MateriePainter(t, accent)
+            : _EnergiePainter(t, accent);
+    }
+
+    return CustomPaint(painter: painter);
   }
 }
 
@@ -615,6 +638,282 @@ class _EnergiePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _EnergiePainter old) => old.t != t;
+}
+
+// ─── B10.6: Raumstimmung-Painter ─────────────────────────────────────────────
+
+/// Materie — dichtes Datennetz mit pulsierenden blauen Knotenpunkten.
+class _NetzwerkPainter extends CustomPainter {
+  final double t;
+  final Color accent;
+  _NetzwerkPainter(this.t, this.accent);
+
+  static const _nodes = <Offset>[
+    Offset(0.15, 0.12), Offset(0.45, 0.08), Offset(0.80, 0.18),
+    Offset(0.10, 0.38), Offset(0.35, 0.35), Offset(0.65, 0.30),
+    Offset(0.88, 0.42), Offset(0.20, 0.60), Offset(0.50, 0.58),
+    Offset(0.75, 0.62), Offset(0.12, 0.80), Offset(0.40, 0.82),
+    Offset(0.70, 0.88), Offset(0.90, 0.75),
+  ];
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final linePaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.7
+      ..color = accent.withValues(alpha: 0.12);
+
+    // Verbindungslinien zwischen nahen Knoten
+    for (int i = 0; i < _nodes.length; i++) {
+      for (int j = i + 1; j < _nodes.length; j++) {
+        final a = Offset(_nodes[i].dx * size.width, _nodes[i].dy * size.height);
+        final b = Offset(_nodes[j].dx * size.width, _nodes[j].dy * size.height);
+        final dist = (a - b).distance;
+        if (dist < size.width * 0.38) {
+          linePaint.color = accent.withValues(alpha: 0.09 * (1 - dist / (size.width * 0.38)));
+          canvas.drawLine(a, b, linePaint);
+        }
+      }
+    }
+
+    // Pulsierende Knoten mit animiertem Glow
+    for (int i = 0; i < _nodes.length; i++) {
+      final cx = _nodes[i].dx * size.width;
+      final cy = _nodes[i].dy * size.height;
+      final phase = (t + i * 0.07) % 1.0;
+      final glowR = 40.0 + 20.0 * phase;
+      final glowPaint = Paint()
+        ..style = PaintingStyle.fill
+        ..shader = RadialGradient(colors: [
+          accent.withValues(alpha: 0.18 * (1 - phase)),
+          accent.withValues(alpha: 0),
+        ]).createShader(Rect.fromCircle(center: Offset(cx, cy), radius: glowR));
+      canvas.drawCircle(Offset(cx, cy), glowR, glowPaint);
+
+      // Kern-Dot
+      final dotPaint = Paint()
+        ..style = PaintingStyle.fill
+        ..color = accent.withValues(alpha: 0.55);
+      canvas.drawCircle(Offset(cx, cy), 2.5, dotPaint);
+    }
+
+    // Datenstrom-Partikel entlang einer Linie
+    final streamPaint = Paint()
+      ..style = PaintingStyle.fill
+      ..color = accent.withValues(alpha: 0.65);
+    for (int i = 0; i < 6; i++) {
+      final frac = (t + i / 6.0) % 1.0;
+      final startIdx = i % _nodes.length;
+      final endIdx = (i + 3) % _nodes.length;
+      final sx = _nodes[startIdx].dx * size.width;
+      final sy = _nodes[startIdx].dy * size.height;
+      final ex = _nodes[endIdx].dx * size.width;
+      final ey = _nodes[endIdx].dy * size.height;
+      final px = sx + (ex - sx) * frac;
+      final py = sy + (ey - sy) * frac;
+      canvas.drawCircle(Offset(px, py), 2.0, streamPaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _NetzwerkPainter old) => old.t != t;
+}
+
+/// Materie — tiefer Weltraum mit rotem Nebel und Sternfeld.
+class _KosmosPainter extends CustomPainter {
+  final double t;
+  final Color accent;
+  _KosmosPainter(this.t, this.accent);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    // Sternenfeld (statisch, seed-basiert)
+    final starPaint = Paint()..style = PaintingStyle.fill;
+    for (int i = 0; i < 80; i++) {
+      final seed = i * 0.137;
+      final x = ((seed * 137.7 + 0.5) % 1.0) * size.width;
+      final y = ((seed * 97.3 + 0.3) % 1.0) * size.height;
+      final brightness = 0.2 + ((i * 31) % 60) / 150.0;
+      final twinkle = brightness + 0.15 * math.sin(t * math.pi * 2 + i);
+      starPaint.color = Colors.white.withValues(alpha: twinkle.clamp(0.0, 0.9));
+      canvas.drawCircle(Offset(x, y), 0.8 + (i % 3) * 0.4, starPaint);
+    }
+
+    // Roter Nebel-Glow (2 überlagerte Wolken)
+    for (int w = 0; w < 2; w++) {
+      final cx = size.width * (0.3 + w * 0.4);
+      final cy = size.height * (0.4 + w * 0.15);
+      final r = size.width * (0.35 + w * 0.10);
+      final phase = (t + w * 0.4) % 1.0;
+      final nebulaPaint = Paint()
+        ..style = PaintingStyle.fill
+        ..shader = RadialGradient(colors: [
+          accent.withValues(alpha: 0.10 + 0.04 * math.sin(phase * math.pi * 2)),
+          accent.withValues(alpha: 0.03),
+          accent.withValues(alpha: 0),
+        ]).createShader(Rect.fromCircle(center: Offset(cx, cy), radius: r));
+      canvas.drawCircle(Offset(cx, cy), r, nebulaPaint);
+    }
+
+    // Heller Kern (Zentralstern)
+    final corePaint = Paint()
+      ..style = PaintingStyle.fill
+      ..shader = RadialGradient(colors: [
+        accent.withValues(alpha: 0.28),
+        accent.withValues(alpha: 0),
+      ]).createShader(
+          Rect.fromCircle(center: Offset(size.width * 0.5, size.height * 0.45),
+              radius: size.width * 0.18));
+    canvas.drawCircle(
+        Offset(size.width * 0.5, size.height * 0.45), size.width * 0.18, corePaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _KosmosPainter old) => old.t != t;
+}
+
+/// Energie — rotierendes Mandala-Muster aus geometrischen Linien.
+class _MandalaPainter extends CustomPainter {
+  final double t;
+  final Color accent;
+  _MandalaPainter(this.t, this.accent);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final cx = size.width / 2;
+    final cy = size.height / 2;
+    final maxR = size.width * 0.45;
+
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.8;
+
+    // 3 rotierende Ringe mit je 12 Speichen
+    for (int ring = 0; ring < 3; ring++) {
+      final r = maxR * (0.35 + ring * 0.22);
+      final rotation = t * math.pi * (ring.isEven ? 0.4 : -0.3) + ring * math.pi / 6;
+      final alpha = 0.08 + ring * 0.03;
+      paint.color = accent.withValues(alpha: alpha);
+
+      // Kreisbogen
+      canvas.drawCircle(Offset(cx, cy), r, paint);
+
+      // Speichen
+      for (int spoke = 0; spoke < 12; spoke++) {
+        final angle = rotation + spoke * math.pi * 2 / 12;
+        final innerR = r * 0.35;
+        canvas.drawLine(
+          Offset(cx + math.cos(angle) * innerR, cy + math.sin(angle) * innerR),
+          Offset(cx + math.cos(angle) * r, cy + math.sin(angle) * r),
+          paint,
+        );
+      }
+    }
+
+    // Leuchtender Kern
+    final corePaint = Paint()
+      ..style = PaintingStyle.fill
+      ..shader = RadialGradient(colors: [
+        accent.withValues(alpha: 0.22 + 0.08 * math.sin(t * math.pi * 2)),
+        accent.withValues(alpha: 0),
+      ]).createShader(
+          Rect.fromCircle(center: Offset(cx, cy), radius: maxR * 0.15));
+    canvas.drawCircle(Offset(cx, cy), maxR * 0.15, corePaint);
+
+    // Äußerer Glow-Ring
+    final glowPaint = Paint()
+      ..style = PaintingStyle.fill
+      ..shader = RadialGradient(colors: [
+        accent.withValues(alpha: 0),
+        accent.withValues(alpha: 0.05),
+        accent.withValues(alpha: 0),
+      ], stops: const [0.6, 0.8, 1.0]).createShader(
+          Rect.fromCircle(center: Offset(cx, cy), radius: maxR));
+    canvas.drawCircle(Offset(cx, cy), maxR, glowPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _MandalaPainter old) => old.t != t;
+}
+
+/// Energie — schwebende Licht-Kristall-Scherben mit Prisma-Effekt.
+class _KristallPainter extends CustomPainter {
+  final double t;
+  final Color accent;
+  _KristallPainter(this.t, this.accent);
+
+  // 10 Kristall-Scherben mit festen Seed-Positionen
+  static const _seeds = <(double, double, double)>[
+    (0.15, 0.20, 0.0), (0.45, 0.12, 0.2), (0.78, 0.25, 0.4),
+    (0.08, 0.55, 0.6), (0.35, 0.65, 0.8), (0.62, 0.50, 0.1),
+    (0.88, 0.60, 0.3), (0.25, 0.82, 0.5), (0.58, 0.85, 0.7),
+    (0.82, 0.88, 0.9),
+  ];
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..style = PaintingStyle.fill;
+    final strokePaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.6;
+
+    for (int i = 0; i < _seeds.length; i++) {
+      final (sx, sy, phase0) = _seeds[i];
+      final phase = (t * 0.7 + phase0) % 1.0;
+      final floatY = math.sin(phase * math.pi * 2) * 12;
+      final cx = sx * size.width;
+      final cy = sy * size.height + floatY;
+      final scale = 12.0 + (i % 3) * 8.0;
+      final rotation = t * math.pi * (i.isEven ? 0.15 : -0.10) + i;
+
+      // Kristall-Hexagon
+      final path = Path();
+      for (int v = 0; v < 6; v++) {
+        final angle = rotation + v * math.pi / 3;
+        final px = cx + math.cos(angle) * scale;
+        final py = cy + math.sin(angle) * scale;
+        if (v == 0) path.moveTo(px, py); else path.lineTo(px, py);
+      }
+      path.close();
+
+      final alpha = 0.05 + 0.04 * math.sin(phase * math.pi * 2 + i);
+      paint.color = accent.withValues(alpha: alpha);
+      canvas.drawPath(path, paint);
+
+      strokePaint.color = accent.withValues(alpha: alpha * 3.5);
+      canvas.drawPath(path, strokePaint);
+
+      // Innerer Glanz-Punkt
+      final glowPaint = Paint()
+        ..style = PaintingStyle.fill
+        ..shader = RadialGradient(colors: [
+          Colors.white.withValues(alpha: 0.30 * (1 - phase)),
+          accent.withValues(alpha: 0),
+        ]).createShader(Rect.fromCircle(center: Offset(cx, cy), radius: scale));
+      canvas.drawCircle(Offset(cx, cy), scale * 0.4, glowPaint);
+    }
+
+    // Sanfter Hintergrund-Glow in der Mitte
+    final bgGlow = Paint()
+      ..style = PaintingStyle.fill
+      ..shader = RadialGradient(colors: [
+        accent.withValues(alpha: 0.06),
+        accent.withValues(alpha: 0),
+      ]).createShader(Rect.fromCircle(
+          center: Offset(size.width / 2, size.height / 2),
+          radius: size.width * 0.55));
+    canvas.drawCircle(
+        Offset(size.width / 2, size.height / 2), size.width * 0.55, bgGlow);
+  }
+
+  @override
+  bool shouldRepaint(covariant _KristallPainter old) => old.t != t;
+}
+
+/// Globaler ValueNotifier für Spatial-Audio-Toggle (UI-State, kein setState im Screen).
+class _SpatialNotifier extends ValueNotifier<bool> {
+  _SpatialNotifier._() : super(AudioFeedbackService.instance.spatialEnabled);
+  static final instance = _SpatialNotifier._();
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -811,8 +1110,182 @@ class _TopBar extends StatelessWidget {
                     onToggleAudioOnly();
                   },
                 ),
+                // 🎨 B10.6: Raumstimmung
+                Builder(builder: (ctx2) {
+                  final theme = AudioFeedbackService.instance.currentTheme;
+                  return _MoreOptionTile(
+                    icon: theme.icon,
+                    title: 'Raumstimmung: ${theme.label}',
+                    subtitle: 'Hintergrund-Atmosphäre des Anrufs anpassen',
+                    active: theme != RoomTheme.standard,
+                    accent: accent,
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      _showRaumstimmungPicker(context);
+                    },
+                  );
+                }),
+                // 🔊 B10.8: Spatial Audio (Sprecher-Ducking)
+                ValueListenableBuilder<bool>(
+                  valueListenable: _SpatialNotifier.instance,
+                  builder: (_, spatialOn, __) => _MoreOptionTile(
+                    icon: spatialOn
+                        ? Icons.surround_sound_rounded
+                        : Icons.surround_sound_outlined,
+                    title: 'Spatial Audio',
+                    subtitle: spatialOn
+                        ? 'Aktiv — Sprecher im Fokus, andere leiser'
+                        : 'Aktiver Sprecher wird hervorgehoben',
+                    active: spatialOn,
+                    accent: accent,
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      AudioFeedbackService.instance.toggleSpatial();
+                      _SpatialNotifier.instance.value =
+                          AudioFeedbackService.instance.spatialEnabled;
+                    },
+                  ),
+                ),
                 SizedBox(height: MediaQuery.of(ctx).padding.bottom + 16),
               ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showRaumstimmungPicker(BuildContext context) {
+    final accent = WbDesign.accent(world);
+    final themes = RoomTheme.values
+        .where((th) => th.availableFor(world))
+        .toList();
+
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModalState) => ClipRRect(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+            child: Container(
+              decoration: BoxDecoration(
+                color: WbDesign.surface(world).withValues(alpha: 0.96),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(20)),
+                border: Border(
+                  top: BorderSide(
+                      color: accent.withValues(alpha: 0.25), width: 1),
+                ),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(height: 12),
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: WbDesign.textTertiary.withValues(alpha: 0.4),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Row(
+                      children: [
+                        Icon(Icons.palette_outlined, color: accent, size: 20),
+                        const SizedBox(width: 10),
+                        Text(
+                          'Raumstimmung',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  ...themes.map((theme) {
+                    final isCurrent =
+                        AudioFeedbackService.instance.currentTheme == theme;
+                    return InkWell(
+                      onTap: () {
+                        AudioFeedbackService.instance.setTheme(theme);
+                        setModalState(() {});
+                        Navigator.pop(ctx);
+                      },
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        margin: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 3),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: isCurrent
+                              ? accent.withValues(alpha: 0.18)
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isCurrent
+                                ? accent.withValues(alpha: 0.40)
+                                : Colors.transparent,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: isCurrent
+                                    ? accent.withValues(alpha: 0.20)
+                                    : Colors.white.withValues(alpha: 0.07),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Icon(theme.icon,
+                                  color: isCurrent ? accent : WbDesign.textTertiary,
+                                  size: 20),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    theme.label,
+                                    style: TextStyle(
+                                      color: isCurrent ? accent : Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    theme.description,
+                                    style: TextStyle(
+                                      color: WbDesign.textSecondary,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (isCurrent)
+                              Icon(Icons.check_circle_rounded,
+                                  color: accent, size: 18),
+                          ],
+                        ),
+                      ),
+                    );
+                  }),
+                  SizedBox(height: MediaQuery.of(ctx).padding.bottom + 16),
+                ],
+              ),
             ),
           ),
         ),

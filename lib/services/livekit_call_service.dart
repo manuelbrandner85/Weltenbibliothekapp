@@ -29,6 +29,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/api_config.dart';
+import 'audio_feedback_service.dart';
 import 'cowatch_service.dart';
 import 'incall_chat_service.dart';
 import 'live_caption_service.dart';
@@ -578,6 +579,8 @@ class LiveKitCallService extends ChangeNotifier {
           lp2.identity,
           displayName ?? lp2.identity,
         );
+        // 🔊 B10.8: AudioFeedback-Service anhängen (Spatial Ducking)
+        AudioFeedbackService.instance.attachRoom(room);
       }
 
       // 🔁 Bundle 3.1: Token-Refresh-Loop starten — verhindert Auth-Verlust
@@ -774,6 +777,8 @@ class LiveKitCallService extends ChangeNotifier {
     listener.on<ActiveSpeakersChangedEvent>((event) {
       _activeSpeakers = event.speakers.map((p) => p.identity).toSet();
       speakersNotifier.value = _activeSpeakers;
+      // 🔊 B10.8: Spatial Ducking — nicht-aktive Sprecher leiser schalten
+      AudioFeedbackService.instance.updateActiveSpeakers(_activeSpeakers);
 
       if (_autoSpeakerFocus && event.speakers.isNotEmpty) {
         final lp = _room?.localParticipant;
@@ -832,6 +837,8 @@ class LiveKitCallService extends ChangeNotifier {
     CoWatchService.instance.detachRoom();
     // 💬 In-Call-Chat vom Raum trennen
     InCallChatService.instance.detachRoom();
+    // 🔊 B10.8: AudioFeedback-Service trennen
+    AudioFeedbackService.instance.detachRoom();
 
     try {
       await _room?.disconnect();
