@@ -1134,6 +1134,40 @@ class _TopBar extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
+                // Ansicht wechseln (Gallery ↔ Speaker)
+                _MoreOptionTile(
+                  icon: viewMode == LiveKitViewMode.speaker
+                      ? Icons.grid_view_rounded
+                      : Icons.account_box_rounded,
+                  title: viewMode == LiveKitViewMode.speaker
+                      ? 'Rasteransicht'
+                      : 'Sprecheransicht',
+                  subtitle: viewMode == LiveKitViewMode.speaker
+                      ? 'Alle Teilnehmer als gleichgroße Kacheln'
+                      : 'Aktiven Sprecher groß hervorheben',
+                  active: viewMode == LiveKitViewMode.speaker,
+                  accent: accent,
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    onToggleViewMode();
+                  },
+                ),
+                // Untertitel
+                _MoreOptionTile(
+                  icon: captionsEnabled
+                      ? Icons.closed_caption_rounded
+                      : Icons.closed_caption_disabled_rounded,
+                  title: 'Untertitel',
+                  subtitle: captionsEnabled
+                      ? 'Gesprochenes wird als Text eingeblendet'
+                      : 'Live-Untertitel für diesen Anruf aktivieren',
+                  active: captionsEnabled,
+                  accent: accent,
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    onToggleCaptions();
+                  },
+                ),
                 // Atmosphäre (Hintergrund-Sound)
                 _MoreOptionTile(
                   icon: soundscapeEnabled
@@ -1712,31 +1746,11 @@ class _TopBar extends StatelessWidget {
                     ],
                   ),
                 ),
-              // 🔁 B6: Ansicht wechseln (Gallery ↔ Speaker)
-              _TopBarBtn(
-                icon: viewMode == LiveKitViewMode.speaker
-                    ? Icons.grid_view_rounded
-                    : Icons.account_box_rounded,
-                label: 'Ansicht',
-                active: viewMode == LiveKitViewMode.speaker,
-                accent: accent,
-                onTap: onToggleViewMode,
-              ),
-              // 🎙️ B8: Untertitel
-              _TopBarBtn(
-                icon: captionsEnabled
-                    ? Icons.closed_caption_rounded
-                    : Icons.closed_caption_disabled_rounded,
-                label: 'Untertitel',
-                active: captionsEnabled,
-                accent: accent,
-                onTap: onToggleCaptions,
-              ),
-              // ⋮ Mehr Optionen (Atmosphäre, Heilfrequenz, Audio-Only)
+              // ⋮ Mehr Optionen (Ansicht, Untertitel, Atmosphäre, Heilfrequenz)
               Builder(builder: (ctx) => _TopBarBtn(
                 icon: Icons.more_vert_rounded,
                 label: 'Mehr',
-                active: soundscapeEnabled || heilEnabled || audioOnly,
+                active: soundscapeEnabled || heilEnabled || captionsEnabled,
                 accent: accent,
                 onTap: () => _showMoreOptions(ctx),
               )),
@@ -2789,103 +2803,6 @@ class _ControlBar extends StatelessWidget {
                     ),
                   ),
                   // ── Auflegen (immer sichtbar, prominent) ──
-                  // Kamera drehen (Front/Back) — nur sichtbar wenn Camera an
-                  if (service.cameraEnabled)
-                    _CtrlBtn(
-                      icon: Icons.cameraswitch_rounded,
-                      label: 'Drehen',
-                      active: false,
-                      activeColor: accent,
-                      enabled: isConnected,
-                      onTap: () => service.switchCamera(),
-                    ),
-                  // Bildschirm teilen
-                  _CtrlBtn(
-                    icon: service.screenShareEnabled
-                        ? Icons.stop_screen_share_rounded
-                        : Icons.present_to_all_rounded,
-                    label:
-                        service.screenShareEnabled ? 'Teilen stoppen' : 'Bildschirm',
-                    active: service.screenShareEnabled,
-                    activeColor: accent,
-                    enabled: isConnected,
-                    onTap: () => service.toggleScreenShare(),
-                  ),
-                  // 💬 In-Call-Chat
-                  ValueListenableBuilder<int>(
-                    valueListenable:
-                        InCallChatService.instance.unreadNotifier,
-                    builder: (_, unread, __) => Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        _CtrlBtn(
-                          icon: chatVisible
-                              ? Icons.chat_bubble_rounded
-                              : Icons.chat_bubble_outline_rounded,
-                          label: 'Chat',
-                          active: chatVisible,
-                          activeColor: accent,
-                          enabled: isConnected,
-                          onTap: onToggleChat,
-                        ),
-                        if (unread > 0 && !chatVisible)
-                          Positioned(
-                            top: 0,
-                            right: 0,
-                            child: Container(
-                              width: 16,
-                              height: 16,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFFF1744),
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                    color: Colors.black, width: 1.5),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  unread > 9 ? '9+' : '$unread',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                  // 💖 Bundle 4: Reactions-Picker
-                  _CtrlBtn(
-                    icon: Icons.emoji_emotions_outlined,
-                    label: 'Reaktion',
-                    active: false,
-                    activeColor: accent,
-                    enabled: isConnected,
-                    onTap: () => _showReactionsPicker(context, world, service),
-                  ),
-                  // 📺 B10.4: Co-Watch
-                  _CtrlBtn(
-                    icon: Icons.tv_rounded,
-                    label: 'Co-Watch',
-                    active: CoWatchService.instance.active,
-                    activeColor: accent,
-                    enabled: isConnected,
-                    onTap: onCoWatch,
-                  ),
-                  // Hand heben
-                  _CtrlBtn(
-                    icon: service.handRaised
-                        ? Icons.front_hand_rounded
-                        : Icons.front_hand_outlined,
-                    label: service.handRaised ? 'Hand senken' : 'Hand heben',
-                    active: service.handRaised,
-                    activeColor: const Color(0xFFFFB300),
-                    enabled: isConnected,
-                    onTap: () => service.toggleHandRaised(),
-                  ),
-                  // Auflegen
                   _CtrlBtn(
                     icon: Icons.call_end_rounded,
                     label: 'Auflegen',
