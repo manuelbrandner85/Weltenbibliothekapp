@@ -290,6 +290,7 @@ class _LiveKitGroupCallScreenState
             remoteHandRaised: svc.isRemoteHandRaised,
             remoteAvatarUrl: svc.remoteAvatarUrl,
             activeSpeakers: speakers,
+            qualityFor: svc.connectionQualityFor, // B2
           ),
         );
     }
@@ -767,7 +768,9 @@ class _ParticipantGrid extends StatelessWidget {
   final bool localHandRaised;
   final bool Function(String) remoteHandRaised;
   final String? Function(String) remoteAvatarUrl;
-  // 🌌 Bundle 3: aktive Sprecher (Identities-Set) für Aura-Glow
+  // 📶 B2: Verbindungs-Qualität-Callback
+  final LiveKitParticipantQuality Function(String) qualityFor;
+  // 🌌 B3: aktive Sprecher (Identities-Set) für Aura-Glow
   final Set<String> activeSpeakers;
 
   const _ParticipantGrid({
@@ -785,6 +788,7 @@ class _ParticipantGrid extends StatelessWidget {
     required this.localHandRaised,
     required this.remoteHandRaised,
     required this.remoteAvatarUrl,
+    required this.qualityFor,
     this.activeSpeakers = const <String>{},
   });
 
@@ -835,11 +839,15 @@ class _ParticipantGrid extends StatelessWidget {
           handRaised: info.hand,
           avatarUrl: info.avatar,
           isActiveSpeaker: id.isNotEmpty && activeSpeakers.contains(id),
+          quality: id.isEmpty
+              ? LiveKitParticipantQuality.unknown
+              : qualityFor(id),
         ),
       );
     }
 
     final crossCount = count <= 2 ? 2 : (count <= 4 ? 2 : 3);
+    // Identity-Lookup für Quality + Active-Speaker-Check
     final identitiesSorted = remoteVideoTracks.keys.toList();
     final tiles = List.generate(count, (i) {
       final isLocal = i == 0;
@@ -858,6 +866,9 @@ class _ParticipantGrid extends StatelessWidget {
         handRaised: info.hand,
         avatarUrl: info.avatar,
         isActiveSpeaker: id.isNotEmpty && activeSpeakers.contains(id),
+        quality: id.isEmpty
+            ? LiveKitParticipantQuality.unknown
+            : qualityFor(id),
       );
     });
 
@@ -893,7 +904,9 @@ class _ParticipantTile extends StatefulWidget {
   final lk.VideoTrack? videoTrack;
   final bool handRaised;
   final String? avatarUrl;
-  // 🌌 Bundle 3: aktiver Sprecher → animierte Aura um's Tile
+  // 📶 B2: Verbindungs-Qualität (für farbigen Punkt oben rechts)
+  final LiveKitParticipantQuality quality;
+  // 🌌 B3: aktiver Sprecher → animierte Aura um's Tile
   final bool isActiveSpeaker;
 
   const _ParticipantTile({
@@ -906,6 +919,7 @@ class _ParticipantTile extends StatefulWidget {
     this.videoTrack,
     this.handRaised = false,
     this.avatarUrl,
+    this.quality = LiveKitParticipantQuality.unknown,
     this.isActiveSpeaker = false,
   });
 
@@ -968,18 +982,29 @@ class _ParticipantTileState extends State<_ParticipantTile>
     final isMaterie = widget.world == 'materie';
     final hasVideo = widget.videoTrack != null;
 
-    final tile = _buildTileBody(context, initials, avatarSize, fontSize, isMaterie, hasVideo);
+    final tileBody = _buildTileBody(context, initials, avatarSize, fontSize, isMaterie, hasVideo);
 
-    // 🌌 Bundle 3: Aktive-Sprecher-Aura — pulsierender Welt-farbiger Ring
-    // umschließt das Tile wenn die Person grade redet. Nicht nur micEnabled
-    // (= Mic an), sondern wirklich aktiv sprechend (via _activeSpeakers).
-    if (!widget.isActiveSpeaker) return tile;
+    // 📶 B2: Quality-Punkt overlay oben rechts auf das Tile
+    final tileWithQuality = Stack(
+      children: [
+        tileBody,
+        if (widget.quality != LiveKitParticipantQuality.unknown)
+          Positioned(
+            top: 8,
+            right: 8,
+            child: _QualityDot(quality: widget.quality),
+          ),
+      ],
+    );
+
+    // 🌌 B3: Aktive-Sprecher-Aura — pulsierender Welt-farbiger Ring
+    // umschließt das Tile wenn die Person grade redet.
+    if (!widget.isActiveSpeaker) return tileWithQuality;
 
     return AnimatedBuilder(
       animation: _pulseAnim,
       builder: (_, __) {
-        final t = _pulseAnim.value; // 0..1
-        // Materie: 2 Farben (rot↔blau), Energie: 2 Farben (lila↔cyan)
+        final t = _pulseAnim.value; // 0.95..1.05
         final c1 = isMaterie
             ? const Color(0xFFE53935) // materie rot
             : const Color(0xFF7C4DFF); // energie lila
@@ -991,13 +1016,11 @@ class _ParticipantTileState extends State<_ParticipantTile>
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(WbDesign.radiusCard + 4),
             boxShadow: [
-              // Innerer harter Ring
               BoxShadow(
                 color: auraColor.withValues(alpha: 0.55),
                 blurRadius: 16 + (t * 8),
                 spreadRadius: 2 + (t * 2),
               ),
-              // Äußerer weicher Halo
               BoxShadow(
                 color: auraColor.withValues(alpha: 0.18),
                 blurRadius: 32 + (t * 16),
@@ -1005,7 +1028,7 @@ class _ParticipantTileState extends State<_ParticipantTile>
               ),
             ],
           ),
-          child: tile,
+          child: tileWithQuality,
         );
       },
     );
@@ -1748,4 +1771,64 @@ class _MaterieAvatarGlow extends CustomPainter {
   @override
   bool shouldRepaint(covariant _MaterieAvatarGlow old) =>
       old.accent != accent;
+}
+
+/// 📶 Bundle 2: kleiner farbiger Punkt am Tile (oben rechts) der die
+/// Verbindungs-Qualität des Teilnehmers anzeigt — wie bei Discord.
+class _QualityDot extends StatelessWidget {
+  final LiveKitParticipantQuality quality;
+  const _QualityDot({required this.quality});
+
+  Color get _color {
+    switch (quality) {
+      case LiveKitParticipantQuality.excellent:
+        return const Color(0xFF4CAF50); // grün
+      case LiveKitParticipantQuality.good:
+        return const Color(0xFF8BC34A); // hellgrün
+      case LiveKitParticipantQuality.poor:
+        return const Color(0xFFFF9800); // orange
+      case LiveKitParticipantQuality.lost:
+        return const Color(0xFFFF1744); // rot
+      case LiveKitParticipantQuality.unknown:
+        return Colors.grey;
+    }
+  }
+
+  String get _tooltip {
+    switch (quality) {
+      case LiveKitParticipantQuality.excellent:
+        return 'Verbindung: ausgezeichnet';
+      case LiveKitParticipantQuality.good:
+        return 'Verbindung: gut';
+      case LiveKitParticipantQuality.poor:
+        return 'Verbindung: schlecht';
+      case LiveKitParticipantQuality.lost:
+        return 'Verbindung verloren';
+      case LiveKitParticipantQuality.unknown:
+        return 'Verbindung: unbekannt';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: _tooltip,
+      child: Container(
+        width: 10,
+        height: 10,
+        decoration: BoxDecoration(
+          color: _color,
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.black.withValues(alpha: 0.6), width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: _color.withValues(alpha: 0.6),
+              blurRadius: 4,
+              spreadRadius: 0.5,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
