@@ -275,20 +275,28 @@ class _LiveKitGroupCallScreenState
           },
         );
       case LiveKitConnectionState.connected:
-        return _ParticipantGrid(
-          world: widget.world,
-          localName: widget.displayName,
-          localAvatarUrl: widget.avatarUrl,
-          remoteNames: svc.remoteParticipantNames,
-          micEnabled: svc.micEnabled,
-          cameraEnabled: svc.cameraEnabled,
-          accent: accent,
-          localVideoTrack: svc.localVideoTrack,
-          remoteVideoTracks: svc.remoteVideoTracks,
-          remoteMicActive: svc.isRemoteMicActive,
-          localHandRaised: svc.handRaised,
-          remoteHandRaised: svc.isRemoteHandRaised,
-          remoteAvatarUrl: svc.remoteAvatarUrl,
+        // 🌌 Bundle 3: ValueListenableBuilder auf speakersNotifier — nur das
+        // Grid rebuildet wenn sich Sprecher ändern, nicht der ganze Screen.
+        return ValueListenableBuilder<Set<String>>(
+          valueListenable: svc.speakersNotifier,
+          builder: (_, speakers, __) => _ParticipantGrid(
+            world: widget.world,
+            localName: widget.displayName,
+            localAvatarUrl: widget.avatarUrl,
+            localIdentity: svc.room?.localParticipant?.identity,
+            remoteNames: svc.remoteParticipantNames,
+            micEnabled: svc.micEnabled,
+            cameraEnabled: svc.cameraEnabled,
+            accent: accent,
+            localVideoTrack: svc.localVideoTrack,
+            remoteVideoTracks: svc.remoteVideoTracks,
+            remoteMicActive: svc.isRemoteMicActive,
+            localHandRaised: svc.handRaised,
+            remoteHandRaised: svc.isRemoteHandRaised,
+            remoteAvatarUrl: svc.remoteAvatarUrl,
+            activeSpeakers: speakers,
+            qualityFor: svc.connectionQualityFor, // B2
+          ),
         );
     }
   }
@@ -754,6 +762,7 @@ class _ParticipantGrid extends StatelessWidget {
   final String world;
   final String localName;
   final String? localAvatarUrl;
+  final String? localIdentity;
   final List<String> remoteNames;
   final bool micEnabled;
   final bool cameraEnabled;
@@ -764,11 +773,16 @@ class _ParticipantGrid extends StatelessWidget {
   final bool localHandRaised;
   final bool Function(String) remoteHandRaised;
   final String? Function(String) remoteAvatarUrl;
+  // 📶 B2: Verbindungs-Qualität-Callback
+  final LiveKitParticipantQuality Function(String) qualityFor;
+  // 🌌 B3: aktive Sprecher (Identities-Set) für Aura-Glow
+  final Set<String> activeSpeakers;
 
   const _ParticipantGrid({
     required this.world,
     required this.localName,
     required this.localAvatarUrl,
+    this.localIdentity,
     required this.remoteNames,
     required this.micEnabled,
     required this.cameraEnabled,
@@ -779,6 +793,8 @@ class _ParticipantGrid extends StatelessWidget {
     required this.localHandRaised,
     required this.remoteHandRaised,
     required this.remoteAvatarUrl,
+    required this.qualityFor,
+    this.activeSpeakers = const <String>{},
   });
 
   /// Map: index → (videoTrack, micActive, handRaised, avatarUrl)
@@ -814,6 +830,7 @@ class _ParticipantGrid extends StatelessWidget {
 
     if (count == 1) {
       final info = _trackInfoFor(0);
+      final id = localIdentity ?? '';
       return Padding(
         padding: const EdgeInsets.all(20),
         child: _ParticipantTile(
@@ -826,14 +843,23 @@ class _ParticipantGrid extends StatelessWidget {
           videoTrack: info.video,
           handRaised: info.hand,
           avatarUrl: info.avatar,
+          isActiveSpeaker: id.isNotEmpty && activeSpeakers.contains(id),
+          quality: id.isEmpty
+              ? LiveKitParticipantQuality.unknown
+              : qualityFor(id),
         ),
       );
     }
 
     final crossCount = count <= 2 ? 2 : (count <= 4 ? 2 : 3);
+    // Identity-Lookup für Quality + Active-Speaker-Check
+    final identitiesSorted = remoteVideoTracks.keys.toList();
     final tiles = List.generate(count, (i) {
       final isLocal = i == 0;
       final info = _trackInfoFor(i);
+      final id = isLocal
+          ? (localIdentity ?? '')
+          : (i - 1 < identitiesSorted.length ? identitiesSorted[i - 1] : '');
       return _ParticipantTile(
         name: allNames[i],
         isLocal: isLocal,
@@ -844,6 +870,10 @@ class _ParticipantGrid extends StatelessWidget {
         videoTrack: info.video,
         handRaised: info.hand,
         avatarUrl: info.avatar,
+        isActiveSpeaker: id.isNotEmpty && activeSpeakers.contains(id),
+        quality: id.isEmpty
+            ? LiveKitParticipantQuality.unknown
+            : qualityFor(id),
       );
     });
 
@@ -879,6 +909,10 @@ class _ParticipantTile extends StatefulWidget {
   final lk.VideoTrack? videoTrack;
   final bool handRaised;
   final String? avatarUrl;
+  // 📶 B2: Verbindungs-Qualität (für farbigen Punkt oben rechts)
+  final LiveKitParticipantQuality quality;
+  // 🌌 B3: aktiver Sprecher → animierte Aura um's Tile
+  final bool isActiveSpeaker;
 
   const _ParticipantTile({
     required this.name,
@@ -890,6 +924,8 @@ class _ParticipantTile extends StatefulWidget {
     this.videoTrack,
     this.handRaised = false,
     this.avatarUrl,
+    this.quality = LiveKitParticipantQuality.unknown,
+    this.isActiveSpeaker = false,
   });
 
   @override
@@ -911,15 +947,18 @@ class _ParticipantTileState extends State<_ParticipantTile>
     _pulseAnim = Tween<double>(begin: 0.95, end: 1.05).animate(
       CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut),
     );
-    if (widget.micEnabled) _pulseCtrl.repeat(reverse: true);
+    if (widget.micEnabled || widget.isActiveSpeaker) _pulseCtrl.repeat(reverse: true);
   }
 
   @override
   void didUpdateWidget(covariant _ParticipantTile old) {
     super.didUpdateWidget(old);
-    if (widget.micEnabled && !_pulseCtrl.isAnimating) {
+    // 🌌 Bundle 3: Animation läuft wenn micEnabled ODER isActiveSpeaker
+    // (Aura-Glow nutzt _pulseAnim auch).
+    final shouldAnimate = widget.micEnabled || widget.isActiveSpeaker;
+    if (shouldAnimate && !_pulseCtrl.isAnimating) {
       _pulseCtrl.repeat(reverse: true);
-    } else if (!widget.micEnabled && _pulseCtrl.isAnimating) {
+    } else if (!shouldAnimate && _pulseCtrl.isAnimating) {
       // Bundle 5.9: animateTo(0) macht 1-Frame-Animation, flackert bei
       // schnellem Mic-Toggle. Sofort auf 0 setzen via .value.
       _pulseCtrl.stop();
@@ -948,6 +987,60 @@ class _ParticipantTileState extends State<_ParticipantTile>
     final isMaterie = widget.world == 'materie';
     final hasVideo = widget.videoTrack != null;
 
+    final tileBody = _buildTileBody(context, initials, avatarSize, fontSize, isMaterie, hasVideo);
+
+    // 📶 B2: Quality-Punkt overlay oben rechts auf das Tile
+    final tileWithQuality = Stack(
+      children: [
+        tileBody,
+        if (widget.quality != LiveKitParticipantQuality.unknown)
+          Positioned(
+            top: 8,
+            right: 8,
+            child: _QualityDot(quality: widget.quality),
+          ),
+      ],
+    );
+
+    // 🌌 B3: Aktive-Sprecher-Aura — pulsierender Welt-farbiger Ring
+    // umschließt das Tile wenn die Person grade redet.
+    if (!widget.isActiveSpeaker) return tileWithQuality;
+
+    return AnimatedBuilder(
+      animation: _pulseAnim,
+      builder: (_, __) {
+        final t = _pulseAnim.value; // 0.95..1.05
+        final c1 = isMaterie
+            ? const Color(0xFFE53935) // materie rot
+            : const Color(0xFF7C4DFF); // energie lila
+        final c2 = isMaterie
+            ? const Color(0xFF2979FF) // materie blau
+            : const Color(0xFF00E5FF); // energie cyan
+        final auraColor = Color.lerp(c1, c2, t) ?? widget.accent;
+        return Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(WbDesign.radiusCard + 4),
+            boxShadow: [
+              BoxShadow(
+                color: auraColor.withValues(alpha: 0.55),
+                blurRadius: 16 + (t * 8),
+                spreadRadius: 2 + (t * 2),
+              ),
+              BoxShadow(
+                color: auraColor.withValues(alpha: 0.18),
+                blurRadius: 32 + (t * 16),
+                spreadRadius: 6 + (t * 4),
+              ),
+            ],
+          ),
+          child: tileWithQuality,
+        );
+      },
+    );
+  }
+
+  Widget _buildTileBody(BuildContext context, String initials, double avatarSize,
+      double fontSize, bool isMaterie, bool hasVideo) {
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -1796,4 +1889,64 @@ class _MaterieAvatarGlow extends CustomPainter {
   @override
   bool shouldRepaint(covariant _MaterieAvatarGlow old) =>
       old.accent != accent;
+}
+
+/// 📶 Bundle 2: kleiner farbiger Punkt am Tile (oben rechts) der die
+/// Verbindungs-Qualität des Teilnehmers anzeigt — wie bei Discord.
+class _QualityDot extends StatelessWidget {
+  final LiveKitParticipantQuality quality;
+  const _QualityDot({required this.quality});
+
+  Color get _color {
+    switch (quality) {
+      case LiveKitParticipantQuality.excellent:
+        return const Color(0xFF4CAF50); // grün
+      case LiveKitParticipantQuality.good:
+        return const Color(0xFF8BC34A); // hellgrün
+      case LiveKitParticipantQuality.poor:
+        return const Color(0xFFFF9800); // orange
+      case LiveKitParticipantQuality.lost:
+        return const Color(0xFFFF1744); // rot
+      case LiveKitParticipantQuality.unknown:
+        return Colors.grey;
+    }
+  }
+
+  String get _tooltip {
+    switch (quality) {
+      case LiveKitParticipantQuality.excellent:
+        return 'Verbindung: ausgezeichnet';
+      case LiveKitParticipantQuality.good:
+        return 'Verbindung: gut';
+      case LiveKitParticipantQuality.poor:
+        return 'Verbindung: schlecht';
+      case LiveKitParticipantQuality.lost:
+        return 'Verbindung verloren';
+      case LiveKitParticipantQuality.unknown:
+        return 'Verbindung: unbekannt';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: _tooltip,
+      child: Container(
+        width: 10,
+        height: 10,
+        decoration: BoxDecoration(
+          color: _color,
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.black.withValues(alpha: 0.6), width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: _color.withValues(alpha: 0.6),
+              blurRadius: 4,
+              spreadRadius: 0.5,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
