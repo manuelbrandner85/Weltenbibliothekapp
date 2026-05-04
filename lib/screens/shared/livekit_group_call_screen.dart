@@ -22,6 +22,7 @@ import '../../config/wb_design.dart';
 import '../../providers/livekit_call_provider.dart';
 import '../../services/livekit_call_service.dart';
 import '../../widgets/livekit_mini_bar.dart';
+import '../../widgets/livekit_reactions_overlay.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // PUBLIC SCREEN WIDGET
@@ -177,6 +178,10 @@ class _LiveKitGroupCallScreenState
                 accent: accent,
               ),
               child!,
+              // 💖 Bundle 4: Floating-Reactions-Overlay liegt ÜBER allem
+              // (Body + ControlBar) damit Emojis durchgängig nach oben
+              // floaten können. IgnorePointer schützt Touch-Events.
+              LiveKitReactionsOverlay(reactions: svc.reactionsStream),
             ],
           ),
           child: SafeArea(
@@ -1313,6 +1318,15 @@ class _ControlBar extends StatelessWidget {
                     enabled: isConnected,
                     onTap: () => service.toggleScreenShare(),
                   ),
+                  // 💖 Bundle 4: Reactions-Picker
+                  _CtrlBtn(
+                    icon: Icons.emoji_emotions_outlined,
+                    label: 'Reaktion',
+                    active: false,
+                    activeColor: accent,
+                    enabled: isConnected,
+                    onTap: () => _showReactionsPicker(context, world, service),
+                  ),
                   // Hand heben
                   _CtrlBtn(
                     icon: service.handRaised
@@ -1337,6 +1351,110 @@ class _ControlBar extends StatelessWidget {
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 💖 Bundle 4: Reactions-Picker als Bottom-Sheet — pro Welt eigener
+/// Emoji-Set (Energie eher esoterisch, Materie eher kraftvoll).
+void _showReactionsPicker(BuildContext context, String world,
+    LiveKitCallService service) {
+  final emojis = world == 'energie' ? kEnergieReactions : kMaterieReactions;
+  final accent = WbDesign.accent(world);
+  showModalBottomSheet(
+    context: context,
+    backgroundColor: Colors.transparent,
+    builder: (ctx) => ClipRRect(
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+          decoration: BoxDecoration(
+            color: WbDesign.surface(world).withValues(alpha: 0.92),
+            border: Border(
+              top: BorderSide(color: accent.withValues(alpha: 0.3), width: 1),
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Drag-Handle
+              Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: WbDesign.textTertiary.withValues(alpha: 0.4),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 18),
+              Row(
+                children: [
+                  Icon(Icons.auto_awesome_rounded, color: accent, size: 18),
+                  const SizedBox(width: 8),
+                  Text('Reaktion senden',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      )),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                alignment: WrapAlignment.center,
+                children: [
+                  for (final e in emojis)
+                    _ReactionEmojiBtn(
+                      emoji: e,
+                      accent: accent,
+                      onTap: () {
+                        service.sendReaction(e);
+                        Navigator.pop(ctx);
+                      },
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+class _ReactionEmojiBtn extends StatelessWidget {
+  final String emoji;
+  final Color accent;
+  final VoidCallback onTap;
+  const _ReactionEmojiBtn({
+    required this.emoji,
+    required this.accent,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: Container(
+          width: 56,
+          height: 56,
+          decoration: BoxDecoration(
+            color: accent.withValues(alpha: 0.10),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: accent.withValues(alpha: 0.30)),
+          ),
+          alignment: Alignment.center,
+          child: Text(emoji, style: const TextStyle(fontSize: 28)),
         ),
       ),
     );

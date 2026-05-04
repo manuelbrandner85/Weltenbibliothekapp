@@ -39,6 +39,20 @@ enum LiveKitConnectionState {
   error,
 }
 
+/// 💖 Bundle 4: Reaction-Event (Send + Receive via LiveKit DataChannel).
+class ReactionEvent {
+  final String emoji;
+  final String fromIdentity;
+  final String fromName;
+  final DateTime timestamp;
+  const ReactionEvent({
+    required this.emoji,
+    required this.fromIdentity,
+    required this.fromName,
+    required this.timestamp,
+  });
+}
+
 class LiveKitCallService extends ChangeNotifier {
   LiveKitCallService();
 
@@ -111,6 +125,43 @@ class LiveKitCallService extends ChangeNotifier {
   bool get cameraEnabled => _cameraEnabled;
   bool get screenShareEnabled => _screenShareEnabled;
   bool get handRaised => _handRaised;
+
+  // 💖 Bundle 4: Floating Reactions
+  // Stream von empfangenen Reactions für die Floating-Animation-Layer.
+  // Jedes Event: ReactionEvent { emoji, fromIdentity, fromName, timestamp }.
+  // Bewusst NICHT broadcastet zurück — wir haben Send + Empfang via
+  // LiveKit DataChannel, keine zusätzliche Persistenz.
+  final StreamController<ReactionEvent> _reactionsCtrl =
+      StreamController<ReactionEvent>.broadcast();
+  Stream<ReactionEvent> get reactionsStream => _reactionsCtrl.stream;
+
+  /// 💖 Bundle 4: Reaction senden — broadcastet via LiveKit DataChannel
+  /// an alle Teilnehmer im Raum. Selbst-Echo: das Event wird auch lokal
+  /// gefeuert damit der Sender die eigene Reaction sieht.
+  Future<void> sendReaction(String emoji) async {
+    final room = _room;
+    final lp = room?.localParticipant;
+    if (room == null || lp == null) return;
+    final payload = jsonEncode({
+      'type': 'reaction',
+      'emoji': emoji,
+    });
+    try {
+      await lp.publishData(
+        utf8.encode(payload),
+        reliable: false,
+      );
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ sendReaction failed: $e');
+    }
+    // Selbst-Echo damit der Sender die eigene Reaction sieht
+    _reactionsCtrl.add(ReactionEvent(
+      emoji: emoji,
+      fromIdentity: lp.identity,
+      fromName: lp.name.isNotEmpty ? lp.name : 'Du',
+      timestamp: DateTime.now(),
+    ));
+  }
 
   /// Anzahl der entfernten Teilnehmer (ohne lokalen User).
   int get remoteParticipantCount => _room?.remoteParticipants.length ?? 0;
@@ -567,6 +618,34 @@ class LiveKitCallService extends ChangeNotifier {
         notifyListeners();
       }
     });
+    // 💖 Bundle 4: DataChannel-Reaction empfangen → in Stream feeden.
+    // Andere Geräte broadcasten via room.localParticipant.publishData mit
+    // payload {"type":"reaction","emoji":"❤️"}. Wir parsen + feeden in
+    // _reactionsCtrl, die ReactionsOverlay zeichnet die Floating-Animation.
+    listener.on<DataReceivedEvent>((event) {
+      try {
+        final raw = utf8.decode(event.data);
+        final data = jsonDecode(raw);
+        if (data is! Map) return;
+        final type = data['type'];
+        if (type != 'reaction') return;
+        final emoji = data['emoji'];
+        if (emoji is! String || emoji.isEmpty) return;
+        final from = event.participant;
+        _reactionsCtrl.add(ReactionEvent(
+          emoji: emoji,
+          fromIdentity: from?.identity ?? '?',
+          fromName: (from?.name.isNotEmpty ?? false)
+              ? from!.name
+              : (from?.identity ?? 'Mitglied'),
+          timestamp: DateTime.now(),
+        ));
+      } catch (_) {
+        // Malformed payload — ignorieren (kann auch Daten von anderen
+        // Features sein die wir noch nicht kennen)
+      }
+    });
+
     // Hand-Heben-Sync: andere User ändern Attribute → UI muss neu zeichnen.
     listener.on<ParticipantAttributesChanged>((event) {
       if (kDebugMode) {
@@ -1278,6 +1357,9 @@ class LiveKitCallService extends ChangeNotifier {
     } catch (_) {}
     try {
       _room?.disconnect();
+    } catch (_) {}
+    try {
+      _reactionsCtrl.close();
     } catch (_) {}
     super.dispose();
   }
