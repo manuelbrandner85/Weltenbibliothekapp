@@ -339,8 +339,18 @@ class _LiveKitGroupCallScreenState
                     await SoundscapeService.instance.toggleHeilfrequenz(hz: hz);
                     if (mounted) setState(() => _heilEnabled = true);
                   },
-                  onClose: () async {
-                    if (await _confirmLeave()) await _leaveAndPop();
+                  service: svc,
+                  onCoWatch: () async {
+                    final url = await showCoWatchInputDialog(
+                        context, widget.world);
+                    if (url == null || !mounted) return;
+                    await CoWatchService.instance.loadVideo(url);
+                    setState(() {
+                      _coWatchVideoId =
+                          CoWatchService.instance.currentVideoId;
+                      _coWatchVisible =
+                          CoWatchService.instance.currentVideoId != null;
+                    });
                   },
                 ),
                 Expanded(child: _buildBody(state, svc, accent)),
@@ -1014,7 +1024,9 @@ class _TopBar extends StatelessWidget {
   final int heilHz;
   final VoidCallback onToggleHeil;
   final void Function(int hz) onSelectHeilHz;
-  final VoidCallback onClose;
+  // 🎛️ Konsolidiertes Optionen-Sheet — Service + Co-Watch nötig für sekundäre Aktionen
+  final LiveKitCallService service;
+  final VoidCallback onCoWatch;
 
   const _TopBar({
     required this.roomName,
@@ -1034,7 +1046,8 @@ class _TopBar extends StatelessWidget {
     required this.heilHz,
     required this.onToggleHeil,
     required this.onSelectHeilHz,
-    required this.onClose,
+    required this.service,
+    required this.onCoWatch,
   });
 
   static String _formatDuration(int s) {
@@ -1089,11 +1102,15 @@ class _TopBar extends StatelessWidget {
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
+      isScrollControlled: true,
       builder: (ctx) => ClipRRect(
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
           child: Container(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.85,
+            ),
             decoration: BoxDecoration(
               color: WbDesign.surface(world).withValues(alpha: 0.96),
               borderRadius:
@@ -1134,6 +1151,117 @@ class _TopBar extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
+                // ── Aktionen während des Anrufs ──────────────────────────────
+                Flexible(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                // Reaktion senden
+                _MoreOptionTile(
+                  icon: Icons.emoji_emotions_outlined,
+                  title: 'Reaktion',
+                  subtitle: 'Emoji-Reaktion an alle senden',
+                  active: false,
+                  accent: accent,
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _showReactionsPicker(context, world, service);
+                  },
+                ),
+                // Hand heben
+                _MoreOptionTile(
+                  icon: service.handRaised
+                      ? Icons.front_hand_rounded
+                      : Icons.front_hand_outlined,
+                  title: service.handRaised ? 'Hand senken' : 'Hand heben',
+                  subtitle: service.handRaised
+                      ? 'Meldung zurückziehen'
+                      : 'Allen zeigen dass du etwas sagen möchtest',
+                  active: service.handRaised,
+                  accent: const Color(0xFFFFB300),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    service.toggleHandRaised();
+                  },
+                ),
+                // Bildschirm teilen
+                _MoreOptionTile(
+                  icon: service.screenShareEnabled
+                      ? Icons.stop_screen_share_rounded
+                      : Icons.present_to_all_rounded,
+                  title: service.screenShareEnabled
+                      ? 'Teilen stoppen'
+                      : 'Bildschirm teilen',
+                  subtitle: service.screenShareEnabled
+                      ? 'Bildschirmübertragung beenden'
+                      : 'Deinen Bildschirm für alle sichtbar machen',
+                  active: service.screenShareEnabled,
+                  accent: accent,
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    service.toggleScreenShare();
+                  },
+                ),
+                // Kamera drehen (nur wenn Kamera an)
+                if (service.cameraEnabled)
+                  _MoreOptionTile(
+                    icon: Icons.cameraswitch_rounded,
+                    title: 'Kamera drehen',
+                    subtitle: 'Zwischen Vorder- und Rückkamera wechseln',
+                    active: false,
+                    accent: accent,
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      service.switchCamera();
+                    },
+                  ),
+                // Co-Watch
+                _MoreOptionTile(
+                  icon: Icons.tv_rounded,
+                  title: 'Co-Watch',
+                  subtitle: CoWatchService.instance.active
+                      ? 'YouTube-Video läuft — Tippen zum Verwalten'
+                      : 'YouTube-Video gemeinsam anschauen',
+                  active: CoWatchService.instance.active,
+                  accent: accent,
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    onCoWatch();
+                  },
+                ),
+                // Aufnahme
+                ValueListenableBuilder<RecordingState>(
+                  valueListenable: RecordingService.instance.stateNotifier,
+                  builder: (_, recState, __) {
+                    final isRec = recState == RecordingState.recording;
+                    final isBusy = recState == RecordingState.starting ||
+                        recState == RecordingState.stopping;
+                    return _MoreOptionTile(
+                      icon: isRec
+                          ? Icons.stop_circle_rounded
+                          : Icons.fiber_manual_record_rounded,
+                      title: isRec ? 'Aufnahme stoppen' : 'Aufnahme starten',
+                      subtitle: isRec
+                          ? 'Laufende Aufnahme beenden'
+                          : isBusy
+                              ? 'Bitte warten…'
+                              : 'Gesprächsaufnahme starten (MP4)',
+                      active: isRec,
+                      accent: const Color(0xFFFF1744),
+                      onTap: () {
+                        if (isBusy) return;
+                        Navigator.pop(ctx);
+                        if (isRec) {
+                          RecordingService.instance.stopRecording();
+                        } else {
+                          RecordingService.instance.startRecording(roomName);
+                        }
+                      },
+                    );
+                  },
+                ),
+                // ── Anzeige & Audio ────────────────────────────────────────────
                 // Ansicht wechseln (Gallery ↔ Speaker)
                 _MoreOptionTile(
                   icon: viewMode == LiveKitViewMode.speaker
@@ -1250,6 +1378,10 @@ class _TopBar extends StatelessWidget {
                       _SpatialNotifier.instance.value =
                           AudioFeedbackService.instance.spatialEnabled;
                     },
+                  ),
+                ),
+                      ],
+                    ),
                   ),
                 ),
                 SizedBox(height: MediaQuery.of(ctx).padding.bottom + 16),
@@ -1746,28 +1878,19 @@ class _TopBar extends StatelessWidget {
                     ],
                   ),
                 ),
-              // ⋮ Mehr Optionen (Ansicht, Untertitel, Atmosphäre, Heilfrequenz)
+              // ⋮ Alle sekundären Optionen (Ansicht, Hand, Bildschirm, Aufnahme,
+              // Reaktion, Co-Watch, Untertitel, Atmosphäre, Heilfrequenz, etc.)
               Builder(builder: (ctx) => _TopBarBtn(
                 icon: Icons.more_vert_rounded,
                 label: 'Mehr',
-                active: soundscapeEnabled || heilEnabled || captionsEnabled,
+                active: soundscapeEnabled ||
+                    heilEnabled ||
+                    captionsEnabled ||
+                    service.handRaised ||
+                    service.screenShareEnabled,
                 accent: accent,
                 onTap: () => _showMoreOptions(ctx),
               )),
-              // Schließen
-              SizedBox(
-                width: 40,
-                height: 40,
-                child: IconButton(
-                  tooltip: 'Anruf beenden',
-                  onPressed: onClose,
-                  icon: Icon(
-                    Icons.close_rounded,
-                    color: WbDesign.textTertiary,
-                    size: 20,
-                  ),
-                ),
-              ),
             ],
           ),
         ),
@@ -2522,215 +2645,6 @@ class _ControlBar extends StatelessWidget {
     required this.onLeave,
   });
 
-  /// Öffnet das "Mehr Aktionen"-Sheet mit sekundären Call-Funktionen.
-  void _showMoreActions(BuildContext context) {
-    final accent = WbDesign.accent(world);
-    final isConnected = service.isConnected;
-
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setModalState) {
-          return ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: WbDesign.surface(world).withValues(alpha: 0.96),
-                  borderRadius:
-                      const BorderRadius.vertical(top: Radius.circular(24)),
-                  border: Border(
-                    top: BorderSide(
-                        color: accent.withValues(alpha: 0.30), width: 1),
-                  ),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const SizedBox(height: 12),
-                    Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: WbDesign.textTertiary.withValues(alpha: 0.4),
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 32,
-                            height: 32,
-                            decoration: BoxDecoration(
-                              gradient: WbDesign.hero(world),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(Icons.more_horiz_rounded,
-                                color: Colors.white, size: 18),
-                          ),
-                          const SizedBox(width: 12),
-                          Text(
-                            'Weitere Aktionen',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    // Chat
-                    ValueListenableBuilder<int>(
-                      valueListenable: InCallChatService.instance.unreadNotifier,
-                      builder: (_, unread, __) => _MoreActionTile(
-                        icon: chatVisible
-                            ? Icons.chat_bubble_rounded
-                            : Icons.chat_bubble_outline_rounded,
-                        title: 'Chat',
-                        subtitle: chatVisible
-                            ? 'Chat schließen'
-                            : (unread > 0
-                                ? '$unread neue Nachricht${unread == 1 ? '' : 'en'}'
-                                : 'Nachrichten im Anruf schreiben'),
-                        active: chatVisible,
-                        accent: accent,
-                        badgeCount: (!chatVisible && unread > 0) ? unread : 0,
-                        enabled: isConnected,
-                        onTap: () {
-                          Navigator.pop(ctx);
-                          onToggleChat();
-                        },
-                      ),
-                    ),
-                    // Reaktion senden
-                    _MoreActionTile(
-                      icon: Icons.emoji_emotions_outlined,
-                      title: 'Reaktion',
-                      subtitle: 'Emoji-Reaktion an alle senden',
-                      active: false,
-                      accent: accent,
-                      enabled: isConnected,
-                      onTap: () {
-                        Navigator.pop(ctx);
-                        _showReactionsPicker(context, world, service);
-                      },
-                    ),
-                    // Hand heben
-                    _MoreActionTile(
-                      icon: service.handRaised
-                          ? Icons.front_hand_rounded
-                          : Icons.front_hand_outlined,
-                      title: service.handRaised ? 'Hand senken' : 'Hand heben',
-                      subtitle: service.handRaised
-                          ? 'Meldung zurückziehen'
-                          : 'Allen zeigen dass du etwas sagen möchtest',
-                      active: service.handRaised,
-                      accent: const Color(0xFFFFB300),
-                      enabled: isConnected,
-                      onTap: () {
-                        Navigator.pop(ctx);
-                        service.toggleHandRaised();
-                      },
-                    ),
-                    // Bildschirm teilen
-                    _MoreActionTile(
-                      icon: service.screenShareEnabled
-                          ? Icons.stop_screen_share_rounded
-                          : Icons.present_to_all_rounded,
-                      title: service.screenShareEnabled
-                          ? 'Teilen stoppen'
-                          : 'Bildschirm teilen',
-                      subtitle: service.screenShareEnabled
-                          ? 'Bildschirmübertragung beenden'
-                          : 'Deinen Bildschirm für alle sichtbar machen',
-                      active: service.screenShareEnabled,
-                      accent: accent,
-                      enabled: isConnected,
-                      onTap: () {
-                        Navigator.pop(ctx);
-                        service.toggleScreenShare();
-                      },
-                    ),
-                    // Kamera drehen (nur wenn Kamera an)
-                    if (service.cameraEnabled)
-                      _MoreActionTile(
-                        icon: Icons.cameraswitch_rounded,
-                        title: 'Kamera drehen',
-                        subtitle: 'Zwischen Vorder- und Rückkamera wechseln',
-                        active: false,
-                        accent: accent,
-                        enabled: isConnected,
-                        onTap: () {
-                          Navigator.pop(ctx);
-                          service.switchCamera();
-                        },
-                      ),
-                    // Co-Watch
-                    _MoreActionTile(
-                      icon: Icons.tv_rounded,
-                      title: 'Co-Watch',
-                      subtitle: CoWatchService.instance.active
-                          ? 'YouTube-Video läuft — Tippen zum Verwalten'
-                          : 'YouTube-Video gemeinsam anschauen',
-                      active: CoWatchService.instance.active,
-                      accent: accent,
-                      enabled: isConnected,
-                      onTap: () {
-                        Navigator.pop(ctx);
-                        onCoWatch();
-                      },
-                    ),
-                    // Aufnahme
-                    ValueListenableBuilder<RecordingState>(
-                      valueListenable: RecordingService.instance.stateNotifier,
-                      builder: (_, recState, __) {
-                        final isRec = recState == RecordingState.recording;
-                        final isBusy = recState == RecordingState.starting ||
-                            recState == RecordingState.stopping;
-                        return _MoreActionTile(
-                          icon: isRec
-                              ? Icons.stop_circle_rounded
-                              : Icons.fiber_manual_record_rounded,
-                          title: isRec ? 'Aufnahme stoppen' : 'Aufnahme starten',
-                          subtitle: isRec
-                              ? 'Laufende Aufnahme beenden'
-                              : isBusy
-                                  ? 'Bitte warten…'
-                                  : 'Gesprächsaufnahme starten (MP4)',
-                          active: isRec,
-                          accent: const Color(0xFFFF1744),
-                          enabled: isConnected && !isBusy,
-                          onTap: () {
-                            Navigator.pop(ctx);
-                            if (isRec) {
-                              RecordingService.instance.stopRecording();
-                            } else {
-                              RecordingService.instance.startRecording(roomName);
-                            }
-                          },
-                        );
-                      },
-                    ),
-                    SizedBox(
-                        height: MediaQuery.of(ctx).padding.bottom + 20),
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final isConnected = service.isConnected;
@@ -2761,10 +2675,55 @@ class _ControlBar extends StatelessWidget {
                 vertical: 14,
               ),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
+                  // ── Chat (mit Unread-Badge) ──
+                  ValueListenableBuilder<int>(
+                    valueListenable: InCallChatService.instance.unreadNotifier,
+                    builder: (_, unread, __) => Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        _CtrlBtn(
+                          icon: chatVisible
+                              ? Icons.chat_bubble_rounded
+                              : Icons.chat_bubble_outline_rounded,
+                          label: 'Chat',
+                          active: chatVisible,
+                          activeColor: accent,
+                          enabled: isConnected,
+                          onTap: onToggleChat,
+                        ),
+                        if (!chatVisible && unread > 0)
+                          Positioned(
+                            top: -2,
+                            right: -2,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 2),
+                              constraints: const BoxConstraints(
+                                  minWidth: 18, minHeight: 18),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFF1744),
+                                borderRadius: BorderRadius.circular(9),
+                                border: Border.all(
+                                    color: WbDesign.surfaceAlt(world),
+                                    width: 1.5),
+                              ),
+                              child: Text(
+                                unread > 99 ? '99+' : '$unread',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
                   // ── Mikrofon (Tap = Toggle, Long-Press = PTT) ──
-                  // Mikrofon (Tap = Toggle, Long-Press = PTT)
                   _CtrlBtn(
                     icon: service.micEnabled
                         ? Icons.mic_rounded
@@ -2791,16 +2750,6 @@ class _ControlBar extends StatelessWidget {
                     activeColor: accent,
                     enabled: isConnected,
                     onTap: () => service.toggleCamera(),
-                  ),
-                  // ── Optionen (Smart-Badge zeigt aktive Sekundär-Features) ──
-                  Builder(
-                    builder: (ctx) => _SmartMehrButton(
-                      world: world,
-                      service: service,
-                      chatVisible: chatVisible,
-                      accent: accent,
-                      onTap: () => _showMoreActions(ctx),
-                    ),
                   ),
                   // ── Auflegen (immer sichtbar, prominent) ──
                   _CtrlBtn(
@@ -3070,154 +3019,6 @@ class _ReactionEmojiBtn extends StatelessWidget {
 
 // ── Smart-Mehr-Button: zeigt aktive Sekundär-Feature-Badges ─────────────────
 
-class _SmartMehrButton extends StatelessWidget {
-  final String world;
-  final LiveKitCallService service;
-  final bool chatVisible;
-  final Color accent;
-  final VoidCallback onTap;
-
-  const _SmartMehrButton({
-    required this.world,
-    required this.service,
-    required this.chatVisible,
-    required this.accent,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ValueListenableBuilder<int>(
-      valueListenable: InCallChatService.instance.unreadNotifier,
-      builder: (_, unread, __) {
-        final hasUnreadChat = unread > 0 && !chatVisible;
-        final features = <_ActiveFeature>[
-          if (service.cameraEnabled)
-            const _ActiveFeature(Icons.videocam_rounded, Color(0xFF69F0AE)),
-          if (service.screenShareEnabled)
-            const _ActiveFeature(Icons.present_to_all_rounded, Color(0xFF40C4FF)),
-          if (service.handRaised)
-            const _ActiveFeature(Icons.front_hand_rounded, Color(0xFFFFB300)),
-          if (CoWatchService.instance.active)
-            const _ActiveFeature(Icons.tv_rounded, Color(0xFFE040FB)),
-        ];
-        final hasActive = features.isNotEmpty || chatVisible;
-
-        return GestureDetector(
-          onTap: onTap,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    width: 54,
-                    height: 54,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: hasActive
-                          ? accent.withValues(alpha: 0.22)
-                          : Colors.white.withValues(alpha: 0.10),
-                      border: Border.all(
-                        color: hasActive
-                            ? accent.withValues(alpha: 0.55)
-                            : Colors.white.withValues(alpha: 0.18),
-                        width: 1.5,
-                      ),
-                      boxShadow: hasActive
-                          ? [
-                              BoxShadow(
-                                color: accent.withValues(alpha: 0.25),
-                                blurRadius: 12,
-                                spreadRadius: 1,
-                              ),
-                            ]
-                          : null,
-                    ),
-                    child: Icon(
-                      Icons.tune_rounded,
-                      color: hasActive ? accent : Colors.white.withValues(alpha: 0.75),
-                      size: 24,
-                    ),
-                  ),
-                  // Unread-Chat-Badge (roter Dot)
-                  if (hasUnreadChat)
-                    Positioned(
-                      top: -1,
-                      right: -1,
-                      child: Container(
-                        width: 14,
-                        height: 14,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFF1744),
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.black, width: 1.5),
-                        ),
-                        child: Center(
-                          child: Text(
-                            unread > 9 ? '9+' : '$unread',
-                            style: const TextStyle(
-                              fontSize: 7,
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  // Mini-Feature-Badges (max 3)
-                  if (features.isNotEmpty)
-                    Positioned(
-                      bottom: -4,
-                      left: 0,
-                      right: 0,
-                      child: Center(
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: features.take(3).map((f) => Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 1.5),
-                            width: 14,
-                            height: 14,
-                            decoration: BoxDecoration(
-                              color: f.color,
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.black, width: 1),
-                            ),
-                            child: Icon(f.icon, size: 8, color: Colors.black),
-                          )).toList(),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: features_labelOffset),
-              Text(
-                'Optionen',
-                style: TextStyle(
-                  color: hasActive ? accent : Colors.white.withValues(alpha: 0.65),
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-}
-
-// Hilfs-Klasse für Feature-Badge-Daten
-class _ActiveFeature {
-  final IconData icon;
-  final Color color;
-  const _ActiveFeature(this.icon, this.color);
-}
-
-// Konstante für Label-Abstand (features-Variable nicht direkt in const nutzbar)
-const double features_labelOffset = 6.0;
 
 class _CtrlBtn extends StatelessWidget {
   final IconData icon;
