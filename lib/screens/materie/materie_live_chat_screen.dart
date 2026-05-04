@@ -81,8 +81,6 @@ import '../../services/chat/user_block_service.dart';
 import '../../services/chat/unread_tracker_service.dart';
 import '../../widgets/chat_animated_background.dart';
 import '../../widgets/live_room_banner.dart';
-import '../shared/livekit_group_call_screen.dart';
-import '../../providers/livekit_call_provider.dart';
 
 /// MATERIE-WELT LIVE-CHAT - Cloudflare Edition
 class MaterieLiveChatScreen extends StatefulWidget {
