@@ -51,10 +51,18 @@ rtc:
   # (Mobilfunk-CGNAT, Firmen-VPN, Hotel-WLAN). Coturn läuft als separater
   # Container im gleichen docker-compose (livekit-wb-coturn).
   # KEIN LiveKit-internal TURN (braucht TLS-Cert) — coturn ist plain UDP/TCP.
-  ice_servers:
-    - urls:
-        - turn:72.62.154.95:3478?transport=udp
-        - turn:72.62.154.95:3478?transport=tcp
+  #
+  # ⚠ Korrekte LiveKit-Syntax: `turn_servers` (NICHT ice_servers).
+  # Pro Protokoll ein eigener Eintrag mit host/port/protocol/credentials.
+  turn_servers:
+    - host: 72.62.154.95
+      port: 3478
+      protocol: udp
+      username: wb-turn-2026
+      credential: WbCoturnRelay_a9b26485d407e7dc
+    - host: 72.62.154.95
+      port: 3478
+      protocol: tcp
       username: wb-turn-2026
       credential: WbCoturnRelay_a9b26485d407e7dc
 

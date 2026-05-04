@@ -5,6 +5,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'dart:async';
 import '../../config/api_config.dart';
 import '../shared/livekit_prejoin_screen.dart';
+import 'kaninchenbau/kaninchenbau_screen.dart';
 import '../../services/supabase_service.dart'; // 🔥 supabase Auth
 import 'package:supabase_flutter/supabase_flutter.dart' show RealtimeChannel;
 import '../../services/cloudflare_api_service.dart';
@@ -565,34 +566,37 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
     });
   }
   
-  // 🛠️ TOOL NAVIGATION
+  // 🛠️ TOOL NAVIGATION → Kaninchenbau-Faden mit passendem Initialthema
   // ignore: unused_element
   void _navigateToTool() {
-    Widget? screen;
-    
+    String? topic;
     switch (_selectedRoom) {
       case 'politik':
-        screen = GeopolitikMapScreen(roomId: _selectedRoom);
+        topic = 'Geopolitik';
         break;
       case 'geschichte':
-        screen = HistoryTimelineScreen(roomId: _selectedRoom);
+        topic = 'Verschwiegene Geschichte';
         break;
       case 'ufo':
-        screen = UfoSightingsScreen(roomId: _selectedRoom);
+        topic = 'UFO Sichtungen';
         break;
       case 'verschwoerungen':
-        screen = ConspiracyNetworkScreen(roomId: _selectedRoom);
+        topic = 'Verschwörungstheorien';
         break;
       case 'technologie':
-        screen = ResearchArchiveScreen(roomId: _selectedRoom);
+        topic = 'Forschung';
         break;
       case 'gesundheit':
-        screen = CriticalHealthScreen(roomId: _selectedRoom);
+        topic = 'Pharma';
         break;
     }
-    
-    if (screen != null && mounted) {
-      Navigator.of(context).push(MaterialPageRoute(builder: (ctx) => screen!));
+    if (mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => KaninchenbauScreen(initialTopic: topic),
+        ),
+      );
     }
   }
 
