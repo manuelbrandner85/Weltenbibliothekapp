@@ -8,16 +8,14 @@
 /// - Local caching
 /// - Avatar management
 library;
-import '../config/api_config.dart';
 
 import 'dart:io';
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Exception mit nutzerlesbarer deutscher Fehlermeldung. Wird von
 /// [AvatarUploadService.uploadAvatarOrThrow] geworfen — Caller kann den Text
@@ -31,8 +29,7 @@ class AvatarUploadException implements Exception {
 
 class AvatarUploadService {
   static const String _avatarKeyPrefix = 'user_avatar_';
-  static const String _backendUrl = ApiConfig.workerUrl;
-  
+
   final ImagePicker _picker = ImagePicker();
   
   /// Pick image from gallery
@@ -97,53 +94,55 @@ class AvatarUploadService {
     }
   }
 
-  /// Upload avatar mit nutzerlesbarer [AvatarUploadException] bei Fehler.
-  /// UI-Pfade die spezifische Fehlermeldungen zeigen wollen (zu groß,
-  /// falsches Format, Auth, Connection) nutzen diesen Throw-Style.
+  /// Upload avatar direkt zu Supabase Storage (Bucket: avatars).
+  /// Pfad: {userId}/avatar.jpg — upsert:true ersetzt automatisch das alte Bild.
+  /// Speichert die öffentliche URL in profiles.avatar_url.
   Future<String> uploadAvatarOrThrow(File imageFile, String userId) async {
-    if (kDebugMode) debugPrint('⬆️ Uploading avatar for user $userId...');
+    if (kDebugMode) debugPrint('⬆️ Uploading avatar for user $userId to Supabase Storage...');
 
     try {
-      final bytes = await imageFile.readAsBytes();
-      final base64Image = base64Encode(bytes);
+      final client = Supabase.instance.client;
 
-      final response = await http.post(
-        Uri.parse('$_backendUrl/api/avatar/upload'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'user_id': userId,
-          'image_data': base64Image,
-        }),
-      ).timeout(const Duration(seconds: 30));
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final avatarUrl = data['avatar_url'] as String?;
-        if (avatarUrl == null || avatarUrl.isEmpty) {
-          throw AvatarUploadException(
-            'Server lieferte keine Avatar-URL zurück.',
-          );
-        }
-        await saveAvatarUrl(userId, avatarUrl);
-        if (kDebugMode) debugPrint('✅ Avatar uploaded: $avatarUrl');
-        return avatarUrl;
-      } else if (response.statusCode == 413) {
-        throw AvatarUploadException('Bild zu groß. Bitte kleineres wählen.');
-      } else if (response.statusCode == 415) {
-        throw AvatarUploadException('Format wird nicht unterstützt.');
-      } else if (response.statusCode == 401 || response.statusCode == 403) {
-        throw AvatarUploadException('Nicht berechtigt — bitte erneut anmelden.');
-      } else {
-        throw AvatarUploadException(
-          'Upload fehlgeschlagen (${response.statusCode}).',
-        );
+      if (client.auth.currentUser == null) {
+        throw AvatarUploadException('Nicht eingeloggt — bitte erneut anmelden.');
       }
+
+      final bytes = await imageFile.readAsBytes();
+      // Dateiendung aus Pfad ermitteln, fallback auf jpg
+      final ext = imageFile.path.split('.').last.toLowerCase();
+      final safeExt = ['jpg', 'jpeg', 'png', 'webp'].contains(ext) ? ext : 'jpg';
+      final storagePath = '$userId/avatar.$safeExt';
+      final mimeType = safeExt == 'png' ? 'image/png' : 'image/jpeg';
+
+      // Altes Bild mit upsert:true überschreiben (gleicher Pfad)
+      await client.storage.from('avatars').uploadBinary(
+        storagePath,
+        bytes,
+        fileOptions: FileOptions(upsert: true, contentType: mimeType),
+      );
+
+      // Cache-Buster damit der Browser/App-Cache das neue Bild lädt
+      final publicUrl = client.storage.from('avatars').getPublicUrl(storagePath);
+      final avatarUrl = '$publicUrl?t=${DateTime.now().millisecondsSinceEpoch}';
+
+      // profiles.avatar_url in Supabase DB aktualisieren
+      await client.from('profiles').update({'avatar_url': publicUrl}).eq('id', userId);
+
+      await saveAvatarUrl(userId, avatarUrl);
+      if (kDebugMode) debugPrint('✅ Avatar uploaded: $avatarUrl');
+      return avatarUrl;
     } on AvatarUploadException {
       rethrow;
+    } on StorageException catch (e) {
+      if (kDebugMode) debugPrint('❌ Supabase Storage error: $e');
+      if (e.statusCode == '413') {
+        throw AvatarUploadException('Bild zu groß. Bitte kleineres wählen.');
+      }
+      throw AvatarUploadException('Upload fehlgeschlagen: ${e.message}');
     } catch (e) {
       if (kDebugMode) debugPrint('❌ Error uploading avatar: $e');
       throw AvatarUploadException(
-        'Verbindung zum Server fehlgeschlagen. Bitte erneut versuchen.',
+        'Verbindung fehlgeschlagen. Bitte erneut versuchen.',
       );
     }
   }
@@ -177,35 +176,24 @@ class AvatarUploadService {
     }
   }
   
-  /// Delete avatar
+  /// Delete avatar aus Supabase Storage + profiles.avatar_url leeren.
   Future<bool> deleteAvatar(String userId) async {
     try {
-      if (kDebugMode) {
-        debugPrint('🗑️ Deleting avatar for user $userId...');
+      if (kDebugMode) debugPrint('🗑️ Deleting avatar for user $userId...');
+      final client = Supabase.instance.client;
+      // Alle gängigen Endungen versuchen
+      for (final ext in ['jpg', 'jpeg', 'png', 'webp']) {
+        try {
+          await client.storage.from('avatars').remove(['$userId/avatar.$ext']);
+        } catch (_) {}
       }
-      
-      // Delete from backend
-      final response = await http.delete(
-        Uri.parse('$_backendUrl/api/avatar/$userId'),
-      ).timeout(const Duration(seconds: 10));
-      
-      if (response.statusCode == 200) {
-        // Delete from local storage
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.remove('$_avatarKeyPrefix$userId');
-        
-        if (kDebugMode) {
-          debugPrint('✅ Avatar deleted');
-        }
-        
-        return true;
-      }
-      
-      return false;
+      await client.from('profiles').update({'avatar_url': null}).eq('id', userId);
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('$_avatarKeyPrefix$userId');
+      if (kDebugMode) debugPrint('✅ Avatar deleted');
+      return true;
     } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ Error deleting avatar: $e');
-      }
+      if (kDebugMode) debugPrint('❌ Error deleting avatar: $e');
       return false;
     }
   }

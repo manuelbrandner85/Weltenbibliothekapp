@@ -7,7 +7,7 @@ import '../../services/openclaw_dashboard_service.dart';
 import '../../services/storage_service.dart';
 import '../../models/materie_profile.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'recherche_tab_modern.dart';
+import 'kaninchenbau/kaninchenbau_screen.dart';
 import 'materie_live_chat_screen.dart';
 import 'history_timeline_screen.dart';
 import '../../services/chat/recent_rooms_service.dart';
@@ -291,7 +291,7 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
     if (url != null && url.isNotEmpty) {
       launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
     } else {
-      _go(const RechercheTabModern());
+      _go(const KaninchenbauScreen());
     }
   }
 
@@ -569,7 +569,7 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
 
   Widget _buildInlineSearch() {
     return GestureDetector(
-      onTap: () => _go(const RechercheTabModern()),
+      onTap: () => _go(const KaninchenbauScreen()),
       child: Container(
         height: 46,
         padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -681,7 +681,7 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
         sub: 'Artikel & Fakten',
         gradient: [const Color(0xFF0D47A1), const Color(0xFF1565C0), const Color(0xFF2979FF)],
         badge: 0,
-        onTap: () => _go(const RechercheTabModern()),
+        onTap: () => _go(const KaninchenbauScreen()),
       ),
       _TileDef(
         icon: Icons.forum_rounded,
@@ -851,7 +851,7 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
             ]),
           ),
           GestureDetector(
-            onTap: () => _go(const RechercheTabModern()),
+            onTap: () => _go(const KaninchenbauScreen()),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
@@ -991,7 +991,7 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
             final topic = topics[i];
             final c = chipColors[i % chipColors.length];
             return GestureDetector(
-              onTap: () => _go(const RechercheTabModern()),
+              onTap: () => _go(const KaninchenbauScreen()),
               child: Container(
                 margin: const EdgeInsets.only(right: 10),
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -1030,7 +1030,7 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
     if (_latestArticles.isEmpty) {
       return SliverToBoxAdapter(
         child: GestureDetector(
-          onTap: () => _go(const RechercheTabModern()),
+          onTap: () => _go(const KaninchenbauScreen()),
           child: Container(
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             padding: const EdgeInsets.all(28),

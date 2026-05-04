@@ -525,19 +525,18 @@ class LiveKitCallService extends ChangeNotifier {
 
       // Foreground-Service starten damit der Anruf weiter läuft wenn der
       // User die App minimiert (Standard-Verhalten von Android: kill ohne FG).
+      // initialize() MUSS immer aufgerufen werden — nicht nur bei fehlenden Perms.
+      // enableBackgroundExecution() schlägt sonst still fehl.
       try {
-        final hasPerms = await FlutterBackground.hasPermissions;
-        if (!hasPerms) {
-          await FlutterBackground.initialize(
-            androidConfig: const FlutterBackgroundAndroidConfig(
-              notificationTitle: 'Sprach-Anruf läuft',
-              notificationText:
-                  'Weltenbibliothek hält den Anruf im Hintergrund aktiv.',
-              notificationImportance: AndroidNotificationImportance.normal,
-              enableWifiLock: true,
-            ),
-          );
-        }
+        await FlutterBackground.initialize(
+          androidConfig: const FlutterBackgroundAndroidConfig(
+            notificationTitle: 'Sprach-Anruf läuft',
+            notificationText:
+                'Weltenbibliothek hält den Anruf im Hintergrund aktiv.',
+            notificationImportance: AndroidNotificationImportance.normal,
+            enableWifiLock: true,
+          ),
+        );
         final ok = await FlutterBackground.enableBackgroundExecution();
         if (kDebugMode) {
           debugPrint(ok
