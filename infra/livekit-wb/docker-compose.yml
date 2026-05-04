@@ -1,10 +1,12 @@
 name: livekit-weltenbibliothek
 
-# Weltenbibliothek LiveKit-Server — eigene Instanz, getrennt von Mensaena.
+# Weltenbibliothek LiveKit-Server + coturn TURN-Relay.
 # - Eigener API-Key (wb-...), keine Vermischung mit Mensaena
 # - LiveKit-Container hört auf Host-Port 7980 (nicht 7880 = LiveKit-Default)
-# - UDP-Media-Range 60001-65000 (Mensaena nutzt 50000-60000) → KEIN Overlap
-# - KEIN TURN-Server in WB (Mensaena könnte 5350/3479 belegen) → STUN-only
+# - UDP-Media-Range 60001-61000 (Mensaena nutzt 50000-60000) → KEIN Overlap
+# - coturn TURN-Server für symmetrisches NAT (Firmen-VPN, manche CGNAT)
+#   - TURN-Listener: 3478/UDP+TCP (Mensaena: 3479 → kein Konflikt)
+#   - TURN-Relay-Range: 61001-62000/UDP (disjunkt von LiveKit)
 # - KEIN eigener Reverse-Proxy mehr — Mensaena's Caddy macht das Routing
 #   für `livekit-wb.srv1438024.hstgr.cloud` → 127.0.0.1:7980 (additive Caddy-Config)
 #
@@ -50,6 +52,30 @@ services:
       timeout: 10s
       retries: 5
       start_period: 10s
+
+  # ── coturn TURN/STUN-Relay-Server ──────────────────────────────────────
+  # Eigenständiger Container — Crash hier killt LiveKit NICHT.
+  # Notwendig für User hinter symmetrischem NAT (kein STUN-Punch möglich):
+  # Firmen-VPN, manche Mobil-Carrier-CGNAT, Hotel-WLAN.
+  #
+  # Listener auf 3478 (Standard, disjunkt von Mensaena 3479).
+  # Relay-Range 61001-62000 (disjunkt von LiveKit 60001-61000 + Mensaena 50000-60000).
+  # KEIN TLS — Plain TURN/UDP+TCP genügt für 95%+ der NAT-Probleme.
+  coturn:
+    image: coturn/coturn:4.6
+    container_name: livekit-wb-coturn
+    restart: unless-stopped
+    ports:
+      # STUN/TURN-Listener (Standard-Ports)
+      - "3478:3478/udp"
+      - "3478:3478/tcp"
+      # Relay-Range (Media-Pakete vom Server zurück zum Client)
+      - "61001-62000:61001-62000/udp"
+    volumes:
+      - ./turnserver.conf:/etc/turnserver.conf:ro
+    command: ["-c", "/etc/turnserver.conf"]
+    networks:
+      - livekit-wb-net
 
 networks:
   livekit-wb-net:

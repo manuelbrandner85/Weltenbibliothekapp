@@ -150,10 +150,10 @@ jobs:
             exit 1
           fi
           mkdir -p "${WB_DIR}"
-          for f in docker-compose.yml livekit.yaml caddy-snippet.caddy; do
+          for f in docker-compose.yml livekit.yaml caddy-snippet.caddy turnserver.conf; do
             cp -f "infra/livekit-wb/${f}" "${WB_DIR}/${f}"
           done
-          chmod 600 "${WB_DIR}/livekit.yaml"
+          chmod 600 "${WB_DIR}/livekit.yaml" "${WB_DIR}/turnserver.conf"
           chmod 644 "${WB_DIR}"/{docker-compose.yml,caddy-snippet.caddy}
 
           cd "${WB_DIR}"
