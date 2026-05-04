@@ -333,6 +333,140 @@ class FreeApiService {
   }
 
   // ─────────────────────────────────────────────────────────────────────────
+  // 13. OpenAlex — Wissenschaftliche Studien (kein API-Key)
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /// Sucht 250M+ akademische Arbeiten über OpenAlex. Kein API-Key nötig.
+  Future<List<OpenAlexWork>> fetchOpenAlexWorks(String query, {int limit = 15}) async {
+    final url = Uri.parse(
+      'https://api.openalex.org/works'
+      '?search=${Uri.encodeComponent(query)}'
+      '&filter=open_access.is_oa:true'
+      '&per-page=$limit'
+      '&select=id,title,abstract_inverted_index,authorships,publication_year,doi,open_access,cited_by_count,concepts'
+      '&mailto=app@weltenbibliothek.de',
+    );
+    try {
+      final res = await http.get(url, headers: {'User-Agent': 'Weltenbibliothek/1.0'}).timeout(_timeout);
+      if (res.statusCode != 200) return [];
+      final data = jsonDecode(res.body) as Map<String, dynamic>;
+      final results = (data['results'] as List? ?? []);
+      return results
+          .map((r) => OpenAlexWork.fromJson(r as Map<String, dynamic>))
+          .where((w) => w.title.isNotEmpty)
+          .toList();
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ OpenAlex: $e');
+      return [];
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // 14. Wikimedia "On This Day" — Historische Ereignisse
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /// Liefert historische Ereignisse für heute (oder angegebenes Datum).
+  Future<List<WikiOnThisDay>> fetchOnThisDay({DateTime? date}) async {
+    final d = date ?? DateTime.now();
+    final mm = d.month.toString().padLeft(2, '0');
+    final dd = d.day.toString().padLeft(2, '0');
+    final url = Uri.parse('https://history.muffinlabs.com/date/$mm/$dd');
+    try {
+      final res = await http.get(url, headers: {'Accept': 'application/json'}).timeout(_timeout);
+      if (res.statusCode != 200) return [];
+      final data = jsonDecode(res.body) as Map<String, dynamic>;
+      final events = (data['data']?['Events'] as List? ?? []);
+      return events
+          .take(30)
+          .map((e) => WikiOnThisDay.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ OnThisDay: $e');
+      return [];
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // 15. Datamuse — Wort-Assoziationen (für Traumsymbole)
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /// Liefert semantisch verwandte Begriffe zu [word] (kein API-Key).
+  Future<List<String>> fetchWordAssociations(String word, {int limit = 8}) async {
+    final url = Uri.parse(
+      'https://api.datamuse.com/words?ml=${Uri.encodeComponent(word)}&max=$limit',
+    );
+    try {
+      final res = await http.get(url).timeout(_timeout);
+      if (res.statusCode != 200) return [];
+      final data = jsonDecode(res.body) as List;
+      return data.map((w) => w['word'] as String).toList();
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ Datamuse: $e');
+      return [];
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // 16. PubChem — Pflanzenwirkstoffe (NIH, kein API-Key)
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /// Sucht aktive Verbindungen einer Heilpflanze in PubChem.
+  Future<PubChemResult?> fetchPubChemPlant(String plantName) async {
+    final url = Uri.parse(
+      'https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/${Uri.encodeComponent(plantName)}/property/MolecularFormula,IUPACName,XLogP,Complexity/JSON',
+    );
+    try {
+      final res = await http.get(url).timeout(_timeout);
+      if (res.statusCode != 200) return null;
+      final data = jsonDecode(res.body) as Map<String, dynamic>;
+      final props = data['PropertyTable']?['Properties'];
+      if (props == null || (props as List).isEmpty) return null;
+      return PubChemResult.fromJson(props[0] as Map<String, dynamic>);
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ PubChem: $e');
+      return null;
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // 17. CrossRef — 165M+ DOIs, kein API-Key
+  // ─────────────────────────────────────────────────────────────────────────
+
+  Future<List<CrossRefWork>> fetchCrossRefWorks(String query, {int limit = 15}) async {
+    final url = Uri.parse(
+      'https://api.crossref.org/works?query=${Uri.encodeComponent(query)}'
+      '&rows=$limit&mailto=app@weltenbibliothek.de'
+      '&select=title,author,published-print,DOI,publisher,is-referenced-by-count',
+    );
+    try {
+      final res = await http.get(url, headers: {'User-Agent': 'Weltenbibliothek/1.0'}).timeout(_timeout);
+      if (res.statusCode != 200) return [];
+      final data = jsonDecode(res.body) as Map<String, dynamic>;
+      final items = (data['message']?['items'] as List? ?? []);
+      return items.map((i) => CrossRefWork.fromJson(i as Map<String, dynamic>)).toList();
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ CrossRef: $e');
+      return [];
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // 18. Unpaywall — Kostenlose PDF-Links für DOIs
+  // ─────────────────────────────────────────────────────────────────────────
+
+  Future<String?> fetchUnpaywallPdf(String doi) async {
+    final url = Uri.parse('https://api.unpaywall.org/v2/${Uri.encodeComponent(doi)}?email=app@weltenbibliothek.de');
+    try {
+      final res = await http.get(url).timeout(_timeout);
+      if (res.statusCode != 200) return null;
+      final data = jsonDecode(res.body) as Map<String, dynamic>;
+      return data['best_oa_location']?['url_for_pdf'] as String?;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
   // 12. Mondphase — Mathematische Berechnung (kein API nötig)
   // ─────────────────────────────────────────────────────────────────────────
 
@@ -706,5 +840,168 @@ class MoonPhase {
     // Annäherung: sin²(phase * π)
     final illum = math.pow(math.sin(phase * math.pi), 2);
     return (illum * 100).round();
+  }
+}
+
+// ─── OpenAlex Work ────────────────────────────────────────────────────────────
+
+class OpenAlexWork {
+  final String id;
+  final String title;
+  final String abstract;
+  final List<String> authors;
+  final int? year;
+  final String? doi;
+  final String? openAccessUrl;
+  final int citedBy;
+  final List<String> concepts;
+
+  const OpenAlexWork({
+    required this.id,
+    required this.title,
+    required this.abstract,
+    required this.authors,
+    this.year,
+    this.doi,
+    this.openAccessUrl,
+    required this.citedBy,
+    required this.concepts,
+  });
+
+  factory OpenAlexWork.fromJson(Map<String, dynamic> j) {
+    final authList = (j['authorships'] as List? ?? [])
+        .take(3)
+        .map((a) => (a['author']?['display_name'] ?? '') as String)
+        .where((s) => s.isNotEmpty)
+        .toList();
+    final conceptList = (j['concepts'] as List? ?? [])
+        .take(5)
+        .map((c) => (c['display_name'] ?? '') as String)
+        .where((s) => s.isNotEmpty)
+        .toList();
+    // Abstract aus inverted index
+    String abstract = '';
+    final inv = j['abstract_inverted_index'];
+    if (inv is Map) {
+      final words = <int, String>{};
+      (inv as Map<String, dynamic>).forEach((word, positions) {
+        for (final pos in (positions as List)) {
+          words[pos as int] = word;
+        }
+      });
+      final sortedKeys = words.keys.toList()..sort();
+      abstract = sortedKeys.map((k) => words[k]).join(' ');
+      if (abstract.length > 300) abstract = '${abstract.substring(0, 300)}…';
+    }
+    return OpenAlexWork(
+      id: j['id'] as String? ?? '',
+      title: (j['title'] as String? ?? '').trim(),
+      abstract: abstract,
+      authors: authList,
+      year: j['publication_year'] as int?,
+      doi: j['doi'] as String?,
+      openAccessUrl: j['open_access']?['oa_url'] as String?,
+      citedBy: j['cited_by_count'] as int? ?? 0,
+      concepts: conceptList,
+    );
+  }
+}
+
+// ─── Wikimedia On This Day ────────────────────────────────────────────────────
+
+class WikiOnThisDay {
+  final int year;
+  final String text;
+  final List<String> links;
+
+  const WikiOnThisDay({
+    required this.year,
+    required this.text,
+    required this.links,
+  });
+
+  factory WikiOnThisDay.fromJson(Map<String, dynamic> j) {
+    final linksList = (j['links'] as List? ?? [])
+        .map((l) => (l['title'] ?? '') as String)
+        .where((s) => s.isNotEmpty)
+        .take(3)
+        .toList();
+    return WikiOnThisDay(
+      year: int.tryParse(j['year']?.toString() ?? '') ?? 0,
+      text: j['text'] as String? ?? '',
+      links: linksList,
+    );
+  }
+}
+
+// ─── PubChem Result ───────────────────────────────────────────────────────────
+
+class PubChemResult {
+  final int cid;
+  final String formula;
+  final String iupacName;
+
+  const PubChemResult({
+    required this.cid,
+    required this.formula,
+    required this.iupacName,
+  });
+
+  factory PubChemResult.fromJson(Map<String, dynamic> j) => PubChemResult(
+    cid: j['CID'] as int? ?? 0,
+    formula: j['MolecularFormula'] as String? ?? '',
+    iupacName: j['IUPACName'] as String? ?? '',
+  );
+}
+
+// ─── CrossRef Work ────────────────────────────────────────────────────────────
+
+class CrossRefWork {
+  final String title;
+  final List<String> authors;
+  final int? year;
+  final String doi;
+  final String publisher;
+  final int citedBy;
+
+  const CrossRefWork({
+    required this.title,
+    required this.authors,
+    this.year,
+    required this.doi,
+    required this.publisher,
+    required this.citedBy,
+  });
+
+  factory CrossRefWork.fromJson(Map<String, dynamic> j) {
+    final titleList = j['title'] as List?;
+    final title = (titleList != null && titleList.isNotEmpty) ? titleList[0] as String : '';
+
+    final authorList = j['author'] as List? ?? [];
+    final authors = authorList
+        .take(3)
+        .map((a) {
+          final family = (a as Map)['family'] as String? ?? '';
+          final given = a['given'] as String? ?? '';
+          return given.isNotEmpty ? '$given $family' : family;
+        })
+        .where((s) => s.isNotEmpty)
+        .toList();
+
+    final printedDate = j['published-print']?['date-parts'];
+    int? year;
+    if (printedDate is List && printedDate.isNotEmpty) {
+      final parts = printedDate[0] as List?;
+      if (parts != null && parts.isNotEmpty) year = parts[0] as int?;
+    }
+
+    return CrossRefWork(
+      title: title,
+      authors: authors,
+      year: year,
+      doi: j['DOI'] as String? ?? '',
+      publisher: j['publisher'] as String? ?? '',
+      citedBy: j['is-referenced-by-count'] as int? ?? 0,
+    );
   }
 }
