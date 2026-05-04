@@ -11,6 +11,7 @@
 ///   - `_StatusView` — Connecting / Error / Disconnected State
 library;
 
+import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui';
 
@@ -20,8 +21,13 @@ import 'package:livekit_client/livekit_client.dart' as lk;
 
 import '../../config/wb_design.dart';
 import '../../providers/livekit_call_provider.dart';
+import '../../services/cowatch_service.dart';
+import '../../services/incall_chat_service.dart';
 import '../../services/livekit_call_service.dart';
 import '../../services/live_caption_service.dart';
+import '../../services/soundscape_service.dart';
+import '../../widgets/cowatch_panel.dart';
+import '../../widgets/incall_chat_panel.dart';
 import '../../widgets/live_caption_overlay.dart';
 import '../../widgets/livekit_mini_bar.dart';
 import '../../widgets/livekit_reactions_overlay.dart';
@@ -35,9 +41,10 @@ class LiveKitGroupCallScreen extends ConsumerStatefulWidget {
   final String world;
   final String displayName;
   final String? avatarUrl;
-  // 🛋️ B5: kommt aus Pre-Join-Lobby. Wenn true → Kamera bleibt aus,
-  // Audio-Only-Mode aktiv beim Join.
+  // 🛋️ B5: kommt aus Pre-Join-Lobby.
   final bool audioOnly;
+  // Wenn false → stumm beitreten (Zuhörer-Modus), User kann Mic später an/aus schalten.
+  final bool initialMicEnabled;
 
   const LiveKitGroupCallScreen({
     super.key,
@@ -46,6 +53,7 @@ class LiveKitGroupCallScreen extends ConsumerStatefulWidget {
     required this.displayName,
     this.avatarUrl,
     this.audioOnly = false,
+    this.initialMicEnabled = true,
   });
 
   @override
@@ -59,6 +67,16 @@ class _LiveKitGroupCallScreenState
   bool _hasJoined = false;
   bool _isLeaving = false;
   bool _captionsEnabled = false;
+  // 🎵 B10.1/B10.2: Soundscape + Heilfrequenz
+  bool _soundscapeEnabled = false;
+  bool _heilEnabled = false;
+  int _heilHz = 432;
+  // 📺 B10.4: Co-Watch
+  bool _coWatchVisible = false;
+  String? _coWatchVideoId;
+  StreamSubscription<CoWatchEvent>? _coWatchSub;
+  // 💬 In-Call-Chat
+  bool _chatVisible = false;
   late final AnimationController _bgController;
   late final Animation<double> _bgAnimation;
 
@@ -75,12 +93,30 @@ class _LiveKitGroupCallScreenState
     LiveKitScreenVisibility.instance.setVisible(true);
 
     WidgetsBinding.instance.addPostFrameCallback((_) => _join());
+
+    // 📺 B10.4: CoWatch-Events vom Remote empfangen
+    _coWatchSub = CoWatchService.instance.eventStream.listen((event) {
+      if (!mounted) return;
+      if (event.action == CoWatchAction.load && event.videoId != null) {
+        setState(() {
+          _coWatchVideoId = event.videoId;
+          _coWatchVisible = true;
+        });
+      } else if (event.action == CoWatchAction.close) {
+        setState(() {
+          _coWatchVisible = false;
+          _coWatchVideoId = null;
+        });
+      }
+    });
   }
 
   @override
   void dispose() {
+    _coWatchSub?.cancel();
     LiveKitScreenVisibility.instance.setVisible(false);
     _bgController.dispose();
+    SoundscapeService.instance.stopAll();
     super.dispose();
   }
 
@@ -94,6 +130,7 @@ class _LiveKitGroupCallScreenState
         displayName: widget.displayName,
         avatarUrl: widget.avatarUrl,
         audioOnly: widget.audioOnly,
+        initialMicEnabled: widget.initialMicEnabled,
       );
       if (mounted) setState(() => _hasJoined = true);
     } catch (_) {
@@ -105,6 +142,7 @@ class _LiveKitGroupCallScreenState
     if (_isLeaving) return;
     setState(() => _isLeaving = true);
     final svc = ref.read(livekitCallServiceProvider);
+    await SoundscapeService.instance.stopAll();
     await svc.leaveRoom();
     if (mounted) Navigator.of(context).pop();
   }
@@ -193,6 +231,36 @@ class _LiveKitGroupCallScreenState
               // 🎙️ B8: Caption-Overlay (liegt über allem, unter Reactions)
               if (_captionsEnabled)
                 LiveCaptionOverlay(service: LiveCaptionService.instance),
+              // 📺 B10.4: Co-Watch-Panel (schwebend, 55% Höhe)
+              if (_coWatchVisible && _coWatchVideoId != null)
+                Positioned(
+                  left: 12,
+                  right: 12,
+                  bottom: 100,
+                  height: MediaQuery.of(context).size.height * 0.55,
+                  child: CoWatchPanel(
+                    videoId: _coWatchVideoId!,
+                    world: widget.world,
+                    isHost: true,
+                    service: CoWatchService.instance,
+                    onClose: () => setState(() {
+                      _coWatchVisible = false;
+                    }),
+                  ),
+                ),
+              // 💬 In-Call-Chat-Panel (schwebend über ControlBar)
+              if (_chatVisible)
+                Positioned(
+                  left: 12,
+                  right: 12,
+                  bottom: 100,
+                  height: MediaQuery.of(context).size.height * 0.52,
+                  child: InCallChatPanel(
+                    world: widget.world,
+                    service: InCallChatService.instance,
+                    onClose: () => setState(() => _chatVisible = false),
+                  ),
+                ),
             ],
           ),
           child: SafeArea(
@@ -216,6 +284,26 @@ class _LiveKitGroupCallScreenState
                     final nowOn = await LiveCaptionService.instance.toggle();
                     if (mounted) setState(() => _captionsEnabled = nowOn);
                   },
+                  // 🎵 B10.1: Soundscape-Atmosphäre
+                  soundscapeEnabled: _soundscapeEnabled,
+                  onToggleSoundscape: () async {
+                    final nowOn = await SoundscapeService.instance
+                        .toggleSoundscape(widget.world);
+                    if (mounted) setState(() => _soundscapeEnabled = nowOn);
+                  },
+                  // 🎵 B10.2: Heilfrequenz (nur Energie)
+                  heilEnabled: _heilEnabled,
+                  heilHz: _heilHz,
+                  onToggleHeil: () async {
+                    final nowOn = await SoundscapeService.instance
+                        .toggleHeilfrequenz();
+                    if (mounted) setState(() => _heilEnabled = nowOn);
+                  },
+                  onSelectHeilHz: (hz) async {
+                    setState(() => _heilHz = hz);
+                    await SoundscapeService.instance.toggleHeilfrequenz(hz: hz);
+                    if (mounted) setState(() => _heilEnabled = true);
+                  },
                   onClose: () async {
                     if (await _confirmLeave()) await _leaveAndPop();
                   },
@@ -224,6 +312,27 @@ class _LiveKitGroupCallScreenState
                 _ControlBar(
                   world: widget.world,
                   service: svc,
+                  onCoWatch: () async {
+                    final url = await showCoWatchInputDialog(
+                        context, widget.world);
+                    if (url == null || !mounted) return;
+                    await CoWatchService.instance.loadVideo(url);
+                    setState(() {
+                      _coWatchVideoId =
+                          CoWatchService.instance.currentVideoId;
+                      _coWatchVisible =
+                          CoWatchService.instance.currentVideoId != null;
+                    });
+                  },
+                  onToggleChat: () {
+                    setState(() {
+                      _chatVisible = !_chatVisible;
+                      if (_chatVisible) {
+                        InCallChatService.instance.markAllRead();
+                      }
+                    });
+                  },
+                  chatVisible: _chatVisible,
                   onLeave: () async {
                     if (await _confirmLeave()) await _leaveAndPop();
                   },
@@ -526,6 +635,14 @@ class _TopBar extends StatelessWidget {
   // 🎙️ B8: Live-Untertitel
   final bool captionsEnabled;
   final VoidCallback onToggleCaptions;
+  // 🎵 B10.1: Soundscape-Atmosphäre
+  final bool soundscapeEnabled;
+  final VoidCallback onToggleSoundscape;
+  // 🎵 B10.2: Heilfrequenz (Energie-Welt)
+  final bool heilEnabled;
+  final int heilHz;
+  final VoidCallback onToggleHeil;
+  final void Function(int hz) onSelectHeilHz;
   final VoidCallback onClose;
 
   const _TopBar({
@@ -540,6 +657,12 @@ class _TopBar extends StatelessWidget {
     required this.onToggleViewMode,
     required this.captionsEnabled,
     required this.onToggleCaptions,
+    required this.soundscapeEnabled,
+    required this.onToggleSoundscape,
+    required this.heilEnabled,
+    required this.heilHz,
+    required this.onToggleHeil,
+    required this.onSelectHeilHz,
     required this.onClose,
   });
 
@@ -588,6 +711,252 @@ class _TopBar extends StatelessWidget {
       return last.isNotEmpty ? '${last[0].toUpperCase()}${last.substring(1)}' : r;
     }
     return r;
+  }
+
+  void _showMoreOptions(BuildContext context) {
+    final accent = WbDesign.accent(world);
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => ClipRRect(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          child: Container(
+            decoration: BoxDecoration(
+              color: WbDesign.surface(world).withValues(alpha: 0.96),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(20)),
+              border: Border(
+                top: BorderSide(
+                    color: accent.withValues(alpha: 0.25), width: 1),
+              ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 12),
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: WbDesign.textTertiary.withValues(alpha: 0.4),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Row(
+                    children: [
+                      Icon(Icons.tune_rounded, color: accent, size: 20),
+                      const SizedBox(width: 10),
+                      Text(
+                        'Weitere Optionen',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                // Atmosphäre (Hintergrund-Sound)
+                _MoreOptionTile(
+                  icon: soundscapeEnabled
+                      ? Icons.graphic_eq_rounded
+                      : Icons.music_note_rounded,
+                  title: 'Atmosphäre',
+                  subtitle: soundscapeEnabled
+                      ? 'Hintergrund-Sound läuft — Tippen zum Stoppen'
+                      : 'Beruhigender Hintergrund-Sound für den Call',
+                  active: soundscapeEnabled,
+                  accent: accent,
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    onToggleSoundscape();
+                  },
+                ),
+                // Heilfrequenz (nur Energie-Welt)
+                if (world == 'energie')
+                  _MoreOptionTile(
+                    icon: Icons.self_improvement_rounded,
+                    title: heilEnabled
+                        ? 'Heilfrequenz: $heilHz Hz'
+                        : 'Heilfrequenz',
+                    subtitle: heilEnabled
+                        ? 'Frequenz läuft — Tippen zum Wechseln oder Stoppen'
+                        : 'Solfeggio-Frequenzen (174–963 Hz) zur Stimmung',
+                    active: heilEnabled,
+                    accent: accent,
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      _showHeilfrequenzPicker(context);
+                    },
+                  ),
+                // Audio-Only-Modus
+                _MoreOptionTile(
+                  icon:
+                      audioOnly ? Icons.headset_rounded : Icons.headset_outlined,
+                  title: 'Nur Audio',
+                  subtitle: audioOnly
+                      ? 'Kamera deaktiviert — spart Akku und Daten'
+                      : 'Kamera ausschalten für mehr Akku-Laufzeit',
+                  active: audioOnly,
+                  accent: accent,
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    onToggleAudioOnly();
+                  },
+                ),
+                SizedBox(height: MediaQuery.of(ctx).padding.bottom + 16),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showHeilfrequenzPicker(BuildContext context) {
+    final accent = WbDesign.accent(world);
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => ClipRRect(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          child: Container(
+            decoration: BoxDecoration(
+              color: WbDesign.surface(world).withValues(alpha: 0.95),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+              border: Border(
+                top: BorderSide(color: accent.withValues(alpha: 0.25), width: 1),
+              ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 12),
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: WbDesign.textTertiary.withValues(alpha: 0.4),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Row(
+                    children: [
+                      Icon(Icons.self_improvement_rounded,
+                          color: accent, size: 20),
+                      const SizedBox(width: 10),
+                      Text(
+                        'Heilfrequenz wählen',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const Spacer(),
+                      if (heilEnabled)
+                        TextButton(
+                          onPressed: () {
+                            Navigator.pop(ctx);
+                            onToggleHeil();
+                          },
+                          child: Text('Aus',
+                              style: TextStyle(
+                                  color: WbDesign.textTertiary, fontSize: 13)),
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  height: 300,
+                  child: ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: kHeilfrequenzen.length,
+                    itemBuilder: (_, i) {
+                      final entry = kHeilfrequenzen[i];
+                      final isSelected =
+                          heilEnabled && entry.hz == heilHz;
+                      return InkWell(
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          onSelectHeilHz(entry.hz);
+                        },
+                        borderRadius: BorderRadius.circular(12),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          margin: const EdgeInsets.symmetric(vertical: 3),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? accent.withValues(alpha: 0.18)
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: isSelected
+                                  ? accent.withValues(alpha: 0.40)
+                                  : WbDesign.borderMedium
+                                      .withValues(alpha: 0.0),
+                              width: isSelected ? 1 : 0,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 52,
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  entry.label,
+                                  style: TextStyle(
+                                    color: isSelected
+                                        ? accent
+                                        : Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  entry.description,
+                                  style: TextStyle(
+                                    color: WbDesign.textSecondary,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ),
+                              if (isSelected)
+                                Icon(Icons.volume_up_rounded,
+                                    color: accent, size: 16),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                SizedBox(
+                    height: MediaQuery.of(ctx).padding.bottom + 12),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -766,68 +1135,38 @@ class _TopBar extends StatelessWidget {
                     ],
                   ),
                 ),
-              // 🔁 B6: Layout-Toggle (Gallery ↔ Speaker-View)
-              SizedBox(
-                width: 38,
-                height: 38,
-                child: IconButton(
-                  tooltip: viewMode == LiveKitViewMode.speaker
-                      ? 'Gallery-Ansicht (alle gleich groß)'
-                      : 'Speaker-Ansicht (aktiver Sprecher groß)',
-                  onPressed: onToggleViewMode,
-                  icon: Icon(
-                    viewMode == LiveKitViewMode.speaker
-                        ? Icons.view_quilt_rounded
-                        : Icons.grid_view_rounded,
-                    color: viewMode == LiveKitViewMode.speaker
-                        ? accent
-                        : WbDesign.textTertiary,
-                    size: 20,
-                  ),
-                ),
+              // 🔁 B6: Ansicht wechseln (Gallery ↔ Speaker)
+              _TopBarBtn(
+                icon: viewMode == LiveKitViewMode.speaker
+                    ? Icons.grid_view_rounded
+                    : Icons.account_box_rounded,
+                label: 'Ansicht',
+                active: viewMode == LiveKitViewMode.speaker,
+                accent: accent,
+                onTap: onToggleViewMode,
               ),
-              // 🎙️ B8: Live-Untertitel-Toggle
-              SizedBox(
-                width: 38,
-                height: 38,
-                child: IconButton(
-                  tooltip: captionsEnabled
-                      ? 'Untertitel aus'
-                      : 'Live-Untertitel an',
-                  onPressed: onToggleCaptions,
-                  icon: Icon(
-                    captionsEnabled
-                        ? Icons.closed_caption_rounded
-                        : Icons.closed_caption_disabled_rounded,
-                    color: captionsEnabled ? accent : WbDesign.textTertiary,
-                    size: 20,
-                  ),
-                ),
+              // 🎙️ B8: Untertitel
+              _TopBarBtn(
+                icon: Icons.closed_caption_rounded,
+                label: 'Untertitel',
+                active: captionsEnabled,
+                accent: accent,
+                onTap: onToggleCaptions,
               ),
-              // 🎧 Audio-Only-Modus-Toggle (Akku/Bandbreite-Sparmodus)
-              SizedBox(
-                width: 38,
-                height: 38,
-                child: IconButton(
-                  tooltip: audioOnly
-                      ? 'Audio-Only aus → Video möglich'
-                      : 'Audio-Only an → spart Akku & Daten',
-                  onPressed: onToggleAudioOnly,
-                  icon: Icon(
-                    audioOnly
-                        ? Icons.headset_rounded
-                        : Icons.headset_outlined,
-                    color: audioOnly ? accent : WbDesign.textTertiary,
-                    size: 20,
-                  ),
-                ),
-              ),
+              // ⋮ Mehr Optionen (Atmosphäre, Heilfrequenz, Audio-Only)
+              Builder(builder: (ctx) => _TopBarBtn(
+                icon: Icons.more_vert_rounded,
+                label: 'Mehr',
+                active: soundscapeEnabled || heilEnabled || audioOnly,
+                accent: accent,
+                onTap: () => _showMoreOptions(ctx),
+              )),
               // Schließen
               SizedBox(
                 width: 40,
                 height: 40,
                 child: IconButton(
-                  tooltip: 'Schließen',
+                  tooltip: 'Anruf beenden',
                   onPressed: onClose,
                   icon: Icon(
                     Icons.close_rounded,
@@ -838,6 +1177,134 @@ class _TopBar extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── TopBar-Hilfselemente ────────────────────────────────────────────────────
+
+/// Kleiner Icon-Button mit sichtbarem Text-Label darunter für die TopBar.
+class _TopBarBtn extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool active;
+  final Color accent;
+  final VoidCallback onTap;
+
+  const _TopBarBtn({
+    required this.icon,
+    required this.label,
+    required this.active,
+    required this.accent,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 19,
+              color: active ? accent : WbDesign.textTertiary,
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 9,
+                color: active ? accent : WbDesign.textTertiary,
+                fontWeight:
+                    active ? FontWeight.w700 : FontWeight.w400,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Zeile in der "Mehr Optionen"-BottomSheet mit Icon, Titel, Beschreibung.
+class _MoreOptionTile extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final bool active;
+  final Color accent;
+  final VoidCallback onTap;
+
+  const _MoreOptionTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.active,
+    required this.accent,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding:
+            const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: active
+                    ? accent.withValues(alpha: 0.18)
+                    : WbDesign.borderMedium.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon,
+                  size: 22, color: active ? accent : WbDesign.textTertiary),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: active ? accent : Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      color: WbDesign.textSecondary,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (active)
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: accent,
+                  shape: BoxShape.circle,
+                ),
+              ),
+          ],
         ),
       ),
     );
@@ -1446,13 +1913,197 @@ class _ParticipantTileState extends State<_ParticipantTile>
 class _ControlBar extends StatelessWidget {
   final String world;
   final LiveKitCallService service;
+  final VoidCallback onCoWatch;
+  final VoidCallback onToggleChat;
+  final bool chatVisible;
   final VoidCallback onLeave;
 
   const _ControlBar({
     required this.world,
     required this.service,
+    required this.onCoWatch,
+    required this.onToggleChat,
+    required this.chatVisible,
     required this.onLeave,
   });
+
+  /// Öffnet das "Mehr Aktionen"-Sheet mit sekundären Call-Funktionen.
+  void _showMoreActions(BuildContext context) {
+    final accent = WbDesign.accent(world);
+    final isConnected = service.isConnected;
+
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModalState) {
+          return ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: WbDesign.surface(world).withValues(alpha: 0.96),
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(24)),
+                  border: Border(
+                    top: BorderSide(
+                        color: accent.withValues(alpha: 0.30), width: 1),
+                  ),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const SizedBox(height: 12),
+                    Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: WbDesign.textTertiary.withValues(alpha: 0.4),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              gradient: WbDesign.hero(world),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.more_horiz_rounded,
+                                color: Colors.white, size: 18),
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            'Weitere Aktionen',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    // Chat
+                    ValueListenableBuilder<int>(
+                      valueListenable: InCallChatService.instance.unreadNotifier,
+                      builder: (_, unread, __) => _MoreActionTile(
+                        icon: chatVisible
+                            ? Icons.chat_bubble_rounded
+                            : Icons.chat_bubble_outline_rounded,
+                        title: 'Chat',
+                        subtitle: chatVisible
+                            ? 'Chat schließen'
+                            : (unread > 0
+                                ? '$unread neue Nachricht${unread == 1 ? '' : 'en'}'
+                                : 'Nachrichten im Anruf schreiben'),
+                        active: chatVisible,
+                        accent: accent,
+                        badgeCount: (!chatVisible && unread > 0) ? unread : 0,
+                        enabled: isConnected,
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          onToggleChat();
+                        },
+                      ),
+                    ),
+                    // Reaktion senden
+                    _MoreActionTile(
+                      icon: Icons.emoji_emotions_outlined,
+                      title: 'Reaktion',
+                      subtitle: 'Emoji-Reaktion an alle senden',
+                      active: false,
+                      accent: accent,
+                      enabled: isConnected,
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        _showReactionsPicker(context, world, service);
+                      },
+                    ),
+                    // Hand heben
+                    _MoreActionTile(
+                      icon: service.handRaised
+                          ? Icons.front_hand_rounded
+                          : Icons.front_hand_outlined,
+                      title: service.handRaised ? 'Hand senken' : 'Hand heben',
+                      subtitle: service.handRaised
+                          ? 'Meldung zurückziehen'
+                          : 'Allen zeigen dass du etwas sagen möchtest',
+                      active: service.handRaised,
+                      accent: const Color(0xFFFFB300),
+                      enabled: isConnected,
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        service.toggleHandRaised();
+                      },
+                    ),
+                    // Bildschirm teilen
+                    _MoreActionTile(
+                      icon: service.screenShareEnabled
+                          ? Icons.stop_screen_share_rounded
+                          : Icons.present_to_all_rounded,
+                      title: service.screenShareEnabled
+                          ? 'Teilen stoppen'
+                          : 'Bildschirm teilen',
+                      subtitle: service.screenShareEnabled
+                          ? 'Bildschirmübertragung beenden'
+                          : 'Deinen Bildschirm für alle sichtbar machen',
+                      active: service.screenShareEnabled,
+                      accent: accent,
+                      enabled: isConnected,
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        service.toggleScreenShare();
+                      },
+                    ),
+                    // Kamera drehen (nur wenn Kamera an)
+                    if (service.cameraEnabled)
+                      _MoreActionTile(
+                        icon: Icons.cameraswitch_rounded,
+                        title: 'Kamera drehen',
+                        subtitle: 'Zwischen Vorder- und Rückkamera wechseln',
+                        active: false,
+                        accent: accent,
+                        enabled: isConnected,
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          service.switchCamera();
+                        },
+                      ),
+                    // Co-Watch
+                    _MoreActionTile(
+                      icon: Icons.tv_rounded,
+                      title: 'Co-Watch',
+                      subtitle: CoWatchService.instance.active
+                          ? 'YouTube-Video läuft — Tippen zum Verwalten'
+                          : 'YouTube-Video gemeinsam anschauen',
+                      active: CoWatchService.instance.active,
+                      accent: accent,
+                      enabled: isConnected,
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        onCoWatch();
+                      },
+                    ),
+                    SizedBox(
+                        height: MediaQuery.of(ctx).padding.bottom + 20),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1464,103 +2115,252 @@ class _ControlBar extends StatelessWidget {
         filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
         child: Container(
           decoration: BoxDecoration(
-            color: WbDesign.surfaceAlt(world).withValues(alpha: 0.90),
+            color: WbDesign.surfaceAlt(world).withValues(alpha: 0.92),
             border: Border(
-              top: BorderSide(color: WbDesign.borderMedium),
+              top: BorderSide(color: accent.withValues(alpha: 0.15), width: 1),
             ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.25),
+                blurRadius: 20,
+                offset: const Offset(0, -4),
+              ),
+            ],
           ),
           child: SafeArea(
             top: false,
             child: Padding(
               padding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 12,
+                horizontal: 24,
+                vertical: 14,
               ),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Mikrofon (Tap = Toggle, Long-Press = PTT)
+                  // ── Mikrofon (Tap = Toggle, Long-Press = PTT) ──
                   _CtrlBtn(
                     icon: service.micEnabled
                         ? Icons.mic_rounded
                         : Icons.mic_off_rounded,
                     label: service.pttActive
-                        ? 'PTT aktiv'
-                        : (service.micEnabled ? 'Stumm' : 'Mikrofon'),
+                        ? 'Sprechtaste'
+                        : (service.micEnabled ? 'Mikrofon' : 'Stumm'),
                     active: service.micEnabled || service.pttActive,
                     activeColor: service.pttActive
-                        ? const Color(0xFF00E676) // grüner PTT-Glow
+                        ? const Color(0xFF00E676)
                         : accent,
                     enabled: isConnected,
                     onTap: () => service.toggleMicrophone(),
                     onLongPressStart: () => service.pttPress(),
                     onLongPressEnd: () => service.pttRelease(),
                   ),
-                  // Kamera
+                  // ── Kamera ──
                   _CtrlBtn(
                     icon: service.cameraEnabled
                         ? Icons.videocam_rounded
                         : Icons.videocam_off_rounded,
-                    label: service.cameraEnabled ? 'Kamera aus' : 'Kamera an',
+                    label: service.cameraEnabled ? 'Kamera' : 'Kamera aus',
                     active: service.cameraEnabled,
                     activeColor: accent,
                     enabled: isConnected,
                     onTap: () => service.toggleCamera(),
                   ),
-                  // Kamera wechseln (Front/Back) — nur sichtbar wenn Camera an
-                  if (service.cameraEnabled)
-                    _CtrlBtn(
-                      icon: Icons.cameraswitch_rounded,
-                      label: 'Wechseln',
-                      active: false,
-                      activeColor: accent,
-                      enabled: isConnected,
-                      onTap: () => service.switchCamera(),
-                    ),
-                  // Bildschirm teilen
-                  _CtrlBtn(
-                    icon: service.screenShareEnabled
-                        ? Icons.stop_screen_share_rounded
-                        : Icons.present_to_all_rounded,
-                    label: service.screenShareEnabled ? 'Stop' : 'Teilen',
-                    active: service.screenShareEnabled,
-                    activeColor: accent,
-                    enabled: isConnected,
-                    onTap: () => service.toggleScreenShare(),
+                  // ── Mehr (sekundäre Aktionen) ──
+                  Builder(
+                    builder: (ctx) {
+                      final hasUnread = InCallChatService
+                              .instance.unreadNotifier.value >
+                          0;
+                      final hasActive = chatVisible ||
+                          service.handRaised ||
+                          service.screenShareEnabled ||
+                          CoWatchService.instance.active;
+                      return Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          _CtrlBtn(
+                            icon: Icons.more_horiz_rounded,
+                            label: 'Mehr',
+                            active: hasActive,
+                            activeColor: accent,
+                            enabled: true,
+                            onTap: () => _showMoreActions(ctx),
+                          ),
+                          if (hasUnread && !chatVisible)
+                            Positioned(
+                              top: 0,
+                              right: 2,
+                              child: Container(
+                                width: 12,
+                                height: 12,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFF1744),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                      color: Colors.black, width: 1.5),
+                                ),
+                              ),
+                            ),
+                        ],
+                      );
+                    },
                   ),
-                  // 💖 Bundle 4: Reactions-Picker
-                  _CtrlBtn(
-                    icon: Icons.emoji_emotions_outlined,
-                    label: 'Reaktion',
-                    active: false,
-                    activeColor: accent,
-                    enabled: isConnected,
-                    onTap: () => _showReactionsPicker(context, world, service),
-                  ),
-                  // Hand heben
-                  _CtrlBtn(
-                    icon: service.handRaised
-                        ? Icons.front_hand_rounded
-                        : Icons.front_hand_outlined,
-                    label: service.handRaised ? 'Hand senken' : 'Hand heben',
-                    active: service.handRaised,
-                    activeColor: const Color(0xFFFFB300),
-                    enabled: isConnected,
-                    onTap: () => service.toggleHandRaised(),
-                  ),
-                  // Auflegen
+                  // ── Auflegen (immer sichtbar, prominent) ──
                   _CtrlBtn(
                     icon: Icons.call_end_rounded,
                     label: 'Auflegen',
                     active: false,
                     enabled: true,
                     isDanger: true,
+                    isLarge: true,
                     onTap: onLeave,
                   ),
                 ],
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Zeile im "Mehr Aktionen"-Sheet.
+class _MoreActionTile extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final bool active;
+  final Color accent;
+  final bool enabled;
+  final int badgeCount;
+  final VoidCallback onTap;
+
+  const _MoreActionTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.active,
+    required this.accent,
+    required this.enabled,
+    required this.onTap,
+    this.badgeCount = 0,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: enabled ? onTap : null,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        child: Row(
+          children: [
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: active
+                        ? accent.withValues(alpha: 0.20)
+                        : Colors.white.withValues(alpha: 0.07),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: active
+                          ? accent.withValues(alpha: 0.45)
+                          : Colors.white.withValues(alpha: 0.10),
+                    ),
+                    boxShadow: active
+                        ? [
+                            BoxShadow(
+                              color: accent.withValues(alpha: 0.25),
+                              blurRadius: 12,
+                              spreadRadius: 1,
+                            )
+                          ]
+                        : null,
+                  ),
+                  child: Icon(
+                    icon,
+                    size: 22,
+                    color: !enabled
+                        ? Colors.white.withValues(alpha: 0.25)
+                        : (active ? accent : Colors.white),
+                  ),
+                ),
+                if (badgeCount > 0)
+                  Positioned(
+                    top: -4,
+                    right: -4,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 5, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFF1744),
+                        borderRadius: BorderRadius.circular(8),
+                        border:
+                            Border.all(color: Colors.black, width: 1.5),
+                      ),
+                      child: Text(
+                        badgeCount > 9 ? '9+' : '$badgeCount',
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: !enabled
+                          ? WbDesign.textDisabled
+                          : (active ? accent : Colors.white),
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      color: !enabled
+                          ? WbDesign.textDisabled
+                          : WbDesign.textSecondary,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (active)
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: accent,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: accent.withValues(alpha: 0.6),
+                      blurRadius: 6,
+                    ),
+                  ],
+                ),
+              )
+            else if (!enabled)
+              Icon(Icons.lock_outline_rounded,
+                  color: WbDesign.textDisabled, size: 16),
+          ],
         ),
       ),
     );
@@ -1678,6 +2478,8 @@ class _CtrlBtn extends StatelessWidget {
   final Color? activeColor;
   final bool enabled;
   final bool isDanger;
+  /// Wenn true → größeres Auflegen-Format (64×64 px, größeres Icon).
+  final bool isLarge;
   final VoidCallback? onTap;
   // 🎙️ B12: Push-to-Talk Long-Press
   final VoidCallback? onLongPressStart;
@@ -1690,6 +2492,7 @@ class _CtrlBtn extends StatelessWidget {
     required this.enabled,
     this.activeColor,
     this.isDanger = false,
+    this.isLarge = false,
     this.onTap,
     this.onLongPressStart,
     this.onLongPressEnd,
@@ -1697,6 +2500,9 @@ class _CtrlBtn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final double btnSize = isLarge ? 64 : 54;
+    final double iconSize = isLarge ? 26 : 22;
+
     final Color bg = isDanger
         ? const Color(0xFFFF1744)
         : (active && activeColor != null
@@ -1729,26 +2535,25 @@ class _CtrlBtn extends StatelessWidget {
           children: [
             AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              width: 54,
-              height: 54,
+              width: btnSize,
+              height: btnSize,
               decoration: BoxDecoration(
                 color: bg,
                 shape: BoxShape.circle,
-                border: Border.all(
-                  color: isDanger
-                      ? Colors.transparent
-                      : (active && activeColor != null
-                          ? activeColor!.withValues(alpha: 0.40)
-                          : WbDesign.borderMedium),
-                  width: 1.5,
-                ),
+                border: isDanger
+                    ? null
+                    : Border.all(
+                        color: active && activeColor != null
+                            ? activeColor!.withValues(alpha: 0.40)
+                            : WbDesign.borderMedium,
+                        width: 1.5,
+                      ),
                 boxShadow: isDanger
                     ? [
                         BoxShadow(
-                          color:
-                              const Color(0xFFFF1744).withValues(alpha: 0.40),
-                          blurRadius: 16,
-                          spreadRadius: 2,
+                          color: const Color(0xFFFF1744).withValues(alpha: 0.50),
+                          blurRadius: isLarge ? 24 : 16,
+                          spreadRadius: isLarge ? 4 : 2,
                         ),
                       ]
                     : (active && activeColor != null
@@ -1761,16 +2566,19 @@ class _CtrlBtn extends StatelessWidget {
                           ]
                         : null),
               ),
-              child: Icon(icon, color: iconColor, size: 22),
+              child: Icon(icon, color: iconColor, size: iconSize),
             ),
             const SizedBox(height: 5),
             Text(
               label,
               style: TextStyle(
-                color: labelColor,
+                color: isDanger
+                    ? const Color(0xFFFF6B6B)
+                    : labelColor,
                 fontSize: 9.5,
-                fontWeight:
-                    active ? FontWeight.w700 : FontWeight.w400,
+                fontWeight: (active || isDanger)
+                    ? FontWeight.w700
+                    : FontWeight.w400,
               ),
               textAlign: TextAlign.center,
               maxLines: 1,

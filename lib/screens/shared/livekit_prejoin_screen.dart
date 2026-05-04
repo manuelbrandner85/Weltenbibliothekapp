@@ -40,6 +40,7 @@ class LiveKitPreJoinScreen extends StatefulWidget {
 class _LiveKitPreJoinScreenState extends State<LiveKitPreJoinScreen>
     with SingleTickerProviderStateMixin {
   bool _audioOnly = true; // default = sparsam
+  bool _micEnabled = true; // default = Mikrofon an (User kann als Zuhörer deaktivieren)
   bool _micGranted = false;
   bool _camGranted = false;
   bool _checkingPerms = true;
@@ -102,6 +103,7 @@ class _LiveKitPreJoinScreenState extends State<LiveKitPreJoinScreen>
           displayName: widget.displayName,
           avatarUrl: widget.avatarUrl,
           audioOnly: _audioOnly,
+          initialMicEnabled: _micEnabled,
         ),
       ),
     );
@@ -248,6 +250,14 @@ class _LiveKitPreJoinScreenState extends State<LiveKitPreJoinScreen>
                           accent: accent,
                           onTap: _micGranted ? null : _requestMic,
                         ),
+                        if (_micGranted) ...[
+                          const SizedBox(height: 10),
+                          _MicToggleCard(
+                            value: _micEnabled,
+                            onChanged: (v) => setState(() => _micEnabled = v),
+                            accent: accent,
+                          ),
+                        ],
                         const SizedBox(height: 10),
                         _AudioOnlyToggleCard(
                           value: _audioOnly,
@@ -269,15 +279,17 @@ class _LiveKitPreJoinScreenState extends State<LiveKitPreJoinScreen>
                 child: ElevatedButton.icon(
                   onPressed: _checkingPerms ? null : _join,
                   icon: Icon(
-                    _audioOnly ? Icons.headset_rounded : Icons.videocam_rounded,
+                    _micGranted && _micEnabled
+                        ? Icons.mic_rounded
+                        : Icons.mic_off_rounded,
                     size: 22,
                   ),
                   label: Text(
-                    _micGranted
-                        ? (_audioOnly
-                            ? 'Stumm beitreten — als Zuhörer'
-                            : 'Mit Mikrofon beitreten')
-                        : 'Mikrofon-Berechtigung erlauben',
+                    !_micGranted
+                        ? 'Mikrofon-Berechtigung erlauben'
+                        : (_micEnabled
+                            ? 'Mit Mikrofon beitreten'
+                            : 'Als Zuhörer beitreten'),
                     style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
@@ -408,6 +420,89 @@ class _PermissionCard extends StatelessWidget {
                 ],
               ),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MicToggleCard extends StatelessWidget {
+  final bool value;
+  final ValueChanged<bool> onChanged;
+  final Color accent;
+
+  const _MicToggleCard({
+    required this.value,
+    required this.onChanged,
+    required this.accent,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(WbDesign.radiusLarge),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: WbDesign.surface('').withValues(alpha: 0.6),
+            border: Border.all(
+              color: value
+                  ? accent.withValues(alpha: 0.4)
+                  : Colors.white.withValues(alpha: 0.08),
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: value
+                      ? accent.withValues(alpha: 0.18)
+                      : Colors.white.withValues(alpha: 0.06),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  value ? Icons.mic_rounded : Icons.mic_off_rounded,
+                  size: 20,
+                  color: value ? accent : WbDesign.textTertiary,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Mikrofon beim Beitreten',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        )),
+                    Text(
+                      value
+                          ? 'Mikrofon ist an — andere hören dich'
+                          : 'Stummgeschaltet — du hörst nur zu',
+                      style: TextStyle(
+                        color: value
+                            ? accent.withValues(alpha: 0.85)
+                            : WbDesign.textTertiary,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Switch.adaptive(
+                value: value,
+                onChanged: onChanged,
+                activeThumbColor: accent,
+              ),
+            ],
           ),
         ),
       ),

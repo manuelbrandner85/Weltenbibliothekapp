@@ -29,6 +29,8 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/api_config.dart';
+import 'cowatch_service.dart';
+import 'incall_chat_service.dart';
 import 'live_caption_service.dart';
 
 /// Verbindungs-Phasen — granular damit die UI passende Indicator zeigen kann.
@@ -302,6 +304,7 @@ class LiveKitCallService extends ChangeNotifier {
     String? displayName,
     String? avatarUrl,
     bool audioOnly = false,
+    bool initialMicEnabled = true,
   }) async {
     // Avatar-URL + Display-Name für später (Mini-Bar & Re-Open)
     _localAvatarUrl = avatarUrl;
@@ -534,13 +537,14 @@ class LiveKitCallService extends ChangeNotifier {
         }
       }
 
-      // Mikrofon direkt beim Beitritt aktivieren — User soll standardmäßig
-      // im Anruf hörbar sein (nicht "stumm beigetreten").
+      // Mikrofon beim Beitritt je nach User-Wunsch aktivieren.
+      // initialMicEnabled=true (Standard) → Mikrofon an.
+      // initialMicEnabled=false → stumm beitreten (Zuhörer-Modus).
       try {
-        await room.localParticipant?.setMicrophoneEnabled(true);
-        _micEnabled = true;
+        await room.localParticipant?.setMicrophoneEnabled(initialMicEnabled);
+        _micEnabled = initialMicEnabled;
         if (kDebugMode) {
-          debugPrint('🎤 Mikrofon aktiviert');
+          debugPrint(initialMicEnabled ? '🎤 Mikrofon aktiviert' : '🔇 Stumm beigetreten (Zuhörer)');
         }
       } catch (e) {
         if (kDebugMode) {
@@ -563,6 +567,13 @@ class LiveKitCallService extends ChangeNotifier {
       final lp2 = room.localParticipant;
       if (lp2 != null) {
         LiveCaptionService.instance.attachRoom(
+          room,
+          lp2.identity,
+          displayName ?? lp2.identity,
+        );
+        CoWatchService.instance.attachRoom(room, lp2.identity);
+        // 💬 In-Call-Chat anhängen
+        InCallChatService.instance.attachRoom(
           room,
           lp2.identity,
           displayName ?? lp2.identity,
@@ -720,6 +731,17 @@ class LiveKitCallService extends ChangeNotifier {
           return;
         }
 
+        // 📺 B10.4: Co-Watch-Event → CoWatchService weiterleiten
+        if (type == 'cowatch') {
+          CoWatchService.instance.handleIncomingData(data, event.participant);
+          return;
+        }
+        // 💬 In-Call-Chat-Event
+        if (type == 'incall_chat') {
+          InCallChatService.instance.handleIncomingData(data, event.participant);
+          return;
+        }
+
         if (type != 'reaction') return;
         final emoji = data['emoji'];
         if (emoji is! String || emoji.isEmpty) return;
@@ -806,6 +828,10 @@ class LiveKitCallService extends ChangeNotifier {
 
     // 🎙️ B8: Caption-Service vom Raum trennen
     LiveCaptionService.instance.detachRoom();
+    // 📺 B10.4: CoWatch-Service vom Raum trennen
+    CoWatchService.instance.detachRoom();
+    // 💬 In-Call-Chat vom Raum trennen
+    InCallChatService.instance.detachRoom();
 
     try {
       await _room?.disconnect();
