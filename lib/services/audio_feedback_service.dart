@@ -12,8 +12,6 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:livekit_client/livekit_client.dart' as lk;
 
-import 'livekit_call_service.dart';
-
 // ─── Raum-Themes (B10.6) ────────────────────────────────────────────────────
 
 enum RoomTheme {
