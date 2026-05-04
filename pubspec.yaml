@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 5.42.0+20260505
+version: 5.41.0+20260504
 
 environment:
   sdk: '>=3.5.0 <4.0.0'
@@ -80,7 +80,6 @@ dependencies:
   # Visualisierungen & Charts + Timeline
   fl_chart: 0.69.0          # Charts, Graphen, Heatmaps
   graphview: 1.2.0          # Interaktive Netzwerk-Graphen (Verschwörungs-Netz)
-  timeline_tile: ^2.0.2     # 🆕 Zeitleisten-Visualisierung (Geschichte-Tool)
   
   # PDF & Multimedia (v7.2 - In-App Viewer)
   path_provider: 2.1.5      # Dateipfade

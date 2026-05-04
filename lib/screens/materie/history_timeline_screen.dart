@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:timeline_tile/timeline_tile.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../services/free_api_service.dart';
 import '../../services/group_tools_service.dart';
@@ -949,63 +948,82 @@ class _HistoryTimelineScreenState extends State<HistoryTimelineScreen>
 
     final yearLabel = year < 0 ? '${year.abs()}\nv.Chr.' : '$year';
 
-    return TimelineTile(
-      axis: TimelineAxis.vertical,
-      alignment: TimelineAlign.start,
-      isFirst: isFirst,
-      isLast: isLast,
-      indicatorStyle: IndicatorStyle(
-        width: 18,
-        height: 18,
-        color: color,
-        padding: const EdgeInsets.all(2),
-        indicator: Container(
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.25),
-            shape: BoxShape.circle,
-            border: Border.all(color: color, width: 2),
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Jahres-Spalte
+          SizedBox(
+            width: 64,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
+              child: Text(
+                yearLabel,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  height: 1.3,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 3,
+              ),
+            ),
           ),
-        ),
-      ),
-      afterLineStyle: LineStyle(
-        color: color.withValues(alpha: 0.25),
-        thickness: 2,
-      ),
-      beforeLineStyle: LineStyle(
-        color: color.withValues(alpha: 0.25),
-        thickness: 2,
-      ),
-      startChild: Container(
-        width: 64,
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
-        child: Text(
-          yearLabel,
-          style: TextStyle(
-            color: color,
-            fontSize: 10,
-            fontWeight: FontWeight.bold,
-            height: 1.3,
+          // Indikator + Linie
+          SizedBox(
+            width: 22,
+            child: Column(
+              children: [
+                Expanded(
+                  child: Container(
+                    width: 2,
+                    color: isFirst
+                        ? Colors.transparent
+                        : color.withValues(alpha: 0.25),
+                  ),
+                ),
+                Container(
+                  width: 18,
+                  height: 18,
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.25),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: color, width: 2),
+                  ),
+                ),
+                Expanded(
+                  child: Container(
+                    width: 2,
+                    color: isLast
+                        ? Colors.transparent
+                        : color.withValues(alpha: 0.25),
+                  ),
+                ),
+              ],
+            ),
           ),
-          textAlign: TextAlign.center,
-          maxLines: 3,
-        ),
-      ),
-      endChild: Container(
-        margin: const EdgeInsets.symmetric(vertical: 6),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: _surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withValues(alpha: 0.2)),
-        ),
-        child: Text(
-          text,
-          style: const TextStyle(
-            color: Colors.white70,
-            fontSize: 13,
-            height: 1.5,
+          // Inhalt
+          Expanded(
+            child: Container(
+              margin: const EdgeInsets.symmetric(vertical: 6),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: _surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: color.withValues(alpha: 0.2)),
+              ),
+              child: Text(
+                text,
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 13,
+                  height: 1.5,
+                ),
+              ),
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
