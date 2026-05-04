@@ -25,6 +25,7 @@ import '../../services/audio_feedback_service.dart';
 import '../../services/cowatch_service.dart';
 import '../../services/incall_chat_service.dart';
 import '../../services/livekit_call_service.dart';
+import '../../services/recording_service.dart';
 import '../../services/live_caption_service.dart';
 import '../../services/soundscape_service.dart';
 import '../../widgets/cowatch_panel.dart';
@@ -120,6 +121,7 @@ class _LiveKitGroupCallScreenState
     LiveKitScreenVisibility.instance.setVisible(false);
     _bgController.dispose();
     SoundscapeService.instance.stopAll();
+    RecordingService.instance.reset();
     super.dispose();
   }
 
@@ -317,6 +319,7 @@ class _LiveKitGroupCallScreenState
                 Expanded(child: _buildBody(state, svc, accent)),
                 _ControlBar(
                   world: widget.world,
+                  roomName: widget.roomName,
                   service: svc,
                   onCoWatch: () async {
                     final url = await showCoWatchInputDialog(
@@ -911,6 +914,48 @@ class _KristallPainter extends CustomPainter {
 }
 
 /// Globaler ValueNotifier für Spatial-Audio-Toggle (UI-State, kein setState im Screen).
+// Pulsierender roter Punkt für REC-Indikator
+class _BlinkingDot extends StatefulWidget {
+  const _BlinkingDot();
+  @override
+  State<_BlinkingDot> createState() => _BlinkingDotState();
+}
+
+class _BlinkingDotState extends State<_BlinkingDot>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _anim;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat(reverse: true);
+    _anim = CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut);
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => FadeTransition(
+        opacity: _anim,
+        child: Container(
+          width: 7,
+          height: 7,
+          decoration: const BoxDecoration(
+            color: Color(0xFFFF1744),
+            shape: BoxShape.circle,
+          ),
+        ),
+      );
+}
+
 class _SpatialNotifier extends ValueNotifier<bool> {
   _SpatialNotifier._() : super(AudioFeedbackService.instance.spatialEnabled);
   static final instance = _SpatialNotifier._();
@@ -1577,6 +1622,38 @@ class _TopBar extends StatelessWidget {
                     ),
                   ],
                 ),
+              ),
+              // 🔴 Recording-Indikator
+              ValueListenableBuilder<RecordingState>(
+                valueListenable: RecordingService.instance.stateNotifier,
+                builder: (_, recState, __) {
+                  if (recState != RecordingState.recording) return const SizedBox.shrink();
+                  return Container(
+                    margin: const EdgeInsets.only(right: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFF1744).withValues(alpha: 0.18),
+                      borderRadius: BorderRadius.circular(WbDesign.radiusPill),
+                      border: Border.all(color: const Color(0xFFFF1744).withValues(alpha: 0.5)),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _BlinkingDot(),
+                        SizedBox(width: 5),
+                        Text(
+                          'REC',
+                          style: TextStyle(
+                            color: Color(0xFFFF1744),
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
               // Teilnehmer-Badge
               if (participantCount > 0)
@@ -2385,6 +2462,7 @@ class _ParticipantTileState extends State<_ParticipantTile>
 
 class _ControlBar extends StatelessWidget {
   final String world;
+  final String roomName;
   final LiveKitCallService service;
   final VoidCallback onCoWatch;
   final VoidCallback onToggleChat;
@@ -2393,6 +2471,7 @@ class _ControlBar extends StatelessWidget {
 
   const _ControlBar({
     required this.world,
+    required this.roomName,
     required this.service,
     required this.onCoWatch,
     required this.onToggleChat,
@@ -2564,6 +2643,37 @@ class _ControlBar extends StatelessWidget {
                       onTap: () {
                         Navigator.pop(ctx);
                         onCoWatch();
+                      },
+                    ),
+                    // Aufnahme
+                    ValueListenableBuilder<RecordingState>(
+                      valueListenable: RecordingService.instance.stateNotifier,
+                      builder: (_, recState, __) {
+                        final isRec = recState == RecordingState.recording;
+                        final isBusy = recState == RecordingState.starting ||
+                            recState == RecordingState.stopping;
+                        return _MoreActionTile(
+                          icon: isRec
+                              ? Icons.stop_circle_rounded
+                              : Icons.fiber_manual_record_rounded,
+                          title: isRec ? 'Aufnahme stoppen' : 'Aufnahme starten',
+                          subtitle: isRec
+                              ? 'Laufende Aufnahme beenden'
+                              : isBusy
+                                  ? 'Bitte warten…'
+                                  : 'Gesprächsaufnahme starten (MP4)',
+                          active: isRec,
+                          accent: const Color(0xFFFF1744),
+                          enabled: isConnected && !isBusy,
+                          onTap: () {
+                            Navigator.pop(ctx);
+                            if (isRec) {
+                              RecordingService.instance.stopRecording();
+                            } else {
+                              RecordingService.instance.startRecording(roomName);
+                            }
+                          },
+                        );
                       },
                     ),
                     SizedBox(
