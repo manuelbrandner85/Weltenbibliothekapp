@@ -67,7 +67,7 @@ class LiveKitGroupCallScreen extends ConsumerStatefulWidget {
 
 class _LiveKitGroupCallScreenState
     extends ConsumerState<LiveKitGroupCallScreen>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   bool _hasJoined = false;
   bool _isLeaving = false;
   bool _captionsEnabled = false;
@@ -92,6 +92,7 @@ class _LiveKitGroupCallScreenState
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _bgController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 6),
@@ -128,6 +129,7 @@ class _LiveKitGroupCallScreenState
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _pipSub?.cancel();
     _coWatchSub?.cancel();
     LiveKitScreenVisibility.instance.setVisible(false);
@@ -135,6 +137,15 @@ class _LiveKitGroupCallScreenState
     SoundscapeService.instance.stopAll();
     RecordingService.instance.reset();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Bei paused/hidden NICHT disconnecten — FlutterBackground hält den Anruf.
+    // Bei resumed: Hintergrund-Animationen wieder starten falls gestoppt.
+    if (state == AppLifecycleState.resumed) {
+      if (!_bgController.isAnimating) _bgController.repeat(reverse: true);
+    }
   }
 
   Future<void> _join() async {
@@ -2559,10 +2570,13 @@ class _ParticipantTileState extends State<_ParticipantTile>
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // Video-Renderer
-          lk.VideoTrackRenderer(
-            widget.videoTrack!,
-            fit: lk.VideoViewFit.cover,
+          // RepaintBoundary verhindert dass Pulse/Aura-Animationen den
+          // Video-Frame neu rendern lassen (= Flackern beim Sprechen).
+          RepaintBoundary(
+            child: lk.VideoTrackRenderer(
+              widget.videoTrack!,
+              fit: lk.VideoViewFit.cover,
+            ),
           ),
           // Bottom overlay: Name + Mic-Status
           Positioned(
