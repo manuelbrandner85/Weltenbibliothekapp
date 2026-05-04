@@ -2544,23 +2544,6 @@ class _ControlBar extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    // Kamera
-                    _MoreActionTile(
-                      icon: service.cameraEnabled
-                          ? Icons.videocam_rounded
-                          : Icons.videocam_off_rounded,
-                      title: service.cameraEnabled ? 'Kamera an' : 'Kamera aus',
-                      subtitle: service.cameraEnabled
-                          ? 'Kamera deaktivieren'
-                          : 'Kamera für andere sichtbar machen',
-                      active: service.cameraEnabled,
-                      accent: accent,
-                      enabled: isConnected,
-                      onTap: () {
-                        Navigator.pop(ctx);
-                        service.toggleCamera();
-                      },
-                    ),
                     // Chat
                     ValueListenableBuilder<int>(
                       valueListenable: InCallChatService.instance.unreadNotifier,
@@ -2731,7 +2714,7 @@ class _ControlBar extends StatelessWidget {
             top: false,
             child: Padding(
               padding: const EdgeInsets.symmetric(
-                horizontal: 32,
+                horizontal: 20,
                 vertical: 14,
               ),
               child: Row(
@@ -2754,7 +2737,18 @@ class _ControlBar extends StatelessWidget {
                     onLongPressStart: () => service.pttPress(),
                     onLongPressEnd: () => service.pttRelease(),
                   ),
-                  // ── Mehr (Smart-Badge zeigt aktive Sekundär-Features) ──
+                  // ── Kamera ──
+                  _CtrlBtn(
+                    icon: service.cameraEnabled
+                        ? Icons.videocam_rounded
+                        : Icons.videocam_off_rounded,
+                    label: service.cameraEnabled ? 'Kamera' : 'Kamera aus',
+                    active: service.cameraEnabled,
+                    activeColor: accent,
+                    enabled: isConnected,
+                    onTap: () => service.toggleCamera(),
+                  ),
+                  // ── Optionen (Smart-Badge zeigt aktive Sekundär-Features) ──
                   Builder(
                     builder: (ctx) => _SmartMehrButton(
                       world: world,
