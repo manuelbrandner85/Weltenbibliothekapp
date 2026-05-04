@@ -110,7 +110,6 @@ class AudioFeedbackService {
   void attachRoom(lk.Room room) {
     _room = room;
     _volumes.clear();
-    _applyDucking();
   }
 
   void detachRoom() {
