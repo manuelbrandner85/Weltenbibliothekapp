@@ -95,8 +95,16 @@ CREATE POLICY "voice_sessions_update"
     )
   );
 
--- Supabase Realtime aktivieren
-ALTER PUBLICATION supabase_realtime ADD TABLE public.voice_sessions;
+-- Supabase Realtime aktivieren (idempotent — ignoriert falls schon Mitglied)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime' AND tablename = 'voice_sessions'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.voice_sessions;
+  END IF;
+END $$;
 
 -- Grants
 GRANT SELECT, INSERT, UPDATE ON public.voice_sessions TO anon, authenticated;

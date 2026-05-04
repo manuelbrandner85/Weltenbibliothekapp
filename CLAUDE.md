@@ -680,6 +680,22 @@ chore(deps): Dependencies aktualisiert
     - Alle Sekundär-Aktionen im Optionen-Sheet: Chat, Hand, Bildschirm, Reaktion,
       Co-Watch, Aufnahme, Kamera drehen, Raumstimmung, Spatial Audio
 
+- [x] **PR #102 — Kaninchenbau-Tools + LiveStream ControlBar-Finale** (2026-05-04, Patch ✓):
+  - **6 Materie-Tools komplett neu** mit echten kostenlosen APIs:
+    - UFO Sichtungen: NASA Fireballs + OpenSky ADS-B (3 Tabs)
+    - Geopolitik: GDELT + USGS Erdbeben + flutter_map CartoDB Dark
+    - Geschichte: Wikidata SPARQL + Library of Congress; `timeline_tile` entfernt (Dart 3
+      inkompatibel) → Inline-Widget mit `IntrinsicHeight+Row`
+    - Verschwörungen: Wikidata SPARQL + graphview FruchtermanReingold
+    - Forschungs-Archiv: CrossRef 165M+ DOIs + Unpaywall Open-Access PDFs
+    - Gesundheit: OpenFDA FAERS + Retraction Watch + CMS Open Payments → `CriticalHealthScreen`
+  - **LiveStream ControlBar finale UI**: `Chat | Mikrofon | Kamera | Auflegen` (4 Buttons)
+    - Chat-Button mit rotem Unread-Badge (oben rechts)
+    - TopBar `⋮ Mehr`-Sheet: alle sekundären Aktionen (scrollbar, `isScrollControlled:true`)
+    - Entfernt: `_SmartMehrButton`, `_ActiveFeature`, `_showMoreActions`, `features_labelOffset`
+  - `CrossRefWork` Modell-Klasse in `free_api_service.dart`
+  - `lib/screens/materie/critical_health_screen.dart` (neu)
+
 - [x] **PR #101 — B8-B12 + B10.6/8 + Recording + 4-Bug-Fixes** (2026-05-04, Patch ✓):
   - **4 Merge-Konflikt-Bereinigungen** in `livekit_group_call_screen.dart`:
     - Duplikate Imports entfernt (cowatch, incall, livekit, live_caption, etc.)
@@ -713,14 +729,14 @@ chore(deps): Dependencies aktualisiert
    - `unused_field` Warnungen (nicht kritisch)
    - `deprecated_member_use` (Radio-Widgets, alte APIs)
 
-3. **🎥 LiveKit vollständig implementiert** (v5.39.0+, PR #55+56+64+71+97+98+99+100+101):
+3. **🎥 LiveKit vollständig implementiert** (v5.39.0+, PR #55+56+64+71+97+98+99+100+101+102):
    - flutter_webrtc entfernt, livekit_client + flutter_background als Dependencies
    - **Token-Endpoint: Cloudflare Worker** `/api/livekit/token` (HMAC-SHA256-JWT, 4h TTL)
    - `LiveKitCallService` — join/leave, Track-Toggles, Token-Refresh, VoiceSession-Tracking
    - `livekit_group_call_screen.dart` — animierter Hintergrund (5 Themes via B10.6),
-     responsives Grid, **ControlBar: 4 Buttons** (Mikrofon | Kamera | Optionen | Auflegen)
-   - `_SmartMehrButton`: Mini-Dots für aktive Features + Chat-Zahl-Badge
-   - Optionen-Sheet: Chat, Hand, Bildschirm, Reaktion, Co-Watch, Aufnahme, Raumstimmung, Spatial Audio
+     responsives Grid, **ControlBar: `Chat | Mikrofon | Kamera | Auflegen`** (4 Buttons)
+   - Chat-Button mit Unread-Badge, TopBar `⋮ Mehr`-Sheet für alle sekundären Aktionen
+   - Optionen-Sheet (via TopBar): Hand, Bildschirm, Reaktion, Co-Watch, Aufnahme, Ansicht, Untertitel, Raumstimmung, Spatial Audio
    - Recording: `RecordingService` + Worker `/api/livekit/recording/start|stop` (Egress API)
    - Live-Banner: `live_room_banner.dart` via Supabase Realtime `voice_sessions`
    - LiveKit-Server: `livekit-weltenbibliothek` auf Hostinger VPS, eigene Instanz
