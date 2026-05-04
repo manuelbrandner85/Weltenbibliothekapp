@@ -216,9 +216,9 @@ class _GeopolitikMapScreenState extends State<GeopolitikMapScreen>
             if (eq.depth != null)
               _detailRow(Icons.arrow_downward, 'Tiefe',
                   '${eq.depth!.toStringAsFixed(0)} km'),
-            if (eq.lat != null && eq.lon != null)
+            if (eq.latitude != null && eq.longitude != null)
               _detailRow(Icons.location_on, 'Koordinaten',
-                  '${eq.lat!.toStringAsFixed(2)}° N, ${eq.lon!.toStringAsFixed(2)}° E'),
+                  '${eq.latitude!.toStringAsFixed(2)}° N, ${eq.longitude!.toStringAsFixed(2)}° E'),
             const SizedBox(height: 16),
             if (eq.url != null)
               SizedBox(
@@ -532,10 +532,10 @@ class _GeopolitikMapScreenState extends State<GeopolitikMapScreen>
   Widget _buildMapTab() {
     // Erdbeben-Marker bauen (nur mit validen Koordinaten)
     final eqMarkers = _earthquakes
-        .where((eq) => eq.lat != null && eq.lon != null)
+        .where((eq) => eq.latitude != null && eq.longitude != null)
         .map((eq) {
       return Marker(
-        point: LatLng(eq.lat!, eq.lon!),
+        point: LatLng(eq.latitude!, eq.longitude!),
         width: 24,
         height: 24,
         child: GestureDetector(
