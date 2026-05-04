@@ -1,12 +1,33 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
-import 'package:url_launcher/url_launcher.dart';
+import 'package:http/http.dart' as http;
+
+import '../../services/free_api_service.dart';
 import '../../services/group_tools_service.dart';
 import '../../services/user_service.dart';
-import '../../services/free_api_service.dart';
 
-/// UFO-Sichtungen Screen
-/// Community-Meldungen + offizielle NASA-Bolide/Fireball-Ereignisse
+// ─────────────────────────────────────────────────────────────────────────────
+// Design-Tokens (Materie – Rot)
+// ─────────────────────────────────────────────────────────────────────────────
+const _kAccent = Color(0xFFE53935);
+const _kAccentDim = Color(0xFFB71C1C);
+const _kBg = Color(0xFF0D0505);
+const _kSurface = Color(0xFF1A0000);
+const _kSurfaceAlt = Color(0xFF150A0A);
+const _kText = Colors.white;
+const _kTextMuted = Color(0xFFB0A0A0);
+const _kBorder = Color(0x33E53935);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Screen Widget
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// UFO-Sichtungen Screen — 3 Tabs:
+///   1. Community-Sichtungen (GroupToolsService)
+///   2. NASA Fireballs      (FreeApiService)
+///   3. OpenSky Radar       (OpenSky REST API — no auth)
 class UfoSightingsScreen extends StatefulWidget {
   final String roomId;
 
@@ -17,284 +38,406 @@ class UfoSightingsScreen extends StatefulWidget {
 }
 
 class _UfoSightingsScreenState extends State<UfoSightingsScreen>
-    with TickerProviderStateMixin {
-  final GroupToolsService _toolsService = GroupToolsService();
-  final UserService _userService = UserService();
-  final _api = FreeApiService.instance;
-
+    with SingleTickerProviderStateMixin {
   late final TabController _tabCtrl;
-  late final AnimationController _pulseCtrl;
 
-  // Suchfeld NASA
+  // ── Community state ──────────────────────────────────────────────────────
+  final _toolsService = GroupToolsService();
+  List<Map<String, dynamic>> _sightings = [];
+  bool _loadingSightings = false;
+  String? _sightingsError;
+
+  // ── NASA Fireball state ──────────────────────────────────────────────────
+  final _api = FreeApiService.instance;
+  List<NasaFireball> _fireballs = [];
+  List<NasaFireball> _filteredFireballs = [];
+  bool _loadingFireballs = false;
+  String? _fireballsError;
   final _searchCtrl = TextEditingController();
   String _searchQuery = '';
 
-  List<Map<String, dynamic>> _sightings = [];
-  List<NasaFireball> _fireballs = [];
-  List<NasaFireball> _filteredFireballs = [];
+  // ── Radar state ───────────────────────────────────────────────────────────
+  final _latCtrl = TextEditingController(text: '48.8');
+  final _lonCtrl = TextEditingController(text: '2.35');
+  List<_AircraftState> _aircraft = [];
+  bool _loadingRadar = false;
+  String? _radarError;
 
-  bool _loadingSightings = false;
-  bool _loadingFireballs = false;
-
-  String _username = '';
+  // ── User ─────────────────────────────────────────────────────────────────
   String _userId = '';
-
-  static const _accentRed = Color(0xFFE53935);
-  static const _bgDark = Color(0xFF0D0505);
+  String _username = '';
 
   @override
   void initState() {
     super.initState();
-    _tabCtrl = TabController(length: 2, vsync: this);
-    _tabCtrl.addListener(() => setState(() {}));
-    _pulseCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1200),
-    )..repeat(reverse: true);
-    _loadUserData();
+    _tabCtrl = TabController(length: 3, vsync: this);
+    _tabCtrl.addListener(_onTabChanged);
+    _resolveUser();
     _loadSightings();
-    _loadFireballs();
+  }
+
+  void _onTabChanged() {
+    if (!_tabCtrl.indexIsChanging) return;
+    if (_tabCtrl.index == 1 && _fireballs.isEmpty && !_loadingFireballs) {
+      _loadFireballs();
+    }
+  }
+
+  Future<void> _resolveUser() async {
+    _userId = UserService.getCurrentUserId();
+    _username = UserService.getCurrentUsername();
   }
 
   @override
   void dispose() {
+    _tabCtrl.removeListener(_onTabChanged);
     _tabCtrl.dispose();
-    _pulseCtrl.dispose();
     _searchCtrl.dispose();
+    _latCtrl.dispose();
+    _lonCtrl.dispose();
     super.dispose();
   }
 
-  Future<void> _loadUserData() async {
-    try {
-      final user = await _userService.getCurrentUser();
-      setState(() {
-        _username = user.username;
-        _userId = 'user_${user.username.toLowerCase()}';
-      });
-    } catch (_) {}
-  }
+  // ─────────────────────────────────────────────────────────────────────────
+  // Data loading
+  // ─────────────────────────────────────────────────────────────────────────
 
   Future<void> _loadSightings() async {
-    setState(() => _loadingSightings = true);
+    setState(() {
+      _loadingSightings = true;
+      _sightingsError = null;
+    });
     try {
-      final response = await _toolsService.getUfoSightings(roomId: widget.roomId);
-      if (mounted) setState(() { _sightings = response; _loadingSightings = false; });
+      final data = await _toolsService.getUfoSightings(roomId: widget.roomId);
+      if (!mounted) return;
+      setState(() {
+        _sightings = data;
+        _loadingSightings = false;
+      });
     } catch (e) {
-      if (kDebugMode) debugPrint('UFO load: $e');
-      if (mounted) setState(() => _loadingSightings = false);
+      if (!mounted) return;
+      setState(() {
+        _sightingsError = 'Fehler beim Laden: $e';
+        _loadingSightings = false;
+      });
     }
   }
 
   Future<void> _loadFireballs() async {
-    setState(() => _loadingFireballs = true);
-    final result = await _api.fetchFireballs(limit: 30);
-    if (mounted) {
+    setState(() {
+      _loadingFireballs = true;
+      _fireballsError = null;
+    });
+    try {
+      final data = await _api.fetchFireballs(limit: 40);
+      if (!mounted) return;
       setState(() {
-        _fireballs = result;
-        _filteredFireballs = result;
+        _fireballs = data;
+        _filteredFireballs = data;
+        _loadingFireballs = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _fireballsError = 'NASA-Daten konnten nicht geladen werden: $e';
         _loadingFireballs = false;
       });
     }
   }
 
-  void _applySearch(String query) {
+  void _onSearchChanged(String query) {
     setState(() {
-      _searchQuery = query.trim().toLowerCase();
+      _searchQuery = query.toLowerCase();
       if (_searchQuery.isEmpty) {
         _filteredFireballs = _fireballs;
       } else {
-        _filteredFireballs = _fireballs.where((fb) {
-          final loc = fb.locationLabel.toLowerCase();
-          final date = fb.date != null
-              ? '${fb.date!.year}'.toLowerCase()
-              : '';
+        _filteredFireballs = _fireballs.where((f) {
+          final loc = f.locationLabel.toLowerCase();
+          final date = (f.date?.toIso8601String() ?? '').toLowerCase();
           return loc.contains(_searchQuery) || date.contains(_searchQuery);
         }).toList();
       }
     });
   }
 
+  Future<void> _fetchRadar() async {
+    final lat = double.tryParse(_latCtrl.text.trim());
+    final lon = double.tryParse(_lonCtrl.text.trim());
+    if (lat == null || lon == null) {
+      setState(() => _radarError = 'Bitte gültige Koordinaten eingeben (z.B. 48.8 / 2.35).');
+      return;
+    }
+    setState(() {
+      _loadingRadar = true;
+      _radarError = null;
+      _aircraft = [];
+    });
+    final url = Uri.parse(
+      'https://opensky-network.org/api/states/all'
+      '?lamin=${lat - 2}&lomin=${lon - 2}&lamax=${lat + 2}&lomax=${lon + 2}',
+    );
+    try {
+      final resp = await http.get(url).timeout(const Duration(seconds: 15));
+      if (!mounted) return;
+      if (resp.statusCode == 200) {
+        final body = jsonDecode(resp.body) as Map<String, dynamic>;
+        final states = body['states'] as List? ?? [];
+        setState(() {
+          _aircraft = states.map(_AircraftState.fromList).toList()
+            ..sort((a, b) => (b.altitude ?? -1).compareTo(a.altitude ?? -1));
+          _loadingRadar = false;
+        });
+      } else if (resp.statusCode == 429) {
+        setState(() {
+          _radarError = 'Rate-Limit erreicht. Bitte 10 Sekunden warten und erneut versuchen.';
+          _loadingRadar = false;
+        });
+      } else {
+        setState(() {
+          _radarError = 'OpenSky-Server antwortete mit Status ${resp.statusCode}.';
+          _loadingRadar = false;
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _radarError = 'Verbindungsfehler: $e';
+        _loadingRadar = false;
+      });
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Add sighting dialog
+  // ─────────────────────────────────────────────────────────────────────────
+
+  Future<void> _showAddSightingDialog() async {
+    final titleCtrl = TextEditingController();
+    final locationCtrl = TextEditingController();
+    final descCtrl = TextEditingController();
+    bool submitting = false;
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDlgState) => AlertDialog(
+          backgroundColor: _kSurface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: const BorderSide(color: _kBorder),
+          ),
+          title: const Text(
+            'Sichtung melden',
+            style: TextStyle(color: _kText, fontWeight: FontWeight.bold),
+          ),
+          content: SizedBox(
+            width: 340,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _dlgField(titleCtrl, 'Titel', Icons.title),
+                const SizedBox(height: 12),
+                _dlgField(locationCtrl, 'Ort / Region', Icons.location_on_outlined),
+                const SizedBox(height: 12),
+                _dlgField(descCtrl, 'Beschreibung', Icons.description_outlined,
+                    maxLines: 3),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Abbrechen', style: TextStyle(color: _kTextMuted)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _kAccent,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: submitting
+                  ? null
+                  : () async {
+                      final title = titleCtrl.text.trim();
+                      final location = locationCtrl.text.trim();
+                      final rawDesc = descCtrl.text.trim();
+                      if (title.isEmpty || rawDesc.isEmpty) return;
+                      final desc = location.isNotEmpty
+                          ? 'Ort: $location\n$rawDesc'
+                          : rawDesc;
+                      setDlgState(() => submitting = true);
+                      try {
+                        await _toolsService.createUfoSighting(
+                          roomId: widget.roomId,
+                          userId: _userId,
+                          username: _username.isNotEmpty ? _username : 'Anonym',
+                          title: title,
+                          description: desc,
+                          objectType: 'light',
+                          witnesses: 1,
+                        );
+                        if (ctx.mounted) Navigator.pop(ctx);
+                        await _loadSightings();
+                      } catch (e) {
+                        if (kDebugMode) debugPrint('❌ createUfoSighting: $e');
+                        setDlgState(() => submitting = false);
+                      }
+                    },
+              child: submitting
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white),
+                    )
+                  : const Text('Melden'),
+            ),
+          ],
+        ),
+      ),
+    );
+    titleCtrl.dispose();
+    locationCtrl.dispose();
+    descCtrl.dispose();
+  }
+
+  Widget _dlgField(
+    TextEditingController ctrl,
+    String hint,
+    IconData icon, {
+    int maxLines = 1,
+  }) {
+    return TextField(
+      controller: ctrl,
+      maxLines: maxLines,
+      style: const TextStyle(color: _kText),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: const TextStyle(color: _kTextMuted),
+        prefixIcon: Icon(icon, color: _kAccent, size: 18),
+        filled: true,
+        fillColor: _kSurfaceAlt,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: _kBorder),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: _kBorder),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: _kAccent, width: 1.5),
+        ),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      ),
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Build
+  // ─────────────────────────────────────────────────────────────────────────
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _bgDark,
-      appBar: _buildAppBar(),
+      backgroundColor: _kBg,
+      appBar: AppBar(
+        backgroundColor: _kSurface,
+        foregroundColor: _kText,
+        elevation: 0,
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: _kAccent.withAlpha(30),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.blur_on, color: _kAccent, size: 20),
+            ),
+            const SizedBox(width: 10),
+            const Text(
+              'UFO-Sichtungen',
+              style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                  color: _kText),
+            ),
+          ],
+        ),
+        bottom: TabBar(
+          controller: _tabCtrl,
+          labelColor: _kAccent,
+          unselectedLabelColor: _kTextMuted,
+          indicatorColor: _kAccent,
+          indicatorWeight: 2.5,
+          tabs: const [
+            Tab(icon: Icon(Icons.people_outline, size: 18), text: 'Community'),
+            Tab(icon: Icon(Icons.local_fire_department_outlined, size: 18), text: 'NASA'),
+            Tab(icon: Icon(Icons.radar, size: 18), text: 'Radar'),
+          ],
+        ),
+      ),
       body: TabBarView(
         controller: _tabCtrl,
         children: [
           _buildCommunityTab(),
-          _buildFireballTab(),
+          _buildNasaTab(),
+          _buildRadarTab(),
         ],
       ),
       floatingActionButton: _tabCtrl.index == 0
           ? FloatingActionButton.extended(
-              onPressed: _showAddSightingDialog,
-              backgroundColor: _accentRed,
-              icon: const Icon(Icons.add_location),
+              backgroundColor: _kAccent,
+              foregroundColor: Colors.white,
+              icon: const Icon(Icons.add),
               label: const Text('Sichtung melden'),
+              onPressed: _showAddSightingDialog,
             )
           : null,
     );
   }
 
-  PreferredSizeWidget _buildAppBar() {
-    return PreferredSize(
-      preferredSize: const Size.fromHeight(kToolbarHeight + 48),
-      child: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF1A0505), Color(0xFF0D0D1A)],
-          ),
-          border: Border(bottom: BorderSide(color: Color(0x33E53935), width: 1)),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              // Titelzeile
-              SizedBox(
-                height: kToolbarHeight,
-                child: Row(
-                  children: [
-                    const SizedBox(width: 4),
-                    BackButton(color: Colors.white70),
-                    const SizedBox(width: 4),
-                    const Text(
-                      'UFO & Luftphänomene',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const Spacer(),
-                    IconButton(
-                      icon: const Icon(Icons.refresh, color: Colors.white70),
-                      onPressed: () { _loadSightings(); _loadFireballs(); },
-                    ),
-                  ],
-                ),
-              ),
-              // TabBar
-              TabBar(
-                controller: _tabCtrl,
-                indicatorColor: _accentRed,
-                indicatorWeight: 3,
-                labelColor: _accentRed,
-                unselectedLabelColor: Colors.white54,
-                tabs: [
-                  Tab(text: 'Community (${_sightings.length})'),
-                  const Tab(text: 'NASA Fireballs'),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // ── Stats-Banner ─────────────────────────────────────────────────────────
-
-  Widget _buildStatsBanner(int count, String label, Color color) {
-    return AnimatedBuilder(
-      animation: _pulseCtrl,
-      builder: (context, child) {
-        final opacity = 0.5 + 0.5 * _pulseCtrl.value;
-        return Container(
-          margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.04),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-          ),
-          child: Row(
-            children: [
-              // Pulsierender roter Punkt
-              Container(
-                width: 12,
-                height: 12,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: color.withValues(alpha: opacity),
-                  boxShadow: [
-                    BoxShadow(
-                      color: color.withValues(alpha: opacity * 0.6),
-                      blurRadius: 8,
-                      spreadRadius: 2,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                '$count $label',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
-                ),
-              ),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  'LIVE',
-                  style: TextStyle(
-                    color: color,
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  // ── Tab 1: Community Sichtungen ──────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────────────────
+  // Tab 1: Community
+  // ─────────────────────────────────────────────────────────────────────────
 
   Widget _buildCommunityTab() {
     if (_loadingSightings) {
-      return const Center(child: CircularProgressIndicator(color: _accentRed));
+      return const Center(
+          child: CircularProgressIndicator(color: _kAccent));
+    }
+    if (_sightingsError != null) {
+      return _errorView(_sightingsError!, _loadSightings);
     }
     if (_sightings.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.rocket_launch, size: 64, color: _accentRed.withValues(alpha: 0.4)),
-            const SizedBox(height: 16),
-            const Text('Noch keine Community-Sichtungen',
-                style: TextStyle(color: Colors.white38)),
-            const SizedBox(height: 8),
-            const Text('Schau dir offizielle NASA-Daten im "Fireballs"-Tab an!',
-                style: TextStyle(color: Colors.white24, fontSize: 12),
-                textAlign: TextAlign.center),
-          ],
-        ),
+      return _emptyView(
+        Icons.blur_on,
+        'Noch keine Sichtungen',
+        'Sei der Erste, der eine UFO-Sichtung meldet!',
       );
     }
+
+    final latest = _sightings.first;
+    final latestDate = _formatDate(latest['created_at'] as String?);
+
     return RefreshIndicator(
+      color: _kAccent,
+      backgroundColor: _kSurface,
       onRefresh: _loadSightings,
-      color: _accentRed,
-      child: Column(
-        children: [
-          _buildStatsBanner(_sightings.length, 'Community-Sichtungen', _accentRed),
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              itemCount: _sightings.length,
-              itemBuilder: (context, index) => _buildSightingCard(_sightings[index]),
+      child: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(child: _statsBanner(_sightings.length, latestDate)),
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 100),
+            sliver: SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (ctx, i) => _sightingCard(_sightings[i]),
+                childCount: _sightings.length,
+              ),
             ),
           ),
         ],
@@ -302,199 +445,230 @@ class _UfoSightingsScreenState extends State<UfoSightingsScreen>
     );
   }
 
-  Widget _buildSightingCard(Map<String, dynamic> sighting) {
-    final title = sighting['sighting_title'] ?? 'Unbekannt';
-    final description = sighting['sighting_description'] ?? '';
-    final username = sighting['username'] ?? 'Anonym';
-    final objectType = sighting['object_type'] ?? 'unknown';
-    final witnesses = sighting['witnesses'] ?? 1;
-    final verified = sighting['verified'] == 1 || sighting['verified'] == true;
+  Widget _statsBanner(int count, String latestDate) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [_kAccent.withAlpha(40), _kSurface],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _kBorder),
+      ),
+      child: Row(
+        children: [
+          _statChip(Icons.visibility_outlined, '$count', 'Sichtungen'),
+          const SizedBox(width: 16),
+          _statChip(Icons.calendar_today_outlined, latestDate, 'Zuletzt'),
+        ],
+      ),
+    );
+  }
+
+  Widget _statChip(IconData icon, String value, String label) {
+    return Row(
+      children: [
+        Icon(icon, color: _kAccent, size: 18),
+        const SizedBox(width: 6),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(value,
+                style: const TextStyle(
+                    color: _kText,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13)),
+            Text(label,
+                style: const TextStyle(color: _kTextMuted, fontSize: 10)),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _sightingCard(Map<String, dynamic> s) {
+    final title = s['sighting_title'] as String? ?? 'Unbekanntes Objekt';
+    final desc = s['sighting_description'] as String? ?? '';
+    final date = _formatDate(s['created_at'] as String?);
+    final username = s['username'] as String? ?? 'Anonym';
+    final objectType = s['object_type'] as String? ?? 'light';
+    final witnesses = s['witnesses'] as int? ?? 1;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        color: _kSurface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _kBorder),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
                 Container(
-                  width: 48, height: 48,
+                  padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      colors: [_accentRed.withValues(alpha: 0.6), _accentRed.withValues(alpha: 0.2)],
-                    ),
+                    color: _kAccent.withAlpha(25),
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(Icons.rocket_launch, color: Colors.white, size: 22),
+                  child: Icon(_shapeIcon(objectType),
+                      color: _kAccent, size: 22),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(title,
                           style: const TextStyle(
-                              color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-                      Text(objectType.toUpperCase(),
-                          style: TextStyle(color: _accentRed.withValues(alpha: 0.8), fontSize: 12)),
+                              color: _kText,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14)),
+                      const SizedBox(height: 2),
+                      Text('@$username · $date',
+                          style: const TextStyle(
+                              color: _kTextMuted, fontSize: 11)),
                     ],
                   ),
                 ),
-                if (verified)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.blue.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.verified, size: 14, color: Colors.blue),
-                        SizedBox(width: 4),
-                        Text('Verifiziert', style: TextStyle(color: Colors.blue, fontSize: 11)),
-                      ],
-                    ),
-                  ),
+                _badge(Icons.person_outline, '$witnesses Zeuge${witnesses != 1 ? 'n' : ''}'),
               ],
             ),
-            if (description.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Text(description,
-                  style: TextStyle(color: Colors.white.withValues(alpha: 0.75), fontSize: 13),
+            if (desc.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Text(desc,
                   maxLines: 3,
-                  overflow: TextOverflow.ellipsis),
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: _kTextMuted, fontSize: 13)),
             ],
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                const Icon(Icons.person_outline, size: 14, color: Colors.white38),
-                const SizedBox(width: 4),
-                Text(username, style: const TextStyle(color: Colors.white38, fontSize: 12)),
-                const SizedBox(width: 16),
-                const Icon(Icons.group_outlined, size: 14, color: Colors.white38),
-                const SizedBox(width: 4),
-                Text('$witnesses Zeugen',
-                    style: const TextStyle(color: Colors.white38, fontSize: 12)),
-              ],
-            ),
           ],
         ),
       ),
     );
   }
 
-  // ── Tab 2: NASA Fireballs ────────────────────────────────────────────────
+  IconData _shapeIcon(String type) {
+    switch (type.toLowerCase()) {
+      case 'disc':
+      case 'disk':
+        return Icons.circle_outlined;
+      case 'triangle':
+        return Icons.change_history_outlined;
+      case 'orb':
+      case 'sphere':
+      case 'ball':
+        return Icons.brightness_1_outlined;
+      case 'cylinder':
+        return Icons.crop_portrait_outlined;
+      case 'chevron':
+        return Icons.chevron_right;
+      default:
+        return Icons.blur_on;
+    }
+  }
 
-  Widget _buildFireballTab() {
+  // ─────────────────────────────────────────────────────────────────────────
+  // Tab 2: NASA Fireballs
+  // ─────────────────────────────────────────────────────────────────────────
+
+  Widget _buildNasaTab() {
     if (_loadingFireballs) {
       return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(color: Colors.orange),
-            SizedBox(height: 16),
-            Text('Lade NASA Bolide-Daten…', style: TextStyle(color: Colors.white54)),
-          ],
-        ),
-      );
+          child: CircularProgressIndicator(color: _kAccent));
+    }
+    if (_fireballsError != null) {
+      return _errorView(_fireballsError!, _loadFireballs);
     }
     if (_fireballs.isEmpty) {
       return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.wifi_off, size: 48, color: Colors.white24),
-            const SizedBox(height: 12),
-            const Text('NASA SSD nicht erreichbar', style: TextStyle(color: Colors.white54)),
-            TextButton(
-              onPressed: _loadFireballs,
-              child: const Text('Neu laden', style: TextStyle(color: Colors.orange)),
-            ),
-          ],
+        child: ElevatedButton.icon(
+          style: ElevatedButton.styleFrom(backgroundColor: _kAccent),
+          icon: const Icon(Icons.download_rounded, color: Colors.white),
+          label: const Text('NASA-Daten laden',
+              style: TextStyle(color: Colors.white)),
+          onPressed: _loadFireballs,
         ),
       );
     }
-    return RefreshIndicator(
-      onRefresh: _loadFireballs,
-      color: Colors.orange,
-      child: Column(
-        children: [
-          _buildStatsBanner(_fireballs.length, 'bestätigte Bolid-Ereignisse', Colors.orange),
-          _buildFireballSearchBar(),
-          Expanded(
-            child: _filteredFireballs.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.search_off, size: 48, color: Colors.white24),
-                        const SizedBox(height: 12),
-                        Text('Keine Treffer für "$_searchQuery"',
-                            style: const TextStyle(color: Colors.white54)),
-                      ],
-                    ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
-                    itemCount: _filteredFireballs.length + 1,
-                    itemBuilder: (ctx, i) {
-                      if (i == 0) return _buildFireballHeader();
-                      return _buildFireballCard(_filteredFireballs[i - 1]);
-                    },
-                  ),
+
+    final maxEnergy = _fireballs
+        .map((f) => f.energy ?? 0.0)
+        .fold(0.0, (a, b) => a > b ? a : b);
+
+    return CustomScrollView(
+      slivers: [
+        SliverToBoxAdapter(
+          child: Column(
+            children: [
+              _nasaStatsBanner(_fireballs.length, maxEnergy),
+              _searchBar(),
+            ],
           ),
-        ],
-      ),
+        ),
+        if (_filteredFireballs.isEmpty)
+          const SliverFillRemaining(
+            child: Center(
+              child: Text('Keine Ergebnisse für diese Suche.',
+                  style: TextStyle(color: _kTextMuted)),
+            ),
+          )
+        else
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 24),
+            sliver: SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (ctx, i) => _fireballCard(_filteredFireballs[i]),
+                childCount: _filteredFireballs.length,
+              ),
+            ),
+          ),
+      ],
     );
   }
 
-  Widget _buildFireballSearchBar() {
+  Widget _nasaStatsBanner(int count, double maxEnergy) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+      margin: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFF4A0000), _kSurface],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _kBorder),
+      ),
       child: Row(
         children: [
-          Expanded(
-            child: TextField(
-              controller: _searchCtrl,
-              style: const TextStyle(color: Colors.white),
-              onChanged: _applySearch,
-              decoration: InputDecoration(
-                hintText: 'Was ist das? (Ort, Jahr…)',
-                hintStyle: const TextStyle(color: Colors.white38, fontSize: 13),
-                filled: true,
-                fillColor: Colors.white.withValues(alpha: 0.05),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.orange.withValues(alpha: 0.5)),
-                ),
-                prefixIcon: const Icon(Icons.search, color: Colors.orange, size: 20),
-                suffixIcon: _searchQuery.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear, color: Colors.white38, size: 18),
-                        onPressed: () {
-                          _searchCtrl.clear();
-                          _applySearch('');
-                        },
-                      )
-                    : null,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          _statChip(Icons.local_fire_department, '$count', 'Bolide'),
+          const SizedBox(width: 16),
+          _statChip(Icons.bolt_outlined,
+              maxEnergy > 0 ? '${maxEnergy.toStringAsFixed(1)} GJ' : '–',
+              'Max. Energie'),
+          const Spacer(),
+          GestureDetector(
+            onTap: () {},
+            child: Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: _kAccent.withAlpha(25),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: _kBorder),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.info_outline, color: _kTextMuted, size: 12),
+                  SizedBox(width: 4),
+                  Text('NASA SSD', style: TextStyle(color: _kTextMuted, fontSize: 10)),
+                ],
               ),
             ),
           ),
@@ -503,117 +677,138 @@ class _UfoSightingsScreenState extends State<UfoSightingsScreen>
     );
   }
 
-  Widget _buildFireballHeader() {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.orange.withValues(alpha: 0.15), Colors.red.withValues(alpha: 0.08)],
+  Widget _searchBar() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 4),
+      child: TextField(
+        controller: _searchCtrl,
+        onChanged: _onSearchChanged,
+        style: const TextStyle(color: _kText),
+        decoration: InputDecoration(
+          hintText: 'Nach Ort oder Datum suchen…',
+          hintStyle: const TextStyle(color: _kTextMuted),
+          prefixIcon: const Icon(Icons.search, color: _kTextMuted, size: 20),
+          suffixIcon: _searchQuery.isNotEmpty
+              ? IconButton(
+                  icon: const Icon(Icons.clear, color: _kTextMuted, size: 18),
+                  onPressed: () {
+                    _searchCtrl.clear();
+                    _onSearchChanged('');
+                  },
+                )
+              : null,
+          filled: true,
+          fillColor: _kSurface,
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: _kBorder)),
+          enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: _kBorder)),
+          focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: _kAccent, width: 1.5)),
         ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Row(
-            children: [
-              Text('NASA Bolide / Fireball Monitor',
-                  style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold, fontSize: 15)),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Text(
-            '${_filteredFireballs.length} von ${_fireballs.length} Einträgen · Quelle: NASA JPL',
-            style: const TextStyle(color: Colors.white54, fontSize: 12),
-          ),
-          const SizedBox(height: 6),
-          InkWell(
-            onTap: () async {
-              final uri = Uri.parse('https://cneos.jpl.nasa.gov/fireballs/');
-              await launchUrl(uri, mode: LaunchMode.externalApplication);
-            },
-            child: const Text(
-              'cneos.jpl.nasa.gov/fireballs →',
-              style: TextStyle(color: Colors.orange, fontSize: 12, decoration: TextDecoration.underline),
-            ),
-          ),
-        ],
       ),
     );
   }
 
-  Widget _buildFireballCard(NasaFireball fb) {
-    final date = fb.date;
-    final dateStr = date != null
-        ? '${date.day}.${date.month}.${date.year}'
+  Widget _fireballCard(NasaFireball f) {
+    final energy = f.energy;
+    final energyColor = energy == null
+        ? _kTextMuted
+        : energy >= 100
+            ? const Color(0xFFE53935)
+            : energy >= 10
+                ? const Color(0xFFFF9800)
+                : const Color(0xFFFFEB3B);
+    final energyLabel =
+        energy != null ? '${energy.toStringAsFixed(1)} GJ' : '–';
+    final date = f.date != null
+        ? '${f.date!.day.toString().padLeft(2, '0')}.${f.date!.month.toString().padLeft(2, '0')}.${f.date!.year}'
         : 'Datum unbekannt';
-
-    // Energie-Badge Farbe je nach Stärke
-    Color energyColor = Colors.orange;
-    String energyLabel = 'Unbekannt';
-    if (fb.energy != null) {
-      final e = fb.energy!;
-      if (e >= 100) {
-        energyColor = Colors.red;
-        energyLabel = '${e.toStringAsFixed(0)} GJ';
-      } else if (e >= 10) {
-        energyColor = Colors.orange;
-        energyLabel = '${e.toStringAsFixed(1)} GJ';
-      } else {
-        energyColor = Colors.yellow.shade700;
-        energyLabel = '${e.toStringAsFixed(2)} GJ';
-      }
-    }
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        color: _kSurface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _kBorder),
       ),
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Energy badge
             Container(
-              width: 44, height: 44,
+              width: 52,
+              padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
               decoration: BoxDecoration(
-                color: Colors.orange.withValues(alpha: 0.12),
-                shape: BoxShape.circle,
+                color: energyColor.withAlpha(25),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: energyColor.withAlpha(80)),
               ),
-              child: const Center(child: Text('☄️', style: TextStyle(fontSize: 22))),
+              child: Column(
+                children: [
+                  Icon(Icons.local_fire_department,
+                      color: energyColor, size: 20),
+                  const SizedBox(height: 4),
+                  Text(energyLabel,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                          color: energyColor,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold)),
+                ],
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    fb.locationLabel,
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: 8),
-                  // Energie + Geschwindigkeit als farbige Badges
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 6,
+                  Row(
                     children: [
-                      if (fb.energy != null)
-                        _badge(Icons.bolt, energyLabel, energyColor),
-                      if (fb.velocity != null)
-                        _badge(Icons.speed,
-                            '${fb.velocity!.toStringAsFixed(1)} km/s', Colors.blue),
-                      if (fb.altitude != null)
-                        _badge(Icons.height,
-                            '${fb.altitude!.toStringAsFixed(0)} km', Colors.tealAccent.shade700),
+                      const Icon(Icons.calendar_today_outlined,
+                          color: _kTextMuted, size: 13),
+                      const SizedBox(width: 4),
+                      Text(date,
+                          style: const TextStyle(
+                              color: _kText,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13)),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  Text(dateStr, style: const TextStyle(color: Colors.white38, fontSize: 11)),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      const Icon(Icons.location_on_outlined,
+                          color: _kTextMuted, size: 13),
+                      const SizedBox(width: 4),
+                      Text(f.locationLabel,
+                          style: const TextStyle(
+                              color: _kTextMuted, fontSize: 12)),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    children: [
+                      if (f.velocity != null)
+                        _infoChip(Icons.speed_outlined,
+                            '${f.velocity!.toStringAsFixed(1)} km/s'),
+                      if (f.altitude != null)
+                        _infoChip(Icons.height_outlined,
+                            '${f.altitude!.toStringAsFixed(0)} km'),
+                      if (f.impactEnergy != null)
+                        _infoChip(Icons.bolt_outlined,
+                            '${f.impactEnergy!.toStringAsFixed(2)} kt Impact'),
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -623,131 +818,462 @@ class _UfoSightingsScreenState extends State<UfoSightingsScreen>
     );
   }
 
-  Widget _badge(IconData icon, String label, Color color) {
+  Widget _infoChip(IconData icon, String label) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withValues(alpha: 0.4)),
+        color: _kSurfaceAlt,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: _kBorder),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 11, color: color),
-          const SizedBox(width: 4),
-          Text(label, style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600)),
+          Icon(icon, color: _kTextMuted, size: 11),
+          const SizedBox(width: 3),
+          Text(label,
+              style: const TextStyle(color: _kTextMuted, fontSize: 10)),
         ],
       ),
     );
   }
 
-  // ── Dialog: Eigene Sichtung melden ──────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────────────────
+  // Tab 3: OpenSky Radar
+  // ─────────────────────────────────────────────────────────────────────────
 
-  void _showAddSightingDialog() {
-    if (_username.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Bitte erstelle erst ein Profil')),
-      );
-      return;
-    }
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        final titleCtrl = TextEditingController();
-        final descCtrl = TextEditingController();
-        String objectType = 'light';
-        int witnesses = 1;
-
-        return StatefulBuilder(
-          builder: (context, setState) => AlertDialog(
-            backgroundColor: const Color(0xFF1A1A2E),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            title: const Text('Sichtung melden', style: TextStyle(color: Colors.white)),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: titleCtrl,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: const InputDecoration(
-                      labelText: 'Titel',
-                      labelStyle: TextStyle(color: Colors.white70),
-                    ),
-                  ),
-                  TextField(
-                    controller: descCtrl,
-                    style: const TextStyle(color: Colors.white),
-                    maxLines: 3,
-                    decoration: const InputDecoration(
-                      labelText: 'Beschreibung',
-                      labelStyle: TextStyle(color: Colors.white70),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  DropdownButtonFormField<String>(
-                    initialValue: objectType,
-                    dropdownColor: const Color(0xFF1A1A2E),
-                    style: const TextStyle(color: Colors.white),
-                    decoration: const InputDecoration(
-                      labelText: 'Objekt-Typ',
-                      labelStyle: TextStyle(color: Colors.white70),
-                    ),
-                    items: const [
-                      DropdownMenuItem(value: 'light', child: Text('Licht')),
-                      DropdownMenuItem(value: 'craft', child: Text('Raumschiff')),
-                      DropdownMenuItem(value: 'orb', child: Text('Orb')),
-                      DropdownMenuItem(value: 'triangle', child: Text('Dreieck')),
-                      DropdownMenuItem(value: 'disc', child: Text('Scheibe')),
-                    ],
-                    onChanged: (val) => setState(() => objectType = val!),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      const Text('Zeugen:', style: TextStyle(color: Colors.white70)),
-                      const SizedBox(width: 16),
-                      IconButton(
-                        icon: const Icon(Icons.remove, color: Colors.white),
-                        onPressed: () { if (witnesses > 1) setState(() => witnesses--); },
-                      ),
-                      Text('$witnesses', style: const TextStyle(color: Colors.white, fontSize: 18)),
-                      IconButton(
-                        icon: const Icon(Icons.add, color: Colors.white),
-                        onPressed: () => setState(() => witnesses++),
-                      ),
-                    ],
-                  ),
-                ],
+  Widget _buildRadarTab() {
+    return CustomScrollView(
+      slivers: [
+        SliverToBoxAdapter(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _radarHeader(),
+              _radarInputPanel(),
+              if (_radarError != null) _radarErrorBanner(_radarError!),
+              if (_loadingRadar)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 32),
+                  child: Center(
+                      child: CircularProgressIndicator(color: _kAccent)),
+                ),
+              if (!_loadingRadar && _aircraft.isNotEmpty)
+                _aircraftListHeader(),
+            ],
+          ),
+        ),
+        if (!_loadingRadar && _aircraft.isNotEmpty)
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 24),
+            sliver: SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (ctx, i) => _aircraftCard(_aircraft[i]),
+                childCount: _aircraft.length,
               ),
             ),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(context), child: const Text('Abbrechen')),
-              ElevatedButton(
-                onPressed: () async {
-                  final id = await _toolsService.createUfoSighting(
-                    roomId: widget.roomId,
-                    userId: _userId,
-                    username: _username,
-                    title: titleCtrl.text,
-                    description: descCtrl.text,
-                    objectType: objectType,
-                    witnesses: witnesses,
-                  );
-                  if (context.mounted) {
-                    Navigator.pop(context);
-                    if (id != null) _loadSightings();
-                  }
-                },
-                style: ElevatedButton.styleFrom(backgroundColor: _accentRed),
-                child: const Text('Melden'),
+          ),
+        if (!_loadingRadar && _aircraft.isEmpty && _radarError == null)
+          const SliverFillRemaining(
+            child: Padding(
+              padding: EdgeInsets.only(top: 32),
+              child: _RadarEmptyHint(),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _radarHeader() {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: _kSurface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _kBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.radar, color: _kAccent, size: 20),
+              SizedBox(width: 8),
+              Text(
+                'Radar-Check: Konventionelle Flugzeuge?',
+                style: TextStyle(
+                    color: _kText,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14),
               ),
             ],
           ),
-        );
-      },
+          const SizedBox(height: 8),
+          const Text(
+            'Gib die Koordinaten eines Sichtungsortes ein. '
+            'Die App prüft via OpenSky Network, ob zum Zeitpunkt '
+            'konventionelle Luftfahrzeuge im ±2°-Umkreis aktiv waren. '
+            'Leere Ergebnisse erhöhen die Glaubwürdigkeit einer Sichtung.',
+            style: TextStyle(color: _kTextMuted, fontSize: 12, height: 1.5),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _radarInputPanel() {
+    return Padding(
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: _coordField(
+                  _latCtrl,
+                  'Breitengrad',
+                  'z.B. 48.8',
+                  Icons.north_outlined,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _coordField(
+                  _lonCtrl,
+                  'Längengrad',
+                  'z.B. 2.35',
+                  Icons.east_outlined,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _kAccent,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 13),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
+              ),
+              icon: _loadingRadar
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white),
+                    )
+                  : const Icon(Icons.radar, size: 18),
+              label: Text(_loadingRadar ? 'Suche läuft…' : 'Radar starten'),
+              onPressed: _loadingRadar ? null : _fetchRadar,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _coordField(
+    TextEditingController ctrl,
+    String label,
+    String hint,
+    IconData icon,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label,
+            style: const TextStyle(
+                color: _kTextMuted, fontSize: 11)),
+        const SizedBox(height: 4),
+        TextField(
+          controller: ctrl,
+          keyboardType:
+              const TextInputType.numberWithOptions(decimal: true, signed: true),
+          style: const TextStyle(color: _kText),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: const TextStyle(color: _kTextMuted),
+            prefixIcon: Icon(icon, color: _kAccent, size: 16),
+            filled: true,
+            fillColor: _kSurface,
+            border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: _kBorder)),
+            enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: _kBorder)),
+            focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: _kAccent, width: 1.5)),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _radarErrorBanner(String msg) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: _kAccentDim.withAlpha(30),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: _kAccentDim),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.warning_amber_rounded, color: _kAccent, size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(msg,
+                style: const TextStyle(color: _kTextMuted, fontSize: 12)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _aircraftListHeader() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+      child: Row(
+        children: [
+          const Icon(Icons.flight, color: _kAccent, size: 16),
+          const SizedBox(width: 6),
+          Text(
+            '${_aircraft.length} Luftfahrzeug${_aircraft.length != 1 ? 'e' : ''} im Umkreis',
+            style: const TextStyle(
+                color: _kText,
+                fontWeight: FontWeight.bold,
+                fontSize: 13),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _aircraftCard(_AircraftState ac) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: _kSurface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _kBorder),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: _kAccent.withAlpha(20),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.flight, color: _kAccent, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  ac.callsign.isNotEmpty ? ac.callsign : '(kein Rufzeichen)',
+                  style: const TextStyle(
+                      color: _kText,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    if (ac.altitude != null)
+                      _infoChip(Icons.height_outlined,
+                          '${ac.altitude!.round()} m'),
+                    if (ac.altitude != null) const SizedBox(width: 6),
+                    if (ac.velocity != null)
+                      _infoChip(Icons.speed_outlined,
+                          '${ac.velocity!.round()} m/s'),
+                    if (ac.velocity != null) const SizedBox(width: 6),
+                    if (ac.heading != null)
+                      _infoChip(Icons.navigation_outlined,
+                          '${ac.heading!.round()}°'),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          if (ac.onGround)
+            _badge(Icons.airplanemode_active_outlined, 'Am Boden'),
+        ],
+      ),
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Shared helpers
+  // ─────────────────────────────────────────────────────────────────────────
+
+  Widget _badge(IconData icon, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+      decoration: BoxDecoration(
+        color: _kSurfaceAlt,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: _kBorder),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: _kTextMuted, size: 11),
+          const SizedBox(width: 3),
+          Text(label,
+              style: const TextStyle(color: _kTextMuted, fontSize: 10)),
+        ],
+      ),
+    );
+  }
+
+  Widget _errorView(String msg, VoidCallback onRetry) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.cloud_off, color: _kTextMuted, size: 48),
+            const SizedBox(height: 16),
+            Text(msg,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: _kTextMuted, fontSize: 13)),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(backgroundColor: _kAccent),
+              icon: const Icon(Icons.refresh, color: Colors.white, size: 18),
+              label: const Text('Erneut versuchen',
+                  style: TextStyle(color: Colors.white)),
+              onPressed: onRetry,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _emptyView(IconData icon, String title, String subtitle) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: _kTextMuted, size: 52),
+            const SizedBox(height: 16),
+            Text(title,
+                style: const TextStyle(
+                    color: _kText,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16)),
+            const SizedBox(height: 8),
+            Text(subtitle,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: _kTextMuted, fontSize: 13)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatDate(String? iso) {
+    if (iso == null || iso.isEmpty) return '–';
+    try {
+      final dt = DateTime.parse(iso).toLocal();
+      return '${dt.day.toString().padLeft(2, '0')}.${dt.month.toString().padLeft(2, '0')}.${dt.year}';
+    } catch (_) {
+      return iso.length > 10 ? iso.substring(0, 10) : iso;
+    }
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Aircraft state model (OpenSky Network)
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _AircraftState {
+  final String callsign;
+  final double? latitude;
+  final double? longitude;
+  final double? altitude;
+  final double? velocity;
+  final double? heading;
+  final bool onGround;
+
+  const _AircraftState({
+    required this.callsign,
+    this.latitude,
+    this.longitude,
+    this.altitude,
+    this.velocity,
+    this.heading,
+    required this.onGround,
+  });
+
+  /// OpenSky `states/all` returns arrays:
+  /// [0]=icao24, [1]=callsign, [2]=origin_country, [3]=time_pos,
+  /// [4]=last_contact, [5]=lon, [6]=lat, [7]=baro_alt,
+  /// [8]=on_ground, [9]=velocity, [10]=true_track, ...
+  factory _AircraftState.fromList(dynamic raw) {
+    final List list = raw as List;
+    double? _d(int i) {
+      if (i >= list.length || list[i] == null) return null;
+      return (list[i] as num?)?.toDouble();
+    }
+
+    return _AircraftState(
+      callsign: ((list.length > 1 ? list[1] : null) as String? ?? '').trim(),
+      longitude: _d(5),
+      latitude: _d(6),
+      altitude: _d(7),
+      onGround: (list.length > 8 && list[8] == true),
+      velocity: _d(9),
+      heading: _d(10),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Radar empty hint (const-safe)
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _RadarEmptyHint extends StatelessWidget {
+  const _RadarEmptyHint();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(Icons.radar, color: _kTextMuted, size: 52),
+        const SizedBox(height: 14),
+        const Text(
+          'Koordinaten eingeben und\n„Radar starten" tippen.',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: _kTextMuted, fontSize: 13),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          'OpenSky liefert Live-Daten — kein API-Key nötig.',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: _kTextMuted, fontSize: 11),
+        ),
+      ],
     );
   }
 }

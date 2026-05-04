@@ -1,53 +1,59 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:graphview/GraphView.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../services/free_api_service.dart';
 
-/// 🕸️ Verschwörungs-Netzwerk — Wikidata + statisches Netz + interaktiver Graph
+// ─────────────────────────────────────────────────────────────────────────────
+// Materie-Farben
+// ─────────────────────────────────────────────────────────────────────────────
+const _kAccent = Color(0xFFE53935);
+const _kBg = Color(0xFF0D0505);
+const _kSurface = Color(0xFF1A0000);
+
+/// 🕸️ Verschwörungs-Netzwerk — Wikidata-Daten als interaktiver Force-Graph
 class ConspiracyNetworkScreen extends StatefulWidget {
   final String roomId;
   const ConspiracyNetworkScreen({super.key, required this.roomId});
 
   @override
-  State<ConspiracyNetworkScreen> createState() => _ConspiracyNetworkScreenState();
+  State<ConspiracyNetworkScreen> createState() =>
+      _ConspiracyNetworkScreenState();
 }
 
-class _ConspiracyNetworkScreenState extends State<ConspiracyNetworkScreen>
-    with SingleTickerProviderStateMixin {
+class _ConspiracyNetworkScreenState extends State<ConspiracyNetworkScreen> {
   final _api = FreeApiService.instance;
   final _searchCtrl = TextEditingController();
   Timer? _debounce;
 
-  List<WikidataEntry> _nodes = [];
+  List<WikidataEntry> _entries = [];
   bool _loading = false;
-  WikidataEntry? _selected;
-  String _searchQuery = 'conspiracy secret society illuminati';
+  bool _showGraph = true; // true = Graph, false = Liste
 
-  // Vordefinierte Seed-Themen
+  String _activeChip = 'Illuminati';
+
   static const _seeds = [
-    'New World Order',
-    'Illuminati Freemasons',
-    'Deep State government',
-    'MK-Ultra CIA mind control',
-    'Bilderberg Group',
-    'Area 51 UFO',
-    'Chemtrails geoengineering',
-    'Federal Reserve banking cartel',
+    'Illuminati',
+    'Bilderberg',
+    'Freimaurer',
+    'Rothschild',
+    'Geheimbund',
+    'MK Ultra',
+    'Gladio',
+    'Bohemian Grove',
   ];
 
-  // Farbe je nach Typ
-  static const _typeColors = {
-    'Q7278': Color(0xFFFF1744), // Political party
-    'Q43229': Color(0xFFFF6D00), // Organization
-    'Q5': Color(0xFF29B6F6), // Human
-    'Q8': Color(0xFFAB47BC), // Happiness
-    'default': Color(0xFF78909C),
-  };
+  // Graph-State
+  final Graph _graph = Graph()..isTree = false;
+  final _algorithm = FruchtermanReingoldAlgorithm(iterations: 200);
+
+  // Mapping WikidataEntry.id → Graph-Node für Tap-Detection
+  final Map<int, WikidataEntry> _nodeMap = {};
 
   @override
   void initState() {
     super.initState();
-    _load(_searchQuery);
+    _load(_activeChip);
   }
 
   @override
@@ -57,236 +63,369 @@ class _ConspiracyNetworkScreenState extends State<ConspiracyNetworkScreen>
     super.dispose();
   }
 
-  Future<void> _load(String q) async {
-    setState(() { _loading = true; _selected = null; _searchQuery = q; });
-    final results = await _api.fetchWikidataEntries(q, limit: 20);
-    if (mounted) setState(() { _nodes = results; _loading = false; });
+  // ── Daten laden ──────────────────────────────────────────────────────────
+
+  Future<void> _load(String query) async {
+    if (!mounted) return;
+    setState(() => _loading = true);
+    try {
+      final results = await _api.fetchWikidataEntries(query, limit: 20);
+      if (!mounted) return;
+      setState(() {
+        _entries = results;
+        _buildGraph(results);
+        _loading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loading = false);
+    }
   }
 
-  void _onSearch(String val) {
+  void _onSearch(String value) {
     _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 600), () => _load(val));
+    _debounce = Timer(const Duration(milliseconds: 500), () {
+      if (value.trim().isNotEmpty) _load(value.trim());
+    });
   }
+
+  // ── Graph aufbauen ───────────────────────────────────────────────────────
+
+  void _buildGraph(List<WikidataEntry> entries) {
+    // Graph leeren
+    _graph.nodes.clear();
+    _graph.edges.clear();
+    _nodeMap.clear();
+
+    if (entries.isEmpty) return;
+
+    // Nodes erstellen — jede WikidataEntry bekommt einen Node
+    final nodes = <Node>[];
+    for (int i = 0; i < entries.length; i++) {
+      final node = Node.Id(i);
+      nodes.add(node);
+      _nodeMap[i] = entries[i];
+    }
+
+    // Alle Nodes zum Graph hinzufügen
+    for (final node in nodes) {
+      _graph.addNode(node);
+    }
+
+    // Kanten: jeder Node → nächster (Kette) + jeder dritte → Node 0 (Hub)
+    for (int i = 0; i < nodes.length - 1; i++) {
+      _graph.addEdge(nodes[i], nodes[i + 1]);
+    }
+    // Hub-Verbindungen: alle 3 Nodes zurück zu Node 0
+    for (int i = 3; i < nodes.length; i += 3) {
+      _graph.addEdge(nodes[i], nodes[0]);
+    }
+  }
+
+  // ── Bottom Sheet bei Node-Tap ────────────────────────────────────────────
+
+  void _showNodeDetail(WikidataEntry entry) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: _kSurface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => _NodeDetailSheet(entry: entry),
+    );
+  }
+
+  // ── UI ───────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
-    const accent = Color(0xFFE53935);
-    const bg = Color(0xFF0D0505);
-
     return Scaffold(
-      backgroundColor: bg,
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            pinned: true,
-            expandedHeight: 100,
-            backgroundColor: const Color(0xFF1A0000),
-            flexibleSpace: FlexibleSpaceBar(
-              title: const Text('Verschwörungs-Netzwerk',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
-              background: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [const Color(0xFF1A0000), accent.withValues(alpha: 0.2)],
-                  ),
-                ),
-              ),
+      backgroundColor: _kBg,
+      appBar: AppBar(
+        backgroundColor: _kSurface,
+        title: const Text(
+          'Verschwörungs-Netzwerk',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+        iconTheme: const IconThemeData(color: Colors.white),
+        actions: [
+          // Graph / Liste togglen
+          IconButton(
+            icon: Icon(
+              _showGraph ? Icons.list : Icons.bubble_chart,
+              color: _kAccent,
             ),
-            bottom: PreferredSize(
-              preferredSize: const Size.fromHeight(52),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-                child: TextField(
-                  controller: _searchCtrl,
-                  onChanged: _onSearch,
-                  onSubmitted: _load,
-                  style: const TextStyle(color: Colors.white, fontSize: 14),
-                  decoration: InputDecoration(
-                    hintText: 'Entität suchen…',
-                    hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4)),
-                    prefixIcon: const Icon(Icons.search, color: Color(0xFFE53935), size: 20),
-                    filled: true,
-                    fillColor: Colors.white.withValues(alpha: 0.07),
-                    contentPadding: const EdgeInsets.symmetric(vertical: 6),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                ),
-              ),
-            ),
+            tooltip: _showGraph ? 'Listenansicht' : 'Graphansicht',
+            onPressed: () => setState(() => _showGraph = !_showGraph),
           ),
-          // Seed-Chips
-          SliverToBoxAdapter(
-            child: SizedBox(
-              height: 38,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                itemCount: _seeds.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 6),
-                itemBuilder: (_, i) {
-                  final active = _searchQuery == _seeds[i];
-                  return GestureDetector(
-                    onTap: () {
-                      _searchCtrl.text = _seeds[i];
-                      _load(_seeds[i]);
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: active ? accent.withValues(alpha: 0.2) : Colors.white.withValues(alpha: 0.06),
-                        borderRadius: BorderRadius.circular(18),
-                        border: Border.all(
-                          color: active ? accent.withValues(alpha: 0.6) : Colors.white.withValues(alpha: 0.12),
-                        ),
-                      ),
-                      child: Text(
-                        _seeds[i].split(' ').first,
-                        style: TextStyle(
-                          color: active ? accent : Colors.white60,
-                          fontSize: 11,
-                          fontWeight: active ? FontWeight.bold : FontWeight.normal,
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
+        ],
+      ),
+      body: Column(
+        children: [
+          _buildSearchBar(),
+          _buildChips(),
+          Expanded(
+            child: _loading
+                ? const Center(
+                    child: CircularProgressIndicator(color: _kAccent),
+                  )
+                : _entries.isEmpty
+                    ? _buildEmpty()
+                    : _showGraph
+                        ? _buildGraphView()
+                        : _buildListView(),
           ),
-          const SliverToBoxAdapter(child: SizedBox(height: 12)),
-          if (_loading)
-            const SliverFillRemaining(
-              child: Center(child: CircularProgressIndicator(color: Color(0xFFE53935))),
-            )
-          else if (_nodes.isEmpty)
-            SliverFillRemaining(
-              child: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.hub_outlined, size: 64, color: Colors.white.withValues(alpha: 0.2)),
-                    const SizedBox(height: 12),
-                    Text('Keine Verbindungen gefunden',
-                        style: TextStyle(color: Colors.white.withValues(alpha: 0.4))),
-                  ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchBar() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 4),
+      child: TextField(
+        controller: _searchCtrl,
+        style: const TextStyle(color: Colors.white),
+        decoration: InputDecoration(
+          hintText: 'Thema suchen …',
+          hintStyle: const TextStyle(color: Colors.white38),
+          prefixIcon: const Icon(Icons.search, color: _kAccent),
+          filled: true,
+          fillColor: _kSurface,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
+          contentPadding:
+              const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+        ),
+        onChanged: _onSearch,
+      ),
+    );
+  }
+
+  Widget _buildChips() {
+    return SizedBox(
+      height: 44,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        itemCount: _seeds.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (_, i) {
+          final seed = _seeds[i];
+          final active = seed == _activeChip;
+          return GestureDetector(
+            onTap: () {
+              setState(() => _activeChip = seed);
+              _searchCtrl.clear();
+              _load(seed);
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+              decoration: BoxDecoration(
+                color: active ? _kAccent : _kSurface,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: active ? _kAccent : Colors.white12,
                 ),
               ),
-            )
-          else ...[
-            // Detail-Panel wenn ausgewählt
-            if (_selected != null)
-              SliverToBoxAdapter(child: _DetailPanel(entry: _selected!, accent: accent)),
-            SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              sliver: SliverGrid(
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 10,
-                  mainAxisSpacing: 10,
-                  childAspectRatio: 1.6,
-                ),
-                delegate: SliverChildBuilderDelegate(
-                  (_, i) => _NodeCard(
-                    entry: _nodes[i],
-                    accent: accent,
-                    isSelected: _selected?.id == _nodes[i].id,
-                    onTap: () => setState(() =>
-                        _selected = _selected?.id == _nodes[i].id ? null : _nodes[i]),
-                  ),
-                  childCount: _nodes.length,
+              child: Text(
+                seed,
+                style: TextStyle(
+                  color: active ? Colors.white : Colors.white60,
+                  fontSize: 12,
+                  fontWeight:
+                      active ? FontWeight.bold : FontWeight.normal,
                 ),
               ),
             ),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  'Daten: Wikidata (CC0) · ${_nodes.length} Entitäten',
-                  style: TextStyle(color: Colors.white.withValues(alpha: 0.25), fontSize: 11),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            ),
-          ],
+          );
+        },
+      ),
+    );
+  }
+
+  // ── Graphansicht ─────────────────────────────────────────────────────────
+
+  Widget _buildGraphView() {
+    return InteractiveViewer(
+      constrained: false,
+      boundaryMargin: const EdgeInsets.all(200),
+      minScale: 0.2,
+      maxScale: 3.0,
+      child: GraphView(
+        graph: _graph,
+        algorithm: _algorithm,
+        paint: Paint()
+          ..color = _kAccent.withOpacity(0.5)
+          ..strokeWidth = 1.2
+          ..style = PaintingStyle.stroke,
+        builder: (Node node) {
+          final id = node.key!.value as int;
+          final entry = _nodeMap[id];
+          if (entry == null) return const SizedBox.shrink();
+          return _GraphNode(
+            entry: entry,
+            onTap: () => _showNodeDetail(entry),
+          );
+        },
+      ),
+    );
+  }
+
+  // ── Listenansicht ────────────────────────────────────────────────────────
+
+  Widget _buildListView() {
+    return GridView.builder(
+      padding: const EdgeInsets.all(12),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        childAspectRatio: 1.1,
+        crossAxisSpacing: 10,
+        mainAxisSpacing: 10,
+      ),
+      itemCount: _entries.length,
+      itemBuilder: (_, i) => _ListCard(
+        entry: _entries[i],
+        onTap: () => _showNodeDetail(_entries[i]),
+      ),
+    );
+  }
+
+  Widget _buildEmpty() {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.hub_outlined, color: Colors.white24, size: 64),
+          const SizedBox(height: 12),
+          const Text(
+            'Keine Ergebnisse',
+            style: TextStyle(color: Colors.white38, fontSize: 16),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Wähle ein Thema oder suche manuell.',
+            style: TextStyle(color: Colors.white24, fontSize: 13),
+          ),
         ],
       ),
     );
   }
 }
 
-class _NodeCard extends StatelessWidget {
+// ─────────────────────────────────────────────────────────────────────────────
+// Graph-Node-Widget
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _GraphNode extends StatelessWidget {
   final WikidataEntry entry;
-  final Color accent;
-  final bool isSelected;
   final VoidCallback onTap;
 
-  const _NodeCard({
-    required this.entry,
-    required this.accent,
-    required this.isSelected,
-    required this.onTap,
-  });
+  const _GraphNode({required this.entry, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final label = entry.label.length > 14
+        ? '${entry.label.substring(0, 13)}…'
+        : entry.label;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 100,
+        height: 40,
+        decoration: BoxDecoration(
+          color: _kSurface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: _kAccent, width: 1.4),
+          boxShadow: [
+            BoxShadow(
+              color: _kAccent.withOpacity(0.35),
+              blurRadius: 8,
+              spreadRadius: 1,
+            ),
+          ],
+        ),
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        child: Text(
+          label,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+          ),
+          textAlign: TextAlign.center,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Listen-Karte
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _ListCard extends StatelessWidget {
+  final WikidataEntry entry;
+  final VoidCallback onTap;
+
+  const _ListCard({required this.entry, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+      child: Container(
         decoration: BoxDecoration(
-          color: isSelected
-              ? accent.withValues(alpha: 0.15)
-              : Colors.white.withValues(alpha: 0.05),
+          color: _kSurface,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: isSelected ? accent : Colors.white.withValues(alpha: 0.1),
-            width: isSelected ? 1.5 : 1,
-          ),
+          border: Border.all(color: _kAccent.withOpacity(0.3)),
+          boxShadow: [
+            BoxShadow(
+              color: _kAccent.withOpacity(0.12),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
+            ),
+          ],
         ),
         padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Container(
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: accent,
-                    shape: BoxShape.circle,
-                    boxShadow: isSelected
-                        ? [BoxShadow(color: accent.withValues(alpha: 0.6), blurRadius: 6)]
-                        : null,
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    entry.label,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: _kAccent.withOpacity(0.15),
+                shape: BoxShape.circle,
+                border: Border.all(color: _kAccent, width: 1.2),
+              ),
+              child: const Icon(Icons.hub, color: _kAccent, size: 16),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 8),
+            Text(
+              entry.label,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 4),
             Expanded(
               child: Text(
-                entry.description,
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.6),
-                  fontSize: 11,
-                  height: 1.4,
-                ),
+                entry.description ?? entry.id,
+                style:
+                    const TextStyle(color: Colors.white54, fontSize: 11),
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -298,67 +437,99 @@ class _NodeCard extends StatelessWidget {
   }
 }
 
-class _DetailPanel extends StatelessWidget {
-  final WikidataEntry entry;
-  final Color accent;
+// ─────────────────────────────────────────────────────────────────────────────
+// Node-Detail Bottom Sheet
+// ─────────────────────────────────────────────────────────────────────────────
 
-  const _DetailPanel({required this.entry, required this.accent});
+class _NodeDetailSheet extends StatelessWidget {
+  final WikidataEntry entry;
+
+  const _NodeDetailSheet({required this.entry});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [accent.withValues(alpha: 0.12), accent.withValues(alpha: 0.05)],
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: accent.withValues(alpha: 0.3)),
-      ),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Drag handle
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.white24,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Icon + Titel
           Row(
             children: [
-              Icon(Icons.hub_rounded, color: accent, size: 18),
-              const SizedBox(width: 8),
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: _kAccent.withOpacity(0.15),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: _kAccent, width: 1.5),
+                ),
+                child:
+                    const Icon(Icons.hub, color: _kAccent, size: 20),
+              ),
+              const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   entry.label,
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 16,
+                    fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
-              IconButton(
-                icon: const Icon(Icons.open_in_new_rounded, size: 18, color: Colors.white54),
-                onPressed: () => launchUrl(
-                  Uri.parse('https://www.wikidata.org/wiki/${entry.id}'),
-                  mode: LaunchMode.externalApplication,
-                ),
-              ),
             ],
           ),
-          if (entry.description.isNotEmpty) ...[
-            const SizedBox(height: 8),
+          const SizedBox(height: 10),
+          // Wikidata-ID
+          Text(
+            'ID: ${entry.id}',
+            style:
+                const TextStyle(color: Colors.white38, fontSize: 12),
+          ),
+          if (entry.description != null && entry.description!.isNotEmpty) ...[
+            const SizedBox(height: 10),
             Text(
-              entry.description,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.8),
-                fontSize: 13,
-                height: 1.5,
-              ),
+              entry.description!,
+              style:
+                  const TextStyle(color: Colors.white70, fontSize: 14),
             ),
           ],
-          const SizedBox(height: 8),
-          Text(
-            'ID: ${entry.id} · Tippen zum Schließen',
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.3),
-              fontSize: 11,
+          const SizedBox(height: 18),
+          // Wikidata-Link
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _kAccent,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+              icon: const Icon(Icons.open_in_new, size: 16),
+              label: const Text('Auf Wikidata öffnen'),
+              onPressed: () async {
+                final uri = Uri.parse(entry.url);
+                if (await canLaunchUrl(uri)) {
+                  await launchUrl(uri,
+                      mode: LaunchMode.externalApplication);
+                }
+              },
             ),
           ),
         ],

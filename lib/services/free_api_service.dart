@@ -429,6 +429,44 @@ class FreeApiService {
   }
 
   // ─────────────────────────────────────────────────────────────────────────
+  // 17. CrossRef — 165M+ DOIs, kein API-Key
+  // ─────────────────────────────────────────────────────────────────────────
+
+  Future<List<CrossRefWork>> fetchCrossRefWorks(String query, {int limit = 15}) async {
+    final url = Uri.parse(
+      'https://api.crossref.org/works?query=${Uri.encodeComponent(query)}'
+      '&rows=$limit&mailto=app@weltenbibliothek.de'
+      '&select=title,author,published-print,DOI,publisher,is-referenced-by-count',
+    );
+    try {
+      final res = await http.get(url, headers: {'User-Agent': 'Weltenbibliothek/1.0'}).timeout(_timeout);
+      if (res.statusCode != 200) return [];
+      final data = jsonDecode(res.body) as Map<String, dynamic>;
+      final items = (data['message']?['items'] as List? ?? []);
+      return items.map((i) => CrossRefWork.fromJson(i as Map<String, dynamic>)).toList();
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ CrossRef: $e');
+      return [];
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // 18. Unpaywall — Kostenlose PDF-Links für DOIs
+  // ─────────────────────────────────────────────────────────────────────────
+
+  Future<String?> fetchUnpaywallPdf(String doi) async {
+    final url = Uri.parse('https://api.unpaywall.org/v2/${Uri.encodeComponent(doi)}?email=app@weltenbibliothek.de');
+    try {
+      final res = await http.get(url).timeout(_timeout);
+      if (res.statusCode != 200) return null;
+      final data = jsonDecode(res.body) as Map<String, dynamic>;
+      return data['best_oa_location']?['url_for_pdf'] as String?;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
   // 12. Mondphase — Mathematische Berechnung (kein API nötig)
   // ─────────────────────────────────────────────────────────────────────────
 
@@ -914,4 +952,56 @@ class PubChemResult {
     formula: j['MolecularFormula'] as String? ?? '',
     iupacName: j['IUPACName'] as String? ?? '',
   );
+}
+
+// ─── CrossRef Work ────────────────────────────────────────────────────────────
+
+class CrossRefWork {
+  final String title;
+  final List<String> authors;
+  final int? year;
+  final String doi;
+  final String publisher;
+  final int citedBy;
+
+  const CrossRefWork({
+    required this.title,
+    required this.authors,
+    this.year,
+    required this.doi,
+    required this.publisher,
+    required this.citedBy,
+  });
+
+  factory CrossRefWork.fromJson(Map<String, dynamic> j) {
+    final titleList = j['title'] as List?;
+    final title = (titleList != null && titleList.isNotEmpty) ? titleList[0] as String : '';
+
+    final authorList = j['author'] as List? ?? [];
+    final authors = authorList
+        .take(3)
+        .map((a) {
+          final family = (a as Map)['family'] as String? ?? '';
+          final given = a['given'] as String? ?? '';
+          return given.isNotEmpty ? '$given $family' : family;
+        })
+        .where((s) => s.isNotEmpty)
+        .toList();
+
+    final printedDate = j['published-print']?['date-parts'];
+    int? year;
+    if (printedDate is List && printedDate.isNotEmpty) {
+      final parts = printedDate[0] as List?;
+      if (parts != null && parts.isNotEmpty) year = parts[0] as int?;
+    }
+
+    return CrossRefWork(
+      title: title,
+      authors: authors,
+      year: year,
+      doi: j['DOI'] as String? ?? '',
+      publisher: j['publisher'] as String? ?? '',
+      citedBy: j['is-referenced-by-count'] as int? ?? 0,
+    );
+  }
 }
