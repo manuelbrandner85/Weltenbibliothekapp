@@ -22,8 +22,9 @@
 #   - Media-UDP-Range 60001–65000 → kein Overlap mit Mensaena (50000–60000)
 #   - KEIN TURN-Server in WB → keine UDP-5350/3479-Kollision
 
-# force-deploy-trigger: 2026-05-04 (coturn) — coturn-Container hinzugefügt,
-# Deploy muss neu starten um beide Container hochzuziehen.
+# force-deploy-trigger: 2026-05-04 (stale-cleanup) — vorige Deploys
+# gescheitert wegen Stale-Container mit Hash-Prefix. Beide Workflows
+# triggern damit der Cleanup-Step + saubere Recreate produktiv werden.
 port: 7980
 
 # API-Keys: Wert wird beim Deploy via envsubst aus dem GitHub-Secret
