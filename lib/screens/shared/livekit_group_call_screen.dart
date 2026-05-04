@@ -29,6 +29,14 @@ import '../../services/recording_service.dart';
 import '../../services/live_caption_service.dart';
 import '../../services/soundscape_service.dart';
 import '../../widgets/cowatch_panel.dart';
+import '../../services/cowatch_service.dart';
+import '../../services/incall_chat_service.dart';
+import '../../services/livekit_call_service.dart';
+import '../../services/live_caption_service.dart';
+import '../../services/pip_service.dart';
+import '../../services/soundscape_service.dart';
+import '../../widgets/cowatch_panel.dart';
+import '../../widgets/pip_overlay.dart';
 import '../../widgets/incall_chat_panel.dart';
 import '../../widgets/live_caption_overlay.dart';
 import '../../widgets/livekit_mini_bar.dart';
@@ -81,6 +89,9 @@ class _LiveKitGroupCallScreenState
   bool _chatVisible = false;
   // 🎨 B10.6: Raumstimmung (AudioFeedbackService hält den aktuellen Theme)
   // kein lokaler State — wir lesen direkt aus AudioFeedbackService.themeNotifier
+  // 📺 B10.3: PiP
+  bool _pipActive = false;
+  StreamSubscription<bool>? _pipSub;
   late final AnimationController _bgController;
   late final Animation<double> _bgAnimation;
 
@@ -97,6 +108,12 @@ class _LiveKitGroupCallScreenState
     LiveKitScreenVisibility.instance.setVisible(true);
 
     WidgetsBinding.instance.addPostFrameCallback((_) => _join());
+
+    // 📺 B10.3: PiP-Modus-Wechsel lauschen
+    _pipSub = PipService.instance.onPipModeChanged.listen((active) {
+      if (!mounted) return;
+      setState(() => _pipActive = active);
+    });
 
     // 📺 B10.4: CoWatch-Events vom Remote empfangen
     _coWatchSub = CoWatchService.instance.eventStream.listen((event) {
@@ -117,6 +134,7 @@ class _LiveKitGroupCallScreenState
 
   @override
   void dispose() {
+    _pipSub?.cancel();
     _coWatchSub?.cancel();
     LiveKitScreenVisibility.instance.setVisible(false);
     _bgController.dispose();
@@ -209,10 +227,25 @@ class _LiveKitGroupCallScreenState
     final accent = WbDesign.accent(widget.world);
     final bg = WbDesign.background(widget.world);
 
+    // 📺 B10.3: Im PiP-Modus nur minimale UI anzeigen
+    if (_pipActive) {
+      return PipOverlay(
+        world: widget.world,
+        localName: widget.displayName,
+        localAvatarUrl: widget.avatarUrl,
+        service: svc,
+      );
+    }
+
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) async {
         if (didPop) return;
+        // Back-Taste → PiP statt Anruf beenden (wenn unterstützt)
+        if (PipService.instance.isSupported) {
+          await PipService.instance.enterPip();
+          return;
+        }
         if (await _confirmLeave()) await _leaveAndPop();
       },
       child: Scaffold(
@@ -275,6 +308,12 @@ class _LiveKitGroupCallScreenState
               child: Column(
                 children: [
                   _TopBar(
+            ],
+          ),
+          child: SafeArea(
+            child: Column(
+              children: [
+                _TopBar(
                   roomName: widget.roomName,
                   world: widget.world,
                   state: state,
@@ -1691,6 +1730,11 @@ class _TopBar extends StatelessWidget {
                     ? Icons.grid_view_rounded
                     : Icons.account_box_rounded,
                 label: 'Ansicht',
+                    ? Icons.view_quilt_rounded
+                    : Icons.grid_view_rounded,
+                label: viewMode == LiveKitViewMode.speaker
+                    ? 'Ansicht'
+                    : 'Ansicht',
                 active: viewMode == LiveKitViewMode.speaker,
                 accent: accent,
                 onTap: onToggleViewMode,
@@ -1698,6 +1742,9 @@ class _TopBar extends StatelessWidget {
               // 🎙️ B8: Untertitel
               _TopBarBtn(
                 icon: Icons.closed_caption_rounded,
+                icon: captionsEnabled
+                    ? Icons.closed_caption_rounded
+                    : Icons.closed_caption_disabled_rounded,
                 label: 'Untertitel',
                 active: captionsEnabled,
                 accent: accent,
@@ -2721,6 +2768,7 @@ class _ControlBar extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   // ── Mikrofon (Tap = Toggle, Long-Press = PTT) ──
+                  // Mikrofon (Tap = Toggle, Long-Press = PTT)
                   _CtrlBtn(
                     icon: service.micEnabled
                         ? Icons.mic_rounded
@@ -2728,6 +2776,7 @@ class _ControlBar extends StatelessWidget {
                     label: service.pttActive
                         ? 'Sprechtaste'
                         : (service.micEnabled ? 'Mikrofon' : 'Stumm'),
+                        : (service.micEnabled ? 'Mikrofon an' : 'Stummschalten'),
                     active: service.micEnabled || service.pttActive,
                     activeColor: service.pttActive
                         ? const Color(0xFF00E676)
@@ -2743,6 +2792,7 @@ class _ControlBar extends StatelessWidget {
                         ? Icons.videocam_rounded
                         : Icons.videocam_off_rounded,
                     label: service.cameraEnabled ? 'Kamera' : 'Kamera aus',
+                    label: service.cameraEnabled ? 'Kamera an' : 'Kamera aus',
                     active: service.cameraEnabled,
                     activeColor: accent,
                     enabled: isConnected,
@@ -2759,6 +2809,103 @@ class _ControlBar extends StatelessWidget {
                     ),
                   ),
                   // ── Auflegen (immer sichtbar, prominent) ──
+                  // Kamera drehen (Front/Back) — nur sichtbar wenn Camera an
+                  if (service.cameraEnabled)
+                    _CtrlBtn(
+                      icon: Icons.cameraswitch_rounded,
+                      label: 'Drehen',
+                      active: false,
+                      activeColor: accent,
+                      enabled: isConnected,
+                      onTap: () => service.switchCamera(),
+                    ),
+                  // Bildschirm teilen
+                  _CtrlBtn(
+                    icon: service.screenShareEnabled
+                        ? Icons.stop_screen_share_rounded
+                        : Icons.present_to_all_rounded,
+                    label:
+                        service.screenShareEnabled ? 'Teilen stoppen' : 'Bildschirm',
+                    active: service.screenShareEnabled,
+                    activeColor: accent,
+                    enabled: isConnected,
+                    onTap: () => service.toggleScreenShare(),
+                  ),
+                  // 💬 In-Call-Chat
+                  ValueListenableBuilder<int>(
+                    valueListenable:
+                        InCallChatService.instance.unreadNotifier,
+                    builder: (_, unread, __) => Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        _CtrlBtn(
+                          icon: chatVisible
+                              ? Icons.chat_bubble_rounded
+                              : Icons.chat_bubble_outline_rounded,
+                          label: 'Chat',
+                          active: chatVisible,
+                          activeColor: accent,
+                          enabled: isConnected,
+                          onTap: onToggleChat,
+                        ),
+                        if (unread > 0 && !chatVisible)
+                          Positioned(
+                            top: 0,
+                            right: 0,
+                            child: Container(
+                              width: 16,
+                              height: 16,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFF1744),
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                    color: Colors.black, width: 1.5),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  unread > 9 ? '9+' : '$unread',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  // 💖 Bundle 4: Reactions-Picker
+                  _CtrlBtn(
+                    icon: Icons.emoji_emotions_outlined,
+                    label: 'Reaktion',
+                    active: false,
+                    activeColor: accent,
+                    enabled: isConnected,
+                    onTap: () => _showReactionsPicker(context, world, service),
+                  ),
+                  // 📺 B10.4: Co-Watch
+                  _CtrlBtn(
+                    icon: Icons.tv_rounded,
+                    label: 'Co-Watch',
+                    active: CoWatchService.instance.active,
+                    activeColor: accent,
+                    enabled: isConnected,
+                    onTap: onCoWatch,
+                  ),
+                  // Hand heben
+                  _CtrlBtn(
+                    icon: service.handRaised
+                        ? Icons.front_hand_rounded
+                        : Icons.front_hand_outlined,
+                    label: service.handRaised ? 'Hand senken' : 'Hand heben',
+                    active: service.handRaised,
+                    activeColor: const Color(0xFFFFB300),
+                    enabled: isConnected,
+                    onTap: () => service.toggleHandRaised(),
+                  ),
+                  // Auflegen
                   _CtrlBtn(
                     icon: Icons.call_end_rounded,
                     label: 'Auflegen',
