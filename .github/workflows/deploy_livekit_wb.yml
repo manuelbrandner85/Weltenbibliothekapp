@@ -383,7 +383,7 @@ jobs:
             echo 'STALE=$(docker ps -a --format "{{.ID}} {{.Names}}" | awk "\$2 ~ /(^|_)livekit-weltenbibliothek\$|(^|_)livekit-wb-coturn\$/ {print \$1}" || true)'
             echo 'if [ -n "$STALE" ]; then'
             echo '  echo "→ Stale-Container gefunden, force-rm:"'
-            echo '  echo "$STALE" | xargs -r docker rm -f'
+            echo '  echo "$STALE" | xargs -r docker rm -f 2>/dev/null || true'
             echo 'fi'
             echo 'docker compose up -d --remove-orphans --force-recreate'
             echo 'sleep 10'
