@@ -1473,6 +1473,161 @@ export default {
       }
     }
 
+    // ── LiveKit Recording (Egress) ────────────────────────────
+    // POST /api/livekit/recording/start   { roomName }
+    // POST /api/livekit/recording/stop    { egressId }
+    //
+    // Benötigt LiveKit Egress Runner auf dem VPS + optional R2-Credentials:
+    //   wrangler secret put LIVEKIT_EGRESS_S3_ENDPOINT   (z.B. https://<accountid>.r2.cloudflarestorage.com)
+    //   wrangler secret put LIVEKIT_EGRESS_S3_BUCKET
+    //   wrangler secret put LIVEKIT_EGRESS_S3_ACCESS_KEY
+    //   wrangler secret put LIVEKIT_EGRESS_S3_SECRET
+    //
+    // Ohne S3-Credentials → lokale Datei-Ausgabe (Pfad: /recordings/<room>-<ts>.mp4)
+    if (path === '/api/livekit/recording/start' && method === 'POST') {
+      try {
+        const body = await request.json().catch(() => ({}));
+        const roomName = body.roomName;
+        if (!roomName) return jsonResponse({ error: 'roomName fehlt' }, 400);
+
+        const apiKey = env.LIVEKIT_API_KEY;
+        const apiSecret = env.LIVEKIT_API_SECRET;
+        const livekitUrl = (env.LIVEKIT_URL || '').replace(/^wss?:\/\//, 'https://');
+        if (!apiKey || !apiSecret || !livekitUrl) {
+          return jsonResponse({ error: 'LiveKit serverseitig nicht konfiguriert' }, 503);
+        }
+
+        // Admin-JWT für Egress API (roomAdmin-Grant)
+        const enc = new TextEncoder();
+        const b64urlBytes = (bytes) => btoa(String.fromCharCode(...bytes))
+          .replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+        const b64url = (str) => b64urlBytes(enc.encode(str));
+        const now = Math.floor(Date.now() / 1000);
+        const header = b64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+        const payload = b64url(JSON.stringify({
+          iss: apiKey,
+          sub: 'recording-service',
+          nbf: now,
+          exp: now + 3600,
+          video: { roomAdmin: true, room: roomName },
+        }));
+        const key = await crypto.subtle.importKey(
+          'raw', enc.encode(apiSecret),
+          { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'],
+        );
+        const sigBytes = await crypto.subtle.sign('HMAC', key, enc.encode(`${header}.${payload}`));
+        const adminJwt = `${header}.${payload}.${b64urlBytes(new Uint8Array(sigBytes))}`;
+
+        // Egress-Output: R2/S3 wenn konfiguriert, sonst lokale Datei
+        const ts = Date.now();
+        const filepath = `${roomName}-${ts}.mp4`;
+        let output;
+        if (env.LIVEKIT_EGRESS_S3_BUCKET && env.LIVEKIT_EGRESS_S3_ACCESS_KEY) {
+          output = {
+            file_type: 1, // MP4
+            filepath,
+            s3: {
+              access_key: env.LIVEKIT_EGRESS_S3_ACCESS_KEY,
+              secret: env.LIVEKIT_EGRESS_S3_SECRET || '',
+              bucket: env.LIVEKIT_EGRESS_S3_BUCKET,
+              endpoint: env.LIVEKIT_EGRESS_S3_ENDPOINT || '',
+              region: 'auto',
+            },
+          };
+        } else {
+          // Lokale Datei auf dem LiveKit-Server (nur für Dev/Test)
+          output = { file_type: 1, filepath: `/recordings/${filepath}` };
+        }
+
+        const egressRes = await fetch(
+          `${livekitUrl}/twirp/livekit.Egress/StartRoomCompositeEgress`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${adminJwt}`,
+            },
+            body: JSON.stringify({ room_name: roomName, file: output }),
+          },
+        );
+
+        const egressBody = await egressRes.json().catch(() => ({}));
+        if (!egressRes.ok) {
+          return jsonResponse(
+            { error: egressBody.message || `Egress-Fehler ${egressRes.status}` },
+            502,
+          );
+        }
+
+        return jsonResponse({
+          egressId: egressBody.egress_id,
+          status: egressBody.status,
+          filepath,
+        });
+      } catch (e) {
+        return errorResponse(`Recording-Start fehlgeschlagen: ${e.message}`);
+      }
+    }
+
+    if (path === '/api/livekit/recording/stop' && method === 'POST') {
+      try {
+        const body = await request.json().catch(() => ({}));
+        const egressId = body.egressId;
+        if (!egressId) return jsonResponse({ error: 'egressId fehlt' }, 400);
+
+        const apiKey = env.LIVEKIT_API_KEY;
+        const apiSecret = env.LIVEKIT_API_SECRET;
+        const livekitUrl = (env.LIVEKIT_URL || '').replace(/^wss?:\/\//, 'https://');
+        if (!apiKey || !apiSecret || !livekitUrl) {
+          return jsonResponse({ error: 'LiveKit serverseitig nicht konfiguriert' }, 503);
+        }
+
+        const enc = new TextEncoder();
+        const b64urlBytes = (bytes) => btoa(String.fromCharCode(...bytes))
+          .replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+        const b64url = (str) => b64urlBytes(enc.encode(str));
+        const now = Math.floor(Date.now() / 1000);
+        const header = b64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+        const payload = b64url(JSON.stringify({
+          iss: apiKey,
+          sub: 'recording-service',
+          nbf: now,
+          exp: now + 600,
+          video: { roomAdmin: true },
+        }));
+        const key = await crypto.subtle.importKey(
+          'raw', enc.encode(apiSecret),
+          { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'],
+        );
+        const sigBytes = await crypto.subtle.sign('HMAC', key, enc.encode(`${header}.${payload}`));
+        const adminJwt = `${header}.${payload}.${b64urlBytes(new Uint8Array(sigBytes))}`;
+
+        const stopRes = await fetch(
+          `${livekitUrl}/twirp/livekit.Egress/StopEgress`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${adminJwt}`,
+            },
+            body: JSON.stringify({ egress_id: egressId }),
+          },
+        );
+
+        if (!stopRes.ok) {
+          const errBody = await stopRes.json().catch(() => ({}));
+          return jsonResponse(
+            { error: errBody.message || `Egress-Stop-Fehler ${stopRes.status}` },
+            502,
+          );
+        }
+
+        return jsonResponse({ status: 'stopped' });
+      } catch (e) {
+        return errorResponse(`Recording-Stop fehlgeschlagen: ${e.message}`);
+      }
+    }
+
     // ── Statistiken ───────────────────────────────────────────
     if (path === '/api/statistics' || path.startsWith('/api/statistics')) {
       try {
