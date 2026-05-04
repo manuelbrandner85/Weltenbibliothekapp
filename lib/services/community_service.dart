@@ -133,7 +133,7 @@ class CommunityService {
     }
   }
   
-  /// Create a new post
+  /// Create a new post — direkt via Supabase (Auth + RLS automatisch)
   Future<void> createPost({
     required String username,
     required String content,
@@ -143,36 +143,24 @@ class CommunityService {
     String? mediaUrl,
     String? mediaType,
   }) async {
-    try {
-      final response = await http.post(
-        Uri.parse('$_baseUrl/community/posts'),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({
-          'author': username,
-          'authorAvatar': authorAvatar,
-          'content': content,
-          'tags': tags,
-          'world': worldType.name,
-          'mediaUrl': mediaUrl,
-          'mediaType': mediaType,
-          'timestamp': DateTime.now().toIso8601String(),
-        }),
-      ).timeout(_timeout);
-      
-      if (response.statusCode != 200 && response.statusCode != 201) {
-        throw Exception('Failed to create post: ${response.statusCode}');
-      }
-      
-      if (kDebugMode) {
-        debugPrint('✅ Post created successfully');
-      }
-      
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ Error creating post: $e');
-      }
-      throw Exception('Fehler beim Erstellen des Posts: $e');
-    }
+    final client = Supabase.instance.client;
+    final userId = client.auth.currentUser?.id;
+    if (userId == null) throw Exception('Nicht eingeloggt');
+    await client.from('community_posts').insert({
+      'user_id': userId,
+      'world': worldType.name,
+      'content': content,
+      'author': username,
+      'username': username,
+      'author_avatar': authorAvatar ?? '👤',
+      'tags': tags,
+      'media_url': mediaUrl,
+      'media_type': mediaType,
+      'likes_count': 0,
+      'comments_count': 0,
+      'shares_count': 0,
+    });
+    if (kDebugMode) debugPrint('✅ Post erstellt');
   }
   
   /// Like a post
@@ -227,58 +215,29 @@ class CommunityService {
     }
   }
   
-  /// Delete a post (only by author)
+  /// Delete a post — nur eigene (RLS stellt das sicher)
   Future<void> deletePost(String postId, String username) async {
-    try {
-      final response = await http.delete(
-        Uri.parse('$_baseUrl/community/posts/$postId?username=$username'),
-      ).timeout(_timeout);
-      
-      if (response.statusCode != 200) {
-        throw Exception('Failed to delete post: ${response.statusCode}');
-      }
-      
-      if (kDebugMode) {
-        debugPrint('✅ Post deleted: $postId');
-      }
-      
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ Error deleting post: $e');
-      }
-      throw Exception('Fehler beim Löschen: $e');
-    }
+    final client = Supabase.instance.client;
+    final userId = client.auth.currentUser?.id;
+    if (userId == null) throw Exception('Nicht eingeloggt');
+    await client.from('community_posts').delete().eq('id', postId).eq('user_id', userId);
+    if (kDebugMode) debugPrint('✅ Post gelöscht: $postId');
   }
-  
-  /// Edit a post
+
+  /// Edit a post — nur eigene (RLS stellt das sicher)
   Future<void> editPost(String postId, {
     required String content,
     required List<String> tags,
   }) async {
-    try {
-      final response = await http.put(
-        Uri.parse('$_baseUrl/community/posts/$postId'),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({
-          'content': content,
-          'tags': tags,
-        }),
-      ).timeout(_timeout);
-      
-      if (response.statusCode != 200) {
-        throw Exception('Failed to edit post: ${response.statusCode}');
-      }
-      
-      if (kDebugMode) {
-        debugPrint('✅ Post edited: $postId');
-      }
-      
-    } catch (e) {
-      if (kDebugMode) {
-        debugPrint('❌ Error editing post: $e');
-      }
-      throw Exception('Fehler beim Bearbeiten: $e');
-    }
+    final client = Supabase.instance.client;
+    final userId = client.auth.currentUser?.id;
+    if (userId == null) throw Exception('Nicht eingeloggt');
+    await client.from('community_posts').update({
+      'content': content,
+      'tags': tags,
+      'updated_at': DateTime.now().toIso8601String(),
+    }).eq('id', postId).eq('user_id', userId);
+    if (kDebugMode) debugPrint('✅ Post bearbeitet: $postId');
   }
   
   /// Get comments for a post
