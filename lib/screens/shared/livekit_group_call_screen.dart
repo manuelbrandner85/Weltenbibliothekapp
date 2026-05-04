@@ -21,6 +21,8 @@ import 'package:livekit_client/livekit_client.dart' as lk;
 import '../../config/wb_design.dart';
 import '../../providers/livekit_call_provider.dart';
 import '../../services/livekit_call_service.dart';
+import '../../services/live_caption_service.dart';
+import '../../widgets/live_caption_overlay.dart';
 import '../../widgets/livekit_mini_bar.dart';
 import '../../widgets/livekit_reactions_overlay.dart';
 
@@ -56,6 +58,7 @@ class _LiveKitGroupCallScreenState
     with TickerProviderStateMixin {
   bool _hasJoined = false;
   bool _isLeaving = false;
+  bool _captionsEnabled = false;
   late final AnimationController _bgController;
   late final Animation<double> _bgAnimation;
 
@@ -187,6 +190,9 @@ class _LiveKitGroupCallScreenState
               // (Body + ControlBar) damit Emojis durchgängig nach oben
               // floaten können. IgnorePointer schützt Touch-Events.
               LiveKitReactionsOverlay(reactions: svc.reactionsStream),
+              // 🎙️ B8: Caption-Overlay (liegt über allem, unter Reactions)
+              if (_captionsEnabled)
+                LiveCaptionOverlay(service: LiveCaptionService.instance),
             ],
           ),
           child: SafeArea(
@@ -205,6 +211,11 @@ class _LiveKitGroupCallScreenState
                   onToggleAudioOnly: () => svc.toggleAudioOnlyMode(),
                   viewMode: svc.viewMode,
                   onToggleViewMode: () => svc.toggleViewMode(),
+                  captionsEnabled: _captionsEnabled,
+                  onToggleCaptions: () async {
+                    final nowOn = await LiveCaptionService.instance.toggle();
+                    if (mounted) setState(() => _captionsEnabled = nowOn);
+                  },
                   onClose: () async {
                     if (await _confirmLeave()) await _leaveAndPop();
                   },
@@ -512,6 +523,9 @@ class _TopBar extends StatelessWidget {
   // 🔁 B6: Layout-Toggle (gallery / speaker-view)
   final LiveKitViewMode viewMode;
   final VoidCallback onToggleViewMode;
+  // 🎙️ B8: Live-Untertitel
+  final bool captionsEnabled;
+  final VoidCallback onToggleCaptions;
   final VoidCallback onClose;
 
   const _TopBar({
@@ -524,6 +538,8 @@ class _TopBar extends StatelessWidget {
     required this.onToggleAudioOnly,
     required this.viewMode,
     required this.onToggleViewMode,
+    required this.captionsEnabled,
+    required this.onToggleCaptions,
     required this.onClose,
   });
 
@@ -766,6 +782,24 @@ class _TopBar extends StatelessWidget {
                     color: viewMode == LiveKitViewMode.speaker
                         ? accent
                         : WbDesign.textTertiary,
+                    size: 20,
+                  ),
+                ),
+              ),
+              // 🎙️ B8: Live-Untertitel-Toggle
+              SizedBox(
+                width: 38,
+                height: 38,
+                child: IconButton(
+                  tooltip: captionsEnabled
+                      ? 'Untertitel aus'
+                      : 'Live-Untertitel an',
+                  onPressed: onToggleCaptions,
+                  icon: Icon(
+                    captionsEnabled
+                        ? Icons.closed_caption_rounded
+                        : Icons.closed_caption_disabled_rounded,
+                    color: captionsEnabled ? accent : WbDesign.textTertiary,
                     size: 20,
                   ),
                 ),

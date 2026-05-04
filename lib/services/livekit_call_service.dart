@@ -29,6 +29,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/api_config.dart';
+import 'live_caption_service.dart';
 
 /// Verbindungs-Phasen — granular damit die UI passende Indicator zeigen kann.
 enum LiveKitConnectionState {
@@ -558,6 +559,16 @@ class LiveKitCallService extends ChangeNotifier {
       _setState(LiveKitConnectionState.connected);
       _startDurationTimer();
 
+      // 🎙️ B8: Caption-Service mit Raum verknüpfen
+      final lp2 = room.localParticipant;
+      if (lp2 != null) {
+        LiveCaptionService.instance.attachRoom(
+          room,
+          lp2.identity,
+          displayName,
+        );
+      }
+
       // 🔁 Bundle 3.1: Token-Refresh-Loop starten — verhindert Auth-Verlust
       // bei langen Calls (Token-TTL 4h auf der Edge Function).
       _activeWorld = world;
@@ -703,6 +714,12 @@ class LiveKitCallService extends ChangeNotifier {
           return;
         }
 
+        // 🎙️ B8: Caption-Event → LiveCaptionService weiterleiten
+        if (type == 'caption') {
+          LiveCaptionService.instance.handleIncomingData(data, event.participant);
+          return;
+        }
+
         if (type != 'reaction') return;
         final emoji = data['emoji'];
         if (emoji is! String || emoji.isEmpty) return;
@@ -786,6 +803,9 @@ class LiveKitCallService extends ChangeNotifier {
       await _listener?.dispose();
     } catch (_) {}
     _listener = null;
+
+    // 🎙️ B8: Caption-Service vom Raum trennen
+    LiveCaptionService.instance.detachRoom();
 
     try {
       await _room?.disconnect();
