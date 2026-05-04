@@ -307,18 +307,40 @@ class LiveKitCallService extends ChangeNotifier {
       _attachRoomListener(room);
 
       // Connect-Optionen mit Auto-Subscribe — sonst hören Teilnehmer einander nicht.
-      // Hard-Timeout 30s: ohne den hängt die UI bei NAT/Firewall-Problemen
+      // Hard-Timeout 60s: ohne den hängt die UI bei NAT/Firewall-Problemen
       // ewig in "verbinde..." weil LiveKit intern endlos retried.
+      // Mobile/CGNAT-Netzwerke brauchen oft 15-25s für ICE-Gathering,
+      // 30s war zu knapp für slow LTE/3G.
+      //
+      // ICE-Server-Config: coturn auf 72.62.154.95:3478 als TURN-Relay
+      // damit User hinter symmetrischem NAT (Firmen-VPN, manche CGNAT)
+      // auch durchkommen. STUN-Server (Google) als Fallback für die
+      // initiale Public-IP-Erkennung.
+      // Creds sind public (auch im Repo) — abuse-mitigated via coturn
+      // Rate-Limits + denied-peer-ip für private Subnetze.
       await room
           .connect(
             livekitUrl,
             token,
-            connectOptions: const ConnectOptions(
-              autoSubscribe: true, // Remote-Tracks automatisch abonnieren
+            connectOptions: ConnectOptions(
+              autoSubscribe: true,
+              rtcConfiguration: const RTCConfiguration(
+                iceServers: [
+                  RTCIceServer(
+                    urls: [
+                      'turn:72.62.154.95:3478?transport=udp',
+                      'turn:72.62.154.95:3478?transport=tcp',
+                    ],
+                    username: 'wb-turn-2026',
+                    credential: 'WbCoturnRelay_a9b26485d407e7dc',
+                  ),
+                  RTCIceServer(urls: ['stun:stun.l.google.com:19302']),
+                ],
+              ),
             ),
           )
           .timeout(
-            const Duration(seconds: 30),
+            const Duration(seconds: 60),
             onTimeout: () {
               throw Exception(
                 'Verbindung zum Sprach-Server fehlgeschlagen — '
