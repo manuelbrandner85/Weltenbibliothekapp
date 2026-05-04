@@ -28,6 +28,7 @@ import 'widgets/cinematic_intro.dart';
 import 'widgets/kb_design.dart';
 import 'widgets/rote_faden_line.dart';
 import 'widgets/virgil_orb.dart';
+import 'widgets/virgil_panel.dart';
 
 class KaninchenbauScreen extends StatefulWidget {
   /// Optional vorausgewähltes Thema (z.B. von einem Tool-Button).
@@ -43,6 +44,7 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
   final _service = KaninchenbauService();
   final _scroll = ScrollController();
   final List<_ThreadState> _stack = [];
+  bool _virgilOpen = false;
 
   @override
   void initState() {
@@ -192,17 +194,55 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
             ),
           ],
         ),
-        // Virgil-Orb unten rechts
+        // Virgil-Orb unten rechts — öffnet Full-Panel beim Tap
         Positioned(
           right: 18,
           bottom: 18,
           child: VirgilOrb(
             insight: s.aiInsight,
             thinking: s.aiLoading,
+            onTap: () => setState(() => _virgilOpen = true),
           ),
         ),
+        // Virgil Full-Panel
+        if (_virgilOpen)
+          VirgilPanel(
+            topic: s.topic,
+            initialInsight: s.aiInsight,
+            cardContext: _buildCardContext(s),
+            onClose: () => setState(() => _virgilOpen = false),
+          ),
       ],
     );
+  }
+
+  /// Aggregiert den Inhalt aller geladenen Karten als Kontext für Virgil.
+  String _buildCardContext(_ThreadState s) {
+    final parts = <String>[];
+    if (s.identityData != null) {
+      final d = s.identityData!;
+      parts.add('Identität: ${d['label']} — ${d['description']}');
+    }
+    if (s.networkNodes.isNotEmpty) {
+      final names = s.networkNodes
+          .where((n) => n.id != 'center')
+          .map((n) => n.label)
+          .take(8)
+          .join(', ');
+      if (names.isNotEmpty) parts.add('Netzwerk: $names');
+    }
+    if (s.timelineEntries.isNotEmpty) {
+      final events = s.timelineEntries
+          .take(5)
+          .map((e) => '${e.year}: ${e.title}')
+          .join(' | ');
+      parts.add('Zeitstrahl: $events');
+    }
+    if (s.sources.isNotEmpty) {
+      final titles = s.sources.take(4).map((src) => src.title).join(' | ');
+      parts.add('Quellen: $titles');
+    }
+    return parts.join(' || ');
   }
 
   Widget _buildScrollContent(_ThreadState s) {

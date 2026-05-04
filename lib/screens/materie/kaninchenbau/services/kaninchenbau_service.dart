@@ -157,6 +157,53 @@ class KaninchenbauService {
     return result.take(6).toList();
   }
 
+  /// Virgil-Chat — mehrturnig. Übergibt vollständige Historie + Kontext aus Cards.
+  /// Format: messages = [{role: 'user'|'assistant', content: '...'}]
+  Future<String?> chatWithVirgil({
+    required List<Map<String, String>> messages,
+    required String topic,
+    String? cardContext,
+  }) async {
+    try {
+      final system =
+          'Du bist VIRGIL, ein investigativer Recherche-KI im Stil eines erfahrenen '
+          'Whistleblower-Beraters. Du sprichst Deutsch, knapp, präzise, ohne Floskeln. '
+          'Aktuelles Thema des Users: "$topic". '
+          '${cardContext != null ? "Bekannte Fakten aus den Karten: $cardContext" : ""} '
+          'Antworte direkt auf die Frage des Users — wenn etwas unklar ist, '
+          'sage was du nicht weißt. Schlage konkrete nächste Recherche-Schritte vor.';
+
+      final history = messages
+          .map((m) =>
+              '${m['role'] == 'user' ? 'USER' : 'VIRGIL'}: ${m['content']}')
+          .join('\n');
+      final body = jsonEncode({
+        'prompt': '$system\n\n$history\nVIRGIL:',
+        'max_tokens': 600,
+      });
+
+      final resp = await http
+          .post(
+            Uri.parse('${ApiConfig.workerUrl}/api/ai/ask'),
+            headers: {'Content-Type': 'application/json'},
+            body: body,
+          )
+          .timeout(const Duration(seconds: 30));
+
+      if (resp.statusCode != 200) return null;
+      final data = jsonDecode(resp.body) as Map<String, dynamic>;
+      return (data['response'] ??
+              data['answer'] ??
+              data['text'] ??
+              data['result'])
+          ?.toString()
+          .trim();
+    } catch (e) {
+      debugPrint('VIRGIL-Chat-Error: $e');
+      return null;
+    }
+  }
+
   /// AI-Insight via Cloudflare Worker (`/api/ai/ask` → Llama 3.1 8B).
   Future<String?> fetchAiInsight(String topic, {String? context}) async {
     try {
