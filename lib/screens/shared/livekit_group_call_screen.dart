@@ -203,6 +203,8 @@ class _LiveKitGroupCallScreenState
                   participantCount: svc.totalParticipantCount,
                   audioOnly: svc.audioOnlyMode,
                   onToggleAudioOnly: () => svc.toggleAudioOnlyMode(),
+                  viewMode: svc.viewMode,
+                  onToggleViewMode: () => svc.toggleViewMode(),
                   onClose: () async {
                     if (await _confirmLeave()) await _leaveAndPop();
                   },
@@ -280,28 +282,50 @@ class _LiveKitGroupCallScreenState
           },
         );
       case LiveKitConnectionState.connected:
-        // 🌌 Bundle 3: ValueListenableBuilder auf speakersNotifier — nur das
-        // Grid rebuildet wenn sich Sprecher ändern, nicht der ganze Screen.
+        // 🌌 Bundle 3: ValueListenableBuilder auf speakersNotifier.
+        // 🔁 Bundle 6: viewMode entscheidet ob Gallery oder Speaker-View.
         return ValueListenableBuilder<Set<String>>(
           valueListenable: svc.speakersNotifier,
-          builder: (_, speakers, __) => _ParticipantGrid(
-            world: widget.world,
-            localName: widget.displayName,
-            localAvatarUrl: widget.avatarUrl,
-            localIdentity: svc.room?.localParticipant?.identity,
-            remoteNames: svc.remoteParticipantNames,
-            micEnabled: svc.micEnabled,
-            cameraEnabled: svc.cameraEnabled,
-            accent: accent,
-            localVideoTrack: svc.localVideoTrack,
-            remoteVideoTracks: svc.remoteVideoTracks,
-            remoteMicActive: svc.isRemoteMicActive,
-            localHandRaised: svc.handRaised,
-            remoteHandRaised: svc.isRemoteHandRaised,
-            remoteAvatarUrl: svc.remoteAvatarUrl,
-            activeSpeakers: speakers,
-            qualityFor: svc.connectionQualityFor, // B2
-          ),
+          builder: (_, speakers, __) {
+            if (svc.viewMode == LiveKitViewMode.speaker) {
+              return _SpeakerView(
+                world: widget.world,
+                localName: widget.displayName,
+                localAvatarUrl: widget.avatarUrl,
+                localIdentity: svc.room?.localParticipant?.identity,
+                remoteNames: svc.remoteParticipantNames,
+                micEnabled: svc.micEnabled,
+                accent: accent,
+                localVideoTrack: svc.localVideoTrack,
+                remoteVideoTracks: svc.remoteVideoTracks,
+                remoteMicActive: svc.isRemoteMicActive,
+                localHandRaised: svc.handRaised,
+                remoteHandRaised: svc.isRemoteHandRaised,
+                remoteAvatarUrl: svc.remoteAvatarUrl,
+                activeSpeakers: speakers,
+                qualityFor: svc.connectionQualityFor,
+                pinnedIdentity: svc.pinnedIdentity,
+              );
+            }
+            return _ParticipantGrid(
+              world: widget.world,
+              localName: widget.displayName,
+              localAvatarUrl: widget.avatarUrl,
+              localIdentity: svc.room?.localParticipant?.identity,
+              remoteNames: svc.remoteParticipantNames,
+              micEnabled: svc.micEnabled,
+              cameraEnabled: svc.cameraEnabled,
+              accent: accent,
+              localVideoTrack: svc.localVideoTrack,
+              remoteVideoTracks: svc.remoteVideoTracks,
+              remoteMicActive: svc.isRemoteMicActive,
+              localHandRaised: svc.handRaised,
+              remoteHandRaised: svc.isRemoteHandRaised,
+              remoteAvatarUrl: svc.remoteAvatarUrl,
+              activeSpeakers: speakers,
+              qualityFor: svc.connectionQualityFor,
+            );
+          },
         );
     }
   }
@@ -483,6 +507,9 @@ class _TopBar extends StatelessWidget {
   final int participantCount;
   final bool audioOnly;
   final VoidCallback onToggleAudioOnly;
+  // 🔁 B6: Layout-Toggle (gallery / speaker-view)
+  final LiveKitViewMode viewMode;
+  final VoidCallback onToggleViewMode;
   final VoidCallback onClose;
 
   const _TopBar({
@@ -493,6 +520,8 @@ class _TopBar extends StatelessWidget {
     required this.participantCount,
     required this.audioOnly,
     required this.onToggleAudioOnly,
+    required this.viewMode,
+    required this.onToggleViewMode,
     required this.onClose,
   });
 
@@ -719,6 +748,26 @@ class _TopBar extends StatelessWidget {
                     ],
                   ),
                 ),
+              // 🔁 B6: Layout-Toggle (Gallery ↔ Speaker-View)
+              SizedBox(
+                width: 38,
+                height: 38,
+                child: IconButton(
+                  tooltip: viewMode == LiveKitViewMode.speaker
+                      ? 'Gallery-Ansicht (alle gleich groß)'
+                      : 'Speaker-Ansicht (aktiver Sprecher groß)',
+                  onPressed: onToggleViewMode,
+                  icon: Icon(
+                    viewMode == LiveKitViewMode.speaker
+                        ? Icons.view_quilt_rounded
+                        : Icons.grid_view_rounded,
+                    color: viewMode == LiveKitViewMode.speaker
+                        ? accent
+                        : WbDesign.textTertiary,
+                    size: 20,
+                  ),
+                ),
+              ),
               // 🎧 Audio-Only-Modus-Toggle (Akku/Bandbreite-Sparmodus)
               SizedBox(
                 width: 38,
@@ -1951,6 +2000,175 @@ class _QualityDot extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 🔁 BUNDLE 6: SPEAKER VIEW LAYOUT
+// Aktiver/gepinnter Sprecher GROSS oben, andere als kleiner Strip unten.
+// ═══════════════════════════════════════════════════════════════════════════
+
+class _SpeakerView extends StatelessWidget {
+  final String world;
+  final String localName;
+  final String? localAvatarUrl;
+  final String? localIdentity;
+  final List<String> remoteNames;
+  final bool micEnabled;
+  final Color accent;
+  final lk.VideoTrack? localVideoTrack;
+  final Map<String, lk.VideoTrack?> remoteVideoTracks;
+  final bool Function(String) remoteMicActive;
+  final bool localHandRaised;
+  final bool Function(String) remoteHandRaised;
+  final String? Function(String) remoteAvatarUrl;
+  final Set<String> activeSpeakers;
+  final LiveKitParticipantQuality Function(String) qualityFor;
+  final String? pinnedIdentity;
+
+  const _SpeakerView({
+    required this.world,
+    required this.localName,
+    required this.localAvatarUrl,
+    required this.localIdentity,
+    required this.remoteNames,
+    required this.micEnabled,
+    required this.accent,
+    required this.localVideoTrack,
+    required this.remoteVideoTracks,
+    required this.remoteMicActive,
+    required this.localHandRaised,
+    required this.remoteHandRaised,
+    required this.remoteAvatarUrl,
+    required this.activeSpeakers,
+    required this.qualityFor,
+    required this.pinnedIdentity,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final remoteIds = remoteVideoTracks.keys.toList();
+    String mainId = pinnedIdentity ?? '';
+    bool mainIsLocal = mainId == (localIdentity ?? '');
+    if (mainId.isEmpty || (!mainIsLocal && !remoteIds.contains(mainId))) {
+      if (remoteIds.isNotEmpty) {
+        mainId = remoteIds.first;
+        mainIsLocal = false;
+      } else {
+        mainId = localIdentity ?? '';
+        mainIsLocal = true;
+      }
+    }
+
+    final stripIds = <({String id, bool local})>[];
+    if (!mainIsLocal && (localIdentity?.isNotEmpty ?? false)) {
+      stripIds.add((id: localIdentity!, local: true));
+    }
+    for (final id in remoteIds) {
+      if (id != mainId) stripIds.add((id: id, local: false));
+    }
+
+    String mainName;
+    bool mainMic;
+    bool mainHand;
+    String? mainAvatar;
+    lk.VideoTrack? mainVideo;
+    if (mainIsLocal) {
+      mainName = localName;
+      mainMic = micEnabled;
+      mainHand = localHandRaised;
+      mainAvatar = localAvatarUrl;
+      mainVideo = localVideoTrack;
+    } else {
+      final idx = remoteIds.indexOf(mainId);
+      mainName = (idx >= 0 && idx < remoteNames.length) ? remoteNames[idx] : mainId;
+      mainMic = remoteMicActive(mainId);
+      mainHand = remoteHandRaised(mainId);
+      mainAvatar = remoteAvatarUrl(mainId);
+      mainVideo = remoteVideoTracks[mainId];
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+      child: Column(
+        children: [
+          Expanded(
+            flex: 3,
+            child: _ParticipantTile(
+              name: mainName,
+              isLocal: mainIsLocal,
+              micEnabled: mainMic,
+              world: world,
+              accent: accent,
+              isSolo: true,
+              videoTrack: mainVideo,
+              handRaised: mainHand,
+              avatarUrl: mainAvatar,
+              isActiveSpeaker:
+                  mainId.isNotEmpty && activeSpeakers.contains(mainId),
+              quality: mainId.isEmpty
+                  ? LiveKitParticipantQuality.unknown
+                  : qualityFor(mainId),
+            ),
+          ),
+          if (stripIds.isNotEmpty) const SizedBox(height: 10),
+          if (stripIds.isNotEmpty)
+            SizedBox(
+              height: 110,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: stripIds.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                itemBuilder: (_, i) {
+                  final entry = stripIds[i];
+                  final id = entry.id;
+                  final isLocal = entry.local;
+                  String name;
+                  bool mic;
+                  bool hand;
+                  String? avatar;
+                  lk.VideoTrack? video;
+                  if (isLocal) {
+                    name = localName;
+                    mic = micEnabled;
+                    hand = localHandRaised;
+                    avatar = localAvatarUrl;
+                    video = localVideoTrack;
+                  } else {
+                    final idx = remoteIds.indexOf(id);
+                    name = (idx >= 0 && idx < remoteNames.length)
+                        ? remoteNames[idx]
+                        : id;
+                    mic = remoteMicActive(id);
+                    hand = remoteHandRaised(id);
+                    avatar = remoteAvatarUrl(id);
+                    video = remoteVideoTracks[id];
+                  }
+                  return SizedBox(
+                    width: 95,
+                    child: _ParticipantTile(
+                      name: name,
+                      isLocal: isLocal,
+                      micEnabled: mic,
+                      world: world,
+                      accent: accent,
+                      isSolo: false,
+                      videoTrack: video,
+                      handRaised: hand,
+                      avatarUrl: avatar,
+                      isActiveSpeaker:
+                          id.isNotEmpty && activeSpeakers.contains(id),
+                      quality: id.isEmpty
+                          ? LiveKitParticipantQuality.unknown
+                          : qualityFor(id),
+                    ),
+                  );
+                },
+              ),
+            ),
+        ],
       ),
     );
   }
