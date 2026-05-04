@@ -11,6 +11,7 @@
 ///   - `_StatusView` — Connecting / Error / Disconnected State
 library;
 
+import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui';
 
@@ -20,9 +21,11 @@ import 'package:livekit_client/livekit_client.dart' as lk;
 
 import '../../config/wb_design.dart';
 import '../../providers/livekit_call_provider.dart';
+import '../../services/cowatch_service.dart';
 import '../../services/livekit_call_service.dart';
 import '../../services/live_caption_service.dart';
 import '../../services/soundscape_service.dart';
+import '../../widgets/cowatch_panel.dart';
 import '../../widgets/live_caption_overlay.dart';
 import '../../widgets/livekit_mini_bar.dart';
 import '../../widgets/livekit_reactions_overlay.dart';
@@ -64,6 +67,10 @@ class _LiveKitGroupCallScreenState
   bool _soundscapeEnabled = false;
   bool _heilEnabled = false;
   int _heilHz = 432;
+  // 📺 B10.4: Co-Watch
+  bool _coWatchVisible = false;
+  String? _coWatchVideoId;
+  StreamSubscription<CoWatchEvent>? _coWatchSub;
   late final AnimationController _bgController;
   late final Animation<double> _bgAnimation;
 
@@ -80,10 +87,27 @@ class _LiveKitGroupCallScreenState
     LiveKitScreenVisibility.instance.setVisible(true);
 
     WidgetsBinding.instance.addPostFrameCallback((_) => _join());
+
+    // 📺 B10.4: CoWatch-Events vom Remote empfangen
+    _coWatchSub = CoWatchService.instance.eventStream.listen((event) {
+      if (!mounted) return;
+      if (event.action == CoWatchAction.load && event.videoId != null) {
+        setState(() {
+          _coWatchVideoId = event.videoId;
+          _coWatchVisible = true;
+        });
+      } else if (event.action == CoWatchAction.close) {
+        setState(() {
+          _coWatchVisible = false;
+          _coWatchVideoId = null;
+        });
+      }
+    });
   }
 
   @override
   void dispose() {
+    _coWatchSub?.cancel();
     LiveKitScreenVisibility.instance.setVisible(false);
     _bgController.dispose();
     SoundscapeService.instance.stopAll();
@@ -200,6 +224,23 @@ class _LiveKitGroupCallScreenState
               // 🎙️ B8: Caption-Overlay (liegt über allem, unter Reactions)
               if (_captionsEnabled)
                 LiveCaptionOverlay(service: LiveCaptionService.instance),
+              // 📺 B10.4: Co-Watch-Panel (schwebend, 70% Höhe)
+              if (_coWatchVisible && _coWatchVideoId != null)
+                Positioned(
+                  left: 12,
+                  right: 12,
+                  bottom: 100,
+                  height: MediaQuery.of(context).size.height * 0.55,
+                  child: CoWatchPanel(
+                    videoId: _coWatchVideoId!,
+                    world: widget.world,
+                    isHost: true,
+                    service: CoWatchService.instance,
+                    onClose: () => setState(() {
+                      _coWatchVisible = false;
+                    }),
+                  ),
+                ),
             ],
           ),
           child: SafeArea(
@@ -251,6 +292,18 @@ class _LiveKitGroupCallScreenState
                 _ControlBar(
                   world: widget.world,
                   service: svc,
+                  onCoWatch: () async {
+                    final url = await showCoWatchInputDialog(
+                        context, widget.world);
+                    if (url == null || !mounted) return;
+                    await CoWatchService.instance.loadVideo(url);
+                    setState(() {
+                      _coWatchVideoId =
+                          CoWatchService.instance.currentVideoId;
+                      _coWatchVisible =
+                          CoWatchService.instance.currentVideoId != null;
+                    });
+                  },
                   onLeave: () async {
                     if (await _confirmLeave()) await _leaveAndPop();
                   },
@@ -1661,11 +1714,13 @@ class _ParticipantTileState extends State<_ParticipantTile>
 class _ControlBar extends StatelessWidget {
   final String world;
   final LiveKitCallService service;
+  final VoidCallback onCoWatch;
   final VoidCallback onLeave;
 
   const _ControlBar({
     required this.world,
     required this.service,
+    required this.onCoWatch,
     required this.onLeave,
   });
 
@@ -1751,6 +1806,15 @@ class _ControlBar extends StatelessWidget {
                     activeColor: accent,
                     enabled: isConnected,
                     onTap: () => _showReactionsPicker(context, world, service),
+                  ),
+                  // 📺 B10.4: Co-Watch
+                  _CtrlBtn(
+                    icon: Icons.tv_rounded,
+                    label: 'Co-Watch',
+                    active: CoWatchService.instance.active,
+                    activeColor: accent,
+                    enabled: isConnected,
+                    onTap: onCoWatch,
                   ),
                   // Hand heben
                   _CtrlBtn(
