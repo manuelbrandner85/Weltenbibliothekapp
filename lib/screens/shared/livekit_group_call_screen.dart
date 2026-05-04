@@ -22,6 +22,7 @@ import '../../config/wb_design.dart';
 import '../../providers/livekit_call_provider.dart';
 import '../../services/livekit_call_service.dart';
 import '../../services/live_caption_service.dart';
+import '../../services/soundscape_service.dart';
 import '../../widgets/live_caption_overlay.dart';
 import '../../widgets/livekit_mini_bar.dart';
 import '../../widgets/livekit_reactions_overlay.dart';
@@ -59,6 +60,10 @@ class _LiveKitGroupCallScreenState
   bool _hasJoined = false;
   bool _isLeaving = false;
   bool _captionsEnabled = false;
+  // 🎵 B10.1/B10.2: Soundscape + Heilfrequenz
+  bool _soundscapeEnabled = false;
+  bool _heilEnabled = false;
+  int _heilHz = 432;
   late final AnimationController _bgController;
   late final Animation<double> _bgAnimation;
 
@@ -81,6 +86,7 @@ class _LiveKitGroupCallScreenState
   void dispose() {
     LiveKitScreenVisibility.instance.setVisible(false);
     _bgController.dispose();
+    SoundscapeService.instance.stopAll();
     super.dispose();
   }
 
@@ -105,6 +111,7 @@ class _LiveKitGroupCallScreenState
     if (_isLeaving) return;
     setState(() => _isLeaving = true);
     final svc = ref.read(livekitCallServiceProvider);
+    await SoundscapeService.instance.stopAll();
     await svc.leaveRoom();
     if (mounted) Navigator.of(context).pop();
   }
@@ -215,6 +222,26 @@ class _LiveKitGroupCallScreenState
                   onToggleCaptions: () async {
                     final nowOn = await LiveCaptionService.instance.toggle();
                     if (mounted) setState(() => _captionsEnabled = nowOn);
+                  },
+                  // 🎵 B10.1: Soundscape-Atmosphäre
+                  soundscapeEnabled: _soundscapeEnabled,
+                  onToggleSoundscape: () async {
+                    final nowOn = await SoundscapeService.instance
+                        .toggleSoundscape(widget.world);
+                    if (mounted) setState(() => _soundscapeEnabled = nowOn);
+                  },
+                  // 🎵 B10.2: Heilfrequenz (nur Energie)
+                  heilEnabled: _heilEnabled,
+                  heilHz: _heilHz,
+                  onToggleHeil: () async {
+                    final nowOn = await SoundscapeService.instance
+                        .toggleHeilfrequenz();
+                    if (mounted) setState(() => _heilEnabled = nowOn);
+                  },
+                  onSelectHeilHz: (hz) async {
+                    setState(() => _heilHz = hz);
+                    await SoundscapeService.instance.toggleHeilfrequenz(hz: hz);
+                    if (mounted) setState(() => _heilEnabled = true);
                   },
                   onClose: () async {
                     if (await _confirmLeave()) await _leaveAndPop();
@@ -526,6 +553,14 @@ class _TopBar extends StatelessWidget {
   // 🎙️ B8: Live-Untertitel
   final bool captionsEnabled;
   final VoidCallback onToggleCaptions;
+  // 🎵 B10.1: Soundscape-Atmosphäre
+  final bool soundscapeEnabled;
+  final VoidCallback onToggleSoundscape;
+  // 🎵 B10.2: Heilfrequenz (Energie-Welt)
+  final bool heilEnabled;
+  final int heilHz;
+  final VoidCallback onToggleHeil;
+  final void Function(int hz) onSelectHeilHz;
   final VoidCallback onClose;
 
   const _TopBar({
@@ -540,6 +575,12 @@ class _TopBar extends StatelessWidget {
     required this.onToggleViewMode,
     required this.captionsEnabled,
     required this.onToggleCaptions,
+    required this.soundscapeEnabled,
+    required this.onToggleSoundscape,
+    required this.heilEnabled,
+    required this.heilHz,
+    required this.onToggleHeil,
+    required this.onSelectHeilHz,
     required this.onClose,
   });
 
@@ -588,6 +629,145 @@ class _TopBar extends StatelessWidget {
       return last.isNotEmpty ? '${last[0].toUpperCase()}${last.substring(1)}' : r;
     }
     return r;
+  }
+
+  void _showHeilfrequenzPicker(BuildContext context) {
+    final accent = WbDesign.accent(world);
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => ClipRRect(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          child: Container(
+            decoration: BoxDecoration(
+              color: WbDesign.surface(world).withValues(alpha: 0.95),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+              border: Border(
+                top: BorderSide(color: accent.withValues(alpha: 0.25), width: 1),
+              ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 12),
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: WbDesign.textTertiary.withValues(alpha: 0.4),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Row(
+                    children: [
+                      Icon(Icons.self_improvement_rounded,
+                          color: accent, size: 20),
+                      const SizedBox(width: 10),
+                      Text(
+                        'Heilfrequenz wählen',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const Spacer(),
+                      if (heilEnabled)
+                        TextButton(
+                          onPressed: () {
+                            Navigator.pop(ctx);
+                            onToggleHeil();
+                          },
+                          child: Text('Aus',
+                              style: TextStyle(
+                                  color: WbDesign.textTertiary, fontSize: 13)),
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  height: 300,
+                  child: ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: kHeilfrequenzen.length,
+                    itemBuilder: (_, i) {
+                      final entry = kHeilfrequenzen[i];
+                      final isSelected =
+                          heilEnabled && entry.hz == heilHz;
+                      return InkWell(
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          onSelectHeilHz(entry.hz);
+                        },
+                        borderRadius: BorderRadius.circular(12),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          margin: const EdgeInsets.symmetric(vertical: 3),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? accent.withValues(alpha: 0.18)
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: isSelected
+                                  ? accent.withValues(alpha: 0.40)
+                                  : WbDesign.borderMedium
+                                      .withValues(alpha: 0.0),
+                              width: isSelected ? 1 : 0,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 52,
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  entry.label,
+                                  style: TextStyle(
+                                    color: isSelected
+                                        ? accent
+                                        : Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  entry.description,
+                                  style: TextStyle(
+                                    color: WbDesign.textSecondary,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ),
+                              if (isSelected)
+                                Icon(Icons.volume_up_rounded,
+                                    color: accent, size: 16),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                SizedBox(
+                    height: MediaQuery.of(ctx).padding.bottom + 12),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -804,6 +984,41 @@ class _TopBar extends StatelessWidget {
                   ),
                 ),
               ),
+              // 🎵 B10.1: Soundscape-Atmosphäre-Toggle
+              SizedBox(
+                width: 38,
+                height: 38,
+                child: IconButton(
+                  tooltip: soundscapeEnabled
+                      ? 'Atmosphäre aus'
+                      : 'Atmosphäre an (Hintergrund-Sound)',
+                  onPressed: onToggleSoundscape,
+                  icon: Icon(
+                    soundscapeEnabled
+                        ? Icons.graphic_eq_rounded
+                        : Icons.music_note_rounded,
+                    color: soundscapeEnabled ? accent : WbDesign.textTertiary,
+                    size: 20,
+                  ),
+                ),
+              ),
+              // 🎵 B10.2: Heilfrequenz-Picker (nur Energie-Welt)
+              if (world == 'energie')
+                Builder(builder: (ctx) => SizedBox(
+                  width: 38,
+                  height: 38,
+                  child: IconButton(
+                    tooltip: heilEnabled
+                        ? 'Heilfrequenz: $heilHz Hz (Tippen zum Ändern)'
+                        : 'Heilfrequenz wählen',
+                    onPressed: () => _showHeilfrequenzPicker(ctx),
+                    icon: Icon(
+                      Icons.self_improvement_rounded,
+                      color: heilEnabled ? accent : WbDesign.textTertiary,
+                      size: 20,
+                    ),
+                  ),
+                )),
               // 🎧 Audio-Only-Modus-Toggle (Akku/Bandbreite-Sparmodus)
               SizedBox(
                 width: 38,
