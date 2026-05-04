@@ -687,6 +687,22 @@ class LiveKitCallService extends ChangeNotifier {
         final data = jsonDecode(raw);
         if (data is! Map) return;
         final type = data['type'];
+
+        // 🔦 B11: Spotlight — Host pinnt Teilnehmer für alle
+        if (type == 'spotlight') {
+          final identity = data['identity'] as String?;
+          _pinnedIdentity = identity;
+          _autoSpeakerFocus = false;
+          notifyListeners();
+          return;
+        }
+        if (type == 'spotlight_clear') {
+          _pinnedIdentity = null;
+          _autoSpeakerFocus = true;
+          notifyListeners();
+          return;
+        }
+
         if (type != 'reaction') return;
         final emoji = data['emoji'];
         if (emoji is! String || emoji.isEmpty) return;
@@ -1261,6 +1277,26 @@ class LiveKitCallService extends ChangeNotifier {
 
   void setAutoSpeakerFocus(bool enabled) {
     _autoSpeakerFocus = enabled;
+    notifyListeners();
+  }
+
+  // 🔦 B11: Spotlight — pinnt Teilnehmer für ALLE via DataChannel
+  Future<void> sendSpotlight(String? identity) async {
+    final lp = _room?.localParticipant;
+    if (lp == null) return;
+    final payload = jsonEncode(
+      identity != null
+          ? {'type': 'spotlight', 'identity': identity}
+          : {'type': 'spotlight_clear'},
+    );
+    try {
+      await lp.publishData(utf8.encode(payload), reliable: true);
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ sendSpotlight failed: $e');
+    }
+    // Lokal sofort anwenden
+    _pinnedIdentity = identity;
+    _autoSpeakerFocus = identity == null;
     notifyListeners();
   }
 

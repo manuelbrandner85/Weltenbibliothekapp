@@ -305,6 +305,7 @@ class _LiveKitGroupCallScreenState
                 activeSpeakers: speakers,
                 qualityFor: svc.connectionQualityFor,
                 pinnedIdentity: svc.pinnedIdentity,
+                onSpotlight: (id) => svc.sendSpotlight(id),
               );
             }
             return _ParticipantGrid(
@@ -324,6 +325,7 @@ class _LiveKitGroupCallScreenState
               remoteAvatarUrl: svc.remoteAvatarUrl,
               activeSpeakers: speakers,
               qualityFor: svc.connectionQualityFor,
+              onSpotlight: (id) => svc.sendSpotlight(id),
             );
           },
         );
@@ -831,6 +833,8 @@ class _ParticipantGrid extends StatelessWidget {
   final LiveKitParticipantQuality Function(String) qualityFor;
   // 🌌 B3: aktive Sprecher (Identities-Set) für Aura-Glow
   final Set<String> activeSpeakers;
+  // 🔦 B11: Spotlight-Callback (identity → für alle pinnen)
+  final void Function(String identity)? onSpotlight;
 
   const _ParticipantGrid({
     required this.world,
@@ -849,6 +853,7 @@ class _ParticipantGrid extends StatelessWidget {
     required this.remoteAvatarUrl,
     required this.qualityFor,
     this.activeSpeakers = const <String>{},
+    this.onSpotlight,
   });
 
   /// Map: index → (videoTrack, micActive, handRaised, avatarUrl)
@@ -914,8 +919,13 @@ class _ParticipantGrid extends StatelessWidget {
       final id = isLocal
           ? (localIdentity ?? '')
           : (i - 1 < identitiesSorted.length ? identitiesSorted[i - 1] : '');
+      final name = allNames[i];
+      // 🔦 B11: Long-Press nur für Remote-Teilnehmer (lokaler pinnt sich nicht selbst)
+      final spotlight = (!isLocal && id.isNotEmpty && onSpotlight != null)
+          ? () => _showSpotlightSheet(context, name, id, accent, onSpotlight!)
+          : null;
       return _ParticipantTile(
-        name: allNames[i],
+        name: name,
         isLocal: isLocal,
         micEnabled: info.mic,
         world: world,
@@ -928,6 +938,7 @@ class _ParticipantGrid extends StatelessWidget {
         quality: id.isEmpty
             ? LiveKitParticipantQuality.unknown
             : qualityFor(id),
+        onLongPress: spotlight,
       );
     });
 
@@ -967,6 +978,8 @@ class _ParticipantTile extends StatefulWidget {
   final LiveKitParticipantQuality quality;
   // 🌌 B3: aktiver Sprecher → animierte Aura um's Tile
   final bool isActiveSpeaker;
+  // 🔦 B11: Long-Press → Spotlight-Aktion
+  final VoidCallback? onLongPress;
 
   const _ParticipantTile({
     required this.name,
@@ -980,6 +993,7 @@ class _ParticipantTile extends StatefulWidget {
     this.avatarUrl,
     this.quality = LiveKitParticipantQuality.unknown,
     this.isActiveSpeaker = false,
+    this.onLongPress,
   });
 
   @override
@@ -1058,39 +1072,48 @@ class _ParticipantTileState extends State<_ParticipantTile>
 
     // 🌌 B3: Aktive-Sprecher-Aura — pulsierender Welt-farbiger Ring
     // umschließt das Tile wenn die Person grade redet.
-    if (!widget.isActiveSpeaker) return tileWithQuality;
+    Widget result;
+    if (!widget.isActiveSpeaker) {
+      result = tileWithQuality;
+    } else {
+      result = AnimatedBuilder(
+        animation: _pulseAnim,
+        builder: (_, __) {
+          final t = _pulseAnim.value; // 0.95..1.05
+          final c1 = isMaterie
+              ? const Color(0xFFE53935) // materie rot
+              : const Color(0xFF7C4DFF); // energie lila
+          final c2 = isMaterie
+              ? const Color(0xFF2979FF) // materie blau
+              : const Color(0xFF00E5FF); // energie cyan
+          final auraColor = Color.lerp(c1, c2, t) ?? widget.accent;
+          return Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(WbDesign.radiusCard + 4),
+              boxShadow: [
+                BoxShadow(
+                  color: auraColor.withValues(alpha: 0.55),
+                  blurRadius: 16 + (t * 8),
+                  spreadRadius: 2 + (t * 2),
+                ),
+                BoxShadow(
+                  color: auraColor.withValues(alpha: 0.18),
+                  blurRadius: 32 + (t * 16),
+                  spreadRadius: 6 + (t * 4),
+                ),
+              ],
+            ),
+            child: tileWithQuality,
+          );
+        },
+      );
+    }
 
-    return AnimatedBuilder(
-      animation: _pulseAnim,
-      builder: (_, __) {
-        final t = _pulseAnim.value; // 0.95..1.05
-        final c1 = isMaterie
-            ? const Color(0xFFE53935) // materie rot
-            : const Color(0xFF7C4DFF); // energie lila
-        final c2 = isMaterie
-            ? const Color(0xFF2979FF) // materie blau
-            : const Color(0xFF00E5FF); // energie cyan
-        final auraColor = Color.lerp(c1, c2, t) ?? widget.accent;
-        return Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(WbDesign.radiusCard + 4),
-            boxShadow: [
-              BoxShadow(
-                color: auraColor.withValues(alpha: 0.55),
-                blurRadius: 16 + (t * 8),
-                spreadRadius: 2 + (t * 2),
-              ),
-              BoxShadow(
-                color: auraColor.withValues(alpha: 0.18),
-                blurRadius: 32 + (t * 16),
-                spreadRadius: 6 + (t * 4),
-              ),
-            ],
-          ),
-          child: tileWithQuality,
-        );
-      },
-    );
+    // 🔦 B11: Long-Press wrappen wenn Callback vorhanden
+    if (widget.onLongPress != null) {
+      return GestureDetector(onLongPress: widget.onLongPress, child: result);
+    }
+    return result;
   }
 
   Widget _buildTileBody(BuildContext context, String initials, double avatarSize,
@@ -2010,6 +2033,61 @@ class _QualityDot extends StatelessWidget {
 // Aktiver/gepinnter Sprecher GROSS oben, andere als kleiner Strip unten.
 // ═══════════════════════════════════════════════════════════════════════════
 
+// 🔦 B11: Spotlight-Bottom-Sheet — zeigt "Für alle pinnen" Option
+void _showSpotlightSheet(
+  BuildContext context,
+  String name,
+  String identity,
+  Color accent,
+  void Function(String) onSpotlight,
+) {
+  showModalBottomSheet(
+    context: context,
+    backgroundColor: const Color(0xFF0D0D1A),
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (_) => Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 36,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 16),
+          ListTile(
+            leading: CircleAvatar(
+              backgroundColor: accent.withValues(alpha: 0.15),
+              child: Icon(Icons.push_pin_rounded, color: accent),
+            ),
+            title: Text(
+              'Für alle pinnen',
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            subtitle: Text(
+              '$name wird für alle Teilnehmer hervorgehoben',
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.55)),
+            ),
+            onTap: () {
+              Navigator.pop(context);
+              onSpotlight(identity);
+            },
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
 class _SpeakerView extends StatelessWidget {
   final String world;
   final String localName;
@@ -2027,6 +2105,8 @@ class _SpeakerView extends StatelessWidget {
   final Set<String> activeSpeakers;
   final LiveKitParticipantQuality Function(String) qualityFor;
   final String? pinnedIdentity;
+  // 🔦 B11: Spotlight-Callback
+  final void Function(String identity)? onSpotlight;
 
   const _SpeakerView({
     required this.world,
@@ -2045,6 +2125,7 @@ class _SpeakerView extends StatelessWidget {
     required this.activeSpeakers,
     required this.qualityFor,
     required this.pinnedIdentity,
+    this.onSpotlight,
   });
 
   @override
@@ -2146,6 +2227,9 @@ class _SpeakerView extends StatelessWidget {
                     avatar = remoteAvatarUrl(id);
                     video = remoteVideoTracks[id];
                   }
+                  final spotlight = (!isLocal && id.isNotEmpty && onSpotlight != null)
+                      ? () => _showSpotlightSheet(context, name, id, accent, onSpotlight!)
+                      : null;
                   return SizedBox(
                     width: 95,
                     child: _ParticipantTile(
@@ -2163,6 +2247,7 @@ class _SpeakerView extends StatelessWidget {
                       quality: id.isEmpty
                           ? LiveKitParticipantQuality.unknown
                           : qualityFor(id),
+                      onLongPress: spotlight,
                     ),
                   );
                 },
