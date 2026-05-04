@@ -22,10 +22,12 @@ import 'package:livekit_client/livekit_client.dart' as lk;
 import '../../config/wb_design.dart';
 import '../../providers/livekit_call_provider.dart';
 import '../../services/cowatch_service.dart';
+import '../../services/incall_chat_service.dart';
 import '../../services/livekit_call_service.dart';
 import '../../services/live_caption_service.dart';
 import '../../services/soundscape_service.dart';
 import '../../widgets/cowatch_panel.dart';
+import '../../widgets/incall_chat_panel.dart';
 import '../../widgets/live_caption_overlay.dart';
 import '../../widgets/livekit_mini_bar.dart';
 import '../../widgets/livekit_reactions_overlay.dart';
@@ -71,6 +73,8 @@ class _LiveKitGroupCallScreenState
   bool _coWatchVisible = false;
   String? _coWatchVideoId;
   StreamSubscription<CoWatchEvent>? _coWatchSub;
+  // 💬 In-Call-Chat
+  bool _chatVisible = false;
   late final AnimationController _bgController;
   late final Animation<double> _bgAnimation;
 
@@ -224,7 +228,7 @@ class _LiveKitGroupCallScreenState
               // 🎙️ B8: Caption-Overlay (liegt über allem, unter Reactions)
               if (_captionsEnabled)
                 LiveCaptionOverlay(service: LiveCaptionService.instance),
-              // 📺 B10.4: Co-Watch-Panel (schwebend, 70% Höhe)
+              // 📺 B10.4: Co-Watch-Panel (schwebend, 55% Höhe)
               if (_coWatchVisible && _coWatchVideoId != null)
                 Positioned(
                   left: 12,
@@ -239,6 +243,19 @@ class _LiveKitGroupCallScreenState
                     onClose: () => setState(() {
                       _coWatchVisible = false;
                     }),
+                  ),
+                ),
+              // 💬 In-Call-Chat-Panel (schwebend über ControlBar)
+              if (_chatVisible)
+                Positioned(
+                  left: 12,
+                  right: 12,
+                  bottom: 100,
+                  height: MediaQuery.of(context).size.height * 0.52,
+                  child: InCallChatPanel(
+                    world: widget.world,
+                    service: InCallChatService.instance,
+                    onClose: () => setState(() => _chatVisible = false),
                   ),
                 ),
             ],
@@ -304,6 +321,15 @@ class _LiveKitGroupCallScreenState
                           CoWatchService.instance.currentVideoId != null;
                     });
                   },
+                  onToggleChat: () {
+                    setState(() {
+                      _chatVisible = !_chatVisible;
+                      if (_chatVisible) {
+                        InCallChatService.instance.markAllRead();
+                      }
+                    });
+                  },
+                  chatVisible: _chatVisible,
                   onLeave: () async {
                     if (await _confirmLeave()) await _leaveAndPop();
                   },
@@ -1715,12 +1741,16 @@ class _ControlBar extends StatelessWidget {
   final String world;
   final LiveKitCallService service;
   final VoidCallback onCoWatch;
+  final VoidCallback onToggleChat;
+  final bool chatVisible;
   final VoidCallback onLeave;
 
   const _ControlBar({
     required this.world,
     required this.service,
     required this.onCoWatch,
+    required this.onToggleChat,
+    required this.chatVisible,
     required this.onLeave,
   });
 
@@ -1797,6 +1827,51 @@ class _ControlBar extends StatelessWidget {
                     activeColor: accent,
                     enabled: isConnected,
                     onTap: () => service.toggleScreenShare(),
+                  ),
+                  // 💬 In-Call-Chat
+                  ValueListenableBuilder<int>(
+                    valueListenable:
+                        InCallChatService.instance.unreadNotifier,
+                    builder: (_, unread, __) => Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        _CtrlBtn(
+                          icon: chatVisible
+                              ? Icons.chat_bubble_rounded
+                              : Icons.chat_bubble_outline_rounded,
+                          label: 'Chat',
+                          active: chatVisible,
+                          activeColor: accent,
+                          enabled: isConnected,
+                          onTap: onToggleChat,
+                        ),
+                        if (unread > 0 && !chatVisible)
+                          Positioned(
+                            top: 0,
+                            right: 0,
+                            child: Container(
+                              width: 16,
+                              height: 16,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFF1744),
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                    color: Colors.black, width: 1.5),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  unread > 9 ? '9+' : '$unread',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                   // 💖 Bundle 4: Reactions-Picker
                   _CtrlBtn(

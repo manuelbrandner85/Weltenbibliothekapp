@@ -30,6 +30,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/api_config.dart';
 import 'cowatch_service.dart';
+import 'incall_chat_service.dart';
 import 'live_caption_service.dart';
 
 /// Verbindungs-Phasen — granular damit die UI passende Indicator zeigen kann.
@@ -569,6 +570,12 @@ class LiveKitCallService extends ChangeNotifier {
           displayName ?? lp2.identity,
         );
         CoWatchService.instance.attachRoom(room, lp2.identity);
+        // 💬 In-Call-Chat anhängen
+        InCallChatService.instance.attachRoom(
+          room,
+          lp2.identity,
+          displayName ?? lp2.identity,
+        );
       }
 
       // 🔁 Bundle 3.1: Token-Refresh-Loop starten — verhindert Auth-Verlust
@@ -727,6 +734,11 @@ class LiveKitCallService extends ChangeNotifier {
           CoWatchService.instance.handleIncomingData(data, event.participant);
           return;
         }
+        // 💬 In-Call-Chat-Event
+        if (type == 'incall_chat') {
+          InCallChatService.instance.handleIncomingData(data, event.participant);
+          return;
+        }
 
         if (type != 'reaction') return;
         final emoji = data['emoji'];
@@ -816,6 +828,8 @@ class LiveKitCallService extends ChangeNotifier {
     LiveCaptionService.instance.detachRoom();
     // 📺 B10.4: CoWatch-Service vom Raum trennen
     CoWatchService.instance.detachRoom();
+    // 💬 In-Call-Chat vom Raum trennen
+    InCallChatService.instance.detachRoom();
 
     try {
       await _room?.disconnect();
