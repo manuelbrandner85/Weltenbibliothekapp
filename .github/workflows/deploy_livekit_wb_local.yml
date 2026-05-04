@@ -76,31 +76,51 @@ jobs:
       # ─────────────────────────────────────────────────────────────────────
       # 🛡️ STEP 2: PORT-KONFLIKT-CHECK
       # ─────────────────────────────────────────────────────────────────────
-      - name: 🛡️ Port-Konflikt-Check
+      - name: 🛡️ Port-Konflikt-Check + Zombie-Cleanup
         run: |
           set -euo pipefail
 
-          # Bei Re-Deploys läuft unser Container schon und hält die Ports.
-          # `ss -tulnp` zeigt nur "docker-proxy" + PID, keinen Container-Namen,
-          # deshalb können wir die eigenen Ports nicht per grep ausschließen.
-          # Workaround: wenn der WB-Container existiert, ist es ein Re-Deploy
-          # und wir skippen den Check (docker compose up -d kümmert sich um
-          # das saubere Recreate).
+          # Bei Re-Deploys läuft unser Container schon — Skip ist sicher
           if docker ps -a --format '{{.Names}}' | grep -qx "${WB_CONTAINER}"; then
-            echo "ℹ️  Container ${WB_CONTAINER} existiert bereits — Re-Deploy, "
-            echo "    Port-Konflikt-Check übersprungen (Compose recreate handhabt das)"
+            echo "ℹ️  Container ${WB_CONTAINER} existiert — Re-Deploy, Check übersprungen"
             exit 0
           fi
 
-          # Erst-Deploy: prüfe ob ein FREMDER Prozess unsere Ports belegt
-          CONFLICTS=$(ss -tulnp 2>/dev/null \
-            | grep -E ':(7980|7981|60001) ' || true)
-          if [ -n "$CONFLICTS" ]; then
-            echo "❌ Port-Konflikt (kein WB-Container vorhanden, aber Ports belegt):"
-            echo "$CONFLICTS"
-            exit 1
+          # Container existiert NICHT — aber sind die Ports trotzdem belegt?
+          # Häufiges Problem: docker-proxy bleibt als Zombie bestehen wenn
+          # Container hart-killed wurde (OOM, kill -9, Crash). Diese Zombies
+          # blockieren das nächste docker compose up.
+          ZOMBIE_PIDS=$(ss -tulnp 2>/dev/null \
+            | grep -E ':(7980|7981|60001) ' \
+            | grep -oP 'pid=\K[0-9]+' \
+            | sort -u || true)
+
+          if [ -n "$ZOMBIE_PIDS" ]; then
+            echo "⚠️  Container fehlt aber Ports belegt — Zombie-docker-proxies erkannt:"
+            ss -tulnp 2>/dev/null | grep -E ':(7980|7981|60001) ' || true
+            for pid in $ZOMBIE_PIDS; do
+              # Sicherheit: nur docker-proxy-Prozesse killen, nichts anderes
+              PNAME=$(ps -p "$pid" -o comm= 2>/dev/null || echo "")
+              if [ "$PNAME" = "docker-proxy" ]; then
+                echo "→ Kill PID $pid (docker-proxy)"
+                kill -9 "$pid" 2>/dev/null || true
+              else
+                echo "❌ PID $pid ist '$PNAME' (nicht docker-proxy) — KEIN Kill, manueller Eingriff nötig"
+                exit 1
+              fi
+            done
+            sleep 2
+            # Verifikation
+            REMAINING=$(ss -tulnp 2>/dev/null | grep -E ':(7980|7981|60001) ' || true)
+            if [ -n "$REMAINING" ]; then
+              echo "❌ Trotz Kill noch immer belegt:"
+              echo "$REMAINING"
+              exit 1
+            fi
+            echo "✅ Zombies entfernt, Ports frei"
+          else
+            echo "✅ Alle WB-Ports frei"
           fi
-          echo "✅ Alle WB-Ports frei"
 
       # ─────────────────────────────────────────────────────────────────────
       # STEP 3: CADDYFILE-PFAD ERMITTELN
