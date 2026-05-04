@@ -39,6 +39,22 @@ enum LiveKitConnectionState {
   error,
 }
 
+/// 🔁 Bundle 2 (B2): Layout-Modus für den Group-Call-Screen.
+///   - gallery: alle Teilnehmer gleich groß im Grid (Standard, gut für 2-6)
+///   - speaker: aktiver Sprecher GROSS, andere als kleiner Strip unten
+///     (gut für Vorträge, Meditationen, große Räume)
+enum LiveKitViewMode { gallery, speaker }
+
+/// 📶 Bundle 2 (B2): Verbindungs-Qualität pro Teilnehmer.
+/// Wird als kleiner farbiger Punkt am Tile angezeigt.
+enum LiveKitParticipantQuality {
+  excellent,  // grün, alles gut
+  good,       // gelb-grün, vereinzelt Paket-Drops
+  poor,       // orange, deutliche Probleme
+  lost,       // rot, Verbindung weg
+  unknown,    // grau, Daten noch nicht verfügbar
+}
+
 class LiveKitCallService extends ChangeNotifier {
   LiveKitCallService();
 
@@ -85,6 +101,20 @@ class LiveKitCallService extends ChangeNotifier {
   // angeboten und Camera-Toggle ist deaktiviert.
   bool _audioOnlyMode = false;
   bool get audioOnlyMode => _audioOnlyMode;
+
+  // 🔁 Bundle 2: Layout-Modus (gallery vs. speaker-view)
+  LiveKitViewMode _viewMode = LiveKitViewMode.gallery;
+  LiveKitViewMode get viewMode => _viewMode;
+  void setViewMode(LiveKitViewMode mode) {
+    if (_viewMode == mode) return;
+    _viewMode = mode;
+    notifyListeners();
+  }
+  void toggleViewMode() {
+    setViewMode(_viewMode == LiveKitViewMode.gallery
+        ? LiveKitViewMode.speaker
+        : LiveKitViewMode.gallery);
+  }
 
   /// Avatar-URL des lokalen Users — wird beim Connect via setAttributes
   /// an alle Teilnehmer gebroadcastet damit ihre UI sie zeigen kann.
@@ -168,6 +198,33 @@ class LiveKitCallService extends ChangeNotifier {
       map[p.identity] = track;
     }
     return map;
+  }
+
+  /// 📶 Bundle 2: Verbindungs-Qualität eines Teilnehmers (für Tile-Indikator).
+  /// Funktioniert für lokal + remote.
+  LiveKitParticipantQuality connectionQualityFor(String identity) {
+    final r = _room;
+    if (r == null) return LiveKitParticipantQuality.unknown;
+    final lp = r.localParticipant;
+    if (lp != null && lp.identity == identity) {
+      return _mapQuality(lp.connectionQuality);
+    }
+    final p = r.remoteParticipants.values
+        .where((p) => p.identity == identity)
+        .firstOrNull;
+    if (p == null) return LiveKitParticipantQuality.unknown;
+    return _mapQuality(p.connectionQuality);
+  }
+
+  LiveKitParticipantQuality _mapQuality(dynamic q) {
+    // livekit_client.ConnectionQuality enum als String matchen damit wir
+    // robust über Versions-Drift sind.
+    final s = q?.toString().toLowerCase() ?? '';
+    if (s.contains('excellent')) return LiveKitParticipantQuality.excellent;
+    if (s.contains('good')) return LiveKitParticipantQuality.good;
+    if (s.contains('poor')) return LiveKitParticipantQuality.poor;
+    if (s.contains('lost')) return LiveKitParticipantQuality.lost;
+    return LiveKitParticipantQuality.unknown;
   }
 
   /// Hat ein bestimmter Remote-Teilnehmer Mic aktiv?
@@ -567,6 +624,10 @@ class LiveKitCallService extends ChangeNotifier {
         notifyListeners();
       }
     });
+    // 📶 Bundle 2: Connection-Quality wird via existierende Events refreshed
+    // (TrackSubscribed / Participant-Attributes / ActiveSpeakers feuern
+    // notifyListeners). Eigener Quality-Event-Listener wäre versions-fragil.
+
     // Hand-Heben-Sync: andere User ändern Attribute → UI muss neu zeichnen.
     listener.on<ParticipantAttributesChanged>((event) {
       if (kDebugMode) {
@@ -577,9 +638,28 @@ class LiveKitCallService extends ChangeNotifier {
     });
     // Active-Speakers Update — UI highlightet wer grade redet.
     // Bundle 4.6: Nur granular-Notifier feuern (nicht voller Screen-Rebuild).
+    // Bundle 2 (B2): Wenn Auto-Speaker-Focus aktiv ist und kein User
+    // manuell gepinnt hat → automatisch auf den aktuellen Sprecher pinnen
+    // (aber nur wenn es kein lokaler User ist — sich selbst zu pinnen
+    // bringt nichts).
     listener.on<ActiveSpeakersChangedEvent>((event) {
       _activeSpeakers = event.speakers.map((p) => p.identity).toSet();
       speakersNotifier.value = _activeSpeakers;
+
+      if (_autoSpeakerFocus && event.speakers.isNotEmpty) {
+        final lp = _room?.localParticipant;
+        // Ersten Remote-Sprecher finden (lokalen ignorieren)
+        final firstRemote = event.speakers.firstWhere(
+          (p) => p.identity != (lp?.identity ?? ''),
+          orElse: () => event.speakers.first,
+        );
+        if (firstRemote.identity != (lp?.identity ?? '')) {
+          if (_pinnedIdentity != firstRemote.identity) {
+            _pinnedIdentity = firstRemote.identity;
+            notifyListeners();
+          }
+        }
+      }
     });
   }
 
