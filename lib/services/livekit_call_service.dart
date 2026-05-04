@@ -565,7 +565,7 @@ class LiveKitCallService extends ChangeNotifier {
         LiveCaptionService.instance.attachRoom(
           room,
           lp2.identity,
-          displayName,
+          displayName ?? lp2.identity,
         );
       }
 

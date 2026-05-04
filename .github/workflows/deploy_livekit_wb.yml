@@ -303,10 +303,11 @@ jobs:
             -o ConnectTimeout=30 \
             -o PasswordAuthentication=yes"
           T="${VPS_USER}@${VPS_HOST}"
-          $SCP /tmp/livekit-wb-filled.yaml          ${T}:/tmp/livekit-wb-filled.yaml
-          $SCP infra/livekit-wb/docker-compose.yml  ${T}:/tmp/livekit-wb-compose.yml
-          $SCP infra/livekit-wb/caddy-snippet.caddy ${T}:/tmp/caddy-wb-snippet.caddy
-          echo "✅ Dateien hochgeladen"
+          $SCP /tmp/livekit-wb-filled.yaml              ${T}:/tmp/livekit-wb-filled.yaml
+          $SCP infra/livekit-wb/docker-compose.yml      ${T}:/tmp/livekit-wb-compose.yml
+          $SCP infra/livekit-wb/caddy-snippet.caddy     ${T}:/tmp/caddy-wb-snippet.caddy
+          $SCP infra/livekit-wb/turnserver.conf         ${T}:/tmp/livekit-wb-turnserver.conf
+          echo "✅ Dateien hochgeladen (inkl. turnserver.conf für TURN-Relay)"
 
       # ─────────────────────────────────────────────────────────────────────
       # STEP 5: Container deployen + Caddy konfigurieren
@@ -323,7 +324,10 @@ jobs:
             echo 'cp /tmp/livekit-wb-filled.yaml "$DEPLOY_DIR/livekit.yaml"'
             echo 'chmod 600 "$DEPLOY_DIR/livekit.yaml"'
             echo 'cp /tmp/livekit-wb-compose.yml "$DEPLOY_DIR/docker-compose.yml"'
-            echo 'echo "✅ Konfiguration nach $DEPLOY_DIR kopiert"'
+            echo '# 🌐 TURN-Relay-Konfiguration für Mobilfunk-User (CGNAT-Durchdringung)'
+            echo 'cp /tmp/livekit-wb-turnserver.conf "$DEPLOY_DIR/turnserver.conf"'
+            echo 'chmod 600 "$DEPLOY_DIR/turnserver.conf"'
+            echo 'echo "✅ Konfiguration nach $DEPLOY_DIR kopiert (inkl. turnserver.conf)"'
             echo ''
             echo '# Caddyfile suchen — zuerst via docker inspect (zuverlässigster Weg)'
             echo 'CADDY_FILE=""'
