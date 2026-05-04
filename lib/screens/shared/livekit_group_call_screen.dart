@@ -41,9 +41,10 @@ class LiveKitGroupCallScreen extends ConsumerStatefulWidget {
   final String world;
   final String displayName;
   final String? avatarUrl;
-  // 🛋️ B5: kommt aus Pre-Join-Lobby. Wenn true → Kamera bleibt aus,
-  // Audio-Only-Mode aktiv beim Join.
+  // 🛋️ B5: kommt aus Pre-Join-Lobby.
   final bool audioOnly;
+  // Wenn false → stumm beitreten (Zuhörer-Modus), User kann Mic später an/aus schalten.
+  final bool initialMicEnabled;
 
   const LiveKitGroupCallScreen({
     super.key,
@@ -52,6 +53,7 @@ class LiveKitGroupCallScreen extends ConsumerStatefulWidget {
     required this.displayName,
     this.avatarUrl,
     this.audioOnly = false,
+    this.initialMicEnabled = true,
   });
 
   @override
@@ -128,6 +130,7 @@ class _LiveKitGroupCallScreenState
         displayName: widget.displayName,
         avatarUrl: widget.avatarUrl,
         audioOnly: widget.audioOnly,
+        initialMicEnabled: widget.initialMicEnabled,
       );
       if (mounted) setState(() => _hasJoined = true);
     } catch (_) {
@@ -710,6 +713,113 @@ class _TopBar extends StatelessWidget {
     return r;
   }
 
+  void _showMoreOptions(BuildContext context) {
+    final accent = WbDesign.accent(world);
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => ClipRRect(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          child: Container(
+            decoration: BoxDecoration(
+              color: WbDesign.surface(world).withValues(alpha: 0.96),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(20)),
+              border: Border(
+                top: BorderSide(
+                    color: accent.withValues(alpha: 0.25), width: 1),
+              ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 12),
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: WbDesign.textTertiary.withValues(alpha: 0.4),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Row(
+                    children: [
+                      Icon(Icons.tune_rounded, color: accent, size: 20),
+                      const SizedBox(width: 10),
+                      Text(
+                        'Weitere Optionen',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                // Atmosphäre (Hintergrund-Sound)
+                _MoreOptionTile(
+                  icon: soundscapeEnabled
+                      ? Icons.graphic_eq_rounded
+                      : Icons.music_note_rounded,
+                  title: 'Atmosphäre',
+                  subtitle: soundscapeEnabled
+                      ? 'Hintergrund-Sound läuft — Tippen zum Stoppen'
+                      : 'Beruhigender Hintergrund-Sound für den Call',
+                  active: soundscapeEnabled,
+                  accent: accent,
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    onToggleSoundscape();
+                  },
+                ),
+                // Heilfrequenz (nur Energie-Welt)
+                if (world == 'energie')
+                  _MoreOptionTile(
+                    icon: Icons.self_improvement_rounded,
+                    title: heilEnabled
+                        ? 'Heilfrequenz: $heilHz Hz'
+                        : 'Heilfrequenz',
+                    subtitle: heilEnabled
+                        ? 'Frequenz läuft — Tippen zum Wechseln oder Stoppen'
+                        : 'Solfeggio-Frequenzen (174–963 Hz) zur Stimmung',
+                    active: heilEnabled,
+                    accent: accent,
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      _showHeilfrequenzPicker(context);
+                    },
+                  ),
+                // Audio-Only-Modus
+                _MoreOptionTile(
+                  icon:
+                      audioOnly ? Icons.headset_rounded : Icons.headset_outlined,
+                  title: 'Nur Audio',
+                  subtitle: audioOnly
+                      ? 'Kamera deaktiviert — spart Akku und Daten'
+                      : 'Kamera ausschalten für mehr Akku-Laufzeit',
+                  active: audioOnly,
+                  accent: accent,
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    onToggleAudioOnly();
+                  },
+                ),
+                SizedBox(height: MediaQuery.of(ctx).padding.bottom + 16),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   void _showHeilfrequenzPicker(BuildContext context) {
     final accent = WbDesign.accent(world);
     showModalBottomSheet<void>(
@@ -1025,103 +1135,42 @@ class _TopBar extends StatelessWidget {
                     ],
                   ),
                 ),
-              // 🔁 B6: Layout-Toggle (Gallery ↔ Speaker-View)
-              SizedBox(
-                width: 38,
-                height: 38,
-                child: IconButton(
-                  tooltip: viewMode == LiveKitViewMode.speaker
-                      ? 'Gallery-Ansicht (alle gleich groß)'
-                      : 'Speaker-Ansicht (aktiver Sprecher groß)',
-                  onPressed: onToggleViewMode,
-                  icon: Icon(
-                    viewMode == LiveKitViewMode.speaker
-                        ? Icons.view_quilt_rounded
-                        : Icons.grid_view_rounded,
-                    color: viewMode == LiveKitViewMode.speaker
-                        ? accent
-                        : WbDesign.textTertiary,
-                    size: 20,
-                  ),
-                ),
+              // 🔁 B6: Ansicht wechseln (Gallery ↔ Speaker)
+              _TopBarBtn(
+                icon: viewMode == LiveKitViewMode.speaker
+                    ? Icons.view_quilt_rounded
+                    : Icons.grid_view_rounded,
+                label: viewMode == LiveKitViewMode.speaker
+                    ? 'Ansicht'
+                    : 'Ansicht',
+                active: viewMode == LiveKitViewMode.speaker,
+                accent: accent,
+                onTap: onToggleViewMode,
               ),
-              // 🎙️ B8: Live-Untertitel-Toggle
-              SizedBox(
-                width: 38,
-                height: 38,
-                child: IconButton(
-                  tooltip: captionsEnabled
-                      ? 'Untertitel aus'
-                      : 'Live-Untertitel an',
-                  onPressed: onToggleCaptions,
-                  icon: Icon(
-                    captionsEnabled
-                        ? Icons.closed_caption_rounded
-                        : Icons.closed_caption_disabled_rounded,
-                    color: captionsEnabled ? accent : WbDesign.textTertiary,
-                    size: 20,
-                  ),
-                ),
+              // 🎙️ B8: Untertitel
+              _TopBarBtn(
+                icon: captionsEnabled
+                    ? Icons.closed_caption_rounded
+                    : Icons.closed_caption_disabled_rounded,
+                label: 'Untertitel',
+                active: captionsEnabled,
+                accent: accent,
+                onTap: onToggleCaptions,
               ),
-              // 🎵 B10.1: Soundscape-Atmosphäre-Toggle
-              SizedBox(
-                width: 38,
-                height: 38,
-                child: IconButton(
-                  tooltip: soundscapeEnabled
-                      ? 'Atmosphäre aus'
-                      : 'Atmosphäre an (Hintergrund-Sound)',
-                  onPressed: onToggleSoundscape,
-                  icon: Icon(
-                    soundscapeEnabled
-                        ? Icons.graphic_eq_rounded
-                        : Icons.music_note_rounded,
-                    color: soundscapeEnabled ? accent : WbDesign.textTertiary,
-                    size: 20,
-                  ),
-                ),
-              ),
-              // 🎵 B10.2: Heilfrequenz-Picker (nur Energie-Welt)
-              if (world == 'energie')
-                Builder(builder: (ctx) => SizedBox(
-                  width: 38,
-                  height: 38,
-                  child: IconButton(
-                    tooltip: heilEnabled
-                        ? 'Heilfrequenz: $heilHz Hz (Tippen zum Ändern)'
-                        : 'Heilfrequenz wählen',
-                    onPressed: () => _showHeilfrequenzPicker(ctx),
-                    icon: Icon(
-                      Icons.self_improvement_rounded,
-                      color: heilEnabled ? accent : WbDesign.textTertiary,
-                      size: 20,
-                    ),
-                  ),
-                )),
-              // 🎧 Audio-Only-Modus-Toggle (Akku/Bandbreite-Sparmodus)
-              SizedBox(
-                width: 38,
-                height: 38,
-                child: IconButton(
-                  tooltip: audioOnly
-                      ? 'Audio-Only aus → Video möglich'
-                      : 'Audio-Only an → spart Akku & Daten',
-                  onPressed: onToggleAudioOnly,
-                  icon: Icon(
-                    audioOnly
-                        ? Icons.headset_rounded
-                        : Icons.headset_outlined,
-                    color: audioOnly ? accent : WbDesign.textTertiary,
-                    size: 20,
-                  ),
-                ),
-              ),
+              // ⋮ Mehr Optionen (Atmosphäre, Heilfrequenz, Audio-Only)
+              Builder(builder: (ctx) => _TopBarBtn(
+                icon: Icons.more_vert_rounded,
+                label: 'Mehr',
+                active: soundscapeEnabled || heilEnabled || audioOnly,
+                accent: accent,
+                onTap: () => _showMoreOptions(ctx),
+              )),
               // Schließen
               SizedBox(
                 width: 40,
                 height: 40,
                 child: IconButton(
-                  tooltip: 'Schließen',
+                  tooltip: 'Anruf beenden',
                   onPressed: onClose,
                   icon: Icon(
                     Icons.close_rounded,
@@ -1132,6 +1181,134 @@ class _TopBar extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── TopBar-Hilfselemente ────────────────────────────────────────────────────
+
+/// Kleiner Icon-Button mit sichtbarem Text-Label darunter für die TopBar.
+class _TopBarBtn extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool active;
+  final Color accent;
+  final VoidCallback onTap;
+
+  const _TopBarBtn({
+    required this.icon,
+    required this.label,
+    required this.active,
+    required this.accent,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 19,
+              color: active ? accent : WbDesign.textTertiary,
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 9,
+                color: active ? accent : WbDesign.textTertiary,
+                fontWeight:
+                    active ? FontWeight.w700 : FontWeight.w400,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Zeile in der "Mehr Optionen"-BottomSheet mit Icon, Titel, Beschreibung.
+class _MoreOptionTile extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final bool active;
+  final Color accent;
+  final VoidCallback onTap;
+
+  const _MoreOptionTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.active,
+    required this.accent,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding:
+            const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: active
+                    ? accent.withValues(alpha: 0.18)
+                    : WbDesign.borderMedium.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon,
+                  size: 22, color: active ? accent : WbDesign.textTertiary),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: active ? accent : Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      color: WbDesign.textSecondary,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (active)
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: accent,
+                  shape: BoxShape.circle,
+                ),
+              ),
+          ],
         ),
       ),
     );
@@ -1785,11 +1962,11 @@ class _ControlBar extends StatelessWidget {
                         ? Icons.mic_rounded
                         : Icons.mic_off_rounded,
                     label: service.pttActive
-                        ? 'PTT aktiv'
-                        : (service.micEnabled ? 'Stumm' : 'Mikrofon'),
+                        ? 'Sprechtaste'
+                        : (service.micEnabled ? 'Mikrofon an' : 'Stummschalten'),
                     active: service.micEnabled || service.pttActive,
                     activeColor: service.pttActive
-                        ? const Color(0xFF00E676) // grüner PTT-Glow
+                        ? const Color(0xFF00E676)
                         : accent,
                     enabled: isConnected,
                     onTap: () => service.toggleMicrophone(),
@@ -1801,17 +1978,17 @@ class _ControlBar extends StatelessWidget {
                     icon: service.cameraEnabled
                         ? Icons.videocam_rounded
                         : Icons.videocam_off_rounded,
-                    label: service.cameraEnabled ? 'Kamera aus' : 'Kamera an',
+                    label: service.cameraEnabled ? 'Kamera an' : 'Kamera aus',
                     active: service.cameraEnabled,
                     activeColor: accent,
                     enabled: isConnected,
                     onTap: () => service.toggleCamera(),
                   ),
-                  // Kamera wechseln (Front/Back) — nur sichtbar wenn Camera an
+                  // Kamera drehen (Front/Back) — nur sichtbar wenn Camera an
                   if (service.cameraEnabled)
                     _CtrlBtn(
                       icon: Icons.cameraswitch_rounded,
-                      label: 'Wechseln',
+                      label: 'Drehen',
                       active: false,
                       activeColor: accent,
                       enabled: isConnected,
@@ -1822,7 +1999,8 @@ class _ControlBar extends StatelessWidget {
                     icon: service.screenShareEnabled
                         ? Icons.stop_screen_share_rounded
                         : Icons.present_to_all_rounded,
-                    label: service.screenShareEnabled ? 'Stop' : 'Teilen',
+                    label:
+                        service.screenShareEnabled ? 'Teilen stoppen' : 'Bildschirm',
                     active: service.screenShareEnabled,
                     activeColor: accent,
                     enabled: isConnected,

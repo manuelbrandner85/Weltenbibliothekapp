@@ -304,6 +304,7 @@ class LiveKitCallService extends ChangeNotifier {
     String? displayName,
     String? avatarUrl,
     bool audioOnly = false,
+    bool initialMicEnabled = true,
   }) async {
     // Avatar-URL + Display-Name für später (Mini-Bar & Re-Open)
     _localAvatarUrl = avatarUrl;
@@ -536,13 +537,14 @@ class LiveKitCallService extends ChangeNotifier {
         }
       }
 
-      // Mikrofon direkt beim Beitritt aktivieren — User soll standardmäßig
-      // im Anruf hörbar sein (nicht "stumm beigetreten").
+      // Mikrofon beim Beitritt je nach User-Wunsch aktivieren.
+      // initialMicEnabled=true (Standard) → Mikrofon an.
+      // initialMicEnabled=false → stumm beitreten (Zuhörer-Modus).
       try {
-        await room.localParticipant?.setMicrophoneEnabled(true);
-        _micEnabled = true;
+        await room.localParticipant?.setMicrophoneEnabled(initialMicEnabled);
+        _micEnabled = initialMicEnabled;
         if (kDebugMode) {
-          debugPrint('🎤 Mikrofon aktiviert');
+          debugPrint(initialMicEnabled ? '🎤 Mikrofon aktiviert' : '🔇 Stumm beigetreten (Zuhörer)');
         }
       } catch (e) {
         if (kDebugMode) {
