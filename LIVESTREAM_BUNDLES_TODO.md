@@ -1,6 +1,6 @@
 # 🎥 LiveStream High-End Roadmap — Status & offene Aufgaben
 
-**Stand:** 2026-05-04, nach Session 3.
+**Stand:** 2026-05-04, nach Session 4.
 
 ---
 
@@ -19,67 +19,30 @@
 | B9 | Energie-Karten-Pins (Symmetrie zu B7, Lila-Akzent #9C27B0) | #92 | ✅ live |
 | B11 | Spotlight — Host pinnt Teilnehmer für alle via DataChannel | #92 | ✅ live |
 | B12 | Push-to-Talk — Long-Press Mic-Button, grüner Glow, auto Mic-Toggle | #92 | ✅ live |
+| B10.1 | Welt-Soundscape (Atmosphäre) — Dart WAV-Generator, `audioplayers` BytesSource | #93 | ✅ live |
+| B10.2 | Heilfrequenz-Player (Energie-USP) — 10 Solfeggio-Frequenzen, BottomSheet-Picker | #93 | ✅ live |
+| B10.4 | Co-Watch — synchronisierter YouTube-Player via LiveKit DataChannel + WebView | #94 | ✅ live |
+| B10.5 | In-Call Text-Chat via DataChannel + Unread-Badge | #95 | ✅ live |
+| UI-Fixes | Verständliche Button-Labels + Mehr-Optionen-Menü + Mikrofon-Default AN | #96 | 🔄 CI läuft |
 
-**Bonus-Fixes in PR #92:**
-- TURN/Mobilfunk: `turnserver.conf` wird jetzt im Deploy-Workflow hochgeladen → coturn startet → Mobilfunk-User (CGNAT) können sich verbinden
-- Dart-Fixes: const-Konstruktor `_CaptionLine`, null-safety `displayName`, `use_build_context_synchronously`
-
----
-
-## ✅ Patch-kompatibel erledigt (B10.1 + B10.2)
-
-| # | Bundle | Status |
-|---|---|---|
-| B10.1 | Welt-Soundscape (Atmosphäre) | ✅ Patch — Dart WAV-Generator, `audioplayers` BytesSource |
-| B10.2 | Heilfrequenz-Player (Energie-USP) | ✅ Patch — 10 Solfeggio-Frequenzen, BottomSheet-Picker |
-| B10.4 | Co-Watch (gemeinsam YouTube) | ✅ Patch — webview_flutter bereits vorhanden, DataChannel-Sync |
-
-**B10.1 Details:**
-- `lib/services/soundscape_service.dart` — WAV-Generator (22050 Hz, 16-bit mono, 5s Loop)
-- Materie: 40 Hz + 44 Hz Binaural-Mix (4 Hz Gamma-Beat)
-- Energie: 432 Hz Naturstimmung
-- 20ms Fade-In/Out an Loop-Grenzen (kein Knacken)
-- 12% Volume Standard → sehr leise im Hintergrund
-- Toggle-Icon (🎵) in `_TopBar` — Atmosphäre ein/aus
-
-**B10.2 Details:**
-- 10 Solfeggio-Frequenzen (174, 285, 396, 417, 432, 528, 639, 741, 852, 963 Hz)
-- BottomSheet-Picker mit Glassmorphic-Design (Energie-Lila)
-- Heilfrequenz-Icon (🧘) im TopBar — nur für Energie-Welt sichtbar
-- Volume 10%, ReleaseMode.loop — läuft parallel zum Soundscape
+**UI-Fixes (PR #96) Details:**
+- TopBar: 5 icon-only Buttons → 2 sichtbar beschriftet (Ansicht, Untertitel) + "Mehr"-Menü
+- "Mehr"-BottomSheet: Atmosphäre / Heilfrequenz / Nur-Audio — je mit Beschreibungstext
+- ControlBar: PTT-Label → "Sprechtaste", Kamera-Labels korrekt, "Wechseln" → "Drehen", "Stop/Teilen" → "Teilen stoppen/Bildschirm"
+- Pre-Join: **Mikrofon jetzt standardmäßig AN** — User kann als Zuhörer deaktivieren
+- Pre-Join: Neuer Mikrofon-Toggle mit Label "Mit Mikrofon beitreten" / "Als Zuhörer beitreten"
 
 ---
 
-## 🔴 Noch offen — Native Releases (B10.3–B10.8) — APK-Update nötig
+## 🔴 Noch offen — Native Releases (B10.3, B10.6–B10.8) — APK-Update nötig
 
 Diese Features brauchen native Plugins oder Audio-Assets → kein OTA-Patch möglich.
 **WARNUNG:** Build-Nummer in `pubspec.yaml` bumpen + neue APK verteilen!
-
-Empfehlung: Alle B10.x-Features in EINEM einzigen Release-PR bündeln, einmalig neue APK rollen.
-
-**B10.4 Details:**
-- `lib/services/cowatch_service.dart` — DataChannel-Protokoll (load/play/pause/seek/close)
-- `lib/widgets/cowatch_panel.dart` — YouTube IFrame Player API via WebView, Host-Badge, Sync-Overlay
-- YouTube-URL-Parser: youtu.be, youtube.com/watch?v=, /embed/, Video-ID direkt
-- Schwebender Panel (55% Bildschirmhöhe) über ControlBar mit Schließ-Button
-- Co-Watch-Button 📺 in ControlBar, bei Host aktiv wenn Video läuft
-- Remote-Teilnehmer sehen Video automatisch wenn Host lädt
-
----
 
 ### B10.3 — Picture-in-Picture (nächster Schritt)
 - Wenn App minimiert → Mini-Window mit aktuellem Sprecher
 - Native: Android PictureInPictureParams
 - Package: `flutter_pip` oder nativer MethodChannel
-
-### B10.4 — Co-Watch (gemeinsam Video)
-- Synchronisierter Video-Player (YouTube Embed)
-- LiveKit DataChannel für Sync-Events (play/pause/seek)
-
-### B10.5 — Recording
-- LiveKit Egress API (server-side)
-- Cloudflare Worker proxied Egress-Request
-- Bedarf: Server-Egress-Container neben LiveKit
 
 ### B10.6 — Virtuelle Hintergründe
 - VideoTrackProcessor in livekit_client
@@ -91,6 +54,11 @@ Empfehlung: Alle B10.x-Features in EINEM einzigen Release-PR bündeln, einmalig 
 ### B10.8 — Spatial Audio
 - Stereo-Pan basierend auf Tile-Position im Grid
 
+### Recording (Server-seitig)
+- LiveKit Egress API (server-side)
+- Cloudflare Worker proxied Egress-Request
+- Bedarf: Server-Egress-Container neben LiveKit
+
 ---
 
 ## 🎯 Architektur-Prinzipien
@@ -100,7 +68,9 @@ Empfehlung: Alle B10.x-Features in EINEM einzigen Release-PR bündeln, einmalig 
 3. **WbDesign tokens**: Keine hardcoded colors für Welt-Akzente
 4. **Service-Pattern**: `lib/services/live_map_pins_service.dart` und `live_caption_service.dart` als Vorlage
 5. **DataChannel-Pattern**: `{type: 'xyz', ...}` in `livekit_call_service.dart` DataReceivedEvent
+6. **TopBar-Pattern**: Wichtige Features sichtbar beschriftet (`_TopBarBtn`), seltene in "Mehr"-Sheet (`_MoreOptionTile`)
+7. **Pre-Join-Pattern**: `initialMicEnabled` + `audioOnly` unabhängig voneinander → Pre-Join gibt exakte Wünsche weiter
 
 ---
 
-**Generiert:** 2026-05-04 von Claude (Sonnet 4.6, Session 3).
+**Aktualisiert:** 2026-05-04 von Claude (Sonnet 4.6, Session 4).
