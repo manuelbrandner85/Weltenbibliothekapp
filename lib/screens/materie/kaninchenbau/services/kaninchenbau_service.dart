@@ -15,7 +15,7 @@ class KaninchenbauService {
   factory KaninchenbauService() => _instance;
   KaninchenbauService._();
 
-  final _free = FreeApiService();
+  final _free = FreeApiService.instance;
 
   /// Wikidata-Entity holen — Identität (Name, Beschreibung).
   Future<Map<String, dynamic>?> fetchIdentity(String topic) async {
@@ -83,33 +83,27 @@ class KaninchenbauService {
         eagerError: false,
       );
 
-      final guardian = responses[0];
-      if (guardian is List) {
-        for (final g in guardian.take(3)) {
-          if (g is GuardianArticle) {
-            results.add(SourceItem(
-              title: g.webTitle,
-              url: g.webUrl,
-              snippet: g.sectionName ?? g.trailText ?? '',
-              lens: SourceLens.official,
-              credibility: 78,
-            ));
-          }
+      for (final g in responses[0].take(3)) {
+        if (g is GuardianArticle) {
+          results.add(SourceItem(
+            title: g.webTitle,
+            url: g.webUrl,
+            snippet: g.sectionName ?? g.trailText ?? '',
+            lens: SourceLens.official,
+            credibility: 78,
+          ));
         }
       }
 
-      final crossref = responses[1];
-      if (crossref is List) {
-        for (final c in crossref.take(3)) {
-          if (c is CrossRefWork) {
-            results.add(SourceItem(
-              title: c.title,
-              url: 'https://doi.org/${c.doi}',
-              snippet: '${c.publisher} · ${c.year ?? ""}',
-              lens: SourceLens.neutral,
-              credibility: 85,
-            ));
-          }
+      for (final c in responses[1].take(3)) {
+        if (c is CrossRefWork) {
+          results.add(SourceItem(
+            title: c.title,
+            url: 'https://doi.org/${c.doi}',
+            snippet: '${c.publisher} · ${c.year ?? ""}',
+            lens: SourceLens.neutral,
+            credibility: 85,
+          ));
         }
       }
     } catch (e) {
