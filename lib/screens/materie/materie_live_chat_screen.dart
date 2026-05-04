@@ -565,33 +565,39 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
     });
   }
   
-  // 🛠️ TOOL NAVIGATION
+  // 🛠️ TOOL NAVIGATION → Kaninchenbau-Faden mit passendem Initialthema
   // ignore: unused_element
   void _navigateToTool() {
-    Widget? screen;
-    
+    String? topic;
     switch (_selectedRoom) {
       case 'politik':
-        screen = GeopolitikMapScreen(roomId: _selectedRoom);
+        topic = 'Geopolitik';
         break;
       case 'geschichte':
-        screen = HistoryTimelineScreen(roomId: _selectedRoom);
+        topic = 'Verschwiegene Geschichte';
         break;
       case 'ufo':
-        screen = UfoSightingsScreen(roomId: _selectedRoom);
+        topic = 'UFO Sichtungen';
         break;
       case 'verschwoerungen':
-        screen = ConspiracyNetworkScreen(roomId: _selectedRoom);
+        topic = 'Verschwörungstheorien';
         break;
       case 'technologie':
-        screen = ResearchArchiveScreen(roomId: _selectedRoom);
+        topic = 'Forschung';
         break;
       case 'gesundheit':
-        screen = CriticalHealthScreen(roomId: _selectedRoom);
+        topic = 'Pharma';
         break;
     }
-    
-    if (screen != null && mounted) {
+    if (mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => KaninchenbauScreen(initialTopic: topic),
+        ),
+      );
+    }
+    return;
       Navigator.of(context).push(MaterialPageRoute(builder: (ctx) => screen!));
     }
   }
