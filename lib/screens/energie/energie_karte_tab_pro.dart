@@ -999,6 +999,7 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro> {
   Future<void> _showLivePinModal(BuildContext context, LatLng latlng) async {
     final controller = TextEditingController();
     const accent = Color(0xFF9C27B0);
+    final messenger = ScaffoldMessenger.of(context);
     final user = Supabase.instance.client.auth.currentUser;
     final userMeta = user?.userMetadata ?? const {};
     final authorName = (userMeta['username'] as String?) ??
@@ -1139,7 +1140,7 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro> {
       authorAvatarUrl: avatarUrl,
     );
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         const SnackBar(
           content: Text('📍 Live-Pin gesendet — alle sehen ihn live'),
           backgroundColor: accent,

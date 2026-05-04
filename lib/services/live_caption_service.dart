@@ -9,6 +9,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+// ignore_for_file: unawaited_futures
 import 'package:livekit_client/livekit_client.dart' as lk;
 import 'package:speech_to_text/speech_to_text.dart';
 

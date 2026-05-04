@@ -1206,6 +1206,7 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro> {
   Future<void> _showLivePinModal(BuildContext context, LatLng latlng) async {
     final controller = TextEditingController();
     final accent = const Color(0xFF2979FF);
+    final messenger = ScaffoldMessenger.of(context);
     final user = Supabase.instance.client.auth.currentUser;
     final userMeta = user?.userMetadata ?? const {};
     final authorName = (userMeta['username'] as String?) ??
@@ -1345,7 +1346,7 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro> {
       authorAvatarUrl: avatarUrl,
     );
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         SnackBar(
           content: const Text('📍 Live-Pin gesendet — alle sehen ihn live'),
           backgroundColor: accent,
