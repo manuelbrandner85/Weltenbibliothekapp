@@ -71,43 +71,35 @@ class KaninchenbauService {
   }
 
   /// Quellen aggregieren — offizielle (Guardian) + neutrale (CrossRef).
+  /// Parallel via separate Futures (mixed return-types → kein Future.wait).
   Future<List<SourceItem>> fetchSources(String topic) async {
     final results = <SourceItem>[];
 
-    try {
-      final guardianFuture = _free.fetchGuardianNews(topic, limit: 4);
-      final crossrefFuture = _free.fetchCrossRefWorks(topic, limit: 4);
+    final guardianFuture =
+        _free.fetchGuardianNews(topic, limit: 4).catchError((_) => <GuardianArticle>[]);
+    final crossrefFuture =
+        _free.fetchCrossRefWorks(topic, limit: 4).catchError((_) => <CrossRefWork>[]);
 
-      final responses = await Future.wait(
-        [guardianFuture, crossrefFuture],
-        eagerError: false,
-      );
+    final guardianList = await guardianFuture;
+    for (final g in guardianList.take(3)) {
+      results.add(SourceItem(
+        title: g.webTitle,
+        url: g.webUrl,
+        snippet: g.sectionName ?? g.trailText ?? '',
+        lens: SourceLens.official,
+        credibility: 78,
+      ));
+    }
 
-      for (final g in responses[0].take(3)) {
-        if (g is GuardianArticle) {
-          results.add(SourceItem(
-            title: g.webTitle,
-            url: g.webUrl,
-            snippet: g.sectionName ?? g.trailText ?? '',
-            lens: SourceLens.official,
-            credibility: 78,
-          ));
-        }
-      }
-
-      for (final c in responses[1].take(3)) {
-        if (c is CrossRefWork) {
-          results.add(SourceItem(
-            title: c.title,
-            url: 'https://doi.org/${c.doi}',
-            snippet: '${c.publisher} · ${c.year ?? ""}',
-            lens: SourceLens.neutral,
-            credibility: 85,
-          ));
-        }
-      }
-    } catch (e) {
-      debugPrint('Sources-Error: $e');
+    final crossrefList = await crossrefFuture;
+    for (final c in crossrefList.take(3)) {
+      results.add(SourceItem(
+        title: c.title,
+        url: 'https://doi.org/${c.doi}',
+        snippet: '${c.publisher} · ${c.year ?? ""}',
+        lens: SourceLens.neutral,
+        credibility: 85,
+      ));
     }
 
     return results;
