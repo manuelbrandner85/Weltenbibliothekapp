@@ -634,6 +634,37 @@ chore(deps): Dependencies aktualisiert
   - **Chat edit/delete Ownership-Fix**: `cloudflare_api_service.dart editChatMessage/deleteChatMessage` sendeten `username`/`userId` nicht im Body → Worker-Ownership-Check (`existingMsg.username !== username`) wurde silent übersprungen. Behoben.
   - **Community Pill-Switcher**: Glassmorphischer AnimatedAlign-Switcher (260ms easeOutCubic) ersetzt 2px-TabBar-Indikator in `community_tab_modern.dart` (Materie, Blau) + `energie_community_tab_modern.dart` (Energie, Lila). Mit HapticFeedback + Unread-Badge + AnimatedSwitcher-Subtitle.
 
+- [x] **PR #97 — B10.3 Picture-in-Picture (PiP)** (2026-05-04, nativer Release nötig):
+  - PiP-Modus für Android: `LiveKitMiniBar`-Widget erscheint wenn User App in Hintergrund schickt
+  - `LiveKitScreenVisibility.instance` Signal-Flag; `MainActivity.kt` PiP-Support via `enterPictureInPictureMode()`
+  - Automatische PiP-Aktivierung bei `onUserLeaveHint()`
+
+- [x] **PR #98 — ControlBar Redesign: Icon-Fix + 4-Button-Layout** (2026-05-04, Patch ✓):
+  - Chinese-Character-Bug gefixt: `Icons.view_quilt_rounded` → `Icons.grid_view_rounded` (nicht im Flutter-Font-Bundle)
+  - `Icons.closed_caption_disabled_rounded` entfernt (auch nicht im Bundle) → immer `Icons.closed_caption_rounded` mit active-State
+  - ControlBar von 9 auf 4 Buttons reduziert: Mikrofon (PTT), Kamera, Mehr⋯, Auflegen
+  - `_showMoreActions()` Bottom-Sheet für sekundäre Aktionen (Chat, Reaktion, Hand, Bildschirm, Kamera drehen, Co-Watch)
+  - Auflegen `isLarge: true` (64×64px vs 54×54px) — immer sichtbar und prominent
+  - Unread-Badge-Dot auf Mehr-Button wenn Chat-Nachricht ungelesen
+
+- [x] **PR #99 — B10.6 Raumstimmung-Themes + B10.8 Spatial Audio** (2026-05-04, Patch ✓):
+  - **B10.6 Raumstimmung**: 5 welt-spezifische Background-Themes auswählbar via TopBar → Mehr → Raumstimmung
+    - `standard` (immer verfügbar), `netzwerk`/`kosmos` (nur Materie), `mandala`/`kristall` (nur Energie)
+    - 4 neue `CustomPainter`: `_NetzwerkPainter` (Datennetz-Gitter), `_KosmosPainter` (Nebel + Sterne),
+      `_MandalaPainter` (rotierendes Mandala), `_KristallPainter` (Kristall-Scherben mit Prisma-Licht)
+    - `_showRaumstimmungPicker()` Bottom-Sheet mit welt-gefilterter Auswahl + Checkmark
+    - `ValueListenableBuilder<RoomTheme>` → nur `_AnimatedBackground` rebuildet, nicht ganzer Tree
+  - **B10.8 Spatial Audio**: Toggle in TopBar → Mehr → Spatial Audio
+    - `AudioFeedbackService` (`lib/services/audio_feedback_service.dart`) — neuer Singleton-Service
+    - `RoomTheme` Enum + `RoomThemeInfo` Extension in `audio_feedback_service.dart`
+    - `ValueNotifier<RoomTheme>` für reaktive Theme-Updates
+    - `updateActiveSpeakers()` trackt Volumen-State (0.65 Ducking / 1.0 aktiver Sprecher)
+    - **livekit_client 2.5.4 Einschränkung**: `RemoteParticipant.setVolume()` existiert NICHT im Flutter-SDK
+      (nur Web JS SDK) → Spatial Audio ist derzeit Visual-only (Aura-Glow im Speaker-Tile)
+    - Synthetisierte WAV-Töne: Join/Leave-Chimes, Hand-Raise, Mute-Toggle (44.1kHz, 16-bit Mono, inline generiert)
+    - `_SpatialNotifier` (`ValueNotifier<bool>`) für UI-State des Toggles
+    - `LiveKitCallService` ruft `AudioFeedbackService.instance.attachRoom/detachRoom/updateActiveSpeakers()` auf
+
 - [x] **PR #65 — WB eigene LiveKit-Instanz, getrennt von Mensaena** (2026-05-02, Patch ✓):
   - Umstellung von „shared LiveKit mit Mensaena" auf vollständig eigenständige
     WB-Instanz auf demselben Hostinger-VPS — eigene Subdomain, eigene Container,
@@ -666,20 +697,15 @@ chore(deps): Dependencies aktualisiert
    - `unused_field` Warnungen (nicht kritisch)
    - `deprecated_member_use` (Radio-Widgets, alte APIs)
 
-3. **🎥 LiveKit vollständig implementiert + Join-Fix** (v5.39.0+, PR #55+56+64+71):
-   - flutter_webrtc komplett entfernt — alle 17 alten WebRTC-Dateien gelöscht
-   - livekit_client + flutter_background als Dependencies
-   - **Token-Endpoint: Cloudflare Worker** `/api/livekit/token` (HMAC-SHA256-JWT, 4h TTL).
-     Supabase Edge Function `livekit-token` als Fallback vorhanden aber nicht primär.
-   - **`node_ip: 72.62.154.95`** in `livekit.yaml` — ICE-Kandidaten zeigen jetzt auf externe IP.
-   - `LiveKitCallService` — join/leave, alle Track-Toggles (Mic/Cam/Screen/Hand)
-   - `livekit_call_provider.dart` (Riverpod) für State-Sharing
-   - `livekit_group_call_screen.dart` — professionelle Vollbild-UI (1154 Zeilen),
-     animierter Hintergrund, responsives Teilnehmer-Grid, Glassmorphic TopBar/ControlBar
-   - Voice-Buttons in beiden Chat-Screens öffnen direkt `LiveKitGroupCallScreen`
-   - LiveKit-Server: `livekit-weltenbibliothek` Container auf Hostinger VPS, eigene Instanz,
-     erreichbar via `wss://livekit-wb.srv1438024.hstgr.cloud`
-   - GitHub-Secrets gesetzt: `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`, `LIVEKIT_URL`
+3. **🎥 LiveKit vollständig implementiert** (v5.39.0+, PR #55+56+64+71+97+98+99):
+   - flutter_webrtc entfernt, livekit_client + flutter_background als Dependencies
+   - **Token-Endpoint: Cloudflare Worker** `/api/livekit/token` (HMAC-SHA256-JWT, 4h TTL)
+   - `LiveKitCallService` — join/leave, Track-Toggles (Mic/Cam/Screen/Hand), Token-Refresh
+   - `livekit_group_call_screen.dart` — 3592 Zeilen, animierter Hintergrund (5 Themes),
+     responsives Teilnehmer-Grid, Glassmorphic TopBar/ControlBar (4 Buttons + Overflow-Sheet)
+   - PiP-Modus (B10.3), Raumstimmung-Themes (B10.6), Spatial Audio visual-only (B10.8)
+   - **Noch ausstehend: B10.7 3D-Avatar** (braucht Assets + evtl. neues Package)
+   - **Noch ausstehend: Recording** (LiveKit Egress API, serverseitig + Worker-Endpoint)
 
 4. **Push-Notifications** (Cloudflare-basiert, nicht Firebase) – Registrierung funktioniert,
    Delivery-Test aussteht
