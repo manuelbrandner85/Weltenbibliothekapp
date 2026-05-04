@@ -274,6 +274,7 @@ class _LiveKitGroupCallScreenState
           world: widget.world,
           localName: widget.displayName,
           localAvatarUrl: widget.avatarUrl,
+          localIdentity: svc.room?.localParticipant?.identity,
           remoteNames: svc.remoteParticipantNames,
           micEnabled: svc.micEnabled,
           cameraEnabled: svc.cameraEnabled,
@@ -284,6 +285,7 @@ class _LiveKitGroupCallScreenState
           localHandRaised: svc.handRaised,
           remoteHandRaised: svc.isRemoteHandRaised,
           remoteAvatarUrl: svc.remoteAvatarUrl,
+          qualityFor: svc.connectionQualityFor,
         );
     }
   }
@@ -749,6 +751,7 @@ class _ParticipantGrid extends StatelessWidget {
   final String world;
   final String localName;
   final String? localAvatarUrl;
+  final String? localIdentity;
   final List<String> remoteNames;
   final bool micEnabled;
   final bool cameraEnabled;
@@ -759,11 +762,13 @@ class _ParticipantGrid extends StatelessWidget {
   final bool localHandRaised;
   final bool Function(String) remoteHandRaised;
   final String? Function(String) remoteAvatarUrl;
+  final LiveKitParticipantQuality Function(String) qualityFor;
 
   const _ParticipantGrid({
     required this.world,
     required this.localName,
     required this.localAvatarUrl,
+    required this.localIdentity,
     required this.remoteNames,
     required this.micEnabled,
     required this.cameraEnabled,
@@ -774,6 +779,7 @@ class _ParticipantGrid extends StatelessWidget {
     required this.localHandRaised,
     required this.remoteHandRaised,
     required this.remoteAvatarUrl,
+    required this.qualityFor,
   });
 
   /// Map: index → (videoTrack, micActive, handRaised, avatarUrl)
@@ -821,14 +827,22 @@ class _ParticipantGrid extends StatelessWidget {
           videoTrack: info.video,
           handRaised: info.hand,
           avatarUrl: info.avatar,
+          quality: localIdentity != null
+              ? qualityFor(localIdentity!)
+              : LiveKitParticipantQuality.unknown,
         ),
       );
     }
 
     final crossCount = count <= 2 ? 2 : (count <= 4 ? 2 : 3);
+    final identitiesSorted = remoteVideoTracks.keys.toList();
     final tiles = List.generate(count, (i) {
       final isLocal = i == 0;
       final info = _trackInfoFor(i);
+      // Identity bestimmen für quality-lookup
+      final id = isLocal
+          ? (localIdentity ?? '')
+          : (i - 1 < identitiesSorted.length ? identitiesSorted[i - 1] : '');
       return _ParticipantTile(
         name: allNames[i],
         isLocal: isLocal,
@@ -839,6 +853,9 @@ class _ParticipantGrid extends StatelessWidget {
         videoTrack: info.video,
         handRaised: info.hand,
         avatarUrl: info.avatar,
+        quality: id.isEmpty
+            ? LiveKitParticipantQuality.unknown
+            : qualityFor(id),
       );
     });
 
@@ -874,6 +891,8 @@ class _ParticipantTile extends StatefulWidget {
   final lk.VideoTrack? videoTrack;
   final bool handRaised;
   final String? avatarUrl;
+  // 📶 Bundle 2: Verbindungs-Qualität (für farbigen Punkt oben rechts)
+  final LiveKitParticipantQuality quality;
 
   const _ParticipantTile({
     required this.name,
@@ -885,6 +904,7 @@ class _ParticipantTile extends StatefulWidget {
     this.videoTrack,
     this.handRaised = false,
     this.avatarUrl,
+    this.quality = LiveKitParticipantQuality.unknown,
   });
 
   @override
@@ -943,6 +963,22 @@ class _ParticipantTileState extends State<_ParticipantTile>
     final isMaterie = widget.world == 'materie';
     final hasVideo = widget.videoTrack != null;
 
+    return Stack(
+      children: [
+        _buildTileBody(context, initials, avatarSize, fontSize, isMaterie, hasVideo),
+        // 📶 Bundle 2: Verbindungs-Qualität-Punkt oben rechts
+        if (widget.quality != LiveKitParticipantQuality.unknown)
+          Positioned(
+            top: 8,
+            right: 8,
+            child: _QualityDot(quality: widget.quality),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildTileBody(BuildContext context, String initials, double avatarSize,
+      double fontSize, bool isMaterie, bool hasVideo) {
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -1678,4 +1714,64 @@ class _MaterieAvatarGlow extends CustomPainter {
   @override
   bool shouldRepaint(covariant _MaterieAvatarGlow old) =>
       old.accent != accent;
+}
+
+/// 📶 Bundle 2: kleiner farbiger Punkt am Tile (oben rechts) der die
+/// Verbindungs-Qualität des Teilnehmers anzeigt — wie bei Discord.
+class _QualityDot extends StatelessWidget {
+  final LiveKitParticipantQuality quality;
+  const _QualityDot({required this.quality});
+
+  Color get _color {
+    switch (quality) {
+      case LiveKitParticipantQuality.excellent:
+        return const Color(0xFF4CAF50); // grün
+      case LiveKitParticipantQuality.good:
+        return const Color(0xFF8BC34A); // hellgrün
+      case LiveKitParticipantQuality.poor:
+        return const Color(0xFFFF9800); // orange
+      case LiveKitParticipantQuality.lost:
+        return const Color(0xFFFF1744); // rot
+      case LiveKitParticipantQuality.unknown:
+        return Colors.grey;
+    }
+  }
+
+  String get _tooltip {
+    switch (quality) {
+      case LiveKitParticipantQuality.excellent:
+        return 'Verbindung: ausgezeichnet';
+      case LiveKitParticipantQuality.good:
+        return 'Verbindung: gut';
+      case LiveKitParticipantQuality.poor:
+        return 'Verbindung: schlecht';
+      case LiveKitParticipantQuality.lost:
+        return 'Verbindung verloren';
+      case LiveKitParticipantQuality.unknown:
+        return 'Verbindung: unbekannt';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: _tooltip,
+      child: Container(
+        width: 10,
+        height: 10,
+        decoration: BoxDecoration(
+          color: _color,
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.black.withValues(alpha: 0.6), width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: _color.withValues(alpha: 0.6),
+              blurRadius: 4,
+              spreadRadius: 0.5,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
