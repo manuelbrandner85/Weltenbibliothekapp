@@ -307,8 +307,10 @@ class LiveKitCallService extends ChangeNotifier {
       _attachRoomListener(room);
 
       // Connect-Optionen mit Auto-Subscribe — sonst hören Teilnehmer einander nicht.
-      // Hard-Timeout 30s: ohne den hängt die UI bei NAT/Firewall-Problemen
+      // Hard-Timeout 60s: ohne den hängt die UI bei NAT/Firewall-Problemen
       // ewig in "verbinde..." weil LiveKit intern endlos retried.
+      // 60s (vorher 30s): mobile/CGNAT-Netzwerke brauchen oft 15-25s für
+      // ICE-Gathering, 30s war zu knapp für slow LTE/3G.
       await room
           .connect(
             livekitUrl,
@@ -318,7 +320,7 @@ class LiveKitCallService extends ChangeNotifier {
             ),
           )
           .timeout(
-            const Duration(seconds: 30),
+            const Duration(seconds: 60),
             onTimeout: () {
               throw Exception(
                 'Verbindung zum Sprach-Server fehlgeschlagen — '
