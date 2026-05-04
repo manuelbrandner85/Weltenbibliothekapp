@@ -2544,6 +2544,23 @@ class _ControlBar extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 8),
+                    // Kamera
+                    _MoreActionTile(
+                      icon: service.cameraEnabled
+                          ? Icons.videocam_rounded
+                          : Icons.videocam_off_rounded,
+                      title: service.cameraEnabled ? 'Kamera an' : 'Kamera aus',
+                      subtitle: service.cameraEnabled
+                          ? 'Kamera deaktivieren'
+                          : 'Kamera für andere sichtbar machen',
+                      active: service.cameraEnabled,
+                      accent: accent,
+                      enabled: isConnected,
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        service.toggleCamera();
+                      },
+                    ),
                     // Chat
                     ValueListenableBuilder<int>(
                       valueListenable: InCallChatService.instance.unreadNotifier,
@@ -2714,7 +2731,7 @@ class _ControlBar extends StatelessWidget {
             top: false,
             child: Padding(
               padding: const EdgeInsets.symmetric(
-                horizontal: 24,
+                horizontal: 32,
                 vertical: 14,
               ),
               child: Row(
@@ -2737,56 +2754,15 @@ class _ControlBar extends StatelessWidget {
                     onLongPressStart: () => service.pttPress(),
                     onLongPressEnd: () => service.pttRelease(),
                   ),
-                  // ── Kamera ──
-                  _CtrlBtn(
-                    icon: service.cameraEnabled
-                        ? Icons.videocam_rounded
-                        : Icons.videocam_off_rounded,
-                    label: service.cameraEnabled ? 'Kamera' : 'Kamera aus',
-                    active: service.cameraEnabled,
-                    activeColor: accent,
-                    enabled: isConnected,
-                    onTap: () => service.toggleCamera(),
-                  ),
-                  // ── Mehr (sekundäre Aktionen) ──
+                  // ── Mehr (Smart-Badge zeigt aktive Sekundär-Features) ──
                   Builder(
-                    builder: (ctx) {
-                      final hasUnread = InCallChatService
-                              .instance.unreadNotifier.value >
-                          0;
-                      final hasActive = chatVisible ||
-                          service.handRaised ||
-                          service.screenShareEnabled ||
-                          CoWatchService.instance.active;
-                      return Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          _CtrlBtn(
-                            icon: Icons.more_horiz_rounded,
-                            label: 'Mehr',
-                            active: hasActive,
-                            activeColor: accent,
-                            enabled: true,
-                            onTap: () => _showMoreActions(ctx),
-                          ),
-                          if (hasUnread && !chatVisible)
-                            Positioned(
-                              top: 0,
-                              right: 2,
-                              child: Container(
-                                width: 12,
-                                height: 12,
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFFF1744),
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                      color: Colors.black, width: 1.5),
-                                ),
-                              ),
-                            ),
-                        ],
-                      );
-                    },
+                    builder: (ctx) => _SmartMehrButton(
+                      world: world,
+                      service: service,
+                      chatVisible: chatVisible,
+                      accent: accent,
+                      onTap: () => _showMoreActions(ctx),
+                    ),
                   ),
                   // ── Auflegen (immer sichtbar, prominent) ──
                   _CtrlBtn(
@@ -3053,6 +3029,157 @@ class _ReactionEmojiBtn extends StatelessWidget {
     );
   }
 }
+
+// ── Smart-Mehr-Button: zeigt aktive Sekundär-Feature-Badges ─────────────────
+
+class _SmartMehrButton extends StatelessWidget {
+  final String world;
+  final LiveKitCallService service;
+  final bool chatVisible;
+  final Color accent;
+  final VoidCallback onTap;
+
+  const _SmartMehrButton({
+    required this.world,
+    required this.service,
+    required this.chatVisible,
+    required this.accent,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<int>(
+      valueListenable: InCallChatService.instance.unreadNotifier,
+      builder: (_, unread, __) {
+        final hasUnreadChat = unread > 0 && !chatVisible;
+        final features = <_ActiveFeature>[
+          if (service.cameraEnabled)
+            const _ActiveFeature(Icons.videocam_rounded, Color(0xFF69F0AE)),
+          if (service.screenShareEnabled)
+            const _ActiveFeature(Icons.present_to_all_rounded, Color(0xFF40C4FF)),
+          if (service.handRaised)
+            const _ActiveFeature(Icons.front_hand_rounded, Color(0xFFFFB300)),
+          if (CoWatchService.instance.active)
+            const _ActiveFeature(Icons.tv_rounded, Color(0xFFE040FB)),
+        ];
+        final hasActive = features.isNotEmpty || chatVisible;
+
+        return GestureDetector(
+          onTap: onTap,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    width: 54,
+                    height: 54,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: hasActive
+                          ? accent.withValues(alpha: 0.22)
+                          : Colors.white.withValues(alpha: 0.10),
+                      border: Border.all(
+                        color: hasActive
+                            ? accent.withValues(alpha: 0.55)
+                            : Colors.white.withValues(alpha: 0.18),
+                        width: 1.5,
+                      ),
+                      boxShadow: hasActive
+                          ? [
+                              BoxShadow(
+                                color: accent.withValues(alpha: 0.25),
+                                blurRadius: 12,
+                                spreadRadius: 1,
+                              ),
+                            ]
+                          : null,
+                    ),
+                    child: Icon(
+                      Icons.tune_rounded,
+                      color: hasActive ? accent : Colors.white.withValues(alpha: 0.75),
+                      size: 24,
+                    ),
+                  ),
+                  // Unread-Chat-Badge (roter Dot)
+                  if (hasUnreadChat)
+                    Positioned(
+                      top: -1,
+                      right: -1,
+                      child: Container(
+                        width: 14,
+                        height: 14,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFF1744),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.black, width: 1.5),
+                        ),
+                        child: Center(
+                          child: Text(
+                            unread > 9 ? '9+' : '$unread',
+                            style: const TextStyle(
+                              fontSize: 7,
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  // Mini-Feature-Badges (max 3)
+                  if (features.isNotEmpty)
+                    Positioned(
+                      bottom: -4,
+                      left: 0,
+                      right: 0,
+                      child: Center(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: features.take(3).map((f) => Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 1.5),
+                            width: 14,
+                            height: 14,
+                            decoration: BoxDecoration(
+                              color: f.color,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.black, width: 1),
+                            ),
+                            child: Icon(f.icon, size: 8, color: Colors.black),
+                          )).toList(),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: features_labelOffset),
+              Text(
+                'Optionen',
+                style: TextStyle(
+                  color: hasActive ? accent : Colors.white.withValues(alpha: 0.65),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+// Hilfs-Klasse für Feature-Badge-Daten
+class _ActiveFeature {
+  final IconData icon;
+  final Color color;
+  const _ActiveFeature(this.icon, this.color);
+}
+
+// Konstante für Label-Abstand (features-Variable nicht direkt in const nutzbar)
+const double features_labelOffset = 6.0;
 
 class _CtrlBtn extends StatelessWidget {
   final IconData icon;
