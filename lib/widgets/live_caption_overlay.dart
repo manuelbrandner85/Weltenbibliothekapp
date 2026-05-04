@@ -88,7 +88,7 @@ class _CaptionLine extends StatelessWidget {
   final String text;
   final bool isPartial;
 
-  const _CaptionLine({required CaptionEvent event})
+  _CaptionLine({required CaptionEvent event})
       : name = event.name,
         text = event.text,
         isPartial = false;
