@@ -270,20 +270,27 @@ class _LiveKitGroupCallScreenState
           },
         );
       case LiveKitConnectionState.connected:
-        return _ParticipantGrid(
-          world: widget.world,
-          localName: widget.displayName,
-          localAvatarUrl: widget.avatarUrl,
-          remoteNames: svc.remoteParticipantNames,
-          micEnabled: svc.micEnabled,
-          cameraEnabled: svc.cameraEnabled,
-          accent: accent,
-          localVideoTrack: svc.localVideoTrack,
-          remoteVideoTracks: svc.remoteVideoTracks,
-          remoteMicActive: svc.isRemoteMicActive,
-          localHandRaised: svc.handRaised,
-          remoteHandRaised: svc.isRemoteHandRaised,
-          remoteAvatarUrl: svc.remoteAvatarUrl,
+        // 🌌 Bundle 3: ValueListenableBuilder auf speakersNotifier — nur das
+        // Grid rebuildet wenn sich Sprecher ändern, nicht der ganze Screen.
+        return ValueListenableBuilder<Set<String>>(
+          valueListenable: svc.speakersNotifier,
+          builder: (_, speakers, __) => _ParticipantGrid(
+            world: widget.world,
+            localName: widget.displayName,
+            localAvatarUrl: widget.avatarUrl,
+            localIdentity: svc.room?.localParticipant?.identity,
+            remoteNames: svc.remoteParticipantNames,
+            micEnabled: svc.micEnabled,
+            cameraEnabled: svc.cameraEnabled,
+            accent: accent,
+            localVideoTrack: svc.localVideoTrack,
+            remoteVideoTracks: svc.remoteVideoTracks,
+            remoteMicActive: svc.isRemoteMicActive,
+            localHandRaised: svc.handRaised,
+            remoteHandRaised: svc.isRemoteHandRaised,
+            remoteAvatarUrl: svc.remoteAvatarUrl,
+            activeSpeakers: speakers,
+          ),
         );
     }
   }
@@ -749,6 +756,7 @@ class _ParticipantGrid extends StatelessWidget {
   final String world;
   final String localName;
   final String? localAvatarUrl;
+  final String? localIdentity;
   final List<String> remoteNames;
   final bool micEnabled;
   final bool cameraEnabled;
@@ -759,11 +767,14 @@ class _ParticipantGrid extends StatelessWidget {
   final bool localHandRaised;
   final bool Function(String) remoteHandRaised;
   final String? Function(String) remoteAvatarUrl;
+  // 🌌 Bundle 3: aktive Sprecher (Identities-Set) für Aura-Glow
+  final Set<String> activeSpeakers;
 
   const _ParticipantGrid({
     required this.world,
     required this.localName,
     required this.localAvatarUrl,
+    this.localIdentity,
     required this.remoteNames,
     required this.micEnabled,
     required this.cameraEnabled,
@@ -774,6 +785,7 @@ class _ParticipantGrid extends StatelessWidget {
     required this.localHandRaised,
     required this.remoteHandRaised,
     required this.remoteAvatarUrl,
+    this.activeSpeakers = const <String>{},
   });
 
   /// Map: index → (videoTrack, micActive, handRaised, avatarUrl)
@@ -809,6 +821,7 @@ class _ParticipantGrid extends StatelessWidget {
 
     if (count == 1) {
       final info = _trackInfoFor(0);
+      final id = localIdentity ?? '';
       return Padding(
         padding: const EdgeInsets.all(20),
         child: _ParticipantTile(
@@ -821,14 +834,19 @@ class _ParticipantGrid extends StatelessWidget {
           videoTrack: info.video,
           handRaised: info.hand,
           avatarUrl: info.avatar,
+          isActiveSpeaker: id.isNotEmpty && activeSpeakers.contains(id),
         ),
       );
     }
 
     final crossCount = count <= 2 ? 2 : (count <= 4 ? 2 : 3);
+    final identitiesSorted = remoteVideoTracks.keys.toList();
     final tiles = List.generate(count, (i) {
       final isLocal = i == 0;
       final info = _trackInfoFor(i);
+      final id = isLocal
+          ? (localIdentity ?? '')
+          : (i - 1 < identitiesSorted.length ? identitiesSorted[i - 1] : '');
       return _ParticipantTile(
         name: allNames[i],
         isLocal: isLocal,
@@ -839,6 +857,7 @@ class _ParticipantGrid extends StatelessWidget {
         videoTrack: info.video,
         handRaised: info.hand,
         avatarUrl: info.avatar,
+        isActiveSpeaker: id.isNotEmpty && activeSpeakers.contains(id),
       );
     });
 
@@ -874,6 +893,8 @@ class _ParticipantTile extends StatefulWidget {
   final lk.VideoTrack? videoTrack;
   final bool handRaised;
   final String? avatarUrl;
+  // 🌌 Bundle 3: aktiver Sprecher → animierte Aura um's Tile
+  final bool isActiveSpeaker;
 
   const _ParticipantTile({
     required this.name,
@@ -885,6 +906,7 @@ class _ParticipantTile extends StatefulWidget {
     this.videoTrack,
     this.handRaised = false,
     this.avatarUrl,
+    this.isActiveSpeaker = false,
   });
 
   @override
@@ -906,15 +928,18 @@ class _ParticipantTileState extends State<_ParticipantTile>
     _pulseAnim = Tween<double>(begin: 0.95, end: 1.05).animate(
       CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut),
     );
-    if (widget.micEnabled) _pulseCtrl.repeat(reverse: true);
+    if (widget.micEnabled || widget.isActiveSpeaker) _pulseCtrl.repeat(reverse: true);
   }
 
   @override
   void didUpdateWidget(covariant _ParticipantTile old) {
     super.didUpdateWidget(old);
-    if (widget.micEnabled && !_pulseCtrl.isAnimating) {
+    // 🌌 Bundle 3: Animation läuft wenn micEnabled ODER isActiveSpeaker
+    // (Aura-Glow nutzt _pulseAnim auch).
+    final shouldAnimate = widget.micEnabled || widget.isActiveSpeaker;
+    if (shouldAnimate && !_pulseCtrl.isAnimating) {
       _pulseCtrl.repeat(reverse: true);
-    } else if (!widget.micEnabled && _pulseCtrl.isAnimating) {
+    } else if (!shouldAnimate && _pulseCtrl.isAnimating) {
       // Bundle 5.9: animateTo(0) macht 1-Frame-Animation, flackert bei
       // schnellem Mic-Toggle. Sofort auf 0 setzen via .value.
       _pulseCtrl.stop();
@@ -943,6 +968,51 @@ class _ParticipantTileState extends State<_ParticipantTile>
     final isMaterie = widget.world == 'materie';
     final hasVideo = widget.videoTrack != null;
 
+    final tile = _buildTileBody(context, initials, avatarSize, fontSize, isMaterie, hasVideo);
+
+    // 🌌 Bundle 3: Aktive-Sprecher-Aura — pulsierender Welt-farbiger Ring
+    // umschließt das Tile wenn die Person grade redet. Nicht nur micEnabled
+    // (= Mic an), sondern wirklich aktiv sprechend (via _activeSpeakers).
+    if (!widget.isActiveSpeaker) return tile;
+
+    return AnimatedBuilder(
+      animation: _pulseAnim,
+      builder: (_, __) {
+        final t = _pulseAnim.value; // 0..1
+        // Materie: 2 Farben (rot↔blau), Energie: 2 Farben (lila↔cyan)
+        final c1 = isMaterie
+            ? const Color(0xFFE53935) // materie rot
+            : const Color(0xFF7C4DFF); // energie lila
+        final c2 = isMaterie
+            ? const Color(0xFF2979FF) // materie blau
+            : const Color(0xFF00E5FF); // energie cyan
+        final auraColor = Color.lerp(c1, c2, t) ?? widget.accent;
+        return Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(WbDesign.radiusCard + 4),
+            boxShadow: [
+              // Innerer harter Ring
+              BoxShadow(
+                color: auraColor.withValues(alpha: 0.55),
+                blurRadius: 16 + (t * 8),
+                spreadRadius: 2 + (t * 2),
+              ),
+              // Äußerer weicher Halo
+              BoxShadow(
+                color: auraColor.withValues(alpha: 0.18),
+                blurRadius: 32 + (t * 16),
+                spreadRadius: 6 + (t * 4),
+              ),
+            ],
+          ),
+          child: tile,
+        );
+      },
+    );
+  }
+
+  Widget _buildTileBody(BuildContext context, String initials, double avatarSize,
+      double fontSize, bool isMaterie, bool hasVideo) {
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
