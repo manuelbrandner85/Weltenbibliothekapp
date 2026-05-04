@@ -5,7 +5,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'dart:async';
 import 'dart:io'; // File for uploads
 import '../../config/api_config.dart';
-import '../shared/livekit_prejoin_screen.dart';
+import '../shared/livekit_group_call_screen.dart';
 import '../../services/supabase_service.dart'; // 🔥 supabase client für Auth
 import 'package:supabase_flutter/supabase_flutter.dart' show RealtimeChannel;
 // Removed: dart:convert (unused after FIX 15)
@@ -1453,11 +1453,13 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => LiveKitPreJoinScreen(
+                  builder: (_) => LiveKitGroupCallScreen(
                     roomName: 'wb-energie-$_selectedRoom',
                     world: 'energie',
                     displayName: _username.isNotEmpty ? _username : 'Mitglied',
                     avatarUrl: _avatarUrl,
+                    audioOnly: false,
+                    initialMicEnabled: true,
                   ),
                 ),
               );
@@ -1522,12 +1524,14 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                     onJoin: (roomName) => Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => LiveKitPreJoinScreen(
+                        builder: (_) => LiveKitGroupCallScreen(
                           roomName: 'wb-$roomName',
                           world: 'energie',
                           displayName:
                               _username.isNotEmpty ? _username : 'Mitglied',
                           avatarUrl: _avatarUrl,
+                          audioOnly: false,
+                          initialMicEnabled: true,
                         ),
                       ),
                     ),
