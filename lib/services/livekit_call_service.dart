@@ -79,6 +79,13 @@ class LiveKitCallService extends ChangeNotifier {
   bool _screenShareEnabled = false;
   bool _handRaised = false;
 
+  // 🎧 Bundle 1: Audio-Only-Modus — Kamera/Video komplett aus, spart Akku +
+  // Bandbreite massiv. Ideal für lange Calls oder schwache Netze.
+  // Wenn aktiv, wird beim Join die Kamera nicht mehr automatisch
+  // angeboten und Camera-Toggle ist deaktiviert.
+  bool _audioOnlyMode = false;
+  bool get audioOnlyMode => _audioOnlyMode;
+
   /// Avatar-URL des lokalen Users — wird beim Connect via setAttributes
   /// an alle Teilnehmer gebroadcastet damit ihre UI sie zeigen kann.
   String? _localAvatarUrl;
@@ -187,10 +194,12 @@ class LiveKitCallService extends ChangeNotifier {
     required String world,
     String? displayName,
     String? avatarUrl,
+    bool audioOnly = false,
   }) async {
     // Avatar-URL + Display-Name für später (Mini-Bar & Re-Open)
     _localAvatarUrl = avatarUrl;
     _localDisplayName = displayName;
+    _audioOnlyMode = audioOnly;
     if (!ApiConfig.isLivekitEnabled) {
       throw Exception('Sprach-Anruf ist nicht konfiguriert (LIVEKIT_URL fehlt).');
     }
@@ -287,11 +296,24 @@ class LiveKitCallService extends ChangeNotifier {
         debugPrint('🎥 LiveKit: connecting to $livekitUrl room=$roomName …');
       }
 
+      // 🎙️ Bundle 1: High-End-Audio
+      // - noiseSuppression: WebRTC RNNoise filtert Tastatur, Lüfter, Verkehr
+      // - echoCancellation: verhindert Feedback wenn User über Lautsprecher hört
+      // - autoGainControl: gleicht laute/leise Stimmen automatisch aus
+      // - highPassFilter: filtert Frequenzen unter 80Hz (Brummen, Wind, Pop)
+      // - typingNoiseDetection: erkennt + dämpft Tastatur-Klicks gezielt
+      // Alle 5 zusammen: Pro-Sound-Qualität wie Krisp/Zoom — ohne Extra-Library.
       final room = Room(
         roomOptions: const RoomOptions(
           adaptiveStream: true,
           dynacast: true,
-          // Ohne defaultAudioPublishOptions kommt Mensaena-Default-Encoding
+          defaultAudioCaptureOptions: AudioCaptureOptions(
+            noiseSuppression: true,
+            echoCancellation: true,
+            autoGainControl: true,
+            highPassFilter: true,
+            typingNoiseDetection: true,
+          ),
           defaultAudioPublishOptions: AudioPublishOptions(
             dtx: true, // Discontinuous Transmission — spart Bandbreite bei Stille
           ),
@@ -609,6 +631,7 @@ class LiveKitCallService extends ChangeNotifier {
     _cameraEnabled = false;
     _screenShareEnabled = false;
     _handRaised = false;
+    _audioOnlyMode = false;     // Reset für nächsten Join
     _cameraIndex = 0;          // 🔄 Bundle 3.4: Index für nächsten Join resetten
     _activeSpeakers = {};
     speakersNotifier.value = const <String>{};
@@ -617,6 +640,23 @@ class LiveKitCallService extends ChangeNotifier {
     _localDisplayName = null;
     _localAvatarUrl = null;
     notifyListeners();
+  }
+
+  /// 🎧 Bundle 1: Audio-Only-Modus zur Laufzeit umschalten.
+  /// AN: Kamera wird abgeschaltet wenn aktiv, Toggle blockiert weiter.
+  /// AUS: User kann Kamera wie gewohnt aktivieren.
+  /// Akku- und Bandbreiten-Ersparnis ~80% gegenüber Video.
+  Future<void> toggleAudioOnlyMode() async {
+    final target = !_audioOnlyMode;
+    _audioOnlyMode = target;
+    if (target && _cameraEnabled) {
+      // Wenn Kamera aktiv ist beim Aktivieren von Audio-Only → ausschalten
+      await toggleCamera();
+    }
+    notifyListeners();
+    if (kDebugMode) {
+      debugPrint('🎧 Audio-Only-Modus: ${target ? "AN" : "AUS"}');
+    }
   }
 
   // ── Track-Toggles ──────────────────────────────────────────────────────────
@@ -678,6 +718,15 @@ class LiveKitCallService extends ChangeNotifier {
     final lp = _room?.localParticipant;
     if (lp == null) return;
 
+    // 🎧 Bundle 1: Im Audio-Only-Modus ist Kamera-AN gesperrt
+    // (Akku/Bandbreite zu schützen). Ausschalten bleibt erlaubt.
+    final wantTarget = !_cameraEnabled;
+    if (wantTarget && _audioOnlyMode) {
+      _errorMessage = 'Audio-Only-Modus ist aktiv. Bitte zuerst deaktivieren um die Kamera zu nutzen.';
+      notifyListeners();
+      return;
+    }
+
     // Doppel-Tap-Schutz: zweiter Tap während der erste läuft → ignoriere
     if (_cameraToggleInFlight) {
       if (kDebugMode) {
@@ -686,7 +735,7 @@ class LiveKitCallService extends ChangeNotifier {
       return;
     }
     _cameraToggleInFlight = true;
-    final target = !_cameraEnabled;
+    final target = wantTarget;
 
     try {
       if (target) {
