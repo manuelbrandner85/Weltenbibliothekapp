@@ -191,6 +191,8 @@ class _LiveKitGroupCallScreenState
                   // Screen pro Sekunde.
                   durationNotifier: svc.durationNotifier,
                   participantCount: svc.totalParticipantCount,
+                  audioOnly: svc.audioOnlyMode,
+                  onToggleAudioOnly: () => svc.toggleAudioOnlyMode(),
                   onClose: () async {
                     if (await _confirmLeave()) await _leaveAndPop();
                   },
@@ -461,6 +463,8 @@ class _TopBar extends StatelessWidget {
   final LiveKitConnectionState state;
   final ValueNotifier<int> durationNotifier;
   final int participantCount;
+  final bool audioOnly;
+  final VoidCallback onToggleAudioOnly;
   final VoidCallback onClose;
 
   const _TopBar({
@@ -469,6 +473,8 @@ class _TopBar extends StatelessWidget {
     required this.state,
     required this.durationNotifier,
     required this.participantCount,
+    required this.audioOnly,
+    required this.onToggleAudioOnly,
     required this.onClose,
   });
 
@@ -695,6 +701,24 @@ class _TopBar extends StatelessWidget {
                     ],
                   ),
                 ),
+              // 🎧 Audio-Only-Modus-Toggle (Akku/Bandbreite-Sparmodus)
+              SizedBox(
+                width: 38,
+                height: 38,
+                child: IconButton(
+                  tooltip: audioOnly
+                      ? 'Audio-Only aus → Video möglich'
+                      : 'Audio-Only an → spart Akku & Daten',
+                  onPressed: onToggleAudioOnly,
+                  icon: Icon(
+                    audioOnly
+                        ? Icons.headset_rounded
+                        : Icons.headset_outlined,
+                    color: audioOnly ? accent : WbDesign.textTertiary,
+                    size: 20,
+                  ),
+                ),
+              ),
               // Schließen
               SizedBox(
                 width: 40,
