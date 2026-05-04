@@ -186,24 +186,43 @@ jobs:
           echo "── Letzte 30 Container-Log-Zeilen ─────────────────────────"
           docker compose logs --tail=30 livekit
           echo ""
-          # Container-Health prüfen: muss UP sein, nicht "Restarting"
-          STATE=$(docker inspect --format '{{.State.Status}}' livekit-weltenbibliothek 2>/dev/null || echo "missing")
-          echo "→ Container-State: $STATE"
-          if [ "$STATE" != "running" ]; then
-            echo "❌ Container ist nicht 'running' (State: $STATE) — Deploy gescheitert"
-            echo "→ Letzte 100 Log-Zeilen für Diagnose:"
+          # Container-Health: docker compose ps statt docker inspect, weil
+          # letzteres mit Container-Namen je nach Docker-Version manchmal
+          # leeren String + non-zero exit liefert (gesehen am 2026-05-04).
+          # compose ps ist die kanonische Wahrheit aus Compose's Sicht.
+          if docker compose ps livekit --format '{{.State}}' 2>/dev/null | grep -qi '^running'; then
+            echo "✅ Container 'livekit' läuft (compose ps)"
+          else
+            echo "❌ Container 'livekit' läuft nicht — Deploy gescheitert"
+            docker compose ps || true
             docker compose logs --tail=100 livekit || true
             exit 1
           fi
           # Signaling-Endpoint testen — Server muss HTTP antworten (auch 404 ist ok,
-          # zeigt dass der HTTP-Stack lebt)
-          HTTP=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 http://127.0.0.1:7980 || echo "000")
+          # zeigt dass der HTTP-Stack lebt). Mehrere Retries weil Container
+          # noch initialisiert sein kann auch wenn er "running" zeigt.
+          HTTP="000"
+          for attempt in 1 2 3 4 5; do
+            HTTP=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 http://127.0.0.1:7980 || echo "000")
+            [ "$HTTP" != "000" ] && break
+            echo "  attempt $attempt: HTTP $HTTP — warte 3s …"
+            sleep 3
+          done
           if [ "$HTTP" = "000" ]; then
-            echo "❌ LiveKit-Signaling-Endpoint antwortet nicht (HTTP 000)"
+            echo "❌ LiveKit-Signaling-Endpoint antwortet nach 5 Versuchen nicht"
             docker compose logs --tail=100 livekit || true
             exit 1
           fi
           echo "✅ LiveKit-Signaling antwortet (HTTP $HTTP)"
+
+          # coturn-Health: prüft ob der TURN-Container auch lebt
+          if docker compose ps coturn --format '{{.State}}' 2>/dev/null | grep -qi '^running'; then
+            echo "✅ Container 'coturn' läuft"
+          else
+            echo "⚠️  coturn-Container läuft nicht — TURN-Relay nicht verfügbar"
+            docker compose logs --tail=50 coturn || true
+            # KEIN exit 1 — LiveKit funktioniert auch ohne coturn (nur weniger NAT-Coverage)
+          fi
 
       # ─────────────────────────────────────────────────────────────────────
       # 🛡️ STEP 5: CADDYFILE ADDITIV ERWEITERN
