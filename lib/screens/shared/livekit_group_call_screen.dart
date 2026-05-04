@@ -2645,6 +2645,215 @@ class _ControlBar extends StatelessWidget {
     required this.onLeave,
   });
 
+  /// Öffnet das "Mehr Aktionen"-Sheet mit sekundären Call-Funktionen.
+  void _showMoreActions(BuildContext context) {
+    final accent = WbDesign.accent(world);
+    final isConnected = service.isConnected;
+
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModalState) {
+          return ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: WbDesign.surface(world).withValues(alpha: 0.96),
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(24)),
+                  border: Border(
+                    top: BorderSide(
+                        color: accent.withValues(alpha: 0.30), width: 1),
+                  ),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const SizedBox(height: 12),
+                    Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: WbDesign.textTertiary.withValues(alpha: 0.4),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              gradient: WbDesign.hero(world),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.more_horiz_rounded,
+                                color: Colors.white, size: 18),
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            'Weitere Aktionen',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    // Chat
+                    ValueListenableBuilder<int>(
+                      valueListenable: InCallChatService.instance.unreadNotifier,
+                      builder: (_, unread, __) => _MoreActionTile(
+                        icon: chatVisible
+                            ? Icons.chat_bubble_rounded
+                            : Icons.chat_bubble_outline_rounded,
+                        title: 'Chat',
+                        subtitle: chatVisible
+                            ? 'Chat schließen'
+                            : (unread > 0
+                                ? '$unread neue Nachricht${unread == 1 ? '' : 'en'}'
+                                : 'Nachrichten im Anruf schreiben'),
+                        active: chatVisible,
+                        accent: accent,
+                        badgeCount: (!chatVisible && unread > 0) ? unread : 0,
+                        enabled: isConnected,
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          onToggleChat();
+                        },
+                      ),
+                    ),
+                    // Reaktion senden
+                    _MoreActionTile(
+                      icon: Icons.emoji_emotions_outlined,
+                      title: 'Reaktion',
+                      subtitle: 'Emoji-Reaktion an alle senden',
+                      active: false,
+                      accent: accent,
+                      enabled: isConnected,
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        _showReactionsPicker(context, world, service);
+                      },
+                    ),
+                    // Hand heben
+                    _MoreActionTile(
+                      icon: service.handRaised
+                          ? Icons.front_hand_rounded
+                          : Icons.front_hand_outlined,
+                      title: service.handRaised ? 'Hand senken' : 'Hand heben',
+                      subtitle: service.handRaised
+                          ? 'Meldung zurückziehen'
+                          : 'Allen zeigen dass du etwas sagen möchtest',
+                      active: service.handRaised,
+                      accent: const Color(0xFFFFB300),
+                      enabled: isConnected,
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        service.toggleHandRaised();
+                      },
+                    ),
+                    // Bildschirm teilen
+                    _MoreActionTile(
+                      icon: service.screenShareEnabled
+                          ? Icons.stop_screen_share_rounded
+                          : Icons.present_to_all_rounded,
+                      title: service.screenShareEnabled
+                          ? 'Teilen stoppen'
+                          : 'Bildschirm teilen',
+                      subtitle: service.screenShareEnabled
+                          ? 'Bildschirmübertragung beenden'
+                          : 'Deinen Bildschirm für alle sichtbar machen',
+                      active: service.screenShareEnabled,
+                      accent: accent,
+                      enabled: isConnected,
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        service.toggleScreenShare();
+                      },
+                    ),
+                    // Kamera drehen (nur wenn Kamera an)
+                    if (service.cameraEnabled)
+                      _MoreActionTile(
+                        icon: Icons.cameraswitch_rounded,
+                        title: 'Kamera drehen',
+                        subtitle: 'Zwischen Vorder- und Rückkamera wechseln',
+                        active: false,
+                        accent: accent,
+                        enabled: isConnected,
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          service.switchCamera();
+                        },
+                      ),
+                    // Co-Watch
+                    _MoreActionTile(
+                      icon: Icons.tv_rounded,
+                      title: 'Co-Watch',
+                      subtitle: CoWatchService.instance.active
+                          ? 'YouTube-Video läuft — Tippen zum Verwalten'
+                          : 'YouTube-Video gemeinsam anschauen',
+                      active: CoWatchService.instance.active,
+                      accent: accent,
+                      enabled: isConnected,
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        onCoWatch();
+                      },
+                    ),
+                    // Aufnahme
+                    ValueListenableBuilder<RecordingState>(
+                      valueListenable: RecordingService.instance.stateNotifier,
+                      builder: (_, recState, __) {
+                        final isRec = recState == RecordingState.recording;
+                        final isBusy = recState == RecordingState.starting ||
+                            recState == RecordingState.stopping;
+                        return _MoreActionTile(
+                          icon: isRec
+                              ? Icons.stop_circle_rounded
+                              : Icons.fiber_manual_record_rounded,
+                          title: isRec ? 'Aufnahme stoppen' : 'Aufnahme starten',
+                          subtitle: isRec
+                              ? 'Laufende Aufnahme beenden'
+                              : isBusy
+                                  ? 'Bitte warten…'
+                                  : 'Gesprächsaufnahme starten (MP4)',
+                          active: isRec,
+                          accent: const Color(0xFFFF1744),
+                          enabled: isConnected && !isBusy,
+                          onTap: () {
+                            Navigator.pop(ctx);
+                            if (isRec) {
+                              RecordingService.instance.stopRecording();
+                            } else {
+                              RecordingService.instance.startRecording(roomName);
+                            }
+                          },
+                        );
+                      },
+                    ),
+                    SizedBox(
+                        height: MediaQuery.of(ctx).padding.bottom + 20),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isConnected = service.isConnected;
