@@ -32,6 +32,7 @@
 |---|---|---|
 | B10.1 | Welt-Soundscape (Atmosphäre) | ✅ Patch — Dart WAV-Generator, `audioplayers` BytesSource |
 | B10.2 | Heilfrequenz-Player (Energie-USP) | ✅ Patch — 10 Solfeggio-Frequenzen, BottomSheet-Picker |
+| B10.4 | Co-Watch (gemeinsam YouTube) | ✅ Patch — webview_flutter bereits vorhanden, DataChannel-Sync |
 
 **B10.1 Details:**
 - `lib/services/soundscape_service.dart` — WAV-Generator (22050 Hz, 16-bit mono, 5s Loop)
@@ -55,6 +56,16 @@ Diese Features brauchen native Plugins oder Audio-Assets → kein OTA-Patch mög
 **WARNUNG:** Build-Nummer in `pubspec.yaml` bumpen + neue APK verteilen!
 
 Empfehlung: Alle B10.x-Features in EINEM einzigen Release-PR bündeln, einmalig neue APK rollen.
+
+**B10.4 Details:**
+- `lib/services/cowatch_service.dart` — DataChannel-Protokoll (load/play/pause/seek/close)
+- `lib/widgets/cowatch_panel.dart` — YouTube IFrame Player API via WebView, Host-Badge, Sync-Overlay
+- YouTube-URL-Parser: youtu.be, youtube.com/watch?v=, /embed/, Video-ID direkt
+- Schwebender Panel (55% Bildschirmhöhe) über ControlBar mit Schließ-Button
+- Co-Watch-Button 📺 in ControlBar, bei Host aktiv wenn Video läuft
+- Remote-Teilnehmer sehen Video automatisch wenn Host lädt
+
+---
 
 ### B10.3 — Picture-in-Picture (nächster Schritt)
 - Wenn App minimiert → Mini-Window mit aktuellem Sprecher
