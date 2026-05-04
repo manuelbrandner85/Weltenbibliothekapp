@@ -1138,20 +1138,16 @@ class _TopBar extends StatelessWidget {
               // 🔁 B6: Ansicht wechseln (Gallery ↔ Speaker)
               _TopBarBtn(
                 icon: viewMode == LiveKitViewMode.speaker
-                    ? Icons.view_quilt_rounded
-                    : Icons.grid_view_rounded,
-                label: viewMode == LiveKitViewMode.speaker
-                    ? 'Ansicht'
-                    : 'Ansicht',
+                    ? Icons.grid_view_rounded
+                    : Icons.account_box_rounded,
+                label: 'Ansicht',
                 active: viewMode == LiveKitViewMode.speaker,
                 accent: accent,
                 onTap: onToggleViewMode,
               ),
               // 🎙️ B8: Untertitel
               _TopBarBtn(
-                icon: captionsEnabled
-                    ? Icons.closed_caption_rounded
-                    : Icons.closed_caption_disabled_rounded,
+                icon: Icons.closed_caption_rounded,
                 label: 'Untertitel',
                 active: captionsEnabled,
                 accent: accent,
@@ -1931,6 +1927,184 @@ class _ControlBar extends StatelessWidget {
     required this.onLeave,
   });
 
+  /// Öffnet das "Mehr Aktionen"-Sheet mit sekundären Call-Funktionen.
+  void _showMoreActions(BuildContext context) {
+    final accent = WbDesign.accent(world);
+    final isConnected = service.isConnected;
+
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModalState) {
+          return ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: WbDesign.surface(world).withValues(alpha: 0.96),
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(24)),
+                  border: Border(
+                    top: BorderSide(
+                        color: accent.withValues(alpha: 0.30), width: 1),
+                  ),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const SizedBox(height: 12),
+                    Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: WbDesign.textTertiary.withValues(alpha: 0.4),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              gradient: WbDesign.hero(world),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.more_horiz_rounded,
+                                color: Colors.white, size: 18),
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            'Weitere Aktionen',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    // Chat
+                    ValueListenableBuilder<int>(
+                      valueListenable: InCallChatService.instance.unreadNotifier,
+                      builder: (_, unread, __) => _MoreActionTile(
+                        icon: chatVisible
+                            ? Icons.chat_bubble_rounded
+                            : Icons.chat_bubble_outline_rounded,
+                        title: 'Chat',
+                        subtitle: chatVisible
+                            ? 'Chat schließen'
+                            : (unread > 0
+                                ? '$unread neue Nachricht${unread == 1 ? '' : 'en'}'
+                                : 'Nachrichten im Anruf schreiben'),
+                        active: chatVisible,
+                        accent: accent,
+                        badgeCount: (!chatVisible && unread > 0) ? unread : 0,
+                        enabled: isConnected,
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          onToggleChat();
+                        },
+                      ),
+                    ),
+                    // Reaktion senden
+                    _MoreActionTile(
+                      icon: Icons.emoji_emotions_outlined,
+                      title: 'Reaktion',
+                      subtitle: 'Emoji-Reaktion an alle senden',
+                      active: false,
+                      accent: accent,
+                      enabled: isConnected,
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        _showReactionsPicker(context, world, service);
+                      },
+                    ),
+                    // Hand heben
+                    _MoreActionTile(
+                      icon: service.handRaised
+                          ? Icons.front_hand_rounded
+                          : Icons.front_hand_outlined,
+                      title: service.handRaised ? 'Hand senken' : 'Hand heben',
+                      subtitle: service.handRaised
+                          ? 'Meldung zurückziehen'
+                          : 'Allen zeigen dass du etwas sagen möchtest',
+                      active: service.handRaised,
+                      accent: const Color(0xFFFFB300),
+                      enabled: isConnected,
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        service.toggleHandRaised();
+                      },
+                    ),
+                    // Bildschirm teilen
+                    _MoreActionTile(
+                      icon: service.screenShareEnabled
+                          ? Icons.stop_screen_share_rounded
+                          : Icons.present_to_all_rounded,
+                      title: service.screenShareEnabled
+                          ? 'Teilen stoppen'
+                          : 'Bildschirm teilen',
+                      subtitle: service.screenShareEnabled
+                          ? 'Bildschirmübertragung beenden'
+                          : 'Deinen Bildschirm für alle sichtbar machen',
+                      active: service.screenShareEnabled,
+                      accent: accent,
+                      enabled: isConnected,
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        service.toggleScreenShare();
+                      },
+                    ),
+                    // Kamera drehen (nur wenn Kamera an)
+                    if (service.cameraEnabled)
+                      _MoreActionTile(
+                        icon: Icons.cameraswitch_rounded,
+                        title: 'Kamera drehen',
+                        subtitle: 'Zwischen Vorder- und Rückkamera wechseln',
+                        active: false,
+                        accent: accent,
+                        enabled: isConnected,
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          service.switchCamera();
+                        },
+                      ),
+                    // Co-Watch
+                    _MoreActionTile(
+                      icon: Icons.tv_rounded,
+                      title: 'Co-Watch',
+                      subtitle: CoWatchService.instance.active
+                          ? 'YouTube-Video läuft — Tippen zum Verwalten'
+                          : 'YouTube-Video gemeinsam anschauen',
+                      active: CoWatchService.instance.active,
+                      accent: accent,
+                      enabled: isConnected,
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        onCoWatch();
+                      },
+                    ),
+                    SizedBox(
+                        height: MediaQuery.of(ctx).padding.bottom + 20),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isConnected = service.isConnected;
@@ -1941,29 +2115,36 @@ class _ControlBar extends StatelessWidget {
         filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
         child: Container(
           decoration: BoxDecoration(
-            color: WbDesign.surfaceAlt(world).withValues(alpha: 0.90),
+            color: WbDesign.surfaceAlt(world).withValues(alpha: 0.92),
             border: Border(
-              top: BorderSide(color: WbDesign.borderMedium),
+              top: BorderSide(color: accent.withValues(alpha: 0.15), width: 1),
             ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.25),
+                blurRadius: 20,
+                offset: const Offset(0, -4),
+              ),
+            ],
           ),
           child: SafeArea(
             top: false,
             child: Padding(
               padding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 12,
+                horizontal: 24,
+                vertical: 14,
               ),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Mikrofon (Tap = Toggle, Long-Press = PTT)
+                  // ── Mikrofon (Tap = Toggle, Long-Press = PTT) ──
                   _CtrlBtn(
                     icon: service.micEnabled
                         ? Icons.mic_rounded
                         : Icons.mic_off_rounded,
                     label: service.pttActive
                         ? 'Sprechtaste'
-                        : (service.micEnabled ? 'Mikrofon an' : 'Stummschalten'),
+                        : (service.micEnabled ? 'Mikrofon' : 'Stumm'),
                     active: service.micEnabled || service.pttActive,
                     activeColor: service.pttActive
                         ? const Color(0xFF00E676)
@@ -1973,126 +2154,213 @@ class _ControlBar extends StatelessWidget {
                     onLongPressStart: () => service.pttPress(),
                     onLongPressEnd: () => service.pttRelease(),
                   ),
-                  // Kamera
+                  // ── Kamera ──
                   _CtrlBtn(
                     icon: service.cameraEnabled
                         ? Icons.videocam_rounded
                         : Icons.videocam_off_rounded,
-                    label: service.cameraEnabled ? 'Kamera an' : 'Kamera aus',
+                    label: service.cameraEnabled ? 'Kamera' : 'Kamera aus',
                     active: service.cameraEnabled,
                     activeColor: accent,
                     enabled: isConnected,
                     onTap: () => service.toggleCamera(),
                   ),
-                  // Kamera drehen (Front/Back) — nur sichtbar wenn Camera an
-                  if (service.cameraEnabled)
-                    _CtrlBtn(
-                      icon: Icons.cameraswitch_rounded,
-                      label: 'Drehen',
-                      active: false,
-                      activeColor: accent,
-                      enabled: isConnected,
-                      onTap: () => service.switchCamera(),
-                    ),
-                  // Bildschirm teilen
-                  _CtrlBtn(
-                    icon: service.screenShareEnabled
-                        ? Icons.stop_screen_share_rounded
-                        : Icons.present_to_all_rounded,
-                    label:
-                        service.screenShareEnabled ? 'Teilen stoppen' : 'Bildschirm',
-                    active: service.screenShareEnabled,
-                    activeColor: accent,
-                    enabled: isConnected,
-                    onTap: () => service.toggleScreenShare(),
-                  ),
-                  // 💬 In-Call-Chat
-                  ValueListenableBuilder<int>(
-                    valueListenable:
-                        InCallChatService.instance.unreadNotifier,
-                    builder: (_, unread, __) => Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        _CtrlBtn(
-                          icon: chatVisible
-                              ? Icons.chat_bubble_rounded
-                              : Icons.chat_bubble_outline_rounded,
-                          label: 'Chat',
-                          active: chatVisible,
-                          activeColor: accent,
-                          enabled: isConnected,
-                          onTap: onToggleChat,
-                        ),
-                        if (unread > 0 && !chatVisible)
-                          Positioned(
-                            top: 0,
-                            right: 0,
-                            child: Container(
-                              width: 16,
-                              height: 16,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFFF1744),
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                    color: Colors.black, width: 1.5),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  unread > 9 ? '9+' : '$unread',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                  // ── Mehr (sekundäre Aktionen) ──
+                  Builder(
+                    builder: (ctx) {
+                      final hasUnread = InCallChatService
+                              .instance.unreadNotifier.value >
+                          0;
+                      final hasActive = chatVisible ||
+                          service.handRaised ||
+                          service.screenShareEnabled ||
+                          CoWatchService.instance.active;
+                      return Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          _CtrlBtn(
+                            icon: Icons.more_horiz_rounded,
+                            label: 'Mehr',
+                            active: hasActive,
+                            activeColor: accent,
+                            enabled: true,
+                            onTap: () => _showMoreActions(ctx),
+                          ),
+                          if (hasUnread && !chatVisible)
+                            Positioned(
+                              top: 0,
+                              right: 2,
+                              child: Container(
+                                width: 12,
+                                height: 12,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFF1744),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                      color: Colors.black, width: 1.5),
                                 ),
                               ),
                             ),
-                          ),
-                      ],
-                    ),
+                        ],
+                      );
+                    },
                   ),
-                  // 💖 Bundle 4: Reactions-Picker
-                  _CtrlBtn(
-                    icon: Icons.emoji_emotions_outlined,
-                    label: 'Reaktion',
-                    active: false,
-                    activeColor: accent,
-                    enabled: isConnected,
-                    onTap: () => _showReactionsPicker(context, world, service),
-                  ),
-                  // 📺 B10.4: Co-Watch
-                  _CtrlBtn(
-                    icon: Icons.tv_rounded,
-                    label: 'Co-Watch',
-                    active: CoWatchService.instance.active,
-                    activeColor: accent,
-                    enabled: isConnected,
-                    onTap: onCoWatch,
-                  ),
-                  // Hand heben
-                  _CtrlBtn(
-                    icon: service.handRaised
-                        ? Icons.front_hand_rounded
-                        : Icons.front_hand_outlined,
-                    label: service.handRaised ? 'Hand senken' : 'Hand heben',
-                    active: service.handRaised,
-                    activeColor: const Color(0xFFFFB300),
-                    enabled: isConnected,
-                    onTap: () => service.toggleHandRaised(),
-                  ),
-                  // Auflegen
+                  // ── Auflegen (immer sichtbar, prominent) ──
                   _CtrlBtn(
                     icon: Icons.call_end_rounded,
                     label: 'Auflegen',
                     active: false,
                     enabled: true,
                     isDanger: true,
+                    isLarge: true,
                     onTap: onLeave,
                   ),
                 ],
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Zeile im "Mehr Aktionen"-Sheet.
+class _MoreActionTile extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final bool active;
+  final Color accent;
+  final bool enabled;
+  final int badgeCount;
+  final VoidCallback onTap;
+
+  const _MoreActionTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.active,
+    required this.accent,
+    required this.enabled,
+    required this.onTap,
+    this.badgeCount = 0,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: enabled ? onTap : null,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        child: Row(
+          children: [
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: active
+                        ? accent.withValues(alpha: 0.20)
+                        : Colors.white.withValues(alpha: 0.07),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: active
+                          ? accent.withValues(alpha: 0.45)
+                          : Colors.white.withValues(alpha: 0.10),
+                    ),
+                    boxShadow: active
+                        ? [
+                            BoxShadow(
+                              color: accent.withValues(alpha: 0.25),
+                              blurRadius: 12,
+                              spreadRadius: 1,
+                            )
+                          ]
+                        : null,
+                  ),
+                  child: Icon(
+                    icon,
+                    size: 22,
+                    color: !enabled
+                        ? Colors.white.withValues(alpha: 0.25)
+                        : (active ? accent : Colors.white),
+                  ),
+                ),
+                if (badgeCount > 0)
+                  Positioned(
+                    top: -4,
+                    right: -4,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 5, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFF1744),
+                        borderRadius: BorderRadius.circular(8),
+                        border:
+                            Border.all(color: Colors.black, width: 1.5),
+                      ),
+                      child: Text(
+                        badgeCount > 9 ? '9+' : '$badgeCount',
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: !enabled
+                          ? WbDesign.textDisabled
+                          : (active ? accent : Colors.white),
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      color: !enabled
+                          ? WbDesign.textDisabled
+                          : WbDesign.textSecondary,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (active)
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: accent,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: accent.withValues(alpha: 0.6),
+                      blurRadius: 6,
+                    ),
+                  ],
+                ),
+              )
+            else if (!enabled)
+              Icon(Icons.lock_outline_rounded,
+                  color: WbDesign.textDisabled, size: 16),
+          ],
         ),
       ),
     );
@@ -2210,6 +2478,8 @@ class _CtrlBtn extends StatelessWidget {
   final Color? activeColor;
   final bool enabled;
   final bool isDanger;
+  /// Wenn true → größeres Auflegen-Format (64×64 px, größeres Icon).
+  final bool isLarge;
   final VoidCallback? onTap;
   // 🎙️ B12: Push-to-Talk Long-Press
   final VoidCallback? onLongPressStart;
@@ -2222,6 +2492,7 @@ class _CtrlBtn extends StatelessWidget {
     required this.enabled,
     this.activeColor,
     this.isDanger = false,
+    this.isLarge = false,
     this.onTap,
     this.onLongPressStart,
     this.onLongPressEnd,
@@ -2229,6 +2500,9 @@ class _CtrlBtn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final double btnSize = isLarge ? 64 : 54;
+    final double iconSize = isLarge ? 26 : 22;
+
     final Color bg = isDanger
         ? const Color(0xFFFF1744)
         : (active && activeColor != null
@@ -2261,26 +2535,25 @@ class _CtrlBtn extends StatelessWidget {
           children: [
             AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              width: 54,
-              height: 54,
+              width: btnSize,
+              height: btnSize,
               decoration: BoxDecoration(
                 color: bg,
                 shape: BoxShape.circle,
-                border: Border.all(
-                  color: isDanger
-                      ? Colors.transparent
-                      : (active && activeColor != null
-                          ? activeColor!.withValues(alpha: 0.40)
-                          : WbDesign.borderMedium),
-                  width: 1.5,
-                ),
+                border: isDanger
+                    ? null
+                    : Border.all(
+                        color: active && activeColor != null
+                            ? activeColor!.withValues(alpha: 0.40)
+                            : WbDesign.borderMedium,
+                        width: 1.5,
+                      ),
                 boxShadow: isDanger
                     ? [
                         BoxShadow(
-                          color:
-                              const Color(0xFFFF1744).withValues(alpha: 0.40),
-                          blurRadius: 16,
-                          spreadRadius: 2,
+                          color: const Color(0xFFFF1744).withValues(alpha: 0.50),
+                          blurRadius: isLarge ? 24 : 16,
+                          spreadRadius: isLarge ? 4 : 2,
                         ),
                       ]
                     : (active && activeColor != null
@@ -2293,16 +2566,19 @@ class _CtrlBtn extends StatelessWidget {
                           ]
                         : null),
               ),
-              child: Icon(icon, color: iconColor, size: 22),
+              child: Icon(icon, color: iconColor, size: iconSize),
             ),
             const SizedBox(height: 5),
             Text(
               label,
               style: TextStyle(
-                color: labelColor,
+                color: isDanger
+                    ? const Color(0xFFFF6B6B)
+                    : labelColor,
                 fontSize: 9.5,
-                fontWeight:
-                    active ? FontWeight.w700 : FontWeight.w400,
+                fontWeight: (active || isDanger)
+                    ? FontWeight.w700
+                    : FontWeight.w400,
               ),
               textAlign: TextAlign.center,
               maxLines: 1,
