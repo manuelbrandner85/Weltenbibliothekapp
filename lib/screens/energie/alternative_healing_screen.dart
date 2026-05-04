@@ -167,7 +167,7 @@ class _AlternativeHealingScreenState extends State<AlternativeHealingScreen>
 
   Widget _buildCommunityTab() {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator(color: const Color(0xFF7C4DFF)));
+      return const Center(child: CircularProgressIndicator(color: Color(0xFF7C4DFF)));
     }
     if (_items.isEmpty) {
       return Center(
@@ -197,13 +197,13 @@ class _AlternativeHealingScreenState extends State<AlternativeHealingScreen>
       itemBuilder: (ctx, i) {
         final item = _items[i];
         return Card(
-          color: const Color(0xFF1A1A30),
+          color: Color(0xFF1A1A30),
           margin: const EdgeInsets.only(bottom: 12),
           child: ListTile(
-            leading: const Icon(Icons.healing, color: const Color(0xFF7C4DFF), size: 32),
+            leading: const Icon(Icons.healing, color: Color(0xFF7C4DFF), size: 32),
             title: Text(
               item['method_name'] ?? 'Methode',
-              style: const TextStyle(color: const Color(0xFF7C4DFF), fontWeight: FontWeight.bold),
+              style: const TextStyle(color: Color(0xFF7C4DFF), fontWeight: FontWeight.bold),
             ),
             subtitle: Text(
               item['method_description'] ?? '',
@@ -238,7 +238,7 @@ class _AlternativeHealingScreenState extends State<AlternativeHealingScreen>
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      CircularProgressIndicator(color: const Color(0xFF7C4DFF)),
+                      CircularProgressIndicator(color: Color(0xFF7C4DFF)),
                       SizedBox(height: 16),
                       Text('Suche PubMed-Datenbank…',
                           style: TextStyle(color: Colors.white54)),
@@ -249,7 +249,7 @@ class _AlternativeHealingScreenState extends State<AlternativeHealingScreen>
                   ? _buildPubMedEmpty()
                   : RefreshIndicator(
                       onRefresh: () => _loadStudies(),
-                      color: const Color(0xFF7C4DFF),
+                      color: Color(0xFF7C4DFF),
                       child: ListView.builder(
                         padding: const EdgeInsets.all(12),
                         itemCount: _studies.length + 1,
@@ -266,7 +266,7 @@ class _AlternativeHealingScreenState extends State<AlternativeHealingScreen>
 
   Widget _buildSearchBar() {
     return Container(
-      color: const Color(0xFF0D0D1A),
+      color: Color(0xFF0D0D1A),
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
       child: Row(
         children: [
@@ -283,7 +283,7 @@ class _AlternativeHealingScreenState extends State<AlternativeHealingScreen>
                   borderRadius: BorderRadius.circular(10),
                   borderSide: BorderSide.none,
                 ),
-                prefixIcon: const Icon(Icons.science, color: const Color(0xFF7C4DFF)),
+                prefixIcon: const Icon(Icons.science, color: Color(0xFF7C4DFF)),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 12),
               ),
               onSubmitted: (v) => _loadStudies(v.trim()),
@@ -309,9 +309,9 @@ class _AlternativeHealingScreenState extends State<AlternativeHealingScreen>
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF7C4DFF).withValues(alpha: 0.1),
+        color: Color(0xFF7C4DFF).withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF7C4DFF).withValues(alpha: 0.3)),
+        border: Border.all(color: Color(0xFF7C4DFF).withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
@@ -322,7 +322,7 @@ class _AlternativeHealingScreenState extends State<AlternativeHealingScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text('PubMed Wissenschaftliche Studien',
-                    style: TextStyle(color: const Color(0xFF7C4DFF), fontWeight: FontWeight.bold)),
+                    style: TextStyle(color: Color(0xFF7C4DFF), fontWeight: FontWeight.bold)),
                 Text('${_studies.length} Ergebnisse für "$_pubmedQuery"',
                     style: const TextStyle(color: Colors.white54, fontSize: 12)),
               ],
@@ -351,7 +351,7 @@ class _AlternativeHealingScreenState extends State<AlternativeHealingScreen>
 
   Widget _buildStudyCard(PubMedStudy study) {
     return Card(
-      color: const Color(0xFF1A1A30),
+      color: Color(0xFF1A1A30),
       margin: const EdgeInsets.only(bottom: 10),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       child: InkWell(
@@ -376,7 +376,7 @@ class _AlternativeHealingScreenState extends State<AlternativeHealingScreen>
               if (study.authors.isNotEmpty)
                 Text(
                   study.authors.join(', '),
-                  style: const TextStyle(color: const Color(0xFF7C4DFF), fontSize: 12),
+                  style: const TextStyle(color: Color(0xFF7C4DFF), fontSize: 12),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -392,7 +392,7 @@ class _AlternativeHealingScreenState extends State<AlternativeHealingScreen>
                   if (study.pubDate != null)
                     Text(study.pubDate!, style: const TextStyle(color: Colors.white38, fontSize: 11)),
                   const Spacer(),
-                  const Icon(Icons.open_in_new, size: 14, color: const Color(0xFF7C4DFF)),
+                  const Icon(Icons.open_in_new, size: 14, color: Color(0xFF7C4DFF)),
                 ],
               ),
             ],
