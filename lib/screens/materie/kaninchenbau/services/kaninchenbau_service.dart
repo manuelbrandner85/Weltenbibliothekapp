@@ -17,22 +17,27 @@ class KaninchenbauService {
 
   final _free = FreeApiService();
 
-  /// Wikidata-Entity holen — Identität (Name, Beschreibung, Bild, Typ).
+  /// Wikidata-Entity holen — Identität (Name, Beschreibung).
   Future<Map<String, dynamic>?> fetchIdentity(String topic) async {
     try {
-      final entities = await _free.fetchWikidataEntities(topic, limit: 1);
-      if (entities.isEmpty) return null;
-      return entities.first;
+      final entries = await _free.fetchWikidataEntries(topic, limit: 1);
+      if (entries.isEmpty) return null;
+      final e = entries.first;
+      return {
+        'label': e.label,
+        'description': e.description ?? '',
+        'url': e.url,
+      };
     } catch (e) {
       debugPrint('Identity-Error: $e');
       return null;
     }
   }
 
-  /// Netzwerk: über Wikidata-SPARQL verwandte Entitäten holen.
+  /// Netzwerk: über Wikidata-Suche verwandte Entitäten holen.
   Future<List<NetworkNode>> fetchNetworkNodes(String topic) async {
     try {
-      final results = await _free.fetchWikidataEntities(topic, limit: 8);
+      final results = await _free.fetchWikidataEntries(topic, limit: 8);
       final nodes = <NetworkNode>[
         NetworkNode(id: 'center', label: topic, type: 'concept', weight: 1.0),
       ];
@@ -40,26 +45,32 @@ class KaninchenbauService {
         final r = results[i];
         nodes.add(NetworkNode(
           id: 'n$i',
-          label: (r['label'] ?? r['name'] ?? '?').toString(),
-          type: _guessType(r['description']?.toString() ?? ''),
+          label: r.label,
+          type: _guessType(r.description ?? ''),
           weight: 0.7 - (i * 0.05),
         ));
       }
       return nodes;
     } catch (_) {
-      return [NetworkNode(id: 'center', label: topic, type: 'concept', weight: 1.0)];
+      return [
+        NetworkNode(id: 'center', label: topic, type: 'concept', weight: 1.0),
+      ];
     }
   }
 
   String _guessType(String desc) {
     final d = desc.toLowerCase();
-    if (d.contains('company') || d.contains('corporation') || d.contains('firma')) return 'company';
-    if (d.contains('politician') || d.contains('person') || d.contains('researcher')) return 'person';
+    if (d.contains('company') ||
+        d.contains('corporation') ||
+        d.contains('firma')) return 'company';
+    if (d.contains('politician') ||
+        d.contains('person') ||
+        d.contains('researcher')) return 'person';
     if (d.contains('organization') || d.contains('foundation')) return 'org';
     return 'concept';
   }
 
-  /// Quellen aggregieren — offizielle (Wikipedia/Guardian) + alternative (CrossRef/Retracted).
+  /// Quellen aggregieren — offizielle (Guardian) + neutrale (CrossRef).
   Future<List<SourceItem>> fetchSources(String topic) async {
     final results = <SourceItem>[];
 
@@ -67,34 +78,38 @@ class KaninchenbauService {
       final guardianFuture = _free.fetchGuardianNews(topic, limit: 4);
       final crossrefFuture = _free.fetchCrossRefWorks(topic, limit: 4);
 
-      final responses = await Future.wait([guardianFuture, crossrefFuture],
-          eagerError: false);
+      final responses = await Future.wait(
+        [guardianFuture, crossrefFuture],
+        eagerError: false,
+      );
 
-      // Guardian → official
-      final guardian = (responses[0] as List?) ?? const [];
-      for (final g in guardian.take(3)) {
-        final m = g as Map<String, dynamic>;
-        results.add(SourceItem(
-          title: (m['title'] ?? '').toString(),
-          url: (m['url'] ?? '').toString(),
-          snippet: (m['section'] ?? '').toString(),
-          lens: SourceLens.official,
-          credibility: 78,
-        ));
+      final guardian = responses[0];
+      if (guardian is List) {
+        for (final g in guardian.take(3)) {
+          if (g is GuardianArticle) {
+            results.add(SourceItem(
+              title: g.webTitle,
+              url: g.webUrl,
+              snippet: g.sectionName ?? g.trailText ?? '',
+              lens: SourceLens.official,
+              credibility: 78,
+            ));
+          }
+        }
       }
 
-      // CrossRef → mostly neutral / scientific
       final crossref = responses[1];
       if (crossref is List) {
         for (final c in crossref.take(3)) {
-          final m = c as Map<String, dynamic>;
-          results.add(SourceItem(
-            title: (m['title'] ?? '').toString(),
-            url: 'https://doi.org/${m['doi'] ?? ''}',
-            snippet: '${m['publisher'] ?? ''} · ${m['year'] ?? ''}',
-            lens: SourceLens.neutral,
-            credibility: 85,
-          ));
+          if (c is CrossRefWork) {
+            results.add(SourceItem(
+              title: c.title,
+              url: 'https://doi.org/${c.doi}',
+              snippet: '${c.publisher} · ${c.year ?? ""}',
+              lens: SourceLens.neutral,
+              credibility: 85,
+            ));
+          }
         }
       }
     } catch (e) {
@@ -104,19 +119,21 @@ class KaninchenbauService {
     return results;
   }
 
-  /// Zeitstrahl: GDELT-Events + Wikipedia OnThisDay.
+  /// Zeitstrahl: GDELT-Events.
   Future<List<TimelineEntry>> fetchTimeline(String topic) async {
     final entries = <TimelineEntry>[];
     try {
-      final gdelt = await _free.fetchGdeltEvents(topic, limit: 6);
+      final gdelt = await _free.fetchGdeltEvents(query: topic, limit: 8);
       for (final g in gdelt) {
-        final m = g as Map<String, dynamic>;
-        final dateStr = (m['seendate'] ?? '').toString();
-        final year = int.tryParse(dateStr.substring(0, 4)) ?? DateTime.now().year;
+        final dateStr = g.seendate;
+        int year = DateTime.now().year;
+        if (dateStr.length >= 4) {
+          year = int.tryParse(dateStr.substring(0, 4)) ?? year;
+        }
         entries.add(TimelineEntry(
           year: year,
-          title: (m['title'] ?? '').toString(),
-          sourceUrl: (m['url'] ?? '').toString(),
+          title: g.title,
+          sourceUrl: g.url,
         ));
       }
     } catch (e) {
@@ -126,21 +143,12 @@ class KaninchenbauService {
     return entries;
   }
 
-  /// Geldflüsse — Heuristik: aus Wikidata "owner of"/"subsidiary of" Felder
-  /// + bekannte öffentliche Datenbanken. Stub-Demo wenn keine echten Daten.
-  Future<List<MoneyFlow>> fetchMoneyFlows(String topic) async {
-    // Phase 1: Aus Wikidata-Description extrahieren (Light-Version).
-    // Echte OpenSecrets/SEC-Integration kommt in Phase 2.
-    return const [];
-  }
-
-  /// Verwandte Pfade — algorithmisch aus Wikidata + Datamuse.
+  /// Verwandte Pfade — algorithmisch aus Datamuse + Wikidata.
   Future<List<String>> fetchRelatedTopics(String topic) async {
     final result = <String>{};
     try {
       final assoc = await _free.fetchWordAssociations(topic, limit: 8);
-      for (final a in assoc) {
-        final word = (a['word'] ?? '').toString();
+      for (final word in assoc) {
         if (word.isNotEmpty && word.toLowerCase() != topic.toLowerCase()) {
           result.add(word);
         }
@@ -149,11 +157,11 @@ class KaninchenbauService {
 
     if (result.length < 6) {
       try {
-        final entities = await _free.fetchWikidataEntities(topic, limit: 10);
+        final entities = await _free.fetchWikidataEntries(topic, limit: 10);
         for (final e in entities) {
-          final label = (e['label'] ?? '').toString();
-          if (label.isNotEmpty && label.toLowerCase() != topic.toLowerCase()) {
-            result.add(label);
+          if (e.label.isNotEmpty &&
+              e.label.toLowerCase() != topic.toLowerCase()) {
+            result.add(e.label);
           }
           if (result.length >= 6) break;
         }
@@ -186,8 +194,10 @@ class KaninchenbauService {
 
       if (resp.statusCode != 200) return null;
       final data = jsonDecode(resp.body) as Map<String, dynamic>;
-      // Worker AI returns various shapes; try common keys
-      return (data['response'] ?? data['answer'] ?? data['text'] ?? data['result'])
+      return (data['response'] ??
+              data['answer'] ??
+              data['text'] ??
+              data['result'])
           ?.toString()
           .trim();
     } catch (e) {
