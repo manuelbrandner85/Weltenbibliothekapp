@@ -5,7 +5,6 @@
 /// - Spatial Ducking: aktiver Sprecher 1.0, Stille 0.65 — hilft beim Fokus
 library;
 
-import 'dart:async';
 import 'dart:typed_data';
 import 'dart:math' as math;
 
@@ -125,47 +124,29 @@ class AudioFeedbackService {
 
   void toggleSpatial() {
     _spatialEnabled = !_spatialEnabled;
-    if (!_spatialEnabled) {
-      _resetAllVolumes();
-    } else {
-      _applyDucking();
-    }
+    // Hinweis: livekit_client 2.x stellt kein setVolume() auf RemoteParticipant
+    // bereit (nur Web-SDK). Spatial Audio ist derzeit Visual-only — der aktive
+    // Sprecher wird durch den Aura-Glow in der ParticipantTile hervorgehoben.
+    // Audio-Ducking wird aktiviert sobald livekit_client ein Volume-API liefert.
   }
 
   /// Wird von LiveKitCallService aufgerufen wenn sich aktive Sprecher ändern.
+  /// Derzeit nur Tracking — Volume-Manipulation nicht verfügbar in livekit_client 2.x.
   void updateActiveSpeakers(Set<String> activeSpeakerIdentities) {
-    if (!_spatialEnabled || _room == null) return;
-    final room = _room!;
-
-    for (final p in room.remoteParticipants.values) {
-      final isActive = activeSpeakerIdentities.contains(p.identity);
-      final targetVol = isActive ? 1.0 : 0.65;
-      if (_volumes[p.identity] != targetVol) {
-        _volumes[p.identity] = targetVol;
-        try {
-          p.setVolume(targetVol);
-        } catch (_) {}
+    if (!_spatialEnabled) return;
+    // Volume-Ducking: livekit_client 2.5.x hat kein setVolume() auf
+    // RemoteParticipant (nur WebAudio im Browser-SDK). Wir tracken den State
+    // und können in einer späteren SDK-Version aktivieren.
+    for (final identity in activeSpeakerIdentities) {
+      _volumes[identity] = 1.0;
+    }
+    if (_room != null) {
+      for (final p in _room!.remoteParticipants.values) {
+        if (!activeSpeakerIdentities.contains(p.identity)) {
+          _volumes[p.identity] = 0.65;
+        }
       }
     }
-  }
-
-  void _applyDucking() {
-    if (_room == null) return;
-    for (final p in _room!.remoteParticipants.values) {
-      try {
-        p.setVolume(1.0);
-      } catch (_) {}
-    }
-  }
-
-  void _resetAllVolumes() {
-    if (_room == null) return;
-    for (final p in _room!.remoteParticipants.values) {
-      try {
-        p.setVolume(1.0);
-      } catch (_) {}
-    }
-    _volumes.clear();
   }
 
   // ─── B10.8: Synthesized Call-Sounds ───────────────────────────────────────
