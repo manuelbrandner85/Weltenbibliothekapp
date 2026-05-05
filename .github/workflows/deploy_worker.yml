@@ -80,9 +80,10 @@ jobs:
           echo "✅ Worker deployed — Cron-Trigger aktiv"
 
       - name: 🔑 Worker-Secrets setzen
-        # Alle Secrets in EINEM bulk-Aufruf setzen.
-        # Mehrere einzelne `secret put` Calls erzeugen in Wrangler 3.x einen
-        # Versions-Drift-Error (zweiter Call sieht unveröffentlichte Draft-Version).
+        # Setzt Secrets direkt via Cloudflare REST API (script-level secrets endpoint).
+        # wrangler secret bulk schlägt mit Error 10214 fehl wenn gerade eine neue
+        # Worker-Version deployed wurde (versioned-deployment conflict).
+        # Die REST API umgeht dieses Problem vollständig.
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -93,69 +94,41 @@ jobs:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           GOOGLE_FACTCHECK_API_KEY: ${{ secrets.GOOGLE_FACTCHECK_API_KEY }}
           YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
-        working-directory: workers
         run: |
           set -euo pipefail
-          SECRETS_FILE=$(mktemp /tmp/wrangler_secrets.XXXXXX.json)
-          trap 'rm -f "$SECRETS_FILE"' EXIT
+          ACCOUNT_ID="3472f5994537c3a30c5caeaff4de21fb"
+          SCRIPT_NAME="weltenbibliothek-api"
+          API="https://api.cloudflare.com/client/v4/accounts/${ACCOUNT_ID}/workers/scripts/${SCRIPT_NAME}/secrets"
 
-          # JSON mit jq aufbauen (sicheres Escaping, kein Heredoc nötig)
-          PAYLOAD='{}'
+          set_secret() {
+            local name="$1"
+            local value="$2"
+            local result
+            result=$(curl -s -X PUT "$API" \
+              -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+              -H "Content-Type: application/json" \
+              -d "{\"name\":$(echo -n "$name" | jq -Rs .),\"text\":$(echo -n "$value" | jq -Rs .),\"type\":\"secret_text\"}")
+            if echo "$result" | jq -e '.success == true' > /dev/null 2>&1; then
+              echo "✅ $name"
+            else
+              echo "❌ $name: $(echo "$result" | jq -r '.errors[0].message // "unbekannter Fehler"')"
+              return 1
+            fi
+          }
 
-          if [ -n "${SUPABASE_SERVICE_ROLE_KEY:-}" ]; then
-            echo "→ SUPABASE_SERVICE_ROLE_KEY"
-            PAYLOAD=$(printf '%s' "$PAYLOAD" | jq --arg v "$SUPABASE_SERVICE_ROLE_KEY" '. + {SUPABASE_SERVICE_ROLE_KEY: $v}')
-          else
-            echo "⚠️  SUPABASE_SERVICE_ROLE_KEY fehlt"
-          fi
-
-          if [ -n "${FCM_SERVICE_ACCOUNT_JSON:-}" ]; then
-            echo "→ FCM_SERVICE_ACCOUNT"
-            PAYLOAD=$(printf '%s' "$PAYLOAD" | jq --arg v "$FCM_SERVICE_ACCOUNT_JSON" '. + {FCM_SERVICE_ACCOUNT: $v}')
-          else
-            echo "ℹ️  FCM_SERVICE_ACCOUNT_JSON fehlt — Push-Dispatcher markiert Queue nur als 'sent'"
-          fi
-
-          if [ -n "${GROQ_API_KEY:-}" ]; then
-            echo "→ GROQ_API_KEY (Virgil Llama 3.3 70B)"
-            PAYLOAD=$(printf '%s' "$PAYLOAD" | jq --arg v "$GROQ_API_KEY" '. + {GROQ_API_KEY: $v}')
-          else
-            echo "ℹ️  GROQ_API_KEY fehlt — Virgil nutzt Workers AI Llama 3.1 8B (Fallback)"
-          fi
-
-          if [ -n "${GOOGLE_FACTCHECK_API_KEY:-}" ]; then
-            echo "→ GOOGLE_FACTCHECK_API_KEY"
-            PAYLOAD=$(printf '%s' "$PAYLOAD" | jq --arg v "$GOOGLE_FACTCHECK_API_KEY" '. + {GOOGLE_FACTCHECK_API_KEY: $v}')
-          else
-            echo "ℹ️  GOOGLE_FACTCHECK_API_KEY fehlt — Fact-Check Card zeigt Snopes/Politifact-Search-Links"
-          fi
-
-          if [ -n "${YOUTUBE_API_KEY:-}" ]; then
-            echo "→ YOUTUBE_API_KEY"
-            PAYLOAD=$(printf '%s' "$PAYLOAD" | jq --arg v "$YOUTUBE_API_KEY" '. + {YOUTUBE_API_KEY: $v}')
-          else
-            echo "ℹ️  YOUTUBE_API_KEY fehlt — Karten-Videos nutzen nur hardcodierte IDs"
-          fi
-
+          [ -n "${SUPABASE_SERVICE_ROLE_KEY:-}" ] && set_secret "SUPABASE_SERVICE_ROLE_KEY" "$SUPABASE_SERVICE_ROLE_KEY" || echo "⚠️  SUPABASE_SERVICE_ROLE_KEY fehlt"
+          [ -n "${FCM_SERVICE_ACCOUNT_JSON:-}" ]  && set_secret "FCM_SERVICE_ACCOUNT" "$FCM_SERVICE_ACCOUNT_JSON"        || echo "ℹ️  FCM_SERVICE_ACCOUNT_JSON fehlt"
+          [ -n "${GROQ_API_KEY:-}" ]              && set_secret "GROQ_API_KEY" "$GROQ_API_KEY"                          || echo "ℹ️  GROQ_API_KEY fehlt"
+          [ -n "${GOOGLE_FACTCHECK_API_KEY:-}" ]  && set_secret "GOOGLE_FACTCHECK_API_KEY" "$GOOGLE_FACTCHECK_API_KEY"  || echo "ℹ️  GOOGLE_FACTCHECK_API_KEY fehlt"
+          [ -n "${YOUTUBE_API_KEY:-}" ]           && set_secret "YOUTUBE_API_KEY" "$YOUTUBE_API_KEY"                    || echo "ℹ️  YOUTUBE_API_KEY fehlt"
           if [ -n "${WB_SECRET:-}" ]; then
-            echo "→ LIVEKIT_API_KEY / LIVEKIT_API_SECRET / LIVEKIT_URL"
-            PAYLOAD=$(printf '%s' "$PAYLOAD" | jq \
-              --arg k "${WB_KEY}" --arg s "${WB_SECRET}" --arg u "${WB_URL}" \
-              '. + {LIVEKIT_API_KEY: $k, LIVEKIT_API_SECRET: $s, LIVEKIT_URL: $u}')
+            set_secret "LIVEKIT_API_KEY"    "${WB_KEY}"
+            set_secret "LIVEKIT_API_SECRET" "${WB_SECRET}"
+            set_secret "LIVEKIT_URL"        "${WB_URL}"
           else
-            echo "ℹ️  LIVEKIT_API_SECRET nicht gesetzt — LiveKit-Secrets bleiben unverändert"
+            echo "ℹ️  LIVEKIT_API_SECRET fehlt — LiveKit-Secrets bleiben unverändert"
           fi
-
-          if [ "$PAYLOAD" = '{}' ]; then
-            echo "⚠️  Keine Secrets zu setzen — übersprungen"
-            exit 0
-          fi
-
-          COUNT=$(printf '%s' "$PAYLOAD" | jq 'keys | length')
-          echo "→ $COUNT Secrets via wrangler secret bulk …"
-          printf '%s' "$PAYLOAD" > "$SECRETS_FILE"
-          npx -y wrangler@3 secret bulk "$SECRETS_FILE"
-          echo "✅ Alle $COUNT Secrets gesetzt"
+          echo "✅ Secret-Deploy abgeschlossen"
 
       # HINWEIS: Der frühere Step "livekit.yaml auf VPS aktualisieren" wurde entfernt.
       # Er hatte Mensaena's livekit.yaml überschrieben, um WB's Key dort einzutragen
