@@ -9,6 +9,7 @@ class YoutubeVideo {
   final String thumbnail;
   final String published;
   final String description;
+  final bool isSubtitled; // true = englisches Video mit deutschen Untertiteln
 
   const YoutubeVideo({
     required this.videoId,
@@ -17,6 +18,7 @@ class YoutubeVideo {
     required this.thumbnail,
     required this.published,
     required this.description,
+    this.isSubtitled = false,
   });
 
   factory YoutubeVideo.fromJson(Map<String, dynamic> j) => YoutubeVideo(
@@ -26,6 +28,7 @@ class YoutubeVideo {
         thumbnail: j['thumbnail'] as String? ?? '',
         published: j['published'] as String? ?? '',
         description: j['description'] as String? ?? '',
+        isSubtitled: j['isSubtitled'] as bool? ?? false,
       );
 
   String get embedUrl => 'https://www.youtube-nocookie.com/embed/$videoId?autoplay=1&hl=de&rel=0';
@@ -40,15 +43,16 @@ class YoutubeService {
   final _cache = <String, List<YoutubeVideo>>{};
 
   Future<List<YoutubeVideo>> searchVideos(String query, {int max = 6}) async {
-    final key = '$query|$max';
+    // Suffix "deutsch" entfernen — Worker kümmert sich selbst darum
+    final cleanQuery = query.replaceAll(RegExp(r'\s+deutsch$', caseSensitive: false), '').trim();
+    final key = '$cleanQuery|$max';
     if (_cache.containsKey(key)) return _cache[key]!;
 
     try {
       final uri = Uri.parse(ApiConfig.workerUrl)
           .resolve('/api/youtube/search')
           .replace(queryParameters: {
-        'q': query,
-        'lang': 'de',
+        'q': cleanQuery,
         'max': '$max',
       });
 

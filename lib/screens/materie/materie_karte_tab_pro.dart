@@ -1120,6 +1120,18 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro>
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
+                          if (video.isSubtitled)
+                            Container(
+                              margin: const EdgeInsets.only(left: 4),
+                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.blue.withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(4),
+                                border: Border.all(color: Colors.blue.withValues(alpha: 0.4), width: 0.8),
+                              ),
+                              child: const Text('🇩🇪 UT',
+                                  style: TextStyle(color: Colors.lightBlueAccent, fontSize: 8, fontWeight: FontWeight.w700)),
+                            ),
                         ],
                       ),
                     ],
