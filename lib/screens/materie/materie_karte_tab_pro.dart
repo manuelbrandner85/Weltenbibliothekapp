@@ -8,6 +8,7 @@ import '../../models/location_category.dart'; // ✅ ENUM
 import '../../data/materie_locations.dart'; // ✅ DATA
 import '../../services/live_map_pins_service.dart'; // 📍 B7: Live-Pins
 import '../../services/youtube_service.dart';
+import '../../services/wikimedia_service.dart';
 import '../../widgets/live_pins_layer.dart'; // 📍 B7: Live-Pins-Marker
 import '../../widgets/youtube_player_inline.dart';
 
@@ -44,6 +45,11 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro> {
   YoutubeVideo? _ytPlaying;
   String _ytLocationName = '';
 
+  // Wikimedia-Bilder-State pro Marker
+  List<String> _wikiImages = const [];
+  bool _wikiLoading = false;
+  String _wikiLocationName = '';
+
   // 🗺️ MAP LAYER STATE
   String _currentMapLayer = 'street'; // street, satellite, terrain, topo
   bool _isLayerSwitcherExpanded = false; // Standard: Eingeklappt
@@ -74,6 +80,21 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro> {
     setState(() {
       _ytVideos = videos;
       _ytLoading = false;
+    });
+  }
+
+  Future<void> _loadWikimediaForLocation(String name) async {
+    if (_wikiLocationName == name) return;
+    if (!mounted) return;
+    setState(() {
+      _wikiLoading = true;
+      _wikiLocationName = name;
+    });
+    final images = await WikimediaService.instance.searchImages(name);
+    if (!mounted) return;
+    setState(() {
+      _wikiImages = images;
+      _wikiLoading = false;
     });
   }
 
@@ -159,9 +180,12 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro> {
                           _ytVideos = null;
                           _ytPlaying = null;
                           _ytLocationName = '';
+                          _wikiImages = const [];
+                          _wikiLocationName = '';
                         });
                         _mapController.move(location.position, 12.0);
                         _loadYoutubeForLocation(location.name);
+                        _loadWikimediaForLocation(location.name);
                       },
                       child: _buildMarker(location),
                     ),
@@ -528,14 +552,13 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro> {
           
           const SizedBox(height: 16),
           
-          // TABS
+          // TABS — immer alle 3 sichtbar
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Row(
               children: [
                 _buildTab('Info', 0, Icons.info_outline),
-                if (location.imageUrls.isNotEmpty)
-                  _buildTab('Bilder', 1, Icons.image_outlined),
+                _buildTab('Bilder', 1, Icons.image_outlined),
                 _buildTab('Videos', 2, Icons.play_circle_outline),
               ],
             ),
@@ -695,17 +718,32 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro> {
   }
   
   Widget _buildImagesTab(MaterieLocationDetail location) {
-    if (location.imageUrls.isEmpty) {
+    final allImages = [...location.imageUrls, ..._wikiImages];
+
+    if (_wikiLoading && allImages.isEmpty) {
+      return const Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(color: Colors.red, strokeWidth: 2),
+            SizedBox(height: 12),
+            Text('Suche Bilder…', style: TextStyle(color: Colors.white54, fontSize: 12)),
+          ],
+        ),
+      );
+    }
+
+    if (allImages.isEmpty) {
       return Center(
         child: Text(
-          'Keine Bilder verfügbar',
+          'Keine Bilder gefunden',
           style: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
         ),
       );
     }
-    
+
     return Column(
-      children: location.imageUrls.map((imageUrl) {
+      children: allImages.map((imageUrl) {
         return Container(
           margin: const EdgeInsets.only(bottom: 16),
           decoration: BoxDecoration(

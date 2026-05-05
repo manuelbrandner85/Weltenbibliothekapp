@@ -3252,6 +3252,30 @@ EMPFEHLUNG: [1 Satz — was sollte der User selbst recherchieren?]`;
       }
     }
 
+    // ── Wikimedia Commons Bildersuche für Karte-Marker ──────────────────────
+    if (path === '/api/map/wikimedia' && method === 'GET') {
+      const q = url.searchParams.get('q') || '';
+      if (!q) return jsonResponse({ images: [] });
+      try {
+        const searchUrl = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(q)}&gsrnamespace=6&gsrlimit=10&prop=imageinfo&iiprop=url|size|mime&format=json&origin=*`;
+        const r = await fetch(searchUrl, { headers: { 'User-Agent': 'WeltenbibliothekApp/1.0' } });
+        if (!r.ok) return jsonResponse({ images: [] });
+        const data = await r.json();
+        const pages = data.query?.pages || {};
+        const images = Object.values(pages)
+          .filter(p => {
+            const u = p.imageinfo?.[0]?.url || '';
+            return u.match(/\.(jpg|jpeg|png|webp)(\?|$)/i);
+          })
+          .sort((a, b) => (b.imageinfo?.[0]?.width || 0) - (a.imageinfo?.[0]?.width || 0))
+          .slice(0, 6)
+          .map(p => p.imageinfo[0].url);
+        return jsonResponse({ images });
+      } catch (e) {
+        return jsonResponse({ images: [] });
+      }
+    }
+
     // ── Whisper Transcribe (Workers AI, kein API-Key) ──
     if (path === '/api/whisper/transcribe' && method === 'POST') {
       if (!env.AI) return errorResponse('Workers AI nicht konfiguriert', 503);
@@ -3760,6 +3784,450 @@ EMPFEHLUNG: [1 Satz — was sollte der User selbst recherchieren?]`;
     if (path.startsWith('/go/') || path.startsWith('/out')) {
       const target = url.searchParams.get('url') || path.replace('/go/', 'https://t.me/');
       return Response.redirect(target, 302);
+    }
+
+    // ══════════════════════════════════════════════════════════
+    // OSINT TOOLS — 7 Standalone-Tools (kein Key nötig)
+    // ══════════════════════════════════════════════════════════
+
+    // A — Bildanalyse: EXIF via exif.tools API, Fallback HEAD-Request
+    if (path === '/api/tools/image-analysis' && method === 'GET') {
+      try {
+        const imageUrl = url.searchParams.get('url') || '';
+        if (!imageUrl.startsWith('http')) return errorResponse('Ungültige URL', 400);
+
+        // HEAD-Request für Content-Type und Größe
+        const headResp = await fetch(imageUrl, { method: 'HEAD' });
+        const contentType = headResp.headers.get('content-type') || 'unbekannt';
+        const contentLength = headResp.headers.get('content-length');
+        const lastModified  = headResp.headers.get('last-modified') || null;
+        const sizeBytes = contentLength ? parseInt(contentLength, 10) : null;
+        const sizeFormatted = sizeBytes
+          ? sizeBytes > 1048576
+            ? `${(sizeBytes / 1048576).toFixed(2)} MB`
+            : `${(sizeBytes / 1024).toFixed(1)} KB`
+          : null;
+
+        let exifData = {};
+        try {
+          const exifResp = await fetch(
+            `https://exif.tools/api?url=${encodeURIComponent(imageUrl)}`,
+            { headers: { 'User-Agent': 'WeltenbibliothekOSINT/1.0' } }
+          );
+          if (exifResp.ok) {
+            const exifJson = await exifResp.json();
+            // exif.tools gibt flaches JSON zurück; relevante Felder extrahieren
+            const keep = ['ImageWidth','ImageHeight','Make','Model','DateTime','GPSLatitude',
+              'GPSLongitude','Software','ExposureTime','FNumber','ISO','Flash','Orientation'];
+            for (const k of keep) {
+              if (exifJson[k] !== undefined) exifData[k] = exifJson[k];
+            }
+          }
+        } catch (_) { /* EXIF optional */ }
+
+        return jsonResponse({
+          contentType,
+          size: sizeFormatted,
+          sizeBytes,
+          lastModified,
+          width:  exifData['ImageWidth']  || null,
+          height: exifData['ImageHeight'] || null,
+          exif: exifData,
+        });
+      } catch (e) {
+        return errorResponse(`Bildanalyse-Fehler: ${e.message}`);
+      }
+    }
+
+    // B — Datenleck-Prüfer: ProxyNova COMB-Datenbank (frei, kein Key)
+    if (path === '/api/tools/data-leak' && method === 'GET') {
+      try {
+        const email = url.searchParams.get('email') || '';
+        if (!email.includes('@')) return errorResponse('Ungültige E-Mail', 400);
+
+        const resp = await fetch(
+          `https://api.proxynova.com/comb?search=${encodeURIComponent(email)}&start=0&limit=20`,
+          { headers: { 'User-Agent': 'WeltenbibliothekOSINT/1.0' } }
+        );
+        if (!resp.ok) {
+          return jsonResponse({ count: 0, samples: [], message: 'Datenbank nicht erreichbar' });
+        }
+        const data = await resp.json();
+        const lines = Array.isArray(data.lines) ? data.lines : [];
+        return jsonResponse({
+          count: data.count || lines.length,
+          samples: lines.slice(0, 10),
+        });
+      } catch (e) {
+        return errorResponse(`Datenleck-Fehler: ${e.message}`);
+      }
+    }
+
+    // C — Krypto-Verfolger: BTC via blockchain.info, ETH via Blockscout
+    if (path === '/api/tools/crypto' && method === 'GET') {
+      try {
+        const address = url.searchParams.get('address') || '';
+        if (!address) return errorResponse('Keine Adresse angegeben', 400);
+
+        const isBtc = /^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$/.test(address)
+          || /^bc1[ac-hj-np-z02-9]{6,87}$/.test(address);
+        const isEth = /^0x[0-9a-fA-F]{40}$/.test(address);
+
+        if (isBtc) {
+          const r = await fetch(
+            `https://blockchain.info/rawaddr/${address}?limit=10`,
+            { headers: { 'User-Agent': 'WeltenbibliothekOSINT/1.0' } }
+          );
+          if (!r.ok) return errorResponse('BTC-API nicht erreichbar', 502);
+          const d = await r.json();
+          const satoshi = d.final_balance || 0;
+          const btc = (satoshi / 1e8).toFixed(8);
+          const txs = (d.txs || []).slice(0, 5).map(tx => {
+            const myOut = (tx.out || []).filter(o => o.addr === address).reduce((s, o) => s + o.value, 0);
+            const myIn  = (tx.inputs || []).filter(i => i.prev_out?.addr === address).reduce((s, i) => s + i.prev_out.value, 0);
+            const net = (myOut - myIn) / 1e8;
+            return {
+              hash: tx.hash?.slice(0, 16) + '…',
+              amount: `${net >= 0 ? '+' : ''}${net.toFixed(8)} BTC`,
+              date: tx.time ? new Date(tx.time * 1000).toISOString().split('T')[0] : null,
+            };
+          });
+          return jsonResponse({
+            coin: 'Bitcoin (BTC)',
+            balance: `${btc} BTC`,
+            balanceUsd: null,
+            txCount: d.n_tx || 0,
+            firstSeen: null,
+            lastSeen: null,
+            transactions: txs,
+          });
+        } else if (isEth) {
+          const [addrResp, txResp] = await Promise.all([
+            fetch(`https://eth.blockscout.com/api/v2/addresses/${address}`,
+              { headers: { 'User-Agent': 'WeltenbibliothekOSINT/1.0' } }),
+            fetch(`https://eth.blockscout.com/api/v2/addresses/${address}/transactions?filter=to%20%7C%20from&limit=5`,
+              { headers: { 'User-Agent': 'WeltenbibliothekOSINT/1.0' } }),
+          ]);
+          if (!addrResp.ok) return errorResponse('ETH-API nicht erreichbar', 502);
+          const addrData = await addrResp.json();
+          const txData   = txResp.ok ? await txResp.json() : { items: [] };
+          const weiBalance = BigInt(addrData.coin_balance || '0');
+          const ethBalance = (Number(weiBalance) / 1e18).toFixed(6);
+          const txs = (txData.items || []).slice(0, 5).map(tx => ({
+            hash: (tx.hash || '').slice(0, 16) + '…',
+            amount: `${tx.from?.hash?.toLowerCase() === address.toLowerCase() ? '-' : '+'}${(Number(tx.value || '0') / 1e18).toFixed(6)} ETH`,
+            date: tx.timestamp ? tx.timestamp.split('T')[0] : null,
+          }));
+          return jsonResponse({
+            coin: 'Ethereum (ETH)',
+            balance: `${ethBalance} ETH`,
+            balanceUsd: null,
+            txCount: addrData.transaction_count || 0,
+            firstSeen: null,
+            lastSeen: null,
+            transactions: txs,
+          });
+        } else {
+          return errorResponse('Adresse nicht erkannt (BTC oder ETH erwartet)', 400);
+        }
+      } catch (e) {
+        return errorResponse(`Krypto-Fehler: ${e.message}`);
+      }
+    }
+
+    // D — Domain-OSINT: RDAP + Cloudflare DNS (A, MX, TXT)
+    if (path === '/api/tools/domain' && method === 'GET') {
+      try {
+        const domain = url.searchParams.get('domain') || '';
+        if (!domain || !/^[a-z0-9._-]{2,253}$/.test(domain)) return errorResponse('Ungültige Domain', 400);
+
+        const [rdapResp, dnsAResp, dnsMxResp, dnsTxtResp] = await Promise.all([
+          fetch(`https://rdap.org/domain/${encodeURIComponent(domain)}`,
+            { headers: { 'User-Agent': 'WeltenbibliothekOSINT/1.0' } }),
+          fetch(`https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(domain)}&type=A&ct=application/dns-json`,
+            { headers: { 'Accept': 'application/dns-json' } }),
+          fetch(`https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(domain)}&type=MX&ct=application/dns-json`,
+            { headers: { 'Accept': 'application/dns-json' } }),
+          fetch(`https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(domain)}&type=TXT&ct=application/dns-json`,
+            { headers: { 'Accept': 'application/dns-json' } }),
+        ]);
+
+        // RDAP / WHOIS
+        let whois = {};
+        if (rdapResp.ok) {
+          const rdap = await rdapResp.json();
+          const registrar = (rdap.entities || []).find(e => (e.roles || []).includes('registrar'));
+          const events = rdap.events || [];
+          const reg = events.find(e => e.eventAction === 'registration');
+          const exp = events.find(e => e.eventAction === 'expiration');
+          const ns  = (rdap.nameservers || []).map(n => n.ldhName || n.unicodeName || '').filter(Boolean);
+          whois = {
+            registrar: registrar?.vcardArray?.[1]?.find(v => v[0] === 'fn')?.[3] || null,
+            createdDate: reg?.eventDate?.split('T')[0] || null,
+            expiryDate:  exp?.eventDate?.split('T')[0] || null,
+            status: (rdap.status || []).join(', ') || null,
+            nameservers: ns,
+          };
+        }
+
+        // DNS
+        const parseAnswers = (json, type) => {
+          if (!json || !Array.isArray(json.Answer)) return [];
+          return json.Answer.filter(r => r.type === type).map(r => r.data.replace(/"/g, '').trim());
+        };
+        const dnsA   = dnsAResp.ok   ? await dnsAResp.json()   : {};
+        const dnsMx  = dnsMxResp.ok  ? await dnsMxResp.json()  : {};
+        const dnsTxt = dnsTxtResp.ok ? await dnsTxtResp.json() : {};
+
+        return jsonResponse({
+          domain,
+          whois,
+          dns: {
+            a:   parseAnswers(dnsA,  1),
+            mx:  parseAnswers(dnsMx, 15),
+            txt: parseAnswers(dnsTxt, 16),
+          },
+        });
+      } catch (e) {
+        return errorResponse(`Domain-OSINT-Fehler: ${e.message}`);
+      }
+    }
+
+    // E — Telefon-OSINT: Regex-basierte Vorwahl-Analyse (kein Key nötig)
+    if (path === '/api/tools/phone' && method === 'GET') {
+      try {
+        const raw = (url.searchParams.get('number') || '').replace(/[\s\-().]/g, '');
+        if (!raw) return errorResponse('Keine Nummer angegeben', 400);
+
+        // Normalisieren auf +XXXXXXXXXXX
+        const normalized = raw.startsWith('+') ? raw : `+${raw}`;
+
+        // Länder-Lookup-Tabelle (Top 80 Vorwahlen)
+        const COUNTRY_DB = {
+          '+1':   { country: 'USA / Kanada', flag: '🇺🇸', continent: 'Nordamerika', tz: 'UTC-5...-8' },
+          '+7':   { country: 'Russland',     flag: '🇷🇺', continent: 'Eurasien',   tz: 'UTC+2...+12' },
+          '+20':  { country: 'Ägypten',      flag: '🇪🇬', continent: 'Afrika',     tz: 'UTC+2' },
+          '+27':  { country: 'Südafrika',    flag: '🇿🇦', continent: 'Afrika',     tz: 'UTC+2' },
+          '+30':  { country: 'Griechenland', flag: '🇬🇷', continent: 'Europa',     tz: 'UTC+2' },
+          '+31':  { country: 'Niederlande',  flag: '🇳🇱', continent: 'Europa',     tz: 'UTC+1' },
+          '+32':  { country: 'Belgien',      flag: '🇧🇪', continent: 'Europa',     tz: 'UTC+1' },
+          '+33':  { country: 'Frankreich',   flag: '🇫🇷', continent: 'Europa',     tz: 'UTC+1' },
+          '+34':  { country: 'Spanien',      flag: '🇪🇸', continent: 'Europa',     tz: 'UTC+1' },
+          '+36':  { country: 'Ungarn',       flag: '🇭🇺', continent: 'Europa',     tz: 'UTC+1' },
+          '+39':  { country: 'Italien',      flag: '🇮🇹', continent: 'Europa',     tz: 'UTC+1' },
+          '+40':  { country: 'Rumänien',     flag: '🇷🇴', continent: 'Europa',     tz: 'UTC+2' },
+          '+41':  { country: 'Schweiz',      flag: '🇨🇭', continent: 'Europa',     tz: 'UTC+1' },
+          '+43':  { country: 'Österreich',   flag: '🇦🇹', continent: 'Europa',     tz: 'UTC+1' },
+          '+44':  { country: 'UK',           flag: '🇬🇧', continent: 'Europa',     tz: 'UTC+0' },
+          '+45':  { country: 'Dänemark',     flag: '🇩🇰', continent: 'Europa',     tz: 'UTC+1' },
+          '+46':  { country: 'Schweden',     flag: '🇸🇪', continent: 'Europa',     tz: 'UTC+1' },
+          '+47':  { country: 'Norwegen',     flag: '🇳🇴', continent: 'Europa',     tz: 'UTC+1' },
+          '+48':  { country: 'Polen',        flag: '🇵🇱', continent: 'Europa',     tz: 'UTC+1' },
+          '+49':  { country: 'Deutschland',  flag: '🇩🇪', continent: 'Europa',     tz: 'UTC+1' },
+          '+51':  { country: 'Peru',         flag: '🇵🇪', continent: 'Südamerika', tz: 'UTC-5' },
+          '+52':  { country: 'Mexiko',       flag: '🇲🇽', continent: 'Nordamerika',tz: 'UTC-6' },
+          '+54':  { country: 'Argentinien',  flag: '🇦🇷', continent: 'Südamerika', tz: 'UTC-3' },
+          '+55':  { country: 'Brasilien',    flag: '🇧🇷', continent: 'Südamerika', tz: 'UTC-3' },
+          '+56':  { country: 'Chile',        flag: '🇨🇱', continent: 'Südamerika', tz: 'UTC-4' },
+          '+57':  { country: 'Kolumbien',    flag: '🇨🇴', continent: 'Südamerika', tz: 'UTC-5' },
+          '+60':  { country: 'Malaysia',     flag: '🇲🇾', continent: 'Asien',      tz: 'UTC+8' },
+          '+61':  { country: 'Australien',   flag: '🇦🇺', continent: 'Ozeanien',   tz: 'UTC+10' },
+          '+62':  { country: 'Indonesien',   flag: '🇮🇩', continent: 'Asien',      tz: 'UTC+7' },
+          '+63':  { country: 'Philippinen',  flag: '🇵🇭', continent: 'Asien',      tz: 'UTC+8' },
+          '+64':  { country: 'Neuseeland',   flag: '🇳🇿', continent: 'Ozeanien',   tz: 'UTC+12' },
+          '+65':  { country: 'Singapur',     flag: '🇸🇬', continent: 'Asien',      tz: 'UTC+8' },
+          '+66':  { country: 'Thailand',     flag: '🇹🇭', continent: 'Asien',      tz: 'UTC+7' },
+          '+81':  { country: 'Japan',        flag: '🇯🇵', continent: 'Asien',      tz: 'UTC+9' },
+          '+82':  { country: 'Südkorea',     flag: '🇰🇷', continent: 'Asien',      tz: 'UTC+9' },
+          '+84':  { country: 'Vietnam',      flag: '🇻🇳', continent: 'Asien',      tz: 'UTC+7' },
+          '+86':  { country: 'China',        flag: '🇨🇳', continent: 'Asien',      tz: 'UTC+8' },
+          '+90':  { country: 'Türkei',       flag: '🇹🇷', continent: 'Eurasien',   tz: 'UTC+3' },
+          '+91':  { country: 'Indien',       flag: '🇮🇳', continent: 'Asien',      tz: 'UTC+5:30' },
+          '+92':  { country: 'Pakistan',     flag: '🇵🇰', continent: 'Asien',      tz: 'UTC+5' },
+          '+93':  { country: 'Afghanistan',  flag: '🇦🇫', continent: 'Asien',      tz: 'UTC+4:30' },
+          '+94':  { country: 'Sri Lanka',    flag: '🇱🇰', continent: 'Asien',      tz: 'UTC+5:30' },
+          '+95':  { country: 'Myanmar',      flag: '🇲🇲', continent: 'Asien',      tz: 'UTC+6:30' },
+          '+98':  { country: 'Iran',         flag: '🇮🇷', continent: 'Asien',      tz: 'UTC+3:30' },
+          '+212': { country: 'Marokko',      flag: '🇲🇦', continent: 'Afrika',     tz: 'UTC+1' },
+          '+213': { country: 'Algerien',     flag: '🇩🇿', continent: 'Afrika',     tz: 'UTC+1' },
+          '+216': { country: 'Tunesien',     flag: '🇹🇳', continent: 'Afrika',     tz: 'UTC+1' },
+          '+218': { country: 'Libyen',       flag: '🇱🇾', continent: 'Afrika',     tz: 'UTC+2' },
+          '+234': { country: 'Nigeria',      flag: '🇳🇬', continent: 'Afrika',     tz: 'UTC+1' },
+          '+254': { country: 'Kenia',        flag: '🇰🇪', continent: 'Afrika',     tz: 'UTC+3' },
+          '+380': { country: 'Ukraine',      flag: '🇺🇦', continent: 'Europa',     tz: 'UTC+2' },
+          '+420': { country: 'Tschechien',   flag: '🇨🇿', continent: 'Europa',     tz: 'UTC+1' },
+          '+421': { country: 'Slowakei',     flag: '🇸🇰', continent: 'Europa',     tz: 'UTC+1' },
+          '+966': { country: 'Saudi-Arabien',flag: '🇸🇦', continent: 'Asien',      tz: 'UTC+3' },
+          '+971': { country: 'VAE',          flag: '🇦🇪', continent: 'Asien',      tz: 'UTC+4' },
+          '+972': { country: 'Israel',       flag: '🇮🇱', continent: 'Asien',      tz: 'UTC+2' },
+          '+994': { country: 'Aserbaidschan',flag: '🇦🇿', continent: 'Asien',      tz: 'UTC+4' },
+          '+995': { country: 'Georgien',     flag: '🇬🇪', continent: 'Asien',      tz: 'UTC+4' },
+        };
+
+        // Vorwahl-Matching (längste zuerst)
+        let match = null;
+        for (const len of [4, 3, 2, 1]) {
+          const prefix = normalized.slice(0, len + 1);
+          if (COUNTRY_DB[prefix]) { match = { ...COUNTRY_DB[prefix], callingCode: prefix }; break; }
+        }
+
+        // Leitungstyp-Heuristik (sehr grob, anhand Nummernlänge)
+        const localPart = normalized.slice(match?.callingCode?.length || 2);
+        const lineType = localPart.length <= 7 ? 'Festnetz (wahrscheinlich)' : 'Mobilfunk (wahrscheinlich)';
+
+        // Formatierte Darstellung
+        const formatted = match
+          ? `${match.callingCode} ${localPart.replace(/(\d{3})(\d{3})(\d+)/, '$1 $2 $3')}`
+          : normalized;
+
+        return jsonResponse({
+          countryCode: match?.callingCode?.slice(1) || null,
+          callingCode: match?.callingCode || null,
+          country: match?.country || 'Unbekannt',
+          countryFlag: match?.flag || '🌐',
+          continent: match?.continent || null,
+          timezone: match?.tz || null,
+          lineType,
+          formatted,
+          prefixInfo: match
+            ? `Nummernkreis ${match.callingCode} ist ${match.country} zugeordnet (${match.continent}).`
+            : 'Vorwahl konnte keinem Land zugeordnet werden.',
+        });
+      } catch (e) {
+        return errorResponse(`Telefon-OSINT-Fehler: ${e.message}`);
+      }
+    }
+
+    // F — KI-Content-Detektor: Groq Llama-3 Heuristik
+    if (path === '/api/tools/ai-detect' && method === 'POST') {
+      try {
+        const body = await request.json();
+        const text = (body.text || '').trim();
+        if (text.length < 50) return errorResponse('Text zu kurz (min. 50 Zeichen)', 400);
+        const excerpt = text.slice(0, 3000); // Kosten begrenzen
+
+        if (env.GROQ_API_KEY) {
+          const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${env.GROQ_API_KEY}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              model: 'llama-3.3-70b-versatile',
+              messages: [{
+                role: 'user',
+                content: `Analysiere ob dieser Text von einer KI oder einem Menschen geschrieben wurde. Antworte NUR mit valide JSON (kein Markdown), folgendes Format: {"score": <0-100>, "indicators": ["<Merkmal1>", "<Merkmal2>"], "verdict": "<Human-verfasst|KI-generiert|Unklar>"}. Score 0=Mensch, 100=KI. Maximal 5 Indikatoren auf Deutsch.\n\nText:\n${excerpt}`,
+              }],
+              max_tokens: 300,
+              temperature: 0.2,
+            }),
+          });
+          if (r.ok) {
+            const data = await r.json();
+            const raw = data?.choices?.[0]?.message?.content || '{}';
+            // JSON aus Antwort extrahieren (falls Markdown-Block)
+            const jsonMatch = raw.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+              const parsed = JSON.parse(jsonMatch[0]);
+              return jsonResponse({
+                score: Math.min(100, Math.max(0, parseInt(parsed.score) || 50)),
+                indicators: Array.isArray(parsed.indicators) ? parsed.indicators.slice(0, 5) : [],
+                verdict: parsed.verdict || 'Unklar',
+                model: 'groq-llama-3.3-70b',
+              });
+            }
+          }
+        }
+
+        // Fallback: einfache Heuristik ohne KI
+        const aiPhrases = ['es ist wichtig zu beachten', 'zusammenfassend', 'es sei darauf hingewiesen',
+          'im hinblick auf', 'in diesem zusammenhang', 'zudem', 'darüber hinaus', 'it is worth noting',
+          'it is important to note', 'in conclusion', 'furthermore', 'moreover', 'additionally',
+          'in summary', 'to summarize', 'as an AI', 'als KI', 'als Sprachmodell'];
+        const lower = text.toLowerCase();
+        const hits  = aiPhrases.filter(p => lower.includes(p));
+        const score = Math.min(100, hits.length * 15 + (text.length > 2000 ? 10 : 0));
+        return jsonResponse({
+          score,
+          indicators: hits.slice(0, 5).map(h => `Phrase erkannt: "${h}"`),
+          verdict: score > 60 ? 'KI-generiert' : score > 30 ? 'Unklar' : 'Human-verfasst',
+          model: 'heuristik-fallback',
+        });
+      } catch (e) {
+        return errorResponse(`KI-Detektor-Fehler: ${e.message}`);
+      }
+    }
+
+    // G — Geo-Analyse: Nominatim + Open-Meteo + Wikipedia Geosearch
+    if (path === '/api/tools/geo' && method === 'GET') {
+      try {
+        const q = url.searchParams.get('q') || '';
+        if (!q) return errorResponse('Kein Suchbegriff', 400);
+
+        // Nominatim Geocoding
+        const nomResp = await fetch(
+          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=1&addressdetails=1`,
+          { headers: { 'User-Agent': 'WeltenbibliothekOSINT/1.0 (kontakt@weltenbibliothek.app)' } }
+        );
+        if (!nomResp.ok) return errorResponse('Geocoding nicht erreichbar', 502);
+        const nomData = await nomResp.json();
+        if (!nomData || nomData.length === 0) return errorResponse('Ort nicht gefunden', 404);
+
+        const place = nomData[0];
+        const lat   = parseFloat(place.lat);
+        const lon   = parseFloat(place.lon);
+        const addr  = place.address || {};
+
+        // Open-Meteo Wetter + Wikipedia parallel
+        const [weatherResp, wikiResp] = await Promise.all([
+          fetch(
+            `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,wind_speed_10m,precipitation&timezone=auto`,
+            { headers: { 'User-Agent': 'WeltenbibliothekOSINT/1.0' } }
+          ),
+          fetch(
+            `https://en.wikipedia.org/w/api.php?action=query&list=geosearch&gscoord=${lat}|${lon}&gsradius=10000&gslimit=5&format=json&origin=*`,
+            { headers: { 'User-Agent': 'WeltenbibliothekOSINT/1.0' } }
+          ),
+        ]);
+
+        let weather = null;
+        if (weatherResp.ok) {
+          const wd = await weatherResp.json();
+          const cur = wd.current || {};
+          weather = {
+            temperature: cur.temperature_2m ?? null,
+            windSpeed:   cur.wind_speed_10m ?? null,
+            precipitation: cur.precipitation ?? null,
+            time: cur.time ?? null,
+          };
+        }
+
+        let wikipedia = [];
+        if (wikiResp.ok) {
+          const wikiData = await wikiResp.json();
+          wikipedia = (wikiData.query?.geosearch || []).map(p => ({
+            title: p.title,
+            distance: p.dist,
+          }));
+        }
+
+        return jsonResponse({
+          location: {
+            displayName: place.display_name?.split(', ').slice(0, 3).join(', ') || q,
+            country:  addr.country || addr['ISO3166-2-lvl4'] || null,
+            region:   addr.county  || addr.district || null,
+            state:    addr.state   || null,
+            city:     addr.city    || addr.town || addr.village || null,
+            lat,
+            lon,
+          },
+          weather,
+          wikipedia,
+        });
+      } catch (e) {
+        return errorResponse(`Geo-Analyse-Fehler: ${e.message}`);
+      }
     }
 
     // ── 404 ───────────────────────────────────────────────────

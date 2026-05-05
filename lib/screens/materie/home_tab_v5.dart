@@ -12,6 +12,7 @@ import 'materie_live_chat_screen.dart';
 // HistoryTimelineScreen ersetzt durch Kaninchenbau (Zeitlinie ist jetzt eine Card im Kaninchenbau)
 import '../../services/chat/recent_rooms_service.dart';
 import '../shared/bookmarks_screen.dart';
+import 'tools/osint_tools_hub.dart';
 import '../shared/stats_dashboard_screen.dart';
 import '../shared/notification_center_screen.dart';
 import '../../services/world_subscription_service.dart';
@@ -707,6 +708,14 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
         badge: _bookmarks > 0 ? _bookmarks : 0,
         onTap: () => _go(const BookmarksScreen()),
       ),
+      _TileDef(
+        icon: Icons.manage_search_rounded,
+        label: 'OSINT Tools',
+        sub: 'Bild · Leak · Krypto',
+        gradient: [const Color(0xFF4A0000), const Color(0xFF7B0000), const Color(0xFFE53935)],
+        badge: 0,
+        onTap: () => _go(const OsintToolsHub()),
+      ),
     ];
 
     return SliverToBoxAdapter(
@@ -728,6 +737,12 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
                 _buildActionTile(tiles[2]),
                 const SizedBox(width: 10),
                 _buildActionTile(tiles[3]),
+              ]),
+              const SizedBox(height: 10),
+              Row(children: [
+                _buildActionTile(tiles[4]),
+                const SizedBox(width: 10),
+                const Expanded(child: SizedBox()),
               ]),
             ]),
           ),
