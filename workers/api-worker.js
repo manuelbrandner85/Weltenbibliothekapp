@@ -3212,6 +3212,30 @@ EMPFEHLUNG: [1 Satz — was sollte der User selbst recherchieren?]`;
       }
     }
 
+    // ── Wikimedia Commons Bildersuche für Karte-Marker ──────────────────────
+    if (path === '/api/map/wikimedia' && method === 'GET') {
+      const q = url.searchParams.get('q') || '';
+      if (!q) return jsonResponse({ images: [] });
+      try {
+        const searchUrl = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(q)}&gsrnamespace=6&gsrlimit=10&prop=imageinfo&iiprop=url|size|mime&format=json&origin=*`;
+        const r = await fetch(searchUrl, { headers: { 'User-Agent': 'WeltenbibliothekApp/1.0' } });
+        if (!r.ok) return jsonResponse({ images: [] });
+        const data = await r.json();
+        const pages = data.query?.pages || {};
+        const images = Object.values(pages)
+          .filter(p => {
+            const u = p.imageinfo?.[0]?.url || '';
+            return u.match(/\.(jpg|jpeg|png|webp)(\?|$)/i);
+          })
+          .sort((a, b) => (b.imageinfo?.[0]?.width || 0) - (a.imageinfo?.[0]?.width || 0))
+          .slice(0, 6)
+          .map(p => p.imageinfo[0].url);
+        return jsonResponse({ images });
+      } catch (e) {
+        return jsonResponse({ images: [] });
+      }
+    }
+
     // ── Whisper Transcribe (Workers AI, kein API-Key) ──
     if (path === '/api/whisper/transcribe' && method === 'POST') {
       if (!env.AI) return errorResponse('Workers AI nicht konfiguriert', 503);

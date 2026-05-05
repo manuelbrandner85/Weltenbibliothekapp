@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../utils/map_clustering_helper.dart'; // 🗺️ MARKER-CLUSTERING
 import '../../services/live_map_pins_service.dart'; // 📍 B9: Live-Pins
+import '../../services/youtube_service.dart';
+import '../../services/wikimedia_service.dart';
 import '../../widgets/live_pins_layer.dart'; // 📍 B9: Live-Pins-Marker
 
 /// ENERGIE-Karte Tab - Spirituelle Kraftorte & Ley-Lines
@@ -34,6 +37,16 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro> {
   
   // Detail Panel Tab State
   int _detailTabIndex = 0;
+
+  // Dynamic Media State
+  List<YoutubeVideo>? _ytVideos;
+  bool _ytLoading = false;
+  YoutubeVideo? _ytPlaying;
+  String _ytLocationName = '';
+
+  List<String> _wikiImages = const [];
+  bool _wikiLoading = false;
+  String _wikiLocationName = '';
   
   @override
   void initState() {
@@ -46,6 +59,24 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro> {
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadYoutubeForLocation(String name) async {
+    if (_ytLocationName == name) return;
+    if (!mounted) return;
+    setState(() { _ytLoading = true; _ytLocationName = name; });
+    final videos = await YoutubeService.instance.searchVideos('$name', max: 5);
+    if (!mounted) return;
+    setState(() { _ytVideos = videos; _ytLoading = false; });
+  }
+
+  Future<void> _loadWikimediaForLocation(String name) async {
+    if (_wikiLocationName == name) return;
+    if (!mounted) return;
+    setState(() { _wikiLoading = true; _wikiLocationName = name; });
+    final images = await WikimediaService.instance.searchImages(name);
+    if (!mounted) return;
+    setState(() { _wikiImages = images; _wikiLoading = false; });
   }
 
   List<EnergieLocationDetail> get _filteredLocations {
@@ -364,7 +395,15 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro> {
           onTap: () {
             setState(() {
               _selectedLocation = location;
+              _detailTabIndex = 0;
+              _ytVideos = null;
+              _ytPlaying = null;
+              _ytLocationName = '';
+              _wikiImages = const [];
+              _wikiLocationName = '';
             });
+            _loadYoutubeForLocation(location.name);
+            _loadWikimediaForLocation(location.name);
           },
           child: Container(
             decoration: BoxDecoration(
@@ -535,23 +574,18 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro> {
             
             const SizedBox(height: 16),
             
-            // TABS (nur wenn Multimedia vorhanden)
-            if (location.imageUrls.isNotEmpty || location.videoUrls.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Row(
-                  children: [
-                    _buildTab('Info', 0, Icons.info_outline),
-                    if (location.imageUrls.isNotEmpty)
-                      _buildTab('Bilder', 1, Icons.image_outlined),
-                    if (location.videoUrls.isNotEmpty)
-                      _buildTab('Videos', 2, Icons.play_circle_outline),
-                  ],
-                ),
+            // TABS — immer alle 3 sichtbar
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                children: [
+                  _buildTab('Info', 0, Icons.info_outline),
+                  _buildTab('Bilder', 1, Icons.image_outlined),
+                  _buildTab('Videos', 2, Icons.play_circle_outline),
+                ],
               ),
-            
-            if (location.imageUrls.isNotEmpty || location.videoUrls.isNotEmpty)
-              const SizedBox(height: 12),
+            ),
+            const SizedBox(height: 12),
             
             // Content
             Expanded(
@@ -761,24 +795,34 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro> {
   }
   
   Widget _buildImagesTab(EnergieLocationDetail location) {
-    if (location.imageUrls.isEmpty) {
+    final allImages = [...location.imageUrls, ..._wikiImages];
+
+    if (_wikiLoading && allImages.isEmpty) {
       return const Center(
-        child: Text(
-          'Keine Bilder verfügbar',
-          style: TextStyle(color: Colors.white54),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(color: Color(0xFF9C27B0), strokeWidth: 2),
+            SizedBox(height: 12),
+            Text('Suche Bilder…', style: TextStyle(color: Colors.white54, fontSize: 12)),
+          ],
         ),
       );
     }
-    
+
+    if (allImages.isEmpty) {
+      return const Center(
+        child: Text('Keine Bilder gefunden', style: TextStyle(color: Colors.white54)),
+      );
+    }
+
     return Column(
-      children: location.imageUrls.map((imageUrl) {
+      children: allImages.map((imageUrl) {
         return Container(
           margin: const EdgeInsets.only(bottom: 16),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: Colors.white.withAlpha((0.2 * 255).round()),
-            ),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
           ),
           clipBehavior: Clip.antiAlias,
           child: Image.network(
@@ -788,22 +832,16 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro> {
               if (loadingProgress == null) return child;
               return Container(
                 height: 200,
-                color: Colors.white.withAlpha((0.05 * 255).round()),
-                child: const Center(
-                  child: CircularProgressIndicator(color: Colors.white54),
-                ),
+                color: Colors.white.withValues(alpha: 0.05),
+                child: const Center(child: CircularProgressIndicator(color: Colors.white54)),
               );
             },
             errorBuilder: (context, error, stackTrace) {
               return Container(
                 height: 200,
-                color: Colors.white.withAlpha((0.05 * 255).round()),
+                color: Colors.white.withValues(alpha: 0.05),
                 child: Center(
-                  child: Icon(
-                    Icons.broken_image,
-                    color: Colors.white.withAlpha((0.3 * 255).round()),
-                    size: 48,
-                  ),
+                  child: Icon(Icons.broken_image, color: Colors.white.withValues(alpha: 0.3), size: 48),
                 ),
               );
             },
@@ -812,69 +850,138 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro> {
       }).toList(),
     );
   }
-  
+
   Widget _buildVideosTab(EnergieLocationDetail location) {
-    if (location.videoUrls.isEmpty) {
-      return const Center(
-        child: Text(
-          'Keine Videos verfügbar',
-          style: TextStyle(color: Colors.white54),
+    if (_ytPlaying != null) {
+      return SingleChildScrollView(
+        child: Column(
+          children: [
+            // Inline Video Player
+            Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFF9C27B0), width: 2),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: Column(
+                children: [
+                  Image.network(
+                    _ytPlaying!.thumbnail.isNotEmpty ? _ytPlaying!.thumbnail : _ytPlaying!.fallbackThumbnail,
+                    height: 200, width: double.infinity, fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      height: 200, color: Colors.white.withValues(alpha: 0.05),
+                      child: const Icon(Icons.videocam_off, color: Colors.white38, size: 40),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(10),
+                    child: Row(children: [
+                      Expanded(child: Text(_ytPlaying!.title,
+                          style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+                          maxLines: 2, overflow: TextOverflow.ellipsis)),
+                      const SizedBox(width: 8),
+                      TextButton.icon(
+                        onPressed: () async {
+                          final uri = Uri.tryParse(_ytPlaying!.watchUrl);
+                          if (uri != null) await launchUrl(uri, mode: LaunchMode.externalApplication);
+                        },
+                        icon: const Icon(Icons.play_circle_fill, color: Color(0xFF9C27B0), size: 18),
+                        label: const Text('Ansehen', style: TextStyle(color: Color(0xFF9C27B0), fontSize: 11)),
+                      ),
+                      IconButton(
+                        onPressed: () => setState(() => _ytPlaying = null),
+                        icon: const Icon(Icons.close, color: Colors.white54, size: 16),
+                        constraints: const BoxConstraints(),
+                        padding: EdgeInsets.zero,
+                      ),
+                    ]),
+                  ),
+                ],
+              ),
+            ),
+            ..._buildEnergieVideoList(),
+          ],
         ),
       );
     }
-    
-    return Column(
-      children: location.videoUrls.map((videoId) {
-        return Container(
-          margin: const EdgeInsets.only(bottom: 16),
+
+    if (_ytLoading) {
+      return const Center(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          CircularProgressIndicator(color: Color(0xFF9C27B0), strokeWidth: 2),
+          SizedBox(height: 12),
+          Text('Suche Videos…', style: TextStyle(color: Colors.white54, fontSize: 12)),
+        ]),
+      );
+    }
+
+    final hasVideos = (_ytVideos?.isNotEmpty ?? false);
+    if (!hasVideos) {
+      return const Center(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Icon(Icons.videocam_off, color: Colors.white24, size: 40),
+          SizedBox(height: 8),
+          Text('Keine Videos gefunden', style: TextStyle(color: Colors.white38, fontSize: 13)),
+        ]),
+      );
+    }
+
+    return SingleChildScrollView(child: Column(children: _buildEnergieVideoList()));
+  }
+
+  List<Widget> _buildEnergieVideoList() {
+    return (_ytVideos ?? []).map((video) {
+      final isPlaying = _ytPlaying?.videoId == video.videoId;
+      return GestureDetector(
+        onTap: () => setState(() => _ytPlaying = isPlaying ? null : video),
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 12),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: Colors.white.withAlpha((0.2 * 255).round()),
+              color: isPlaying ? const Color(0xFF9C27B0) : const Color(0xFF9C27B0).withValues(alpha: 0.3),
+              width: isPlaying ? 2 : 1,
             ),
+            color: Colors.black.withValues(alpha: 0.3),
           ),
           clipBehavior: Clip.antiAlias,
-          child: Column(
-            children: [
-              // YouTube Thumbnail
+          child: Row(children: [
+            Stack(children: [
               Image.network(
-                'https://img.youtube.com/vi/$videoId/hqdefault.jpg',
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    height: 180,
-                    color: Colors.white.withAlpha((0.05 * 255).round()),
-                    child: const Center(
-                      child: Icon(Icons.videocam_off, color: Colors.white38),
-                    ),
-                  );
-                },
-              ),
-              Container(
-                padding: const EdgeInsets.all(12),
-                color: Colors.white.withAlpha((0.05 * 255).round()),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.play_circle_filled, color: Colors.purple.shade400, size: 24),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Auf YouTube ansehen',
-                      style: TextStyle(
-                        color: Colors.white.withAlpha((0.8 * 255).round()),
-                        fontSize: 13,
-                      ),
-                    ),
-                  ],
+                video.thumbnail.isNotEmpty ? video.thumbnail : video.fallbackThumbnail,
+                width: 110, height: 70, fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  width: 110, height: 70,
+                  color: Colors.white.withValues(alpha: 0.05),
+                  child: const Icon(Icons.videocam_off, color: Colors.white24, size: 28),
                 ),
               ),
-            ],
-          ),
-        );
-      }).toList(),
-    );
+              Positioned.fill(child: Center(
+                child: Icon(
+                  isPlaying ? Icons.stop_circle : Icons.play_circle_fill,
+                  color: const Color(0xFF9C27B0), size: 32,
+                ),
+              )),
+            ]),
+            Expanded(child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(video.title,
+                    style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+                    maxLines: 2, overflow: TextOverflow.ellipsis),
+                const SizedBox(height: 4),
+                Text(video.channel,
+                    style: const TextStyle(color: Colors.white38, fontSize: 10),
+                    maxLines: 1, overflow: TextOverflow.ellipsis),
+              ]),
+            )),
+          ]),
+        ),
+      );
+    }).toList();
   }
-  
+
   // 🗺️ MAP LAYER URL PROVIDER
   String _getMapLayerUrl() {
     switch (_currentMapLayer) {
