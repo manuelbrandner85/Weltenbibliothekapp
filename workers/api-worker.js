@@ -3518,6 +3518,62 @@ export default {
       }
     }
 
+    // ── Wikimedia Commons Bilder für Karte ────────────────────
+    if (path === '/api/map/wikimedia' && method === 'GET') {
+      const q = url.searchParams.get('q') || '';
+      if (!q) return jsonResponse({ images: [] });
+      try {
+        const apiUrl = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrnamespace=6&gsrwhat=text&gsrsearch=${encodeURIComponent(q)}&gsrlimit=10&prop=imageinfo&iiprop=url|mime&iiurlwidth=800&format=json&origin=*`;
+        const r = await fetch(apiUrl, { headers: { 'User-Agent': 'WeltenbibliothekApp/1.0' }, signal: AbortSignal.timeout(8000) });
+        if (!r.ok) return jsonResponse({ images: [] });
+        const data = await r.json();
+        const pages = Object.values(data?.query?.pages || {});
+        const images = pages
+          .filter(p => p.imageinfo?.[0]?.mime?.startsWith('image/') && !p.imageinfo[0].mime.includes('svg'))
+          .map(p => p.imageinfo[0].thumburl || p.imageinfo[0].url)
+          .filter(Boolean)
+          .slice(0, 8);
+        return jsonResponse({ images });
+      } catch (e) {
+        return jsonResponse({ images: [] });
+      }
+    }
+
+    // ── YouTube Suche für Karte ───────────────────────────────
+    if (path === '/api/map/youtube' && method === 'GET') {
+      const q = url.searchParams.get('q') || '';
+      const lang = url.searchParams.get('lang') || 'de';
+      if (!q) return jsonResponse({ videos: [] });
+      try {
+        const apiKey = env.YOUTUBE_API_KEY;
+        if (!apiKey) return jsonResponse({ videos: [], error: 'YOUTUBE_API_KEY fehlt' });
+        const query = lang === 'de' ? `${q} deutsch` : q;
+        const params = new URLSearchParams({
+          part: 'snippet',
+          q: query,
+          type: 'video',
+          maxResults: '6',
+          relevanceLanguage: lang === 'de' ? 'de' : 'en',
+          regionCode: lang === 'de' ? 'DE' : 'US',
+          key: apiKey,
+        });
+        const r = await fetch(`https://www.googleapis.com/youtube/v3/search?${params}`, { signal: AbortSignal.timeout(8000) });
+        if (!r.ok) return jsonResponse({ videos: [] });
+        const data = await r.json();
+        const videos = (data.items || []).map(item => ({
+          videoId: item.id?.videoId || '',
+          title: item.snippet?.title || '',
+          channel: item.snippet?.channelTitle || '',
+          thumbnail: item.snippet?.thumbnails?.medium?.url || item.snippet?.thumbnails?.default?.url || '',
+          publishedAt: item.snippet?.publishedAt || '',
+          isSubtitled: lang !== 'de',
+        })).filter(v => v.videoId);
+        return jsonResponse({ videos });
+      } catch (e) {
+        return jsonResponse({ videos: [] });
+      }
+    }
+
     // ── 404 ───────────────────────────────────────────────────
     return errorResponse(`Endpoint '${path}' nicht gefunden`, 404);
   },

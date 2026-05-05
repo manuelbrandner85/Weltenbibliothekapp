@@ -13,25 +13,59 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'cards/abgeordnete_card.dart';
 import 'cards/academic_card.dart';
 import 'cards/ai_insight_card.dart';
+import 'cards/aleph_card.dart';
 import 'cards/annotations_card.dart';
+import 'cards/archive_card.dart';
+import 'cards/companies_card.dart';
 import 'cards/court_cases_card.dart';
+import 'cards/deep_research_card.dart';
 import 'cards/documents_card.dart';
+import 'cards/eu_votes_card.dart';
 import 'cards/fact_check_card.dart';
 import 'cards/global_impact_card.dart';
 import 'cards/identity_card.dart';
+import 'cards/key_persons_card.dart';
+import 'cards/lobbying_card.dart';
 import 'cards/media_compass_card.dart';
 import 'cards/money_flow_card.dart';
 import 'cards/network_card.dart';
+import 'cards/offshore_card.dart';
+import 'cards/opensanctions_card.dart';
 import 'cards/power_relations_card.dart';
+import 'cards/propaganda_card.dart';
+import 'cards/pubmed_card.dart';
 import 'cards/related_paths_card.dart';
 import 'cards/rss_mentions_card.dart';
 import 'cards/sanctions_card.dart';
+import 'cards/semantic_papers_card.dart';
 import 'cards/sherlock_card.dart';
+import 'cards/skandale_card.dart';
 import 'cards/sources_card.dart';
 import 'cards/timeline_card.dart';
 import 'cards/wayback_card.dart';
+// ── Mindblow-Tier (18 Tiefenquellen) ──
+import 'cards/usaspending_card.dart';
+import 'cards/worldbank_card.dart';
+import 'cards/openownership_card.dart';
+import 'cards/openspending_card.dart';
+import 'cards/courtlistener_card.dart';
+import 'cards/muckrock_card.dart';
+import 'cards/hudoc_card.dart';
+import 'cards/eucuria_card.dart';
+import 'cards/opensecrets_card.dart';
+import 'cards/fec_card.dart';
+import 'cards/littlesis_card.dart';
+import 'cards/everypolitician_card.dart';
+import 'cards/documentcloud_card.dart';
+import 'cards/wikileaks_card.dart';
+import 'cards/ciacrest_card.dart';
+import 'cards/snowden_card.dart';
+import 'cards/oc_network_card.dart';
+import 'cards/corpwatch_card.dart';
+import 'services/kb_history_service.dart';
 import 'services/osint_apis.dart';
 import 'services/saved_threads_service.dart';
 import 'models/thread.dart';
@@ -42,6 +76,7 @@ import 'widgets/kb_design.dart';
 import 'widgets/rote_faden_line.dart';
 import 'widgets/virgil_orb.dart';
 import 'widgets/virgil_panel.dart';
+import 'widgets/youtube_card.dart';
 
 class KaninchenbauScreen extends StatefulWidget {
   final String? initialTopic;
@@ -367,6 +402,80 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
       });
     });
 
+    // ── MINDBLOW-TIER (18 Tiefenquellen) ───────────────────────────────────
+    _service.fetchUsaSpending(s.topic).then((items) {
+      if (!mounted || s.disposed) return;
+      setState(() { s.usaSpending = items; s.usaSpendingLoading = false; s.loadedApiCount++; });
+    });
+    _service.fetchWorldBank(s.topic).then((items) {
+      if (!mounted || s.disposed) return;
+      setState(() { s.worldBank = items; s.worldBankLoading = false; s.loadedApiCount++; });
+    });
+    _service.fetchOpenOwnership(s.topic).then((items) {
+      if (!mounted || s.disposed) return;
+      setState(() { s.openOwnership = items; s.openOwnershipLoading = false; s.loadedApiCount++; });
+    });
+    _service.fetchOpenSpending(s.topic).then((items) {
+      if (!mounted || s.disposed) return;
+      setState(() { s.openSpending = items; s.openSpendingLoading = false; s.loadedApiCount++; });
+    });
+    _service.fetchCourtListener(s.topic).then((items) {
+      if (!mounted || s.disposed) return;
+      setState(() { s.courtListener = items; s.courtListenerLoading = false; s.loadedApiCount++; });
+    });
+    _service.fetchMuckRock(s.topic).then((items) {
+      if (!mounted || s.disposed) return;
+      setState(() { s.muckRock = items; s.muckRockLoading = false; s.loadedApiCount++; });
+    });
+    _service.fetchHudoc(s.topic).then((items) {
+      if (!mounted || s.disposed) return;
+      setState(() { s.hudoc = items; s.hudocLoading = false; s.loadedApiCount++; });
+    });
+    _service.fetchEuCuria(s.topic).then((items) {
+      if (!mounted || s.disposed) return;
+      setState(() { s.euCuria = items; s.euCuriaLoading = false; s.loadedApiCount++; });
+    });
+    _service.fetchOpenSecrets(s.topic).then((items) {
+      if (!mounted || s.disposed) return;
+      setState(() { s.openSecrets = items; s.openSecretsLoading = false; s.loadedApiCount++; });
+    });
+    _service.fetchFec(s.topic).then((items) {
+      if (!mounted || s.disposed) return;
+      setState(() { s.fec = items; s.fecLoading = false; s.loadedApiCount++; });
+    });
+    _service.fetchLittleSis(s.topic).then((items) {
+      if (!mounted || s.disposed) return;
+      setState(() { s.littleSis = items; s.littleSisLoading = false; s.loadedApiCount++; });
+    });
+    _service.fetchEveryPolitician(s.topic).then((items) {
+      if (!mounted || s.disposed) return;
+      setState(() { s.everyPolitician = items; s.everyPoliticianLoading = false; s.loadedApiCount++; });
+    });
+    _service.fetchDocumentCloud(s.topic).then((items) {
+      if (!mounted || s.disposed) return;
+      setState(() { s.documentCloud = items; s.documentCloudLoading = false; s.loadedApiCount++; });
+    });
+    _service.fetchWikiLeaks(s.topic).then((items) {
+      if (!mounted || s.disposed) return;
+      setState(() { s.wikiLeaks = items; s.wikiLeaksLoading = false; s.loadedApiCount++; });
+    });
+    _service.fetchCiaCrest(s.topic).then((items) {
+      if (!mounted || s.disposed) return;
+      setState(() { s.ciaCrest = items; s.ciaCrestLoading = false; s.loadedApiCount++; });
+    });
+    _service.fetchSnowden(s.topic).then((items) {
+      if (!mounted || s.disposed) return;
+      setState(() { s.snowden = items; s.snowdenLoading = false; s.loadedApiCount++; });
+    });
+    _service.fetchOcNetwork(s.topic).then((items) {
+      if (!mounted || s.disposed) return;
+      setState(() { s.ocNetwork = items; s.ocNetworkLoading = false; s.loadedApiCount++; });
+    });
+    _service.fetchCorpWatch(s.topic).then((items) {
+      if (!mounted || s.disposed) return;
+      setState(() { s.corpWatch = items; s.corpWatchLoading = false; s.loadedApiCount++; });
+    });
+
     // Geldflüsse (warten bis Network-Daten da sind, dann mit Kontext)
     Future.delayed(const Duration(milliseconds: 600), () {
       if (!mounted || s.disposed) return;
@@ -600,7 +709,7 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
                         key: const ValueKey('loading'),
                         topic: s.topic,
                         loadedCount: s.loadedApiCount,
-                        totalCount: 28,
+                        totalCount: 46,
                       )
                     : _buildScrollContent(s),
               ),
@@ -912,11 +1021,82 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
                   )),
                   _gap(),
 
-                  _stag(730, AnnotationsCard(topic: s.topic)),
+                  // ── MINDBLOW: GELDFLÜSSE & WIRTSCHAFTSMACHT ─────────────
+                  const _SectionHeader(
+                    label: 'GELDFLÜSSE & WIRTSCHAFTSMACHT',
+                    icon: Icons.account_balance_rounded,
+                    color: Color(0xFFFFB300),
+                  ),
+                  _stag(760, UsaSpendingCard(items: s.usaSpending, loading: s.usaSpendingLoading)),
                   _gap(),
-                  _stag(750, SherlockCard(topic: s.topic)),
+                  _stag(770, WorldBankCard(items: s.worldBank, loading: s.worldBankLoading)),
                   _gap(),
-                  _stag(700, RelatedPathsCard(
+                  _stag(780, OpenOwnershipCard(items: s.openOwnership, loading: s.openOwnershipLoading)),
+                  _gap(),
+                  _stag(790, OpenSpendingCard(items: s.openSpending, loading: s.openSpendingLoading)),
+                  _gap(),
+
+                  // ── MINDBLOW: GERICHTSAKTEN & RECHTSDOKUMENTE ───────────
+                  const _SectionHeader(
+                    label: 'GERICHTSAKTEN & RECHTSDOKUMENTE',
+                    icon: Icons.gavel_rounded,
+                    color: Color(0xFF7986CB),
+                  ),
+                  _stag(800, CourtListenerCard(items: s.courtListener, loading: s.courtListenerLoading)),
+                  _gap(),
+                  _stag(810, MuckRockCard(items: s.muckRock, loading: s.muckRockLoading)),
+                  _gap(),
+                  _stag(820, HudocCard(items: s.hudoc, loading: s.hudocLoading)),
+                  _gap(),
+                  _stag(830, EuCuriaCard(items: s.euCuria, loading: s.euCuriaLoading)),
+                  _gap(),
+
+                  // ── MINDBLOW: POLITISCHE FINANZIERUNG & NETZWERKE ───────
+                  const _SectionHeader(
+                    label: 'POLITISCHE FINANZIERUNG & NETZWERKE',
+                    icon: Icons.how_to_vote_rounded,
+                    color: Color(0xFFEC407A),
+                  ),
+                  _stag(840, OpenSecretsCard(items: s.openSecrets, loading: s.openSecretsLoading)),
+                  _gap(),
+                  _stag(850, FecCard(items: s.fec, loading: s.fecLoading)),
+                  _gap(),
+                  _stag(860, LittleSisCard(items: s.littleSis, loading: s.littleSisLoading)),
+                  _gap(),
+                  _stag(870, EveryPoliticianCard(items: s.everyPolitician, loading: s.everyPoliticianLoading)),
+                  _gap(),
+
+                  // ── MINDBLOW: INVESTIGATIVE DOKUMENTE & WHISTLEBLOWER ───
+                  const _SectionHeader(
+                    label: 'INVESTIGATIVE DOKUMENTE & WHISTLEBLOWER',
+                    icon: Icons.warning_amber_rounded,
+                    color: Color(0xFFFF7043),
+                  ),
+                  _stag(880, DocumentCloudCard(items: s.documentCloud, loading: s.documentCloudLoading)),
+                  _gap(),
+                  _stag(890, WikiLeaksCard(items: s.wikiLeaks, loading: s.wikiLeaksLoading)),
+                  _gap(),
+                  _stag(900, CiaCrestCard(items: s.ciaCrest, loading: s.ciaCrestLoading)),
+                  _gap(),
+                  _stag(910, SnowdenCard(items: s.snowden, loading: s.snowdenLoading)),
+                  _gap(),
+
+                  // ── MINDBLOW: UNTERNEHMENS-VERFLECHTUNGEN ───────────────
+                  const _SectionHeader(
+                    label: 'UNTERNEHMENS-VERFLECHTUNGEN',
+                    icon: Icons.business_center_rounded,
+                    color: Color(0xFF26A69A),
+                  ),
+                  _stag(920, OcNetworkCard(items: s.ocNetwork, loading: s.ocNetworkLoading)),
+                  _gap(),
+                  _stag(930, CorpWatchCard(items: s.corpWatch, loading: s.corpWatchLoading)),
+                  _gap(),
+
+                  _stag(940, AnnotationsCard(topic: s.topic)),
+                  _gap(),
+                  _stag(950, SherlockCard(topic: s.topic)),
+                  _gap(),
+                  _stag(960, RelatedPathsCard(
                     topics: s.relatedTopics,
                     loading: s.relatedLoading,
                     onTap: _openThread,
@@ -967,7 +1147,7 @@ class _ResearchLoadingOverlayState extends State<_ResearchLoadingOverlay>
   static const _msgs = [
     'Wikidata wird befragt …',
     'Netzwerk-Verbindungen kartiert …',
-    '28 Quellen werden analysiert …',
+    '46 Quellen werden analysiert …',
     'Historische Events durchsucht …',
     'Sanktionslisten geprüft …',
     'Lobbying-Register abgefragt …',
@@ -981,6 +1161,19 @@ class _ResearchLoadingOverlayState extends State<_ResearchLoadingOverlay>
     'Akademische Paper durchsucht …',
     'Propaganda-Linsen kalibriert …',
     'Vergangene Snapshots geladen …',
+    'USASpending durchsucht …',
+    'Weltbank-Projekte geladen …',
+    'OpenOwnership geprüft …',
+    'CourtListener durchsucht …',
+    'MuckRock FOIA-Anfragen …',
+    'EGMR-Urteile geladen …',
+    'OpenSecrets analysiert …',
+    'LittleSis-Netzwerk …',
+    'DocumentCloud durchsucht …',
+    'WikiLeaks-Archiv …',
+    'CIA-CREST gecheckt …',
+    'Snowden-Files …',
+    'Vorstands-Verflechtungen …',
     'Virgil denkt nach …',
   ];
 
@@ -1419,6 +1612,61 @@ class _ThreadState {
 
   List<RssItem> rssItems = const [];
   bool rssLoading = true;
+
+  // ── Mindblow-Tier ──────────────────────────────────────────────────────
+  List<UsaSpendingAward> usaSpending = const [];
+  bool usaSpendingLoading = true;
+
+  List<WorldBankProject> worldBank = const [];
+  bool worldBankLoading = true;
+
+  List<OpenOwnershipEntity> openOwnership = const [];
+  bool openOwnershipLoading = true;
+
+  List<OpenSpendingEntry> openSpending = const [];
+  bool openSpendingLoading = true;
+
+  List<CourtListenerCase> courtListener = const [];
+  bool courtListenerLoading = true;
+
+  List<MuckRockFoia> muckRock = const [];
+  bool muckRockLoading = true;
+
+  List<HudocCase> hudoc = const [];
+  bool hudocLoading = true;
+
+  List<EuCuriaCase> euCuria = const [];
+  bool euCuriaLoading = true;
+
+  List<OpenSecretsOrg> openSecrets = const [];
+  bool openSecretsLoading = true;
+
+  List<FecCandidate> fec = const [];
+  bool fecLoading = true;
+
+  List<LittleSisEntity> littleSis = const [];
+  bool littleSisLoading = true;
+
+  List<EveryPolitician> everyPolitician = const [];
+  bool everyPoliticianLoading = true;
+
+  List<DocumentCloudDoc> documentCloud = const [];
+  bool documentCloudLoading = true;
+
+  List<WikiLeaksDoc> wikiLeaks = const [];
+  bool wikiLeaksLoading = true;
+
+  List<CiaCrestDoc> ciaCrest = const [];
+  bool ciaCrestLoading = true;
+
+  List<SnowdenDoc> snowden = const [];
+  bool snowdenLoading = true;
+
+  List<OcNetworkOfficer> ocNetwork = const [];
+  bool ocNetworkLoading = true;
+
+  List<CorpWatchArticle> corpWatch = const [];
+  bool corpWatchLoading = true;
 
   _ThreadState({required this.topic});
 }
