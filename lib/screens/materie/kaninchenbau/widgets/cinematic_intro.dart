@@ -467,6 +467,13 @@ class _CinematicIntroState extends State<CinematicIntro>
               ],
             ),
           ),
+          const SizedBox(height: 36),
+          // OSINT Direkt-Zugänge
+          AnimatedOpacity(
+            duration: const Duration(milliseconds: 800),
+            opacity: _typewriterDone ? 1.0 : 0.0,
+            child: _buildOsintGrid(),
+          ),
           const SizedBox(height: 32),
           Text(
             'Tap zum Überspringen · Enter zum Eintauchen',
@@ -477,6 +484,234 @@ class _CinematicIntroState extends State<CinematicIntro>
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  static const _osintTools = [
+    (Icons.account_balance_wallet_rounded, 'Panama Papers', 'ICIJ Offshore Leaks', Color(0xFFFFB300)),
+    (Icons.gavel_rounded, 'OpenSanctions', 'EU/UN/OFAC Sanktionen', Color(0xFFE53935)),
+    (Icons.folder_zip_rounded, 'Aleph OCCRP', 'FinCEN, LuxLeaks, Suisse Secrets', Color(0xFF7C4DFF)),
+    (Icons.science_rounded, 'PubMed', '35 Mio. Studien & Papers', Color(0xFF00BCD4)),
+    (Icons.auto_stories_rounded, 'Semantic Scholar', '200 Mio. wissenschaftliche Paper', Color(0xFF4CAF50)),
+    (Icons.archive_rounded, 'Internet Archive', '50 Mio. Dokumente & Wayback', Color(0xFFFF7043)),
+    (Icons.how_to_vote_rounded, 'EU-Parlament', 'Abstimmungen & Abgeordnete', Color(0xFF2196F3)),
+  ];
+
+  Widget _buildOsintGrid() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 14),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.manage_search_rounded,
+                  size: 14, color: KbDesign.neonRedSoft.withValues(alpha: 0.8)),
+              const SizedBox(width: 6),
+              Text(
+                'OSINT DATENBANKEN',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.4),
+                  fontSize: 10,
+                  letterSpacing: 2,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+        GridView.count(
+          crossAxisCount: 2,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          mainAxisSpacing: 10,
+          crossAxisSpacing: 10,
+          childAspectRatio: 2.8,
+          children: _osintTools.map((t) => _OsintToolTile(
+            icon: t.$1,
+            title: t.$2,
+            subtitle: t.$3,
+            accentColor: t.$4,
+            onTap: () => _showOsintSearch(t.$2),
+          )).toList(),
+        ),
+      ],
+    );
+  }
+
+  void _showOsintSearch(String toolName) {
+    HapticFeedback.lightImpact();
+    final ctrl = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        backgroundColor: const Color(0xFF0E0E1A),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                toolName,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Wonach möchtest du suchen?',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.5),
+                  fontSize: 13,
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: ctrl,
+                autofocus: true,
+                style: const TextStyle(color: Colors.white),
+                cursorColor: KbDesign.neonRedSoft,
+                decoration: InputDecoration(
+                  hintText: 'Name, Firma, Ereignis…',
+                  hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
+                  filled: true,
+                  fillColor: const Color(0xFF1A1A2E),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: KbDesign.neonRed.withValues(alpha: 0.4)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: KbDesign.neonRed.withValues(alpha: 0.3)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: KbDesign.neonRedSoft, width: 1.5),
+                  ),
+                ),
+                onSubmitted: (v) {
+                  Navigator.of(ctx).pop();
+                  if (v.trim().isNotEmpty) _submit(v.trim());
+                },
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.of(ctx).pop(),
+                    child: Text('Abbrechen',
+                        style: TextStyle(color: Colors.white.withValues(alpha: 0.5))),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: KbDesign.neonRed,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                    ),
+                    onPressed: () {
+                      Navigator.of(ctx).pop();
+                      if (ctrl.text.trim().isNotEmpty) _submit(ctrl.text.trim());
+                    },
+                    child: const Text('Suchen'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _OsintToolTile extends StatefulWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Color accentColor;
+  final VoidCallback onTap;
+
+  const _OsintToolTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.accentColor,
+    required this.onTap,
+  });
+
+  @override
+  State<_OsintToolTile> createState() => _OsintToolTileState();
+}
+
+class _OsintToolTileState extends State<_OsintToolTile> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) { setState(() => _pressed = false); widget.onTap(); },
+      onTapCancel: () => setState(() => _pressed = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 120),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          color: _pressed
+              ? widget.accentColor.withValues(alpha: 0.15)
+              : const Color(0xFF0E0E1A),
+          border: Border.all(
+            color: _pressed
+                ? widget.accentColor.withValues(alpha: 0.7)
+                : widget.accentColor.withValues(alpha: 0.25),
+            width: 1.2,
+          ),
+          boxShadow: _pressed
+              ? [BoxShadow(color: widget.accentColor.withValues(alpha: 0.2), blurRadius: 12)]
+              : [],
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        child: Row(
+          children: [
+            Icon(widget.icon, color: widget.accentColor, size: 18),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    widget.title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Text(
+                    widget.subtitle,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.4),
+                      fontSize: 9,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
