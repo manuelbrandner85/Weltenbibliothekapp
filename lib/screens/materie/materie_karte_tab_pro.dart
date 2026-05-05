@@ -7,7 +7,9 @@ import '../../models/materie_location_detail.dart'; // ✅ MODEL
 import '../../models/location_category.dart'; // ✅ ENUM
 import '../../data/materie_locations.dart'; // ✅ DATA
 import '../../services/live_map_pins_service.dart'; // 📍 B7: Live-Pins
+import '../../services/youtube_service.dart';
 import '../../widgets/live_pins_layer.dart'; // 📍 B7: Live-Pins-Marker
+import '../../widgets/youtube_player_inline.dart';
 
 class MaterieKarteTabPro extends StatefulWidget {
   const MaterieKarteTabPro({super.key});
@@ -35,7 +37,13 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro> {
   
   // Detail Panel Tab State
   int _detailTabIndex = 0;
-  
+
+  // YouTube-State pro Marker
+  List<YoutubeVideo>? _ytVideos;
+  bool _ytLoading = false;
+  YoutubeVideo? _ytPlaying;
+  String _ytLocationName = '';
+
   // 🗺️ MAP LAYER STATE
   String _currentMapLayer = 'street'; // street, satellite, terrain, topo
   bool _isLayerSwitcherExpanded = false; // Standard: Eingeklappt
@@ -51,6 +59,22 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro> {
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadYoutubeForLocation(String name) async {
+    if (_ytLocationName == name) return;
+    if (!mounted) return;
+    setState(() {
+      _ytLoading = true;
+      _ytLocationName = name;
+    });
+    final videos = await YoutubeService.instance
+        .searchVideos('$name deutsch', max: 5);
+    if (!mounted) return;
+    setState(() {
+      _ytVideos = videos;
+      _ytLoading = false;
+    });
   }
 
   List<MaterieLocationDetail> get _filteredLocations {
@@ -129,8 +153,15 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro> {
                         _savedMapCenter = _mapController.camera.center;
                         _savedMapZoom = _mapController.camera.zoom;
                         
-                        setState(() => _selectedLocation = location);
+                        setState(() {
+                          _selectedLocation = location;
+                          _detailTabIndex = 0;
+                          _ytVideos = null;
+                          _ytPlaying = null;
+                          _ytLocationName = '';
+                        });
                         _mapController.move(location.position, 12.0);
+                        _loadYoutubeForLocation(location.name);
                       },
                       child: _buildMarker(location),
                     ),
@@ -497,23 +528,19 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro> {
           
           const SizedBox(height: 16),
           
-          // TABS (nur wenn Multimedia vorhanden)
-          if (location.imageUrls.isNotEmpty || location.videoUrls.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                children: [
-                  _buildTab('Info', 0, Icons.info_outline),
-                  if (location.imageUrls.isNotEmpty)
-                    _buildTab('Bilder', 1, Icons.image_outlined),
-                  if (location.videoUrls.isNotEmpty)
-                    _buildTab('Videos', 2, Icons.play_circle_outline),
-                ],
-              ),
+          // TABS
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              children: [
+                _buildTab('Info', 0, Icons.info_outline),
+                if (location.imageUrls.isNotEmpty)
+                  _buildTab('Bilder', 1, Icons.image_outlined),
+                _buildTab('Videos', 2, Icons.play_circle_outline),
+              ],
             ),
-          
-          if (location.imageUrls.isNotEmpty || location.videoUrls.isNotEmpty)
-            const SizedBox(height: 12),
+          ),
+          const SizedBox(height: 12),
           
           // Content
           Expanded(
@@ -721,146 +748,154 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro> {
   }
   
   Widget _buildVideosTab(MaterieLocationDetail location) {
-    if (location.videoUrls.isEmpty) {
-      return Center(
-        child: Text(
-          'Keine Videos verfügbar',
-          style: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
+    // Inline-Player wenn ein Video läuft
+    if (_ytPlaying != null) {
+      return SingleChildScrollView(
+        child: Column(
+          children: [
+            YoutubePlayerInline(
+              video: _ytPlaying!,
+              onClose: () => setState(() => _ytPlaying = null),
+            ),
+            const SizedBox(height: 12),
+            ..._buildVideoList(),
+          ],
         ),
       );
     }
-    
-    return Column(
-      children: location.videoUrls.map((videoId) {
-        final youtubeUrl = 'https://www.youtube.com/watch?v=$videoId';
-        
-        return GestureDetector(
-          onTap: () {
-            // 📱 Show YouTube URL (Android-compatible)
-            debugPrint('📱 YouTube: $youtubeUrl');
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('📺 Video: $videoId'),
-                action: SnackBarAction(
-                  label: 'OK',
-                  onPressed: () {},
-                ),
-              ),
-            );
-          },
-          child: Container(
-            margin: const EdgeInsets.only(bottom: 16),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: Colors.red.shade400.withValues(alpha: 0.5),
-                width: 2,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.red.shade400.withValues(alpha: 0.3),
-                  blurRadius: 8,
-                  spreadRadius: 2,
-                ),
-              ],
+
+    if (_ytLoading) {
+      return const Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(color: Colors.red, strokeWidth: 2),
+            SizedBox(height: 12),
+            Text('Suche Videos…',
+                style: TextStyle(color: Colors.white54, fontSize: 12)),
+          ],
+        ),
+      );
+    }
+
+    if (_ytVideos == null || _ytVideos!.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.videocam_off, color: Colors.white24, size: 40),
+            const SizedBox(height: 8),
+            Text(
+              'Keine Videos gefunden',
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 13),
             ),
-            clipBehavior: Clip.antiAlias,
-            child: Stack(
-              children: [
-                // YouTube Thumbnail (hochauflösend)
-                Image.network(
-                  'https://img.youtube.com/vi/$videoId/maxresdefault.jpg',
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                  height: 200,
-                  errorBuilder: (context, error, stackTrace) {
-                    // Fallback zu Standard-Thumbnail
-                    return Image.network(
-                      'https://img.youtube.com/vi/$videoId/hqdefault.jpg',
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                      height: 200,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          height: 200,
-                          color: Colors.white.withValues(alpha: 0.05),
-                          child: const Center(
-                            child: Icon(Icons.videocam_off, color: Colors.white38, size: 48),
-                          ),
-                        );
-                      },
-                    );
-                  },
-                ),
-                
-                // Play-Button Overlay (zentriert & groß)
-                Positioned.fill(
-                  child: Center(
-                    child: Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        color: Colors.red.shade600.withValues(alpha: 0.9),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.5),
-                            blurRadius: 16,
-                            spreadRadius: 2,
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.play_arrow,
-                        color: Colors.white,
-                        size: 50,
-                      ),
-                    ),
-                  ),
-                ),
-                
-                // Info-Bar unten
-                Positioned(
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.bottomCenter,
-                        end: Alignment.topCenter,
-                        colors: [
-                          Colors.black.withValues(alpha: 0.8),
-                          Colors.transparent,
-                        ],
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.play_circle_filled, color: Colors.red.shade400, size: 20),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Auf YouTube ansehen',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Icon(Icons.open_in_new, color: Colors.white.withValues(alpha: 0.7), size: 16),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
+            const SizedBox(height: 4),
+            Text(
+              'YouTube API Key nötig (YOUTUBE_API_KEY)',
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.25), fontSize: 10),
             ),
-          ),
-        );
-      }).toList(),
+          ],
+        ),
+      );
+    }
+
+    return SingleChildScrollView(
+      child: Column(children: _buildVideoList()),
     );
+  }
+
+  List<Widget> _buildVideoList() {
+    final videos = _ytVideos ?? [];
+    return videos.map((video) {
+      final isPlaying = _ytPlaying?.videoId == video.videoId;
+      return GestureDetector(
+        onTap: () => setState(() => _ytPlaying = isPlaying ? null : video),
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isPlaying
+                  ? Colors.red
+                  : Colors.red.withValues(alpha: 0.3),
+              width: isPlaying ? 2 : 1,
+            ),
+            color: Colors.black.withValues(alpha: 0.3),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Row(
+            children: [
+              // Thumbnail
+              Stack(
+                children: [
+                  Image.network(
+                    video.thumbnail.isNotEmpty
+                        ? video.thumbnail
+                        : video.fallbackThumbnail,
+                    width: 110,
+                    height: 70,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      width: 110,
+                      height: 70,
+                      color: Colors.white.withValues(alpha: 0.05),
+                      child: const Icon(Icons.videocam_off,
+                          color: Colors.white24, size: 28),
+                    ),
+                  ),
+                  Positioned.fill(
+                    child: Center(
+                      child: Icon(
+                        isPlaying ? Icons.stop_circle : Icons.play_circle_fill,
+                        color: Colors.red,
+                        size: 32,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              // Info
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        video.title,
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          const Icon(Icons.person_outline,
+                              color: Colors.white38, size: 11),
+                          const SizedBox(width: 3),
+                          Expanded(
+                            child: Text(
+                              video.channel,
+                              style: const TextStyle(
+                                  color: Colors.white38, fontSize: 10),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }).toList();
   }
 
   Color _getCategoryColor(LocationCategory category) {

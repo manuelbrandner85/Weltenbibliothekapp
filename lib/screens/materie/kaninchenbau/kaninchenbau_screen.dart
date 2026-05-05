@@ -44,6 +44,7 @@ import 'widgets/kb_design.dart';
 import 'widgets/rote_faden_line.dart';
 import 'widgets/virgil_orb.dart';
 import 'widgets/virgil_panel.dart';
+import 'widgets/youtube_card.dart';
 
 class KaninchenbauScreen extends StatefulWidget {
   /// Optional vorausgewähltes Thema (z.B. von einem Tool-Button).
@@ -548,7 +549,12 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
                   ),
                   const SizedBox(height: 16),
                   _StaggeredCard(
-                    delay: const Duration(milliseconds: 830),
+                    delay: const Duration(milliseconds: 840),
+                    child: YoutubeCard(topic: s.topic),
+                  ),
+                  const SizedBox(height: 16),
+                  _StaggeredCard(
+                    delay: const Duration(milliseconds: 860),
                     child: RelatedPathsCard(
                       topics: s.relatedTopics,
                       loading: s.relatedLoading,

@@ -13,6 +13,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 
 import '../config/wb_design.dart';
 import '../services/cowatch_service.dart';
+import '../services/youtube_service.dart';
 
 class CoWatchPanel extends StatefulWidget {
   final String videoId;
@@ -288,107 +289,347 @@ class _CoWatchPanelState extends State<CoWatchPanel> {
 ''';
 }
 
-// ── Eingabe-Dialog ────────────────────────────────────────────────────────────
+// ── Eingabe-Dialog (URL ODER Thema-Suche) ───────────────────────────────────
 
-/// Zeigt einen Dialog zur YouTube-URL-Eingabe.
-/// Gibt die eingegebene URL zurück oder null wenn abgebrochen.
+/// Zeigt einen Dialog für Co-Watch:
+/// - Plain Text (z.B. „WEF 2024") → YouTube-Suche, Tap auf Ergebnis startet Co-Watch
+/// - URL/Video-ID → direkt starten
+///
+/// Der LiveKit-Call wird NIE unterbrochen — Dialog ist Overlay, Co-Watch danach
+/// ebenfalls Overlay-Panel (Stack).
 Future<String?> showCoWatchInputDialog(
     BuildContext context, String world) async {
-  final ctrl = TextEditingController();
-  final accent = WbDesign.accent(world);
   return showDialog<String>(
     context: context,
     barrierColor: Colors.black.withValues(alpha: 0.7),
-    builder: (ctx) => BackdropFilter(
+    builder: (ctx) => _CoWatchPickerDialog(world: world),
+  );
+}
+
+bool _looksLikeYoutubeUrlOrId(String input) {
+  final s = input.trim();
+  if (s.isEmpty) return false;
+  // 11-stellige Video-ID
+  if (RegExp(r'^[A-Za-z0-9_-]{11}$').hasMatch(s)) return true;
+  // youtube.com / youtu.be Links
+  if (s.contains('youtube.com/') || s.contains('youtu.be/')) return true;
+  return false;
+}
+
+class _CoWatchPickerDialog extends StatefulWidget {
+  final String world;
+  const _CoWatchPickerDialog({required this.world});
+
+  @override
+  State<_CoWatchPickerDialog> createState() => _CoWatchPickerDialogState();
+}
+
+class _CoWatchPickerDialogState extends State<_CoWatchPickerDialog> {
+  final _ctrl = TextEditingController();
+  List<YoutubeVideo>? _results;
+  bool _searching = false;
+  String _lastQuery = '';
+
+  Color get _accent => WbDesign.accent(widget.world);
+
+  Future<void> _search() async {
+    final q = _ctrl.text.trim();
+    if (q.isEmpty || q == _lastQuery) return;
+    setState(() {
+      _searching = true;
+      _lastQuery = q;
+    });
+    final res = await YoutubeService.instance.searchVideos(q, max: 8);
+    if (!mounted) return;
+    setState(() {
+      _results = res;
+      _searching = false;
+    });
+  }
+
+  void _submit() {
+    final v = _ctrl.text.trim();
+    if (v.isEmpty) return;
+    if (_looksLikeYoutubeUrlOrId(v)) {
+      Navigator.pop(context, v);
+    } else {
+      _search();
+    }
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isUrl = _looksLikeYoutubeUrlOrId(_ctrl.text);
+    return BackdropFilter(
       filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-      child: AlertDialog(
-        backgroundColor: WbDesign.surface(world),
+      child: Dialog(
+        backgroundColor: WbDesign.surface(widget.world),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(WbDesign.radiusLarge),
-          side: BorderSide(color: accent.withValues(alpha: 0.3)),
+          side: BorderSide(color: _accent.withValues(alpha: 0.3)),
         ),
-        title: Row(
-          children: [
-            Icon(Icons.play_circle_rounded, color: accent, size: 22),
-            const SizedBox(width: 10),
-            const Text(
-              'Co-Watch starten',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 17,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'YouTube-Link oder Video-ID eingeben.\nAlle Teilnehmer sehen das Video gleichzeitig.',
-              style: TextStyle(
-                color: WbDesign.textSecondary,
-                fontSize: 13,
-                height: 1.5,
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: ctrl,
-              autofocus: true,
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                hintText: 'https://youtu.be/...',
-                hintStyle: TextStyle(color: WbDesign.textTertiary),
-                filled: true,
-                fillColor: Colors.white.withValues(alpha: 0.07),
-                border: OutlineInputBorder(
-                  borderRadius:
-                      BorderRadius.circular(WbDesign.radiusMedium),
-                  borderSide: BorderSide.none,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 480, maxHeight: 600),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header
+                Row(
+                  children: [
+                    Icon(Icons.play_circle_rounded, color: _accent, size: 22),
+                    const SizedBox(width: 10),
+                    const Expanded(
+                      child: Text(
+                        'Co-Watch starten',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded,
+                          color: Colors.white54, size: 22),
+                      onPressed: () => Navigator.pop(context),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
                 ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius:
-                      BorderRadius.circular(WbDesign.radiusMedium),
-                  borderSide:
-                      BorderSide(color: accent.withValues(alpha: 0.5)),
+                const SizedBox(height: 8),
+                Text(
+                  'YouTube-Link einfügen ODER Thema eingeben (z.B. „WEF 2024"). Der Stream läuft weiter.',
+                  style: TextStyle(
+                    color: WbDesign.textSecondary,
+                    fontSize: 12,
+                    height: 1.4,
+                  ),
                 ),
-                prefixIcon:
-                    Icon(Icons.link_rounded, color: accent, size: 18),
-                contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 12),
-              ),
-              onSubmitted: (v) {
-                if (v.trim().isNotEmpty) Navigator.pop(ctx, v.trim());
-              },
+                const SizedBox(height: 16),
+
+                // Eingabefeld
+                TextField(
+                  controller: _ctrl,
+                  autofocus: true,
+                  style: const TextStyle(color: Colors.white),
+                  textInputAction: TextInputAction.search,
+                  onChanged: (_) => setState(() {}),
+                  onSubmitted: (_) => _submit(),
+                  decoration: InputDecoration(
+                    hintText: 'youtu.be/... oder „Mondlandung"',
+                    hintStyle: TextStyle(color: WbDesign.textTertiary),
+                    filled: true,
+                    fillColor: Colors.white.withValues(alpha: 0.07),
+                    border: OutlineInputBorder(
+                      borderRadius:
+                          BorderRadius.circular(WbDesign.radiusMedium),
+                      borderSide: BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius:
+                          BorderRadius.circular(WbDesign.radiusMedium),
+                      borderSide:
+                          BorderSide(color: _accent.withValues(alpha: 0.5)),
+                    ),
+                    prefixIcon: Icon(
+                      isUrl ? Icons.link_rounded : Icons.search_rounded,
+                      color: _accent,
+                      size: 18,
+                    ),
+                    suffixIcon: _ctrl.text.isEmpty
+                        ? null
+                        : IconButton(
+                            icon: const Icon(Icons.clear,
+                                color: Colors.white38, size: 16),
+                            onPressed: () => setState(() {
+                              _ctrl.clear();
+                              _results = null;
+                              _lastQuery = '';
+                            }),
+                          ),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 12),
+                  ),
+                ),
+
+                const SizedBox(height: 12),
+
+                // Aktion: Starten (URL) oder Suchen (Thema)
+                Row(
+                  children: [
+                    Expanded(
+                      child: FilledButton.icon(
+                        onPressed: _ctrl.text.trim().isEmpty ? null : _submit,
+                        icon: Icon(
+                          isUrl
+                              ? Icons.play_arrow_rounded
+                              : Icons.search_rounded,
+                          size: 18,
+                        ),
+                        label: Text(isUrl ? 'Starten' : 'Videos suchen'),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: _accent,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius:
+                                BorderRadius.circular(WbDesign.radiusMedium),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 16),
+
+                // Ergebnis-Liste
+                if (_searching)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          CircularProgressIndicator(
+                              color: _accent, strokeWidth: 2),
+                          const SizedBox(height: 10),
+                          Text(
+                            'Suche YouTube…',
+                            style: TextStyle(
+                                color: WbDesign.textTertiary, fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                else if (_results != null && _results!.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    child: Text(
+                      'Keine Videos gefunden. YouTube API Key nötig oder anderes Thema versuchen.',
+                      style: TextStyle(
+                          color: WbDesign.textTertiary, fontSize: 12),
+                    ),
+                  )
+                else if (_results != null && _results!.isNotEmpty)
+                  Flexible(
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: _results!.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 8),
+                      itemBuilder: (_, i) {
+                        final v = _results![i];
+                        return _SearchResultTile(
+                          video: v,
+                          accent: _accent,
+                          onTap: () => Navigator.pop(context, v.videoId),
+                        );
+                      },
+                    ),
+                  ),
+              ],
             ),
-          ],
+          ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text('Abbrechen',
-                style: TextStyle(color: WbDesign.textTertiary)),
-          ),
-          FilledButton.icon(
-            onPressed: () {
-              final v = ctrl.text.trim();
-              if (v.isNotEmpty) Navigator.pop(ctx, v);
-            },
-            icon: const Icon(Icons.play_arrow_rounded, size: 18),
-            label: const Text('Starten'),
-            style: FilledButton.styleFrom(
-              backgroundColor: accent,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius:
-                    BorderRadius.circular(WbDesign.radiusMedium),
-              ),
-            ),
-          ),
-        ],
       ),
-    ),
-  );
+    );
+  }
+}
+
+class _SearchResultTile extends StatelessWidget {
+  final YoutubeVideo video;
+  final Color accent;
+  final VoidCallback onTap;
+
+  const _SearchResultTile({
+    required this.video,
+    required this.accent,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.04),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+        ),
+        child: Row(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: Stack(
+                children: [
+                  Image.network(
+                    video.thumbnail.isNotEmpty
+                        ? video.thumbnail
+                        : video.fallbackThumbnail,
+                    width: 90,
+                    height: 56,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      width: 90,
+                      height: 56,
+                      color: Colors.white.withValues(alpha: 0.05),
+                      child: const Icon(Icons.videocam_off,
+                          color: Colors.white24, size: 20),
+                    ),
+                  ),
+                  Positioned.fill(
+                    child: Center(
+                      child: Icon(Icons.play_circle_fill,
+                          color: accent, size: 24),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    video.title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    video.channel,
+                    style: const TextStyle(
+                        color: Colors.white54, fontSize: 10),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.play_arrow_rounded, color: accent, size: 20),
+          ],
+        ),
+      ),
+    );
+  }
 }
