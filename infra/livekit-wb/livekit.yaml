@@ -8,84 +8,36 @@
 #     per `${LIVEKIT_API_SECRET}` zur Deploy-Zeit von der `deploy_livekit_wb.yml`-
 #     Pipeline (envsubst) eingesetzt; die echte yaml mit Secret liegt
 #     ausschließlich auf /docker/livekit-wb/livekit.yaml (chmod 600).
-#   - Falls dieser File jemals ein Klartext-Secret enthielt: SOFORT rotieren!
-#     1. Neues Secret generieren: `openssl rand -hex 32`
-#     2. GitHub-Secret `LIVEKIT_API_SECRET` aktualisieren
-#     3. Supabase Edge-Function-Secret `LIVEKIT_API_SECRET` aktualisieren
-#     4. `deploy_livekit_wb.yml` neu triggern → Container restart
-#   - Secret-Lecks im Git: alte Werte mit `git log -p infra/livekit-wb/livekit.yaml`
-#     prüfen; wenn produktiv: rotieren + alten Wert dokumentiert als kompromittiert.
 #
 # MENSAENA-SCHUTZ:
-#   - Port 7980 statt LiveKit-Default 7880 → keine Kollision falls Mensaena auf 7880 publiziert
+#   - Port 7980 statt LiveKit-Default 7880 → keine Kollision
 #   - tcp_port 7981 statt 7881 → gleicher Grund
-#   - Media-UDP-Range 60001–65000 → kein Overlap mit Mensaena (50000–60000)
-#   - KEIN TURN-Server in WB → keine UDP-5350/3479-Kollision
+#   - Media-UDP-Range 60001–61000 → kein Overlap mit Mensaena (50000–60000)
+#   - TURN udp_port 3479 statt 3478 → Mensaena belegt 3478
 
-# force-deploy-trigger: 2026-05-04 (healthcheck-fix) — Health-Check via
-# docker inspect war broken auf Self-Hosted-Runner Docker-Version.
-# Umgestellt auf docker compose ps + Retry-Loop für Signaling.
 port: 7980
 
-# API-Keys: Wert wird beim Deploy via envsubst aus dem GitHub-Secret
-# `LIVEKIT_API_SECRET` injiziert. Repo enthält ausschließlich den Platzhalter.
 keys:
   wb-a9b26485d407e7dc2043: ${LIVEKIT_API_SECRET}
 
-# WebRTC Media-Konfiguration
-# Range 60001–61000 (1000 Ports) — disjunkt von Mensaena (50000–60000).
-# Bei 50 max_participants × ~4 Tracks (Audio+Video+Screen+RTCP) braucht es
-# mind. 200 Ports. 100 Ports (alter Wert) waren chronisch zu wenig → Audio/
-# Video-Drops. 1000 Ports lassen Spielraum, bleiben aber RAM-verträglich
-# (docker-proxy-Memory ~1-1.5 MiB pro Port = ~1-1.5 GiB für 1000 Ports).
 rtc:
   tcp_port: 7981
   port_range_start: 60001
   port_range_end: 61000
   use_external_ip: true
-  # Explizite externe IP — verhindert dass LiveKit interne Docker-IPs
-  # in ICE-Kandidaten bewirbt (was bei auto-detect manchmal scheitert).
   node_ip: 72.62.154.95
-  # Externer coturn-TURN-Server — LiveKit schickt diese Credentials im
-  # Join-Response an alle Clients. Deckt symmetrisches NAT ab
-  # (Mobilfunk-CGNAT, Firmen-VPN, Hotel-WLAN). Coturn läuft als separater
-  # Container im gleichen docker-compose (livekit-wb-coturn).
-  # KEIN LiveKit-internal TURN (braucht TLS-Cert) — coturn ist plain UDP/TCP.
-  #
-  # ⚠ Korrekte LiveKit-Syntax: `turn_servers` (NICHT ice_servers).
-  # Pro Protokoll ein eigener Eintrag mit host/port/protocol/credentials.
-  turn_servers:
-    - host: 72.62.154.95
-      port: 3478
-      protocol: udp
-      username: wb-turn-2026
-      credential: WbCoturnRelay_a9b26485d407e7dc
-    - host: 72.62.154.95
-      port: 3478
-      protocol: tcp
-      username: wb-turn-2026
-      credential: WbCoturnRelay_a9b26485d407e7dc
 
-# TURN-Server bewusst DEAKTIVIERT — siehe Lessons-Learned.
-#
-# Versuch in PR #74 hat den Container unbootable gemacht:
-# LiveKit verlangt cert_file/key_file SOBALD `turn.enabled: true`,
-# auch mit external_tls: true. Ohne valides TLS-Cert für die
-# TURN-Domain failt der Container-Start → kein User kann mehr joinen.
-#
-# Korrekter TURN-Setup würde brauchen:
-#   - Eigenes TLS-Cert für livekit-wb.srv1438024.hstgr.cloud (Caddy
-#     terminiert nur Port 443, nicht 5352)
-#   - Coturn als separater Container statt LiveKit-internal TURN
-# → später nachholen, sobald symmetrisches NAT wirklich der Bottleneck ist.
-#
-# Aktueller Stand: STUN-only via use_external_ip + node_ip + tcp_port 7981.
-# Deckt den Großteil der User ab; symmetrisches NAT wird via TCP-Fallback
-# auf 7981 abgefangen.
+# LiveKit-interner TURN-Relay (identisch zu Mensaena-Ansatz der zuverlässig funktioniert).
+# domain: '' → LiveKit nutzt node_ip direkt (kein eigenes TLS-Cert nötig).
+# external_tls: false → Plain UDP/TCP TURN, kein TURN-over-TLS.
+# Deckt symmetrisches NAT ab: Mobilfunk-CGNAT, Firmen-VPN, Hotel-WLAN.
+# Port 3479 statt 3478 (Mensaena belegt 3478 für seinen built-in TURN).
+turn:
+  enabled: true
+  udp_port: 3479
+  domain: ""
+  external_tls: false
 
-# Räume werden automatisch angelegt wenn der erste User joint.
-# empty_timeout: 0 → Raum wird SOFORT gelöscht sobald der letzte
-# Teilnehmer geht (kein Idle-Bestand, keine versehentlich offenen Räume).
 room:
   auto_create: true
   empty_timeout: 1

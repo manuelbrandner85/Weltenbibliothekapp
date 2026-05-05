@@ -287,20 +287,20 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
                     ),
 
                     // Collapsible header content
-                    AnimatedContainer(
+                    AnimatedSize(
                       duration: const Duration(milliseconds: 350),
                       curve: Curves.easeInOut,
-                      height: _headerCollapsed ? 0 : double.infinity,
                       clipBehavior: Clip.hardEdge,
-                      decoration: const BoxDecoration(),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          _buildTopBar(),
-                          const SizedBox(height: 12),
-                          _buildFilterChips(),
-                        ],
-                      ),
+                      child: _headerCollapsed
+                          ? const SizedBox.shrink()
+                          : Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                _buildTopBar(),
+                                const SizedBox(height: 12),
+                                _buildFilterChips(),
+                              ],
+                            ),
                     ),
 
                     // Collapsed state: floating search pill
