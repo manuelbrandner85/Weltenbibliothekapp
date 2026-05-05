@@ -179,7 +179,7 @@ class _SourceTile extends StatelessWidget {
                   Icon(
                     item.credibility >= 80
                         ? Icons.verified_rounded
-                        : Icons.info_outline_rounded,
+                        : Icons.info_outlined,
                     size: 13,
                     color: _credColor(item.credibility),
                   ),

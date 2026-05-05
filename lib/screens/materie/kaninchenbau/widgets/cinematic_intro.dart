@@ -81,6 +81,22 @@ class _CinematicIntroState extends State<CinematicIntro>
       setState(() => _ready = true);
       _runTypewriter();
     });
+
+    // G — Verlauf laden
+    KbHistoryService.getHistory().then((list) {
+      if (mounted) setState(() => _history = list);
+    });
+  }
+
+  Future<void> _runTypewriter() async {
+    for (var i = 1; i <= _virgilLine.length; i++) {
+      if (!mounted) return;
+      await Future.delayed(const Duration(milliseconds: 38));
+      setState(() => _typed = _virgilLine.substring(0, i));
+    }
+    if (!mounted) return;
+    setState(() => _typewriterDone = true);
+    _focus.requestFocus();
   }
 
   Future<void> _runTypewriter() async {
