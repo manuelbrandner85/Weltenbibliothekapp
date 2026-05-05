@@ -145,3 +145,47 @@ class MoneyFlow {
     this.year,
   });
 }
+
+/// Ein geleaktes/FOIA Dokument.
+class LeakedDocument {
+  final String title;
+  final String url;
+  final String? snippet;
+  final String archive; // 'WikiLeaks', 'Internet Archive', 'FOIA', 'CIA Reading Room'
+  final String? date;
+  const LeakedDocument({
+    required this.title,
+    required this.url,
+    required this.archive,
+    this.snippet,
+    this.date,
+  });
+}
+
+/// Region mit Sentiment-Score für globale Heatmap.
+class GlobalImpact {
+  final String country; // ISO-Code z.B. 'US', 'DE', 'CN'
+  final String name;
+  final int mentions;
+  final double sentiment; // -1.0 (negativ) bis +1.0 (positiv)
+  const GlobalImpact({
+    required this.country,
+    required this.name,
+    required this.mentions,
+    required this.sentiment,
+  });
+}
+
+/// Position einer Quelle auf dem Medien-Kompass (links/rechts × Establishment/Alt).
+class MediaCompassPoint {
+  final String name;
+  final double xAxis; // -1 (links) bis +1 (rechts)
+  final double yAxis; // -1 (alternativ) bis +1 (Establishment)
+  final int credibility; // 0..100
+  const MediaCompassPoint({
+    required this.name,
+    required this.xAxis,
+    required this.yAxis,
+    required this.credibility,
+  });
+}

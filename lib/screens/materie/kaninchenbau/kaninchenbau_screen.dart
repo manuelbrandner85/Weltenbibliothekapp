@@ -16,7 +16,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'cards/ai_insight_card.dart';
+import 'cards/documents_card.dart';
+import 'cards/global_impact_card.dart';
 import 'cards/identity_card.dart';
+import 'cards/media_compass_card.dart';
+import 'cards/money_flow_card.dart';
 import 'cards/network_card.dart';
 import 'cards/related_paths_card.dart';
 import 'cards/sources_card.dart';
@@ -122,6 +126,47 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
       setState(() {
         s.relatedTopics = topics;
         s.relatedLoading = false;
+      });
+    });
+
+    // Geldflüsse (warten bis Network-Daten da sind, dann mit Kontext)
+    Future.delayed(const Duration(milliseconds: 600), () {
+      if (!mounted || s.disposed) return;
+      _service
+          .fetchMoneyFlows(s.topic, networkContext: s.networkNodes)
+          .then((flows) {
+        if (!mounted || s.disposed) return;
+        setState(() {
+          s.moneyFlows = flows;
+          s.moneyLoading = false;
+        });
+      });
+    });
+
+    // Medien-Kompass
+    _service.fetchMediaCompass(s.topic).then((points) {
+      if (!mounted || s.disposed) return;
+      setState(() {
+        s.compassPoints = points;
+        s.compassLoading = false;
+      });
+    });
+
+    // Dokumente
+    _service.fetchLeakedDocuments(s.topic).then((docs) {
+      if (!mounted || s.disposed) return;
+      setState(() {
+        s.documents = docs;
+        s.documentsLoading = false;
+      });
+    });
+
+    // Globale Auswirkungen
+    _service.fetchGlobalImpact(s.topic).then((impacts) {
+      if (!mounted || s.disposed) return;
+      setState(() {
+        s.globalImpacts = impacts;
+        s.globalLoading = false;
       });
     });
 
@@ -291,10 +336,26 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
                   ),
                   const SizedBox(height: 16),
                   _StaggeredCard(
+                    delay: const Duration(milliseconds: 380),
+                    child: MoneyFlowCard(
+                      flows: s.moneyFlows,
+                      loading: s.moneyLoading,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _StaggeredCard(
                     delay: const Duration(milliseconds: 450),
                     child: SourcesCard(
                       sources: s.sources,
                       loading: s.sourcesLoading,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _StaggeredCard(
+                    delay: const Duration(milliseconds: 520),
+                    child: MediaCompassCard(
+                      points: s.compassPoints,
+                      loading: s.compassLoading,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -307,7 +368,23 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
                   ),
                   const SizedBox(height: 16),
                   _StaggeredCard(
-                    delay: const Duration(milliseconds: 750),
+                    delay: const Duration(milliseconds: 670),
+                    child: GlobalImpactCard(
+                      impacts: s.globalImpacts,
+                      loading: s.globalLoading,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _StaggeredCard(
+                    delay: const Duration(milliseconds: 720),
+                    child: DocumentsCard(
+                      docs: s.documents,
+                      loading: s.documentsLoading,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _StaggeredCard(
+                    delay: const Duration(milliseconds: 800),
                     child: RelatedPathsCard(
                       topics: s.relatedTopics,
                       loading: s.relatedLoading,
@@ -346,6 +423,18 @@ class _ThreadState {
 
   String? aiInsight;
   bool aiLoading = true;
+
+  List<MoneyFlow> moneyFlows = const [];
+  bool moneyLoading = true;
+
+  List<MediaCompassPoint> compassPoints = const [];
+  bool compassLoading = true;
+
+  List<LeakedDocument> documents = const [];
+  bool documentsLoading = true;
+
+  List<GlobalImpact> globalImpacts = const [];
+  bool globalLoading = true;
 
   _ThreadState({required this.topic});
 }
