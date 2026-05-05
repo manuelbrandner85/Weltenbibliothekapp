@@ -436,6 +436,86 @@ class RssItem {
   });
 }
 
+// ─── Deep-API-Tier — PR-#113-Quellen ──────────────────────────────────────────
+
+class AlephDocument {
+  final String name;
+  final String collection;
+  final String schema;
+  final String country;
+  final String? date;
+  final String? summary;
+  final String? url;
+  const AlephDocument({required this.name, required this.collection, required this.schema, required this.country, this.date, this.summary, this.url});
+}
+
+class OffshoreEntity {
+  final String name;
+  final String type;
+  final String leakType;
+  final String? url;
+  const OffshoreEntity({required this.name, required this.type, required this.leakType, this.url});
+}
+
+class CompanyEntry {
+  final String name;
+  final String jurisdiction;
+  final String status;
+  final String source;
+  final String? lei;
+  final String? registered;
+  final String? url;
+  const CompanyEntry({required this.name, required this.jurisdiction, required this.status, required this.source, this.lei, this.registered, this.url});
+}
+
+class SanctionResult {
+  final String name;
+  final String schema;
+  final List<String> topics;
+  final List<String> datasets;
+  final String? birthDate;
+  final String? url;
+  const SanctionResult({required this.name, required this.schema, required this.topics, required this.datasets, this.birthDate, this.url});
+}
+
+class PubMedPaper {
+  final String title;
+  final String? doi;
+  final String? url;
+  const PubMedPaper({required this.title, this.doi, this.url});
+}
+
+class SemanticPaper {
+  final String title;
+  final String? abstract_;
+  final int? year;
+  final bool openAccess;
+  final int influential;
+  final String? url;
+  const SemanticPaper({required this.title, this.abstract_, this.year, required this.openAccess, required this.influential, this.url});
+  String? get abstract => abstract_;
+}
+
+class ArchiveDoc {
+  final String title;
+  final String mediatype;
+  final String? creator;
+  final String? date;
+  final String? description;
+  final String? url;
+  const ArchiveDoc({required this.title, required this.mediatype, this.creator, this.date, this.description, this.url});
+}
+
+class EuVote {
+  final String title;
+  final int forCount;
+  final int againstCount;
+  final int abstainCount;
+  final String result;
+  final String? url;
+  const EuVote({required this.title, required this.forCount, required this.againstCount, required this.abstainCount, required this.result, this.url});
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // MINDBLOW-TIER — 18 Tiefenquellen
 // ═══════════════════════════════════════════════════════════════════════════
