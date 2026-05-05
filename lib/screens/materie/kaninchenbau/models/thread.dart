@@ -418,6 +418,25 @@ class SherlockHit {
 }
 
 
+// ─── Community Annotations ────────────────────────────────────────────────────
+
+class ThreadAnnotation {
+  final String id;
+  final String body;
+  final bool isAnonymous;
+  final DateTime createdAt;
+  final int score;
+  final String? sourceUrl;
+  const ThreadAnnotation({
+    required this.id,
+    required this.body,
+    required this.isAnonymous,
+    required this.createdAt,
+    required this.score,
+    this.sourceUrl,
+  });
+}
+
 // ─── RSS-Aggregator-Item ───────────────────────────────────────────────────────
 
 /// RSS-Aggregator-Item.
