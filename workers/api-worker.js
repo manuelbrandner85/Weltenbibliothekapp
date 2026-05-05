@@ -3182,31 +3182,48 @@ EMPFEHLUNG: [1 Satz — was sollte der User selbst recherchieren?]`;
     // ── YouTube Search (YouTube Data API v3, serverseitig für Key-Schutz) ──
     if (path === '/api/youtube/search' && method === 'GET') {
       const q = url.searchParams.get('q') || '';
-      const lang = url.searchParams.get('lang') || 'de';
       const maxResults = Math.min(parseInt(url.searchParams.get('max') || '6', 10), 12);
       if (!q) return errorResponse('q fehlt', 400);
       if (!env.YOUTUBE_API_KEY) {
-        // Fallback: Suche-Links ohne API-Key
         return jsonResponse({
           items: [],
           fallback: true,
           searchUrl: `https://www.youtube.com/results?search_query=${encodeURIComponent(q + ' deutsch')}&sp=EgIQAQ%3D%3D`,
         });
       }
+
+      const mapItems = (rawItems, isSubtitled) => (rawItems || []).map(item => ({
+        videoId: item.id?.videoId || '',
+        title: item.snippet?.title || '',
+        channel: item.snippet?.channelTitle || '',
+        thumbnail: item.snippet?.thumbnails?.medium?.url || item.snippet?.thumbnails?.default?.url || '',
+        published: item.snippet?.publishedAt || '',
+        description: (item.snippet?.description || '').slice(0, 120),
+        isSubtitled,
+      })).filter(i => i.videoId);
+
+      const base = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoEmbeddable=true&key=${env.YOUTUBE_API_KEY}&maxResults=${maxResults}`;
+
       try {
-        const ytUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(q)}&type=video&relevanceLanguage=${lang}&regionCode=DE&maxResults=${maxResults}&videoEmbeddable=true&key=${env.YOUTUBE_API_KEY}`;
-        const r = await fetch(ytUrl);
-        if (!r.ok) throw new Error(`YT API ${r.status}`);
-        const data = await r.json();
-        const items = (data.items || []).map(item => ({
-          videoId: item.id.videoId,
-          title: item.snippet.title,
-          channel: item.snippet.channelTitle,
-          thumbnail: item.snippet.thumbnails?.medium?.url || item.snippet.thumbnails?.default?.url || '',
-          published: item.snippet.publishedAt,
-          description: (item.snippet.description || '').slice(0, 120),
-        }));
-        return jsonResponse({ items, total: data.pageInfo?.totalResults || items.length });
+        // Schritt 1: Deutsche Videos (Query + "deutsch", Region DE)
+        const deQuery = q.toLowerCase().includes('deutsch') ? q : `${q} deutsch`;
+        const deResp = await fetch(`${base}&q=${encodeURIComponent(deQuery)}&relevanceLanguage=de&regionCode=DE`);
+        if (!deResp.ok) throw new Error(`YT API ${deResp.status}`);
+        const deItems = mapItems((await deResp.json()).items, false);
+
+        // Mindestens 2 deutsche Treffer → nur deutsche zurückgeben
+        if (deItems.length >= 2) {
+          return jsonResponse({ items: deItems, lang: 'de' });
+        }
+
+        // Schritt 2: Englische Videos mit Untertitel-Filter (closedCaption = hat Captions)
+        const enResp = await fetch(`${base}&q=${encodeURIComponent(q)}&videoCaption=closedCaption`);
+        if (!enResp.ok) throw new Error(`YT API ${enResp.status}`);
+        const enItems = mapItems((await enResp.json()).items, true);
+
+        // Deutsche zuerst, dann englische mit Untertitel-Badge
+        const combined = [...deItems, ...enItems].slice(0, maxResults);
+        return jsonResponse({ items: combined, lang: 'en_subtitled' });
       } catch (e) {
         return errorResponse(`YouTube-Fehler: ${e.message}`);
       }
