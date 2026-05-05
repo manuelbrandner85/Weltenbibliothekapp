@@ -2490,20 +2490,45 @@ export default {
     // ── RSS-Aggregator: 20+ Quellen, gefiltert nach Topic ──
     if (path === '/api/rss/aggregate' && method === 'GET') {
       try {
-        const topic = (url.searchParams.get('topic') || '').toLowerCase().trim();
-        if (!topic) return errorResponse('topic fehlt', 400);
+        const topicRaw = (url.searchParams.get('topic') || '').trim();
+        if (!topicRaw) return errorResponse('topic fehlt', 400);
+        // Topic in Tokens splitten: "Klaus Schwab" → ["klaus", "schwab"]
+        // Auch Kurzformen testen: "WEF" → ["wef"]
+        const tokens = topicRaw.toLowerCase()
+          .split(/[\s,/-]+/)
+          .filter(t => t.length >= 3);
+        const matchTopic = (text) => {
+          const lt = text.toLowerCase();
+          if (lt.includes(topicRaw.toLowerCase())) return true;
+          // ALLE Tokens müssen im Titel sein (UND-Verknüpfung) — vermeidet zu viele False-Positives
+          return tokens.length > 0 && tokens.every(t => lt.includes(t));
+        };
+
         const feeds = [
-          { name: 'Spiegel', url: 'https://www.spiegel.de/index.rss', lens: 'establishment-left' },
-          { name: 'FAZ', url: 'https://www.faz.net/rss/aktuell/politik/', lens: 'establishment-right' },
-          { name: 'Welt', url: 'https://www.welt.de/feeds/section/politik.rss', lens: 'establishment-right' },
-          { name: 'Tichys', url: 'https://www.tichyseinblick.de/feed/', lens: 'alt-right' },
-          { name: 'NachDenkSeiten', url: 'https://www.nachdenkseiten.de/?feed=rss2', lens: 'alt-left' },
-          { name: 'Telepolis', url: 'https://www.telepolis.de/news-atom.xml', lens: 'alt' },
+          // Mainstream / Öffentlich-Rechtlich
+          { name: 'Tagesschau', url: 'https://www.tagesschau.de/index~rss2.xml', lens: 'oeff-rechtlich' },
+          { name: 'ZDF heute', url: 'https://www.zdf.de/rss/zdf/nachrichten', lens: 'oeff-rechtlich' },
+          { name: 'Deutschlandfunk', url: 'https://www.deutschlandfunk.de/die-nachrichten-100.rss', lens: 'oeff-rechtlich' },
+          { name: 'Spiegel', url: 'https://www.spiegel.de/index.rss', lens: 'mainstream-links' },
+          { name: 'Süddeutsche', url: 'https://rss.sueddeutsche.de/rss/Politik', lens: 'mainstream-links' },
+          { name: 'taz', url: 'https://taz.de/!s=&ExportStatus=Intern;rss/', lens: 'links' },
+          { name: 'FAZ', url: 'https://www.faz.net/rss/aktuell/politik/', lens: 'mainstream-rechts' },
+          { name: 'Welt', url: 'https://www.welt.de/feeds/section/politik.rss', lens: 'mainstream-rechts' },
+          { name: 'Cicero', url: 'https://www.cicero.de/rss.xml', lens: 'rechts-buergerlich' },
+          // Alternativ
+          { name: 'NachDenkSeiten', url: 'https://www.nachdenkseiten.de/?feed=rss2', lens: 'alt-links' },
           { name: 'Multipolar', url: 'https://multipolar-magazin.de/artikel.atom', lens: 'alt' },
-          { name: 'BBC', url: 'http://feeds.bbci.co.uk/news/world/rss.xml', lens: 'establishment' },
-          { name: 'Guardian', url: 'https://www.theguardian.com/world/rss', lens: 'establishment-left' },
-          { name: 'RT DE', url: 'https://de.rt.com/feeds/all.rss', lens: 'state-russia' },
-          { name: 'Reuters World', url: 'https://feeds.reuters.com/reuters/worldNews', lens: 'wire' },
+          { name: 'Telepolis', url: 'https://www.telepolis.de/news-atom.xml', lens: 'alt' },
+          { name: 'Tichys Einblick', url: 'https://www.tichyseinblick.de/feed/', lens: 'alt-rechts' },
+          { name: 'Apolut', url: 'https://apolut.net/feed/', lens: 'alt' },
+          { name: 'Reitschuster', url: 'https://reitschuster.de/feed/', lens: 'alt-rechts' },
+          { name: 'Junge Welt', url: 'https://www.jungewelt.de/feeds/newsticker.rss', lens: 'links-radikal' },
+          // Investigativ
+          { name: 'Correctiv', url: 'https://correctiv.org/feed/', lens: 'investigativ' },
+          { name: 'LobbyControl', url: 'https://www.lobbycontrol.de/feed/', lens: 'investigativ' },
+          { name: 'Netzpolitik', url: 'https://netzpolitik.org/feed/', lens: 'investigativ' },
+          // International (DE-relevant)
+          { name: 'RT DE', url: 'https://de.rt.com/feeds/all.rss', lens: 'staatsmedien-russland' },
         ];
 
         const all = [];
@@ -2515,17 +2540,20 @@ export default {
             });
             if (!r.ok) return;
             const xml = await r.text();
-            // Simple Item-Parser (kein DOMParser in Workers, RegEx-basiert)
             const items = [...xml.matchAll(/<(item|entry)[\s\S]*?<\/\1>/g)];
-            for (const m of items.slice(0, 30)) {
+            for (const m of items.slice(0, 60)) {
               const block = m[0];
               const title = (block.match(/<title[^>]*>([\s\S]*?)<\/title>/) || [])[1] || '';
+              const desc = (block.match(/<(description|summary|content)[^>]*>([\s\S]*?)<\/\1>/) || [])[2] || '';
               const link = (block.match(/<link[^>]*?>([\s\S]*?)<\/link>/) || block.match(/<link[^>]*href="([^"]+)"/) || [])[1] || '';
               const date = (block.match(/<(pubDate|published|updated)[^>]*>([\s\S]*?)<\/\1>/) || [])[2] || '';
               const cleanTitle = title.replace(/<!\[CDATA\[|\]\]>/g, '').replace(/<[^>]+>/g, '').trim();
-              if (cleanTitle.toLowerCase().includes(topic)) {
+              const cleanDesc = desc.replace(/<!\[CDATA\[|\]\]>/g, '').replace(/<[^>]+>/g, '').trim().slice(0, 200);
+              // Match: Titel ODER Beschreibung
+              if (matchTopic(cleanTitle) || matchTopic(cleanDesc)) {
                 all.push({
                   title: cleanTitle,
+                  description: cleanDesc,
                   url: link.replace(/<!\[CDATA\[|\]\]>/g, '').trim(),
                   date,
                   source: f.name,
@@ -2537,10 +2565,111 @@ export default {
         }));
 
         all.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-        return jsonResponse({ topic, count: all.length, items: all.slice(0, 50) });
+        return jsonResponse({ topic: topicRaw, count: all.length, items: all.slice(0, 80) });
       } catch (e) {
         return errorResponse(`RSS-Fehler: ${e.message}`);
       }
+    }
+
+    // ── Batch-Übersetzung Englisch→Deutsch via Groq (kostengünstig: 1 Call statt N) ──
+    if (path === '/api/translate/batch' && method === 'POST') {
+      try {
+        const { items } = await request.json();
+        if (!Array.isArray(items) || items.length === 0) {
+          return jsonResponse({ translated: [] });
+        }
+        if (!env.GROQ_API_KEY) {
+          // Ohne Groq: Items unübersetzt zurückgeben
+          return jsonResponse({ translated: items, fallback: true });
+        }
+        const numbered = items.map((s, i) => `${i + 1}. ${String(s).replace(/\n/g, ' ').slice(0, 300)}`).join('\n');
+        const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${env.GROQ_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'llama-3.3-70b-versatile',
+            messages: [
+              { role: 'system', content: 'Du übersetzt nummerierte englische Texte ins Deutsche. Gib NUR die Übersetzungen in der gleichen Nummerierung zurück, ohne Kommentare. Behalte Eigennamen und Firmennamen unverändert.' },
+              { role: 'user', content: numbered },
+            ],
+            temperature: 0.3,
+            max_tokens: 1500,
+          }),
+        });
+        if (!r.ok) return jsonResponse({ translated: items, error: `Groq ${r.status}` });
+        const data = await r.json();
+        const text = data?.choices?.[0]?.message?.content || '';
+        // Parse: "1. text\n2. text\n…"
+        const translated = items.map((orig, i) => {
+          const match = text.match(new RegExp(`(?:^|\\n)\\s*${i + 1}\\.\\s*(.+?)(?=(?:\\n\\s*\\d+\\.)|$)`, 's'));
+          return match ? match[1].trim() : orig;
+        });
+        return jsonResponse({ translated });
+      } catch (e) {
+        return errorResponse(`Translate-Fehler: ${e.message}`);
+      }
+    }
+
+    // ── Deep-Suche: Multi-API Aggregat für ein Thema (Worker-side, async parallel) ──
+    if (path === '/api/kaninchenbau/deep' && method === 'GET') {
+      const topic = url.searchParams.get('topic');
+      if (!topic) return errorResponse('topic fehlt', 400);
+      const t = encodeURIComponent(topic);
+
+      const tasks = await Promise.allSettled([
+        // Wikipedia DE Volltext
+        fetch(`https://de.wikipedia.org/api/rest_v1/page/summary/${t}`, { signal: AbortSignal.timeout(6000) })
+          .then(r => r.ok ? r.json() : null).catch(() => null),
+        // Europeana (Kultur, EU)
+        fetch(`https://api.europeana.eu/record/v2/search.json?wskey=api2demo&query=${t}&rows=8`, { signal: AbortSignal.timeout(6000) })
+          .then(r => r.ok ? r.json() : null).catch(() => null),
+        // arXiv (Pre-Prints)
+        fetch(`http://export.arxiv.org/api/query?search_query=all:${t}&max_results=6`, { signal: AbortSignal.timeout(6000) })
+          .then(r => r.ok ? r.text() : null).catch(() => null),
+        // GDELT 2.0 — letzte 24h, alle Sprachen
+        fetch(`https://api.gdeltproject.org/api/v2/doc/doc?query=${t}%20sourcelang:german&mode=ArtList&maxrecords=15&format=json&timespan=7d`, { signal: AbortSignal.timeout(6000) })
+          .then(r => r.ok ? r.json() : null).catch(() => null),
+        // CommonCrawl Index (URL-Erwähnungen)
+        fetch(`https://www.crossref.org/works?query=${t}&rows=5`, { signal: AbortSignal.timeout(6000) })
+          .then(r => r.ok ? r.json() : null).catch(() => null),
+      ]);
+
+      const [wiki, europeana, arxiv, gdelt, _crossref] = tasks.map(t => t.status === 'fulfilled' ? t.value : null);
+
+      // arXiv ist Atom-XML, simple Parse
+      const arxivPapers = arxiv ? [...String(arxiv).matchAll(/<entry>([\s\S]*?)<\/entry>/g)].slice(0, 6).map(m => {
+        const block = m[1];
+        const title = (block.match(/<title>([\s\S]*?)<\/title>/) || [])[1]?.trim();
+        const summary = (block.match(/<summary>([\s\S]*?)<\/summary>/) || [])[1]?.trim().slice(0, 200);
+        const link = (block.match(/<id>([\s\S]*?)<\/id>/) || [])[1]?.trim();
+        return { title, summary, url: link };
+      }).filter(p => p.title) : [];
+
+      return jsonResponse({
+        topic,
+        wikipedia_de: wiki ? {
+          title: wiki.title,
+          extract: wiki.extract,
+          url: wiki.content_urls?.desktop?.page,
+          thumbnail: wiki.thumbnail?.source,
+        } : null,
+        europeana: europeana?.items?.slice(0, 5).map(it => ({
+          title: it.title?.[0],
+          provider: it.dataProvider?.[0],
+          year: it.year?.[0],
+          url: it.guid,
+        })) || [],
+        arxiv: arxivPapers,
+        gdelt_news_de: gdelt?.articles?.slice(0, 10).map(a => ({
+          title: a.title,
+          url: a.url,
+          domain: a.domain,
+          date: a.seendate,
+        })) || [],
+      });
     }
 
     // ── Google Fact Check Tools (Worker-Proxy mit Server-Key) ──

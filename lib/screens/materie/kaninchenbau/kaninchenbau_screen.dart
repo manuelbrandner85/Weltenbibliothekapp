@@ -19,6 +19,7 @@ import 'cards/academic_card.dart';
 import 'cards/ai_insight_card.dart';
 import 'cards/annotations_card.dart';
 import 'cards/court_cases_card.dart';
+import 'cards/deep_research_card.dart';
 import 'cards/documents_card.dart';
 import 'cards/fact_check_card.dart';
 import 'cards/global_impact_card.dart';
@@ -414,6 +415,11 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
                       data: s.identityData,
                       loading: s.identityLoading,
                     ),
+                  ),
+                  const SizedBox(height: 16),
+                  _StaggeredCard(
+                    delay: const Duration(milliseconds: 80),
+                    child: DeepResearchCard(topic: s.topic),
                   ),
                   const SizedBox(height: 16),
                   _StaggeredCard(

@@ -552,31 +552,48 @@ class KaninchenbauService {
     return const _Cc('US', 'USA');
   }
 
-  /// AI-Insight via Cloudflare Worker (`/api/ai/ask` → Llama 3.1 8B).
+  /// AI-Insight via Virgil-Endpoint (Groq Llama 3.3 70B mit Workers AI Fallback).
+  /// Schreibt auf Deutsch eine prägnante investigative Einsicht zum Thema.
   Future<String?> fetchAiInsight(String topic, {String? context}) async {
     try {
+      final system =
+          'Du bist VIRGIL, ein investigativer Recherche-Begleiter im Stil eines '
+          'erfahrenen deutschen Investigativ-Journalisten (LobbyControl, Correctiv, '
+          'NDR-Panorama). Du sprichst NUR Deutsch. Stil: knapp, präzise, sachlich, '
+          'keine Floskeln, keine Begrüßung, keine Markdown-Header.';
+
+      final userPrompt =
+          'Thema: "$topic"\n\n'
+          '${context != null ? "Bekannte Fakten:\n$context\n\n" : ""}'
+          'Schreibe DREI bis VIER prägnante Sätze auf Deutsch über:\n'
+          '• Non-obvious Verbindungen (wer verbindet sich wirtschaftlich/politisch?)\n'
+          '• Verdeckte Geldflüsse oder strukturelle Muster\n'
+          '• Den blinden Fleck der Mainstream-Berichterstattung\n\n'
+          'Beginne direkt mit dem stärksten Hinweis. Keine Einleitung.';
+
       final body = jsonEncode({
-        'prompt':
-            'Du bist VIRGIL, ein leiser Recherche-Begleiter im Stil eines Investigativ-Journalisten. '
-            'Schreibe ZWEI prägnante Sätze auf Deutsch über non-obvious Verbindungen, '
-            'verdeckte Geldflüsse oder strukturelle Muster zum Thema "$topic". '
-            'Beginne mit einem auffälligen Hinweis. Keine Floskeln, keine Begrüßung. '
-            '${context != null ? "Kontext: $context" : ""}',
-        'max_tokens': 200,
+        'system': system,
+        'messages': [
+          {'role': 'user', 'content': userPrompt}
+        ],
+        'max_tokens': 400,
       });
 
       final resp = await http
           .post(
-            Uri.parse('${ApiConfig.workerUrl}/api/ai/ask'),
+            Uri.parse('${ApiConfig.workerUrl}/api/virgil/chat'),
             headers: {'Content-Type': 'application/json'},
             body: body,
           )
-          .timeout(const Duration(seconds: 20));
+          .timeout(const Duration(seconds: 30));
 
-      if (resp.statusCode != 200) return null;
+      if (resp.statusCode != 200) {
+        debugPrint('VIRGIL HTTP ${resp.statusCode}: ${resp.body}');
+        return null;
+      }
       final data = jsonDecode(resp.body) as Map<String, dynamic>;
-      return (data['response'] ??
-              data['answer'] ??
+      return (data['answer'] ??
+              data['response'] ??
               data['text'] ??
               data['result'])
           ?.toString()
