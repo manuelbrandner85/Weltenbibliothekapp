@@ -50,7 +50,7 @@ class YoutubeService {
 
     try {
       final uri = Uri.parse(ApiConfig.workerUrl)
-          .resolve('/api/youtube/search')
+          .resolve('/api/map/youtube')
           .replace(queryParameters: {
         'q': cleanQuery,
         'max': '$max',

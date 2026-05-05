@@ -10,6 +10,7 @@ import '../../services/live_map_pins_service.dart'; // 📍 B9: Live-Pins
 import '../../services/youtube_service.dart';
 import '../../services/wikimedia_service.dart';
 import '../../widgets/live_pins_layer.dart'; // 📍 B9: Live-Pins-Marker
+import '../../widgets/youtube_player_inline.dart';
 
 /// ENERGIE-Karte Tab - Spirituelle Kraftorte & Ley-Lines
 class EnergieKarteTabPro extends StatefulWidget {
@@ -530,8 +531,8 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
       final isSelected = _selectedLocation?.name == location.name;
       return Marker(
         point: location.position,
-        width: 52,
-        height: 52,
+        width: 64,
+        height: 64,
         child: GestureDetector(
           onTap: () {
             setState(() {
@@ -552,6 +553,7 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
             categoryColor: location.category.color,
             icon: location.category.icon,
             isSelected: isSelected,
+            label: location.category.label,
           ),
         ),
       );
@@ -1063,62 +1065,43 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
     );
   }
 
+  List<YoutubeVideo> _hardcodedEnergieVideos(EnergieLocationDetail location) {
+    return location.videoUrls
+        .where((id) => id.isNotEmpty)
+        .map((id) => YoutubeVideo(
+              videoId: id,
+              title: location.name,
+              channel: 'YouTube',
+              thumbnail: '',
+              published: '',
+              description: '',
+            ))
+        .toList();
+  }
+
   Widget _buildVideosTab(EnergieLocationDetail location) {
+    final staticVideos = _hardcodedEnergieVideos(location);
+    final allVideos = [
+      ...staticVideos,
+      ...(_ytVideos ?? []).where((v) => staticVideos.every((s) => s.videoId != v.videoId)),
+    ];
+
     if (_ytPlaying != null) {
       return SingleChildScrollView(
         child: Column(
           children: [
-            // Inline Video Player
-            Container(
-              margin: const EdgeInsets.only(bottom: 12),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFF9C27B0), width: 2),
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: Column(
-                children: [
-                  Image.network(
-                    _ytPlaying!.thumbnail.isNotEmpty ? _ytPlaying!.thumbnail : _ytPlaying!.fallbackThumbnail,
-                    height: 200, width: double.infinity, fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      height: 200, color: Colors.white.withValues(alpha: 0.05),
-                      child: const Icon(Icons.videocam_off, color: Colors.white38, size: 40),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(10),
-                    child: Row(children: [
-                      Expanded(child: Text(_ytPlaying!.title,
-                          style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
-                          maxLines: 2, overflow: TextOverflow.ellipsis)),
-                      const SizedBox(width: 8),
-                      TextButton.icon(
-                        onPressed: () async {
-                          final uri = Uri.tryParse(_ytPlaying!.watchUrl);
-                          if (uri != null) await launchUrl(uri, mode: LaunchMode.externalApplication);
-                        },
-                        icon: const Icon(Icons.play_circle_fill, color: Color(0xFF9C27B0), size: 18),
-                        label: const Text('Ansehen', style: TextStyle(color: Color(0xFF9C27B0), fontSize: 11)),
-                      ),
-                      IconButton(
-                        onPressed: () => setState(() => _ytPlaying = null),
-                        icon: const Icon(Icons.close, color: Colors.white54, size: 16),
-                        constraints: const BoxConstraints(),
-                        padding: EdgeInsets.zero,
-                      ),
-                    ]),
-                  ),
-                ],
-              ),
+            YoutubePlayerInline(
+              video: _ytPlaying!,
+              onClose: () => setState(() => _ytPlaying = null),
             ),
-            ..._buildEnergieVideoList(),
+            const SizedBox(height: 12),
+            ..._buildEnergieVideoList(allVideos),
           ],
         ),
       );
     }
 
-    if (_ytLoading) {
+    if (allVideos.isEmpty && _ytLoading) {
       return const Center(
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           CircularProgressIndicator(color: Color(0xFF9C27B0), strokeWidth: 2),
@@ -1128,22 +1111,21 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
       );
     }
 
-    final hasVideos = (_ytVideos?.isNotEmpty ?? false);
-    if (!hasVideos) {
+    if (allVideos.isEmpty) {
       return const Center(
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           Icon(Icons.videocam_off, color: Colors.white24, size: 40),
           SizedBox(height: 8),
-          Text('Keine Videos gefunden', style: TextStyle(color: Colors.white38, fontSize: 13)),
+          Text('Keine Videos verfügbar', style: TextStyle(color: Colors.white38, fontSize: 13)),
         ]),
       );
     }
 
-    return SingleChildScrollView(child: Column(children: _buildEnergieVideoList()));
+    return SingleChildScrollView(child: Column(children: _buildEnergieVideoList(allVideos)));
   }
 
-  List<Widget> _buildEnergieVideoList() {
-    return (_ytVideos ?? []).map((video) {
+  List<Widget> _buildEnergieVideoList(List<YoutubeVideo> videos) {
+    return videos.map((video) {
       final isPlaying = _ytPlaying?.videoId == video.videoId;
       return GestureDetector(
         onTap: () => setState(() => _ytPlaying = isPlaying ? null : video),
@@ -1499,11 +1481,13 @@ class _PulsingMarker extends StatefulWidget {
   final Color categoryColor;
   final IconData icon;
   final bool isSelected;
+  final String label;
 
   const _PulsingMarker({
     required this.categoryColor,
     required this.icon,
     required this.isSelected,
+    this.label = '',
   });
 
   @override
@@ -1541,22 +1525,45 @@ class _PulsingMarkerState extends State<_PulsingMarker>
         final scale = widget.isSelected ? 1.35 : 1.0;
         return Transform.scale(
           scale: scale,
-          child: Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: widget.categoryColor,
-              border: Border.all(color: Colors.white, width: 2),
-              boxShadow: [
-                BoxShadow(
-                  color: widget.categoryColor.withValues(alpha: glowAlpha),
-                  blurRadius: blurR,
-                  spreadRadius: widget.isSelected ? 4 : 2,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: widget.categoryColor,
+                  border: Border.all(color: Colors.white, width: 2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: widget.categoryColor.withValues(alpha: glowAlpha),
+                      blurRadius: blurR,
+                      spreadRadius: widget.isSelected ? 4 : 2,
+                    ),
+                  ],
+                ),
+                child: Icon(widget.icon, color: Colors.white, size: 20),
+              ),
+              if (widget.label.isNotEmpty) ...[
+                const SizedBox(height: 2),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: widget.categoryColor.withValues(alpha: 0.85),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    widget.label.length > 10 ? '${widget.label.substring(0, 9)}…' : widget.label,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 8,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
               ],
-            ),
-            child: Icon(widget.icon, color: Colors.white, size: 20),
+            ],
           ),
         );
       },

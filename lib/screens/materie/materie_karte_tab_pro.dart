@@ -982,7 +982,28 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro>
     );
   }
   
+  /// Erstellt YoutubeVideo-Objekte aus den hardcodierten IDs eines Ortes.
+  List<YoutubeVideo> _hardcodedVideos(MaterieLocationDetail location) {
+    return location.videoUrls
+        .where((id) => id.isNotEmpty)
+        .map((id) => YoutubeVideo(
+              videoId: id,
+              title: location.name,
+              channel: 'YouTube',
+              thumbnail: '',
+              published: '',
+              description: '',
+            ))
+        .toList();
+  }
+
   Widget _buildVideosTab(MaterieLocationDetail location) {
+    final staticVideos = _hardcodedVideos(location);
+    final allVideos = [
+      ...staticVideos,
+      ...(_ytVideos ?? []).where((v) => staticVideos.every((s) => s.videoId != v.videoId)),
+    ];
+
     // Inline-Player wenn ein Video läuft
     if (_ytPlaying != null) {
       return SingleChildScrollView(
@@ -993,13 +1014,13 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro>
               onClose: () => setState(() => _ytPlaying = null),
             ),
             const SizedBox(height: 12),
-            ..._buildVideoList(),
+            ..._buildVideoList(allVideos),
           ],
         ),
       );
     }
 
-    if (_ytLoading) {
+    if (allVideos.isEmpty && _ytLoading) {
       return const Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1013,7 +1034,7 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro>
       );
     }
 
-    if (_ytVideos == null || _ytVideos!.isEmpty) {
+    if (allVideos.isEmpty) {
       return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1021,13 +1042,8 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro>
             const Icon(Icons.videocam_off, color: Colors.white24, size: 40),
             const SizedBox(height: 8),
             Text(
-              'Keine Videos gefunden',
+              'Keine Videos verfügbar',
               style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 13),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'YouTube API Key nötig (YOUTUBE_API_KEY)',
-              style: TextStyle(color: Colors.white.withValues(alpha: 0.25), fontSize: 10),
             ),
           ],
         ),
@@ -1035,12 +1051,11 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro>
     }
 
     return SingleChildScrollView(
-      child: Column(children: _buildVideoList()),
+      child: Column(children: _buildVideoList(allVideos)),
     );
   }
 
-  List<Widget> _buildVideoList() {
-    final videos = _ytVideos ?? [];
+  List<Widget> _buildVideoList(List<YoutubeVideo> videos) {
     return videos.map((video) {
       final isPlaying = _ytPlaying?.videoId == video.videoId;
       return GestureDetector(
