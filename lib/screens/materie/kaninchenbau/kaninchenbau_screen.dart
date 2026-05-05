@@ -15,14 +15,22 @@ import 'package:flutter/services.dart';
 
 import 'cards/academic_card.dart';
 import 'cards/ai_insight_card.dart';
+import 'cards/aleph_card.dart';
 import 'cards/annotations_card.dart';
 import 'cards/abgeordnete_card.dart';
+import 'cards/archive_card.dart';
+import 'cards/companies_card.dart';
 import 'cards/court_cases_card.dart';
 import 'cards/deep_research_card.dart';
 import 'cards/documents_card.dart';
+import 'cards/eu_votes_card.dart';
 import 'cards/key_persons_card.dart';
 import 'cards/lobbying_card.dart';
+import 'cards/offshore_card.dart';
+import 'cards/opensanctions_card.dart';
 import 'cards/propaganda_card.dart';
+import 'cards/pubmed_card.dart';
+import 'cards/semantic_papers_card.dart';
 import 'cards/skandale_card.dart';
 import 'cards/fact_check_card.dart';
 import 'cards/global_impact_card.dart';
@@ -302,6 +310,79 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
       });
     });
 
+    // ── DEEP-API LAYER ──────────────────────────────────────────────────────
+    _service.fetchOffshoreLeaks(s.topic).then((entities) {
+      if (!mounted || s.disposed) return;
+      setState(() {
+        s.offshoreEntities = entities;
+        s.offshoreLoading = false;
+        s.loadedApiCount++;
+      });
+    });
+
+    _service.fetchCompanies(s.topic).then((companies) {
+      if (!mounted || s.disposed) return;
+      setState(() {
+        s.companies = companies;
+        s.companiesLoading = false;
+        s.loadedApiCount++;
+      });
+    });
+
+    _service.fetchOpenSanctions(s.topic).then((results) {
+      if (!mounted || s.disposed) return;
+      setState(() {
+        s.openSanctions = results;
+        s.openSanctionsLoading = false;
+        s.loadedApiCount++;
+      });
+    });
+
+    _service.fetchAleph(s.topic).then((docs) {
+      if (!mounted || s.disposed) return;
+      setState(() {
+        s.alephDocs = docs;
+        s.alephLoading = false;
+        s.loadedApiCount++;
+      });
+    });
+
+    _service.fetchPubMed(s.topic).then((papers) {
+      if (!mounted || s.disposed) return;
+      setState(() {
+        s.pubmedPapers = papers;
+        s.pubmedLoading = false;
+        s.loadedApiCount++;
+      });
+    });
+
+    _service.fetchSemanticPapers(s.topic).then((papers) {
+      if (!mounted || s.disposed) return;
+      setState(() {
+        s.semanticPapers = papers;
+        s.semanticLoading = false;
+        s.loadedApiCount++;
+      });
+    });
+
+    _service.fetchArchive(s.topic).then((docs) {
+      if (!mounted || s.disposed) return;
+      setState(() {
+        s.archiveDocs = docs;
+        s.archiveLoading = false;
+        s.loadedApiCount++;
+      });
+    });
+
+    _service.fetchEuVotes(s.topic).then((votes) {
+      if (!mounted || s.disposed) return;
+      setState(() {
+        s.euVotes = votes;
+        s.euVotesLoading = false;
+        s.loadedApiCount++;
+      });
+    });
+
     Future.delayed(const Duration(seconds: 1), () {
       if (!mounted || s.disposed) return;
       _service.fetchAiInsight(s.topic).then((text) {
@@ -435,7 +516,7 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
                         key: const ValueKey('loading'),
                         topic: s.topic,
                         loadedCount: s.loadedApiCount,
-                        totalCount: 20,
+                        totalCount: 28,
                       )
                     : _buildScrollContent(s),
               ),
@@ -670,9 +751,64 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
                     loading: s.globalLoading,
                   )),
                   _gap(),
-                  _stag(660, AnnotationsCard(topic: s.topic)),
+
+                  // ── DEEP-API: Finanz- & Unternehmens-Layer ──────────────
+                  const _SectionHeader(
+                    label: 'FINANZ- & UNTERNEHMENS-REGISTER',
+                    icon: Icons.account_balance_rounded,
+                    color: Color(0xFF26A69A),
+                  ),
+                  _stag(650, OffshoreCard(
+                    entities: s.offshoreEntities,
+                    loading: s.offshoreLoading,
+                  )),
                   _gap(),
-                  _stag(680, SherlockCard(topic: s.topic)),
+                  _stag(660, CompaniesCard(
+                    companies: s.companies,
+                    loading: s.companiesLoading,
+                  )),
+                  _gap(),
+                  _stag(670, OpenSanctionsCard(
+                    results: s.openSanctions,
+                    loading: s.openSanctionsLoading,
+                  )),
+                  _gap(),
+                  _stag(680, AlephCard(
+                    documents: s.alephDocs,
+                    loading: s.alephLoading,
+                  )),
+                  _gap(),
+
+                  // ── DEEP-API: Wissenschaft & Archive ────────────────────
+                  const _SectionHeader(
+                    label: 'WISSENSCHAFT & ARCHIVE',
+                    icon: Icons.science_rounded,
+                    color: Color(0xFF7E57C2),
+                  ),
+                  _stag(690, PubMedCard(
+                    papers: s.pubmedPapers,
+                    loading: s.pubmedLoading,
+                  )),
+                  _gap(),
+                  _stag(700, SemanticPapersCard(
+                    papers: s.semanticPapers,
+                    loading: s.semanticLoading,
+                  )),
+                  _gap(),
+                  _stag(710, ArchiveCard(
+                    docs: s.archiveDocs,
+                    loading: s.archiveLoading,
+                  )),
+                  _gap(),
+                  _stag(720, EuVotesCard(
+                    votes: s.euVotes,
+                    loading: s.euVotesLoading,
+                  )),
+                  _gap(),
+
+                  _stag(730, AnnotationsCard(topic: s.topic)),
+                  _gap(),
+                  _stag(750, SherlockCard(topic: s.topic)),
                   _gap(),
                   _stag(700, RelatedPathsCard(
                     topics: s.relatedTopics,
@@ -725,10 +861,17 @@ class _ResearchLoadingOverlayState extends State<_ResearchLoadingOverlay>
   static const _msgs = [
     'Wikidata wird befragt …',
     'Netzwerk-Verbindungen kartiert …',
-    '20 Quellen werden analysiert …',
+    '28 Quellen werden analysiert …',
     'Historische Events durchsucht …',
     'Sanktionslisten geprüft …',
     'Lobbying-Register abgefragt …',
+    'OCCRP Aleph durchsucht …',
+    'Offshore-Leaks überprüft …',
+    'Firmenregister abgefragt …',
+    'OpenSanctions gecheckt …',
+    'PubMed Studien geladen …',
+    'Internet Archive durchsucht …',
+    'EU-Abstimmungen abgerufen …',
     'Akademische Paper durchsucht …',
     'Propaganda-Linsen kalibriert …',
     'Vergangene Snapshots geladen …',
@@ -1185,6 +1328,31 @@ class _ThreadState {
 
   String? propagandaAnalysis;
   bool propagandaLoading = true;
+
+  // ── Deep-API Layer ──────────────────────────────────────────────────────
+  List<OffshoreEntity> offshoreEntities = const [];
+  bool offshoreLoading = true;
+
+  List<CompanyEntry> companies = const [];
+  bool companiesLoading = true;
+
+  List<SanctionResult> openSanctions = const [];
+  bool openSanctionsLoading = true;
+
+  List<AlephDocument> alephDocs = const [];
+  bool alephLoading = true;
+
+  List<PubMedPaper> pubmedPapers = const [];
+  bool pubmedLoading = true;
+
+  List<SemanticPaper> semanticPapers = const [];
+  bool semanticLoading = true;
+
+  List<ArchiveDoc> archiveDocs = const [];
+  bool archiveLoading = true;
+
+  List<EuVote> euVotes = const [];
+  bool euVotesLoading = true;
 
   _ThreadState({required this.topic});
 }
