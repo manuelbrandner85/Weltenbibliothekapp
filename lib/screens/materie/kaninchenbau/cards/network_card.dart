@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/thread.dart';
 import '../widgets/kb_design.dart';
+import '../widgets/network_3d_view.dart';
 
 class NetworkCard extends StatefulWidget {
   final List<NetworkNode> nodes;
@@ -65,6 +66,50 @@ class _NetworkCardState extends State<NetworkCard>
                 ),
               ),
               const Spacer(),
+              if (widget.nodes.length > 1)
+                InkWell(
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => Network3DView(
+                          nodes: widget.nodes,
+                          onTapNode: widget.onTapNode,
+                        ),
+                      ),
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      color: KbDesign.neonRed.withValues(alpha: 0.18),
+                      border: Border.all(
+                        color: KbDesign.neonRed.withValues(alpha: 0.4),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.threed_rotation_rounded,
+                            size: 12, color: KbDesign.neonRedSoft),
+                        const SizedBox(width: 4),
+                        Text(
+                          '3D',
+                          style: TextStyle(
+                            color: KbDesign.neonRedSoft,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              const SizedBox(width: 8),
               Text(
                 '${widget.nodes.length} Knoten',
                 style: TextStyle(
