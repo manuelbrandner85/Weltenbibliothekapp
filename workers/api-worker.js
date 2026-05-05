@@ -61,6 +61,32 @@ function errorResponse(message, status = 500) {
   return jsonResponse({ error: message, status }, status);
 }
 
+// ── Auto-Übersetzung ins Deutsche (Google GTX, kein Key) ───────────────────
+const DE_WORDS = /\b(und|der|die|das|ist|von|auf|zu|für|nicht|mit|einen|einem|eine|des|den|wird|wurde|sind|hat|haben|kann|dass|als|aber|auch|nach|bei|über|durch|im|am|es|er|sie|wir|ihr|was|wie|wenn|dann|noch|nur|alle|sehr|mehr|so|da|hier|jetzt|schon|ihm|ihn|dem|diesem|seiner|ihrer|eines|welche|andere|andere)\b/i;
+
+async function translateToDe(text) {
+  if (!text || text.trim().length < 5) return text || '';
+  if (DE_WORDS.test(text)) return text; // bereits Deutsch
+  try {
+    const r = await fetch(
+      `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=de&dt=t&q=${encodeURIComponent(text.slice(0, 500))}`,
+      { signal: AbortSignal.timeout(5000), headers: { 'User-Agent': 'Mozilla/5.0' } }
+    );
+    if (!r.ok) return text;
+    const data = await r.json();
+    return data?.[0]?.map(s => s?.[0] || '').filter(Boolean).join('') || text;
+  } catch (_) { return text; }
+}
+
+async function translateItems(items, fields) {
+  return Promise.all(items.map(async item => {
+    const vals = await Promise.all(fields.map(f => translateToDe(item[f] || '')));
+    const out = { ...item };
+    fields.forEach((f, i) => { out[f] = vals[i]; });
+    return out;
+  }));
+}
+
 // Supabase-Proxy mit optionalem Auth-Token
 async function proxyToSupabase(request, env, path, method, body, userToken) {
   const anonKey = env.SUPABASE_ANON_KEY || '';
@@ -2640,13 +2666,30 @@ export default {
       const [wiki, europeana, arxiv, gdelt, _crossref] = tasks.map(t => t.status === 'fulfilled' ? t.value : null);
 
       // arXiv ist Atom-XML, simple Parse
-      const arxivPapers = arxiv ? [...String(arxiv).matchAll(/<entry>([\s\S]*?)<\/entry>/g)].slice(0, 6).map(m => {
+      const arxivRaw = arxiv ? [...String(arxiv).matchAll(/<entry>([\s\S]*?)<\/entry>/g)].slice(0, 6).map(m => {
         const block = m[1];
         const title = (block.match(/<title>([\s\S]*?)<\/title>/) || [])[1]?.trim();
         const summary = (block.match(/<summary>([\s\S]*?)<\/summary>/) || [])[1]?.trim().slice(0, 200);
         const link = (block.match(/<id>([\s\S]*?)<\/id>/) || [])[1]?.trim();
         return { title, summary, url: link };
       }).filter(p => p.title) : [];
+      const arxivPapers = await translateItems(arxivRaw, ['title', 'summary']);
+
+      const europeanaRaw = europeana?.items?.slice(0, 5).map(it => ({
+        title: it.title?.[0] || '',
+        provider: it.dataProvider?.[0] || '',
+        year: it.year?.[0] || '',
+        url: it.guid,
+      })) || [];
+      const europeanaTranslated = await translateItems(europeanaRaw, ['title']);
+
+      const gdeltRaw = gdelt?.articles?.slice(0, 10).map(a => ({
+        title: a.title || '',
+        url: a.url,
+        domain: a.domain,
+        date: a.seendate,
+      })) || [];
+      const gdeltTranslated = await translateItems(gdeltRaw, ['title']);
 
       return jsonResponse({
         topic,
@@ -2656,19 +2699,9 @@ export default {
           url: wiki.content_urls?.desktop?.page,
           thumbnail: wiki.thumbnail?.source,
         } : null,
-        europeana: europeana?.items?.slice(0, 5).map(it => ({
-          title: it.title?.[0],
-          provider: it.dataProvider?.[0],
-          year: it.year?.[0],
-          url: it.guid,
-        })) || [],
+        europeana: europeanaTranslated,
         arxiv: arxivPapers,
-        gdelt_news_de: gdelt?.articles?.slice(0, 10).map(a => ({
-          title: a.title,
-          url: a.url,
-          domain: a.domain,
-          date: a.seendate,
-        })) || [],
+        gdelt_news_de: gdeltTranslated,
       });
     }
 
@@ -2871,13 +2904,14 @@ EMPFEHLUNG: [1 Satz — was sollte der User selbst recherchieren?]`;
         );
         if (!r.ok) return jsonResponse({ items: [] });
         const data = await r.json();
-        const items = (data?.articles || []).slice(0, 12).map(a => ({
-          title: a.title,
+        const itemsRaw = (data?.articles || []).slice(0, 12).map(a => ({
+          title: a.title || '',
           url: a.url,
           domain: a.domain,
           date: a.seendate,
           tone: a.tone || 0,
         }));
+        const items = await translateItems(itemsRaw, ['title']);
         return jsonResponse({ topic, items, count: items.length });
       } catch (e) {
         return jsonResponse({ items: [], error: e.message });
@@ -2983,7 +3017,7 @@ EMPFEHLUNG: [1 Satz — was sollte der User selbst recherchieren?]`;
         );
         if (!r.ok) return jsonResponse({ results: [], fallback: true });
         const data = await r.json();
-        const results = (data?.results || []).slice(0, 12).map(e => ({
+        const sanctionsRaw = (data?.results || []).slice(0, 12).map(e => ({
           id: e.id,
           name: e.caption || e.name || '',
           schema: e.schema || '',
@@ -2995,6 +3029,7 @@ EMPFEHLUNG: [1 Satz — was sollte der User selbst recherchieren?]`;
           score: e.score || 0,
           url: `https://www.opensanctions.org/entities/${e.id}`,
         }));
+        const results = await translateItems(sanctionsRaw, ['notes']);
         return jsonResponse({ topic, results, total: data?.total?.value || results.length });
       } catch (e) {
         return jsonResponse({ results: [], error: e.message });
@@ -3014,7 +3049,7 @@ EMPFEHLUNG: [1 Satz — was sollte der User selbst recherchieren?]`;
         );
         if (!r.ok) return jsonResponse({ results: [], fallback: true, status: r.status });
         const data = await r.json();
-        const results = (data?.results || []).slice(0, 12).map(e => ({
+        const alephRaw = (data?.results || []).slice(0, 12).map(e => ({
           id: e.id,
           name: e.caption || '',
           schema: e.schema || '',
@@ -3024,6 +3059,7 @@ EMPFEHLUNG: [1 Satz — was sollte der User selbst recherchieren?]`;
           summary: e.properties?.summary?.[0] || e.properties?.description?.[0] || '',
           url: e.links?.ui || `https://aleph.occrp.org/entities/${e.id}`,
         }));
+        const results = await translateItems(alephRaw, ['name', 'summary']);
         return jsonResponse({ topic, results, total: data?.total?.value || results.length });
       } catch (e) {
         return jsonResponse({ results: [], error: e.message });
@@ -3052,7 +3088,7 @@ EMPFEHLUNG: [1 Satz — was sollte der User selbst recherchieren?]`;
         );
         if (!summaryR.ok) return jsonResponse({ papers: [], topic });
         const summaryData = await summaryR.json();
-        const papers = ids.map(id => {
+        const papersRaw = ids.map(id => {
           const s = summaryData?.result?.[id];
           if (!s) return null;
           return {
@@ -3065,6 +3101,7 @@ EMPFEHLUNG: [1 Satz — was sollte der User selbst recherchieren?]`;
             url: `https://pubmed.ncbi.nlm.nih.gov/${id}/`,
           };
         }).filter(Boolean);
+        const papers = await translateItems(papersRaw, ['title']);
         return jsonResponse({ topic, papers });
       } catch (e) {
         return jsonResponse({ papers: [], error: e.message });
@@ -3086,7 +3123,7 @@ EMPFEHLUNG: [1 Satz — was sollte der User selbst recherchieren?]`;
         );
         if (!r.ok) return jsonResponse({ papers: [] });
         const data = await r.json();
-        const papers = (data?.data || []).map(p => ({
+        const papersRaw = (data?.data || []).map(p => ({
           paperId: p.paperId,
           title: p.title || '',
           authors: (p.authors || []).slice(0, 3).map(a => a.name).join(', '),
@@ -3098,6 +3135,7 @@ EMPFEHLUNG: [1 Satz — was sollte der User selbst recherchieren?]`;
           abstract: (p.abstract || '').slice(0, 250),
           url: `https://www.semanticscholar.org/paper/${p.paperId}`,
         }));
+        const papers = await translateItems(papersRaw, ['title', 'abstract']);
         return jsonResponse({ topic, papers });
       } catch (e) {
         return jsonResponse({ papers: [], error: e.message });
@@ -3116,7 +3154,7 @@ EMPFEHLUNG: [1 Satz — was sollte der User selbst recherchieren?]`;
         );
         if (!r.ok) return jsonResponse({ docs: [] });
         const data = await r.json();
-        const docs = (data?.response?.docs || []).map(d => ({
+        const docsRaw = (data?.response?.docs || []).map(d => ({
           id: d.identifier || '',
           title: (Array.isArray(d.title) ? d.title[0] : d.title) || '',
           creator: (Array.isArray(d.creator) ? d.creator[0] : d.creator) || '',
@@ -3125,6 +3163,7 @@ EMPFEHLUNG: [1 Satz — was sollte der User selbst recherchieren?]`;
           description: (Array.isArray(d.description) ? d.description[0] : d.description || '').slice(0, 200),
           url: `https://archive.org/details/${d.identifier}`,
         }));
+        const docs = await translateItems(docsRaw, ['title', 'description']);
         return jsonResponse({ topic, docs });
       } catch (e) {
         return jsonResponse({ docs: [], error: e.message });
@@ -3142,7 +3181,7 @@ EMPFEHLUNG: [1 Satz — was sollte der User selbst recherchieren?]`;
         );
         if (!r.ok) return jsonResponse({ votes: [], fallback: true });
         const data = await r.json();
-        const votes = (data?.results || data?.items || []).slice(0, 10).map(v => ({
+        const votesRaw = (data?.results || data?.items || []).slice(0, 10).map(v => ({
           id: v.id || v.vote_id || '',
           title: v.description || v.title || '',
           date: v.timestamp?.slice(0, 10) || v.date || '',
@@ -3152,6 +3191,7 @@ EMPFEHLUNG: [1 Satz — was sollte der User selbst recherchieren?]`;
           abstainCount: v.stats?.abstained || 0,
           url: `https://howtheyvote.eu/votes/${v.id}`,
         }));
+        const votes = await translateItems(votesRaw, ['title']);
         return jsonResponse({ topic, votes });
       } catch (e) {
         return jsonResponse({ votes: [], error: e.message });
