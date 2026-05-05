@@ -2884,6 +2884,280 @@ EMPFEHLUNG: [1 Satz — was sollte der User selbst recherchieren?]`;
       }
     }
 
+    // ══════════════════════════════════════════════════════════════════════
+    // DEEP-API LAYER — kostenlose OSINT-Quellen ohne Key
+    // ══════════════════════════════════════════════════════════════════════
+
+    // ── ICIJ Offshore Leaks (Panama Papers, Pandora Papers, Paradise Papers) ──
+    if (path === '/api/kaninchenbau/offshore' && method === 'GET') {
+      const topic = url.searchParams.get('topic');
+      if (!topic) return errorResponse('topic fehlt', 400);
+      try {
+        const r = await fetch(
+          `https://offshoreleaks.icij.org/api/v1/search?q=${encodeURIComponent(topic)}&cat=1,2,3`,
+          { signal: AbortSignal.timeout(12000), headers: { 'Accept': 'application/json' } }
+        );
+        if (!r.ok) return jsonResponse({ entities: [], fallback: true });
+        const data = await r.json();
+        const nodes = data?.nodes || data?.data || data || [];
+        const entities = (Array.isArray(nodes) ? nodes : []).slice(0, 15).map(n => ({
+          name: n.name || n.caption || '',
+          type: n.labels?.[0] || n.node_type || '',
+          jurisdiction: n.jurisdiction_description || n.jurisdiction || '',
+          country: n.country_codes?.[0] || '',
+          status: n.status || '',
+          linkedTo: n.company_name || '',
+          sourceId: n.node_id || n.id || '',
+          leakType: n.data_from || n.sourceID || 'ICIJ',
+          url: n.node_id ? `https://offshoreleaks.icij.org/nodes/${n.node_id}` : null,
+        })).filter(e => e.name);
+        return jsonResponse({ topic, entities, total: entities.length });
+      } catch (e) {
+        return jsonResponse({ entities: [], error: e.message });
+      }
+    }
+
+    // ── OpenCorporates + GLEIF — Firmenregistrierungen weltweit ──
+    if (path === '/api/kaninchenbau/companies' && method === 'GET') {
+      const topic = url.searchParams.get('topic');
+      if (!topic) return errorResponse('topic fehlt', 400);
+      const t = encodeURIComponent(topic);
+      try {
+        const [ocRes, gleifRes] = await Promise.allSettled([
+          // OpenCorporates (100 req/day ohne Key)
+          fetch(`https://api.opencorporates.com/v0.4/companies/search?q=${t}&per_page=8`, {
+            signal: AbortSignal.timeout(10000),
+            headers: { 'Accept': 'application/json', 'User-Agent': 'WeltenbibliothekApp/1.0' },
+          }).then(r => r.ok ? r.json() : null).catch(() => null),
+          // GLEIF — Legal Entity Identifiers (komplett kostenlos, kein Key)
+          fetch(`https://api.gleif.org/api/v1/lei-records?filter[entity.legalName]=${t}&page[size]=8`, {
+            signal: AbortSignal.timeout(10000),
+            headers: { 'Accept': 'application/vnd.api+json' },
+          }).then(r => r.ok ? r.json() : null).catch(() => null),
+        ]);
+        const ocData = ocRes.status === 'fulfilled' ? ocRes.value : null;
+        const gleifData = gleifRes.status === 'fulfilled' ? gleifRes.value : null;
+        const ocCompanies = (ocData?.results?.companies || []).map(c => ({
+          name: c.company?.name || '',
+          jurisdiction: c.company?.jurisdiction_code || '',
+          companyNumber: c.company?.company_number || '',
+          status: c.company?.current_status || '',
+          registered: c.company?.incorporation_date || '',
+          type: c.company?.company_type || '',
+          url: c.company?.opencorporates_url || '',
+          source: 'OpenCorporates',
+        }));
+        const gleifCompanies = (gleifData?.data || []).map(r => ({
+          name: r.attributes?.entity?.legalName?.name || '',
+          jurisdiction: r.attributes?.entity?.legalJurisdiction || '',
+          status: r.attributes?.entity?.status || '',
+          lei: r.attributes?.lei || '',
+          type: r.attributes?.entity?.legalForm?.name || '',
+          country: r.attributes?.entity?.headquarters?.country || '',
+          source: 'GLEIF',
+        }));
+        return jsonResponse({
+          topic,
+          companies: [...ocCompanies, ...gleifCompanies].slice(0, 12),
+          total: ocCompanies.length + gleifCompanies.length,
+        });
+      } catch (e) {
+        return jsonResponse({ companies: [], error: e.message });
+      }
+    }
+
+    // ── OpenSanctions — unified sanctions + PEP aus 100+ Quellen ──
+    if (path === '/api/kaninchenbau/opensanctions' && method === 'GET') {
+      const topic = url.searchParams.get('topic');
+      if (!topic) return errorResponse('topic fehlt', 400);
+      try {
+        const r = await fetch(
+          `https://api.opensanctions.org/search/?q=${encodeURIComponent(topic)}&limit=15`,
+          {
+            signal: AbortSignal.timeout(12000),
+            headers: {
+              'Accept': 'application/json',
+              'User-Agent': 'WeltenbibliothekApp/1.0 (non-commercial research)',
+            },
+          }
+        );
+        if (!r.ok) return jsonResponse({ results: [], fallback: true });
+        const data = await r.json();
+        const results = (data?.results || []).slice(0, 12).map(e => ({
+          id: e.id,
+          name: e.caption || e.name || '',
+          schema: e.schema || '',
+          topics: e.properties?.topics || [],
+          countries: e.properties?.nationality || e.properties?.country || [],
+          birthDate: e.properties?.birthDate?.[0] || null,
+          notes: e.properties?.notes?.[0] || null,
+          datasets: e.datasets || [],
+          score: e.score || 0,
+          url: `https://www.opensanctions.org/entities/${e.id}`,
+        }));
+        return jsonResponse({ topic, results, total: data?.total?.value || results.length });
+      } catch (e) {
+        return jsonResponse({ results: [], error: e.message });
+      }
+    }
+
+    // ── OCCRP Aleph — 300+ Leak-Sammlungen (FinCEN, LuxLeaks, etc.) ──
+    if (path === '/api/kaninchenbau/aleph' && method === 'GET') {
+      const topic = url.searchParams.get('topic');
+      if (!topic) return errorResponse('topic fehlt', 400);
+      try {
+        const headers = { 'Accept': 'application/json', 'User-Agent': 'WeltenbibliothekApp/1.0' };
+        if (env.ALEPH_API_KEY) headers['Authorization'] = `ApiKey ${env.ALEPH_API_KEY}`;
+        const r = await fetch(
+          `https://aleph.occrp.org/api/2/search?q=${encodeURIComponent(topic)}&limit=12&facet=collection_id`,
+          { signal: AbortSignal.timeout(15000), headers }
+        );
+        if (!r.ok) return jsonResponse({ results: [], fallback: true, status: r.status });
+        const data = await r.json();
+        const results = (data?.results || []).slice(0, 12).map(e => ({
+          id: e.id,
+          name: e.caption || '',
+          schema: e.schema || '',
+          collection: e.collection?.label || '',
+          country: e.properties?.country?.[0] || '',
+          date: e.properties?.date?.[0] || e.updated_at || null,
+          summary: e.properties?.summary?.[0] || e.properties?.description?.[0] || '',
+          url: e.links?.ui || `https://aleph.occrp.org/entities/${e.id}`,
+        }));
+        return jsonResponse({ topic, results, total: data?.total?.value || results.length });
+      } catch (e) {
+        return jsonResponse({ results: [], error: e.message });
+      }
+    }
+
+    // ── PubMed NCBI — 35M+ biomedizinische Studien (kein Key) ──
+    if (path === '/api/kaninchenbau/pubmed' && method === 'GET') {
+      const topic = url.searchParams.get('topic');
+      if (!topic) return errorResponse('topic fehlt', 400);
+      const t = encodeURIComponent(topic);
+      try {
+        // 1. IDs holen
+        const searchR = await fetch(
+          `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=${t}&retmax=8&retmode=json&sort=relevance`,
+          { signal: AbortSignal.timeout(10000) }
+        );
+        if (!searchR.ok) return jsonResponse({ papers: [] });
+        const searchData = await searchR.json();
+        const ids = searchData?.esearchresult?.idlist || [];
+        if (ids.length === 0) return jsonResponse({ papers: [], topic });
+        // 2. Summaries holen
+        const summaryR = await fetch(
+          `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=pubmed&id=${ids.join(',')}&retmode=json`,
+          { signal: AbortSignal.timeout(10000) }
+        );
+        if (!summaryR.ok) return jsonResponse({ papers: [], topic });
+        const summaryData = await summaryR.json();
+        const papers = ids.map(id => {
+          const s = summaryData?.result?.[id];
+          if (!s) return null;
+          return {
+            pmid: id,
+            title: s.title || '',
+            authors: (s.authors || []).slice(0, 3).map(a => a.name).join(', '),
+            journal: s.source || '',
+            year: s.pubdate?.slice(0, 4) || '',
+            doi: s.articleids?.find(a => a.idtype === 'doi')?.value || '',
+            url: `https://pubmed.ncbi.nlm.nih.gov/${id}/`,
+          };
+        }).filter(Boolean);
+        return jsonResponse({ topic, papers });
+      } catch (e) {
+        return jsonResponse({ papers: [], error: e.message });
+      }
+    }
+
+    // ── Semantic Scholar — 200M+ Paper mit Citation-Graph ──
+    if (path === '/api/kaninchenbau/semanticpapers' && method === 'GET') {
+      const topic = url.searchParams.get('topic');
+      if (!topic) return errorResponse('topic fehlt', 400);
+      try {
+        const fields = 'title,authors,year,citationCount,influentialCitationCount,externalIds,openAccessPdf,abstract';
+        const r = await fetch(
+          `https://api.semanticscholar.org/graph/v1/paper/search?query=${encodeURIComponent(topic)}&fields=${fields}&limit=8`,
+          {
+            signal: AbortSignal.timeout(12000),
+            headers: { 'User-Agent': 'WeltenbibliothekApp/1.0' },
+          }
+        );
+        if (!r.ok) return jsonResponse({ papers: [] });
+        const data = await r.json();
+        const papers = (data?.data || []).map(p => ({
+          paperId: p.paperId,
+          title: p.title || '',
+          authors: (p.authors || []).slice(0, 3).map(a => a.name).join(', '),
+          year: p.year || null,
+          citations: p.citationCount || 0,
+          influential: p.influentialCitationCount || 0,
+          doi: p.externalIds?.DOI || null,
+          openAccess: p.openAccessPdf?.url || null,
+          abstract: (p.abstract || '').slice(0, 250),
+          url: `https://www.semanticscholar.org/paper/${p.paperId}`,
+        }));
+        return jsonResponse({ topic, papers });
+      } catch (e) {
+        return jsonResponse({ papers: [], error: e.message });
+      }
+    }
+
+    // ── Internet Archive Full-Text Search (kein Key) ──
+    if (path === '/api/kaninchenbau/archive' && method === 'GET') {
+      const topic = url.searchParams.get('topic');
+      if (!topic) return errorResponse('topic fehlt', 400);
+      const t = encodeURIComponent(topic);
+      try {
+        const r = await fetch(
+          `https://archive.org/advancedsearch.php?q=${t}&output=json&rows=10&fl[]=identifier&fl[]=title&fl[]=description&fl[]=date&fl[]=creator&fl[]=mediatype&sort[]=downloads+desc`,
+          { signal: AbortSignal.timeout(10000) }
+        );
+        if (!r.ok) return jsonResponse({ docs: [] });
+        const data = await r.json();
+        const docs = (data?.response?.docs || []).map(d => ({
+          id: d.identifier || '',
+          title: (Array.isArray(d.title) ? d.title[0] : d.title) || '',
+          creator: (Array.isArray(d.creator) ? d.creator[0] : d.creator) || '',
+          date: (Array.isArray(d.date) ? d.date[0] : d.date) || '',
+          mediatype: d.mediatype || '',
+          description: (Array.isArray(d.description) ? d.description[0] : d.description || '').slice(0, 200),
+          url: `https://archive.org/details/${d.identifier}`,
+        }));
+        return jsonResponse({ topic, docs });
+      } catch (e) {
+        return jsonResponse({ docs: [], error: e.message });
+      }
+    }
+
+    // ── HowTheyVote.eu — EU-Parlament Abstimmungen (kein Key) ──
+    if (path === '/api/kaninchenbau/euvotes' && method === 'GET') {
+      const topic = url.searchParams.get('topic');
+      if (!topic) return errorResponse('topic fehlt', 400);
+      try {
+        const r = await fetch(
+          `https://howtheyvote.eu/api/votes?search=${encodeURIComponent(topic)}&page_size=10`,
+          { signal: AbortSignal.timeout(10000), headers: { 'Accept': 'application/json' } }
+        );
+        if (!r.ok) return jsonResponse({ votes: [], fallback: true });
+        const data = await r.json();
+        const votes = (data?.results || data?.items || []).slice(0, 10).map(v => ({
+          id: v.id || v.vote_id || '',
+          title: v.description || v.title || '',
+          date: v.timestamp?.slice(0, 10) || v.date || '',
+          result: v.result || '',
+          forCount: v.stats?.voted_for || 0,
+          againstCount: v.stats?.voted_against || 0,
+          abstainCount: v.stats?.abstained || 0,
+          url: `https://howtheyvote.eu/votes/${v.id}`,
+        }));
+        return jsonResponse({ topic, votes });
+      } catch (e) {
+        return jsonResponse({ votes: [], error: e.message });
+      }
+    }
+
     // ── Google Fact Check Tools (Worker-Proxy mit Server-Key) ──
     if (path === '/api/factcheck/search' && method === 'GET') {
       const q = url.searchParams.get('q');

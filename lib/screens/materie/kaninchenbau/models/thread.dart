@@ -432,3 +432,181 @@ class RssItem {
     this.date,
   });
 }
+
+/// ICIJ Offshore Leaks — Panama Papers, Pandora Papers, Paradise Papers.
+class OffshoreEntity {
+  final String name;
+  final String type; // 'Entity', 'Officer', 'Address'
+  final String jurisdiction;
+  final String country;
+  final String status;
+  final String leakType;
+  final String? url;
+  const OffshoreEntity({
+    required this.name,
+    required this.type,
+    required this.jurisdiction,
+    required this.country,
+    required this.status,
+    required this.leakType,
+    this.url,
+  });
+}
+
+/// OpenCorporates / GLEIF — Firmenregistrierung.
+class CompanyEntry {
+  final String name;
+  final String jurisdiction;
+  final String status;
+  final String type;
+  final String source; // 'OpenCorporates' | 'GLEIF'
+  final String? companyNumber;
+  final String? lei;
+  final String? country;
+  final String? registered;
+  final String? url;
+  const CompanyEntry({
+    required this.name,
+    required this.jurisdiction,
+    required this.status,
+    required this.type,
+    required this.source,
+    this.companyNumber,
+    this.lei,
+    this.country,
+    this.registered,
+    this.url,
+  });
+}
+
+/// OpenSanctions — unified sanctions + PEP aus 100+ Quellen.
+class SanctionResult {
+  final String id;
+  final String name;
+  final String schema; // 'Person', 'Organization', etc.
+  final List<String> topics; // 'sanction', 'pep', 'crime', etc.
+  final List<String> countries;
+  final String? birthDate;
+  final List<String> datasets;
+  final String? url;
+  const SanctionResult({
+    required this.id,
+    required this.name,
+    required this.schema,
+    required this.topics,
+    required this.countries,
+    required this.datasets,
+    this.birthDate,
+    this.url,
+  });
+}
+
+/// OCCRP Aleph — investigativer Dokument-Fund aus 300+ Quellen.
+class AlephDocument {
+  final String id;
+  final String name;
+  final String schema;
+  final String collection;
+  final String country;
+  final String? date;
+  final String? summary;
+  final String? url;
+  const AlephDocument({
+    required this.id,
+    required this.name,
+    required this.schema,
+    required this.collection,
+    required this.country,
+    this.date,
+    this.summary,
+    this.url,
+  });
+}
+
+/// PubMed — biomedizinische Studie.
+class PubMedPaper {
+  final String pmid;
+  final String title;
+  final String authors;
+  final String journal;
+  final String year;
+  final String? doi;
+  final String url;
+  const PubMedPaper({
+    required this.pmid,
+    required this.title,
+    required this.authors,
+    required this.journal,
+    required this.year,
+    required this.url,
+    this.doi,
+  });
+}
+
+/// Semantic Scholar — wissenschaftliche Arbeit mit Citation-Graph.
+class SemanticPaper {
+  final String paperId;
+  final String title;
+  final String authors;
+  final int? year;
+  final int citations;
+  final int influential;
+  final String? doi;
+  final String? openAccess;
+  final String abstract_;
+  final String url;
+  const SemanticPaper({
+    required this.paperId,
+    required this.title,
+    required this.authors,
+    required this.citations,
+    required this.influential,
+    required this.abstract_,
+    required this.url,
+    this.year,
+    this.doi,
+    this.openAccess,
+  });
+}
+
+/// Internet Archive — archiviertes Dokument / Media.
+class ArchiveDoc {
+  final String id;
+  final String title;
+  final String creator;
+  final String date;
+  final String mediatype;
+  final String description;
+  final String url;
+  const ArchiveDoc({
+    required this.id,
+    required this.title,
+    required this.creator,
+    required this.date,
+    required this.mediatype,
+    required this.description,
+    required this.url,
+  });
+}
+
+/// HowTheyVote.eu — EU-Parlament Abstimmung.
+class EuVote {
+  final String id;
+  final String title;
+  final String date;
+  final String result;
+  final int forCount;
+  final int againstCount;
+  final int abstainCount;
+  final String url;
+  const EuVote({
+    required this.id,
+    required this.title,
+    required this.date,
+    required this.result,
+    required this.forCount,
+    required this.againstCount,
+    required this.abstainCount,
+    required this.url,
+  });
+}

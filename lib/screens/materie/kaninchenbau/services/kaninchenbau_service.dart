@@ -887,6 +887,201 @@ LIMIT 30
     }
   }
 
+  // ── DEEP-API LAYER ─────────────────────────────────────────────────────────
+
+  /// ICIJ Offshore Leaks — Panama/Pandora/Paradise Papers.
+  Future<List<OffshoreEntity>> fetchOffshoreLeaks(String topic) async {
+    try {
+      final resp = await http
+          .get(Uri.parse('${ApiConfig.workerUrl}/api/kaninchenbau/offshore?topic=${Uri.encodeComponent(topic)}'))
+          .timeout(const Duration(seconds: 18));
+      if (resp.statusCode != 200) return [];
+      final data = jsonDecode(resp.body) as Map<String, dynamic>;
+      return (data['entities'] as List? ?? []).map((e) => OffshoreEntity(
+        name: e['name'] as String? ?? '',
+        type: e['type'] as String? ?? '',
+        jurisdiction: e['jurisdiction'] as String? ?? '',
+        country: e['country'] as String? ?? '',
+        status: e['status'] as String? ?? '',
+        leakType: e['leakType'] as String? ?? 'ICIJ',
+        url: e['url'] as String?,
+      )).where((e) => e.name.isNotEmpty).toList();
+    } catch (e) {
+      debugPrint('OffshoreLeaks-Error: $e');
+      return [];
+    }
+  }
+
+  /// OpenCorporates + GLEIF — Firmenregistrierungen weltweit.
+  Future<List<CompanyEntry>> fetchCompanies(String topic) async {
+    try {
+      final resp = await http
+          .get(Uri.parse('${ApiConfig.workerUrl}/api/kaninchenbau/companies?topic=${Uri.encodeComponent(topic)}'))
+          .timeout(const Duration(seconds: 18));
+      if (resp.statusCode != 200) return [];
+      final data = jsonDecode(resp.body) as Map<String, dynamic>;
+      return (data['companies'] as List? ?? []).map((e) => CompanyEntry(
+        name: e['name'] as String? ?? '',
+        jurisdiction: e['jurisdiction'] as String? ?? '',
+        status: e['status'] as String? ?? '',
+        type: e['type'] as String? ?? '',
+        source: e['source'] as String? ?? '',
+        companyNumber: e['companyNumber'] as String?,
+        lei: e['lei'] as String?,
+        country: e['country'] as String?,
+        registered: e['registered'] as String?,
+        url: e['url'] as String?,
+      )).where((e) => e.name.isNotEmpty).toList();
+    } catch (e) {
+      debugPrint('Companies-Error: $e');
+      return [];
+    }
+  }
+
+  /// OpenSanctions — unified sanctions + PEP aus 100+ Quellen.
+  Future<List<SanctionResult>> fetchOpenSanctions(String topic) async {
+    try {
+      final resp = await http
+          .get(Uri.parse('${ApiConfig.workerUrl}/api/kaninchenbau/opensanctions?topic=${Uri.encodeComponent(topic)}'))
+          .timeout(const Duration(seconds: 18));
+      if (resp.statusCode != 200) return [];
+      final data = jsonDecode(resp.body) as Map<String, dynamic>;
+      return (data['results'] as List? ?? []).map((e) => SanctionResult(
+        id: e['id'] as String? ?? '',
+        name: e['name'] as String? ?? '',
+        schema: e['schema'] as String? ?? '',
+        topics: List<String>.from(e['topics'] as List? ?? []),
+        countries: List<String>.from(e['countries'] as List? ?? []),
+        datasets: List<String>.from(e['datasets'] as List? ?? []),
+        birthDate: e['birthDate'] as String?,
+        url: e['url'] as String?,
+      )).where((e) => e.name.isNotEmpty).toList();
+    } catch (e) {
+      debugPrint('OpenSanctions-Error: $e');
+      return [];
+    }
+  }
+
+  /// OCCRP Aleph — 300+ Leak-Sammlungen (FinCEN, LuxLeaks, etc.).
+  Future<List<AlephDocument>> fetchAleph(String topic) async {
+    try {
+      final resp = await http
+          .get(Uri.parse('${ApiConfig.workerUrl}/api/kaninchenbau/aleph?topic=${Uri.encodeComponent(topic)}'))
+          .timeout(const Duration(seconds: 20));
+      if (resp.statusCode != 200) return [];
+      final data = jsonDecode(resp.body) as Map<String, dynamic>;
+      return (data['results'] as List? ?? []).map((e) => AlephDocument(
+        id: e['id'] as String? ?? '',
+        name: e['name'] as String? ?? '',
+        schema: e['schema'] as String? ?? '',
+        collection: e['collection'] as String? ?? '',
+        country: e['country'] as String? ?? '',
+        date: e['date'] as String?,
+        summary: e['summary'] as String?,
+        url: e['url'] as String?,
+      )).where((e) => e.name.isNotEmpty).toList();
+    } catch (e) {
+      debugPrint('Aleph-Error: $e');
+      return [];
+    }
+  }
+
+  /// PubMed NCBI — biomedizinische Studien (kein Key nötig).
+  Future<List<PubMedPaper>> fetchPubMed(String topic) async {
+    try {
+      final resp = await http
+          .get(Uri.parse('${ApiConfig.workerUrl}/api/kaninchenbau/pubmed?topic=${Uri.encodeComponent(topic)}'))
+          .timeout(const Duration(seconds: 20));
+      if (resp.statusCode != 200) return [];
+      final data = jsonDecode(resp.body) as Map<String, dynamic>;
+      return (data['papers'] as List? ?? []).map((e) => PubMedPaper(
+        pmid: e['pmid'] as String? ?? '',
+        title: e['title'] as String? ?? '',
+        authors: e['authors'] as String? ?? '',
+        journal: e['journal'] as String? ?? '',
+        year: e['year'] as String? ?? '',
+        doi: e['doi'] as String?,
+        url: e['url'] as String? ?? '',
+      )).where((e) => e.title.isNotEmpty).toList();
+    } catch (e) {
+      debugPrint('PubMed-Error: $e');
+      return [];
+    }
+  }
+
+  /// Semantic Scholar — 200M+ Paper mit Citation-Graph.
+  Future<List<SemanticPaper>> fetchSemanticPapers(String topic) async {
+    try {
+      final resp = await http
+          .get(Uri.parse('${ApiConfig.workerUrl}/api/kaninchenbau/semanticpapers?topic=${Uri.encodeComponent(topic)}'))
+          .timeout(const Duration(seconds: 18));
+      if (resp.statusCode != 200) return [];
+      final data = jsonDecode(resp.body) as Map<String, dynamic>;
+      return (data['papers'] as List? ?? []).map((e) => SemanticPaper(
+        paperId: e['paperId'] as String? ?? '',
+        title: e['title'] as String? ?? '',
+        authors: e['authors'] as String? ?? '',
+        year: e['year'] as int?,
+        citations: e['citations'] as int? ?? 0,
+        influential: e['influential'] as int? ?? 0,
+        doi: e['doi'] as String?,
+        openAccess: e['openAccess'] as String?,
+        abstract_: e['abstract'] as String? ?? '',
+        url: e['url'] as String? ?? '',
+      )).where((e) => e.title.isNotEmpty).toList();
+    } catch (e) {
+      debugPrint('SemanticScholar-Error: $e');
+      return [];
+    }
+  }
+
+  /// Internet Archive Full-Text Search (kein Key).
+  Future<List<ArchiveDoc>> fetchArchive(String topic) async {
+    try {
+      final resp = await http
+          .get(Uri.parse('${ApiConfig.workerUrl}/api/kaninchenbau/archive?topic=${Uri.encodeComponent(topic)}'))
+          .timeout(const Duration(seconds: 15));
+      if (resp.statusCode != 200) return [];
+      final data = jsonDecode(resp.body) as Map<String, dynamic>;
+      return (data['docs'] as List? ?? []).map((e) => ArchiveDoc(
+        id: e['id'] as String? ?? '',
+        title: e['title'] as String? ?? '',
+        creator: e['creator'] as String? ?? '',
+        date: e['date'] as String? ?? '',
+        mediatype: e['mediatype'] as String? ?? '',
+        description: e['description'] as String? ?? '',
+        url: e['url'] as String? ?? '',
+      )).where((e) => e.title.isNotEmpty).toList();
+    } catch (e) {
+      debugPrint('Archive-Error: $e');
+      return [];
+    }
+  }
+
+  /// HowTheyVote.eu — EU-Parlament Abstimmungen (kein Key).
+  Future<List<EuVote>> fetchEuVotes(String topic) async {
+    try {
+      final resp = await http
+          .get(Uri.parse('${ApiConfig.workerUrl}/api/kaninchenbau/euvotes?topic=${Uri.encodeComponent(topic)}'))
+          .timeout(const Duration(seconds: 15));
+      if (resp.statusCode != 200) return [];
+      final data = jsonDecode(resp.body) as Map<String, dynamic>;
+      return (data['votes'] as List? ?? []).map((e) => EuVote(
+        id: e['id'] as String? ?? '',
+        title: e['title'] as String? ?? '',
+        date: e['date'] as String? ?? '',
+        result: e['result'] as String? ?? '',
+        forCount: e['forCount'] as int? ?? 0,
+        againstCount: e['againstCount'] as int? ?? 0,
+        abstainCount: e['abstainCount'] as int? ?? 0,
+        url: e['url'] as String? ?? '',
+      )).where((e) => e.title.isNotEmpty).toList();
+    } catch (e) {
+      debugPrint('EuVotes-Error: $e');
+      return [];
+    }
+  }
+
   /// AI-Insight via Virgil-Endpoint (Groq Llama 3.3 70B mit Workers AI Fallback).
   /// Schreibt auf Deutsch eine prägnante investigative Einsicht zum Thema.
   Future<String?> fetchAiInsight(String topic, {String? context}) async {
