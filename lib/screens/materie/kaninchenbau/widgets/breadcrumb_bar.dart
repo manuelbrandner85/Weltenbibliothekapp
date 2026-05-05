@@ -9,12 +9,16 @@ class BreadcrumbBar extends StatelessWidget {
   final List<String> path;
   final void Function(int index) onJump;
   final VoidCallback onClose;
+  final VoidCallback? onSave;
+  final bool saved;
 
   const BreadcrumbBar({
     super.key,
     required this.path,
     required this.onJump,
     required this.onClose,
+    this.onSave,
+    this.saved = false,
   });
 
   @override
@@ -97,6 +101,21 @@ class BreadcrumbBar extends StatelessWidget {
               ),
             ),
           ),
+          if (onSave != null)
+            IconButton(
+              icon: Icon(
+                saved
+                    ? Icons.bookmark_rounded
+                    : Icons.bookmark_outline_rounded,
+                color: saved ? KbDesign.goldAccent : Colors.white70,
+                size: 22,
+              ),
+              tooltip: saved ? 'Gespeichert' : 'Recherche speichern',
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                onSave!();
+              },
+            ),
         ],
       ),
     );

@@ -15,6 +15,7 @@ library;
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../screens/my_investigations_screen.dart';
 import 'kb_design.dart';
 
 class CinematicIntro extends StatefulWidget {
@@ -198,6 +199,31 @@ class _CinematicIntroState extends State<CinematicIntro>
                           icon: const Icon(Icons.close_rounded,
                               color: Colors.white60, size: 26),
                           onPressed: () => Navigator.of(context).maybePop(),
+                        ),
+                      ),
+                    // "Meine Ermittlungen"-Button oben rechts
+                    if (_ready && collapse < 0.05)
+                      Positioned(
+                        top: MediaQuery.of(context).padding.top + 12,
+                        right: 12,
+                        child: TextButton.icon(
+                          onPressed: () {
+                            HapticFeedback.lightImpact();
+                            Navigator.of(context).push(MaterialPageRoute(
+                              builder: (_) =>
+                                  const MyInvestigationsScreen(),
+                            ));
+                          },
+                          icon: Icon(Icons.bookmark_rounded,
+                              size: 16, color: KbDesign.goldAccent),
+                          label: Text(
+                            'Ermittlungen',
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.85),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
                         ),
                       ),
                   ],

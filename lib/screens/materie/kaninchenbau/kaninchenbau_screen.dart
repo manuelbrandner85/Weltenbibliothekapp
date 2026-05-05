@@ -17,6 +17,7 @@ import 'package:flutter/services.dart';
 
 import 'cards/academic_card.dart';
 import 'cards/ai_insight_card.dart';
+import 'cards/annotations_card.dart';
 import 'cards/court_cases_card.dart';
 import 'cards/documents_card.dart';
 import 'cards/fact_check_card.dart';
@@ -34,6 +35,7 @@ import 'cards/sources_card.dart';
 import 'cards/timeline_card.dart';
 import 'cards/wayback_card.dart';
 import 'services/osint_apis.dart';
+import 'services/saved_threads_service.dart';
 import 'models/thread.dart';
 import 'services/kaninchenbau_service.dart';
 import 'widgets/breadcrumb_bar.dart';
@@ -56,8 +58,10 @@ class KaninchenbauScreen extends StatefulWidget {
 class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
   final _service = KaninchenbauService();
   final _osint = OsintApis.instance;
+  final _saved = SavedThreadsService.instance;
   final _scroll = ScrollController();
   final List<_ThreadState> _stack = [];
+  final Set<String> _savedTopics = {};
   bool _virgilOpen = false;
 
   @override
@@ -301,6 +305,8 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
               path: path,
               onJump: _jumpToBreadcrumb,
               onClose: _close,
+              saved: _savedTopics.contains(s.topic.toLowerCase()),
+              onSave: () => _saveCurrentThread(s),
             ),
             Expanded(
               child: _buildScrollContent(s),
@@ -327,6 +333,30 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
           ),
       ],
     );
+  }
+
+  Future<void> _saveCurrentThread(_ThreadState s) async {
+    final result = await _saved.saveThread(
+      topic: s.topic,
+      path: _stack.map((e) => e.topic).toList(),
+    );
+    if (!mounted) return;
+    if (result != null) {
+      setState(() => _savedTopics.add(s.topic.toLowerCase()));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('🔖 Recherche gespeichert'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('⚠️ Speichern fehlgeschlagen — eingeloggt?'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+    }
   }
 
   /// Aggregiert den Inhalt aller geladenen Karten als Kontext für Virgil.
@@ -508,7 +538,12 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
                   ),
                   const SizedBox(height: 16),
                   _StaggeredCard(
-                    delay: const Duration(milliseconds: 800),
+                    delay: const Duration(milliseconds: 790),
+                    child: AnnotationsCard(topic: s.topic),
+                  ),
+                  const SizedBox(height: 16),
+                  _StaggeredCard(
+                    delay: const Duration(milliseconds: 810),
                     child: SherlockCard(topic: s.topic),
                   ),
                   const SizedBox(height: 16),
