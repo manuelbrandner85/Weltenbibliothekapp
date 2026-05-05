@@ -189,3 +189,137 @@ class MediaCompassPoint {
     required this.credibility,
   });
 }
+
+/// Wissenschaftliches Paper aus OpenAlex/Semantic Scholar.
+class AcademicPaper {
+  final String title;
+  final String? doi;
+  final String? abstractText;
+  final List<String> authors;
+  final int? year;
+  final int citations;
+  final String? url;
+  final String source; // 'OpenAlex' | 'SemanticScholar'
+  const AcademicPaper({
+    required this.title,
+    required this.authors,
+    required this.citations,
+    required this.source,
+    this.doi,
+    this.abstractText,
+    this.year,
+    this.url,
+  });
+}
+
+/// Sanktions-Eintrag (OpenSanctions).
+class SanctionEntry {
+  final String name;
+  final String? type; // Person, Organization, Vessel
+  final List<String> sanctioningAuthorities; // ['OFAC', 'EU', 'UK', 'UN']
+  final String? country;
+  final String? reason;
+  final String? url;
+  const SanctionEntry({
+    required this.name,
+    required this.sanctioningAuthorities,
+    this.type,
+    this.country,
+    this.reason,
+    this.url,
+  });
+}
+
+/// Aktien-/Eigentums-Beteiligung (SEC EDGAR / OpenCorporates).
+class Shareholding {
+  final String holder;
+  final String company;
+  final double? sharePercent;
+  final double? valueUsd;
+  final String? source; // 'SEC EDGAR' | 'OpenCorporates'
+  final String? url;
+  const Shareholding({
+    required this.holder,
+    required this.company,
+    this.sharePercent,
+    this.valueUsd,
+    this.source,
+    this.url,
+  });
+}
+
+/// Power-Broker-Beziehung (LittleSis).
+class PowerRelation {
+  final String entity1;
+  final String entity2;
+  final String relationType; // 'donation', 'board', 'family', 'employment', 'ownership'
+  final String description;
+  final int? amount; // bei donations in USD
+  final String? url;
+  const PowerRelation({
+    required this.entity1,
+    required this.entity2,
+    required this.relationType,
+    required this.description,
+    this.amount,
+    this.url,
+  });
+}
+
+/// Wayback-Snapshot.
+class WaybackSnapshot {
+  final String url;
+  final String archiveUrl;
+  final String timestamp; // YYYYMMDDHHMMSS
+  final int statusCode;
+  final String? title;
+  const WaybackSnapshot({
+    required this.url,
+    required this.archiveUrl,
+    required this.timestamp,
+    required this.statusCode,
+    this.title,
+  });
+
+  DateTime get date {
+    if (timestamp.length < 8) return DateTime.now();
+    final y = int.tryParse(timestamp.substring(0, 4)) ?? 2000;
+    final m = int.tryParse(timestamp.substring(4, 6)) ?? 1;
+    final d = int.tryParse(timestamp.substring(6, 8)) ?? 1;
+    return DateTime(y, m, d);
+  }
+}
+
+/// Gerichtsfall (CourtListener).
+class CourtCase {
+  final String caseName;
+  final String court; // 'US Supreme Court', 'SDNY', etc.
+  final String? snippet;
+  final String? date;
+  final String? url;
+  const CourtCase({
+    required this.caseName,
+    required this.court,
+    this.snippet,
+    this.date,
+    this.url,
+  });
+}
+
+/// Fact-Check-Eintrag (Google Fact Check Tools API).
+class FactCheck {
+  final String claim;
+  final String? claimant;
+  final String verdict; // 'True', 'False', 'Mostly false', etc.
+  final String publisher;
+  final String? url;
+  final String? date;
+  const FactCheck({
+    required this.claim,
+    required this.verdict,
+    required this.publisher,
+    this.claimant,
+    this.url,
+    this.date,
+  });
+}

@@ -379,6 +379,34 @@ class KaninchenbauService {
       snippet: 'Freigegebene Regierungsdokumente, Briefings, Memos',
     ));
 
+    // 5. ICIJ Offshore Leaks Database (Pandora/Panama/Paradise/FinCEN)
+    docs.add(LeakedDocument(
+      title: 'ICIJ Offshore Leaks: $topic',
+      url:
+          'https://offshoreleaks.icij.org/search?q=${Uri.encodeComponent(topic)}&c=&j=',
+      archive: 'ICIJ Leaks',
+      snippet:
+          'Pandora · Panama · Paradise · Bahamas · Offshore · FinCEN Files',
+    ));
+
+    // 6. DDoSecrets — Wikileaks-Nachfolger
+    docs.add(LeakedDocument(
+      title: 'DDoSecrets: $topic',
+      url:
+          'https://search.ddosecrets.com/?q=${Uri.encodeComponent(topic)}',
+      archive: 'DDoSecrets',
+      snippet:
+          'BlueLeaks · Hacker-Dumps · Russland-Akten · 5+ TB Whistleblower-Daten',
+    ));
+
+    // 7. Cryptome — älteste Leaks-Sammlung (seit 1996)
+    docs.add(LeakedDocument(
+      title: 'Cryptome: $topic',
+      url: 'https://cryptome.org/?s=${Uri.encodeComponent(topic)}',
+      archive: 'Cryptome',
+      snippet: 'Älteste Leaks-Sammlung im Web (seit 1996)',
+    ));
+
     return docs;
   }
 

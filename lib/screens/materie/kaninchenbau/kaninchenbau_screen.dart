@@ -15,16 +15,23 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'cards/academic_card.dart';
 import 'cards/ai_insight_card.dart';
+import 'cards/court_cases_card.dart';
 import 'cards/documents_card.dart';
+import 'cards/fact_check_card.dart';
 import 'cards/global_impact_card.dart';
 import 'cards/identity_card.dart';
 import 'cards/media_compass_card.dart';
 import 'cards/money_flow_card.dart';
 import 'cards/network_card.dart';
+import 'cards/power_relations_card.dart';
 import 'cards/related_paths_card.dart';
+import 'cards/sanctions_card.dart';
 import 'cards/sources_card.dart';
 import 'cards/timeline_card.dart';
+import 'cards/wayback_card.dart';
+import 'services/osint_apis.dart';
 import 'models/thread.dart';
 import 'services/kaninchenbau_service.dart';
 import 'widgets/breadcrumb_bar.dart';
@@ -46,6 +53,7 @@ class KaninchenbauScreen extends StatefulWidget {
 
 class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
   final _service = KaninchenbauService();
+  final _osint = OsintApis.instance;
   final _scroll = ScrollController();
   final List<_ThreadState> _stack = [];
   bool _virgilOpen = false;
@@ -167,6 +175,55 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
       setState(() {
         s.globalImpacts = impacts;
         s.globalLoading = false;
+      });
+    });
+
+    // OSINT-Layer parallel
+    _osint.fetchOpenAlexPapers(s.topic).then((papers) {
+      if (!mounted || s.disposed) return;
+      setState(() {
+        s.academicPapers = papers;
+        s.academicLoading = false;
+      });
+    });
+
+    _osint.fetchSanctions(s.topic).then((sanctions) {
+      if (!mounted || s.disposed) return;
+      setState(() {
+        s.sanctions = sanctions;
+        s.sanctionsLoading = false;
+      });
+    });
+
+    _osint.fetchLittleSisRelations(s.topic).then((rels) {
+      if (!mounted || s.disposed) return;
+      setState(() {
+        s.powerRelations = rels;
+        s.powerRelationsLoading = false;
+      });
+    });
+
+    _osint.fetchWaybackSnapshots(s.topic).then((snaps) {
+      if (!mounted || s.disposed) return;
+      setState(() {
+        s.waybackSnapshots = snaps;
+        s.waybackLoading = false;
+      });
+    });
+
+    _osint.fetchCourtCases(s.topic).then((cases) {
+      if (!mounted || s.disposed) return;
+      setState(() {
+        s.courtCases = cases;
+        s.courtLoading = false;
+      });
+    });
+
+    _osint.fetchFactChecks(s.topic).then((fcs) {
+      if (!mounted || s.disposed) return;
+      setState(() {
+        s.factChecks = fcs;
+        s.factCheckLoading = false;
       });
     });
 
@@ -336,7 +393,23 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
                   ),
                   const SizedBox(height: 16),
                   _StaggeredCard(
+                    delay: const Duration(milliseconds: 340),
+                    child: PowerRelationsCard(
+                      relations: s.powerRelations,
+                      loading: s.powerRelationsLoading,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _StaggeredCard(
                     delay: const Duration(milliseconds: 380),
+                    child: SanctionsCard(
+                      entries: s.sanctions,
+                      loading: s.sanctionsLoading,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _StaggeredCard(
+                    delay: const Duration(milliseconds: 420),
                     child: MoneyFlowCard(
                       flows: s.moneyFlows,
                       loading: s.moneyLoading,
@@ -352,10 +425,26 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
                   ),
                   const SizedBox(height: 16),
                   _StaggeredCard(
+                    delay: const Duration(milliseconds: 480),
+                    child: AcademicCard(
+                      papers: s.academicPapers,
+                      loading: s.academicLoading,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _StaggeredCard(
                     delay: const Duration(milliseconds: 520),
                     child: MediaCompassCard(
                       points: s.compassPoints,
                       loading: s.compassLoading,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _StaggeredCard(
+                    delay: const Duration(milliseconds: 560),
+                    child: FactCheckCard(
+                      checks: s.factChecks,
+                      loading: s.factCheckLoading,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -368,6 +457,14 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
                   ),
                   const SizedBox(height: 16),
                   _StaggeredCard(
+                    delay: const Duration(milliseconds: 640),
+                    child: WaybackCard(
+                      snapshots: s.waybackSnapshots,
+                      loading: s.waybackLoading,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _StaggeredCard(
                     delay: const Duration(milliseconds: 670),
                     child: GlobalImpactCard(
                       impacts: s.globalImpacts,
@@ -376,7 +473,15 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
                   ),
                   const SizedBox(height: 16),
                   _StaggeredCard(
-                    delay: const Duration(milliseconds: 720),
+                    delay: const Duration(milliseconds: 700),
+                    child: CourtCasesCard(
+                      cases: s.courtCases,
+                      loading: s.courtLoading,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _StaggeredCard(
+                    delay: const Duration(milliseconds: 740),
                     child: DocumentsCard(
                       docs: s.documents,
                       loading: s.documentsLoading,
@@ -435,6 +540,24 @@ class _ThreadState {
 
   List<GlobalImpact> globalImpacts = const [];
   bool globalLoading = true;
+
+  List<AcademicPaper> academicPapers = const [];
+  bool academicLoading = true;
+
+  List<SanctionEntry> sanctions = const [];
+  bool sanctionsLoading = true;
+
+  List<PowerRelation> powerRelations = const [];
+  bool powerRelationsLoading = true;
+
+  List<WaybackSnapshot> waybackSnapshots = const [];
+  bool waybackLoading = true;
+
+  List<CourtCase> courtCases = const [];
+  bool courtLoading = true;
+
+  List<FactCheck> factChecks = const [];
+  bool factCheckLoading = true;
 
   _ThreadState({required this.topic});
 }

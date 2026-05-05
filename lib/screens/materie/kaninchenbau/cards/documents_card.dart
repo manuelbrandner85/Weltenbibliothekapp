@@ -187,6 +187,12 @@ class DocumentsCard extends StatelessWidget {
         return const Color(0xFF66BB6A);
       case 'NSA Archive':
         return const Color(0xFFAB47BC);
+      case 'ICIJ Leaks':
+        return const Color(0xFFFFD54F);
+      case 'DDoSecrets':
+        return const Color(0xFFFF7043);
+      case 'Cryptome':
+        return const Color(0xFF80CBC4);
       case 'Internet Archive':
       default:
         return const Color(0xFF42A5F5);
