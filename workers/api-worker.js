@@ -3518,6 +3518,62 @@ export default {
       }
     }
 
+    // ── YouTube Suche (YoutubeService) ────────────────────────
+    if (path === '/api/youtube/search' && method === 'GET') {
+      const q = url.searchParams.get('q') || '';
+      const lang = url.searchParams.get('lang') || 'de';
+      const max = parseInt(url.searchParams.get('max') || '6', 10);
+      if (!q) return jsonResponse({ items: [] });
+      try {
+        const apiKey = env.YOUTUBE_API_KEY;
+        if (!apiKey) return jsonResponse({ fallback: true, items: [] });
+        const queryDe = lang === 'de' ? `${q} deutsch` : q;
+        const params = new URLSearchParams({
+          part: 'snippet',
+          q: queryDe,
+          type: 'video',
+          maxResults: String(Math.min(max, 10)),
+          relevanceLanguage: 'de',
+          regionCode: 'DE',
+          key: apiKey,
+        });
+        const r = await fetch(`https://www.googleapis.com/youtube/v3/search?${params}`, { signal: AbortSignal.timeout(8000) });
+        if (!r.ok) return jsonResponse({ items: [] });
+        const data = await r.json();
+        const items = (data.items || [])
+          .filter(i => i.id?.videoId)
+          .map(i => ({
+            videoId: i.id.videoId,
+            title: i.snippet?.title || '',
+            channel: i.snippet?.channelTitle || '',
+            thumbnail: i.snippet?.thumbnails?.medium?.url || i.snippet?.thumbnails?.default?.url || '',
+            published: i.snippet?.publishedAt || '',
+            description: i.snippet?.description || '',
+          }));
+        // Falls weniger als 2 de-Treffer → englische Fallback-Suche
+        if (items.length < 2) {
+          const paramsEn = new URLSearchParams({ part: 'snippet', q, type: 'video', maxResults: String(Math.min(max, 10)), videoCaption: 'closedCaption', key: apiKey });
+          const rEn = await fetch(`https://www.googleapis.com/youtube/v3/search?${paramsEn}`, { signal: AbortSignal.timeout(6000) }).catch(() => null);
+          if (rEn?.ok) {
+            const dataEn = await rEn.json();
+            const itemsEn = (dataEn.items || []).filter(i => i.id?.videoId).map(i => ({
+              videoId: i.id.videoId,
+              title: i.snippet?.title || '',
+              channel: i.snippet?.channelTitle || '',
+              thumbnail: i.snippet?.thumbnails?.medium?.url || '',
+              published: i.snippet?.publishedAt || '',
+              description: i.snippet?.description || '',
+              isSubtitled: true,
+            }));
+            return jsonResponse({ items: [...items, ...itemsEn].slice(0, max) });
+          }
+        }
+        return jsonResponse({ items });
+      } catch (e) {
+        return jsonResponse({ items: [] });
+      }
+    }
+
     // ── Wikimedia Commons Bilder für Karte ────────────────────
     if (path === '/api/map/wikimedia' && method === 'GET') {
       const q = url.searchParams.get('q') || '';
