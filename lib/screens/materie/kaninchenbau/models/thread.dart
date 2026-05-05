@@ -100,6 +100,13 @@ class NetworkEdge {
   });
 }
 
+/// Bündelt Knoten + echte Beziehungs-Kanten eines Wikidata-Sub-Graphen.
+class NetworkGraph {
+  final List<NetworkNode> nodes;
+  final List<NetworkEdge> edges;
+  const NetworkGraph({required this.nodes, required this.edges});
+}
+
 /// Zeitstrahl-Eintrag.
 class TimelineEntry {
   final int year;

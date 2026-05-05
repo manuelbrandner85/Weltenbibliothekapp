@@ -108,11 +108,12 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
       });
     });
 
-    // Network
-    _service.fetchNetworkNodes(s.topic).then((nodes) {
+    // Network — echter Wikidata-SPARQL-Graph mit Beziehungen
+    _service.fetchNetworkGraph(s.topic).then((graph) {
       if (!mounted || s.disposed) return;
       setState(() {
-        s.networkNodes = nodes;
+        s.networkNodes = graph.nodes;
+        s.networkEdges = graph.edges;
         s.networkLoading = false;
       });
     });
@@ -434,6 +435,7 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
                     delay: const Duration(milliseconds: 300),
                     child: NetworkCard(
                       nodes: s.networkNodes,
+                      edges: s.networkEdges,
                       loading: s.networkLoading,
                       onTapNode: _openThread,
                     ),
@@ -580,6 +582,7 @@ class _ThreadState {
   bool identityLoading = true;
 
   List<NetworkNode> networkNodes = const [];
+  List<NetworkEdge> networkEdges = const [];
   bool networkLoading = true;
 
   List<SourceItem> sources = const [];

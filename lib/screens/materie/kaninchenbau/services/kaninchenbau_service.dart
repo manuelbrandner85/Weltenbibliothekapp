@@ -34,39 +34,245 @@ class KaninchenbauService {
     }
   }
 
-  /// Netzwerk: über Wikidata-Suche verwandte Entitäten holen.
+  /// LEGACY: nur für Kompatibilität — neue Nutzer sollten fetchNetworkGraph verwenden.
   Future<List<NetworkNode>> fetchNetworkNodes(String topic) async {
+    final graph = await fetchNetworkGraph(topic);
+    return graph.nodes;
+  }
+
+  /// ECHTER Netzwerk-Graph via Wikidata SPARQL.
+  ///
+  /// Holt für ein Thema die ECHTEN Wikidata-Beziehungen (12+ Property-Typen):
+  ///   • P108 employer · P102 party · P463 member of · P39 position
+  ///   • P26 spouse · P40 child · P22 father · P25 mother · P3373 sibling
+  ///   • P749 parent org · P127 owner · P488 chair · P169 CEO · P112 founded by
+  ///   • P710 participant · P1830 owns · P50 author · P184 advisor · P800 work
+  ///
+  /// Liefert echte Knoten (Person/Firma/Org/Ort) UND echte Kanten mit
+  /// deutschen Beziehungs-Labels ("Mitglied von", "Vorsitzender", "Ehepartner"…).
+  Future<NetworkGraph> fetchNetworkGraph(String topic) async {
+    final centerNode =
+        NetworkNode(id: 'center', label: topic, type: 'concept', weight: 1.0);
     try {
-      final results = await _free.fetchWikidataEntries(topic, limit: 8);
-      final nodes = <NetworkNode>[
-        NetworkNode(id: 'center', label: topic, type: 'concept', weight: 1.0),
-      ];
-      for (var i = 0; i < results.length; i++) {
-        final r = results[i];
-        nodes.add(NetworkNode(
-          id: 'n$i',
-          label: r.label,
-          type: _guessType(r.description ?? ''),
-          weight: 0.7 - (i * 0.05),
-        ));
+      // 1. Entity-ID via Wikidata-Suche (deutsch bevorzugt)
+      final entries = await _free.fetchWikidataEntries(topic, limit: 1);
+      if (entries.isEmpty) {
+        return NetworkGraph(nodes: [centerNode], edges: const []);
       }
-      return nodes;
-    } catch (_) {
-      return [
-        NetworkNode(id: 'center', label: topic, type: 'concept', weight: 1.0),
-      ];
+      final entityId = entries.first.id; // z.B. Q43287
+      if (!RegExp(r'^Q\d+$').hasMatch(entityId)) {
+        return NetworkGraph(nodes: [centerNode], edges: const []);
+      }
+
+      // Center-Label durch echten Wikidata-Label ersetzen (wenn verfügbar)
+      final realCenter = NetworkNode(
+        id: 'center',
+        label: entries.first.label.isNotEmpty ? entries.first.label : topic,
+        type: _typeFromDescription(entries.first.description ?? ''),
+        weight: 1.0,
+      );
+
+      // 2. SPARQL-Abfrage für outgoing-Beziehungen
+      final sparql = '''
+SELECT ?prop ?propLabel ?target ?targetLabel ?targetType ?targetTypeLabel WHERE {
+  VALUES ?prop {
+    wdt:P108 wdt:P102 wdt:P463 wdt:P39 wdt:P26 wdt:P40 wdt:P22 wdt:P25
+    wdt:P3373 wdt:P184 wdt:P800 wdt:P749 wdt:P127 wdt:P488 wdt:P169
+    wdt:P112 wdt:P710 wdt:P1830 wdt:P50 wdt:P159 wdt:P361 wdt:P166
+  }
+  wd:$entityId ?prop ?target.
+  OPTIONAL { ?target wdt:P31 ?targetType. }
+  SERVICE wikibase:label {
+    bd:serviceParam wikibase:language "de,en".
+    ?prop rdfs:label ?propLabel.
+    ?target rdfs:label ?targetLabel.
+    ?targetType rdfs:label ?targetTypeLabel.
+  }
+}
+LIMIT 30
+''';
+
+      final url = Uri.parse(
+          'https://query.wikidata.org/sparql?format=json&query=${Uri.encodeQueryComponent(sparql)}');
+      final resp = await http.get(url, headers: {
+        'Accept': 'application/sparql-results+json',
+        'User-Agent':
+            'WeltenbibliothekKaninchenbau/1.0 (https://weltenbibliothek.app; dev@weltenbibliothek.app)',
+      }).timeout(const Duration(seconds: 18));
+      if (resp.statusCode != 200) {
+        debugPrint('SPARQL HTTP ${resp.statusCode}');
+        return NetworkGraph(nodes: [realCenter], edges: const []);
+      }
+
+      final data = jsonDecode(resp.body) as Map<String, dynamic>;
+      final bindings =
+          ((data['results'] as Map?)?['bindings'] as List?) ?? const [];
+
+      // Dedupe + zähle je relation-type für intelligente Auswahl
+      final nodeMap = <String, NetworkNode>{}; // targetId → Node
+      final edges = <NetworkEdge>[];
+      var idx = 0;
+
+      for (final raw in bindings) {
+        final m = raw as Map<String, dynamic>;
+        final targetUri = (m['target']?['value'] ?? '').toString();
+        final targetLabel = (m['targetLabel']?['value'] ?? '').toString();
+        final propLabel = (m['propLabel']?['value'] ?? '').toString();
+        final targetTypeLabel =
+            (m['targetTypeLabel']?['value'] ?? '').toString();
+
+        if (targetUri.isEmpty || targetLabel.isEmpty) continue;
+        // Skip Treffer wo Label nur die Q-ID ist (= kein DE/EN Label vorhanden)
+        if (RegExp(r'^Q\d+$').hasMatch(targetLabel)) continue;
+
+        // Eindeutige Node-ID aus URI
+        final targetId = targetUri.split('/').last;
+
+        if (!nodeMap.containsKey(targetId)) {
+          nodeMap[targetId] = NetworkNode(
+            id: 'n$idx',
+            label: targetLabel,
+            type: _typeFromTargetType(targetTypeLabel),
+            weight: 0.65 - (idx * 0.015).clamp(0.0, 0.4),
+          );
+          idx++;
+        }
+
+        edges.add(NetworkEdge(
+          fromId: 'center',
+          toId: nodeMap[targetId]!.id,
+          label: _germanizeRelation(propLabel),
+          strength: 0.7,
+        ));
+
+        if (nodeMap.length >= 16) break; // Cap für Lesbarkeit
+      }
+
+      final nodes = <NetworkNode>[realCenter, ...nodeMap.values];
+
+      if (nodes.length == 1) {
+        // Fallback: wenn SPARQL nichts findet, wenigstens die Search-Ergebnisse
+        final searchResults = await _free.fetchWikidataEntries(topic, limit: 6);
+        for (var i = 1; i < searchResults.length; i++) {
+          final r = searchResults[i];
+          nodes.add(NetworkNode(
+            id: 'n$i',
+            label: r.label,
+            type: _typeFromDescription(r.description ?? ''),
+            weight: 0.6 - (i * 0.05),
+          ));
+          edges.add(NetworkEdge(
+              fromId: 'center',
+              toId: 'n$i',
+              label: 'verwandt',
+              strength: 0.4));
+        }
+      }
+
+      return NetworkGraph(nodes: nodes, edges: edges);
+    } catch (e) {
+      debugPrint('Network-Graph-Error: $e');
+      return NetworkGraph(nodes: [centerNode], edges: const []);
     }
   }
 
-  String _guessType(String desc) {
+  /// Mappt Wikidata-Property-Labels (englisch/gemischt) auf knappe deutsche Labels.
+  String _germanizeRelation(String prop) {
+    final p = prop.toLowerCase();
+    const map = {
+      'employer': 'arbeitet bei',
+      'arbeitgeber': 'arbeitet bei',
+      'member of political party': 'Partei',
+      'mitglied einer politischen partei': 'Partei',
+      'member of': 'Mitglied',
+      'mitglied von': 'Mitglied',
+      'position held': 'Position',
+      'innegehabte position': 'Position',
+      'spouse': 'Ehepartner',
+      'ehepartner': 'Ehepartner',
+      'child': 'Kind',
+      'kind': 'Kind',
+      'father': 'Vater',
+      'vater': 'Vater',
+      'mother': 'Mutter',
+      'mutter': 'Mutter',
+      'sibling': 'Geschwister',
+      'geschwister': 'Geschwister',
+      'doctoral advisor': 'Doktorvater',
+      'notable work': 'Werk',
+      'parent organization': 'Mutter-Org',
+      'übergeordnete organisation': 'Mutter-Org',
+      'owned by': 'Eigentümer',
+      'eigentümer': 'Eigentümer',
+      'chairperson': 'Vorsitz',
+      'chair': 'Vorsitz',
+      'vorsitzender': 'Vorsitz',
+      'chief executive officer': 'CEO',
+      'ceo': 'CEO',
+      'founded by': 'Gründer',
+      'gründer': 'Gründer',
+      'participant': 'Teilnehmer',
+      'teilnehmer': 'Teilnehmer',
+      'owner of': 'besitzt',
+      'author': 'Autor',
+      'autor': 'Autor',
+      'headquarters location': 'Sitz',
+      'sitz': 'Sitz',
+      'part of': 'Teil von',
+      'award received': 'Preis',
+    };
+    for (final entry in map.entries) {
+      if (p.contains(entry.key)) return entry.value;
+    }
+    return prop.isEmpty ? 'verbunden' : prop;
+  }
+
+  String _typeFromDescription(String desc) {
     final d = desc.toLowerCase();
     if (d.contains('company') ||
         d.contains('corporation') ||
-        d.contains('firma')) return 'company';
+        d.contains('firma') ||
+        d.contains('unternehmen') ||
+        d.contains('konzern') ||
+        d.contains('aktiengesellschaft')) return 'company';
     if (d.contains('politician') ||
         d.contains('person') ||
-        d.contains('researcher')) return 'person';
-    if (d.contains('organization') || d.contains('foundation')) return 'org';
+        d.contains('researcher') ||
+        d.contains('politiker') ||
+        d.contains('manager') ||
+        d.contains('unternehmer') ||
+        d.contains('autor') ||
+        d.contains('wissenschaftler')) return 'person';
+    if (d.contains('organization') ||
+        d.contains('foundation') ||
+        d.contains('organisation') ||
+        d.contains('stiftung') ||
+        d.contains('verein') ||
+        d.contains('partei')) return 'org';
+    if (d.contains('city') ||
+        d.contains('country') ||
+        d.contains('stadt') ||
+        d.contains('land')) return 'place';
+    return 'concept';
+  }
+
+  String _typeFromTargetType(String typeLabel) {
+    final t = typeLabel.toLowerCase();
+    if (t.contains('mensch') || t.contains('human')) return 'person';
+    if (t.contains('unternehmen') ||
+        t.contains('aktiengesellschaft') ||
+        t.contains('konzern') ||
+        t.contains('business') ||
+        t.contains('company')) return 'company';
+    if (t.contains('organisation') ||
+        t.contains('stiftung') ||
+        t.contains('verein') ||
+        t.contains('partei') ||
+        t.contains('party')) return 'org';
+    if (t.contains('stadt') ||
+        t.contains('staat') ||
+        t.contains('city') ||
+        t.contains('country')) return 'place';
     return 'concept';
   }
 
