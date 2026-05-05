@@ -18,8 +18,14 @@ import 'package:flutter/services.dart';
 import 'cards/academic_card.dart';
 import 'cards/ai_insight_card.dart';
 import 'cards/annotations_card.dart';
+import 'cards/abgeordnete_card.dart';
 import 'cards/court_cases_card.dart';
+import 'cards/deep_research_card.dart';
 import 'cards/documents_card.dart';
+import 'cards/key_persons_card.dart';
+import 'cards/lobbying_card.dart';
+import 'cards/propaganda_card.dart';
+import 'cards/skandale_card.dart';
 import 'cards/fact_check_card.dart';
 import 'cards/global_impact_card.dart';
 import 'cards/identity_card.dart';
@@ -107,11 +113,12 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
       });
     });
 
-    // Network
-    _service.fetchNetworkNodes(s.topic).then((nodes) {
+    // Network — echter Wikidata-SPARQL-Graph mit Beziehungen
+    _service.fetchNetworkGraph(s.topic).then((graph) {
       if (!mounted || s.disposed) return;
       setState(() {
-        s.networkNodes = nodes;
+        s.networkNodes = graph.nodes;
+        s.networkEdges = graph.edges;
         s.networkLoading = false;
       });
     });
@@ -233,12 +240,56 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
       });
     });
 
-    // RSS-Aggregator (Worker)
+    // RSS-Aggregator (Worker) — danach Propaganda-Analyse triggern
     _service.fetchRssAggregate(s.topic).then((rss) {
       if (!mounted || s.disposed) return;
       setState(() {
         s.rssItems = rss;
         s.rssLoading = false;
+      });
+      // Propaganda-Analyse läuft NACH RSS-Items (braucht den Input)
+      _service.fetchPropagandaAnalysis(s.topic, rss).then((analysis) {
+        if (!mounted || s.disposed) return;
+        setState(() {
+          s.propagandaAnalysis = analysis;
+          s.propagandaLoading = false;
+        });
+      });
+    });
+
+    // Schlüsselpersonen (Wikidata SPARQL via Worker)
+    _service.fetchKeyPersons(s.topic).then((persons) {
+      if (!mounted || s.disposed) return;
+      setState(() {
+        s.keyPersons = persons;
+        s.keyPersonsLoading = false;
+      });
+    });
+
+    // Lobbying (LobbyFacts.eu)
+    _service.fetchLobbying(s.topic).then((entries) {
+      if (!mounted || s.disposed) return;
+      setState(() {
+        s.lobbyEntries = entries;
+        s.lobbyLoading = false;
+      });
+    });
+
+    // DE Politiker (abgeordnetenwatch.de)
+    _service.fetchAbgeordnete(s.topic).then((pols) {
+      if (!mounted || s.disposed) return;
+      setState(() {
+        s.abgeordnete = pols;
+        s.abgeordneteLoading = false;
+      });
+    });
+
+    // Skandale & Kontroversen (GDELT mit negativem Sentiment)
+    _service.fetchSkandale(s.topic).then((items) {
+      if (!mounted || s.disposed) return;
+      setState(() {
+        s.skandale = items;
+        s.skandaleLoading = false;
       });
     });
 
@@ -417,6 +468,11 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
                   ),
                   const SizedBox(height: 16),
                   _StaggeredCard(
+                    delay: const Duration(milliseconds: 80),
+                    child: DeepResearchCard(topic: s.topic),
+                  ),
+                  const SizedBox(height: 16),
+                  _StaggeredCard(
                     delay: const Duration(milliseconds: 150),
                     child: AiInsightCard(
                       insight: s.aiInsight,
@@ -428,8 +484,50 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
                     delay: const Duration(milliseconds: 300),
                     child: NetworkCard(
                       nodes: s.networkNodes,
+                      edges: s.networkEdges,
                       loading: s.networkLoading,
                       onTapNode: _openThread,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _StaggeredCard(
+                    delay: const Duration(milliseconds: 320),
+                    child: KeyPersonsCard(
+                      persons: s.keyPersons,
+                      loading: s.keyPersonsLoading,
+                      onTapPerson: _openThread,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _StaggeredCard(
+                    delay: const Duration(milliseconds: 330),
+                    child: PropagandaCard(
+                      analysis: s.propagandaAnalysis,
+                      loading: s.propagandaLoading,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _StaggeredCard(
+                    delay: const Duration(milliseconds: 335),
+                    child: LobbyingCard(
+                      entries: s.lobbyEntries,
+                      loading: s.lobbyLoading,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _StaggeredCard(
+                    delay: const Duration(milliseconds: 338),
+                    child: AbgeordneteCard(
+                      politicians: s.abgeordnete,
+                      loading: s.abgeordneteLoading,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _StaggeredCard(
+                    delay: const Duration(milliseconds: 339),
+                    child: SkandaleCard(
+                      items: s.skandale,
+                      loading: s.skandaleLoading,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -574,6 +672,7 @@ class _ThreadState {
   bool identityLoading = true;
 
   List<NetworkNode> networkNodes = const [];
+  List<NetworkEdge> networkEdges = const [];
   bool networkLoading = true;
 
   List<SourceItem> sources = const [];
@@ -620,6 +719,22 @@ class _ThreadState {
 
   List<RssItem> rssItems = const [];
   bool rssLoading = true;
+
+  // NEUE TIEFEN-LAYER (Phase X)
+  List<KeyPerson> keyPersons = const [];
+  bool keyPersonsLoading = true;
+
+  List<LobbyEntry> lobbyEntries = const [];
+  bool lobbyLoading = true;
+
+  List<Abgeordneter> abgeordnete = const [];
+  bool abgeordneteLoading = true;
+
+  List<Skandal> skandale = const [];
+  bool skandaleLoading = true;
+
+  String? propagandaAnalysis;
+  bool propagandaLoading = true;
 
   _ThreadState({required this.topic});
 }

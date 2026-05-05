@@ -29,7 +29,7 @@ class SanctionsCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.gpp_bad_rounded,
+              const Icon(Icons.gpp_bad,
                   color: Color(0xFFEF5350), size: 18),
               const SizedBox(width: 8),
               const Text(

@@ -2490,20 +2490,45 @@ export default {
     // ── RSS-Aggregator: 20+ Quellen, gefiltert nach Topic ──
     if (path === '/api/rss/aggregate' && method === 'GET') {
       try {
-        const topic = (url.searchParams.get('topic') || '').toLowerCase().trim();
-        if (!topic) return errorResponse('topic fehlt', 400);
+        const topicRaw = (url.searchParams.get('topic') || '').trim();
+        if (!topicRaw) return errorResponse('topic fehlt', 400);
+        // Topic in Tokens splitten: "Klaus Schwab" → ["klaus", "schwab"]
+        // Auch Kurzformen testen: "WEF" → ["wef"]
+        const tokens = topicRaw.toLowerCase()
+          .split(/[\s,/-]+/)
+          .filter(t => t.length >= 3);
+        const matchTopic = (text) => {
+          const lt = text.toLowerCase();
+          if (lt.includes(topicRaw.toLowerCase())) return true;
+          // ALLE Tokens müssen im Titel sein (UND-Verknüpfung) — vermeidet zu viele False-Positives
+          return tokens.length > 0 && tokens.every(t => lt.includes(t));
+        };
+
         const feeds = [
-          { name: 'Spiegel', url: 'https://www.spiegel.de/index.rss', lens: 'establishment-left' },
-          { name: 'FAZ', url: 'https://www.faz.net/rss/aktuell/politik/', lens: 'establishment-right' },
-          { name: 'Welt', url: 'https://www.welt.de/feeds/section/politik.rss', lens: 'establishment-right' },
-          { name: 'Tichys', url: 'https://www.tichyseinblick.de/feed/', lens: 'alt-right' },
-          { name: 'NachDenkSeiten', url: 'https://www.nachdenkseiten.de/?feed=rss2', lens: 'alt-left' },
-          { name: 'Telepolis', url: 'https://www.telepolis.de/news-atom.xml', lens: 'alt' },
+          // Mainstream / Öffentlich-Rechtlich
+          { name: 'Tagesschau', url: 'https://www.tagesschau.de/index~rss2.xml', lens: 'oeff-rechtlich' },
+          { name: 'ZDF heute', url: 'https://www.zdf.de/rss/zdf/nachrichten', lens: 'oeff-rechtlich' },
+          { name: 'Deutschlandfunk', url: 'https://www.deutschlandfunk.de/die-nachrichten-100.rss', lens: 'oeff-rechtlich' },
+          { name: 'Spiegel', url: 'https://www.spiegel.de/index.rss', lens: 'mainstream-links' },
+          { name: 'Süddeutsche', url: 'https://rss.sueddeutsche.de/rss/Politik', lens: 'mainstream-links' },
+          { name: 'taz', url: 'https://taz.de/!s=&ExportStatus=Intern;rss/', lens: 'links' },
+          { name: 'FAZ', url: 'https://www.faz.net/rss/aktuell/politik/', lens: 'mainstream-rechts' },
+          { name: 'Welt', url: 'https://www.welt.de/feeds/section/politik.rss', lens: 'mainstream-rechts' },
+          { name: 'Cicero', url: 'https://www.cicero.de/rss.xml', lens: 'rechts-buergerlich' },
+          // Alternativ
+          { name: 'NachDenkSeiten', url: 'https://www.nachdenkseiten.de/?feed=rss2', lens: 'alt-links' },
           { name: 'Multipolar', url: 'https://multipolar-magazin.de/artikel.atom', lens: 'alt' },
-          { name: 'BBC', url: 'http://feeds.bbci.co.uk/news/world/rss.xml', lens: 'establishment' },
-          { name: 'Guardian', url: 'https://www.theguardian.com/world/rss', lens: 'establishment-left' },
-          { name: 'RT DE', url: 'https://de.rt.com/feeds/all.rss', lens: 'state-russia' },
-          { name: 'Reuters World', url: 'https://feeds.reuters.com/reuters/worldNews', lens: 'wire' },
+          { name: 'Telepolis', url: 'https://www.telepolis.de/news-atom.xml', lens: 'alt' },
+          { name: 'Tichys Einblick', url: 'https://www.tichyseinblick.de/feed/', lens: 'alt-rechts' },
+          { name: 'Apolut', url: 'https://apolut.net/feed/', lens: 'alt' },
+          { name: 'Reitschuster', url: 'https://reitschuster.de/feed/', lens: 'alt-rechts' },
+          { name: 'Junge Welt', url: 'https://www.jungewelt.de/feeds/newsticker.rss', lens: 'links-radikal' },
+          // Investigativ
+          { name: 'Correctiv', url: 'https://correctiv.org/feed/', lens: 'investigativ' },
+          { name: 'LobbyControl', url: 'https://www.lobbycontrol.de/feed/', lens: 'investigativ' },
+          { name: 'Netzpolitik', url: 'https://netzpolitik.org/feed/', lens: 'investigativ' },
+          // International (DE-relevant)
+          { name: 'RT DE', url: 'https://de.rt.com/feeds/all.rss', lens: 'staatsmedien-russland' },
         ];
 
         const all = [];
@@ -2515,17 +2540,20 @@ export default {
             });
             if (!r.ok) return;
             const xml = await r.text();
-            // Simple Item-Parser (kein DOMParser in Workers, RegEx-basiert)
             const items = [...xml.matchAll(/<(item|entry)[\s\S]*?<\/\1>/g)];
-            for (const m of items.slice(0, 30)) {
+            for (const m of items.slice(0, 60)) {
               const block = m[0];
               const title = (block.match(/<title[^>]*>([\s\S]*?)<\/title>/) || [])[1] || '';
+              const desc = (block.match(/<(description|summary|content)[^>]*>([\s\S]*?)<\/\1>/) || [])[2] || '';
               const link = (block.match(/<link[^>]*?>([\s\S]*?)<\/link>/) || block.match(/<link[^>]*href="([^"]+)"/) || [])[1] || '';
               const date = (block.match(/<(pubDate|published|updated)[^>]*>([\s\S]*?)<\/\1>/) || [])[2] || '';
               const cleanTitle = title.replace(/<!\[CDATA\[|\]\]>/g, '').replace(/<[^>]+>/g, '').trim();
-              if (cleanTitle.toLowerCase().includes(topic)) {
+              const cleanDesc = desc.replace(/<!\[CDATA\[|\]\]>/g, '').replace(/<[^>]+>/g, '').trim().slice(0, 200);
+              // Match: Titel ODER Beschreibung
+              if (matchTopic(cleanTitle) || matchTopic(cleanDesc)) {
                 all.push({
                   title: cleanTitle,
+                  description: cleanDesc,
                   url: link.replace(/<!\[CDATA\[|\]\]>/g, '').trim(),
                   date,
                   source: f.name,
@@ -2537,9 +2565,322 @@ export default {
         }));
 
         all.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-        return jsonResponse({ topic, count: all.length, items: all.slice(0, 50) });
+        return jsonResponse({ topic: topicRaw, count: all.length, items: all.slice(0, 80) });
       } catch (e) {
         return errorResponse(`RSS-Fehler: ${e.message}`);
+      }
+    }
+
+    // ── Batch-Übersetzung Englisch→Deutsch via Groq (kostengünstig: 1 Call statt N) ──
+    if (path === '/api/translate/batch' && method === 'POST') {
+      try {
+        const { items } = await request.json();
+        if (!Array.isArray(items) || items.length === 0) {
+          return jsonResponse({ translated: [] });
+        }
+        if (!env.GROQ_API_KEY) {
+          // Ohne Groq: Items unübersetzt zurückgeben
+          return jsonResponse({ translated: items, fallback: true });
+        }
+        const numbered = items.map((s, i) => `${i + 1}. ${String(s).replace(/\n/g, ' ').slice(0, 300)}`).join('\n');
+        const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${env.GROQ_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'llama-3.3-70b-versatile',
+            messages: [
+              { role: 'system', content: 'Du übersetzt nummerierte englische Texte ins Deutsche. Gib NUR die Übersetzungen in der gleichen Nummerierung zurück, ohne Kommentare. Behalte Eigennamen und Firmennamen unverändert.' },
+              { role: 'user', content: numbered },
+            ],
+            temperature: 0.3,
+            max_tokens: 1500,
+          }),
+        });
+        if (!r.ok) return jsonResponse({ translated: items, error: `Groq ${r.status}` });
+        const data = await r.json();
+        const text = data?.choices?.[0]?.message?.content || '';
+        // Parse: "1. text\n2. text\n…"
+        const translated = items.map((orig, i) => {
+          const match = text.match(new RegExp(`(?:^|\\n)\\s*${i + 1}\\.\\s*(.+?)(?=(?:\\n\\s*\\d+\\.)|$)`, 's'));
+          return match ? match[1].trim() : orig;
+        });
+        return jsonResponse({ translated });
+      } catch (e) {
+        return errorResponse(`Translate-Fehler: ${e.message}`);
+      }
+    }
+
+    // ── Deep-Suche: Multi-API Aggregat für ein Thema (Worker-side, async parallel) ──
+    if (path === '/api/kaninchenbau/deep' && method === 'GET') {
+      const topic = url.searchParams.get('topic');
+      if (!topic) return errorResponse('topic fehlt', 400);
+      const t = encodeURIComponent(topic);
+
+      const tasks = await Promise.allSettled([
+        // Wikipedia DE Volltext
+        fetch(`https://de.wikipedia.org/api/rest_v1/page/summary/${t}`, { signal: AbortSignal.timeout(6000) })
+          .then(r => r.ok ? r.json() : null).catch(() => null),
+        // Europeana (Kultur, EU)
+        fetch(`https://api.europeana.eu/record/v2/search.json?wskey=api2demo&query=${t}&rows=8`, { signal: AbortSignal.timeout(6000) })
+          .then(r => r.ok ? r.json() : null).catch(() => null),
+        // arXiv (Pre-Prints)
+        fetch(`http://export.arxiv.org/api/query?search_query=all:${t}&max_results=6`, { signal: AbortSignal.timeout(6000) })
+          .then(r => r.ok ? r.text() : null).catch(() => null),
+        // GDELT 2.0 — letzte 24h, alle Sprachen
+        fetch(`https://api.gdeltproject.org/api/v2/doc/doc?query=${t}%20sourcelang:german&mode=ArtList&maxrecords=15&format=json&timespan=7d`, { signal: AbortSignal.timeout(6000) })
+          .then(r => r.ok ? r.json() : null).catch(() => null),
+        // CommonCrawl Index (URL-Erwähnungen)
+        fetch(`https://www.crossref.org/works?query=${t}&rows=5`, { signal: AbortSignal.timeout(6000) })
+          .then(r => r.ok ? r.json() : null).catch(() => null),
+      ]);
+
+      const [wiki, europeana, arxiv, gdelt, _crossref] = tasks.map(t => t.status === 'fulfilled' ? t.value : null);
+
+      // arXiv ist Atom-XML, simple Parse
+      const arxivPapers = arxiv ? [...String(arxiv).matchAll(/<entry>([\s\S]*?)<\/entry>/g)].slice(0, 6).map(m => {
+        const block = m[1];
+        const title = (block.match(/<title>([\s\S]*?)<\/title>/) || [])[1]?.trim();
+        const summary = (block.match(/<summary>([\s\S]*?)<\/summary>/) || [])[1]?.trim().slice(0, 200);
+        const link = (block.match(/<id>([\s\S]*?)<\/id>/) || [])[1]?.trim();
+        return { title, summary, url: link };
+      }).filter(p => p.title) : [];
+
+      return jsonResponse({
+        topic,
+        wikipedia_de: wiki ? {
+          title: wiki.title,
+          extract: wiki.extract,
+          url: wiki.content_urls?.desktop?.page,
+          thumbnail: wiki.thumbnail?.source,
+        } : null,
+        europeana: europeana?.items?.slice(0, 5).map(it => ({
+          title: it.title?.[0],
+          provider: it.dataProvider?.[0],
+          year: it.year?.[0],
+          url: it.guid,
+        })) || [],
+        arxiv: arxivPapers,
+        gdelt_news_de: gdelt?.articles?.slice(0, 10).map(a => ({
+          title: a.title,
+          url: a.url,
+          domain: a.domain,
+          date: a.seendate,
+        })) || [],
+      });
+    }
+
+    // ── Schlüsselpersonen via Wikidata SPARQL (CEO/Vorstand/Gründer einer Org) ──
+    if (path === '/api/kaninchenbau/keypersons' && method === 'GET') {
+      const topic = url.searchParams.get('topic');
+      if (!topic) return errorResponse('topic fehlt', 400);
+      try {
+        // 1. Entity-ID finden
+        const searchUrl = `https://www.wikidata.org/w/api.php?action=wbsearchentities&search=${encodeURIComponent(topic)}&language=de&limit=1&format=json&origin=*`;
+        const sr = await fetch(searchUrl, { signal: AbortSignal.timeout(8000) });
+        if (!sr.ok) return jsonResponse({ persons: [] });
+        const sd = await sr.json();
+        const entityId = sd?.search?.[0]?.id;
+        if (!entityId || !/^Q\d+$/.test(entityId)) {
+          return jsonResponse({ persons: [], note: 'Keine Entity gefunden' });
+        }
+
+        // 2. SPARQL für Schlüsselpersonen + Bilder
+        const sparql = `
+SELECT DISTINCT ?person ?personLabel ?personDescription ?roleLabel ?image WHERE {
+  VALUES ?role {
+    wdt:P488 wdt:P169 wdt:P112 wdt:P3320 wdt:P1037 wdt:P39
+    wdt:P35 wdt:P6 wdt:P1308
+  }
+  wd:${entityId} ?role ?person.
+  OPTIONAL { ?person wdt:P18 ?image. }
+  OPTIONAL { ?person schema:description ?personDescription. FILTER(LANG(?personDescription) = "de") }
+  ?roleProp wikibase:directClaim ?role.
+  SERVICE wikibase:label {
+    bd:serviceParam wikibase:language "de,en".
+    ?person rdfs:label ?personLabel.
+    ?roleProp rdfs:label ?roleLabel.
+  }
+}
+LIMIT 20`;
+        const sparqlUrl = `https://query.wikidata.org/sparql?format=json&query=${encodeURIComponent(sparql)}`;
+        const r = await fetch(sparqlUrl, {
+          signal: AbortSignal.timeout(15000),
+          headers: { 'Accept': 'application/sparql-results+json', 'User-Agent': 'WeltenbibliothekKaninchenbau/1.0' },
+        });
+        if (!r.ok) return jsonResponse({ persons: [], error: `SPARQL ${r.status}` });
+        const data = await r.json();
+        const seen = new Set();
+        const persons = (data?.results?.bindings || [])
+          .map(b => ({
+            id: (b.person?.value || '').split('/').pop(),
+            name: b.personLabel?.value || '',
+            description: b.personDescription?.value || '',
+            role: b.roleLabel?.value || '',
+            image: b.image?.value || null,
+          }))
+          .filter(p => p.name && !/^Q\d+$/.test(p.name))
+          .filter(p => {
+            if (seen.has(p.id)) return false;
+            seen.add(p.id);
+            return true;
+          });
+        return jsonResponse({ topic, entityId, persons });
+      } catch (e) {
+        return errorResponse(`KeyPersons-Fehler: ${e.message}`);
+      }
+    }
+
+    // ── LobbyFacts.eu — EU-Lobbying-Register (kein Key nötig) ──
+    if (path === '/api/kaninchenbau/lobbying' && method === 'GET') {
+      const topic = url.searchParams.get('topic');
+      if (!topic) return errorResponse('topic fehlt', 400);
+      try {
+        // LobbyFacts.eu Search
+        const r = await fetch(
+          `https://www.lobbyfacts.eu/api/v1/representative?search=${encodeURIComponent(topic)}&limit=10`,
+          { signal: AbortSignal.timeout(10000) }
+        );
+        if (!r.ok) {
+          // Fallback: EU Transparency Register Search-Link
+          return jsonResponse({
+            entries: [],
+            fallback: true,
+            searchUrl: `https://www.lobbyfacts.eu/representatives?search=${encodeURIComponent(topic)}`,
+          });
+        }
+        const data = await r.json();
+        const entries = (data?.results || data || []).slice(0, 10).map(e => ({
+          name: e.name || e.organisation_name || '',
+          country: e.country || e.head_office_country || '',
+          category: e.category || e.legal_status || '',
+          budget: e.eu_budget || e.estimated_costs_eur || null,
+          fullTimeStaff: e.full_time_employees || null,
+          lobbyists: e.lobbyists_with_access || null,
+          meetings: e.commission_meetings_count || null,
+          url: e.lobbyfacts_url || `https://www.lobbyfacts.eu/representative/${e.identification_code || ''}`,
+        }));
+        return jsonResponse({ topic, entries });
+      } catch (e) {
+        return jsonResponse({
+          entries: [],
+          error: e.message,
+          searchUrl: `https://www.lobbyfacts.eu/representatives?search=${encodeURIComponent(topic)}`,
+        });
+      }
+    }
+
+    // ── Abgeordnetenwatch.de — DE Bundestag/EU-Parlament (Open API, kein Key) ──
+    if (path === '/api/kaninchenbau/abgeordnete' && method === 'GET') {
+      const topic = url.searchParams.get('topic');
+      if (!topic) return errorResponse('topic fehlt', 400);
+      try {
+        // Politiker-Suche
+        const r = await fetch(
+          `https://www.abgeordnetenwatch.de/api/v2/politicians?search=${encodeURIComponent(topic)}&range_end=10`,
+          { signal: AbortSignal.timeout(10000) }
+        );
+        if (!r.ok) return jsonResponse({ politicians: [] });
+        const data = await r.json();
+        const politicians = (data?.data || []).slice(0, 10).map(p => ({
+          id: p.id,
+          name: p.label || `${p.first_name || ''} ${p.last_name || ''}`.trim(),
+          party: p.party?.label || '',
+          birthYear: p.year_of_birth,
+          profession: p.occupation,
+          url: p.abgeordnetenwatch_url,
+        }));
+        return jsonResponse({ topic, politicians });
+      } catch (e) {
+        return jsonResponse({ politicians: [], error: e.message });
+      }
+    }
+
+    // ── Propaganda-Linsen-Analyse: Groq vergleicht Framing zwischen Quellen ──
+    if (path === '/api/kaninchenbau/propaganda' && method === 'POST') {
+      try {
+        const { topic, items } = await request.json();
+        if (!topic || !Array.isArray(items) || items.length === 0) {
+          return errorResponse('topic + items[] benötigt', 400);
+        }
+        if (!env.GROQ_API_KEY) {
+          return jsonResponse({ analysis: null, fallback: true, reason: 'GROQ_API_KEY fehlt' });
+        }
+
+        // Items nach Lens gruppieren
+        const byLens = {};
+        for (const it of items) {
+          const lens = it.lens || 'unbekannt';
+          if (!byLens[lens]) byLens[lens] = [];
+          if (byLens[lens].length < 4) byLens[lens].push(`- ${it.source}: "${it.title}"`);
+        }
+        const lensList = Object.entries(byLens)
+          .map(([lens, lines]) => `[${lens.toUpperCase()}]\n${lines.join('\n')}`)
+          .join('\n\n');
+
+        const sys = 'Du bist ein Medienanalyst im Stil von Walter Lippmann oder Noam Chomsky. Du analysierst Framing, Auslassungen und Narrative-Muster in deutscher Berichterstattung. Sprache: NUR Deutsch. Stil: knapp, präzise, ohne Floskeln, ohne Markdown.';
+        const user = `Thema: "${topic}"
+
+Schlagzeilen aus verschiedenen politischen Lagern:
+
+${lensList}
+
+Liefere eine prägnante Framing-Analyse in genau diesem Format:
+
+KERNNARRATIV (Mainstream): [1 Satz]
+GEGEN-NARRATIV (Alternativ): [1 Satz]
+AUSGELASSEN: [1 Satz — was beide Lager NICHT erwähnen]
+PROPAGANDA-MUSTER: [1 Satz — semantische Tricks: Euphemismen, Personalisierung, Zahlen-Manipulation]
+EMPFEHLUNG: [1 Satz — was sollte der User selbst recherchieren?]`;
+
+        const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${env.GROQ_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'llama-3.3-70b-versatile',
+            messages: [{ role: 'system', content: sys }, { role: 'user', content: user }],
+            temperature: 0.7,
+            max_tokens: 600,
+          }),
+        });
+        if (!r.ok) return jsonResponse({ analysis: null, error: `Groq ${r.status}` });
+        const data = await r.json();
+        return jsonResponse({
+          analysis: data?.choices?.[0]?.message?.content || '',
+          model: 'groq-llama-3.3-70b',
+        });
+      } catch (e) {
+        return errorResponse(`Propaganda-Analyse-Fehler: ${e.message}`);
+      }
+    }
+
+    // ── Skandale & Kontroversen: GDELT 2.0 mit negativem Sentiment-Filter ──
+    if (path === '/api/kaninchenbau/skandale' && method === 'GET') {
+      const topic = url.searchParams.get('topic');
+      if (!topic) return errorResponse('topic fehlt', 400);
+      try {
+        // GDELT GKG-Tone-Filter: nur Artikel mit Tone < -3 (deutlich negativ)
+        const r = await fetch(
+          `https://api.gdeltproject.org/api/v2/doc/doc?query=${encodeURIComponent(topic)}%20sourcelang:german%20tone%3C-3&mode=ArtList&maxrecords=15&format=json&timespan=180d&sort=tonedesc`,
+          { signal: AbortSignal.timeout(10000) }
+        );
+        if (!r.ok) return jsonResponse({ items: [] });
+        const data = await r.json();
+        const items = (data?.articles || []).slice(0, 12).map(a => ({
+          title: a.title,
+          url: a.url,
+          domain: a.domain,
+          date: a.seendate,
+          tone: a.tone || 0,
+        }));
+        return jsonResponse({ topic, items, count: items.length });
+      } catch (e) {
+        return jsonResponse({ items: [], error: e.message });
       }
     }
 
