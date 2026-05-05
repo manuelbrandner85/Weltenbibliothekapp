@@ -758,6 +758,135 @@ LIMIT 30
     return const _Cc('US', 'USA');
   }
 
+  /// Schlüsselpersonen einer Org via Wikidata SPARQL (CEO/Vorstand/Gründer/etc).
+  Future<List<KeyPerson>> fetchKeyPersons(String topic) async {
+    try {
+      final url = Uri.parse(
+          '${ApiConfig.workerUrl}/api/kaninchenbau/keypersons?topic=${Uri.encodeQueryComponent(topic)}');
+      final resp = await http.get(url).timeout(const Duration(seconds: 25));
+      if (resp.statusCode != 200) return [];
+      final data = jsonDecode(resp.body) as Map<String, dynamic>;
+      return ((data['persons'] as List?) ?? const [])
+          .map((m) => KeyPerson(
+                id: (m['id'] ?? '').toString(),
+                name: (m['name'] ?? '').toString(),
+                description: (m['description'] ?? '').toString(),
+                role: (m['role'] ?? '').toString(),
+                imageUrl: m['image'] as String?,
+              ))
+          .toList();
+    } catch (e) {
+      debugPrint('KeyPersons-Error: $e');
+      return [];
+    }
+  }
+
+  /// EU-Lobbying-Einträge via LobbyFacts.eu.
+  Future<List<LobbyEntry>> fetchLobbying(String topic) async {
+    try {
+      final url = Uri.parse(
+          '${ApiConfig.workerUrl}/api/kaninchenbau/lobbying?topic=${Uri.encodeQueryComponent(topic)}');
+      final resp = await http.get(url).timeout(const Duration(seconds: 18));
+      if (resp.statusCode != 200) return [];
+      final data = jsonDecode(resp.body) as Map<String, dynamic>;
+      return ((data['entries'] as List?) ?? const [])
+          .map((m) => LobbyEntry(
+                name: (m['name'] ?? '').toString(),
+                country: (m['country'] ?? '').toString(),
+                category: (m['category'] ?? '').toString(),
+                url: (m['url'] ?? '').toString(),
+                budget: m['budget'] as num?,
+                fullTimeStaff: m['fullTimeStaff'] as int?,
+                lobbyists: m['lobbyists'] as int?,
+                meetings: m['meetings'] as int?,
+              ))
+          .toList();
+    } catch (e) {
+      debugPrint('Lobbying-Error: $e');
+      return [];
+    }
+  }
+
+  /// Deutsche Politiker via abgeordnetenwatch.de.
+  Future<List<Abgeordneter>> fetchAbgeordnete(String topic) async {
+    try {
+      final url = Uri.parse(
+          '${ApiConfig.workerUrl}/api/kaninchenbau/abgeordnete?topic=${Uri.encodeQueryComponent(topic)}');
+      final resp = await http.get(url).timeout(const Duration(seconds: 15));
+      if (resp.statusCode != 200) return [];
+      final data = jsonDecode(resp.body) as Map<String, dynamic>;
+      return ((data['politicians'] as List?) ?? const [])
+          .map((m) => Abgeordneter(
+                id: m['id'] as int?,
+                name: (m['name'] ?? '').toString(),
+                party: (m['party'] ?? '').toString(),
+                birthYear: m['birthYear'] as int?,
+                profession: m['profession'] as String?,
+                url: m['url'] as String?,
+              ))
+          .toList();
+    } catch (e) {
+      debugPrint('Abgeordnete-Error: $e');
+      return [];
+    }
+  }
+
+  /// Skandale & Kontroversen via GDELT 2.0 mit negativem Sentiment-Filter.
+  Future<List<Skandal>> fetchSkandale(String topic) async {
+    try {
+      final url = Uri.parse(
+          '${ApiConfig.workerUrl}/api/kaninchenbau/skandale?topic=${Uri.encodeQueryComponent(topic)}');
+      final resp = await http.get(url).timeout(const Duration(seconds: 15));
+      if (resp.statusCode != 200) return [];
+      final data = jsonDecode(resp.body) as Map<String, dynamic>;
+      return ((data['items'] as List?) ?? const [])
+          .map((m) => Skandal(
+                title: (m['title'] ?? '').toString(),
+                url: (m['url'] ?? '').toString(),
+                domain: (m['domain'] ?? '').toString(),
+                date: (m['date'] ?? '').toString(),
+                tone: (m['tone'] as num?)?.toDouble() ?? 0.0,
+              ))
+          .toList();
+    } catch (e) {
+      debugPrint('Skandale-Error: $e');
+      return [];
+    }
+  }
+
+  /// Propaganda-Linsen-Analyse: Groq vergleicht Framing zwischen Quellen.
+  Future<String?> fetchPropagandaAnalysis(
+      String topic, List<RssItem> rssItems) async {
+    if (rssItems.isEmpty) return null;
+    try {
+      final body = jsonEncode({
+        'topic': topic,
+        'items': rssItems
+            .take(20)
+            .map((it) => {
+                  'title': it.title,
+                  'source': it.source,
+                  'lens': it.lens,
+                })
+            .toList(),
+      });
+      final resp = await http
+          .post(
+            Uri.parse(
+                '${ApiConfig.workerUrl}/api/kaninchenbau/propaganda'),
+            headers: {'Content-Type': 'application/json'},
+            body: body,
+          )
+          .timeout(const Duration(seconds: 30));
+      if (resp.statusCode != 200) return null;
+      final data = jsonDecode(resp.body) as Map<String, dynamic>;
+      return (data['analysis'] as String?)?.trim();
+    } catch (e) {
+      debugPrint('Propaganda-Error: $e');
+      return null;
+    }
+  }
+
   /// AI-Insight via Virgil-Endpoint (Groq Llama 3.3 70B mit Workers AI Fallback).
   /// Schreibt auf Deutsch eine prägnante investigative Einsicht zum Thema.
   Future<String?> fetchAiInsight(String topic, {String? context}) async {

@@ -100,6 +100,78 @@ class NetworkEdge {
   });
 }
 
+/// Schlüsselperson mit Rolle + optionalem Bild (Wikidata SPARQL).
+class KeyPerson {
+  final String id;
+  final String name;
+  final String description;
+  final String role;
+  final String? imageUrl;
+  const KeyPerson({
+    required this.id,
+    required this.name,
+    required this.description,
+    required this.role,
+    this.imageUrl,
+  });
+}
+
+/// EU-Lobbying-Eintrag (LobbyFacts.eu).
+class LobbyEntry {
+  final String name;
+  final String country;
+  final String category;
+  final num? budget; // EUR pro Jahr
+  final int? fullTimeStaff;
+  final int? lobbyists;
+  final int? meetings;
+  final String url;
+  const LobbyEntry({
+    required this.name,
+    required this.country,
+    required this.category,
+    required this.url,
+    this.budget,
+    this.fullTimeStaff,
+    this.lobbyists,
+    this.meetings,
+  });
+}
+
+/// DE Politiker-Eintrag (abgeordnetenwatch.de).
+class Abgeordneter {
+  final int? id;
+  final String name;
+  final String party;
+  final int? birthYear;
+  final String? profession;
+  final String? url;
+  const Abgeordneter({
+    required this.name,
+    required this.party,
+    this.id,
+    this.birthYear,
+    this.profession,
+    this.url,
+  });
+}
+
+/// Skandal/Kontroverse aus GDELT (negativer Tonfall).
+class Skandal {
+  final String title;
+  final String url;
+  final String domain;
+  final String date;
+  final double tone;
+  const Skandal({
+    required this.title,
+    required this.url,
+    required this.domain,
+    required this.date,
+    required this.tone,
+  });
+}
+
 /// Bündelt Knoten + echte Beziehungs-Kanten eines Wikidata-Sub-Graphen.
 class NetworkGraph {
   final List<NetworkNode> nodes;

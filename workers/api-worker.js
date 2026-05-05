@@ -2672,6 +2672,218 @@ export default {
       });
     }
 
+    // ── Schlüsselpersonen via Wikidata SPARQL (CEO/Vorstand/Gründer einer Org) ──
+    if (path === '/api/kaninchenbau/keypersons' && method === 'GET') {
+      const topic = url.searchParams.get('topic');
+      if (!topic) return errorResponse('topic fehlt', 400);
+      try {
+        // 1. Entity-ID finden
+        const searchUrl = `https://www.wikidata.org/w/api.php?action=wbsearchentities&search=${encodeURIComponent(topic)}&language=de&limit=1&format=json&origin=*`;
+        const sr = await fetch(searchUrl, { signal: AbortSignal.timeout(8000) });
+        if (!sr.ok) return jsonResponse({ persons: [] });
+        const sd = await sr.json();
+        const entityId = sd?.search?.[0]?.id;
+        if (!entityId || !/^Q\d+$/.test(entityId)) {
+          return jsonResponse({ persons: [], note: 'Keine Entity gefunden' });
+        }
+
+        // 2. SPARQL für Schlüsselpersonen + Bilder
+        const sparql = `
+SELECT DISTINCT ?person ?personLabel ?personDescription ?roleLabel ?image WHERE {
+  VALUES ?role {
+    wdt:P488 wdt:P169 wdt:P112 wdt:P3320 wdt:P1037 wdt:P39
+    wdt:P35 wdt:P6 wdt:P1308
+  }
+  wd:${entityId} ?role ?person.
+  OPTIONAL { ?person wdt:P18 ?image. }
+  OPTIONAL { ?person schema:description ?personDescription. FILTER(LANG(?personDescription) = "de") }
+  ?roleProp wikibase:directClaim ?role.
+  SERVICE wikibase:label {
+    bd:serviceParam wikibase:language "de,en".
+    ?person rdfs:label ?personLabel.
+    ?roleProp rdfs:label ?roleLabel.
+  }
+}
+LIMIT 20`;
+        const sparqlUrl = `https://query.wikidata.org/sparql?format=json&query=${encodeURIComponent(sparql)}`;
+        const r = await fetch(sparqlUrl, {
+          signal: AbortSignal.timeout(15000),
+          headers: { 'Accept': 'application/sparql-results+json', 'User-Agent': 'WeltenbibliothekKaninchenbau/1.0' },
+        });
+        if (!r.ok) return jsonResponse({ persons: [], error: `SPARQL ${r.status}` });
+        const data = await r.json();
+        const seen = new Set();
+        const persons = (data?.results?.bindings || [])
+          .map(b => ({
+            id: (b.person?.value || '').split('/').pop(),
+            name: b.personLabel?.value || '',
+            description: b.personDescription?.value || '',
+            role: b.roleLabel?.value || '',
+            image: b.image?.value || null,
+          }))
+          .filter(p => p.name && !/^Q\d+$/.test(p.name))
+          .filter(p => {
+            if (seen.has(p.id)) return false;
+            seen.add(p.id);
+            return true;
+          });
+        return jsonResponse({ topic, entityId, persons });
+      } catch (e) {
+        return errorResponse(`KeyPersons-Fehler: ${e.message}`);
+      }
+    }
+
+    // ── LobbyFacts.eu — EU-Lobbying-Register (kein Key nötig) ──
+    if (path === '/api/kaninchenbau/lobbying' && method === 'GET') {
+      const topic = url.searchParams.get('topic');
+      if (!topic) return errorResponse('topic fehlt', 400);
+      try {
+        // LobbyFacts.eu Search
+        const r = await fetch(
+          `https://www.lobbyfacts.eu/api/v1/representative?search=${encodeURIComponent(topic)}&limit=10`,
+          { signal: AbortSignal.timeout(10000) }
+        );
+        if (!r.ok) {
+          // Fallback: EU Transparency Register Search-Link
+          return jsonResponse({
+            entries: [],
+            fallback: true,
+            searchUrl: `https://www.lobbyfacts.eu/representatives?search=${encodeURIComponent(topic)}`,
+          });
+        }
+        const data = await r.json();
+        const entries = (data?.results || data || []).slice(0, 10).map(e => ({
+          name: e.name || e.organisation_name || '',
+          country: e.country || e.head_office_country || '',
+          category: e.category || e.legal_status || '',
+          budget: e.eu_budget || e.estimated_costs_eur || null,
+          fullTimeStaff: e.full_time_employees || null,
+          lobbyists: e.lobbyists_with_access || null,
+          meetings: e.commission_meetings_count || null,
+          url: e.lobbyfacts_url || `https://www.lobbyfacts.eu/representative/${e.identification_code || ''}`,
+        }));
+        return jsonResponse({ topic, entries });
+      } catch (e) {
+        return jsonResponse({
+          entries: [],
+          error: e.message,
+          searchUrl: `https://www.lobbyfacts.eu/representatives?search=${encodeURIComponent(topic)}`,
+        });
+      }
+    }
+
+    // ── Abgeordnetenwatch.de — DE Bundestag/EU-Parlament (Open API, kein Key) ──
+    if (path === '/api/kaninchenbau/abgeordnete' && method === 'GET') {
+      const topic = url.searchParams.get('topic');
+      if (!topic) return errorResponse('topic fehlt', 400);
+      try {
+        // Politiker-Suche
+        const r = await fetch(
+          `https://www.abgeordnetenwatch.de/api/v2/politicians?search=${encodeURIComponent(topic)}&range_end=10`,
+          { signal: AbortSignal.timeout(10000) }
+        );
+        if (!r.ok) return jsonResponse({ politicians: [] });
+        const data = await r.json();
+        const politicians = (data?.data || []).slice(0, 10).map(p => ({
+          id: p.id,
+          name: p.label || `${p.first_name || ''} ${p.last_name || ''}`.trim(),
+          party: p.party?.label || '',
+          birthYear: p.year_of_birth,
+          profession: p.occupation,
+          url: p.abgeordnetenwatch_url,
+        }));
+        return jsonResponse({ topic, politicians });
+      } catch (e) {
+        return jsonResponse({ politicians: [], error: e.message });
+      }
+    }
+
+    // ── Propaganda-Linsen-Analyse: Groq vergleicht Framing zwischen Quellen ──
+    if (path === '/api/kaninchenbau/propaganda' && method === 'POST') {
+      try {
+        const { topic, items } = await request.json();
+        if (!topic || !Array.isArray(items) || items.length === 0) {
+          return errorResponse('topic + items[] benötigt', 400);
+        }
+        if (!env.GROQ_API_KEY) {
+          return jsonResponse({ analysis: null, fallback: true, reason: 'GROQ_API_KEY fehlt' });
+        }
+
+        // Items nach Lens gruppieren
+        const byLens = {};
+        for (const it of items) {
+          const lens = it.lens || 'unbekannt';
+          if (!byLens[lens]) byLens[lens] = [];
+          if (byLens[lens].length < 4) byLens[lens].push(`- ${it.source}: "${it.title}"`);
+        }
+        const lensList = Object.entries(byLens)
+          .map(([lens, lines]) => `[${lens.toUpperCase()}]\n${lines.join('\n')}`)
+          .join('\n\n');
+
+        const sys = 'Du bist ein Medienanalyst im Stil von Walter Lippmann oder Noam Chomsky. Du analysierst Framing, Auslassungen und Narrative-Muster in deutscher Berichterstattung. Sprache: NUR Deutsch. Stil: knapp, präzise, ohne Floskeln, ohne Markdown.';
+        const user = `Thema: "${topic}"
+
+Schlagzeilen aus verschiedenen politischen Lagern:
+
+${lensList}
+
+Liefere eine prägnante Framing-Analyse in genau diesem Format:
+
+KERNNARRATIV (Mainstream): [1 Satz]
+GEGEN-NARRATIV (Alternativ): [1 Satz]
+AUSGELASSEN: [1 Satz — was beide Lager NICHT erwähnen]
+PROPAGANDA-MUSTER: [1 Satz — semantische Tricks: Euphemismen, Personalisierung, Zahlen-Manipulation]
+EMPFEHLUNG: [1 Satz — was sollte der User selbst recherchieren?]`;
+
+        const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${env.GROQ_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'llama-3.3-70b-versatile',
+            messages: [{ role: 'system', content: sys }, { role: 'user', content: user }],
+            temperature: 0.7,
+            max_tokens: 600,
+          }),
+        });
+        if (!r.ok) return jsonResponse({ analysis: null, error: `Groq ${r.status}` });
+        const data = await r.json();
+        return jsonResponse({
+          analysis: data?.choices?.[0]?.message?.content || '',
+          model: 'groq-llama-3.3-70b',
+        });
+      } catch (e) {
+        return errorResponse(`Propaganda-Analyse-Fehler: ${e.message}`);
+      }
+    }
+
+    // ── Skandale & Kontroversen: GDELT 2.0 mit negativem Sentiment-Filter ──
+    if (path === '/api/kaninchenbau/skandale' && method === 'GET') {
+      const topic = url.searchParams.get('topic');
+      if (!topic) return errorResponse('topic fehlt', 400);
+      try {
+        // GDELT GKG-Tone-Filter: nur Artikel mit Tone < -3 (deutlich negativ)
+        const r = await fetch(
+          `https://api.gdeltproject.org/api/v2/doc/doc?query=${encodeURIComponent(topic)}%20sourcelang:german%20tone%3C-3&mode=ArtList&maxrecords=15&format=json&timespan=180d&sort=tonedesc`,
+          { signal: AbortSignal.timeout(10000) }
+        );
+        if (!r.ok) return jsonResponse({ items: [] });
+        const data = await r.json();
+        const items = (data?.articles || []).slice(0, 12).map(a => ({
+          title: a.title,
+          url: a.url,
+          domain: a.domain,
+          date: a.seendate,
+          tone: a.tone || 0,
+        }));
+        return jsonResponse({ topic, items, count: items.length });
+      } catch (e) {
+        return jsonResponse({ items: [], error: e.message });
+      }
+    }
+
     // ── Google Fact Check Tools (Worker-Proxy mit Server-Key) ──
     if (path === '/api/factcheck/search' && method === 'GET') {
       const q = url.searchParams.get('q');
