@@ -323,3 +323,33 @@ class FactCheck {
     this.date,
   });
 }
+
+/// Sherlock-Treffer: Username auf einer Plattform.
+class SherlockHit {
+  final String platform;
+  final String url;
+  final bool found;
+  final int statusCode;
+  const SherlockHit({
+    required this.platform,
+    required this.url,
+    required this.found,
+    required this.statusCode,
+  });
+}
+
+/// RSS-Aggregator-Item.
+class RssItem {
+  final String title;
+  final String url;
+  final String source;
+  final String lens;
+  final String? date;
+  const RssItem({
+    required this.title,
+    required this.url,
+    required this.source,
+    required this.lens,
+    this.date,
+  });
+}

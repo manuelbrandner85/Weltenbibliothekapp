@@ -2355,6 +2355,215 @@ export default {
       }
     }
 
+    // ══════════════════════════════════════════════════════════
+    // KANINCHENBAU OSINT / AI ENDPUNKTE
+    // ══════════════════════════════════════════════════════════
+
+    // ── Virgil-Chat: Groq Llama 3 70B (falls Key vorhanden) ──
+    if (path === '/api/virgil/chat' && method === 'POST') {
+      try {
+        const body = await request.json();
+        const messages = Array.isArray(body.messages) ? body.messages : [];
+        const system = body.system || 'Du bist VIRGIL, ein investigativer KI-Begleiter. Antworte auf Deutsch, knapp, präzise.';
+        const maxTokens = Math.min(body.max_tokens || 600, 1500);
+
+        // Bevorzugt Groq (700+ tok/s, Llama 3 70B), Fallback Workers AI Llama 8B
+        if (env.GROQ_API_KEY) {
+          const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${env.GROQ_API_KEY}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              model: 'llama-3.3-70b-versatile',
+              messages: [{ role: 'system', content: system }, ...messages],
+              max_tokens: maxTokens,
+              temperature: 0.6,
+            }),
+          });
+          if (r.ok) {
+            const data = await r.json();
+            return jsonResponse({
+              answer: data?.choices?.[0]?.message?.content || '',
+              model: 'groq-llama-3.3-70b',
+            });
+          }
+        }
+
+        // Fallback: Workers AI
+        if (!env.AI) return errorResponse('Kein AI-Backend verfügbar', 503);
+        const res = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+          messages: [{ role: 'system', content: system }, ...messages],
+          max_tokens: maxTokens,
+        });
+        return jsonResponse({
+          answer: res?.response || '',
+          model: 'workers-ai-llama-3.1-8b',
+        });
+      } catch (e) {
+        return errorResponse(`Virgil-Chat-Fehler: ${e.message}`);
+      }
+    }
+
+    // ── Sherlock-Lite: Username in 25 populären Netzwerken prüfen ──
+    if (path === '/api/sherlock/check' && method === 'POST') {
+      try {
+        const { username } = await request.json();
+        if (!username || !/^[a-zA-Z0-9._-]{2,30}$/.test(username)) {
+          return errorResponse('Ungültiger Username', 400);
+        }
+        const u = encodeURIComponent(username);
+        const sites = [
+          { name: 'GitHub', url: `https://github.com/${u}`, check: 'status' },
+          { name: 'Twitter/X', url: `https://twitter.com/${u}`, check: 'status' },
+          { name: 'Instagram', url: `https://www.instagram.com/${u}/`, check: 'status' },
+          { name: 'TikTok', url: `https://www.tiktok.com/@${u}`, check: 'status' },
+          { name: 'YouTube', url: `https://www.youtube.com/@${u}`, check: 'status' },
+          { name: 'Reddit', url: `https://www.reddit.com/user/${u}`, check: 'status' },
+          { name: 'Mastodon (mastodon.social)', url: `https://mastodon.social/@${u}`, check: 'status' },
+          { name: 'Telegram', url: `https://t.me/${u}`, check: 'status' },
+          { name: 'Twitch', url: `https://www.twitch.tv/${u}`, check: 'status' },
+          { name: 'Medium', url: `https://medium.com/@${u}`, check: 'status' },
+          { name: 'Substack', url: `https://${u}.substack.com`, check: 'status' },
+          { name: 'Patreon', url: `https://www.patreon.com/${u}`, check: 'status' },
+          { name: 'Pinterest', url: `https://www.pinterest.com/${u}`, check: 'status' },
+          { name: 'SoundCloud', url: `https://soundcloud.com/${u}`, check: 'status' },
+          { name: 'GitLab', url: `https://gitlab.com/${u}`, check: 'status' },
+          { name: 'Bitbucket', url: `https://bitbucket.org/${u}`, check: 'status' },
+          { name: 'StackOverflow', url: `https://stackoverflow.com/users/${u}`, check: 'status' },
+          { name: 'Steam', url: `https://steamcommunity.com/id/${u}`, check: 'status' },
+          { name: 'Vimeo', url: `https://vimeo.com/${u}`, check: 'status' },
+          { name: 'DEV.to', url: `https://dev.to/${u}`, check: 'status' },
+          { name: 'HackerNews', url: `https://news.ycombinator.com/user?id=${u}`, check: 'status' },
+          { name: 'Linktree', url: `https://linktr.ee/${u}`, check: 'status' },
+          { name: 'BlueSky', url: `https://bsky.app/profile/${u}.bsky.social`, check: 'status' },
+          { name: 'Threads', url: `https://www.threads.net/@${u}`, check: 'status' },
+          { name: 'OnlyFans', url: `https://onlyfans.com/${u}`, check: 'status' },
+        ];
+
+        const results = await Promise.all(sites.map(async (s) => {
+          try {
+            const r = await fetch(s.url, {
+              method: 'HEAD',
+              redirect: 'manual',
+              signal: AbortSignal.timeout(4000),
+              headers: { 'User-Agent': 'Mozilla/5.0 WeltenbibliothekKaninchenbau/1.0' },
+            });
+            return { name: s.name, url: s.url, status: r.status, found: r.status >= 200 && r.status < 400 };
+          } catch (e) {
+            return { name: s.name, url: s.url, status: 0, found: false, error: e.message };
+          }
+        }));
+
+        return jsonResponse({
+          username,
+          checked: results.length,
+          found: results.filter(r => r.found).length,
+          results,
+        });
+      } catch (e) {
+        return errorResponse(`Sherlock-Fehler: ${e.message}`);
+      }
+    }
+
+    // ── LibreTranslate-Proxy (kein Key, public instance) ──
+    if (path === '/api/translate' && method === 'POST') {
+      try {
+        const { text, source = 'auto', target = 'de' } = await request.json();
+        if (!text) return errorResponse('text fehlt', 400);
+        // Public LibreTranslate-Instanz (libretranslate.de, FOSS)
+        const r = await fetch('https://libretranslate.de/translate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ q: text, source, target, format: 'text' }),
+          signal: AbortSignal.timeout(15000),
+        });
+        if (!r.ok) return errorResponse(`LibreTranslate ${r.status}`, 502);
+        const data = await r.json();
+        return jsonResponse({ translated: data.translatedText || '', source, target });
+      } catch (e) {
+        return errorResponse(`Translate-Fehler: ${e.message}`);
+      }
+    }
+
+    // ── RSS-Aggregator: 20+ Quellen, gefiltert nach Topic ──
+    if (path === '/api/rss/aggregate' && method === 'GET') {
+      try {
+        const topic = (url.searchParams.get('topic') || '').toLowerCase().trim();
+        if (!topic) return errorResponse('topic fehlt', 400);
+        const feeds = [
+          { name: 'Spiegel', url: 'https://www.spiegel.de/index.rss', lens: 'establishment-left' },
+          { name: 'FAZ', url: 'https://www.faz.net/rss/aktuell/politik/', lens: 'establishment-right' },
+          { name: 'Welt', url: 'https://www.welt.de/feeds/section/politik.rss', lens: 'establishment-right' },
+          { name: 'Tichys', url: 'https://www.tichyseinblick.de/feed/', lens: 'alt-right' },
+          { name: 'NachDenkSeiten', url: 'https://www.nachdenkseiten.de/?feed=rss2', lens: 'alt-left' },
+          { name: 'Telepolis', url: 'https://www.telepolis.de/news-atom.xml', lens: 'alt' },
+          { name: 'Multipolar', url: 'https://multipolar-magazin.de/artikel.atom', lens: 'alt' },
+          { name: 'BBC', url: 'http://feeds.bbci.co.uk/news/world/rss.xml', lens: 'establishment' },
+          { name: 'Guardian', url: 'https://www.theguardian.com/world/rss', lens: 'establishment-left' },
+          { name: 'RT DE', url: 'https://de.rt.com/feeds/all.rss', lens: 'state-russia' },
+          { name: 'Reuters World', url: 'https://feeds.reuters.com/reuters/worldNews', lens: 'wire' },
+        ];
+
+        const all = [];
+        await Promise.allSettled(feeds.map(async (f) => {
+          try {
+            const r = await fetch(f.url, {
+              signal: AbortSignal.timeout(8000),
+              headers: { 'User-Agent': 'WeltenbibliothekKaninchenbau/1.0' },
+            });
+            if (!r.ok) return;
+            const xml = await r.text();
+            // Simple Item-Parser (kein DOMParser in Workers, RegEx-basiert)
+            const items = [...xml.matchAll(/<(item|entry)[\s\S]*?<\/\1>/g)];
+            for (const m of items.slice(0, 30)) {
+              const block = m[0];
+              const title = (block.match(/<title[^>]*>([\s\S]*?)<\/title>/) || [])[1] || '';
+              const link = (block.match(/<link[^>]*?>([\s\S]*?)<\/link>/) || block.match(/<link[^>]*href="([^"]+)"/) || [])[1] || '';
+              const date = (block.match(/<(pubDate|published|updated)[^>]*>([\s\S]*?)<\/\1>/) || [])[2] || '';
+              const cleanTitle = title.replace(/<!\[CDATA\[|\]\]>/g, '').replace(/<[^>]+>/g, '').trim();
+              if (cleanTitle.toLowerCase().includes(topic)) {
+                all.push({
+                  title: cleanTitle,
+                  url: link.replace(/<!\[CDATA\[|\]\]>/g, '').trim(),
+                  date,
+                  source: f.name,
+                  lens: f.lens,
+                });
+              }
+            }
+          } catch (_) {}
+        }));
+
+        all.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+        return jsonResponse({ topic, count: all.length, items: all.slice(0, 50) });
+      } catch (e) {
+        return errorResponse(`RSS-Fehler: ${e.message}`);
+      }
+    }
+
+    // ── Whisper Transcribe (Workers AI, kein API-Key) ──
+    if (path === '/api/whisper/transcribe' && method === 'POST') {
+      if (!env.AI) return errorResponse('Workers AI nicht konfiguriert', 503);
+      try {
+        const buf = await request.arrayBuffer();
+        if (buf.byteLength === 0) return errorResponse('audio fehlt', 400);
+        if (buf.byteLength > 25 * 1024 * 1024) {
+          return errorResponse('audio zu groß (max 25 MB)', 413);
+        }
+        const audio = [...new Uint8Array(buf)];
+        const res = await env.AI.run('@cf/openai/whisper', { audio });
+        return jsonResponse({
+          text: res?.text || '',
+          duration: res?.vtt ? null : undefined,
+          word_count: res?.word_count,
+        });
+      } catch (e) {
+        return errorResponse(`Whisper-Fehler: ${e.message}`);
+      }
+    }
+
     // ── AI Endpunkte ──────────────────────────────────────────
     if (path.startsWith('/api/ai/') || path.startsWith('/ai/')) {
       const gatewayUrl = env.OPENCLAW_GATEWAY_URL || 'http://72.62.154.95:50074';

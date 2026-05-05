@@ -27,7 +27,9 @@ import 'cards/money_flow_card.dart';
 import 'cards/network_card.dart';
 import 'cards/power_relations_card.dart';
 import 'cards/related_paths_card.dart';
+import 'cards/rss_mentions_card.dart';
 import 'cards/sanctions_card.dart';
+import 'cards/sherlock_card.dart';
 import 'cards/sources_card.dart';
 import 'cards/timeline_card.dart';
 import 'cards/wayback_card.dart';
@@ -224,6 +226,15 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
       setState(() {
         s.factChecks = fcs;
         s.factCheckLoading = false;
+      });
+    });
+
+    // RSS-Aggregator (Worker)
+    _service.fetchRssAggregate(s.topic).then((rss) {
+      if (!mounted || s.disposed) return;
+      setState(() {
+        s.rssItems = rss;
+        s.rssLoading = false;
       });
     });
 
@@ -489,7 +500,20 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
                   ),
                   const SizedBox(height: 16),
                   _StaggeredCard(
+                    delay: const Duration(milliseconds: 770),
+                    child: RssMentionsCard(
+                      items: s.rssItems,
+                      loading: s.rssLoading,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _StaggeredCard(
                     delay: const Duration(milliseconds: 800),
+                    child: SherlockCard(topic: s.topic),
+                  ),
+                  const SizedBox(height: 16),
+                  _StaggeredCard(
+                    delay: const Duration(milliseconds: 830),
                     child: RelatedPathsCard(
                       topics: s.relatedTopics,
                       loading: s.relatedLoading,
@@ -558,6 +582,9 @@ class _ThreadState {
 
   List<FactCheck> factChecks = const [];
   bool factCheckLoading = true;
+
+  List<RssItem> rssItems = const [];
+  bool rssLoading = true;
 
   _ThreadState({required this.topic});
 }

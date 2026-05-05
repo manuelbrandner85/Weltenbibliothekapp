@@ -157,7 +157,79 @@ class KaninchenbauService {
     return result.take(6).toList();
   }
 
-  /// Virgil-Chat — mehrturnig. Übergibt vollständige Historie + Kontext aus Cards.
+  /// Sherlock-Lite via Worker — Username in 25 Netzwerken prüfen.
+  Future<List<SherlockHit>> sherlockCheck(String username) async {
+    try {
+      final resp = await http
+          .post(
+            Uri.parse('${ApiConfig.workerUrl}/api/sherlock/check'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'username': username}),
+          )
+          .timeout(const Duration(seconds: 25));
+      if (resp.statusCode != 200) return [];
+      final data = jsonDecode(resp.body) as Map<String, dynamic>;
+      final results = (data['results'] as List?) ?? const [];
+      return results.map((raw) {
+        final m = raw as Map<String, dynamic>;
+        return SherlockHit(
+          platform: (m['name'] ?? '').toString(),
+          url: (m['url'] ?? '').toString(),
+          found: m['found'] == true,
+          statusCode: (m['status'] as int?) ?? 0,
+        );
+      }).toList();
+    } catch (e) {
+      debugPrint('Sherlock-Error: $e');
+      return [];
+    }
+  }
+
+  /// RSS-Aggregator via Worker — 11 Quellen nach Topic gefiltert.
+  Future<List<RssItem>> fetchRssAggregate(String topic) async {
+    try {
+      final url = Uri.parse(
+          '${ApiConfig.workerUrl}/api/rss/aggregate?topic=${Uri.encodeComponent(topic)}');
+      final resp = await http.get(url).timeout(const Duration(seconds: 25));
+      if (resp.statusCode != 200) return [];
+      final data = jsonDecode(resp.body) as Map<String, dynamic>;
+      final items = (data['items'] as List?) ?? const [];
+      return items.map((raw) {
+        final m = raw as Map<String, dynamic>;
+        return RssItem(
+          title: (m['title'] ?? '').toString(),
+          url: (m['url'] ?? '').toString(),
+          source: (m['source'] ?? '').toString(),
+          lens: (m['lens'] ?? '').toString(),
+          date: (m['date'] ?? '').toString(),
+        );
+      }).toList();
+    } catch (e) {
+      debugPrint('RSS-Error: $e');
+      return [];
+    }
+  }
+
+  /// LibreTranslate via Worker.
+  Future<String?> translate(String text, {String target = 'de'}) async {
+    try {
+      final resp = await http
+          .post(
+            Uri.parse('${ApiConfig.workerUrl}/api/translate'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'text': text, 'target': target}),
+          )
+          .timeout(const Duration(seconds: 20));
+      if (resp.statusCode != 200) return null;
+      final data = jsonDecode(resp.body) as Map<String, dynamic>;
+      return data['translated']?.toString();
+    } catch (e) {
+      debugPrint('Translate-Error: $e');
+      return null;
+    }
+  }
+
+  /// Virgil-Chat — mehrturnig via /api/virgil/chat (Groq Llama 3.3 70B mit Workers AI Fallback).
   /// Format: messages = [{role: 'user'|'assistant', content: '...'}]
   Future<String?> chatWithVirgil({
     required List<Map<String, String>> messages,
@@ -173,29 +245,23 @@ class KaninchenbauService {
           'Antworte direkt auf die Frage des Users — wenn etwas unklar ist, '
           'sage was du nicht weißt. Schlage konkrete nächste Recherche-Schritte vor.';
 
-      final history = messages
-          .map((m) =>
-              '${m['role'] == 'user' ? 'USER' : 'VIRGIL'}: ${m['content']}')
-          .join('\n');
       final body = jsonEncode({
-        'prompt': '$system\n\n$history\nVIRGIL:',
-        'max_tokens': 600,
+        'system': system,
+        'messages': messages,
+        'max_tokens': 800,
       });
 
       final resp = await http
           .post(
-            Uri.parse('${ApiConfig.workerUrl}/api/ai/ask'),
+            Uri.parse('${ApiConfig.workerUrl}/api/virgil/chat'),
             headers: {'Content-Type': 'application/json'},
             body: body,
           )
-          .timeout(const Duration(seconds: 30));
+          .timeout(const Duration(seconds: 35));
 
       if (resp.statusCode != 200) return null;
       final data = jsonDecode(resp.body) as Map<String, dynamic>;
-      return (data['response'] ??
-              data['answer'] ??
-              data['text'] ??
-              data['result'])
+      return (data['answer'] ?? data['response'] ?? data['text'])
           ?.toString()
           .trim();
     } catch (e) {
