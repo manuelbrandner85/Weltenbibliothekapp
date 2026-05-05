@@ -15,6 +15,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
+import '../../../../config/api_config.dart';
 import '../models/thread.dart';
 
 class OsintApis {
@@ -306,49 +307,44 @@ class OsintApis {
   }
 
   // ═══════════════════════════════════════════════════════════════
-  // 8. GOOGLE FACT CHECK TOOLS — braucht API-Key (optional)
-  // Falls kein Key: leeres Ergebnis, kein Crash.
+  // 8. GOOGLE FACT CHECK TOOLS — via Worker-Proxy (Key bleibt server-side)
+  // Falls Worker keinen Key hat: Fallback zu Snopes/Politifact/Correctiv-Links.
   // ═══════════════════════════════════════════════════════════════
-  Future<List<FactCheck>> fetchFactChecks(
-    String topic, {
-    String? apiKey,
-    int limit = 6,
-  }) async {
-    if (apiKey == null || apiKey.isEmpty) {
-      // Fallback: Snopes-Suche-Link
-      return [
-        FactCheck(
-          claim: 'Snopes durchsuchen: $topic',
-          verdict: 'Externes Archiv',
-          publisher: 'Snopes',
-          url:
-              'https://www.snopes.com/?s=${Uri.encodeComponent(topic)}',
-        ),
-        FactCheck(
-          claim: 'Politifact durchsuchen: $topic',
-          verdict: 'Externes Archiv',
-          publisher: 'Politifact',
-          url:
-              'https://www.politifact.com/search/?q=${Uri.encodeComponent(topic)}',
-        ),
-        FactCheck(
-          claim: 'Correctiv durchsuchen: $topic',
-          verdict: 'Externes Archiv',
-          publisher: 'Correctiv',
-          url:
-              'https://correctiv.org/?s=${Uri.encodeComponent(topic)}',
-        ),
-      ];
-    }
+  Future<List<FactCheck>> fetchFactChecks(String topic, {int limit = 6}) async {
+    final fallbackLinks = [
+      FactCheck(
+        claim: 'Snopes durchsuchen: $topic',
+        verdict: 'Externes Archiv',
+        publisher: 'Snopes',
+        url: 'https://www.snopes.com/?s=${Uri.encodeComponent(topic)}',
+      ),
+      FactCheck(
+        claim: 'Politifact durchsuchen: $topic',
+        verdict: 'Externes Archiv',
+        publisher: 'Politifact',
+        url:
+            'https://www.politifact.com/search/?q=${Uri.encodeComponent(topic)}',
+      ),
+      FactCheck(
+        claim: 'Correctiv durchsuchen: $topic',
+        verdict: 'Externes Archiv',
+        publisher: 'Correctiv',
+        url: 'https://correctiv.org/?s=${Uri.encodeComponent(topic)}',
+      ),
+    ];
+
     try {
+      // Worker-Proxy aufrufen (API-Key bleibt server-side im Worker)
       final url = Uri.parse(
-          'https://factchecktools.googleapis.com/v1alpha1/claims:search?query=${Uri.encodeComponent(topic)}&pageSize=$limit&key=$apiKey&languageCode=de');
-      final resp = await http.get(url).timeout(const Duration(seconds: 12));
-      if (resp.statusCode != 200) return [];
+          '${ApiConfig.workerUrl}/api/factcheck/search?q=${Uri.encodeComponent(topic)}');
+      final resp =
+          await http.get(url).timeout(const Duration(seconds: 12));
+      if (resp.statusCode != 200) return fallbackLinks;
       final data = jsonDecode(resp.body) as Map<String, dynamic>;
+      if (data['fallback'] == true) return fallbackLinks;
       final claims = (data['claims'] as List?) ?? const [];
       final out = <FactCheck>[];
-      for (final raw in claims) {
+      for (final raw in claims.take(limit)) {
         final m = raw as Map<String, dynamic>;
         final reviews = (m['claimReview'] as List?) ?? const [];
         for (final r in reviews) {
@@ -363,11 +359,12 @@ class OsintApis {
           ));
         }
       }
-      return out;
+      return out.isEmpty ? fallbackLinks : out;
     } catch (e) {
       debugPrint('FactCheck-Error: $e');
-      return [];
+      return fallbackLinks;
     }
   }
 }
+
 

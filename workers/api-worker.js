@@ -2543,6 +2543,27 @@ export default {
       }
     }
 
+    // ── Google Fact Check Tools (Worker-Proxy mit Server-Key) ──
+    if (path === '/api/factcheck/search' && method === 'GET') {
+      const q = url.searchParams.get('q');
+      if (!q) return errorResponse('q fehlt', 400);
+      if (!env.GOOGLE_FACTCHECK_API_KEY) {
+        // Fallback: leere Liste, Client zeigt Snopes/Politifact/Correctiv-Links
+        return jsonResponse({ claims: [], fallback: true });
+      }
+      try {
+        const r = await fetch(
+          `https://factchecktools.googleapis.com/v1alpha1/claims:search?query=${encodeURIComponent(q)}&pageSize=10&key=${env.GOOGLE_FACTCHECK_API_KEY}&languageCode=de`,
+          { signal: AbortSignal.timeout(12000) }
+        );
+        if (!r.ok) return jsonResponse({ claims: [], error: `Google ${r.status}` });
+        const data = await r.json();
+        return jsonResponse(data);
+      } catch (e) {
+        return errorResponse(`FactCheck-Fehler: ${e.message}`);
+      }
+    }
+
     // ── Whisper Transcribe (Workers AI, kein API-Key) ──
     if (path === '/api/whisper/transcribe' && method === 'POST') {
       if (!env.AI) return errorResponse('Workers AI nicht konfiguriert', 503);
