@@ -92,6 +92,7 @@ jobs:
           WB_URL: ${{ secrets.LIVEKIT_URL || 'wss://livekit-wb.srv1438024.hstgr.cloud' }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           GOOGLE_FACTCHECK_API_KEY: ${{ secrets.GOOGLE_FACTCHECK_API_KEY }}
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
         working-directory: workers
         run: |
           set -euo pipefail
@@ -127,6 +128,13 @@ jobs:
             PAYLOAD=$(printf '%s' "$PAYLOAD" | jq --arg v "$GOOGLE_FACTCHECK_API_KEY" '. + {GOOGLE_FACTCHECK_API_KEY: $v}')
           else
             echo "ℹ️  GOOGLE_FACTCHECK_API_KEY fehlt — Fact-Check Card zeigt Snopes/Politifact-Search-Links"
+          fi
+
+          if [ -n "${YOUTUBE_API_KEY:-}" ]; then
+            echo "→ YOUTUBE_API_KEY"
+            PAYLOAD=$(printf '%s' "$PAYLOAD" | jq --arg v "$YOUTUBE_API_KEY" '. + {YOUTUBE_API_KEY: $v}')
+          else
+            echo "ℹ️  YOUTUBE_API_KEY fehlt — YouTube-Cards zeigen Suche-Fallback-Link"
           fi
 
           if [ -n "${WB_SECRET:-}" ]; then
