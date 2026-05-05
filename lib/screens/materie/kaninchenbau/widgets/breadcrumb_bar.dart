@@ -106,7 +106,7 @@ class BreadcrumbBar extends StatelessWidget {
               icon: Icon(
                 saved
                     ? Icons.bookmark_rounded
-                    : Icons.bookmark_outline_rounded,
+                    : Icons.bookmark_border_rounded,
                 color: saved ? KbDesign.goldAccent : Colors.white70,
                 size: 22,
               ),

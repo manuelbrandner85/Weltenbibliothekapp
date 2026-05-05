@@ -78,7 +78,7 @@ class _MyInvestigationsScreenState extends State<MyInvestigationsScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.bookmark_outline_rounded,
+            Icon(Icons.bookmark_border_rounded,
                 size: 60, color: Colors.white.withValues(alpha: 0.3)),
             const SizedBox(height: 14),
             Text(
@@ -150,7 +150,7 @@ class _MyInvestigationsScreenState extends State<MyInvestigationsScreen> {
                     ),
                   ),
                 IconButton(
-                  icon: const Icon(Icons.delete_outline_rounded,
+                  icon: const Icon(Icons.delete_outlined,
                       color: Colors.white54, size: 20),
                   onPressed: () async {
                     final ok = await showDialog<bool>(

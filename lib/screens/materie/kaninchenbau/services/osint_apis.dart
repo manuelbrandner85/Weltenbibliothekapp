@@ -26,7 +26,7 @@ class OsintApis {
   // 1. OPENALEX — wissenschaftliche Papers (kein API-Key)
   // ═══════════════════════════════════════════════════════════════
   Future<List<AcademicPaper>> fetchOpenAlexPapers(String topic,
-      {int limit = 6}) async {
+      {int limit = 6, bool germanize = true}) async {
     try {
       final url = Uri.parse(
           'https://api.openalex.org/works?search=${Uri.encodeComponent(topic)}&per_page=$limit&sort=cited_by_count:desc');
@@ -36,7 +36,7 @@ class OsintApis {
       if (resp.statusCode != 200) return [];
       final data = jsonDecode(resp.body) as Map<String, dynamic>;
       final results = (data['results'] as List?) ?? const [];
-      return results.map((raw) {
+      var papers = results.map((raw) {
         final m = raw as Map<String, dynamic>;
         final authorships = (m['authorships'] as List?) ?? const [];
         final authors = authorships
@@ -54,6 +54,25 @@ class OsintApis {
           source: 'OpenAlex',
         );
       }).toList();
+
+      if (germanize && papers.isNotEmpty) {
+        final translated = await translateBatchToGerman(
+            papers.map((p) => p.title).toList());
+        papers = [
+          for (var i = 0; i < papers.length; i++)
+            AcademicPaper(
+              title: translated[i],
+              doi: papers[i].doi,
+              authors: papers[i].authors,
+              year: papers[i].year,
+              citations: papers[i].citations,
+              url: papers[i].url,
+              source: papers[i].source,
+            )
+        ];
+      }
+
+      return papers;
     } catch (e) {
       debugPrint('OpenAlex-Error: $e');
       return [];
@@ -241,46 +260,75 @@ class OsintApis {
   // ═══════════════════════════════════════════════════════════════
   Future<List<WaybackSnapshot>> fetchWaybackSnapshots(String topic,
       {int limit = 12}) async {
-    try {
-      // Erst URL aus Topic ableiten — primäre Suche via Wikipedia-URL
-      final probeUrl = 'wikipedia.org/wiki/${Uri.encodeComponent(topic)}';
-      final url = Uri.parse(
-          'https://web.archive.org/cdx/search/cdx?url=$probeUrl&output=json&limit=$limit&filter=statuscode:200');
-      final resp = await http.get(url).timeout(const Duration(seconds: 12));
-      if (resp.statusCode != 200) return [];
-      final data = jsonDecode(resp.body) as List;
-      if (data.isEmpty) return [];
-      // Erste Zeile = Header, Rest = Daten
-      final header = (data.first as List).map((e) => e.toString()).toList();
-      final urlIdx = header.indexOf('original');
-      final tsIdx = header.indexOf('timestamp');
-      final statusIdx = header.indexOf('statuscode');
-      final snapshots = <WaybackSnapshot>[];
-      for (var i = 1; i < data.length; i++) {
-        final row = (data[i] as List).map((e) => e.toString()).toList();
-        if (row.length < header.length) continue;
-        final origUrl = row[urlIdx];
-        final ts = row[tsIdx];
-        snapshots.add(WaybackSnapshot(
-          url: origUrl,
-          archiveUrl: 'https://web.archive.org/web/$ts/$origUrl',
-          timestamp: ts,
-          statusCode: int.tryParse(row[statusIdx]) ?? 200,
-        ));
+    // Versucht mehrere Wikipedia-Sprachvarianten + freie Domain-Suche
+    final probes = [
+      'de.wikipedia.org/wiki/${Uri.encodeComponent(topic.replaceAll(' ', '_'))}',
+      'en.wikipedia.org/wiki/${Uri.encodeComponent(topic.replaceAll(' ', '_'))}',
+      Uri.encodeComponent(topic), // freie Domain-Suche
+    ];
+
+    for (final probe in probes) {
+      try {
+        final url = Uri.parse(
+            'https://web.archive.org/cdx/search/cdx?url=$probe&output=json&limit=$limit&filter=statuscode:200&collapse=timestamp:6');
+        final resp = await http.get(url).timeout(const Duration(seconds: 12));
+        if (resp.statusCode != 200) continue;
+        final data = jsonDecode(resp.body) as List;
+        if (data.isEmpty || data.length < 2) continue;
+        final header = (data.first as List).map((e) => e.toString()).toList();
+        final urlIdx = header.indexOf('original');
+        final tsIdx = header.indexOf('timestamp');
+        final statusIdx = header.indexOf('statuscode');
+        final snapshots = <WaybackSnapshot>[];
+        for (var i = 1; i < data.length; i++) {
+          final row = (data[i] as List).map((e) => e.toString()).toList();
+          if (row.length < header.length) continue;
+          final origUrl = row[urlIdx];
+          final ts = row[tsIdx];
+          snapshots.add(WaybackSnapshot(
+            url: origUrl,
+            archiveUrl: 'https://web.archive.org/web/$ts/$origUrl',
+            timestamp: ts,
+            statusCode: int.tryParse(row[statusIdx]) ?? 200,
+          ));
+        }
+        if (snapshots.isNotEmpty) {
+          snapshots.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+          return snapshots.take(limit).toList();
+        }
+      } catch (e) {
+        debugPrint('Wayback-Probe-Error ($probe): $e');
       }
-      // Sort newest first
-      snapshots.sort((a, b) => b.timestamp.compareTo(a.timestamp));
-      return snapshots.take(limit).toList();
+    }
+    return [];
+  }
+
+  /// Übersetzt eine Liste englischer Texte ins Deutsche (Worker-Proxy mit Groq).
+  /// Gibt bei Fehler die Original-Texte zurück (kein Datenverlust).
+  Future<List<String>> translateBatchToGerman(List<String> texts) async {
+    if (texts.isEmpty) return texts;
+    try {
+      final url = Uri.parse('${ApiConfig.workerUrl}/api/translate/batch');
+      final resp = await http
+          .post(url,
+              headers: {'Content-Type': 'application/json'},
+              body: jsonEncode({'items': texts}))
+          .timeout(const Duration(seconds: 18));
+      if (resp.statusCode != 200) return texts;
+      final data = jsonDecode(resp.body) as Map<String, dynamic>;
+      final out = (data['translated'] as List?)?.cast<String>();
+      return out != null && out.length == texts.length ? out : texts;
     } catch (e) {
-      debugPrint('Wayback-Error: $e');
-      return [];
+      debugPrint('Translate-Error: $e');
+      return texts;
     }
   }
 
   // ═══════════════════════════════════════════════════════════════
   // 7. COURTLISTENER — US-Gerichtsakten (Read-only ohne Key)
   // ═══════════════════════════════════════════════════════════════
-  Future<List<CourtCase>> fetchCourtCases(String topic, {int limit = 6}) async {
+  Future<List<CourtCase>> fetchCourtCases(String topic,
+      {int limit = 6, bool germanize = true}) async {
     try {
       final url = Uri.parse(
           'https://www.courtlistener.com/api/rest/v3/search/?q=${Uri.encodeComponent(topic)}&type=o&order_by=score+desc');
@@ -288,7 +336,7 @@ class OsintApis {
       if (resp.statusCode != 200) return [];
       final data = jsonDecode(resp.body) as Map<String, dynamic>;
       final results = (data['results'] as List?) ?? const [];
-      return results.take(limit).map((raw) {
+      var cases = results.take(limit).map((raw) {
         final m = raw as Map<String, dynamic>;
         return CourtCase(
           caseName: (m['caseName'] ?? m['caseNameShort'] ?? '').toString(),
@@ -300,6 +348,26 @@ class OsintApis {
               : null,
         );
       }).toList();
+
+      if (germanize && cases.isNotEmpty) {
+        final snippets = cases
+            .map((c) => (c.snippet == null || c.snippet!.isEmpty)
+                ? c.caseName
+                : c.snippet!)
+            .toList();
+        final translated = await translateBatchToGerman(snippets);
+        cases = [
+          for (var i = 0; i < cases.length; i++)
+            CourtCase(
+              caseName: cases[i].caseName,
+              court: cases[i].court,
+              snippet: translated[i],
+              date: cases[i].date,
+              url: cases[i].url,
+            )
+        ];
+      }
+      return cases;
     } catch (e) {
       debugPrint('CourtListener-Error: $e');
       return [];

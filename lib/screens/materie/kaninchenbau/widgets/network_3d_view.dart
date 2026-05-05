@@ -121,7 +121,7 @@ class _Network3DViewState extends State<Network3DView>
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                   const SizedBox(width: 4),
-                  Icon(Icons.threed_rotation_rounded,
+                  Icon(Icons.threed_rotation,
                       color: KbDesign.neonRedSoft, size: 18),
                   const SizedBox(width: 6),
                   const Text('3D NETZWERK',
