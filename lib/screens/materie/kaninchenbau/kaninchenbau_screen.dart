@@ -399,6 +399,7 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
         s.euVotes = votes;
         s.euVotesLoading = false;
         s.loadedApiCount++;
+
       });
     });
 
@@ -1158,6 +1159,7 @@ class _ResearchLoadingOverlayState extends State<_ResearchLoadingOverlay>
     'PubMed Studien geladen …',
     'Internet Archive durchsucht …',
     'EU-Abstimmungen abgerufen …',
+
     'Akademische Paper durchsucht …',
     'Propaganda-Linsen kalibriert …',
     'Vergangene Snapshots geladen …',

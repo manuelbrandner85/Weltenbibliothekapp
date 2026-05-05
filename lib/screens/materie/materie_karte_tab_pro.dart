@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -19,23 +21,24 @@ class MaterieKarteTabPro extends StatefulWidget {
   State<MaterieKarteTabPro> createState() => _MaterieKarteTabProState();
 }
 
-class _MaterieKarteTabProState extends State<MaterieKarteTabPro> {
+class _MaterieKarteTabProState extends State<MaterieKarteTabPro>
+    with TickerProviderStateMixin {
   final MapController _mapController = MapController();
   final TextEditingController _searchController = TextEditingController();
-  
+
   // Filter State (Single-Select)
-  LocationCategory? _selectedCategory; // null = "Alle" ausgewählt
+  LocationCategory? _selectedCategory;
   String _searchQuery = '';
   MaterieLocationDetail? _selectedLocation;
-  
+
   // Gespeicherte Karten-Position (für Zoom-Zurück)
   LatLng? _savedMapCenter;
   double? _savedMapZoom;
-  
+
   // Timeline Filter (Jahr-Range)
-  double _selectedYear = 2024; // Aktuelles Jahr als Standard
-  bool _showTimeline = false;  // Timeline-Slider ein/aus
-  
+  double _selectedYear = 2024;
+  bool _showTimeline = false;
+
   // Detail Panel Tab State
   int _detailTabIndex = 0;
 
@@ -51,20 +54,68 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro> {
   String _wikiLocationName = '';
 
   // 🗺️ MAP LAYER STATE
-  String _currentMapLayer = 'street'; // street, satellite, terrain, topo
-  bool _isLayerSwitcherExpanded = false; // Standard: Eingeklappt
-  
+  String _currentMapLayer = 'street';
+
+  // Feature E: Radial layer menu
+  bool _layerMenuOpen = false;
+
+  // Feature F: Collapsible header
+  bool _headerCollapsed = false;
+
+  // Feature A: Panel slide animation
+  late AnimationController _panelSlideController;
+  late Animation<Offset> _panelSlideAnimation;
+
+  // Feature F: Gradient animation
+  late AnimationController _gradientAnimController;
+  late Animation<double> _gradientAnim;
+
+  // Feature C: Image swiper
+  PageController? _imagePageController;
+  int _imagePage = 0;
+
   @override
   void initState() {
     super.initState();
-    // Default: "Alle" ausgewählt (keine spezifische Kategorie)
     _selectedCategory = null;
+
+    // Feature A: Panel slide
+    _panelSlideController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+    _panelSlideAnimation = Tween<Offset>(
+      begin: const Offset(0, 1),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _panelSlideController,
+      curve: Curves.elasticOut,
+    ));
+
+    // Feature F: Gradient cycling
+    _gradientAnimController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 8),
+    )..repeat(reverse: true);
+    _gradientAnim = Tween<double>(begin: 0.0, end: 1.0).animate(
+      _gradientAnimController,
+    );
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _panelSlideController.dispose();
+    _gradientAnimController.dispose();
+    _imagePageController?.dispose();
     super.dispose();
+  }
+
+  void _openPanel() {
+    _imagePageController?.dispose();
+    _imagePageController = PageController();
+    _imagePage = 0;
+    _panelSlideController.forward(from: 0);
   }
 
   Future<void> _loadYoutubeForLocation(String name) async {
@@ -138,6 +189,15 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro> {
       backgroundColor: const Color(0xFF04080F),
       body: Stack(
         children: [
+          // Feature E: close radial menu on background tap
+          if (_layerMenuOpen)
+            Positioned.fill(
+              child: GestureDetector(
+                onTap: () => setState(() => _layerMenuOpen = false),
+                child: Container(color: Colors.transparent),
+              ),
+            ),
+
           // Map
           FlutterMap(
             mapController: _mapController,
@@ -146,6 +206,11 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro> {
               initialZoom: 4.0,
               minZoom: 2.0,
               maxZoom: 18.0,
+              onPositionChanged: (camera, hasGesture) {
+                if (hasGesture && !_headerCollapsed) {
+                  setState(() => _headerCollapsed = true);
+                }
+              },
               // 📍 B7: Long-Press auf die Karte → Live-Pin-Modal öffnen
               onLongPress: (tapPos, latlng) =>
                   _showLivePinModal(context, latlng),
@@ -161,19 +226,18 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro> {
               // 📍 B7: Live-Pins-Layer (gepulste Marker, auto-expire 5min)
               const LivePinsLayer(world: 'materie', accent: Color(0xFF2979FF)),
 
-              // Marker Layer mit Clustering
+              // Marker Layer mit Clustering — Feature B: _PulsingMarkerMaterie
               MapClusteringHelper.createClusterLayer(
                 markers: _filteredLocations.map((location) {
+                  final isSelected = _selectedLocation?.name == location.name;
                   return Marker(
                     point: location.position,
-                    width: 40,
-                    height: 40,
+                    width: 52,
+                    height: 52,
                     child: GestureDetector(
                       onTap: () {
-                        // Aktuelle Position/Zoom speichern vor dem Zoom
                         _savedMapCenter = _mapController.camera.center;
                         _savedMapZoom = _mapController.camera.zoom;
-                        
                         setState(() {
                           _selectedLocation = location;
                           _detailTabIndex = 0;
@@ -182,16 +246,22 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro> {
                           _ytLocationName = '';
                           _wikiImages = const [];
                           _wikiLocationName = '';
+                          _headerCollapsed = true;
                         });
+                        _openPanel();
                         _mapController.move(location.position, 12.0);
                         _loadYoutubeForLocation(location.name);
                         _loadWikimediaForLocation(location.name);
                       },
-                      child: _buildMarker(location),
+                      child: _PulsingMarkerMaterie(
+                        categoryColor: _getCategoryColor(location.category),
+                        icon: _getCategoryIcon(location.category),
+                        isSelected: isSelected,
+                      ),
                     ),
                   );
                 }).toList(),
-                clusterColor: const Color(0xFF2979FF),
+                clusterColor: const Color(0xFFE53935),
                 maxClusterRadius: MapClusteringHelper.calculateOptimalClusterRadius(
                   _filteredLocations.length,
                 ),
@@ -247,21 +317,95 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro> {
               ),
             ),
 
-          // 🗺️ MAP LAYER SWITCHER (Bottom Left - Fixed Position)
+          // 🗺️ MAP LAYER SWITCHER — Feature E: Radial Menu
           Positioned(
-            bottom: 100,  // Über dem Info-Panel
-            left: 16,     // Links ausgerichtet
-            child: _buildMapLayerSwitcher(),
+            bottom: 100,
+            left: 16,
+            child: _buildRadialLayerMenu(),
           ),
-          
-          // TOP BAR (wie bei Energie - mit SafeArea)
+
+          // Feature F: Animated gradient sky header (collapsible)
           SafeArea(
-            child: Column(
-              children: [
-                _buildSearchAndFilterBar(),
-                const SizedBox(height: 12),  // 📍 Spacing wie bei Energie
-                _buildCategoryFilters(),
-              ],
+            child: AnimatedBuilder(
+              animation: _gradientAnim,
+              builder: (context, child) {
+                final alpha = (0.06 * math.sin(_gradientAnim.value * math.pi));
+                return Stack(
+                  children: [
+                    Positioned(
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      child: Container(
+                        height: _headerCollapsed ? 0 : 120,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              const Color(0xFFE53935).withValues(alpha: alpha.clamp(0.0, 0.06)),
+                              Colors.transparent,
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 350),
+                      curve: Curves.easeInOut,
+                      height: _headerCollapsed ? 0 : double.infinity,
+                      clipBehavior: Clip.hardEdge,
+                      decoration: const BoxDecoration(),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _buildSearchAndFilterBar(),
+                          const SizedBox(height: 12),
+                          _buildCategoryFilters(),
+                        ],
+                      ),
+                    ),
+                    if (_headerCollapsed)
+                      Positioned(
+                        top: 8,
+                        left: 0,
+                        right: 0,
+                        child: Center(
+                          child: GestureDetector(
+                            onTap: () => setState(() => _headerCollapsed = false),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(20),
+                              child: BackdropFilter(
+                                filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                                child: Container(
+                                  height: 32,
+                                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withValues(alpha: 0.45),
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                        color: const Color(0xFFE53935).withValues(alpha: 0.4)),
+                                  ),
+                                  child: const Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.search, color: Colors.white70, size: 16),
+                                      SizedBox(width: 6),
+                                      Text('Suchen…',
+                                          style: TextStyle(color: Colors.white70, fontSize: 12)),
+                                      SizedBox(width: 6),
+                                      Icon(Icons.expand_more, color: Colors.white70, size: 16),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                );
+              },
             ),
           ),
           
@@ -284,26 +428,6 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro> {
             ),
         ],
       ),
-    );
-  }
-
-  Widget _buildMarker(MaterieLocationDetail location) {
-    final color = _getCategoryColor(location.category);
-    final icon = _getCategoryIcon(location.category);
-    
-    return Container(
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: 0.5),
-            blurRadius: 10,
-            spreadRadius: 2,
-          ),
-        ],
-      ),
-      child: Icon(icon, color: Colors.white, size: 20),
     );
   }
 
@@ -459,22 +583,28 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro> {
   }
 
   Widget _buildInfoPanel(MaterieLocationDetail location) {
-    return Container(
+    return SlideTransition(
+      position: _panelSlideAnimation,
+      child: ClipRRect(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+          child: Container(
       constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.6),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            const Color(0xFF0A1020).withValues(alpha: 0.99),
-            const Color(0xFF04080F).withValues(alpha: 0.99),
-          ],
-        ),
+        color: Colors.black.withValues(alpha: 0.75),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         border: Border.all(
           color: _getCategoryColor(location.category).withValues(alpha: 0.4),
           width: 1.5,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: _getCategoryColor(location.category).withValues(alpha: 0.15),
+            blurRadius: 30,
+            spreadRadius: 2,
+          ),
+        ],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -490,22 +620,14 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro> {
             ),
           ),
           
-          // Header
+          // Header — Feature A: pulsing icon
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: _getCategoryColor(location.category).withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    _getCategoryIcon(location.category),
-                    color: _getCategoryColor(location.category),
-                    size: 24,
-                  ),
+                _PulsingIconContainerMaterie(
+                  color: _getCategoryColor(location.category),
+                  icon: _getCategoryIcon(location.category),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -539,8 +661,6 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro> {
                       _selectedLocation = null;
                       _detailTabIndex = 0;
                     });
-                    
-                    // Zoom zurück zur gespeicherten Position
                     if (_savedMapCenter != null && _savedMapZoom != null) {
                       _mapController.move(_savedMapCenter!, _savedMapZoom!);
                     }
@@ -549,9 +669,9 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro> {
               ],
             ),
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // TABS — immer alle 3 sichtbar
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -564,7 +684,7 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro> {
             ),
           ),
           const SizedBox(height: 12),
-          
+
           // Content
           Expanded(
             child: SingleChildScrollView(
@@ -574,7 +694,10 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro> {
           ),
         ],
       ),
-    );
+      ), // Container
+        ), // BackdropFilter
+      ), // ClipRRect
+    ); // SlideTransition
   }
   
   Widget _buildTab(String label, int index, IconData icon) {
@@ -742,46 +865,120 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro> {
       );
     }
 
+    // Feature C: Cinematic image swiper
+    final maxDots = allImages.length.clamp(0, 6);
     return Column(
-      children: allImages.map((imageUrl) {
-        return Container(
-          margin: const EdgeInsets.only(bottom: 16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.2),
-            ),
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: Image.network(
-            imageUrl,
-            fit: BoxFit.cover,
-            loadingBuilder: (context, child, loadingProgress) {
-              if (loadingProgress == null) return child;
-              return Container(
-                height: 200,
-                color: Colors.white.withValues(alpha: 0.05),
-                child: const Center(
-                  child: CircularProgressIndicator(),
-                ),
-              );
-            },
-            errorBuilder: (context, error, stackTrace) {
-              return Container(
-                height: 200,
-                color: Colors.white.withValues(alpha: 0.05),
-                child: Center(
-                  child: Icon(
-                    Icons.broken_image,
-                    color: Colors.white.withValues(alpha: 0.3),
-                    size: 48,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          height: 220,
+          child: Stack(
+            children: [
+              PageView.builder(
+                controller: _imagePageController,
+                itemCount: allImages.length,
+                onPageChanged: (page) => setState(() => _imagePage = page),
+                itemBuilder: (context, index) {
+                  return AnimatedBuilder(
+                    animation: _imagePageController!,
+                    builder: (context, child) {
+                      double pageOffset = 0;
+                      if (_imagePageController!.hasClients &&
+                          _imagePageController!.page != null) {
+                        pageOffset = _imagePageController!.page!;
+                      } else {
+                        pageOffset = _imagePage.toDouble();
+                      }
+                      final offset = (index - pageOffset) * 30.0;
+                      return GestureDetector(
+                        onTap: () => Navigator.of(context).push(
+                          PageRouteBuilder(
+                            opaque: false,
+                            pageBuilder: (_, __, ___) => _FullscreenImageViewerMaterie(
+                              images: allImages,
+                              initialIndex: index,
+                              locationName: location.name,
+                            ),
+                          ),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: ClipRect(
+                            child: Hero(
+                              tag: 'mat_image_${index}_${location.name}',
+                              child: Transform.translate(
+                                offset: Offset(offset, 0),
+                                child: Image.network(
+                                  allImages[index],
+                                  fit: BoxFit.cover,
+                                  width: double.infinity,
+                                  height: 220,
+                                  loadingBuilder: (ctx, child, progress) {
+                                    if (progress == null) return child;
+                                    return Container(
+                                      color: Colors.white.withValues(alpha: 0.05),
+                                      child: const Center(
+                                        child: CircularProgressIndicator(
+                                            color: Colors.red, strokeWidth: 2)),
+                                    );
+                                  },
+                                  errorBuilder: (_, __, ___) => Container(
+                                    color: Colors.white.withValues(alpha: 0.05),
+                                    child: Icon(Icons.broken_image,
+                                        color: Colors.white.withValues(alpha: 0.3),
+                                        size: 48),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+              Positioned(
+                top: 8,
+                right: 12,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.6),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '${_imagePage + 1} / ${allImages.length}',
+                    style: const TextStyle(color: Colors.white, fontSize: 11),
                   ),
                 ),
-              );
-            },
+              ),
+            ],
           ),
-        );
-      }).toList(),
+        ),
+        const SizedBox(height: 10),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(maxDots, (i) {
+            final isCurrent = i == _imagePage.clamp(0, maxDots - 1);
+            return AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              margin: const EdgeInsets.symmetric(horizontal: 3),
+              width: isCurrent ? 10 : 7,
+              height: isCurrent ? 10 : 7,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isCurrent ? const Color(0xFFE53935) : Colors.transparent,
+                border: Border.all(
+                  color: const Color(0xFFE53935).withValues(alpha: 0.7),
+                  width: 1.5,
+                ),
+              ),
+            );
+          }),
+        ),
+        const SizedBox(height: 16),
+      ],
     );
   }
   
@@ -923,6 +1120,18 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro> {
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
+                          if (video.isSubtitled)
+                            Container(
+                              margin: const EdgeInsets.only(left: 4),
+                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.blue.withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(4),
+                                border: Border.all(color: Colors.blue.withValues(alpha: 0.4), width: 0.8),
+                              ),
+                              child: const Text('🇩🇪 UT',
+                                  style: TextStyle(color: Colors.lightBlueAccent, fontSize: 8, fontWeight: FontWeight.w700)),
+                            ),
                         ],
                       ),
                     ],
@@ -1448,103 +1657,358 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro> {
     }
   }
   
-  Widget _buildMapLayerSwitcher() {
-    const accent = Color(0xFF2979FF);
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-      decoration: BoxDecoration(
-        color: const Color(0xFF0A1020),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: accent.withValues(alpha: 0.35), width: 1.5),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.5),
-            blurRadius: 14,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+  // Feature E: Radial circular layer menu
+  Widget _buildRadialLayerMenu() {
+    const accent = Color(0xFFE53935);
+    const layers = [
+      ('street', Icons.map_rounded, 'Straße'),
+      ('satellite', Icons.satellite_rounded, 'Satellit'),
+      ('terrain', Icons.terrain_rounded, 'Gelände'),
+      ('topo', Icons.layers_rounded, 'Topo'),
+    ];
+
+    return SizedBox(
+      width: 160,
+      height: 160,
+      child: Stack(
+        clipBehavior: Clip.none,
         children: [
-          // TOGGLE BUTTON (immer sichtbar)
-          InkWell(
-            onTap: () {
-              setState(() => _isLayerSwitcherExpanded = !_isLayerSwitcherExpanded);
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.layers, size: 24, color: accent),
-                  const SizedBox(width: 10),
-                  const Text('Karte',
-                      style: TextStyle(
-                          fontSize: 14, color: accent,
-                          fontWeight: FontWeight.bold, letterSpacing: 0.3)),
-                  const SizedBox(width: 6),
-                  Icon(
-                    _isLayerSwitcherExpanded ? Icons.expand_less : Icons.expand_more,
-                    size: 20, color: accent,
+          ...List.generate(layers.length, (i) {
+            final (layerType, icon, label) = layers[i];
+            final angle = math.pi + (i * (math.pi / 2) / (layers.length - 1));
+            const radius = 68.0;
+            final dx = math.cos(angle) * radius;
+            final dy = math.sin(angle) * radius;
+            final isSelected = _currentMapLayer == layerType;
+
+            return AnimatedPositioned(
+              duration: Duration(milliseconds: 150 + i * 80),
+              curve: Curves.easeOutBack,
+              bottom: _layerMenuOpen ? (56 - dy) : 0,
+              left: _layerMenuOpen ? (0 + dx + 56) : 56,
+              child: AnimatedOpacity(
+                opacity: _layerMenuOpen ? 1.0 : 0.0,
+                duration: Duration(milliseconds: 150 + i * 60),
+                child: Tooltip(
+                  message: label,
+                  child: GestureDetector(
+                    onTap: () => setState(() {
+                      _currentMapLayer = layerType;
+                      _layerMenuOpen = false;
+                    }),
+                    child: Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: isSelected ? accent : const Color(0xFF0A1020),
+                        border: Border.all(
+                          color: isSelected ? accent : accent.withValues(alpha: 0.6),
+                          width: 1.5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.5),
+                            blurRadius: 8,
+                          ),
+                        ],
+                      ),
+                      child: Icon(icon,
+                          size: 20,
+                          color: isSelected
+                              ? Colors.white
+                              : Colors.white.withValues(alpha: 0.7)),
+                    ),
                   ),
-                ],
+                ),
+              ),
+            );
+          }),
+
+          // Toggle FAB
+          Positioned(
+            bottom: 0,
+            left: 0,
+            child: GestureDetector(
+              onTap: () => setState(() => _layerMenuOpen = !_layerMenuOpen),
+              child: Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: _layerMenuOpen ? accent : const Color(0xFF0A1020),
+                  border: Border.all(color: accent.withValues(alpha: 0.6), width: 1.5),
+                  boxShadow: [
+                    BoxShadow(
+                      color: _layerMenuOpen
+                          ? accent.withValues(alpha: 0.3)
+                          : Colors.black.withValues(alpha: 0.4),
+                      blurRadius: 12,
+                      spreadRadius: 1,
+                    ),
+                  ],
+                ),
+                child: AnimatedRotation(
+                  turns: _layerMenuOpen ? 0.125 : 0,
+                  duration: const Duration(milliseconds: 250),
+                  child: Icon(
+                    Icons.layers_rounded,
+                    size: 24,
+                    color: _layerMenuOpen ? Colors.white : accent,
+                  ),
+                ),
               ),
             ),
           ),
-
-          // LAYER OPTIONEN (nur wenn ausgeklappt)
-          if (_isLayerSwitcherExpanded) ...[
-            Divider(height: 1, color: Colors.white.withValues(alpha: 0.1)),
-            _buildLayerOption('street', Icons.map, 'Straße'),
-            _buildLayerOption('satellite', Icons.satellite, 'Satellit'),
-            _buildLayerOption('terrain', Icons.terrain, 'Gelände'),
-            _buildLayerOption('topo', Icons.layers, 'Topo'),
-          ],
         ],
       ),
     );
   }
 
-  Widget _buildLayerOption(String layerType, IconData icon, String label) {
-    const accent = Color(0xFF2979FF);
-    final isSelected = _currentMapLayer == layerType;
+}
 
-    return InkWell(
-      onTap: () {
-        setState(() {
-          _currentMapLayer = layerType;
-          _isLayerSwitcherExpanded = false;
-        });
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(
-          color: isSelected ? accent.withValues(alpha: 0.15) : Colors.transparent,
-          border: Border(
-            bottom: BorderSide(
-              color: Colors.white.withValues(alpha: 0.08),
-              width: 0.5,
+// ─────────────────────────────────────────────────────────────────────────────
+// Feature B: Animated pulsing marker (Materie)
+// ─────────────────────────────────────────────────────────────────────────────
+class _PulsingMarkerMaterie extends StatefulWidget {
+  final Color categoryColor;
+  final IconData icon;
+  final bool isSelected;
+
+  const _PulsingMarkerMaterie({
+    required this.categoryColor,
+    required this.icon,
+    required this.isSelected,
+  });
+
+  @override
+  State<_PulsingMarkerMaterie> createState() => _PulsingMarkerMaterieState();
+}
+
+class _PulsingMarkerMaterieState extends State<_PulsingMarkerMaterie>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _anim;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2500),
+    )..repeat(reverse: true);
+    _anim = Tween<double>(begin: 0.0, end: 1.0).animate(_ctrl);
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _anim,
+      builder: (context, _) {
+        final glowAlpha = 0.2 + 0.25 * _anim.value;
+        final blurR = 10.0 + 8.0 * _anim.value;
+        final scale = widget.isSelected ? 1.35 : 1.0;
+        return Transform.scale(
+          scale: scale,
+          child: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: widget.categoryColor,
+              border: Border.all(color: Colors.white, width: 2),
+              boxShadow: [
+                BoxShadow(
+                  color: widget.categoryColor.withValues(alpha: glowAlpha),
+                  blurRadius: blurR,
+                  spreadRadius: widget.isSelected ? 4 : 2,
+                ),
+              ],
             ),
+            child: Icon(widget.icon, color: Colors.white, size: 20),
           ),
+        );
+      },
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Feature A: Pulsing icon in panel header (Materie)
+// ─────────────────────────────────────────────────────────────────────────────
+class _PulsingIconContainerMaterie extends StatefulWidget {
+  final Color color;
+  final IconData icon;
+  const _PulsingIconContainerMaterie({required this.color, required this.icon});
+
+  @override
+  State<_PulsingIconContainerMaterie> createState() =>
+      _PulsingIconContainerMaterieState();
+}
+
+class _PulsingIconContainerMaterieState
+    extends State<_PulsingIconContainerMaterie>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat(reverse: true);
+    _scale = Tween<double>(begin: 1.0, end: 1.08).animate(
+      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(
+      scale: _scale,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: widget.color.withValues(alpha: 0.2),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: widget.color.withValues(alpha: 0.5)),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 22,
-                color: isSelected ? accent : Colors.white.withValues(alpha: 0.5)),
-            const SizedBox(width: 10),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 14,
-                color: isSelected ? accent : Colors.white.withValues(alpha: 0.7),
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                letterSpacing: 0.3,
+        child: Icon(widget.icon, color: widget.color, size: 24),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Feature D: Fullscreen image viewer with Hero + swipe-down-to-close (Materie)
+// ─────────────────────────────────────────────────────────────────────────────
+class _FullscreenImageViewerMaterie extends StatefulWidget {
+  final List<String> images;
+  final int initialIndex;
+  final String locationName;
+
+  const _FullscreenImageViewerMaterie({
+    required this.images,
+    required this.initialIndex,
+    required this.locationName,
+  });
+
+  @override
+  State<_FullscreenImageViewerMaterie> createState() =>
+      _FullscreenImageViewerMaterieState();
+}
+
+class _FullscreenImageViewerMaterieState
+    extends State<_FullscreenImageViewerMaterie>
+    with SingleTickerProviderStateMixin {
+  late PageController _pageCtrl;
+  late AnimationController _fadeCtrl;
+  late Animation<double> _fadeAnim;
+  double _dragOffset = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageCtrl = PageController(initialPage: widget.initialIndex);
+    _fadeCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _fadeAnim = Tween<double>(begin: 0.0, end: 1.0).animate(_fadeCtrl);
+    _fadeCtrl.forward();
+  }
+
+  @override
+  void dispose() {
+    _pageCtrl.dispose();
+    _fadeCtrl.dispose();
+    super.dispose();
+  }
+
+  void _close() {
+    _fadeCtrl.reverse().then((_) {
+      if (mounted) Navigator.of(context).pop();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _fadeAnim,
+      builder: (context, child) {
+        return Opacity(opacity: _fadeAnim.value, child: child);
+      },
+      child: GestureDetector(
+        onVerticalDragUpdate: (d) {
+          setState(() => _dragOffset += d.delta.dy);
+        },
+        onVerticalDragEnd: (d) {
+          if (_dragOffset.abs() > 100 ||
+              d.velocity.pixelsPerSecond.dy.abs() > 300) {
+            _close();
+          } else {
+            setState(() => _dragOffset = 0);
+          }
+        },
+        child: Scaffold(
+          backgroundColor: Colors.black,
+          body: Stack(
+            children: [
+              Transform.translate(
+                offset: Offset(0, _dragOffset),
+                child: PageView.builder(
+                  controller: _pageCtrl,
+                  itemCount: widget.images.length,
+                  itemBuilder: (context, index) {
+                    return InteractiveViewer(
+                      minScale: 0.5,
+                      maxScale: 4.0,
+                      child: Hero(
+                        tag: 'mat_image_${index}_${widget.locationName}',
+                        child: Image.network(
+                          widget.images[index],
+                          fit: BoxFit.contain,
+                          errorBuilder: (_, __, ___) => const Icon(
+                              Icons.broken_image,
+                              color: Colors.white30,
+                              size: 80),
+                        ),
+                      ),
+                    );
+                  },
+                ),
               ),
-            ),
-          ],
+              Positioned(
+                top: MediaQuery.of(context).padding.top + 8,
+                right: 16,
+                child: GestureDetector(
+                  onTap: _close,
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.6),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.close, color: Colors.white, size: 20),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
