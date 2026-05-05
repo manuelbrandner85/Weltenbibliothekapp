@@ -39,7 +39,7 @@ class _CinematicIntroState extends State<CinematicIntro>
   bool _ready = false;
   bool _typewriterDone = false;
   String _typed = '';
-  List<String> _history = [];
+  List<String> _history = const [];
   static const String _virgilLine = 'Was möchtest du erforschen?';
 
   // Vorgeschlagene Themen (rotieren)

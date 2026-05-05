@@ -1668,6 +1668,46 @@ class _ThreadState {
   List<CorpWatchArticle> corpWatch = const [];
   bool corpWatchLoading = true;
 
+  // ── Extra fields used by Deep-API layer ────────────────────────────────────
+  String? propagandaAnalysis;
+  bool propagandaLoading = true;
+
+  List<KeyPerson> keyPersons = const [];
+  bool keyPersonsLoading = true;
+
+  List<LobbyEntry> lobbyEntries = const [];
+  bool lobbyLoading = true;
+
+  List<Abgeordneter> abgeordnete = const [];
+  bool abgeordneteLoading = true;
+
+  List<Skandal> skandale = const [];
+  bool skandaleLoading = true;
+
+  List<OffshoreEntity> offshoreEntities = const [];
+  bool offshoreLoading = true;
+
+  List<CompanyEntry> companies = const [];
+  bool companiesLoading = true;
+
+  List<SanctionResult> openSanctions = const [];
+  bool openSanctionsLoading = true;
+
+  List<AlephDocument> alephDocs = const [];
+  bool alephLoading = true;
+
+  List<PubMedPaper> pubmedPapers = const [];
+  bool pubmedLoading = true;
+
+  List<SemanticPaper> semanticPapers = const [];
+  bool semanticLoading = true;
+
+  List<ArchiveDoc> archiveDocs = const [];
+  bool archiveLoading = true;
+
+  List<EuVote> euVotes = const [];
+  bool euVotesLoading = true;
+
   _ThreadState({required this.topic});
 }
 
