@@ -417,6 +417,121 @@ class SherlockHit {
   });
 }
 
+// ─── Mindblow Deep-Research Models ────────────────────────────────────────────
+
+class UsaSpendingAward {
+  final String title;
+  final String recipient;
+  final double amount;
+  final String? date;
+  final String? agency;
+  final String? url;
+  const UsaSpendingAward({required this.title, required this.recipient, required this.amount, this.date, this.agency, this.url});
+}
+
+class WorldBankProject {
+  final String name;
+  final String country;
+  final double? amount;
+  final String? status;
+  final String? date;
+  final String? url;
+  const WorldBankProject({required this.name, required this.country, this.amount, this.status, this.date, this.url});
+}
+
+class OpenOwnershipEntity {
+  final String name;
+  final String? country;
+  final String? type;
+  final String? owner;
+  final String? url;
+  const OpenOwnershipEntity({required this.name, this.country, this.type, this.owner, this.url});
+}
+
+class OpenSpendingEntry {
+  final String title;
+  final String? supplier;
+  final double? amount;
+  final String? currency;
+  final String? date;
+  final String? url;
+  const OpenSpendingEntry({required this.title, this.supplier, this.amount, this.currency, this.date, this.url});
+}
+
+class CourtListenerCase {
+  final String caseName;
+  final String? court;
+  final String? date;
+  final String? summary;
+  final String? url;
+  const CourtListenerCase({required this.caseName, this.court, this.date, this.summary, this.url});
+}
+
+class MuckRockFoia {
+  final String title;
+  final String? agency;
+  final String? status;
+  final String? date;
+  final String? url;
+  const MuckRockFoia({required this.title, this.agency, this.status, this.date, this.url});
+}
+
+class HudocCase {
+  final String title;
+  final String? country;
+  final String? date;
+  final String? importance;
+  final String? url;
+  const HudocCase({required this.title, this.country, this.date, this.importance, this.url});
+}
+
+class EuCuriaCase {
+  final String title;
+  final String? caseNumber;
+  final String? date;
+  final String? type;
+  final String? url;
+  const EuCuriaCase({required this.title, this.caseNumber, this.date, this.type, this.url});
+}
+
+class OpenSecretsOrg {
+  final String name;
+  final String? industry;
+  final double? total;
+  final String? cycle;
+  final String? url;
+  const OpenSecretsOrg({required this.name, this.industry, this.total, this.cycle, this.url});
+}
+
+class FecCandidate {
+  final String name;
+  final String? party;
+  final String? state;
+  final double? raised;
+  final String? cycle;
+  final String? url;
+  const FecCandidate({required this.name, this.party, this.state, this.raised, this.cycle, this.url});
+}
+
+class LittleSisEntity {
+  final String name;
+  final String? type;
+  final String? summary;
+  final String? url;
+  const LittleSisEntity({required this.name, this.type, this.summary, this.url});
+}
+
+class EveryPolitician {
+  final String name;
+  final String? country;
+  final String? party;
+  final String? chamber;
+  final String? url;
+  const EveryPolitician({required this.name, this.country, this.party, this.chamber, this.url});
+}
+
+// ─── RSS-Aggregator-Item ───────────────────────────────────────────────────────
+
 /// RSS-Aggregator-Item.
 class RssItem {
   final String title;
