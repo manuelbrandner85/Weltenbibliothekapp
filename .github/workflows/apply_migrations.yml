@@ -97,5 +97,6 @@ jobs:
           run_sql "v47 Kaninchenbau Saved Threads + Community Annotations" \
             supabase/migrations/20260505_v47_kaninchenbau_threads.sql
 
+
           echo ""
           echo "🎉 Alle Migrationen erfolgreich angewendet"
