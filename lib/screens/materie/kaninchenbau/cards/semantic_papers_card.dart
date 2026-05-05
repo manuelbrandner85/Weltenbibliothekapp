@@ -118,9 +118,9 @@ class SemanticPapersCard extends StatelessWidget {
               if (p.influential > 0)
                 _citBadge(Icons.star_rounded, '${p.influential} einflussreich', const Color(0xFFFF7043)),
             ]),
-            if (p.abstract_.isNotEmpty) ...[
+            if ((p.abstract_ ?? '').isNotEmpty) ...[
               const SizedBox(height: 4),
-              Text(p.abstract_,
+              Text(p.abstract_!,
                   style: TextStyle(color: Colors.white.withValues(alpha: 0.45), fontSize: 10, height: 1.4),
                   maxLines: 2, overflow: TextOverflow.ellipsis),
             ],

@@ -26,6 +26,16 @@ class _YoutubePlayerInlineState extends State<YoutubePlayerInline> {
         onPageFinished: (_) {
           if (mounted) setState(() => _loading = false);
         },
+        onNavigationRequest: (request) {
+          // Nur youtube-nocookie embed und Data-URLs erlauben — alles andere blockieren
+          final url = request.url;
+          if (url.startsWith('https://www.youtube-nocookie.com/embed/') ||
+              url.startsWith('about:') ||
+              url.startsWith('data:')) {
+            return NavigationDecision.navigate;
+          }
+          return NavigationDecision.prevent;
+        },
       ))
       ..loadRequest(Uri.parse(widget.video.embedUrl));
   }

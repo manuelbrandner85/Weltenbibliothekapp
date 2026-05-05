@@ -39,7 +39,7 @@ class _CinematicIntroState extends State<CinematicIntro>
   bool _ready = false;
   bool _typewriterDone = false;
   String _typed = '';
-  List<String> _history = [];
+  List<String> _history = const [];
   static const String _virgilLine = 'Was möchtest du erforschen?';
 
   // Vorgeschlagene Themen (rotieren)
@@ -428,66 +428,6 @@ class _CinematicIntroState extends State<CinematicIntro>
             ),
           ),
           const SizedBox(height: 28),
-          // G — Verlauf-Chips
-          AnimatedOpacity(
-            duration: const Duration(milliseconds: 600),
-            opacity: (_typewriterDone && _history.isNotEmpty) ? 1.0 : 0.0,
-            child: _history.isEmpty
-                ? const SizedBox.shrink()
-                : Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.history_rounded,
-                              size: 13,
-                              color: Colors.white.withValues(alpha: 0.35)),
-                          const SizedBox(width: 6),
-                          Text(
-                            'ZULETZT ERFORSCHT',
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.35),
-                              fontSize: 10,
-                              letterSpacing: 2,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          GestureDetector(
-                            onTap: () async {
-                              await KbHistoryService.clearHistory();
-                              if (mounted) setState(() => _history = []);
-                            },
-                            child: Text(
-                              'Löschen',
-                              style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.22),
-                                fontSize: 9,
-                                decoration: TextDecoration.underline,
-                                decorationColor: Colors.white.withValues(alpha: 0.22),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Wrap(
-                        alignment: WrapAlignment.center,
-                        spacing: 8,
-                        runSpacing: 6,
-                        children: _history
-                            .take(8)
-                            .map((s) => _SuggestionChip(
-                                  label: s,
-                                  isHistory: true,
-                                  onTap: () => _submit(s),
-                                ))
-                            .toList(),
-                      ),
-                      const SizedBox(height: 20),
-                    ],
-                  ),
-          ),
           // Hot-Topic Chips
           AnimatedOpacity(
             duration: const Duration(milliseconds: 600),
@@ -545,13 +485,8 @@ class _CinematicIntroState extends State<CinematicIntro>
 class _SuggestionChip extends StatefulWidget {
   final String label;
   final VoidCallback onTap;
-  final bool isHistory;
 
-  const _SuggestionChip({
-    required this.label,
-    required this.onTap,
-    this.isHistory = false,
-  });
+  const _SuggestionChip({required this.label, required this.onTap});
 
   @override
   State<_SuggestionChip> createState() => _SuggestionChipState();
@@ -572,23 +507,17 @@ class _SuggestionChipState extends State<_SuggestionChip> {
         },
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          padding: EdgeInsets.symmetric(
-            horizontal: widget.isHistory ? 10 : 14,
-            vertical: widget.isHistory ? 7 : 10,
-          ),
+          padding:
+              const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
             color: _hover
                 ? KbDesign.neonRed.withValues(alpha: 0.18)
-                : widget.isHistory
-                    ? Colors.white.withValues(alpha: 0.03)
-                    : Colors.white.withValues(alpha: 0.05),
+                : Colors.white.withValues(alpha: 0.05),
             border: Border.all(
               color: _hover
                   ? KbDesign.neonRed.withValues(alpha: 0.7)
-                  : widget.isHistory
-                      ? Colors.white.withValues(alpha: 0.1)
-                      : Colors.white.withValues(alpha: 0.18),
+                  : Colors.white.withValues(alpha: 0.18),
               width: 1,
             ),
             boxShadow: _hover
@@ -601,31 +530,14 @@ class _SuggestionChipState extends State<_SuggestionChip> {
                   ]
                 : null,
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (widget.isHistory) ...[
-                Icon(
-                  Icons.history_rounded,
-                  size: 10,
-                  color: Colors.white.withValues(alpha: 0.3),
-                ),
-                const SizedBox(width: 4),
-              ],
-              Text(
-                widget.label,
-                style: TextStyle(
-                  color: _hover
-                      ? Colors.white
-                      : widget.isHistory
-                          ? Colors.white.withValues(alpha: 0.5)
-                          : Colors.white70,
-                  fontSize: widget.isHistory ? 11.5 : 12.5,
-                  fontWeight: FontWeight.w500,
-                  letterSpacing: 0.3,
-                ),
-              ),
-            ],
+          child: Text(
+            widget.label,
+            style: TextStyle(
+              color: _hover ? Colors.white : Colors.white70,
+              fontSize: 12.5,
+              fontWeight: FontWeight.w500,
+              letterSpacing: 0.3,
+            ),
           ),
         ),
       ),

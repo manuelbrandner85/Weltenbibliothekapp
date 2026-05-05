@@ -2490,45 +2490,20 @@ export default {
     // ── RSS-Aggregator: 20+ Quellen, gefiltert nach Topic ──
     if (path === '/api/rss/aggregate' && method === 'GET') {
       try {
-        const topicRaw = (url.searchParams.get('topic') || '').trim();
-        if (!topicRaw) return errorResponse('topic fehlt', 400);
-        // Topic in Tokens splitten: "Klaus Schwab" → ["klaus", "schwab"]
-        // Auch Kurzformen testen: "WEF" → ["wef"]
-        const tokens = topicRaw.toLowerCase()
-          .split(/[\s,/-]+/)
-          .filter(t => t.length >= 3);
-        const matchTopic = (text) => {
-          const lt = text.toLowerCase();
-          if (lt.includes(topicRaw.toLowerCase())) return true;
-          // ALLE Tokens müssen im Titel sein (UND-Verknüpfung) — vermeidet zu viele False-Positives
-          return tokens.length > 0 && tokens.every(t => lt.includes(t));
-        };
-
+        const topic = (url.searchParams.get('topic') || '').toLowerCase().trim();
+        if (!topic) return errorResponse('topic fehlt', 400);
         const feeds = [
-          // Mainstream / Öffentlich-Rechtlich
-          { name: 'Tagesschau', url: 'https://www.tagesschau.de/index~rss2.xml', lens: 'oeff-rechtlich' },
-          { name: 'ZDF heute', url: 'https://www.zdf.de/rss/zdf/nachrichten', lens: 'oeff-rechtlich' },
-          { name: 'Deutschlandfunk', url: 'https://www.deutschlandfunk.de/die-nachrichten-100.rss', lens: 'oeff-rechtlich' },
-          { name: 'Spiegel', url: 'https://www.spiegel.de/index.rss', lens: 'mainstream-links' },
-          { name: 'Süddeutsche', url: 'https://rss.sueddeutsche.de/rss/Politik', lens: 'mainstream-links' },
-          { name: 'taz', url: 'https://taz.de/!s=&ExportStatus=Intern;rss/', lens: 'links' },
-          { name: 'FAZ', url: 'https://www.faz.net/rss/aktuell/politik/', lens: 'mainstream-rechts' },
-          { name: 'Welt', url: 'https://www.welt.de/feeds/section/politik.rss', lens: 'mainstream-rechts' },
-          { name: 'Cicero', url: 'https://www.cicero.de/rss.xml', lens: 'rechts-buergerlich' },
-          // Alternativ
-          { name: 'NachDenkSeiten', url: 'https://www.nachdenkseiten.de/?feed=rss2', lens: 'alt-links' },
-          { name: 'Multipolar', url: 'https://multipolar-magazin.de/artikel.atom', lens: 'alt' },
+          { name: 'Spiegel', url: 'https://www.spiegel.de/index.rss', lens: 'establishment-left' },
+          { name: 'FAZ', url: 'https://www.faz.net/rss/aktuell/politik/', lens: 'establishment-right' },
+          { name: 'Welt', url: 'https://www.welt.de/feeds/section/politik.rss', lens: 'establishment-right' },
+          { name: 'Tichys', url: 'https://www.tichyseinblick.de/feed/', lens: 'alt-right' },
+          { name: 'NachDenkSeiten', url: 'https://www.nachdenkseiten.de/?feed=rss2', lens: 'alt-left' },
           { name: 'Telepolis', url: 'https://www.telepolis.de/news-atom.xml', lens: 'alt' },
-          { name: 'Tichys Einblick', url: 'https://www.tichyseinblick.de/feed/', lens: 'alt-rechts' },
-          { name: 'Apolut', url: 'https://apolut.net/feed/', lens: 'alt' },
-          { name: 'Reitschuster', url: 'https://reitschuster.de/feed/', lens: 'alt-rechts' },
-          { name: 'Junge Welt', url: 'https://www.jungewelt.de/feeds/newsticker.rss', lens: 'links-radikal' },
-          // Investigativ
-          { name: 'Correctiv', url: 'https://correctiv.org/feed/', lens: 'investigativ' },
-          { name: 'LobbyControl', url: 'https://www.lobbycontrol.de/feed/', lens: 'investigativ' },
-          { name: 'Netzpolitik', url: 'https://netzpolitik.org/feed/', lens: 'investigativ' },
-          // International (DE-relevant)
-          { name: 'RT DE', url: 'https://de.rt.com/feeds/all.rss', lens: 'staatsmedien-russland' },
+          { name: 'Multipolar', url: 'https://multipolar-magazin.de/artikel.atom', lens: 'alt' },
+          { name: 'BBC', url: 'http://feeds.bbci.co.uk/news/world/rss.xml', lens: 'establishment' },
+          { name: 'Guardian', url: 'https://www.theguardian.com/world/rss', lens: 'establishment-left' },
+          { name: 'RT DE', url: 'https://de.rt.com/feeds/all.rss', lens: 'state-russia' },
+          { name: 'Reuters World', url: 'https://feeds.reuters.com/reuters/worldNews', lens: 'wire' },
         ];
 
         const all = [];
@@ -2540,20 +2515,17 @@ export default {
             });
             if (!r.ok) return;
             const xml = await r.text();
+            // Simple Item-Parser (kein DOMParser in Workers, RegEx-basiert)
             const items = [...xml.matchAll(/<(item|entry)[\s\S]*?<\/\1>/g)];
-            for (const m of items.slice(0, 60)) {
+            for (const m of items.slice(0, 30)) {
               const block = m[0];
               const title = (block.match(/<title[^>]*>([\s\S]*?)<\/title>/) || [])[1] || '';
-              const desc = (block.match(/<(description|summary|content)[^>]*>([\s\S]*?)<\/\1>/) || [])[2] || '';
               const link = (block.match(/<link[^>]*?>([\s\S]*?)<\/link>/) || block.match(/<link[^>]*href="([^"]+)"/) || [])[1] || '';
               const date = (block.match(/<(pubDate|published|updated)[^>]*>([\s\S]*?)<\/\1>/) || [])[2] || '';
               const cleanTitle = title.replace(/<!\[CDATA\[|\]\]>/g, '').replace(/<[^>]+>/g, '').trim();
-              const cleanDesc = desc.replace(/<!\[CDATA\[|\]\]>/g, '').replace(/<[^>]+>/g, '').trim().slice(0, 200);
-              // Match: Titel ODER Beschreibung
-              if (matchTopic(cleanTitle) || matchTopic(cleanDesc)) {
+              if (cleanTitle.toLowerCase().includes(topic)) {
                 all.push({
                   title: cleanTitle,
-                  description: cleanDesc,
                   url: link.replace(/<!\[CDATA\[|\]\]>/g, '').trim(),
                   date,
                   source: f.name,
@@ -2565,596 +2537,9 @@ export default {
         }));
 
         all.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-        return jsonResponse({ topic: topicRaw, count: all.length, items: all.slice(0, 80) });
+        return jsonResponse({ topic, count: all.length, items: all.slice(0, 50) });
       } catch (e) {
         return errorResponse(`RSS-Fehler: ${e.message}`);
-      }
-    }
-
-    // ── Batch-Übersetzung Englisch→Deutsch via Groq (kostengünstig: 1 Call statt N) ──
-    if (path === '/api/translate/batch' && method === 'POST') {
-      try {
-        const { items } = await request.json();
-        if (!Array.isArray(items) || items.length === 0) {
-          return jsonResponse({ translated: [] });
-        }
-        if (!env.GROQ_API_KEY) {
-          // Ohne Groq: Items unübersetzt zurückgeben
-          return jsonResponse({ translated: items, fallback: true });
-        }
-        const numbered = items.map((s, i) => `${i + 1}. ${String(s).replace(/\n/g, ' ').slice(0, 300)}`).join('\n');
-        const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${env.GROQ_API_KEY}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model: 'llama-3.3-70b-versatile',
-            messages: [
-              { role: 'system', content: 'Du übersetzt nummerierte englische Texte ins Deutsche. Gib NUR die Übersetzungen in der gleichen Nummerierung zurück, ohne Kommentare. Behalte Eigennamen und Firmennamen unverändert.' },
-              { role: 'user', content: numbered },
-            ],
-            temperature: 0.3,
-            max_tokens: 1500,
-          }),
-        });
-        if (!r.ok) return jsonResponse({ translated: items, error: `Groq ${r.status}` });
-        const data = await r.json();
-        const text = data?.choices?.[0]?.message?.content || '';
-        // Parse: "1. text\n2. text\n…"
-        const translated = items.map((orig, i) => {
-          const match = text.match(new RegExp(`(?:^|\\n)\\s*${i + 1}\\.\\s*(.+?)(?=(?:\\n\\s*\\d+\\.)|$)`, 's'));
-          return match ? match[1].trim() : orig;
-        });
-        return jsonResponse({ translated });
-      } catch (e) {
-        return errorResponse(`Translate-Fehler: ${e.message}`);
-      }
-    }
-
-    // ── Deep-Suche: Multi-API Aggregat für ein Thema (Worker-side, async parallel) ──
-    if (path === '/api/kaninchenbau/deep' && method === 'GET') {
-      const topic = url.searchParams.get('topic');
-      if (!topic) return errorResponse('topic fehlt', 400);
-      const t = encodeURIComponent(topic);
-
-      const tasks = await Promise.allSettled([
-        // Wikipedia DE Volltext
-        fetch(`https://de.wikipedia.org/api/rest_v1/page/summary/${t}`, { signal: AbortSignal.timeout(6000) })
-          .then(r => r.ok ? r.json() : null).catch(() => null),
-        // Europeana (Kultur, EU)
-        fetch(`https://api.europeana.eu/record/v2/search.json?wskey=api2demo&query=${t}&rows=8`, { signal: AbortSignal.timeout(6000) })
-          .then(r => r.ok ? r.json() : null).catch(() => null),
-        // arXiv (Pre-Prints)
-        fetch(`http://export.arxiv.org/api/query?search_query=all:${t}&max_results=6`, { signal: AbortSignal.timeout(6000) })
-          .then(r => r.ok ? r.text() : null).catch(() => null),
-        // GDELT 2.0 — letzte 24h, alle Sprachen
-        fetch(`https://api.gdeltproject.org/api/v2/doc/doc?query=${t}%20sourcelang:german&mode=ArtList&maxrecords=15&format=json&timespan=7d`, { signal: AbortSignal.timeout(6000) })
-          .then(r => r.ok ? r.json() : null).catch(() => null),
-        // CommonCrawl Index (URL-Erwähnungen)
-        fetch(`https://www.crossref.org/works?query=${t}&rows=5`, { signal: AbortSignal.timeout(6000) })
-          .then(r => r.ok ? r.json() : null).catch(() => null),
-      ]);
-
-      const [wiki, europeana, arxiv, gdelt, _crossref] = tasks.map(t => t.status === 'fulfilled' ? t.value : null);
-
-      // arXiv ist Atom-XML, simple Parse
-      const arxivPapers = arxiv ? [...String(arxiv).matchAll(/<entry>([\s\S]*?)<\/entry>/g)].slice(0, 6).map(m => {
-        const block = m[1];
-        const title = (block.match(/<title>([\s\S]*?)<\/title>/) || [])[1]?.trim();
-        const summary = (block.match(/<summary>([\s\S]*?)<\/summary>/) || [])[1]?.trim().slice(0, 200);
-        const link = (block.match(/<id>([\s\S]*?)<\/id>/) || [])[1]?.trim();
-        return { title, summary, url: link };
-      }).filter(p => p.title) : [];
-
-      return jsonResponse({
-        topic,
-        wikipedia_de: wiki ? {
-          title: wiki.title,
-          extract: wiki.extract,
-          url: wiki.content_urls?.desktop?.page,
-          thumbnail: wiki.thumbnail?.source,
-        } : null,
-        europeana: europeana?.items?.slice(0, 5).map(it => ({
-          title: it.title?.[0],
-          provider: it.dataProvider?.[0],
-          year: it.year?.[0],
-          url: it.guid,
-        })) || [],
-        arxiv: arxivPapers,
-        gdelt_news_de: gdelt?.articles?.slice(0, 10).map(a => ({
-          title: a.title,
-          url: a.url,
-          domain: a.domain,
-          date: a.seendate,
-        })) || [],
-      });
-    }
-
-    // ── Schlüsselpersonen via Wikidata SPARQL (CEO/Vorstand/Gründer einer Org) ──
-    if (path === '/api/kaninchenbau/keypersons' && method === 'GET') {
-      const topic = url.searchParams.get('topic');
-      if (!topic) return errorResponse('topic fehlt', 400);
-      try {
-        // 1. Entity-ID finden
-        const searchUrl = `https://www.wikidata.org/w/api.php?action=wbsearchentities&search=${encodeURIComponent(topic)}&language=de&limit=1&format=json&origin=*`;
-        const sr = await fetch(searchUrl, { signal: AbortSignal.timeout(8000) });
-        if (!sr.ok) return jsonResponse({ persons: [] });
-        const sd = await sr.json();
-        const entityId = sd?.search?.[0]?.id;
-        if (!entityId || !/^Q\d+$/.test(entityId)) {
-          return jsonResponse({ persons: [], note: 'Keine Entity gefunden' });
-        }
-
-        // 2. SPARQL für Schlüsselpersonen + Bilder
-        const sparql = `
-SELECT DISTINCT ?person ?personLabel ?personDescription ?roleLabel ?image WHERE {
-  VALUES ?role {
-    wdt:P488 wdt:P169 wdt:P112 wdt:P3320 wdt:P1037 wdt:P39
-    wdt:P35 wdt:P6 wdt:P1308
-  }
-  wd:${entityId} ?role ?person.
-  OPTIONAL { ?person wdt:P18 ?image. }
-  OPTIONAL { ?person schema:description ?personDescription. FILTER(LANG(?personDescription) = "de") }
-  ?roleProp wikibase:directClaim ?role.
-  SERVICE wikibase:label {
-    bd:serviceParam wikibase:language "de,en".
-    ?person rdfs:label ?personLabel.
-    ?roleProp rdfs:label ?roleLabel.
-  }
-}
-LIMIT 20`;
-        const sparqlUrl = `https://query.wikidata.org/sparql?format=json&query=${encodeURIComponent(sparql)}`;
-        const r = await fetch(sparqlUrl, {
-          signal: AbortSignal.timeout(15000),
-          headers: { 'Accept': 'application/sparql-results+json', 'User-Agent': 'WeltenbibliothekKaninchenbau/1.0' },
-        });
-        if (!r.ok) return jsonResponse({ persons: [], error: `SPARQL ${r.status}` });
-        const data = await r.json();
-        const seen = new Set();
-        const persons = (data?.results?.bindings || [])
-          .map(b => ({
-            id: (b.person?.value || '').split('/').pop(),
-            name: b.personLabel?.value || '',
-            description: b.personDescription?.value || '',
-            role: b.roleLabel?.value || '',
-            image: b.image?.value || null,
-          }))
-          .filter(p => p.name && !/^Q\d+$/.test(p.name))
-          .filter(p => {
-            if (seen.has(p.id)) return false;
-            seen.add(p.id);
-            return true;
-          });
-        return jsonResponse({ topic, entityId, persons });
-      } catch (e) {
-        return errorResponse(`KeyPersons-Fehler: ${e.message}`);
-      }
-    }
-
-    // ── LobbyFacts.eu — EU-Lobbying-Register (kein Key nötig) ──
-    if (path === '/api/kaninchenbau/lobbying' && method === 'GET') {
-      const topic = url.searchParams.get('topic');
-      if (!topic) return errorResponse('topic fehlt', 400);
-      try {
-        // LobbyFacts.eu Search
-        const r = await fetch(
-          `https://www.lobbyfacts.eu/api/v1/representative?search=${encodeURIComponent(topic)}&limit=10`,
-          { signal: AbortSignal.timeout(10000) }
-        );
-        if (!r.ok) {
-          // Fallback: EU Transparency Register Search-Link
-          return jsonResponse({
-            entries: [],
-            fallback: true,
-            searchUrl: `https://www.lobbyfacts.eu/representatives?search=${encodeURIComponent(topic)}`,
-          });
-        }
-        const data = await r.json();
-        const entries = (data?.results || data || []).slice(0, 10).map(e => ({
-          name: e.name || e.organisation_name || '',
-          country: e.country || e.head_office_country || '',
-          category: e.category || e.legal_status || '',
-          budget: e.eu_budget || e.estimated_costs_eur || null,
-          fullTimeStaff: e.full_time_employees || null,
-          lobbyists: e.lobbyists_with_access || null,
-          meetings: e.commission_meetings_count || null,
-          url: e.lobbyfacts_url || `https://www.lobbyfacts.eu/representative/${e.identification_code || ''}`,
-        }));
-        return jsonResponse({ topic, entries });
-      } catch (e) {
-        return jsonResponse({
-          entries: [],
-          error: e.message,
-          searchUrl: `https://www.lobbyfacts.eu/representatives?search=${encodeURIComponent(topic)}`,
-        });
-      }
-    }
-
-    // ── Abgeordnetenwatch.de — DE Bundestag/EU-Parlament (Open API, kein Key) ──
-    if (path === '/api/kaninchenbau/abgeordnete' && method === 'GET') {
-      const topic = url.searchParams.get('topic');
-      if (!topic) return errorResponse('topic fehlt', 400);
-      try {
-        // Politiker-Suche
-        const r = await fetch(
-          `https://www.abgeordnetenwatch.de/api/v2/politicians?search=${encodeURIComponent(topic)}&range_end=10`,
-          { signal: AbortSignal.timeout(10000) }
-        );
-        if (!r.ok) return jsonResponse({ politicians: [] });
-        const data = await r.json();
-        const politicians = (data?.data || []).slice(0, 10).map(p => ({
-          id: p.id,
-          name: p.label || `${p.first_name || ''} ${p.last_name || ''}`.trim(),
-          party: p.party?.label || '',
-          birthYear: p.year_of_birth,
-          profession: p.occupation,
-          url: p.abgeordnetenwatch_url,
-        }));
-        return jsonResponse({ topic, politicians });
-      } catch (e) {
-        return jsonResponse({ politicians: [], error: e.message });
-      }
-    }
-
-    // ── Propaganda-Linsen-Analyse: Groq vergleicht Framing zwischen Quellen ──
-    if (path === '/api/kaninchenbau/propaganda' && method === 'POST') {
-      try {
-        const { topic, items } = await request.json();
-        if (!topic || !Array.isArray(items) || items.length === 0) {
-          return errorResponse('topic + items[] benötigt', 400);
-        }
-        if (!env.GROQ_API_KEY) {
-          return jsonResponse({ analysis: null, fallback: true, reason: 'GROQ_API_KEY fehlt' });
-        }
-
-        // Items nach Lens gruppieren
-        const byLens = {};
-        for (const it of items) {
-          const lens = it.lens || 'unbekannt';
-          if (!byLens[lens]) byLens[lens] = [];
-          if (byLens[lens].length < 4) byLens[lens].push(`- ${it.source}: "${it.title}"`);
-        }
-        const lensList = Object.entries(byLens)
-          .map(([lens, lines]) => `[${lens.toUpperCase()}]\n${lines.join('\n')}`)
-          .join('\n\n');
-
-        const sys = 'Du bist ein Medienanalyst im Stil von Walter Lippmann oder Noam Chomsky. Du analysierst Framing, Auslassungen und Narrative-Muster in deutscher Berichterstattung. Sprache: NUR Deutsch. Stil: knapp, präzise, ohne Floskeln, ohne Markdown.';
-        const user = `Thema: "${topic}"
-
-Schlagzeilen aus verschiedenen politischen Lagern:
-
-${lensList}
-
-Liefere eine prägnante Framing-Analyse in genau diesem Format:
-
-KERNNARRATIV (Mainstream): [1 Satz]
-GEGEN-NARRATIV (Alternativ): [1 Satz]
-AUSGELASSEN: [1 Satz — was beide Lager NICHT erwähnen]
-PROPAGANDA-MUSTER: [1 Satz — semantische Tricks: Euphemismen, Personalisierung, Zahlen-Manipulation]
-EMPFEHLUNG: [1 Satz — was sollte der User selbst recherchieren?]`;
-
-        const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${env.GROQ_API_KEY}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model: 'llama-3.3-70b-versatile',
-            messages: [{ role: 'system', content: sys }, { role: 'user', content: user }],
-            temperature: 0.7,
-            max_tokens: 600,
-          }),
-        });
-        if (!r.ok) return jsonResponse({ analysis: null, error: `Groq ${r.status}` });
-        const data = await r.json();
-        return jsonResponse({
-          analysis: data?.choices?.[0]?.message?.content || '',
-          model: 'groq-llama-3.3-70b',
-        });
-      } catch (e) {
-        return errorResponse(`Propaganda-Analyse-Fehler: ${e.message}`);
-      }
-    }
-
-    // ── Skandale & Kontroversen: GDELT 2.0 mit negativem Sentiment-Filter ──
-    if (path === '/api/kaninchenbau/skandale' && method === 'GET') {
-      const topic = url.searchParams.get('topic');
-      if (!topic) return errorResponse('topic fehlt', 400);
-      try {
-        // GDELT GKG-Tone-Filter: nur Artikel mit Tone < -3 (deutlich negativ)
-        const r = await fetch(
-          `https://api.gdeltproject.org/api/v2/doc/doc?query=${encodeURIComponent(topic)}%20sourcelang:german%20tone%3C-3&mode=ArtList&maxrecords=15&format=json&timespan=180d&sort=tonedesc`,
-          { signal: AbortSignal.timeout(10000) }
-        );
-        if (!r.ok) return jsonResponse({ items: [] });
-        const data = await r.json();
-        const items = (data?.articles || []).slice(0, 12).map(a => ({
-          title: a.title,
-          url: a.url,
-          domain: a.domain,
-          date: a.seendate,
-          tone: a.tone || 0,
-        }));
-        return jsonResponse({ topic, items, count: items.length });
-      } catch (e) {
-        return jsonResponse({ items: [], error: e.message });
-      }
-    }
-
-    // ══════════════════════════════════════════════════════════════════════
-    // DEEP-API LAYER — kostenlose OSINT-Quellen ohne Key
-    // ══════════════════════════════════════════════════════════════════════
-
-    // ── ICIJ Offshore Leaks (Panama Papers, Pandora Papers, Paradise Papers) ──
-    if (path === '/api/kaninchenbau/offshore' && method === 'GET') {
-      const topic = url.searchParams.get('topic');
-      if (!topic) return errorResponse('topic fehlt', 400);
-      try {
-        const r = await fetch(
-          `https://offshoreleaks.icij.org/api/v1/search?q=${encodeURIComponent(topic)}&cat=1,2,3`,
-          { signal: AbortSignal.timeout(12000), headers: { 'Accept': 'application/json' } }
-        );
-        if (!r.ok) return jsonResponse({ entities: [], fallback: true });
-        const data = await r.json();
-        const nodes = data?.nodes || data?.data || data || [];
-        const entities = (Array.isArray(nodes) ? nodes : []).slice(0, 15).map(n => ({
-          name: n.name || n.caption || '',
-          type: n.labels?.[0] || n.node_type || '',
-          jurisdiction: n.jurisdiction_description || n.jurisdiction || '',
-          country: n.country_codes?.[0] || '',
-          status: n.status || '',
-          linkedTo: n.company_name || '',
-          sourceId: n.node_id || n.id || '',
-          leakType: n.data_from || n.sourceID || 'ICIJ',
-          url: n.node_id ? `https://offshoreleaks.icij.org/nodes/${n.node_id}` : null,
-        })).filter(e => e.name);
-        return jsonResponse({ topic, entities, total: entities.length });
-      } catch (e) {
-        return jsonResponse({ entities: [], error: e.message });
-      }
-    }
-
-    // ── OpenCorporates + GLEIF — Firmenregistrierungen weltweit ──
-    if (path === '/api/kaninchenbau/companies' && method === 'GET') {
-      const topic = url.searchParams.get('topic');
-      if (!topic) return errorResponse('topic fehlt', 400);
-      const t = encodeURIComponent(topic);
-      try {
-        const [ocRes, gleifRes] = await Promise.allSettled([
-          // OpenCorporates (100 req/day ohne Key)
-          fetch(`https://api.opencorporates.com/v0.4/companies/search?q=${t}&per_page=8`, {
-            signal: AbortSignal.timeout(10000),
-            headers: { 'Accept': 'application/json', 'User-Agent': 'WeltenbibliothekApp/1.0' },
-          }).then(r => r.ok ? r.json() : null).catch(() => null),
-          // GLEIF — Legal Entity Identifiers (komplett kostenlos, kein Key)
-          fetch(`https://api.gleif.org/api/v1/lei-records?filter[entity.legalName]=${t}&page[size]=8`, {
-            signal: AbortSignal.timeout(10000),
-            headers: { 'Accept': 'application/vnd.api+json' },
-          }).then(r => r.ok ? r.json() : null).catch(() => null),
-        ]);
-        const ocData = ocRes.status === 'fulfilled' ? ocRes.value : null;
-        const gleifData = gleifRes.status === 'fulfilled' ? gleifRes.value : null;
-        const ocCompanies = (ocData?.results?.companies || []).map(c => ({
-          name: c.company?.name || '',
-          jurisdiction: c.company?.jurisdiction_code || '',
-          companyNumber: c.company?.company_number || '',
-          status: c.company?.current_status || '',
-          registered: c.company?.incorporation_date || '',
-          type: c.company?.company_type || '',
-          url: c.company?.opencorporates_url || '',
-          source: 'OpenCorporates',
-        }));
-        const gleifCompanies = (gleifData?.data || []).map(r => ({
-          name: r.attributes?.entity?.legalName?.name || '',
-          jurisdiction: r.attributes?.entity?.legalJurisdiction || '',
-          status: r.attributes?.entity?.status || '',
-          lei: r.attributes?.lei || '',
-          type: r.attributes?.entity?.legalForm?.name || '',
-          country: r.attributes?.entity?.headquarters?.country || '',
-          source: 'GLEIF',
-        }));
-        return jsonResponse({
-          topic,
-          companies: [...ocCompanies, ...gleifCompanies].slice(0, 12),
-          total: ocCompanies.length + gleifCompanies.length,
-        });
-      } catch (e) {
-        return jsonResponse({ companies: [], error: e.message });
-      }
-    }
-
-    // ── OpenSanctions — unified sanctions + PEP aus 100+ Quellen ──
-    if (path === '/api/kaninchenbau/opensanctions' && method === 'GET') {
-      const topic = url.searchParams.get('topic');
-      if (!topic) return errorResponse('topic fehlt', 400);
-      try {
-        const r = await fetch(
-          `https://api.opensanctions.org/search/?q=${encodeURIComponent(topic)}&limit=15`,
-          {
-            signal: AbortSignal.timeout(12000),
-            headers: {
-              'Accept': 'application/json',
-              'User-Agent': 'WeltenbibliothekApp/1.0 (non-commercial research)',
-            },
-          }
-        );
-        if (!r.ok) return jsonResponse({ results: [], fallback: true });
-        const data = await r.json();
-        const results = (data?.results || []).slice(0, 12).map(e => ({
-          id: e.id,
-          name: e.caption || e.name || '',
-          schema: e.schema || '',
-          topics: e.properties?.topics || [],
-          countries: e.properties?.nationality || e.properties?.country || [],
-          birthDate: e.properties?.birthDate?.[0] || null,
-          notes: e.properties?.notes?.[0] || null,
-          datasets: e.datasets || [],
-          score: e.score || 0,
-          url: `https://www.opensanctions.org/entities/${e.id}`,
-        }));
-        return jsonResponse({ topic, results, total: data?.total?.value || results.length });
-      } catch (e) {
-        return jsonResponse({ results: [], error: e.message });
-      }
-    }
-
-    // ── OCCRP Aleph — 300+ Leak-Sammlungen (FinCEN, LuxLeaks, etc.) ──
-    if (path === '/api/kaninchenbau/aleph' && method === 'GET') {
-      const topic = url.searchParams.get('topic');
-      if (!topic) return errorResponse('topic fehlt', 400);
-      try {
-        const headers = { 'Accept': 'application/json', 'User-Agent': 'WeltenbibliothekApp/1.0' };
-        if (env.ALEPH_API_KEY) headers['Authorization'] = `ApiKey ${env.ALEPH_API_KEY}`;
-        const r = await fetch(
-          `https://aleph.occrp.org/api/2/search?q=${encodeURIComponent(topic)}&limit=12&facet=collection_id`,
-          { signal: AbortSignal.timeout(15000), headers }
-        );
-        if (!r.ok) return jsonResponse({ results: [], fallback: true, status: r.status });
-        const data = await r.json();
-        const results = (data?.results || []).slice(0, 12).map(e => ({
-          id: e.id,
-          name: e.caption || '',
-          schema: e.schema || '',
-          collection: e.collection?.label || '',
-          country: e.properties?.country?.[0] || '',
-          date: e.properties?.date?.[0] || e.updated_at || null,
-          summary: e.properties?.summary?.[0] || e.properties?.description?.[0] || '',
-          url: e.links?.ui || `https://aleph.occrp.org/entities/${e.id}`,
-        }));
-        return jsonResponse({ topic, results, total: data?.total?.value || results.length });
-      } catch (e) {
-        return jsonResponse({ results: [], error: e.message });
-      }
-    }
-
-    // ── PubMed NCBI — 35M+ biomedizinische Studien (kein Key) ──
-    if (path === '/api/kaninchenbau/pubmed' && method === 'GET') {
-      const topic = url.searchParams.get('topic');
-      if (!topic) return errorResponse('topic fehlt', 400);
-      const t = encodeURIComponent(topic);
-      try {
-        // 1. IDs holen
-        const searchR = await fetch(
-          `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=${t}&retmax=8&retmode=json&sort=relevance`,
-          { signal: AbortSignal.timeout(10000) }
-        );
-        if (!searchR.ok) return jsonResponse({ papers: [] });
-        const searchData = await searchR.json();
-        const ids = searchData?.esearchresult?.idlist || [];
-        if (ids.length === 0) return jsonResponse({ papers: [], topic });
-        // 2. Summaries holen
-        const summaryR = await fetch(
-          `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=pubmed&id=${ids.join(',')}&retmode=json`,
-          { signal: AbortSignal.timeout(10000) }
-        );
-        if (!summaryR.ok) return jsonResponse({ papers: [], topic });
-        const summaryData = await summaryR.json();
-        const papers = ids.map(id => {
-          const s = summaryData?.result?.[id];
-          if (!s) return null;
-          return {
-            pmid: id,
-            title: s.title || '',
-            authors: (s.authors || []).slice(0, 3).map(a => a.name).join(', '),
-            journal: s.source || '',
-            year: s.pubdate?.slice(0, 4) || '',
-            doi: s.articleids?.find(a => a.idtype === 'doi')?.value || '',
-            url: `https://pubmed.ncbi.nlm.nih.gov/${id}/`,
-          };
-        }).filter(Boolean);
-        return jsonResponse({ topic, papers });
-      } catch (e) {
-        return jsonResponse({ papers: [], error: e.message });
-      }
-    }
-
-    // ── Semantic Scholar — 200M+ Paper mit Citation-Graph ──
-    if (path === '/api/kaninchenbau/semanticpapers' && method === 'GET') {
-      const topic = url.searchParams.get('topic');
-      if (!topic) return errorResponse('topic fehlt', 400);
-      try {
-        const fields = 'title,authors,year,citationCount,influentialCitationCount,externalIds,openAccessPdf,abstract';
-        const r = await fetch(
-          `https://api.semanticscholar.org/graph/v1/paper/search?query=${encodeURIComponent(topic)}&fields=${fields}&limit=8`,
-          {
-            signal: AbortSignal.timeout(12000),
-            headers: { 'User-Agent': 'WeltenbibliothekApp/1.0' },
-          }
-        );
-        if (!r.ok) return jsonResponse({ papers: [] });
-        const data = await r.json();
-        const papers = (data?.data || []).map(p => ({
-          paperId: p.paperId,
-          title: p.title || '',
-          authors: (p.authors || []).slice(0, 3).map(a => a.name).join(', '),
-          year: p.year || null,
-          citations: p.citationCount || 0,
-          influential: p.influentialCitationCount || 0,
-          doi: p.externalIds?.DOI || null,
-          openAccess: p.openAccessPdf?.url || null,
-          abstract: (p.abstract || '').slice(0, 250),
-          url: `https://www.semanticscholar.org/paper/${p.paperId}`,
-        }));
-        return jsonResponse({ topic, papers });
-      } catch (e) {
-        return jsonResponse({ papers: [], error: e.message });
-      }
-    }
-
-    // ── Internet Archive Full-Text Search (kein Key) ──
-    if (path === '/api/kaninchenbau/archive' && method === 'GET') {
-      const topic = url.searchParams.get('topic');
-      if (!topic) return errorResponse('topic fehlt', 400);
-      const t = encodeURIComponent(topic);
-      try {
-        const r = await fetch(
-          `https://archive.org/advancedsearch.php?q=${t}&output=json&rows=10&fl[]=identifier&fl[]=title&fl[]=description&fl[]=date&fl[]=creator&fl[]=mediatype&sort[]=downloads+desc`,
-          { signal: AbortSignal.timeout(10000) }
-        );
-        if (!r.ok) return jsonResponse({ docs: [] });
-        const data = await r.json();
-        const docs = (data?.response?.docs || []).map(d => ({
-          id: d.identifier || '',
-          title: (Array.isArray(d.title) ? d.title[0] : d.title) || '',
-          creator: (Array.isArray(d.creator) ? d.creator[0] : d.creator) || '',
-          date: (Array.isArray(d.date) ? d.date[0] : d.date) || '',
-          mediatype: d.mediatype || '',
-          description: (Array.isArray(d.description) ? d.description[0] : d.description || '').slice(0, 200),
-          url: `https://archive.org/details/${d.identifier}`,
-        }));
-        return jsonResponse({ topic, docs });
-      } catch (e) {
-        return jsonResponse({ docs: [], error: e.message });
-      }
-    }
-
-    // ── HowTheyVote.eu — EU-Parlament Abstimmungen (kein Key) ──
-    if (path === '/api/kaninchenbau/euvotes' && method === 'GET') {
-      const topic = url.searchParams.get('topic');
-      if (!topic) return errorResponse('topic fehlt', 400);
-      try {
-        const r = await fetch(
-          `https://howtheyvote.eu/api/votes?search=${encodeURIComponent(topic)}&page_size=10`,
-          { signal: AbortSignal.timeout(10000), headers: { 'Accept': 'application/json' } }
-        );
-        if (!r.ok) return jsonResponse({ votes: [], fallback: true });
-        const data = await r.json();
-        const votes = (data?.results || data?.items || []).slice(0, 10).map(v => ({
-          id: v.id || v.vote_id || '',
-          title: v.description || v.title || '',
-          date: v.timestamp?.slice(0, 10) || v.date || '',
-          result: v.result || '',
-          forCount: v.stats?.voted_for || 0,
-          againstCount: v.stats?.voted_against || 0,
-          abstainCount: v.stats?.abstained || 0,
-          url: `https://howtheyvote.eu/votes/${v.id}`,
-        }));
-        return jsonResponse({ topic, votes });
-      } catch (e) {
-        return jsonResponse({ votes: [], error: e.message });
       }
     }
 
@@ -3176,80 +2561,6 @@ EMPFEHLUNG: [1 Satz — was sollte der User selbst recherchieren?]`;
         return jsonResponse(data);
       } catch (e) {
         return errorResponse(`FactCheck-Fehler: ${e.message}`);
-      }
-    }
-
-    // ── YouTube Search (YouTube Data API v3, serverseitig für Key-Schutz) ──
-    if (path === '/api/youtube/search' && method === 'GET') {
-      const q = url.searchParams.get('q') || '';
-      const maxResults = Math.min(parseInt(url.searchParams.get('max') || '6', 10), 12);
-      if (!q) return errorResponse('q fehlt', 400);
-      if (!env.YOUTUBE_API_KEY) {
-        return jsonResponse({
-          items: [],
-          fallback: true,
-          searchUrl: `https://www.youtube.com/results?search_query=${encodeURIComponent(q + ' deutsch')}&sp=EgIQAQ%3D%3D`,
-        });
-      }
-
-      const mapItems = (rawItems, isSubtitled) => (rawItems || []).map(item => ({
-        videoId: item.id?.videoId || '',
-        title: item.snippet?.title || '',
-        channel: item.snippet?.channelTitle || '',
-        thumbnail: item.snippet?.thumbnails?.medium?.url || item.snippet?.thumbnails?.default?.url || '',
-        published: item.snippet?.publishedAt || '',
-        description: (item.snippet?.description || '').slice(0, 120),
-        isSubtitled,
-      })).filter(i => i.videoId);
-
-      const base = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoEmbeddable=true&key=${env.YOUTUBE_API_KEY}&maxResults=${maxResults}`;
-
-      try {
-        // Schritt 1: Deutsche Videos (Query + "deutsch", Region DE)
-        const deQuery = q.toLowerCase().includes('deutsch') ? q : `${q} deutsch`;
-        const deResp = await fetch(`${base}&q=${encodeURIComponent(deQuery)}&relevanceLanguage=de&regionCode=DE`);
-        if (!deResp.ok) throw new Error(`YT API ${deResp.status}`);
-        const deItems = mapItems((await deResp.json()).items, false);
-
-        // Mindestens 2 deutsche Treffer → nur deutsche zurückgeben
-        if (deItems.length >= 2) {
-          return jsonResponse({ items: deItems, lang: 'de' });
-        }
-
-        // Schritt 2: Englische Videos mit Untertitel-Filter (closedCaption = hat Captions)
-        const enResp = await fetch(`${base}&q=${encodeURIComponent(q)}&videoCaption=closedCaption`);
-        if (!enResp.ok) throw new Error(`YT API ${enResp.status}`);
-        const enItems = mapItems((await enResp.json()).items, true);
-
-        // Deutsche zuerst, dann englische mit Untertitel-Badge
-        const combined = [...deItems, ...enItems].slice(0, maxResults);
-        return jsonResponse({ items: combined, lang: 'en_subtitled' });
-      } catch (e) {
-        return errorResponse(`YouTube-Fehler: ${e.message}`);
-      }
-    }
-
-    // ── Wikimedia Commons Bildersuche für Karte-Marker ──────────────────────
-    if (path === '/api/map/wikimedia' && method === 'GET') {
-      const q = url.searchParams.get('q') || '';
-      if (!q) return jsonResponse({ images: [] });
-      try {
-        const searchUrl = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(q)}&gsrnamespace=6&gsrlimit=10&prop=imageinfo&iiprop=url|size|mime&format=json&origin=*`;
-        const r = await fetch(searchUrl, { headers: { 'User-Agent': 'WeltenbibliothekApp/1.0' } });
-        if (!r.ok) return jsonResponse({ images: [] });
-        const data = await r.json();
-        const pages = data.query?.pages || {};
-        const images = Object.values(pages)
-          .filter(p => {
-            const u = p.imageinfo?.[0]?.url || '';
-            return u.match(/\.(jpg|jpeg|png|webp)(\?|$)/i);
-          })
-          .sort((a, b) => (b.imageinfo?.[0]?.width || 0) - (a.imageinfo?.[0]?.width || 0))
-          .slice(0, 6)
-          .map(p => p.imageinfo[0].url);
-        return jsonResponse({ images });
-      } catch (e) {
-        return jsonResponse({ images: [] });
       }
     }
 
@@ -4204,6 +3515,118 @@ EMPFEHLUNG: [1 Satz — was sollte der User selbst recherchieren?]`;
         });
       } catch (e) {
         return errorResponse(`Geo-Analyse-Fehler: ${e.message}`);
+      }
+    }
+
+    // ── YouTube Suche (YoutubeService) ────────────────────────
+    if (path === '/api/youtube/search' && method === 'GET') {
+      const q = url.searchParams.get('q') || '';
+      const lang = url.searchParams.get('lang') || 'de';
+      const max = parseInt(url.searchParams.get('max') || '6', 10);
+      if (!q) return jsonResponse({ items: [] });
+      try {
+        const apiKey = env.YOUTUBE_API_KEY;
+        if (!apiKey) return jsonResponse({ fallback: true, items: [] });
+        const queryDe = lang === 'de' ? `${q} deutsch` : q;
+        const params = new URLSearchParams({
+          part: 'snippet',
+          q: queryDe,
+          type: 'video',
+          maxResults: String(Math.min(max, 10)),
+          relevanceLanguage: 'de',
+          regionCode: 'DE',
+          key: apiKey,
+        });
+        const r = await fetch(`https://www.googleapis.com/youtube/v3/search?${params}`, { signal: AbortSignal.timeout(8000) });
+        if (!r.ok) return jsonResponse({ items: [] });
+        const data = await r.json();
+        const items = (data.items || [])
+          .filter(i => i.id?.videoId)
+          .map(i => ({
+            videoId: i.id.videoId,
+            title: i.snippet?.title || '',
+            channel: i.snippet?.channelTitle || '',
+            thumbnail: i.snippet?.thumbnails?.medium?.url || i.snippet?.thumbnails?.default?.url || '',
+            published: i.snippet?.publishedAt || '',
+            description: i.snippet?.description || '',
+          }));
+        // Falls weniger als 2 de-Treffer → englische Fallback-Suche
+        if (items.length < 2) {
+          const paramsEn = new URLSearchParams({ part: 'snippet', q, type: 'video', maxResults: String(Math.min(max, 10)), videoCaption: 'closedCaption', key: apiKey });
+          const rEn = await fetch(`https://www.googleapis.com/youtube/v3/search?${paramsEn}`, { signal: AbortSignal.timeout(6000) }).catch(() => null);
+          if (rEn?.ok) {
+            const dataEn = await rEn.json();
+            const itemsEn = (dataEn.items || []).filter(i => i.id?.videoId).map(i => ({
+              videoId: i.id.videoId,
+              title: i.snippet?.title || '',
+              channel: i.snippet?.channelTitle || '',
+              thumbnail: i.snippet?.thumbnails?.medium?.url || '',
+              published: i.snippet?.publishedAt || '',
+              description: i.snippet?.description || '',
+              isSubtitled: true,
+            }));
+            return jsonResponse({ items: [...items, ...itemsEn].slice(0, max) });
+          }
+        }
+        return jsonResponse({ items });
+      } catch (e) {
+        return jsonResponse({ items: [] });
+      }
+    }
+
+    // ── Wikimedia Commons Bilder für Karte ────────────────────
+    if (path === '/api/map/wikimedia' && method === 'GET') {
+      const q = url.searchParams.get('q') || '';
+      if (!q) return jsonResponse({ images: [] });
+      try {
+        const apiUrl = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrnamespace=6&gsrwhat=text&gsrsearch=${encodeURIComponent(q)}&gsrlimit=10&prop=imageinfo&iiprop=url|mime&iiurlwidth=800&format=json&origin=*`;
+        const r = await fetch(apiUrl, { headers: { 'User-Agent': 'WeltenbibliothekApp/1.0' }, signal: AbortSignal.timeout(8000) });
+        if (!r.ok) return jsonResponse({ images: [] });
+        const data = await r.json();
+        const pages = Object.values(data?.query?.pages || {});
+        const images = pages
+          .filter(p => p.imageinfo?.[0]?.mime?.startsWith('image/') && !p.imageinfo[0].mime.includes('svg'))
+          .map(p => p.imageinfo[0].thumburl || p.imageinfo[0].url)
+          .filter(Boolean)
+          .slice(0, 8);
+        return jsonResponse({ images });
+      } catch (e) {
+        return jsonResponse({ images: [] });
+      }
+    }
+
+    // ── YouTube Suche für Karte ───────────────────────────────
+    if (path === '/api/map/youtube' && method === 'GET') {
+      const q = url.searchParams.get('q') || '';
+      const lang = url.searchParams.get('lang') || 'de';
+      if (!q) return jsonResponse({ videos: [] });
+      try {
+        const apiKey = env.YOUTUBE_API_KEY;
+        if (!apiKey) return jsonResponse({ videos: [], error: 'YOUTUBE_API_KEY fehlt' });
+        const query = lang === 'de' ? `${q} deutsch` : q;
+        const params = new URLSearchParams({
+          part: 'snippet',
+          q: query,
+          type: 'video',
+          maxResults: '6',
+          relevanceLanguage: lang === 'de' ? 'de' : 'en',
+          regionCode: lang === 'de' ? 'DE' : 'US',
+          key: apiKey,
+        });
+        const r = await fetch(`https://www.googleapis.com/youtube/v3/search?${params}`, { signal: AbortSignal.timeout(8000) });
+        if (!r.ok) return jsonResponse({ videos: [] });
+        const data = await r.json();
+        const videos = (data.items || []).map(item => ({
+          videoId: item.id?.videoId || '',
+          title: item.snippet?.title || '',
+          channel: item.snippet?.channelTitle || '',
+          thumbnail: item.snippet?.thumbnails?.medium?.url || item.snippet?.thumbnails?.default?.url || '',
+          publishedAt: item.snippet?.publishedAt || '',
+          isSubtitled: lang !== 'de',
+        })).filter(v => v.videoId);
+        return jsonResponse({ videos });
+      } catch (e) {
+        return jsonResponse({ videos: [] });
       }
     }
 

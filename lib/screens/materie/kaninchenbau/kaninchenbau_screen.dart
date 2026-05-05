@@ -13,39 +13,58 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'cards/abgeordnete_card.dart';
 import 'cards/academic_card.dart';
 import 'cards/ai_insight_card.dart';
 import 'cards/aleph_card.dart';
 import 'cards/annotations_card.dart';
-import 'cards/abgeordnete_card.dart';
 import 'cards/archive_card.dart';
 import 'cards/companies_card.dart';
 import 'cards/court_cases_card.dart';
 import 'cards/deep_research_card.dart';
 import 'cards/documents_card.dart';
 import 'cards/eu_votes_card.dart';
-import 'cards/key_persons_card.dart';
-import 'cards/lobbying_card.dart';
-import 'cards/offshore_card.dart';
-import 'cards/opensanctions_card.dart';
-import 'cards/propaganda_card.dart';
-import 'cards/pubmed_card.dart';
-import 'cards/semantic_papers_card.dart';
-import 'cards/skandale_card.dart';
 import 'cards/fact_check_card.dart';
 import 'cards/global_impact_card.dart';
 import 'cards/identity_card.dart';
+import 'cards/key_persons_card.dart';
+import 'cards/lobbying_card.dart';
 import 'cards/media_compass_card.dart';
 import 'cards/money_flow_card.dart';
 import 'cards/network_card.dart';
+import 'cards/offshore_card.dart';
+import 'cards/opensanctions_card.dart';
 import 'cards/power_relations_card.dart';
+import 'cards/propaganda_card.dart';
+import 'cards/pubmed_card.dart';
 import 'cards/related_paths_card.dart';
 import 'cards/rss_mentions_card.dart';
 import 'cards/sanctions_card.dart';
+import 'cards/semantic_papers_card.dart';
 import 'cards/sherlock_card.dart';
+import 'cards/skandale_card.dart';
 import 'cards/sources_card.dart';
 import 'cards/timeline_card.dart';
 import 'cards/wayback_card.dart';
+// ── Mindblow-Tier (18 Tiefenquellen) ──
+import 'cards/usaspending_card.dart';
+import 'cards/worldbank_card.dart';
+import 'cards/openownership_card.dart';
+import 'cards/openspending_card.dart';
+import 'cards/courtlistener_card.dart';
+import 'cards/muckrock_card.dart';
+import 'cards/hudoc_card.dart';
+import 'cards/eucuria_card.dart';
+import 'cards/opensecrets_card.dart';
+import 'cards/fec_card.dart';
+import 'cards/littlesis_card.dart';
+import 'cards/everypolitician_card.dart';
+import 'cards/documentcloud_card.dart';
+import 'cards/wikileaks_card.dart';
+import 'cards/ciacrest_card.dart';
+import 'cards/snowden_card.dart';
+import 'cards/oc_network_card.dart';
+import 'cards/corpwatch_card.dart';
 import 'services/kb_history_service.dart';
 import 'services/osint_apis.dart';
 import 'services/saved_threads_service.dart';
@@ -384,6 +403,180 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
       });
     });
 
+    // ── MINDBLOW-TIER (18 Tiefenquellen) ───────────────────────────────────
+    _service.fetchUsaSpending(s.topic).then((items) {
+      if (!mounted || s.disposed) return;
+      setState(() { s.usaSpending = items; s.usaSpendingLoading = false; s.loadedApiCount++; });
+    });
+    _service.fetchWorldBank(s.topic).then((items) {
+      if (!mounted || s.disposed) return;
+      setState(() { s.worldBank = items; s.worldBankLoading = false; s.loadedApiCount++; });
+    });
+    _service.fetchOpenOwnership(s.topic).then((items) {
+      if (!mounted || s.disposed) return;
+      setState(() { s.openOwnership = items; s.openOwnershipLoading = false; s.loadedApiCount++; });
+    });
+    _service.fetchOpenSpending(s.topic).then((items) {
+      if (!mounted || s.disposed) return;
+      setState(() { s.openSpending = items; s.openSpendingLoading = false; s.loadedApiCount++; });
+    });
+    _service.fetchCourtListener(s.topic).then((items) {
+      if (!mounted || s.disposed) return;
+      setState(() { s.courtListener = items; s.courtListenerLoading = false; s.loadedApiCount++; });
+    });
+    _service.fetchMuckRock(s.topic).then((items) {
+      if (!mounted || s.disposed) return;
+      setState(() { s.muckRock = items; s.muckRockLoading = false; s.loadedApiCount++; });
+    });
+    _service.fetchHudoc(s.topic).then((items) {
+      if (!mounted || s.disposed) return;
+      setState(() { s.hudoc = items; s.hudocLoading = false; s.loadedApiCount++; });
+    });
+    _service.fetchEuCuria(s.topic).then((items) {
+      if (!mounted || s.disposed) return;
+      setState(() { s.euCuria = items; s.euCuriaLoading = false; s.loadedApiCount++; });
+    });
+    _service.fetchOpenSecrets(s.topic).then((items) {
+      if (!mounted || s.disposed) return;
+      setState(() { s.openSecrets = items; s.openSecretsLoading = false; s.loadedApiCount++; });
+    });
+    _service.fetchFec(s.topic).then((items) {
+      if (!mounted || s.disposed) return;
+      setState(() { s.fec = items; s.fecLoading = false; s.loadedApiCount++; });
+    });
+    _service.fetchLittleSis(s.topic).then((items) {
+      if (!mounted || s.disposed) return;
+      setState(() { s.littleSis = items; s.littleSisLoading = false; s.loadedApiCount++; });
+    });
+    _service.fetchEveryPolitician(s.topic).then((items) {
+      if (!mounted || s.disposed) return;
+      setState(() { s.everyPolitician = items; s.everyPoliticianLoading = false; s.loadedApiCount++; });
+    });
+    _service.fetchDocumentCloud(s.topic).then((items) {
+      if (!mounted || s.disposed) return;
+      setState(() { s.documentCloud = items; s.documentCloudLoading = false; s.loadedApiCount++; });
+    });
+    _service.fetchWikiLeaks(s.topic).then((items) {
+      if (!mounted || s.disposed) return;
+      setState(() { s.wikiLeaks = items; s.wikiLeaksLoading = false; s.loadedApiCount++; });
+    });
+    _service.fetchCiaCrest(s.topic).then((items) {
+      if (!mounted || s.disposed) return;
+      setState(() { s.ciaCrest = items; s.ciaCrestLoading = false; s.loadedApiCount++; });
+    });
+    _service.fetchSnowden(s.topic).then((items) {
+      if (!mounted || s.disposed) return;
+      setState(() { s.snowden = items; s.snowdenLoading = false; s.loadedApiCount++; });
+    });
+    _service.fetchOcNetwork(s.topic).then((items) {
+      if (!mounted || s.disposed) return;
+      setState(() { s.ocNetwork = items; s.ocNetworkLoading = false; s.loadedApiCount++; });
+    });
+    _service.fetchCorpWatch(s.topic).then((items) {
+      if (!mounted || s.disposed) return;
+      setState(() { s.corpWatch = items; s.corpWatchLoading = false; s.loadedApiCount++; });
+    });
+
+    // Geldflüsse (warten bis Network-Daten da sind, dann mit Kontext)
+    Future.delayed(const Duration(milliseconds: 600), () {
+      if (!mounted || s.disposed) return;
+      _service
+          .fetchMoneyFlows(s.topic, networkContext: s.networkNodes)
+          .then((flows) {
+        if (!mounted || s.disposed) return;
+        setState(() {
+          s.moneyFlows = flows;
+          s.moneyLoading = false;
+        });
+      });
+    });
+
+    // Medien-Kompass
+    _service.fetchMediaCompass(s.topic).then((points) {
+      if (!mounted || s.disposed) return;
+      setState(() {
+        s.compassPoints = points;
+        s.compassLoading = false;
+      });
+    });
+
+    // Dokumente
+    _service.fetchLeakedDocuments(s.topic).then((docs) {
+      if (!mounted || s.disposed) return;
+      setState(() {
+        s.documents = docs;
+        s.documentsLoading = false;
+      });
+    });
+
+    // Globale Auswirkungen
+    _service.fetchGlobalImpact(s.topic).then((impacts) {
+      if (!mounted || s.disposed) return;
+      setState(() {
+        s.globalImpacts = impacts;
+        s.globalLoading = false;
+      });
+    });
+
+    // OSINT-Layer parallel
+    _osint.fetchOpenAlexPapers(s.topic).then((papers) {
+      if (!mounted || s.disposed) return;
+      setState(() {
+        s.academicPapers = papers;
+        s.academicLoading = false;
+      });
+    });
+
+    _osint.fetchSanctions(s.topic).then((sanctions) {
+      if (!mounted || s.disposed) return;
+      setState(() {
+        s.sanctions = sanctions;
+        s.sanctionsLoading = false;
+      });
+    });
+
+    _osint.fetchLittleSisRelations(s.topic).then((rels) {
+      if (!mounted || s.disposed) return;
+      setState(() {
+        s.powerRelations = rels;
+        s.powerRelationsLoading = false;
+      });
+    });
+
+    _osint.fetchWaybackSnapshots(s.topic).then((snaps) {
+      if (!mounted || s.disposed) return;
+      setState(() {
+        s.waybackSnapshots = snaps;
+        s.waybackLoading = false;
+      });
+    });
+
+    _osint.fetchCourtCases(s.topic).then((cases) {
+      if (!mounted || s.disposed) return;
+      setState(() {
+        s.courtCases = cases;
+        s.courtLoading = false;
+      });
+    });
+
+    _osint.fetchFactChecks(s.topic).then((fcs) {
+      if (!mounted || s.disposed) return;
+      setState(() {
+        s.factChecks = fcs;
+        s.factCheckLoading = false;
+      });
+    });
+
+    // RSS-Aggregator (Worker)
+    _service.fetchRssAggregate(s.topic).then((rss) {
+      if (!mounted || s.disposed) return;
+      setState(() {
+        s.rssItems = rss;
+        s.rssLoading = false;
+      });
+    });
+
+    // AI Insight (etwas verzögert, damit Kontext vorhanden ist)
     Future.delayed(const Duration(seconds: 1), () {
       if (!mounted || s.disposed) return;
       _service.fetchAiInsight(s.topic).then((text) {
@@ -517,32 +710,24 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
                         key: const ValueKey('loading'),
                         topic: s.topic,
                         loadedCount: s.loadedApiCount,
-                        totalCount: 28,
-
+                        totalCount: 46,
                       )
                     : _buildScrollContent(s),
               ),
             ),
           ],
         ),
-        // D — Virgil-Orb (schwebender Chat-Assistent unten rechts)
-        if (!s.showLoadingOverlay)
-          Positioned(
-            right: 18,
-            bottom: 18,
-            child: VirgilOrb(
-              insight: s.aiInsight,
-              thinking: s.aiLoading,
-              onTap: () => setState(() => _virgilOpen = true),
-            ),
+        // Virgil-Orb unten rechts — öffnet Full-Panel beim Tap
+        Positioned(
+          right: 18,
+          bottom: 18,
+          child: VirgilOrb(
+            insight: s.aiInsight,
+            thinking: s.aiLoading,
+            onTap: () => setState(() => _virgilOpen = true),
           ),
-        // F — Share-FAB unten links
-        if (!s.showLoadingOverlay)
-          Positioned(
-            left: 18,
-            bottom: 18,
-            child: _ShareFab(onTap: () => _shareThread(s)),
-          ),
+        ),
+        // Virgil Full-Panel
         if (_virgilOpen)
           VirgilPanel(
             topic: s.topic,
@@ -578,10 +763,12 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
     }
   }
 
+  /// Aggregiert den Inhalt aller geladenen Karten als Kontext für Virgil.
   String _buildCardContext(_ThreadState s) {
     final parts = <String>[];
     if (s.identityData != null) {
-      parts.add('Identität: ${s.identityData!['label']} — ${s.identityData!['description']}');
+      final d = s.identityData!;
+      parts.add('Identität: ${d['label']} — ${d['description']}');
     }
     if (s.networkNodes.isNotEmpty) {
       final names = s.networkNodes
@@ -592,11 +779,15 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
       if (names.isNotEmpty) parts.add('Netzwerk: $names');
     }
     if (s.timelineEntries.isNotEmpty) {
-      final events = s.timelineEntries.take(5).map((e) => '${e.year}: ${e.title}').join(' | ');
+      final events = s.timelineEntries
+          .take(5)
+          .map((e) => '${e.year}: ${e.title}')
+          .join(' | ');
       parts.add('Zeitstrahl: $events');
     }
     if (s.sources.isNotEmpty) {
-      parts.add('Quellen: ${s.sources.take(4).map((src) => src.title).join(' | ')}');
+      final titles = s.sources.take(4).map((src) => src.title).join(' | ');
+      parts.add('Quellen: $titles');
     }
     return parts.join(' || ');
   }
@@ -687,105 +878,128 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
                     icon: Icons.balance_rounded,
                     color: Color(0xFFAB47BC),
                   ),
-                  _stag(420, PropagandaCard(
-                    analysis: s.propagandaAnalysis,
-                    loading: s.propagandaLoading,
-                  )),
-                  _gap(),
-                  _stag(440, SkandaleCard(
-                    items: s.skandale,
-                    loading: s.skandaleLoading,
-                  )),
-                  _gap(),
-                  _stag(460, FactCheckCard(
-                    checks: s.factChecks,
-                    loading: s.factCheckLoading,
-                  )),
-                  _gap(),
-                  _stag(480, MediaCompassCard(
-                    points: s.compassPoints,
-                    loading: s.compassLoading,
-                  )),
-                  _gap(),
-                  _stag(500, SourcesCard(
-                    sources: s.sources,
-                    loading: s.sourcesLoading,
-                  )),
-                  _gap(),
-                  _stag(520, RssMentionsCard(
-                    items: s.rssItems,
-                    loading: s.rssLoading,
-                  )),
-
-                  // ── C: ABSCHNITT 4 — QUELLEN & ARCHIVE ──────────────────
-                  const _SectionHeader(
-                    label: 'QUELLEN & ARCHIVE',
-                    icon: Icons.folder_open_rounded,
-                    color: Color(0xFF42A5F5),
+                  const SizedBox(height: 16),
+                  _StaggeredCard(
+                    delay: const Duration(milliseconds: 340),
+                    child: PowerRelationsCard(
+                      relations: s.powerRelations,
+                      loading: s.powerRelationsLoading,
+                    ),
                   ),
-                  _stag(540, TimelineCard(
-                    entries: s.timelineEntries,
-                    loading: s.timelineLoading,
-                  )),
-                  _gap(),
-                  _stag(560, AcademicCard(
-                    papers: s.academicPapers,
-                    loading: s.academicLoading,
-                  )),
-                  _gap(),
-                  _stag(580, CourtCasesCard(
-                    cases: s.courtCases,
-                    loading: s.courtLoading,
-                  )),
-                  _gap(),
-                  _stag(600, DocumentsCard(
-                    docs: s.documents,
-                    loading: s.documentsLoading,
-                  )),
-                  _gap(),
-                  _stag(620, WaybackCard(
-                    snapshots: s.waybackSnapshots,
-                    loading: s.waybackLoading,
-                  )),
-                  _gap(),
-                  _stag(640, GlobalImpactCard(
-                    impacts: s.globalImpacts,
-                    loading: s.globalLoading,
-                  )),
-                  _gap(),
-
-                  // ── DEEP-API: Finanz- & Unternehmens-Layer ──────────────
-                  const _SectionHeader(
-                    label: 'FINANZ- & UNTERNEHMENS-REGISTER',
-                    icon: Icons.account_balance_rounded,
-                    color: Color(0xFF26A69A),
+                  const SizedBox(height: 16),
+                  _StaggeredCard(
+                    delay: const Duration(milliseconds: 380),
+                    child: SanctionsCard(
+                      entries: s.sanctions,
+                      loading: s.sanctionsLoading,
+                    ),
                   ),
-                  _stag(650, OffshoreCard(
-                    entities: s.offshoreEntities,
-                    loading: s.offshoreLoading,
-                  )),
-                  _gap(),
-                  _stag(660, CompaniesCard(
-                    companies: s.companies,
-                    loading: s.companiesLoading,
-                  )),
-                  _gap(),
-                  _stag(670, OpenSanctionsCard(
-                    results: s.openSanctions,
-                    loading: s.openSanctionsLoading,
-                  )),
-                  _gap(),
-                  _stag(680, AlephCard(
-                    documents: s.alephDocs,
-                    loading: s.alephLoading,
-                  )),
-                  _gap(),
-
-                  // ── DEEP-API: Wissenschaft & Archive ────────────────────
-                  const _SectionHeader(
-                    label: 'WISSENSCHAFT & ARCHIVE',
-                    icon: Icons.science_rounded,
-                    color: Color(0xFF7E57C2),
+                  const SizedBox(height: 16),
+                  _StaggeredCard(
+                    delay: const Duration(milliseconds: 420),
+                    child: MoneyFlowCard(
+                      flows: s.moneyFlows,
+                      loading: s.moneyLoading,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _StaggeredCard(
+                    delay: const Duration(milliseconds: 450),
+                    child: SourcesCard(
+                      sources: s.sources,
+                      loading: s.sourcesLoading,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _StaggeredCard(
+                    delay: const Duration(milliseconds: 480),
+                    child: AcademicCard(
+                      papers: s.academicPapers,
+                      loading: s.academicLoading,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _StaggeredCard(
+                    delay: const Duration(milliseconds: 520),
+                    child: MediaCompassCard(
+                      points: s.compassPoints,
+                      loading: s.compassLoading,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _StaggeredCard(
+                    delay: const Duration(milliseconds: 560),
+                    child: FactCheckCard(
+                      checks: s.factChecks,
+                      loading: s.factCheckLoading,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _StaggeredCard(
+                    delay: const Duration(milliseconds: 600),
+                    child: TimelineCard(
+                      entries: s.timelineEntries,
+                      loading: s.timelineLoading,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _StaggeredCard(
+                    delay: const Duration(milliseconds: 640),
+                    child: WaybackCard(
+                      snapshots: s.waybackSnapshots,
+                      loading: s.waybackLoading,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _StaggeredCard(
+                    delay: const Duration(milliseconds: 670),
+                    child: GlobalImpactCard(
+                      impacts: s.globalImpacts,
+                      loading: s.globalLoading,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _StaggeredCard(
+                    delay: const Duration(milliseconds: 700),
+                    child: CourtCasesCard(
+                      cases: s.courtCases,
+                      loading: s.courtLoading,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _StaggeredCard(
+                    delay: const Duration(milliseconds: 740),
+                    child: DocumentsCard(
+                      docs: s.documents,
+                      loading: s.documentsLoading,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _StaggeredCard(
+                    delay: const Duration(milliseconds: 770),
+                    child: RssMentionsCard(
+                      items: s.rssItems,
+                      loading: s.rssLoading,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _StaggeredCard(
+                    delay: const Duration(milliseconds: 790),
+                    child: AnnotationsCard(topic: s.topic),
+                  ),
+                  const SizedBox(height: 16),
+                  _StaggeredCard(
+                    delay: const Duration(milliseconds: 810),
+                    child: SherlockCard(topic: s.topic),
+                  ),
+                  const SizedBox(height: 16),
+                  _StaggeredCard(
+                    delay: const Duration(milliseconds: 830),
+                    child: RelatedPathsCard(
+                      topics: s.relatedTopics,
+                      loading: s.relatedLoading,
+                      onTap: _openThread,
+                    ),
                   ),
                   _stag(690, PubMedCard(
                     papers: s.pubmedPapers,
@@ -808,12 +1022,82 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
                   )),
                   _gap(),
 
-                  _stag(730, AnnotationsCard(topic: s.topic)),
+                  // ── MINDBLOW: GELDFLÜSSE & WIRTSCHAFTSMACHT ─────────────
+                  const _SectionHeader(
+                    label: 'GELDFLÜSSE & WIRTSCHAFTSMACHT',
+                    icon: Icons.account_balance_rounded,
+                    color: Color(0xFFFFB300),
+                  ),
+                  _stag(760, UsaSpendingCard(items: s.usaSpending, loading: s.usaSpendingLoading)),
                   _gap(),
-                  _stag(750, SherlockCard(topic: s.topic)),
+                  _stag(770, WorldBankCard(items: s.worldBank, loading: s.worldBankLoading)),
+                  _gap(),
+                  _stag(780, OpenOwnershipCard(items: s.openOwnership, loading: s.openOwnershipLoading)),
+                  _gap(),
+                  _stag(790, OpenSpendingCard(items: s.openSpending, loading: s.openSpendingLoading)),
+                  _gap(),
 
+                  // ── MINDBLOW: GERICHTSAKTEN & RECHTSDOKUMENTE ───────────
+                  const _SectionHeader(
+                    label: 'GERICHTSAKTEN & RECHTSDOKUMENTE',
+                    icon: Icons.gavel_rounded,
+                    color: Color(0xFF7986CB),
+                  ),
+                  _stag(800, CourtListenerCard(items: s.courtListener, loading: s.courtListenerLoading)),
                   _gap(),
-                  _stag(700, RelatedPathsCard(
+                  _stag(810, MuckRockCard(items: s.muckRock, loading: s.muckRockLoading)),
+                  _gap(),
+                  _stag(820, HudocCard(items: s.hudoc, loading: s.hudocLoading)),
+                  _gap(),
+                  _stag(830, EuCuriaCard(items: s.euCuria, loading: s.euCuriaLoading)),
+                  _gap(),
+
+                  // ── MINDBLOW: POLITISCHE FINANZIERUNG & NETZWERKE ───────
+                  const _SectionHeader(
+                    label: 'POLITISCHE FINANZIERUNG & NETZWERKE',
+                    icon: Icons.how_to_vote_rounded,
+                    color: Color(0xFFEC407A),
+                  ),
+                  _stag(840, OpenSecretsCard(items: s.openSecrets, loading: s.openSecretsLoading)),
+                  _gap(),
+                  _stag(850, FecCard(items: s.fec, loading: s.fecLoading)),
+                  _gap(),
+                  _stag(860, LittleSisCard(items: s.littleSis, loading: s.littleSisLoading)),
+                  _gap(),
+                  _stag(870, EveryPoliticianCard(items: s.everyPolitician, loading: s.everyPoliticianLoading)),
+                  _gap(),
+
+                  // ── MINDBLOW: INVESTIGATIVE DOKUMENTE & WHISTLEBLOWER ───
+                  const _SectionHeader(
+                    label: 'INVESTIGATIVE DOKUMENTE & WHISTLEBLOWER',
+                    icon: Icons.warning_amber_rounded,
+                    color: Color(0xFFFF7043),
+                  ),
+                  _stag(880, DocumentCloudCard(items: s.documentCloud, loading: s.documentCloudLoading)),
+                  _gap(),
+                  _stag(890, WikiLeaksCard(items: s.wikiLeaks, loading: s.wikiLeaksLoading)),
+                  _gap(),
+                  _stag(900, CiaCrestCard(items: s.ciaCrest, loading: s.ciaCrestLoading)),
+                  _gap(),
+                  _stag(910, SnowdenCard(items: s.snowden, loading: s.snowdenLoading)),
+                  _gap(),
+
+                  // ── MINDBLOW: UNTERNEHMENS-VERFLECHTUNGEN ───────────────
+                  const _SectionHeader(
+                    label: 'UNTERNEHMENS-VERFLECHTUNGEN',
+                    icon: Icons.business_center_rounded,
+                    color: Color(0xFF26A69A),
+                  ),
+                  _stag(920, OcNetworkCard(items: s.ocNetwork, loading: s.ocNetworkLoading)),
+                  _gap(),
+                  _stag(930, CorpWatchCard(items: s.corpWatch, loading: s.corpWatchLoading)),
+                  _gap(),
+
+                  _stag(940, AnnotationsCard(topic: s.topic)),
+                  _gap(),
+                  _stag(950, SherlockCard(topic: s.topic)),
+                  _gap(),
+                  _stag(960, RelatedPathsCard(
                     topics: s.relatedTopics,
                     loading: s.relatedLoading,
                     onTap: _openThread,
@@ -864,7 +1148,7 @@ class _ResearchLoadingOverlayState extends State<_ResearchLoadingOverlay>
   static const _msgs = [
     'Wikidata wird befragt …',
     'Netzwerk-Verbindungen kartiert …',
-    '28 Quellen werden analysiert …',
+    '46 Quellen werden analysiert …',
     'Historische Events durchsucht …',
     'Sanktionslisten geprüft …',
     'Lobbying-Register abgefragt …',
@@ -879,6 +1163,19 @@ class _ResearchLoadingOverlayState extends State<_ResearchLoadingOverlay>
     'Akademische Paper durchsucht …',
     'Propaganda-Linsen kalibriert …',
     'Vergangene Snapshots geladen …',
+    'USASpending durchsucht …',
+    'Weltbank-Projekte geladen …',
+    'OpenOwnership geprüft …',
+    'CourtListener durchsucht …',
+    'MuckRock FOIA-Anfragen …',
+    'EGMR-Urteile geladen …',
+    'OpenSecrets analysiert …',
+    'LittleSis-Netzwerk …',
+    'DocumentCloud durchsucht …',
+    'WikiLeaks-Archiv …',
+    'CIA-CREST gecheckt …',
+    'Snowden-Files …',
+    'Vorstands-Verflechtungen …',
     'Virgil denkt nach …',
   ];
 
@@ -1318,6 +1615,65 @@ class _ThreadState {
   List<RssItem> rssItems = const [];
   bool rssLoading = true;
 
+  // ── Mindblow-Tier ──────────────────────────────────────────────────────
+  List<UsaSpendingAward> usaSpending = const [];
+  bool usaSpendingLoading = true;
+
+  List<WorldBankProject> worldBank = const [];
+  bool worldBankLoading = true;
+
+  List<OpenOwnershipEntity> openOwnership = const [];
+  bool openOwnershipLoading = true;
+
+  List<OpenSpendingEntry> openSpending = const [];
+  bool openSpendingLoading = true;
+
+  List<CourtListenerCase> courtListener = const [];
+  bool courtListenerLoading = true;
+
+  List<MuckRockFoia> muckRock = const [];
+  bool muckRockLoading = true;
+
+  List<HudocCase> hudoc = const [];
+  bool hudocLoading = true;
+
+  List<EuCuriaCase> euCuria = const [];
+  bool euCuriaLoading = true;
+
+  List<OpenSecretsOrg> openSecrets = const [];
+  bool openSecretsLoading = true;
+
+  List<FecCandidate> fec = const [];
+  bool fecLoading = true;
+
+  List<LittleSisEntity> littleSis = const [];
+  bool littleSisLoading = true;
+
+  List<EveryPolitician> everyPolitician = const [];
+  bool everyPoliticianLoading = true;
+
+  List<DocumentCloudDoc> documentCloud = const [];
+  bool documentCloudLoading = true;
+
+  List<WikiLeaksDoc> wikiLeaks = const [];
+  bool wikiLeaksLoading = true;
+
+  List<CiaCrestDoc> ciaCrest = const [];
+  bool ciaCrestLoading = true;
+
+  List<SnowdenDoc> snowden = const [];
+  bool snowdenLoading = true;
+
+  List<OcNetworkOfficer> ocNetwork = const [];
+  bool ocNetworkLoading = true;
+
+  List<CorpWatchArticle> corpWatch = const [];
+  bool corpWatchLoading = true;
+
+  // ── Extra fields used by Deep-API layer ────────────────────────────────────
+  String? propagandaAnalysis;
+  bool propagandaLoading = true;
+
   List<KeyPerson> keyPersons = const [];
   bool keyPersonsLoading = true;
 
@@ -1330,10 +1686,6 @@ class _ThreadState {
   List<Skandal> skandale = const [];
   bool skandaleLoading = true;
 
-  String? propagandaAnalysis;
-  bool propagandaLoading = true;
-
-  // ── Deep-API Layer ──────────────────────────────────────────────────────
   List<OffshoreEntity> offshoreEntities = const [];
   bool offshoreLoading = true;
 
