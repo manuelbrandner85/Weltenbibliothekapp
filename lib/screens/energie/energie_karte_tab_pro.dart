@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -17,24 +19,38 @@ class EnergieKarteTabPro extends StatefulWidget {
   State<EnergieKarteTabPro> createState() => _EnergieKarteTabProState();
 }
 
-class _EnergieKarteTabProState extends State<EnergieKarteTabPro> {
+class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
+    with TickerProviderStateMixin {
   final MapController _mapController = MapController();
   final TextEditingController _searchController = TextEditingController();
-  
+
   // Filter State (Single-Select)
   EnergieCategory? _selectedCategory; // null = "Alle" ausgewählt
   String _searchQuery = '';
   EnergieLocationDetail? _selectedLocation;
   bool _showLeyLines = true;
-  
-  // Gespeicherte Karten-Position (für Zoom-Zurück)
-  // UNUSED FIELD: LatLng? _savedMapCenter;
-  // UNUSED FIELD: double? _savedMapZoom;
-  
+
   // Map Layer State
   String _currentMapLayer = 'street';
-  bool _isLayerSwitcherExpanded = false; // Standard: Eingeklappt
-  
+
+  // Feature E: Radial layer menu
+  bool _layerMenuOpen = false;
+
+  // Feature F: Collapsible header
+  bool _headerCollapsed = false;
+
+  // Feature A: Panel slide animation
+  late AnimationController _panelSlideController;
+  late Animation<Offset> _panelSlideAnimation;
+
+  // Feature F: Gradient animation
+  late AnimationController _gradientAnimController;
+  late Animation<double> _gradientAnim;
+
+  // Feature C: Image swiper
+  PageController? _imagePageController;
+  int _imagePage = 0;
+
   // Detail Panel Tab State
   int _detailTabIndex = 0;
 
@@ -47,25 +63,56 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro> {
   List<String> _wikiImages = const [];
   bool _wikiLoading = false;
   String _wikiLocationName = '';
-  
+
   @override
   void initState() {
     super.initState();
-    // Default: "Alle" ausgewählt
     _selectedCategory = null;
+
+    // Feature A: Panel slide
+    _panelSlideController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+    _panelSlideAnimation = Tween<Offset>(
+      begin: const Offset(0, 1),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _panelSlideController,
+      curve: Curves.elasticOut,
+    ));
+
+    // Feature F: Gradient cycling
+    _gradientAnimController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 8),
+    )..repeat(reverse: true);
+    _gradientAnim = Tween<double>(begin: 0.0, end: 1.0).animate(
+      _gradientAnimController,
+    );
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _panelSlideController.dispose();
+    _gradientAnimController.dispose();
+    _imagePageController?.dispose();
     super.dispose();
+  }
+
+  void _openPanel() {
+    _imagePageController?.dispose();
+    _imagePageController = PageController();
+    _imagePage = 0;
+    _panelSlideController.forward(from: 0);
   }
 
   Future<void> _loadYoutubeForLocation(String name) async {
     if (_ytLocationName == name) return;
     if (!mounted) return;
     setState(() { _ytLoading = true; _ytLocationName = name; });
-    final videos = await YoutubeService.instance.searchVideos('$name', max: 5);
+    final videos = await YoutubeService.instance.searchVideos(name, max: 5);
     if (!mounted) return;
     setState(() { _ytVideos = videos; _ytLoading = false; });
   }
@@ -107,6 +154,15 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro> {
       body: Stack(
         children: [
           // MAP
+          // Feature E: close radial menu on background tap
+          if (_layerMenuOpen)
+            Positioned.fill(
+              child: GestureDetector(
+                onTap: () => setState(() => _layerMenuOpen = false),
+                child: Container(color: Colors.transparent),
+              ),
+            ),
+
           FlutterMap(
             mapController: _mapController,
             options: MapOptions(
@@ -114,6 +170,11 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro> {
               initialZoom: 5.0,
               minZoom: 2.0,
               maxZoom: 18.0,
+              onPositionChanged: (camera, hasGesture) {
+                if (hasGesture && !_headerCollapsed) {
+                  setState(() => _headerCollapsed = true);
+                }
+              },
               // 📍 B9: Long-Press auf die Karte → Live-Pin-Modal öffnen
               onLongPress: (tapPos, latlng) =>
                   _showLivePinModal(context, latlng),
@@ -197,25 +258,104 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro> {
               ),
             ),
 
-          // TOP BAR
+          // Feature F: Animated gradient sky header (collapsible)
           SafeArea(
-            child: Column(
-              children: [
-                _buildTopBar(),
-                const SizedBox(height: 12),
-                _buildFilterChips(),
-              ],
+            child: AnimatedBuilder(
+              animation: _gradientAnim,
+              builder: (context, child) {
+                final alpha = (0.06 * math.sin(_gradientAnim.value * math.pi));
+                return Stack(
+                  children: [
+                    // Gradient background behind header
+                    Positioned(
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      child: Container(
+                        height: _headerCollapsed ? 0 : 120,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              const Color(0xFF9C27B0).withValues(alpha: alpha.clamp(0.0, 0.06)),
+                              Colors.transparent,
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    // Collapsible header content
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 350),
+                      curve: Curves.easeInOut,
+                      height: _headerCollapsed ? 0 : double.infinity,
+                      clipBehavior: Clip.hardEdge,
+                      decoration: const BoxDecoration(),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _buildTopBar(),
+                          const SizedBox(height: 12),
+                          _buildFilterChips(),
+                        ],
+                      ),
+                    ),
+
+                    // Collapsed state: floating search pill
+                    if (_headerCollapsed)
+                      Positioned(
+                        top: 8,
+                        left: 0,
+                        right: 0,
+                        child: Center(
+                          child: GestureDetector(
+                            onTap: () => setState(() => _headerCollapsed = false),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(20),
+                              child: BackdropFilter(
+                                filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                                child: Container(
+                                  height: 32,
+                                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withValues(alpha: 0.45),
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                        color: const Color(0xFF9C27B0).withValues(alpha: 0.4)),
+                                  ),
+                                  child: const Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.search, color: Colors.white70, size: 16),
+                                      SizedBox(width: 6),
+                                      Text('Suchen…',
+                                          style: TextStyle(color: Colors.white70, fontSize: 12)),
+                                      SizedBox(width: 6),
+                                      Icon(Icons.expand_more, color: Colors.white70, size: 16),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                );
+              },
             ),
           ),
-          
-          // 🗺️ MAP LAYER SWITCHER (Bottom Left)
+
+          // 🗺️ MAP LAYER SWITCHER (Bottom Left) — Feature E: Radial Menu
           Positioned(
             bottom: 100,
             left: 16,
-            child: _buildMapLayerSwitcher(),
+            child: _buildRadialLayerMenu(),
           ),
-          
-          // DETAIL PANEL
+
+          // DETAIL PANEL — Feature A: Blur + SlideTransition
           if (_selectedLocation != null)
             _buildDetailPanel(),
         ],
@@ -387,10 +527,11 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro> {
 
   List<Marker> _buildMarkers() {
     return _filteredLocations.map((location) {
+      final isSelected = _selectedLocation?.name == location.name;
       return Marker(
         point: location.position,
-        width: 40,
-        height: 40,
+        width: 52,
+        height: 52,
         child: GestureDetector(
           onTap: () {
             setState(() {
@@ -401,31 +542,16 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro> {
               _ytLocationName = '';
               _wikiImages = const [];
               _wikiLocationName = '';
+              _headerCollapsed = true;
             });
+            _openPanel();
             _loadYoutubeForLocation(location.name);
             _loadWikimediaForLocation(location.name);
           },
-          child: Container(
-            decoration: BoxDecoration(
-              color: location.category.color,
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: Colors.white,
-                width: 2,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: location.category.color.withAlpha((0.6 * 255).round()),
-                  blurRadius: 10,
-                  spreadRadius: 2,
-                ),
-              ],
-            ),
-            child: Icon(
-              location.category.icon,
-              color: Colors.white,
-              size: 20,
-            ),
+          child: _PulsingMarker(
+            categoryColor: location.category.color,
+            icon: location.category.icon,
+            isSelected: isSelected,
           ),
         ),
       );
@@ -482,24 +608,30 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro> {
       bottom: 0,
       left: 0,
       right: 0,
-      child: Container(
+      child: SlideTransition(
+        position: _panelSlideAnimation,
+        child: ClipRRect(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+            child: Container(
         constraints: BoxConstraints(
           maxHeight: MediaQuery.of(context).size.height * 0.6,
         ),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              const Color(0xFF100B1E).withAlpha((0.99 * 255).round()),
-              const Color(0xFF06040F).withAlpha((0.99 * 255).round()),
-            ],
-          ),
+          color: Colors.black.withValues(alpha: 0.75),
           borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           border: Border.all(
-            color: location.category.color.withAlpha((0.4 * 255).round()),
+            color: location.category.color.withValues(alpha: 0.4),
             width: 1.5,
           ),
+          boxShadow: [
+            BoxShadow(
+              color: location.category.color.withValues(alpha: 0.15),
+              blurRadius: 30,
+              spreadRadius: 2,
+            ),
+          ],
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -510,30 +642,19 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.white.withAlpha((0.3 * 255).round()),
+                color: Colors.white.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            
-            // Header
+
+            // Header — Feature A: pulsing icon
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: location.category.color.withAlpha((0.2 * 255).round()),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: location.category.color.withAlpha((0.5 * 255).round()),
-                      ),
-                    ),
-                    child: Icon(
-                      location.category.icon,
-                      color: location.category.color,
-                      size: 28,
-                    ),
+                  _PulsingIconContainer(
+                    color: location.category.color,
+                    icon: location.category.icon,
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -571,9 +692,9 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro> {
                 ],
               ),
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             // TABS — immer alle 3 sichtbar
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -586,7 +707,7 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro> {
               ),
             ),
             const SizedBox(height: 12),
-            
+
             // Content
             Expanded(
               child: SingleChildScrollView(
@@ -596,8 +717,11 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro> {
             ),
           ],
         ),
-      ),
-    );
+      ), // Container
+          ), // BackdropFilter
+        ), // ClipRRect
+      ), // SlideTransition
+    ); // Positioned
   }
   
   // TAB-SYSTEM METHODS
@@ -816,38 +940,126 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro> {
       );
     }
 
+    // Feature C: Cinematic image swiper
+    final maxDots = allImages.length.clamp(0, 6);
     return Column(
-      children: allImages.map((imageUrl) {
-        return Container(
-          margin: const EdgeInsets.only(bottom: 16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: Image.network(
-            imageUrl,
-            fit: BoxFit.cover,
-            loadingBuilder: (context, child, loadingProgress) {
-              if (loadingProgress == null) return child;
-              return Container(
-                height: 200,
-                color: Colors.white.withValues(alpha: 0.05),
-                child: const Center(child: CircularProgressIndicator(color: Colors.white54)),
-              );
-            },
-            errorBuilder: (context, error, stackTrace) {
-              return Container(
-                height: 200,
-                color: Colors.white.withValues(alpha: 0.05),
-                child: Center(
-                  child: Icon(Icons.broken_image, color: Colors.white.withValues(alpha: 0.3), size: 48),
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // PageView with parallax
+        SizedBox(
+          height: 220,
+          child: Stack(
+            children: [
+              PageView.builder(
+                controller: _imagePageController,
+                itemCount: allImages.length,
+                onPageChanged: (page) => setState(() => _imagePage = page),
+                itemBuilder: (context, index) {
+                  return AnimatedBuilder(
+                    animation: _imagePageController!,
+                    builder: (context, child) {
+                      double pageOffset = 0;
+                      if (_imagePageController!.hasClients &&
+                          _imagePageController!.page != null) {
+                        pageOffset = _imagePageController!.page!;
+                      } else {
+                        pageOffset = _imagePage.toDouble();
+                      }
+                      final offset = (index - pageOffset) * 30.0;
+                      return GestureDetector(
+                        onTap: () => Navigator.of(context).push(
+                          PageRouteBuilder(
+                            opaque: false,
+                            pageBuilder: (_, __, ___) => _FullscreenImageViewer(
+                              images: allImages,
+                              initialIndex: index,
+                              locationName: location.name,
+                            ),
+                          ),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: ClipRect(
+                            child: Hero(
+                              tag: 'map_image_${index}_${location.name}',
+                              child: Transform.translate(
+                                offset: Offset(offset, 0),
+                                child: Image.network(
+                                  allImages[index],
+                                  fit: BoxFit.cover,
+                                  width: double.infinity,
+                                  height: 220,
+                                  loadingBuilder: (ctx, child, progress) {
+                                    if (progress == null) return child;
+                                    return Container(
+                                      color: Colors.white.withValues(alpha: 0.05),
+                                      child: const Center(
+                                        child: CircularProgressIndicator(
+                                          color: Colors.white54, strokeWidth: 2),
+                                      ),
+                                    );
+                                  },
+                                  errorBuilder: (_, __, ___) => Container(
+                                    color: Colors.white.withValues(alpha: 0.05),
+                                    child: Icon(Icons.broken_image,
+                                        color: Colors.white.withValues(alpha: 0.3),
+                                        size: 48),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+              // Counter badge top-right
+              Positioned(
+                top: 8,
+                right: 12,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.6),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '${_imagePage + 1} / ${allImages.length}',
+                    style: const TextStyle(color: Colors.white, fontSize: 11),
+                  ),
                 ),
-              );
-            },
+              ),
+            ],
           ),
-        );
-      }).toList(),
+        ),
+        const SizedBox(height: 10),
+        // Dot indicators
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(maxDots, (i) {
+            final isCurrent = i == _imagePage.clamp(0, maxDots - 1);
+            return AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              margin: const EdgeInsets.symmetric(horizontal: 3),
+              width: isCurrent ? 10 : 7,
+              height: isCurrent ? 10 : 7,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isCurrent
+                    ? const Color(0xFF9C27B0)
+                    : Colors.transparent,
+                border: Border.all(
+                  color: const Color(0xFF9C27B0).withValues(alpha: 0.7),
+                  width: 1.5,
+                ),
+              ),
+            );
+          }),
+        ),
+        const SizedBox(height: 16),
+      ],
     );
   }
 
@@ -998,107 +1210,115 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro> {
     }
   }
   
-  Widget _buildMapLayerSwitcher() {
-    const accent = Color(0xFFAB47BC);
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOut,
-      decoration: BoxDecoration(
-        color: const Color(0xFF100B1E),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: accent.withValues(alpha: 0.35), width: 1.5),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.5),
-            blurRadius: 14,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+  // Feature E: Radial circular layer menu
+  Widget _buildRadialLayerMenu() {
+    const accent = Color(0xFF9C27B0);
+    const layers = [
+      ('street', Icons.map_rounded, 'Straße'),
+      ('satellite', Icons.satellite_rounded, 'Satellit'),
+      ('terrain', Icons.terrain_rounded, 'Gelände'),
+      ('topo', Icons.layers_rounded, 'Topo'),
+    ];
+
+    return SizedBox(
+      width: 160,
+      height: 160,
+      child: Stack(
+        clipBehavior: Clip.none,
         children: [
-          // TOGGLE BUTTON (immer sichtbar)
-          InkWell(
-            onTap: () {
-              setState(() => _isLayerSwitcherExpanded = !_isLayerSwitcherExpanded);
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.layers, size: 24, color: accent),
-                  const SizedBox(width: 10),
-                  const Text('Karte',
-                      style: TextStyle(
-                          fontSize: 14, color: accent,
-                          fontWeight: FontWeight.bold, letterSpacing: 0.3)),
-                  const SizedBox(width: 6),
-                  Icon(
-                    _isLayerSwitcherExpanded ? Icons.expand_less : Icons.expand_more,
-                    size: 20, color: accent,
+          // Fan options — animate outward
+          ...List.generate(layers.length, (i) {
+            final (layerType, icon, label) = layers[i];
+            final angle = math.pi + (i * (math.pi / 2) / (layers.length - 1));
+            const radius = 68.0;
+            final dx = math.cos(angle) * radius;
+            final dy = math.sin(angle) * radius;
+            final isSelected = _currentMapLayer == layerType;
+
+            return AnimatedPositioned(
+              duration: Duration(milliseconds: 150 + i * 80),
+              curve: Curves.easeOutBack,
+              bottom: _layerMenuOpen ? (56 - dy) : 0,
+              left: _layerMenuOpen ? (0 + dx + 56) : 56,
+              child: AnimatedOpacity(
+                opacity: _layerMenuOpen ? 1.0 : 0.0,
+                duration: Duration(milliseconds: 150 + i * 60),
+                child: Tooltip(
+                  message: label,
+                  child: GestureDetector(
+                    onTap: () => setState(() {
+                      _currentMapLayer = layerType;
+                      _layerMenuOpen = false;
+                    }),
+                    child: Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: isSelected ? accent : const Color(0xFF100B1E),
+                        border: Border.all(
+                          color: isSelected ? accent : accent.withValues(alpha: 0.6),
+                          width: 1.5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.5),
+                            blurRadius: 8,
+                          ),
+                        ],
+                      ),
+                      child: Icon(icon,
+                          size: 20,
+                          color: isSelected
+                              ? Colors.white
+                              : Colors.white.withValues(alpha: 0.7)),
+                    ),
                   ),
-                ],
+                ),
+              ),
+            );
+          }),
+
+          // Toggle FAB
+          Positioned(
+            bottom: 0,
+            left: 0,
+            child: GestureDetector(
+              onTap: () => setState(() => _layerMenuOpen = !_layerMenuOpen),
+              child: Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: _layerMenuOpen ? accent : const Color(0xFF100B1E),
+                  border: Border.all(color: accent.withValues(alpha: 0.6), width: 1.5),
+                  boxShadow: [
+                    BoxShadow(
+                      color: _layerMenuOpen
+                          ? accent.withValues(alpha: 0.3)
+                          : Colors.black.withValues(alpha: 0.4),
+                      blurRadius: 12,
+                      spreadRadius: 1,
+                    ),
+                  ],
+                ),
+                child: AnimatedRotation(
+                  turns: _layerMenuOpen ? 0.125 : 0,
+                  duration: const Duration(milliseconds: 250),
+                  child: Icon(
+                    Icons.layers_rounded,
+                    size: 24,
+                    color: _layerMenuOpen ? Colors.white : accent,
+                  ),
+                ),
               ),
             ),
           ),
-
-          // LAYER OPTIONEN (nur wenn ausgeklappt)
-          if (_isLayerSwitcherExpanded) ...[
-            Divider(height: 1, color: Colors.white.withValues(alpha: 0.1)),
-            _buildLayerOption('street', Icons.map, 'Straße'),
-            _buildLayerOption('satellite', Icons.satellite, 'Satellit'),
-            _buildLayerOption('terrain', Icons.terrain, 'Gelände'),
-            _buildLayerOption('topo', Icons.layers, 'Topo'),
-          ],
         ],
       ),
     );
   }
 
-  Widget _buildLayerOption(String layerType, IconData icon, String label) {
-    const accent = Color(0xFFAB47BC);
-    final isSelected = _currentMapLayer == layerType;
-
-    return InkWell(
-      onTap: () {
-        setState(() {
-          _currentMapLayer = layerType;
-          _isLayerSwitcherExpanded = false;
-        });
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(
-          color: isSelected ? accent.withValues(alpha: 0.15) : Colors.transparent,
-          border: Border(
-            bottom: BorderSide(
-              color: Colors.white.withValues(alpha: 0.08),
-              width: 0.5,
-            ),
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 22,
-                color: isSelected ? accent : Colors.white.withValues(alpha: 0.5)),
-            const SizedBox(width: 10),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 14,
-                color: isSelected ? accent : Colors.white.withValues(alpha: 0.7),
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                letterSpacing: 0.3,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   // ───────────────────────────────────────────────────────────────────
   // 📍 BUNDLE 9: LIVE MAP PINS (Energie-USP)
@@ -1255,6 +1475,256 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro> {
         ),
       );
     }
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Feature B: Animated pulsing marker
+// ─────────────────────────────────────────────────────────────────────────────
+class _PulsingMarker extends StatefulWidget {
+  final Color categoryColor;
+  final IconData icon;
+  final bool isSelected;
+
+  const _PulsingMarker({
+    required this.categoryColor,
+    required this.icon,
+    required this.isSelected,
+  });
+
+  @override
+  State<_PulsingMarker> createState() => _PulsingMarkerState();
+}
+
+class _PulsingMarkerState extends State<_PulsingMarker>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _anim;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2500),
+    )..repeat(reverse: true);
+    _anim = Tween<double>(begin: 0.0, end: 1.0).animate(_ctrl);
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _anim,
+      builder: (context, _) {
+        final glowAlpha = 0.2 + 0.25 * _anim.value;
+        final blurR = 10.0 + 8.0 * _anim.value;
+        final scale = widget.isSelected ? 1.35 : 1.0;
+        return Transform.scale(
+          scale: scale,
+          child: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: widget.categoryColor,
+              border: Border.all(color: Colors.white, width: 2),
+              boxShadow: [
+                BoxShadow(
+                  color: widget.categoryColor.withValues(alpha: glowAlpha),
+                  blurRadius: blurR,
+                  spreadRadius: widget.isSelected ? 4 : 2,
+                ),
+              ],
+            ),
+            child: Icon(widget.icon, color: Colors.white, size: 20),
+          ),
+        );
+      },
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Feature A: Pulsing icon in panel header
+// ─────────────────────────────────────────────────────────────────────────────
+class _PulsingIconContainer extends StatefulWidget {
+  final Color color;
+  final IconData icon;
+  const _PulsingIconContainer({required this.color, required this.icon});
+
+  @override
+  State<_PulsingIconContainer> createState() => _PulsingIconContainerState();
+}
+
+class _PulsingIconContainerState extends State<_PulsingIconContainer>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat(reverse: true);
+    _scale = Tween<double>(begin: 1.0, end: 1.08).animate(
+      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(
+      scale: _scale,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: widget.color.withValues(alpha: 0.2),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: widget.color.withValues(alpha: 0.5)),
+        ),
+        child: Icon(widget.icon, color: widget.color, size: 28),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Feature D: Fullscreen image viewer with Hero + swipe-down-to-close
+// ─────────────────────────────────────────────────────────────────────────────
+class _FullscreenImageViewer extends StatefulWidget {
+  final List<String> images;
+  final int initialIndex;
+  final String locationName;
+
+  const _FullscreenImageViewer({
+    required this.images,
+    required this.initialIndex,
+    required this.locationName,
+  });
+
+  @override
+  State<_FullscreenImageViewer> createState() => _FullscreenImageViewerState();
+}
+
+class _FullscreenImageViewerState extends State<_FullscreenImageViewer>
+    with SingleTickerProviderStateMixin {
+  late PageController _pageCtrl;
+  late AnimationController _fadeCtrl;
+  late Animation<double> _fadeAnim;
+  double _dragOffset = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageCtrl = PageController(initialPage: widget.initialIndex);
+    _fadeCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _fadeAnim = Tween<double>(begin: 0.0, end: 1.0).animate(_fadeCtrl);
+    _fadeCtrl.forward();
+  }
+
+  @override
+  void dispose() {
+    _pageCtrl.dispose();
+    _fadeCtrl.dispose();
+    super.dispose();
+  }
+
+  void _close() {
+    _fadeCtrl.reverse().then((_) {
+      if (mounted) Navigator.of(context).pop();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedOpacity(
+      opacity: _fadeAnim.value,
+      duration: Duration.zero,
+      child: AnimatedBuilder(
+        animation: _fadeAnim,
+        builder: (context, child) {
+          return Opacity(opacity: _fadeAnim.value, child: child);
+        },
+        child: GestureDetector(
+          onVerticalDragUpdate: (d) {
+            setState(() => _dragOffset += d.delta.dy);
+          },
+          onVerticalDragEnd: (d) {
+            if (_dragOffset.abs() > 100 ||
+                d.velocity.pixelsPerSecond.dy.abs() > 300) {
+              _close();
+            } else {
+              setState(() => _dragOffset = 0);
+            }
+          },
+          child: Scaffold(
+            backgroundColor: Colors.black,
+            body: Stack(
+              children: [
+                Transform.translate(
+                  offset: Offset(0, _dragOffset),
+                  child: PageView.builder(
+                    controller: _pageCtrl,
+                    itemCount: widget.images.length,
+                    itemBuilder: (context, index) {
+                      return InteractiveViewer(
+                        minScale: 0.5,
+                        maxScale: 4.0,
+                        child: Hero(
+                          tag: 'map_image_${index}_${widget.locationName}',
+                          child: Image.network(
+                            widget.images[index],
+                            fit: BoxFit.contain,
+                            errorBuilder: (_, __, ___) => const Icon(
+                                Icons.broken_image,
+                                color: Colors.white30,
+                                size: 80),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                // Close button
+                Positioned(
+                  top: MediaQuery.of(context).padding.top + 8,
+                  right: 16,
+                  child: GestureDetector(
+                    onTap: _close,
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.6),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.close,
+                          color: Colors.white, size: 20),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 
