@@ -1133,6 +1133,84 @@ LIMIT 30
       return null;
     }
   }
+
+  // ════════════════════════════════════════════════════════════════════════
+  // MINDBLOW-TIER — 18 Tiefenquellen
+  // ════════════════════════════════════════════════════════════════════════
+
+  Future<List<T>> _fetchMindblow<T>(
+    String endpoint,
+    String topic,
+    T Function(Map<String, dynamic>) build,
+  ) async {
+    try {
+      final uri = Uri.parse(
+          '${ApiConfig.workerUrl}/api/kaninchenbau/$endpoint?topic=${Uri.encodeQueryComponent(topic)}');
+      final r = await http.get(uri).timeout(const Duration(seconds: 18));
+      if (r.statusCode != 200) return [];
+      final data = jsonDecode(r.body) as Map<String, dynamic>;
+      return ((data['items'] ?? []) as List)
+          .map((e) => build(e as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      debugPrint('Mindblow[$endpoint]-Error: $e');
+      return [];
+    }
+  }
+
+  Future<List<UsaSpendingAward>> fetchUsaSpending(String topic) =>
+      _fetchMindblow('usaspending', topic, UsaSpendingAward.fromJson);
+
+  Future<List<WorldBankProject>> fetchWorldBank(String topic) =>
+      _fetchMindblow('worldbank', topic, WorldBankProject.fromJson);
+
+  Future<List<OpenOwnershipEntity>> fetchOpenOwnership(String topic) =>
+      _fetchMindblow('openownership', topic, OpenOwnershipEntity.fromJson);
+
+  Future<List<OpenSpendingEntry>> fetchOpenSpending(String topic) =>
+      _fetchMindblow('openspending', topic, OpenSpendingEntry.fromJson);
+
+  Future<List<CourtListenerCase>> fetchCourtListener(String topic) =>
+      _fetchMindblow('courtlistener', topic, CourtListenerCase.fromJson);
+
+  Future<List<MuckRockFoia>> fetchMuckRock(String topic) =>
+      _fetchMindblow('muckrock', topic, MuckRockFoia.fromJson);
+
+  Future<List<HudocCase>> fetchHudoc(String topic) =>
+      _fetchMindblow('hudoc', topic, HudocCase.fromJson);
+
+  Future<List<EuCuriaCase>> fetchEuCuria(String topic) =>
+      _fetchMindblow('eucuria', topic, EuCuriaCase.fromJson);
+
+  Future<List<OpenSecretsOrg>> fetchOpenSecrets(String topic) =>
+      _fetchMindblow('opensecrets', topic, OpenSecretsOrg.fromJson);
+
+  Future<List<FecCandidate>> fetchFec(String topic) =>
+      _fetchMindblow('fec', topic, FecCandidate.fromJson);
+
+  Future<List<LittleSisEntity>> fetchLittleSis(String topic) =>
+      _fetchMindblow('littlesis', topic, LittleSisEntity.fromJson);
+
+  Future<List<EveryPolitician>> fetchEveryPolitician(String topic) =>
+      _fetchMindblow('everypolitician', topic, EveryPolitician.fromJson);
+
+  Future<List<DocumentCloudDoc>> fetchDocumentCloud(String topic) =>
+      _fetchMindblow('documentcloud', topic, DocumentCloudDoc.fromJson);
+
+  Future<List<WikiLeaksDoc>> fetchWikiLeaks(String topic) =>
+      _fetchMindblow('wikileaks', topic, WikiLeaksDoc.fromJson);
+
+  Future<List<CiaCrestDoc>> fetchCiaCrest(String topic) =>
+      _fetchMindblow('ciacrest', topic, CiaCrestDoc.fromJson);
+
+  Future<List<SnowdenDoc>> fetchSnowden(String topic) =>
+      _fetchMindblow('snowden', topic, SnowdenDoc.fromJson);
+
+  Future<List<OcNetworkOfficer>> fetchOcNetwork(String topic) =>
+      _fetchMindblow('oc-network', topic, OcNetworkOfficer.fromJson);
+
+  Future<List<CorpWatchArticle>> fetchCorpWatch(String topic) =>
+      _fetchMindblow('corpwatch', topic, CorpWatchArticle.fromJson);
 }
 
 class _Cc {

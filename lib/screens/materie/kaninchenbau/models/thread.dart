@@ -417,6 +417,9 @@ class SherlockHit {
   });
 }
 
+
+// ─── RSS-Aggregator-Item ───────────────────────────────────────────────────────
+
 /// RSS-Aggregator-Item.
 class RssItem {
   final String title;
@@ -433,180 +436,447 @@ class RssItem {
   });
 }
 
-/// ICIJ Offshore Leaks — Panama Papers, Pandora Papers, Paradise Papers.
-class OffshoreEntity {
-  final String name;
-  final String type; // 'Entity', 'Officer', 'Address'
-  final String jurisdiction;
-  final String country;
-  final String status;
-  final String leakType;
-  final String? url;
-  const OffshoreEntity({
-    required this.name,
-    required this.type,
-    required this.jurisdiction,
-    required this.country,
-    required this.status,
-    required this.leakType,
-    this.url,
+// ═══════════════════════════════════════════════════════════════════════════
+// MINDBLOW-TIER — 18 Tiefenquellen
+// ═══════════════════════════════════════════════════════════════════════════
+
+class UsaSpendingAward {
+  final String recipientName;
+  final num awardAmount;
+  final String awardType;
+  final String description;
+  final String piid;
+  final String agency;
+  final String url;
+  const UsaSpendingAward({
+    required this.recipientName,
+    required this.awardAmount,
+    required this.awardType,
+    required this.description,
+    required this.piid,
+    required this.agency,
+    required this.url,
   });
+  factory UsaSpendingAward.fromJson(Map<String, dynamic> j) => UsaSpendingAward(
+        recipientName: (j['recipientName'] ?? '').toString(),
+        awardAmount: (j['awardAmount'] is num) ? j['awardAmount'] as num : 0,
+        awardType: (j['awardType'] ?? '').toString(),
+        description: (j['description'] ?? '').toString(),
+        piid: (j['piid'] ?? '').toString(),
+        agency: (j['agency'] ?? '').toString(),
+        url: (j['url'] ?? '').toString(),
+      );
 }
 
-/// OpenCorporates / GLEIF — Firmenregistrierung.
-class CompanyEntry {
+class WorldBankProject {
+  final String id;
+  final String name;
+  final String country;
+  final String approved;
+  final String status;
+  final num amount;
+  final String sector;
+  final String url;
+  const WorldBankProject({
+    required this.id,
+    required this.name,
+    required this.country,
+    required this.approved,
+    required this.status,
+    required this.amount,
+    required this.sector,
+    required this.url,
+  });
+  factory WorldBankProject.fromJson(Map<String, dynamic> j) => WorldBankProject(
+        id: (j['id'] ?? '').toString(),
+        name: (j['name'] ?? '').toString(),
+        country: (j['country'] ?? '').toString(),
+        approved: (j['approved'] ?? '').toString(),
+        status: (j['status'] ?? '').toString(),
+        amount: (j['amount'] is num) ? j['amount'] as num : 0,
+        sector: (j['sector'] ?? '').toString(),
+        url: (j['url'] ?? '').toString(),
+      );
+}
+
+class OpenOwnershipEntity {
   final String name;
   final String jurisdiction;
-  final String status;
   final String type;
-  final String source; // 'OpenCorporates' | 'GLEIF'
-  final String? companyNumber;
-  final String? lei;
-  final String? country;
-  final String? registered;
-  final String? url;
-  const CompanyEntry({
+  final String controlChain;
+  final String url;
+  const OpenOwnershipEntity({
     required this.name,
     required this.jurisdiction,
-    required this.status,
     required this.type,
-    required this.source,
-    this.companyNumber,
-    this.lei,
-    this.country,
-    this.registered,
-    this.url,
+    required this.controlChain,
+    required this.url,
   });
+  factory OpenOwnershipEntity.fromJson(Map<String, dynamic> j) => OpenOwnershipEntity(
+        name: (j['name'] ?? '').toString(),
+        jurisdiction: (j['jurisdiction'] ?? '').toString(),
+        type: (j['type'] ?? '').toString(),
+        controlChain: (j['controlChain'] ?? '').toString(),
+        url: (j['url'] ?? '').toString(),
+      );
 }
 
-/// OpenSanctions — unified sanctions + PEP aus 100+ Quellen.
-class SanctionResult {
-  final String id;
-  final String name;
-  final String schema; // 'Person', 'Organization', etc.
-  final List<String> topics; // 'sanction', 'pep', 'crime', etc.
-  final List<String> countries;
-  final String? birthDate;
-  final List<String> datasets;
-  final String? url;
-  const SanctionResult({
-    required this.id,
-    required this.name,
-    required this.schema,
-    required this.topics,
-    required this.countries,
-    required this.datasets,
-    this.birthDate,
-    this.url,
-  });
-}
-
-/// OCCRP Aleph — investigativer Dokument-Fund aus 300+ Quellen.
-class AlephDocument {
-  final String id;
-  final String name;
-  final String schema;
-  final String collection;
-  final String country;
-  final String? date;
-  final String? summary;
-  final String? url;
-  const AlephDocument({
-    required this.id,
-    required this.name,
-    required this.schema,
-    required this.collection,
-    required this.country,
-    this.date,
-    this.summary,
-    this.url,
-  });
-}
-
-/// PubMed — biomedizinische Studie.
-class PubMedPaper {
-  final String pmid;
+class OpenSpendingEntry {
   final String title;
-  final String authors;
+  final String country;
+  final String year;
+  final num amount;
+  final String currency;
+  final String source;
+  final String url;
+  const OpenSpendingEntry({
+    required this.title,
+    required this.country,
+    required this.year,
+    required this.amount,
+    required this.currency,
+    required this.source,
+    required this.url,
+  });
+  factory OpenSpendingEntry.fromJson(Map<String, dynamic> j) => OpenSpendingEntry(
+        title: (j['title'] ?? '').toString(),
+        country: (j['country'] ?? '').toString(),
+        year: (j['year'] ?? '').toString(),
+        amount: (j['amount'] is num) ? j['amount'] as num : 0,
+        currency: (j['currency'] ?? '').toString(),
+        source: (j['source'] ?? '').toString(),
+        url: (j['url'] ?? '').toString(),
+      );
+}
+
+class CourtListenerCase {
+  final String caseName;
+  final String court;
+  final String dateFiled;
+  final String citation;
+  final String snippet;
+  final String status;
+  final String url;
+  const CourtListenerCase({
+    required this.caseName,
+    required this.court,
+    required this.dateFiled,
+    required this.citation,
+    required this.snippet,
+    required this.status,
+    required this.url,
+  });
+  factory CourtListenerCase.fromJson(Map<String, dynamic> j) => CourtListenerCase(
+        caseName: (j['caseName'] ?? '').toString(),
+        court: (j['court'] ?? '').toString(),
+        dateFiled: (j['dateFiled'] ?? '').toString(),
+        citation: (j['citation'] ?? '').toString(),
+        snippet: (j['snippet'] ?? '').toString(),
+        status: (j['status'] ?? '').toString(),
+        url: (j['url'] ?? '').toString(),
+      );
+}
+
+class MuckRockFoia {
+  final String title;
+  final String agency;
+  final String status;
+  final String dateRequested;
+  final String datePromised;
+  final bool hasDocuments;
+  final String url;
+  const MuckRockFoia({
+    required this.title,
+    required this.agency,
+    required this.status,
+    required this.dateRequested,
+    required this.datePromised,
+    required this.hasDocuments,
+    required this.url,
+  });
+  factory MuckRockFoia.fromJson(Map<String, dynamic> j) => MuckRockFoia(
+        title: (j['title'] ?? '').toString(),
+        agency: (j['agency'] ?? '').toString(),
+        status: (j['status'] ?? '').toString(),
+        dateRequested: (j['dateRequested'] ?? '').toString(),
+        datePromised: (j['datePromised'] ?? '').toString(),
+        hasDocuments: j['hasDocuments'] == true,
+        url: (j['url'] ?? '').toString(),
+      );
+}
+
+class HudocCase {
+  final String title;
+  final String country;
+  final String date;
+  final String docId;
+  final String url;
+  const HudocCase({
+    required this.title,
+    required this.country,
+    required this.date,
+    required this.docId,
+    required this.url,
+  });
+  factory HudocCase.fromJson(Map<String, dynamic> j) => HudocCase(
+        title: (j['title'] ?? '').toString(),
+        country: (j['country'] ?? '').toString(),
+        date: (j['date'] ?? '').toString(),
+        docId: (j['docId'] ?? '').toString(),
+        url: (j['url'] ?? '').toString(),
+      );
+}
+
+class EuCuriaCase {
+  final String title;
+  final String author;
   final String journal;
   final String year;
-  final String? doi;
+  final String doi;
   final String url;
-  const PubMedPaper({
-    required this.pmid,
+  const EuCuriaCase({
     required this.title,
-    required this.authors,
+    required this.author,
     required this.journal,
     required this.year,
+    required this.doi,
     required this.url,
-    this.doi,
   });
+  factory EuCuriaCase.fromJson(Map<String, dynamic> j) => EuCuriaCase(
+        title: (j['title'] ?? '').toString(),
+        author: (j['author'] ?? '').toString(),
+        journal: (j['journal'] ?? '').toString(),
+        year: (j['year'] ?? '').toString(),
+        doi: (j['doi'] ?? '').toString(),
+        url: (j['url'] ?? '').toString(),
+      );
 }
 
-/// Semantic Scholar — wissenschaftliche Arbeit mit Citation-Graph.
-class SemanticPaper {
-  final String paperId;
-  final String title;
-  final String authors;
-  final int? year;
-  final int citations;
-  final int influential;
-  final String? doi;
-  final String? openAccess;
-  final String abstract_;
+class OpenSecretsOrg {
+  final String orgname;
+  final String orgid;
   final String url;
-  const SemanticPaper({
-    required this.paperId,
-    required this.title,
-    required this.authors,
-    required this.citations,
-    required this.influential,
-    required this.abstract_,
+  const OpenSecretsOrg({
+    required this.orgname,
+    required this.orgid,
     required this.url,
-    this.year,
-    this.doi,
-    this.openAccess,
   });
+  factory OpenSecretsOrg.fromJson(Map<String, dynamic> j) => OpenSecretsOrg(
+        orgname: (j['orgname'] ?? '').toString(),
+        orgid: (j['orgid'] ?? '').toString(),
+        url: (j['url'] ?? '').toString(),
+      );
 }
 
-/// Internet Archive — archiviertes Dokument / Media.
-class ArchiveDoc {
-  final String id;
+class FecCandidate {
+  final String name;
+  final String party;
+  final String office;
+  final String state;
+  final String district;
+  final String candidateId;
+  final String url;
+  const FecCandidate({
+    required this.name,
+    required this.party,
+    required this.office,
+    required this.state,
+    required this.district,
+    required this.candidateId,
+    required this.url,
+  });
+  factory FecCandidate.fromJson(Map<String, dynamic> j) => FecCandidate(
+        name: (j['name'] ?? '').toString(),
+        party: (j['party'] ?? '').toString(),
+        office: (j['office'] ?? '').toString(),
+        state: (j['state'] ?? '').toString(),
+        district: (j['district'] ?? '').toString(),
+        candidateId: (j['candidateId'] ?? '').toString(),
+        url: (j['url'] ?? '').toString(),
+      );
+}
+
+class LittleSisEntity {
+  final String name;
+  final String type;
+  final String summary;
+  final String url;
+  const LittleSisEntity({
+    required this.name,
+    required this.type,
+    required this.summary,
+    required this.url,
+  });
+  factory LittleSisEntity.fromJson(Map<String, dynamic> j) => LittleSisEntity(
+        name: (j['name'] ?? '').toString(),
+        type: (j['type'] ?? '').toString(),
+        summary: (j['summary'] ?? '').toString(),
+        url: (j['url'] ?? '').toString(),
+      );
+}
+
+class EveryPolitician {
+  final String name;
+  final String country;
+  final String party;
+  final String position;
+  final String url;
+  const EveryPolitician({
+    required this.name,
+    required this.country,
+    required this.party,
+    required this.position,
+    required this.url,
+  });
+  factory EveryPolitician.fromJson(Map<String, dynamic> j) => EveryPolitician(
+        name: (j['name'] ?? '').toString(),
+        country: (j['country'] ?? '').toString(),
+        party: (j['party'] ?? '').toString(),
+        position: (j['position'] ?? '').toString(),
+        url: (j['url'] ?? '').toString(),
+      );
+}
+
+class DocumentCloudDoc {
   final String title;
-  final String creator;
+  final String source;
+  final String organization;
+  final int pageCount;
+  final String language;
+  final String dateUploaded;
+  final String url;
+  final String pdf;
+  const DocumentCloudDoc({
+    required this.title,
+    required this.source,
+    required this.organization,
+    required this.pageCount,
+    required this.language,
+    required this.dateUploaded,
+    required this.url,
+    required this.pdf,
+  });
+  factory DocumentCloudDoc.fromJson(Map<String, dynamic> j) => DocumentCloudDoc(
+        title: (j['title'] ?? '').toString(),
+        source: (j['source'] ?? '').toString(),
+        organization: (j['organization'] ?? '').toString(),
+        pageCount: (j['pageCount'] is int)
+            ? j['pageCount'] as int
+            : int.tryParse((j['pageCount'] ?? '0').toString()) ?? 0,
+        language: (j['language'] ?? '').toString(),
+        dateUploaded: (j['dateUploaded'] ?? '').toString(),
+        url: (j['url'] ?? '').toString(),
+        pdf: (j['pdf'] ?? '').toString(),
+      );
+}
+
+class WikiLeaksDoc {
+  final String title;
   final String date;
-  final String mediatype;
   final String description;
   final String url;
-  const ArchiveDoc({
-    required this.id,
+  const WikiLeaksDoc({
     required this.title,
-    required this.creator,
     required this.date,
-    required this.mediatype,
     required this.description,
     required this.url,
   });
+  factory WikiLeaksDoc.fromJson(Map<String, dynamic> j) => WikiLeaksDoc(
+        title: (j['title'] ?? '').toString(),
+        date: (j['date'] ?? '').toString(),
+        description: (j['description'] ?? '').toString(),
+        url: (j['url'] ?? '').toString(),
+      );
 }
 
-/// HowTheyVote.eu — EU-Parlament Abstimmung.
-class EuVote {
-  final String id;
+class CiaCrestDoc {
   final String title;
   final String date;
-  final String result;
-  final int forCount;
-  final int againstCount;
-  final int abstainCount;
+  final String description;
   final String url;
-  const EuVote({
-    required this.id,
+  const CiaCrestDoc({
     required this.title,
     required this.date,
-    required this.result,
-    required this.forCount,
-    required this.againstCount,
-    required this.abstainCount,
+    required this.description,
     required this.url,
   });
+  factory CiaCrestDoc.fromJson(Map<String, dynamic> j) => CiaCrestDoc(
+        title: (j['title'] ?? '').toString(),
+        date: (j['date'] ?? '').toString(),
+        description: (j['description'] ?? '').toString(),
+        url: (j['url'] ?? '').toString(),
+      );
+}
+
+class SnowdenDoc {
+  final String title;
+  final String date;
+  final String description;
+  final String url;
+  const SnowdenDoc({
+    required this.title,
+    required this.date,
+    required this.description,
+    required this.url,
+  });
+  factory SnowdenDoc.fromJson(Map<String, dynamic> j) => SnowdenDoc(
+        title: (j['title'] ?? '').toString(),
+        date: (j['date'] ?? '').toString(),
+        description: (j['description'] ?? '').toString(),
+        url: (j['url'] ?? '').toString(),
+      );
+}
+
+class OcNetworkOfficer {
+  final String companyName;
+  final String officerName;
+  final String position;
+  final String startDate;
+  final String endDate;
+  final List<String> otherCompanies;
+  final String url;
+  const OcNetworkOfficer({
+    required this.companyName,
+    required this.officerName,
+    required this.position,
+    required this.startDate,
+    required this.endDate,
+    required this.otherCompanies,
+    required this.url,
+  });
+  factory OcNetworkOfficer.fromJson(Map<String, dynamic> j) => OcNetworkOfficer(
+        companyName: (j['companyName'] ?? '').toString(),
+        officerName: (j['officerName'] ?? '').toString(),
+        position: (j['position'] ?? '').toString(),
+        startDate: (j['startDate'] ?? '').toString(),
+        endDate: (j['endDate'] ?? '').toString(),
+        otherCompanies: ((j['otherCompanies'] as List?) ?? const [])
+            .map((e) => e.toString())
+            .toList(),
+        url: (j['url'] ?? '').toString(),
+      );
+}
+
+class CorpWatchArticle {
+  final String title;
+  final String domain;
+  final String date;
+  final double tone;
+  final String url;
+  const CorpWatchArticle({
+    required this.title,
+    required this.domain,
+    required this.date,
+    required this.tone,
+    required this.url,
+  });
+  factory CorpWatchArticle.fromJson(Map<String, dynamic> j) => CorpWatchArticle(
+        title: (j['title'] ?? '').toString(),
+        domain: (j['domain'] ?? '').toString(),
+        date: (j['date'] ?? '').toString(),
+        tone: (j['tone'] is num)
+            ? (j['tone'] as num).toDouble()
+            : double.tryParse((j['tone'] ?? '0').toString()) ?? 0.0,
+        url: (j['url'] ?? '').toString(),
+      );
 }
