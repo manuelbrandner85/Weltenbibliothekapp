@@ -16,6 +16,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../screens/my_investigations_screen.dart';
+import '../services/kb_history_service.dart';
 import 'kb_design.dart';
 
 class CinematicIntro extends StatefulWidget {
@@ -38,6 +39,7 @@ class _CinematicIntroState extends State<CinematicIntro>
   bool _ready = false;
   bool _typewriterDone = false;
   String _typed = '';
+  List<String> _history = const [];
   static const String _virgilLine = 'Was möchtest du erforschen?';
 
   // Vorgeschlagene Themen (rotieren)
@@ -86,17 +88,6 @@ class _CinematicIntroState extends State<CinematicIntro>
     KbHistoryService.getHistory().then((list) {
       if (mounted) setState(() => _history = list);
     });
-  }
-
-  Future<void> _runTypewriter() async {
-    for (var i = 1; i <= _virgilLine.length; i++) {
-      if (!mounted) return;
-      await Future.delayed(const Duration(milliseconds: 38));
-      setState(() => _typed = _virgilLine.substring(0, i));
-    }
-    if (!mounted) return;
-    setState(() => _typewriterDone = true);
-    _focus.requestFocus();
   }
 
   Future<void> _runTypewriter() async {

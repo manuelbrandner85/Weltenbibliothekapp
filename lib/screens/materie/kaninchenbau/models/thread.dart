@@ -439,6 +439,7 @@ class RssItem {
 // ─── Deep-API-Tier — PR-#113-Quellen ──────────────────────────────────────────
 
 class AlephDocument {
+  final String id;
   final String name;
   final String collection;
   final String schema;
@@ -446,74 +447,93 @@ class AlephDocument {
   final String? date;
   final String? summary;
   final String? url;
-  const AlephDocument({required this.name, required this.collection, required this.schema, required this.country, this.date, this.summary, this.url});
+  const AlephDocument({required this.id, required this.name, required this.collection, required this.schema, required this.country, this.date, this.summary, this.url});
 }
 
 class OffshoreEntity {
   final String name;
   final String type;
+  final String jurisdiction;
+  final String country;
+  final String status;
   final String leakType;
   final String? url;
-  const OffshoreEntity({required this.name, required this.type, required this.leakType, this.url});
+  const OffshoreEntity({required this.name, required this.type, required this.jurisdiction, required this.country, required this.status, required this.leakType, this.url});
 }
 
 class CompanyEntry {
   final String name;
   final String jurisdiction;
   final String status;
+  final String type;
   final String source;
+  final String? companyNumber;
+  final String? country;
   final String? lei;
   final String? registered;
   final String? url;
-  const CompanyEntry({required this.name, required this.jurisdiction, required this.status, required this.source, this.lei, this.registered, this.url});
+  const CompanyEntry({required this.name, required this.jurisdiction, required this.status, required this.type, required this.source, this.companyNumber, this.country, this.lei, this.registered, this.url});
 }
 
 class SanctionResult {
+  final String id;
   final String name;
   final String schema;
   final List<String> topics;
+  final List<String> countries;
   final List<String> datasets;
   final String? birthDate;
   final String? url;
-  const SanctionResult({required this.name, required this.schema, required this.topics, required this.datasets, this.birthDate, this.url});
+  const SanctionResult({required this.id, required this.name, required this.schema, required this.topics, required this.countries, required this.datasets, this.birthDate, this.url});
 }
 
 class PubMedPaper {
+  final String pmid;
   final String title;
+  final String authors;
+  final String journal;
+  final String year;
   final String? doi;
-  final String? url;
-  const PubMedPaper({required this.title, this.doi, this.url});
+  final String url;
+  const PubMedPaper({required this.pmid, required this.title, required this.authors, required this.journal, required this.year, this.doi, required this.url});
 }
 
 class SemanticPaper {
+  final String paperId;
   final String title;
-  final String? abstract_;
+  final String authors;
   final int? year;
-  final bool openAccess;
+  final int citations;
   final int influential;
-  final String? url;
-  const SemanticPaper({required this.title, this.abstract_, this.year, required this.openAccess, required this.influential, this.url});
+  final String? doi;
+  final String? openAccess; // nullable String from API (e.g. 'gold', 'green', null)
+  final String? abstract_;
+  final String url;
+  const SemanticPaper({required this.paperId, required this.title, required this.authors, this.year, required this.citations, required this.influential, this.doi, this.openAccess, this.abstract_, required this.url});
   String? get abstract => abstract_;
 }
 
 class ArchiveDoc {
+  final String id;
   final String title;
   final String mediatype;
-  final String? creator;
-  final String? date;
-  final String? description;
-  final String? url;
-  const ArchiveDoc({required this.title, required this.mediatype, this.creator, this.date, this.description, this.url});
+  final String creator;
+  final String date;
+  final String description;
+  final String url;
+  const ArchiveDoc({required this.id, required this.title, required this.mediatype, required this.creator, required this.date, required this.description, required this.url});
 }
 
 class EuVote {
+  final String id;
   final String title;
+  final String date;
   final int forCount;
   final int againstCount;
   final int abstainCount;
   final String result;
-  final String? url;
-  const EuVote({required this.title, required this.forCount, required this.againstCount, required this.abstainCount, required this.result, this.url});
+  final String url;
+  const EuVote({required this.id, required this.title, required this.date, required this.forCount, required this.againstCount, required this.abstainCount, required this.result, required this.url});
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
