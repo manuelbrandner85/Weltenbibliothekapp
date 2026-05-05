@@ -2516,45 +2516,20 @@ export default {
     // ── RSS-Aggregator: 20+ Quellen, gefiltert nach Topic ──
     if (path === '/api/rss/aggregate' && method === 'GET') {
       try {
-        const topicRaw = (url.searchParams.get('topic') || '').trim();
-        if (!topicRaw) return errorResponse('topic fehlt', 400);
-        // Topic in Tokens splitten: "Klaus Schwab" → ["klaus", "schwab"]
-        // Auch Kurzformen testen: "WEF" → ["wef"]
-        const tokens = topicRaw.toLowerCase()
-          .split(/[\s,/-]+/)
-          .filter(t => t.length >= 3);
-        const matchTopic = (text) => {
-          const lt = text.toLowerCase();
-          if (lt.includes(topicRaw.toLowerCase())) return true;
-          // ALLE Tokens müssen im Titel sein (UND-Verknüpfung) — vermeidet zu viele False-Positives
-          return tokens.length > 0 && tokens.every(t => lt.includes(t));
-        };
-
+        const topic = (url.searchParams.get('topic') || '').toLowerCase().trim();
+        if (!topic) return errorResponse('topic fehlt', 400);
         const feeds = [
-          // Mainstream / Öffentlich-Rechtlich
-          { name: 'Tagesschau', url: 'https://www.tagesschau.de/index~rss2.xml', lens: 'oeff-rechtlich' },
-          { name: 'ZDF heute', url: 'https://www.zdf.de/rss/zdf/nachrichten', lens: 'oeff-rechtlich' },
-          { name: 'Deutschlandfunk', url: 'https://www.deutschlandfunk.de/die-nachrichten-100.rss', lens: 'oeff-rechtlich' },
-          { name: 'Spiegel', url: 'https://www.spiegel.de/index.rss', lens: 'mainstream-links' },
-          { name: 'Süddeutsche', url: 'https://rss.sueddeutsche.de/rss/Politik', lens: 'mainstream-links' },
-          { name: 'taz', url: 'https://taz.de/!s=&ExportStatus=Intern;rss/', lens: 'links' },
-          { name: 'FAZ', url: 'https://www.faz.net/rss/aktuell/politik/', lens: 'mainstream-rechts' },
-          { name: 'Welt', url: 'https://www.welt.de/feeds/section/politik.rss', lens: 'mainstream-rechts' },
-          { name: 'Cicero', url: 'https://www.cicero.de/rss.xml', lens: 'rechts-buergerlich' },
-          // Alternativ
-          { name: 'NachDenkSeiten', url: 'https://www.nachdenkseiten.de/?feed=rss2', lens: 'alt-links' },
-          { name: 'Multipolar', url: 'https://multipolar-magazin.de/artikel.atom', lens: 'alt' },
+          { name: 'Spiegel', url: 'https://www.spiegel.de/index.rss', lens: 'establishment-left' },
+          { name: 'FAZ', url: 'https://www.faz.net/rss/aktuell/politik/', lens: 'establishment-right' },
+          { name: 'Welt', url: 'https://www.welt.de/feeds/section/politik.rss', lens: 'establishment-right' },
+          { name: 'Tichys', url: 'https://www.tichyseinblick.de/feed/', lens: 'alt-right' },
+          { name: 'NachDenkSeiten', url: 'https://www.nachdenkseiten.de/?feed=rss2', lens: 'alt-left' },
           { name: 'Telepolis', url: 'https://www.telepolis.de/news-atom.xml', lens: 'alt' },
-          { name: 'Tichys Einblick', url: 'https://www.tichyseinblick.de/feed/', lens: 'alt-rechts' },
-          { name: 'Apolut', url: 'https://apolut.net/feed/', lens: 'alt' },
-          { name: 'Reitschuster', url: 'https://reitschuster.de/feed/', lens: 'alt-rechts' },
-          { name: 'Junge Welt', url: 'https://www.jungewelt.de/feeds/newsticker.rss', lens: 'links-radikal' },
-          // Investigativ
-          { name: 'Correctiv', url: 'https://correctiv.org/feed/', lens: 'investigativ' },
-          { name: 'LobbyControl', url: 'https://www.lobbycontrol.de/feed/', lens: 'investigativ' },
-          { name: 'Netzpolitik', url: 'https://netzpolitik.org/feed/', lens: 'investigativ' },
-          // International (DE-relevant)
-          { name: 'RT DE', url: 'https://de.rt.com/feeds/all.rss', lens: 'staatsmedien-russland' },
+          { name: 'Multipolar', url: 'https://multipolar-magazin.de/artikel.atom', lens: 'alt' },
+          { name: 'BBC', url: 'http://feeds.bbci.co.uk/news/world/rss.xml', lens: 'establishment' },
+          { name: 'Guardian', url: 'https://www.theguardian.com/world/rss', lens: 'establishment-left' },
+          { name: 'RT DE', url: 'https://de.rt.com/feeds/all.rss', lens: 'state-russia' },
+          { name: 'Reuters World', url: 'https://feeds.reuters.com/reuters/worldNews', lens: 'wire' },
         ];
 
         const all = [];
@@ -2566,20 +2541,17 @@ export default {
             });
             if (!r.ok) return;
             const xml = await r.text();
+            // Simple Item-Parser (kein DOMParser in Workers, RegEx-basiert)
             const items = [...xml.matchAll(/<(item|entry)[\s\S]*?<\/\1>/g)];
-            for (const m of items.slice(0, 60)) {
+            for (const m of items.slice(0, 30)) {
               const block = m[0];
               const title = (block.match(/<title[^>]*>([\s\S]*?)<\/title>/) || [])[1] || '';
-              const desc = (block.match(/<(description|summary|content)[^>]*>([\s\S]*?)<\/\1>/) || [])[2] || '';
               const link = (block.match(/<link[^>]*?>([\s\S]*?)<\/link>/) || block.match(/<link[^>]*href="([^"]+)"/) || [])[1] || '';
               const date = (block.match(/<(pubDate|published|updated)[^>]*>([\s\S]*?)<\/\1>/) || [])[2] || '';
               const cleanTitle = title.replace(/<!\[CDATA\[|\]\]>/g, '').replace(/<[^>]+>/g, '').trim();
-              const cleanDesc = desc.replace(/<!\[CDATA\[|\]\]>/g, '').replace(/<[^>]+>/g, '').trim().slice(0, 200);
-              // Match: Titel ODER Beschreibung
-              if (matchTopic(cleanTitle) || matchTopic(cleanDesc)) {
+              if (cleanTitle.toLowerCase().includes(topic)) {
                 all.push({
                   title: cleanTitle,
-                  description: cleanDesc,
                   url: link.replace(/<!\[CDATA\[|\]\]>/g, '').trim(),
                   date,
                   source: f.name,
@@ -2591,7 +2563,7 @@ export default {
         }));
 
         all.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-        return jsonResponse({ topic: topicRaw, count: all.length, items: all.slice(0, 80) });
+        return jsonResponse({ topic, count: all.length, items: all.slice(0, 50) });
       } catch (e) {
         return errorResponse(`RSS-Fehler: ${e.message}`);
       }
@@ -3216,80 +3188,6 @@ EMPFEHLUNG: [1 Satz — was sollte der User selbst recherchieren?]`;
         return jsonResponse(data);
       } catch (e) {
         return errorResponse(`FactCheck-Fehler: ${e.message}`);
-      }
-    }
-
-    // ── YouTube Search (YouTube Data API v3, serverseitig für Key-Schutz) ──
-    if (path === '/api/youtube/search' && method === 'GET') {
-      const q = url.searchParams.get('q') || '';
-      const maxResults = Math.min(parseInt(url.searchParams.get('max') || '6', 10), 12);
-      if (!q) return errorResponse('q fehlt', 400);
-      if (!env.YOUTUBE_API_KEY) {
-        return jsonResponse({
-          items: [],
-          fallback: true,
-          searchUrl: `https://www.youtube.com/results?search_query=${encodeURIComponent(q + ' deutsch')}&sp=EgIQAQ%3D%3D`,
-        });
-      }
-
-      const mapItems = (rawItems, isSubtitled) => (rawItems || []).map(item => ({
-        videoId: item.id?.videoId || '',
-        title: item.snippet?.title || '',
-        channel: item.snippet?.channelTitle || '',
-        thumbnail: item.snippet?.thumbnails?.medium?.url || item.snippet?.thumbnails?.default?.url || '',
-        published: item.snippet?.publishedAt || '',
-        description: (item.snippet?.description || '').slice(0, 120),
-        isSubtitled,
-      })).filter(i => i.videoId);
-
-      const base = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&videoEmbeddable=true&key=${env.YOUTUBE_API_KEY}&maxResults=${maxResults}`;
-
-      try {
-        // Schritt 1: Deutsche Videos (Query + "deutsch", Region DE)
-        const deQuery = q.toLowerCase().includes('deutsch') ? q : `${q} deutsch`;
-        const deResp = await fetch(`${base}&q=${encodeURIComponent(deQuery)}&relevanceLanguage=de&regionCode=DE`);
-        if (!deResp.ok) throw new Error(`YT API ${deResp.status}`);
-        const deItems = mapItems((await deResp.json()).items, false);
-
-        // Mindestens 2 deutsche Treffer → nur deutsche zurückgeben
-        if (deItems.length >= 2) {
-          return jsonResponse({ items: deItems, lang: 'de' });
-        }
-
-        // Schritt 2: Englische Videos mit Untertitel-Filter (closedCaption = hat Captions)
-        const enResp = await fetch(`${base}&q=${encodeURIComponent(q)}&videoCaption=closedCaption`);
-        if (!enResp.ok) throw new Error(`YT API ${enResp.status}`);
-        const enItems = mapItems((await enResp.json()).items, true);
-
-        // Deutsche zuerst, dann englische mit Untertitel-Badge
-        const combined = [...deItems, ...enItems].slice(0, maxResults);
-        return jsonResponse({ items: combined, lang: 'en_subtitled' });
-      } catch (e) {
-        return errorResponse(`YouTube-Fehler: ${e.message}`);
-      }
-    }
-
-    // ── Wikimedia Commons Bildersuche für Karte-Marker ──────────────────────
-    if (path === '/api/map/wikimedia' && method === 'GET') {
-      const q = url.searchParams.get('q') || '';
-      if (!q) return jsonResponse({ images: [] });
-      try {
-        const searchUrl = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(q)}&gsrnamespace=6&gsrlimit=10&prop=imageinfo&iiprop=url|size|mime&format=json&origin=*`;
-        const r = await fetch(searchUrl, { headers: { 'User-Agent': 'WeltenbibliothekApp/1.0' } });
-        if (!r.ok) return jsonResponse({ images: [] });
-        const data = await r.json();
-        const pages = data.query?.pages || {};
-        const images = Object.values(pages)
-          .filter(p => {
-            const u = p.imageinfo?.[0]?.url || '';
-            return u.match(/\.(jpg|jpeg|png|webp)(\?|$)/i);
-          })
-          .sort((a, b) => (b.imageinfo?.[0]?.width || 0) - (a.imageinfo?.[0]?.width || 0))
-          .slice(0, 6)
-          .map(p => p.imageinfo[0].url);
-        return jsonResponse({ images });
-      } catch (e) {
-        return jsonResponse({ images: [] });
       }
     }
 
