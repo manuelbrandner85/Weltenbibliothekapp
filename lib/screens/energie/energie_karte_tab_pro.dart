@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -17,24 +19,39 @@ class EnergieKarteTabPro extends StatefulWidget {
   State<EnergieKarteTabPro> createState() => _EnergieKarteTabProState();
 }
 
-class _EnergieKarteTabProState extends State<EnergieKarteTabPro> {
+class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
+    with TickerProviderStateMixin {
   final MapController _mapController = MapController();
   final TextEditingController _searchController = TextEditingController();
-  
+
   // Filter State (Single-Select)
   EnergieCategory? _selectedCategory; // null = "Alle" ausgewählt
   String _searchQuery = '';
   EnergieLocationDetail? _selectedLocation;
   bool _showLeyLines = true;
-  
-  // Gespeicherte Karten-Position (für Zoom-Zurück)
-  // UNUSED FIELD: LatLng? _savedMapCenter;
-  // UNUSED FIELD: double? _savedMapZoom;
-  
+
   // Map Layer State
   String _currentMapLayer = 'street';
   bool _isLayerSwitcherExpanded = false; // Standard: Eingeklappt
-  
+
+  // Feature E: Radial layer menu
+  bool _layerMenuOpen = false;
+
+  // Feature F: Collapsible header
+  bool _headerCollapsed = false;
+
+  // Feature A: Panel slide animation
+  late AnimationController _panelSlideController;
+  late Animation<Offset> _panelSlideAnimation;
+
+  // Feature F: Gradient animation
+  late AnimationController _gradientAnimController;
+  late Animation<double> _gradientAnim;
+
+  // Feature C: Image swiper
+  PageController? _imagePageController;
+  int _imagePage = 0;
+
   // Detail Panel Tab State
   int _detailTabIndex = 0;
 
@@ -47,18 +64,49 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro> {
   List<String> _wikiImages = const [];
   bool _wikiLoading = false;
   String _wikiLocationName = '';
-  
+
   @override
   void initState() {
     super.initState();
-    // Default: "Alle" ausgewählt
     _selectedCategory = null;
+
+    // Feature A: Panel slide
+    _panelSlideController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+    _panelSlideAnimation = Tween<Offset>(
+      begin: const Offset(0, 1),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _panelSlideController,
+      curve: Curves.elasticOut,
+    ));
+
+    // Feature F: Gradient cycling
+    _gradientAnimController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 8),
+    )..repeat(reverse: true);
+    _gradientAnim = Tween<double>(begin: 0.0, end: 1.0).animate(
+      _gradientAnimController,
+    );
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _panelSlideController.dispose();
+    _gradientAnimController.dispose();
+    _imagePageController?.dispose();
     super.dispose();
+  }
+
+  void _openPanel() {
+    _imagePageController?.dispose();
+    _imagePageController = PageController();
+    _imagePage = 0;
+    _panelSlideController.forward(from: 0);
   }
 
   Future<void> _loadYoutubeForLocation(String name) async {
@@ -107,6 +155,15 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro> {
       body: Stack(
         children: [
           // MAP
+          // Feature E: close radial menu on background tap
+          if (_layerMenuOpen)
+            Positioned.fill(
+              child: GestureDetector(
+                onTap: () => setState(() => _layerMenuOpen = false),
+                child: Container(color: Colors.transparent),
+              ),
+            ),
+
           FlutterMap(
             mapController: _mapController,
             options: MapOptions(
@@ -114,6 +171,11 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro> {
               initialZoom: 5.0,
               minZoom: 2.0,
               maxZoom: 18.0,
+              onPositionChanged: (camera, hasGesture) {
+                if (hasGesture && !_headerCollapsed) {
+                  setState(() => _headerCollapsed = true);
+                }
+              },
               // 📍 B9: Long-Press auf die Karte → Live-Pin-Modal öffnen
               onLongPress: (tapPos, latlng) =>
                   _showLivePinModal(context, latlng),
