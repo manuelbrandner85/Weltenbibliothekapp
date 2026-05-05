@@ -350,20 +350,20 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro>
                         ),
                       ),
                     ),
-                    AnimatedContainer(
+                    AnimatedSize(
                       duration: const Duration(milliseconds: 350),
                       curve: Curves.easeInOut,
-                      height: _headerCollapsed ? 0 : double.infinity,
                       clipBehavior: Clip.hardEdge,
-                      decoration: const BoxDecoration(),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          _buildSearchAndFilterBar(),
-                          const SizedBox(height: 12),
-                          _buildCategoryFilters(),
-                        ],
-                      ),
+                      child: _headerCollapsed
+                          ? const SizedBox.shrink()
+                          : Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                _buildSearchAndFilterBar(),
+                                const SizedBox(height: 12),
+                                _buildCategoryFilters(),
+                              ],
+                            ),
                     ),
                     if (_headerCollapsed)
                       Positioned(

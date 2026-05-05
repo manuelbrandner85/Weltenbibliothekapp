@@ -1,19 +1,15 @@
 name: livekit-weltenbibliothek
 
-# Weltenbibliothek LiveKit-Server + coturn TURN-Relay.
-# - Eigener API-Key (wb-...), keine Vermischung mit Mensaena
-# - LiveKit-Container hört auf Host-Port 7980 (nicht 7880 = LiveKit-Default)
-# - UDP-Media-Range 60001-61000 (Mensaena nutzt 50000-60000) → KEIN Overlap
-# - coturn TURN-Server für symmetrisches NAT (Firmen-VPN, manche CGNAT)
-#   - TURN-Listener: 3478/UDP+TCP (Mensaena: 3479 → kein Konflikt)
-#   - TURN-Relay-Range: 61001-62000/UDP (disjunkt von LiveKit)
-# - KEIN eigener Reverse-Proxy mehr — Mensaena's Caddy macht das Routing
-#   für `livekit-wb.srv1438024.hstgr.cloud` → 127.0.0.1:7980 (additive Caddy-Config)
+# Weltenbibliothek LiveKit-Server mit eingebautem TURN-Relay.
+# Ansatz identisch zu Mensaena (livekit-final-fix.sh): built-in TURN,
+# domain: '', external_tls: false — kein separater coturn nötig.
 #
 # MENSAENA-SAFETY-LISTE (vor jedem manuellen Eingriff lesen!):
 #   ✓ Eigener Container-Name `livekit-weltenbibliothek` (Mensaena: livekit-livekit-1)
 #   ✓ Eigenes Docker-Network `livekit-wb-net` (kein Cross-Talk)
-#   ✓ Eigene Host-Ports — KEINE Überschneidung mit 80/443 (Mensaena Web)
+#   ✓ Signal-Port 7980 (Mensaena: 7880), TCP 7981 (Mensaena: 7881)
+#   ✓ Media-UDP 60001-61000 (Mensaena: 50000-60000) — KEIN Overlap
+#   ✓ TURN-Port 3479 UDP/TCP (Mensaena: 3478) — KEIN Overlap
 #   ✓ Verzeichnis /docker/livekit-wb/ (Mensaena: andere Lokation)
 #
 # Starten:  docker compose -f /docker/livekit-wb/docker-compose.yml up -d
@@ -22,25 +18,21 @@ name: livekit-weltenbibliothek
 
 services:
 
-  # ── LiveKit Medienserver ───────────────────────────────────────────────────
-  # Hört intern auf 7980 (HTTP, kein TLS)
-  # Mensaena's Caddy terminiert TLS und proxied https://livekit-wb.* → 127.0.0.1:7980
   livekit:
     image: livekit/livekit-server:v1.7
     container_name: livekit-weltenbibliothek
     restart: unless-stopped
     ports:
-      # HTTP/WS-Signal — Mensaena's Caddy proxied hierhin
+      # HTTP/WS-Signal — Mensaena's Caddy terminiert TLS und proxied hier hin
       - "127.0.0.1:7980:7980/tcp"
-      # RTC TCP-Fallback (für Clients hinter strengen Firewalls)
+      # RTC TCP-Fallback (Clients hinter strikter Firewall)
       - "7981:7981/tcp"
-      # WebRTC Media — UDP-Range 60001-61000 (1000 Ports).
-      # Vorher 100 Ports → bei vollen Räumen Track-Drops (≈4 Ports/User).
-      # 1000 Ports = ~1-1.5 GB docker-proxy RAM — vertretbar.
+      # WebRTC Media UDP-Range (1000 Ports, disjunkt von Mensaena 50000-60000)
       - "60001-61000:60001-61000/udp"
-      # TURN-Ports (3480/5352) waren in PR #74 vorgesehen, sind aber
-      # bewusst rausgenommen — LiveKit-internal TURN braucht TLS-Cert.
-      # Siehe livekit.yaml für die ausführliche Erklärung.
+      # Built-in TURN: Port 3479 UDP+TCP (Mensaena belegt 3478 — kein Konflikt)
+      # Relay für Mobilfunk-CGNAT / symmetrisches NAT
+      - "3479:3479/udp"
+      - "3479:3479/tcp"
     volumes:
       - ./livekit.yaml:/etc/livekit.yaml:ro
     command: --config /etc/livekit.yaml
@@ -52,30 +44,6 @@ services:
       timeout: 10s
       retries: 5
       start_period: 10s
-
-  # ── coturn TURN/STUN-Relay-Server ──────────────────────────────────────
-  # Eigenständiger Container — Crash hier killt LiveKit NICHT.
-  # Notwendig für User hinter symmetrischem NAT (kein STUN-Punch möglich):
-  # Firmen-VPN, manche Mobil-Carrier-CGNAT, Hotel-WLAN.
-  #
-  # Listener auf 3478 (Standard, disjunkt von Mensaena 3479).
-  # Relay-Range 61001-62000 (disjunkt von LiveKit 60001-61000 + Mensaena 50000-60000).
-  # KEIN TLS — Plain TURN/UDP+TCP genügt für 95%+ der NAT-Probleme.
-  coturn:
-    image: coturn/coturn:4.6
-    container_name: livekit-wb-coturn
-    restart: unless-stopped
-    ports:
-      # STUN/TURN-Listener (Standard-Ports)
-      - "3478:3478/udp"
-      - "3478:3478/tcp"
-      # Relay-Range (Media-Pakete vom Server zurück zum Client)
-      - "61001-62000:61001-62000/udp"
-    volumes:
-      - ./turnserver.conf:/etc/turnserver.conf:ro
-    command: ["-c", "/etc/turnserver.conf"]
-    networks:
-      - livekit-wb-net
 
 networks:
   livekit-wb-net:
