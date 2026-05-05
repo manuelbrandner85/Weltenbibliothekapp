@@ -8,7 +8,7 @@ import '../../services/openclaw_dashboard_service.dart';
 import '../../services/storage_service.dart';
 import '../../models/energie_profile.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../materie/recherche_tab_modern.dart';
+import '../materie/kaninchenbau/kaninchenbau_screen.dart';
 import 'energie_live_chat_screen.dart';
 import '../../services/chat/recent_rooms_service.dart';
 import '../shared/bookmarks_screen.dart';
@@ -337,7 +337,7 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
     if (url != null && url.isNotEmpty) {
       launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
     } else {
-      _go(const RechercheTabModern());
+      _go(const KaninchenbauScreen());
     }
   }
 
@@ -637,7 +637,7 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
 
   Widget _buildInlineSearch() {
     return GestureDetector(
-      onTap: () => _go(const RechercheTabModern()),
+      onTap: () => _go(const KaninchenbauScreen()),
       child: Container(
         height: 46,
         padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -1267,7 +1267,7 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
             ]),
           ),
           GestureDetector(
-            onTap: () => _go(const RechercheTabModern()),
+            onTap: () => _go(const KaninchenbauScreen()),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(

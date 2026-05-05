@@ -52,7 +52,6 @@ import '../../widgets/android_voice_recorder.dart'; // 🎤 Android Voice Record
 // 🎵 Telegram Voice Player
 import '../../widgets/voice_message_player.dart' show ChatVoicePlayer; // 🎤 Chat Voice Player (New)
 import 'ufo_sightings_screen.dart'; // 🛸 UFO-Sichtungen
-import 'history_timeline_screen.dart'; // 🏛️ Geschichte-Zeitleiste
 import 'geopolitik_map_screen.dart'; // 🎭 Geopolitik-Kartierung
 import 'conspiracy_network_screen.dart'; // 👁️ Verbindungsnetz
 import 'research_archive_screen.dart'; // 🔬 Forschungs-Archiv
