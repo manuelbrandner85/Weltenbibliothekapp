@@ -2098,9 +2098,11 @@ Die Große Pyramide war kein Grabmal, sondern ein Energiekonverter bzw. Kraftwer
     position: const LatLng(-25.3444, 131.0369),
     category: EnergieCategory.kraftorte,
     keywords: ['Uluru', 'Ayers Rock', 'Aborigines', 'Traumzeit', 'Australien'],
+    imageUrls: ['https://upload.wikimedia.org/wikipedia/commons/thumb/3/3e/Uluru_Australia.jpg/1200px-Uluru_Australia.jpg'],
+    videoUrls: ['sLb8tWBf5GM'],
     energyLevel: 9,
   ),
-  
+
   // MEDITATIONS-ZENTREN
   EnergieLocationDetail(
     name: 'Bodh Gaya - Indien',
@@ -2109,9 +2111,11 @@ Die Große Pyramide war kein Grabmal, sondern ein Energiekonverter bzw. Kraftwer
     position: const LatLng(24.6951, 84.9914),
     category: EnergieCategory.meditationCenters,
     keywords: ['Bodh Gaya', 'Buddha', 'Erleuchtung', 'Bodhi-Baum', 'Meditation'],
+    imageUrls: ['https://upload.wikimedia.org/wikipedia/commons/thumb/2/22/Mahabodhi_Temple_Bodhgaya.jpg/1200px-Mahabodhi_Temple_Bodhgaya.jpg'],
+    videoUrls: ['ZhZ7cDiPmE8'],
     energyLevel: 10,
   ),
-  
+
   EnergieLocationDetail(
     name: 'Glastonbury - England',
     description: 'Mystisches Zentrum & Avalon',
@@ -2119,9 +2123,11 @@ Die Große Pyramide war kein Grabmal, sondern ein Energiekonverter bzw. Kraftwer
     position: const LatLng(51.1489, -2.7140),
     category: EnergieCategory.meditationCenters,
     keywords: ['Glastonbury', 'Avalon', 'König Artus', 'Ley-Lines', 'Chalice Well'],
+    imageUrls: ['https://upload.wikimedia.org/wikipedia/commons/thumb/6/60/Glastonbury_Tor_and_Hill.jpg/1200px-Glastonbury_Tor_and_Hill.jpg'],
+    videoUrls: ['j8rqzHjNl8c'],
     energyLevel: 9,
   ),
-  
+
   // HEILIGE STÄTTEN
   EnergieLocationDetail(
     name: 'Angkor Wat - Kambodscha',
@@ -2130,9 +2136,11 @@ Die Große Pyramide war kein Grabmal, sondern ein Energiekonverter bzw. Kraftwer
     position: const LatLng(13.4125, 103.8670),
     category: EnergieCategory.sacredSites,
     keywords: ['Angkor Wat', 'Kambodscha', 'Khmer', 'Tempel', 'UNESCO'],
+    imageUrls: ['https://upload.wikimedia.org/wikipedia/commons/thumb/9/94/Bayon_face.jpg/1200px-Bayon_face.jpg'],
+    videoUrls: ['uqhhZJM0wI0'],
     energyLevel: 9,
   ),
-  
+
   EnergieLocationDetail(
     name: 'Mount Shasta - Kalifornien',
     description: 'Heiliger Berg & Energie-Vortex',
@@ -2140,9 +2148,11 @@ Die Große Pyramide war kein Grabmal, sondern ein Energiekonverter bzw. Kraftwer
     position: const LatLng(41.4092, -122.1949),
     category: EnergieCategory.sacredSites,
     keywords: ['Mount Shasta', 'Lemurien', 'Telos', 'UFO', 'Vortex'],
+    imageUrls: ['https://upload.wikimedia.org/wikipedia/commons/thumb/8/88/Mount_Shasta_from_the_south.jpg/1200px-Mount_Shasta_from_the_south.jpg'],
+    videoUrls: ['X5KbZlYWhH4'],
     energyLevel: 9,
   ),
-  
+
   // KRISTALL-HÖHLEN
   EnergieLocationDetail(
     name: 'Kristallhöhle Naica - Mexiko',
@@ -2151,9 +2161,11 @@ Die Große Pyramide war kein Grabmal, sondern ein Energiekonverter bzw. Kraftwer
     position: const LatLng(27.8518, -105.4971),
     category: EnergieCategory.crystalCaves,
     keywords: ['Naica', 'Kristallhöhle', 'Selenit', 'Mexiko', 'Mineralien'],
+    imageUrls: ['https://upload.wikimedia.org/wikipedia/commons/thumb/b/be/Naica_crystals2.jpg/1200px-Naica_crystals2.jpg'],
+    videoUrls: ['R5d8mCaFvFE'],
     energyLevel: 10,
   ),
-  
+
   // ALTE TEMPEL
   EnergieLocationDetail(
     name: 'Göbekli Tepe - Türkei',
@@ -2162,9 +2174,11 @@ Die Große Pyramide war kein Grabmal, sondern ein Energiekonverter bzw. Kraftwer
     position: const LatLng(37.2233, 38.9225),
     category: EnergieCategory.ancientTemples,
     keywords: ['Göbekli Tepe', 'Ältester Tempel', 'Steinzeit', 'Türkei', 'Megalith'],
+    imageUrls: ['https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/G%C3%B6bekli_Tepe%2C_Urfa.jpg/1200px-G%C3%B6bekli_Tepe%2C_Urfa.jpg'],
+    videoUrls: ['_P6tvRjhZ5k'],
     energyLevel: 10,
   ),
-  
+
   EnergieLocationDetail(
     name: 'Teotihuacán - Mexiko',
     description: 'Stadt der Götter',
@@ -2172,20 +2186,12 @@ Die Große Pyramide war kein Grabmal, sondern ein Energiekonverter bzw. Kraftwer
     position: const LatLng(19.6925, -98.8438),
     category: EnergieCategory.ancientTemples,
     keywords: ['Teotihuacán', 'Mexiko', 'Pyramiden', 'Stadt der Götter', 'Azteken'],
+    imageUrls: ['https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Pyramid_of_the_Sun%2C_Teotihuacan.jpg/1200px-Pyramid_of_the_Sun%2C_Teotihuacan.jpg'],
+    videoUrls: ['fmfFAw4NLc0'],
     energyLevel: 9,
   ),
   
   // EUROPÄISCHE KRAFTORTE
-  EnergieLocationDetail(
-    name: 'Externsteine - Deutschland',
-    description: 'Mystische Felsformation',
-    detailedInfo: '''Bis zu 40m hohe Sandsteinfelsen im Teutoburger Wald. Germanisches Heiligtum. Astronomische Marker (Sonnenaufgang Sommersonnenwende). Kapelle im Fels. Kraftort mit starker Energie.''',
-    position: const LatLng(51.8697, 8.9172),
-    category: EnergieCategory.kraftorte,
-    keywords: ['Externsteine', 'Deutschland', 'Germanen', 'Teutoburger Wald', 'Felsen'],
-    energyLevel: 8,
-  ),
-  
   EnergieLocationDetail(
     name: 'Chartres Kathedrale - Frankreich',
     description: 'Gotisches Meisterwerk & Labyrinth',
@@ -2193,9 +2199,11 @@ Die Große Pyramide war kein Grabmal, sondern ein Energiekonverter bzw. Kraftwer
     position: const LatLng(48.4473, 1.4884),
     category: EnergieCategory.sacredSites,
     keywords: ['Chartres', 'Kathedrale', 'Labyrinth', 'Gotik', 'Druiden'],
+    imageUrls: ['https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/Cathedrale.chartres.exterior.JPG/1200px-Cathedrale.chartres.exterior.JPG'],
+    videoUrls: ['6DVcJj9nkYA'],
     energyLevel: 9,
   ),
-  
+
   EnergieLocationDetail(
     name: 'Delphi - Griechenland',
     description: 'Orakel & Nabel der Welt',
@@ -2203,9 +2211,11 @@ Die Große Pyramide war kein Grabmal, sondern ein Energiekonverter bzw. Kraftwer
     position: const LatLng(38.4824, 22.5010),
     category: EnergieCategory.ancientTemples,
     keywords: ['Delphi', 'Orakel', 'Apollo', 'Pythia', 'Griechenland'],
+    imageUrls: ['https://upload.wikimedia.org/wikipedia/commons/thumb/4/40/Temple_of_Apollo_at_Delphi.jpg/1200px-Temple_of_Apollo_at_Delphi.jpg'],
+    videoUrls: ['3YlrP2mjUXU'],
     energyLevel: 9,
   ),
-  
+
   // WEITERE CHAKRA-PUNKTE
   EnergieLocationDetail(
     name: 'Shasta-Kalifornien Korridor',
@@ -2214,9 +2224,11 @@ Die Große Pyramide war kein Grabmal, sondern ein Energiekonverter bzw. Kraftwer
     position: const LatLng(41.3099, -122.3103),
     category: EnergieCategory.chakraPoints,
     keywords: ['Mount Shasta', 'Wurzel-Chakra', 'Erdenergie', 'Vulkan', 'Native American'],
+    imageUrls: ['https://upload.wikimedia.org/wikipedia/commons/thumb/8/88/Mount_Shasta_from_the_south.jpg/1200px-Mount_Shasta_from_the_south.jpg'],
+    videoUrls: ['X5KbZlYWhH4'],
     energyLevel: 9,
   ),
-  
+
   EnergieLocationDetail(
     name: 'Glastonbury Tor - Sakral-Chakra',
     description: 'Sakral-Chakra der Erde',
@@ -2224,6 +2236,8 @@ Die Große Pyramide war kein Grabmal, sondern ein Energiekonverter bzw. Kraftwer
     position: const LatLng(51.1443, -2.6986),
     category: EnergieCategory.chakraPoints,
     keywords: ['Glastonbury Tor', 'Sakral-Chakra', 'Ley-Lines', 'Avalon', 'Weibliche Energie'],
+    imageUrls: ['https://upload.wikimedia.org/wikipedia/commons/thumb/6/60/Glastonbury_Tor_and_Hill.jpg/1200px-Glastonbury_Tor_and_Hill.jpg'],
+    videoUrls: ['j8rqzHjNl8c'],
     energyLevel: 9,
   ),
   
