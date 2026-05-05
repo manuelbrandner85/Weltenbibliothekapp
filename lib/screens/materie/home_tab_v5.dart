@@ -9,7 +9,7 @@ import '../../models/materie_profile.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'kaninchenbau/kaninchenbau_screen.dart';
 import 'materie_live_chat_screen.dart';
-import 'history_timeline_screen.dart';
+// HistoryTimelineScreen ersetzt durch Kaninchenbau (Zeitlinie ist jetzt eine Card im Kaninchenbau)
 import '../../services/chat/recent_rooms_service.dart';
 import '../shared/bookmarks_screen.dart';
 import '../shared/stats_dashboard_screen.dart';
@@ -697,7 +697,7 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
         sub: 'Geschichte & Ereignisse',
         gradient: [const Color(0xFF1B5E20), const Color(0xFF2E7D32), const Color(0xFF43A047)],
         badge: 0,
-        onTap: () => _go(const HistoryTimelineScreen(roomId: 'materie_history')),
+        onTap: () => _go(const KaninchenbauScreen(initialTopic: 'Geschichte')),
       ),
       _TileDef(
         icon: Icons.collections_bookmark_rounded,

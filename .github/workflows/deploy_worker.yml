@@ -90,6 +90,8 @@ jobs:
           WB_KEY: ${{ secrets.LIVEKIT_API_KEY || 'wb-a9b26485d407e7dc2043' }}
           WB_SECRET: ${{ secrets.LIVEKIT_API_SECRET }}
           WB_URL: ${{ secrets.LIVEKIT_URL || 'wss://livekit-wb.srv1438024.hstgr.cloud' }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GOOGLE_FACTCHECK_API_KEY: ${{ secrets.GOOGLE_FACTCHECK_API_KEY }}
         working-directory: workers
         run: |
           set -euo pipefail
@@ -111,6 +113,20 @@ jobs:
             PAYLOAD=$(printf '%s' "$PAYLOAD" | jq --arg v "$FCM_SERVICE_ACCOUNT_JSON" '. + {FCM_SERVICE_ACCOUNT: $v}')
           else
             echo "ℹ️  FCM_SERVICE_ACCOUNT_JSON fehlt — Push-Dispatcher markiert Queue nur als 'sent'"
+          fi
+
+          if [ -n "${GROQ_API_KEY:-}" ]; then
+            echo "→ GROQ_API_KEY (Virgil Llama 3.3 70B)"
+            PAYLOAD=$(printf '%s' "$PAYLOAD" | jq --arg v "$GROQ_API_KEY" '. + {GROQ_API_KEY: $v}')
+          else
+            echo "ℹ️  GROQ_API_KEY fehlt — Virgil nutzt Workers AI Llama 3.1 8B (Fallback)"
+          fi
+
+          if [ -n "${GOOGLE_FACTCHECK_API_KEY:-}" ]; then
+            echo "→ GOOGLE_FACTCHECK_API_KEY"
+            PAYLOAD=$(printf '%s' "$PAYLOAD" | jq --arg v "$GOOGLE_FACTCHECK_API_KEY" '. + {GOOGLE_FACTCHECK_API_KEY: $v}')
+          else
+            echo "ℹ️  GOOGLE_FACTCHECK_API_KEY fehlt — Fact-Check Card zeigt Snopes/Politifact-Search-Links"
           fi
 
           if [ -n "${WB_SECRET:-}" ]; then

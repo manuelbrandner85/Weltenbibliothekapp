@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'materie/home_tab_v5.dart';
-import 'materie/recherche_tab_modern.dart';
+import 'materie/kaninchenbau/kaninchenbau_screen.dart';
 import 'materie/community_tab_modern.dart';
 import 'materie/materie_karte_tab_pro.dart';
 import 'shared/unified_knowledge_tab.dart';
@@ -84,7 +84,7 @@ class _MaterieWorldScreenState extends ConsumerState<MaterieWorldScreen>
     // 🔥 CRITICAL: Tabs mit Key erstellen, damit sie neu gebaut werden wenn Admin-Status sich ändert
     final tabs = [
       MaterieHomeTabV5(key: ValueKey('home_${adminState.username}_${adminState.role}')),
-      const RechercheTabModern(),
+      const KaninchenbauScreen(),
       const MaterieCommunityTabModern(),
       const MaterieKarteTabPro(),
       const UnifiedKnowledgeTab(world: 'materie'),
