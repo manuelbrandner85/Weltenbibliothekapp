@@ -699,6 +699,29 @@ chore(deps): Dependencies aktualisiert
   - Fix Client: Cloudflare STUN als Fallback, Timeout 60s→90s
 
 
+- [x] **PR #116 — Groq + Google FactCheck + Patch-Trigger 7 OSINT-Tools** (2026-05-05, Patch ✓):
+  - Kaninchenbau: Groq-LLM Zusammenfassung + Google FactCheck via Worker-Secrets
+  - Triggert Shorebird OTA-Patch für 7 eigenständige OSINT-Tools aus PR #114
+  - Cloudflare Worker-Deploy mitgetriggert
+
+- [x] **PR #113 — Deep-API Layer + Karte-Fix + LiveKit TURN-Fix** (2026-05-05, Patch ✓):
+  - **8 neue Kaninchenbau-Karten** (kostenlose APIs, kein Key nötig):
+    - `OffshoreCard` — ICIJ Offshore Leaks (Panama/Pandora/Paradise Papers)
+    - `CompaniesCard` — OpenCorporates + GLEIF LEI (200M+ Firmen)
+    - `OpenSanctionsCard` — EU/UN/OFAC/Interpol/PEP-Sanktionen
+    - `AlephCard` — OCCRP Aleph (FinCEN, LuxLeaks, Suisse Secrets)
+    - `PubMedCard` — PubMed NCBI 35M+ Studien
+    - `SemanticPapersCard` — Semantic Scholar 200M+ Paper
+    - `ArchiveCard` — Internet Archive 50M+ Dokumente
+    - `EuVotesCard` — EU-Parlamentsabstimmungen mit Balken
+  - **Karte-Bug-Fix**: `AnimatedContainer(height: double.infinity)` im Stack blockierte alle
+    Map-Touch-Events (Marker-Klick, Zoom, Pan). Fix: `AnimatedSize` mit `SizedBox.shrink()`
+    statt `double.infinity` — gilt für Materie- + Energie-Karte.
+  - **LiveKit TURN-Fix**: Umstellung von externem coturn auf LiveKit built-in TURN
+    (`turn.enabled: true, domain: '', external_tls: false`) — identisch zu Mensaena's
+    bewährtem Ansatz. Port 3479 (Mensaena belegt 3478). Behebt "nicht jeder kommt rein"
+    bei Mobilfunk-CGNAT / symmetrischem NAT. coturn-Container entfernt.
+
 - [x] **PR #102 — Kaninchenbau-Tools + LiveStream ControlBar-Finale** (2026-05-04, Patch ✓):
   - **6 Materie-Tools komplett neu** mit echten kostenlosen APIs:
     - UFO Sichtungen: NASA Fireballs + OpenSky ADS-B (3 Tabs)
@@ -759,6 +782,7 @@ chore(deps): Dependencies aktualisiert
    - Recording: `RecordingService` + Worker `/api/livekit/recording/start|stop` (Egress API)
    - Live-Banner: `live_room_banner.dart` via Supabase Realtime `voice_sessions`
    - LiveKit-Server: `livekit-weltenbibliothek` auf Hostinger VPS, eigene Instanz
+   - **TURN**: Built-in TURN Port 3479 (seit PR #113) — deckt Mobilfunk-CGNAT ab
    - **Noch ausstehend: B10.7 3D-Avatar** (braucht Assets + evtl. neues Package)
    - **Recording-Voraussetzung**: LiveKit Egress Runner Container auf VPS nötig
 
