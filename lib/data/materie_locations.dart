@@ -1810,6 +1810,8 @@ Zahlreiche Ungereimtheiten führten zu alternativen Theorien: Multiple Schützen
     category: LocationCategory.wars,
     keywords: ['Ukraine', 'Russland', 'NATO', 'Krieg', '2022'],
     date: DateTime(2022, 2, 24),
+    imageUrls: ['https://upload.wikimedia.org/wikipedia/commons/thumb/4/49/20220224_Russian_invasion_of_Ukraine.jpg/1200px-20220224_Russian_invasion_of_Ukraine.jpg'],
+    videoUrls: ['XJDuLfNlGS8'],
   ),
   
   
@@ -1822,6 +1824,8 @@ Zahlreiche Ungereimtheiten führten zu alternativen Theorien: Multiple Schützen
     category: LocationCategory.assassinations,
     keywords: ['MLK', 'Martin Luther King', 'FBI', 'COINTELPRO', '1968'],
     date: DateTime(1968, 4, 4),
+    imageUrls: ['https://upload.wikimedia.org/wikipedia/commons/thumb/0/05/I_Have_a_Dream_Martin_Luther_King.jpg/1200px-I_Have_a_Dream_Martin_Luther_King.jpg'],
+    videoUrls: ['T9IcKFpjW2w'],
   ),
   
   MaterieLocationDetail(
@@ -1873,8 +1877,10 @@ Die "Inside Job"-Theorie besagt, dass die US-Regierung oder Elemente im "Deep St
     category: LocationCategory.wars,
     keywords: ['Syrien', 'Assad', 'ISIS', 'Proxy-Krieg', 'Chemiewaffen'],
     date: DateTime(2011, 3, 15),
+    imageUrls: ['https://upload.wikimedia.org/wikipedia/commons/thumb/2/24/Syrian_civil_war_map.svg/1200px-Syrian_civil_war_map.svg.png'],
+    videoUrls: ['VqYT7fJJVOk'],
   ),
-  
+
   MaterieLocationDetail(
     name: 'Vietnam-Krieg - Saigon',
     description: 'Vietnam-Krieg 1955-1975',
@@ -1883,6 +1889,8 @@ Die "Inside Job"-Theorie besagt, dass die US-Regierung oder Elemente im "Deep St
     category: LocationCategory.wars,
     keywords: ['Vietnam', 'USA', 'Pentagon Papers', 'Agent Orange', 'Napalm'],
     date: DateTime(1955, 11, 1),
+    imageUrls: ['https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Nick_Ut-_The_Terror_of_War.jpg/1200px-Nick_Ut-_The_Terror_of_War.jpg'],
+    videoUrls: ['i4Oc0M8V1vE'],
   ),
   
   // Finanz-Zentren
@@ -1893,8 +1901,10 @@ Die "Inside Job"-Theorie besagt, dass die US-Regierung oder Elemente im "Deep St
     position: const LatLng(40.7069, -74.0113),
     category: LocationCategory.finance,
     keywords: ['Wall Street', 'NYSE', 'Federal Reserve', 'Finanzkrise', '2008'],
+    imageUrls: ['https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/New_york_stock_exchange_2.jpg/1200px-New_york_stock_exchange_2.jpg'],
+    videoUrls: ['IFuAOuQlEFo'],
   ),
-  
+
   MaterieLocationDetail(
     name: 'City of London - Finanzdistrikt',
     description: 'Globales Finanzzentrum mit Sonderstatus',
@@ -1902,6 +1912,8 @@ Die "Inside Job"-Theorie besagt, dass die US-Regierung oder Elemente im "Deep St
     position: const LatLng(51.5155, -0.0922),
     category: LocationCategory.finance,
     keywords: ['City of London', 'Offshore', 'Steueroase', 'Bank of England'],
+    imageUrls: ['https://upload.wikimedia.org/wikipedia/commons/thumb/c/c3/City_of_London_skyline_from_London_City_Hall_-_Oct_2008.jpg/1200px-City_of_London_skyline_from_London_City_Hall_-_Oct_2008.jpg'],
+    videoUrls: ['bMSqLy3bNio'],
   ),
   
   // Geheimgesellschaften
@@ -1952,6 +1964,8 @@ Bohemian Grove ist ein okkultes Elite-Ritual-Zentrum, wo die Mächtigsten der We
     position: const LatLng(41.3163, -72.9223),
     category: LocationCategory.secretSocieties,
     keywords: ['Skull and Bones', 'Yale', 'Bush', 'CIA', 'The Order'],
+    imageUrls: ['https://upload.wikimedia.org/wikipedia/commons/thumb/9/93/Skull_and_bones_yale.jpg/800px-Skull_and_bones_yale.jpg'],
+    videoUrls: ['KxUTPTIx6uM'],
   ),
   
   // UFO-Hotspots
@@ -2003,6 +2017,8 @@ Area 51 beherbergt außerirdische Technologie und möglicherweise lebende oder t
     category: LocationCategory.ufo,
     keywords: ['Roswell', 'UFO-Absturz', '1947', 'Alien', 'Vertuschung'],
     date: DateTime(1947, 7, 7),
+    imageUrls: ['https://upload.wikimedia.org/wikipedia/commons/thumb/8/83/Roswell_UFO_Museum.jpg/1200px-Roswell_UFO_Museum.jpg'],
+    videoUrls: ['NqRuEMbNMW8'],
   ),
   
   // Deep State
@@ -2136,8 +2152,10 @@ Die NSA betreibt die größte massenhafte Überwachung in der Geschichte - JEDER
     position: const LatLng(51.8989, -2.0797),
     category: LocationCategory.surveillance,
     keywords: ['GCHQ', 'Tempora', 'Five Eyes', 'UK', 'Überwachung'],
+    imageUrls: ['https://upload.wikimedia.org/wikipedia/commons/thumb/f/f2/GCHQ-aerial.jpg/1200px-GCHQ-aerial.jpg'],
+    videoUrls: ['JeA1otPYNOk'],
   ),
-  
+
   // Biotech & Pharma
   MaterieLocationDetail(
     name: 'CDC - Atlanta',
@@ -2146,6 +2164,8 @@ Die NSA betreibt die größte massenhafte Überwachung in der Geschichte - JEDER
     position: const LatLng(33.7985, -84.3255),
     category: LocationCategory.biotech,
     keywords: ['CDC', 'COVID-19', 'Gain-of-Function', 'Biowaffen', 'Pandemie'],
+    imageUrls: ['https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/CDC-buildings.jpg/1200px-CDC-buildings.jpg'],
+    videoUrls: ['pHr0GbDInyQ'],
   ),
   
   MaterieLocationDetail(
@@ -2241,8 +2261,10 @@ Das WEF ist die Schaltzentrale einer globalen Elite-Verschwörung zur Errichtung
     position: const LatLng(51.5074, -0.1278), // London (symbolisch)
     category: LocationCategory.transparency,
     keywords: ['WikiLeaks', 'Assange', 'Whistleblowing', 'Cablegate', 'Pressefreiheit'],
+    imageUrls: ['https://upload.wikimedia.org/wikipedia/commons/thumb/4/4f/Julian_Assange_cropped_(Norway,_March_2010).jpg/800px-Julian_Assange_cropped_(Norway,_March_2010).jpg'],
+    videoUrls: ['FieaFTCHkUQ'],
   ),
-  
+
   // Alternative Medien
   MaterieLocationDetail(
     name: 'Austin - Infowars HQ',
@@ -2251,6 +2273,8 @@ Das WEF ist die Schaltzentrale einer globalen Elite-Verschwörung zur Errichtung
     position: const LatLng(30.2672, -97.7431),
     category: LocationCategory.alternativeMedia,
     keywords: ['Infowars', 'Alex Jones', 'Alternative Medien', 'Zensur'],
+    imageUrls: ['https://upload.wikimedia.org/wikipedia/commons/thumb/5/58/Alex_Jones_2013.jpg/800px-Alex_Jones_2013.jpg'],
+    videoUrls: ['GbkTfMOCnDg'],
   ),
   
   // Forschung
