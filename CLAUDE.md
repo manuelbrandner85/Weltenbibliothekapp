@@ -699,6 +699,13 @@ chore(deps): Dependencies aktualisiert
   - Fix Client: Cloudflare STUN als Fallback, Timeout 60s→90s
 
 
+- [x] **PR #121 — YouTube Videos + Error-153-Fallback + Karte-Medien + OSINT Direkt-Tools** (2026-05-06, Patch ✓):
+  - **Worker `/api/map/youtube` kritischer Fix**: Worker gab `{ videos: [] }` zurück, Flutter erwartete `{ items: [] }` — Videos haben NIE funktioniert. Piped API (pipedapi.kavin.rocks) als primäre kostenlose Quelle, YouTube Data API v3 als Fallback.
+  - **YoutubePlayerInline Error-153-Fallback**: HTML-Injection mit YouTube IFrame API. Bei Embedding-Sperre: Thumbnail + "In YouTube öffnen"-Button statt weißem Screen.
+  - **Energie-Karte vollständig**: Alle 32 Locations haben `imageUrls` + `videoUrls` (Chartres, Delphi, Shasta-Korridor, Glastonbury-Chakra ergänzt).
+  - **Materie-Karte vollständig**: Alle 87 Locations haben `imageUrls` + `videoUrls` (12 Locations ergänzt: Ukraine, MLK, Syrien, Vietnam, Wall Street, City of London, Skull and Bones, Roswell, GCHQ, CDC, WikiLeaks, Infowars).
+  - **OSINT Datenbanken als Direkt-Zugänge**: 7 Tool-Kacheln in `cinematic_intro.dart` auf der Kaninchenbau-Startseite — Panama Papers, OpenSanctions, Aleph OCCRP, PubMed, Semantic Scholar, Internet Archive, EU-Parlament. Direktzugang ohne vorherige Suche via Suchdialog.
+
 - [x] **PR #116 — Groq + Google FactCheck + Patch-Trigger 7 OSINT-Tools** (2026-05-05, Patch ✓):
   - Kaninchenbau: Groq-LLM Zusammenfassung + Google FactCheck via Worker-Secrets
   - Triggert Shorebird OTA-Patch für 7 eigenständige OSINT-Tools aus PR #114
@@ -761,6 +768,8 @@ chore(deps): Dependencies aktualisiert
     `/api/voice/session/join` (POST), `/api/voice/session/leave` (POST)
 
 ### ⚠️ Noch ausstehend / bekannte Probleme
+
+0. **YouTube-Videos**: Piped API als primäre Quelle aktiv (PR #121). Worker `/api/map/youtube` gibt korrekt `{ items: [] }` zurück. Error-153-Fallback in `youtube_player_inline.dart` aktiv. Alle Karte-Locations haben hardcodierte Video-IDs als Fallback.
 
 1. **SQL-Migrationen**: `apply_migrations.yml` läuft automatisch bei jedem main-Push.
    - `supabase/migrations/20260402_v12_missing_tool_tables.sql` (7 Tool-Tabellen) — noch manuell via SQL-Editor nötig, da nicht in apply_migrations.yml enthalten
