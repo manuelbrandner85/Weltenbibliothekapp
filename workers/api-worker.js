@@ -4169,35 +4169,62 @@ EMPFEHLUNG: [1 Satz — was sollte der User selbst recherchieren?]`;
     // ── YouTube Suche für Karte ───────────────────────────────
     if (path === '/api/map/youtube' && method === 'GET') {
       const q = url.searchParams.get('q') || '';
-      const lang = url.searchParams.get('lang') || 'de';
-      if (!q) return jsonResponse({ videos: [] });
+      const max = parseInt(url.searchParams.get('max') || '6', 10);
+      if (!q) return jsonResponse({ items: [] });
+
+      // Primär: Piped API (kostenlos, kein API-Key) ─────────────
+      try {
+        const pipedQ = encodeURIComponent(`${q} deutsch`);
+        const pr = await fetch(
+          `https://pipedapi.kavin.rocks/search?q=${pipedQ}&filter=videos`,
+          { headers: { 'User-Agent': 'WeltenbibliothekApp/1.0' }, signal: AbortSignal.timeout(8000) }
+        );
+        if (pr.ok) {
+          const pd = await pr.json();
+          const pipedItems = (pd.items || [])
+            .filter(i => i.url && i.url.startsWith('/watch?v='))
+            .slice(0, max)
+            .map(i => ({
+              videoId: i.url.replace('/watch?v=', '').split('&')[0],
+              title: i.title || '',
+              channel: i.uploaderName || i.uploaderUrl || '',
+              thumbnail: i.thumbnail || `https://img.youtube.com/vi/${i.url.replace('/watch?v=', '').split('&')[0]}/mqdefault.jpg`,
+              published: '',
+              description: '',
+              isSubtitled: false,
+            }))
+            .filter(i => i.videoId.length > 0);
+          if (pipedItems.length > 0) return jsonResponse({ items: pipedItems });
+        }
+      } catch (_) {}
+
+      // Fallback: YouTube Data API v3 (falls YOUTUBE_API_KEY gesetzt) ─
       try {
         const apiKey = env.YOUTUBE_API_KEY;
-        if (!apiKey) return jsonResponse({ videos: [], error: 'YOUTUBE_API_KEY fehlt' });
-        const query = lang === 'de' ? `${q} deutsch` : q;
+        if (!apiKey) return jsonResponse({ items: [] });
         const params = new URLSearchParams({
-          part: 'snippet',
-          q: query,
-          type: 'video',
-          maxResults: '6',
-          relevanceLanguage: lang === 'de' ? 'de' : 'en',
-          regionCode: lang === 'de' ? 'DE' : 'US',
-          key: apiKey,
+          part: 'snippet', q: `${q} deutsch`, type: 'video',
+          maxResults: String(Math.min(max, 10)),
+          relevanceLanguage: 'de', regionCode: 'DE', key: apiKey,
         });
         const r = await fetch(`https://www.googleapis.com/youtube/v3/search?${params}`, { signal: AbortSignal.timeout(8000) });
-        if (!r.ok) return jsonResponse({ videos: [] });
+        if (!r.ok) return jsonResponse({ items: [] });
         const data = await r.json();
-        const videos = (data.items || []).map(item => ({
-          videoId: item.id?.videoId || '',
-          title: item.snippet?.title || '',
-          channel: item.snippet?.channelTitle || '',
-          thumbnail: item.snippet?.thumbnails?.medium?.url || item.snippet?.thumbnails?.default?.url || '',
-          publishedAt: item.snippet?.publishedAt || '',
-          isSubtitled: lang !== 'de',
-        })).filter(v => v.videoId);
-        return jsonResponse({ videos });
+        const items = (data.items || [])
+          .filter(i => i.id?.videoId)
+          .slice(0, max)
+          .map(i => ({
+            videoId: i.id.videoId,
+            title: i.snippet?.title || '',
+            channel: i.snippet?.channelTitle || '',
+            thumbnail: i.snippet?.thumbnails?.medium?.url || i.snippet?.thumbnails?.default?.url || '',
+            published: i.snippet?.publishedAt || '',
+            description: i.snippet?.description || '',
+            isSubtitled: false,
+          }));
+        return jsonResponse({ items });
       } catch (e) {
-        return jsonResponse({ videos: [] });
+        return jsonResponse({ items: [] });
       }
     }
 
