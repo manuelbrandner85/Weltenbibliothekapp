@@ -636,7 +636,7 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
           ],
         ),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisSize: MainAxisSize.max,
           children: [
             // Handle
             Container(
