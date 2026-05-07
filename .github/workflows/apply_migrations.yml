@@ -97,6 +97,9 @@ jobs:
           run_sql "v47 Kaninchenbau Saved Threads + Community Annotations" \
             supabase/migrations/20260505_v47_kaninchenbau_threads.sql
 
+          run_sql "v48 Chat RLS für direkte Supabase edit/delete (kein Worker mehr)" \
+            supabase/migrations/20260507_v48_chat_rls_edit_delete.sql
+
 
           echo ""
           echo "🎉 Alle Migrationen erfolgreich angewendet"

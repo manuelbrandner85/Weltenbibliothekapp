@@ -2714,17 +2714,12 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
         );
       }
 
-      // Server-Update im Hintergrund (fire-and-forget mit Retry)
-      _api.editChatMessage(
+      // Server-Update im Hintergrund (fire-and-forget)
+      SupabaseChatService.instance.editMessage(
         messageId: msgId,
-        roomId: _fullRoomId,
-        realm: 'materie',
         newMessage: trimmed,
-        userId: _userId,
-        username: _username,
       ).then((_) {
         if (kDebugMode) debugPrint('✅ Edit erfolgreich gespeichert');
-        // Realtime-UPDATE-Handler synct andere Clients; kein Reload nötig.
       }).catchError((e) {
         if (kDebugMode) debugPrint('⚠️ Edit server error (optimistic update bleibt): $e');
       });
@@ -2771,12 +2766,8 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
       }
 
       try {
-        await _api.deleteChatMessage(
+        await SupabaseChatService.instance.deleteMessage(
           messageId: msgId,
-          roomId: _fullRoomId,
-          realm: 'materie',
-          userId: _userId,
-          username: _username,
         );
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -3607,12 +3598,8 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
 
       // Server-Update im Hintergrund
       if (messageId.isNotEmpty) {
-        _api.deleteChatMessage(
+        SupabaseChatService.instance.deleteMessage(
           messageId: messageId,
-          roomId: _fullRoomId,
-          userId: _userId,
-          username: _username,
-          realm: 'materie',
           isAdmin: true,
         ).then((_) {
           if (kDebugMode) debugPrint('✅ Materie Admin-Delete gespeichert');
