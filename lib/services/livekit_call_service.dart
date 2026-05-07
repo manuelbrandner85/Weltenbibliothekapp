@@ -456,30 +456,12 @@ class LiveKitCallService extends ChangeNotifier {
           .connect(
             livekitUrl,
             token,
-            connectOptions: ConnectOptions(
+            connectOptions: const ConnectOptions(
               autoSubscribe: true,
-              rtcConfiguration: const RTCConfiguration(
-                iceServers: [
-                  // Primärer TURN-Relay (coturn auf WB-VPS) —
-                  // pflichtmäßig für Mobilfunk-CGNAT + symmetrisches NAT.
-                  RTCIceServer(
-                    urls: [
-                      'turn:72.62.154.95:3478?transport=udp',
-                      'turn:72.62.154.95:3478?transport=tcp',
-                    ],
-                    username: 'wb-turn-2026',
-                    credential: 'WbCoturnRelay_a9b26485d407e7dc',
-                  ),
-                  // STUN-Fallbacks für initiale Public-IP-Erkennung.
-                  // Mehrere Server erhöhen Zuverlässigkeit wenn einer
-                  // in bestimmten Ländern blockiert ist.
-                  RTCIceServer(urls: [
-                    'stun:stun.l.google.com:19302',
-                    'stun:stun1.l.google.com:19302',
-                  ]),
-                  RTCIceServer(urls: ['stun:stun.cloudflare.com:3478']),
-                ],
-              ),
+              // Keine manuellen ICE-Server: LiveKit liefert TURN-Credentials
+              // automatisch im Join-Response (built-in TURN Port 3479).
+              // Hardcodierte TURN-Creds auf Port 3478 gehörten zu einem alten
+              // coturn-Container der entfernt wurde — zerstörten die ICE-Verhandlung.
             ),
           )
           .timeout(
