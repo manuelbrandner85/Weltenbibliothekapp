@@ -607,7 +607,7 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro>
         ],
       ),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
+        mainAxisSize: MainAxisSize.max,
         children: [
           // Handle
           Container(

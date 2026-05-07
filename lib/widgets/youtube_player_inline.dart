@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import '../services/youtube_service.dart';
 
 /// Inline YouTube-Player via WebView. Fängt Error 153 (Embedding-Sperre)
-/// per YT-IFrame-API ab und zeigt Fallback-Thumbnail + "In YouTube öffnen".
+/// per YT-IFrame-API ab und zeigt Fallback-Thumbnail + Button der intern in m.youtube.com öffnet.
 class YoutubePlayerInline extends StatefulWidget {
   final YoutubeVideo video;
   final VoidCallback? onClose;
@@ -40,13 +39,12 @@ class _YoutubePlayerInlineState extends State<YoutubePlayerInline> {
         },
         onNavigationRequest: (request) {
           final u = request.url;
-          if (u.contains('youtube.com/watch') || u.contains('youtu.be/')) {
-            launchUrl(Uri.parse(u), mode: LaunchMode.externalApplication);
-            return NavigationDecision.prevent;
+          // YouTube-Links (inkl. Fallback-Button) intern im WebView abspielen
+          if (u.contains('youtube.com') || u.contains('youtu.be/')) {
+            return NavigationDecision.navigate;
           }
           if (u.startsWith('about:') || u.startsWith('data:') ||
-              u.contains('youtube-nocookie.com') || u.contains('youtube.com/iframe_api') ||
-              u.contains('youtube.com/s/') || u.contains('googleapis.com')) {
+              u.contains('googleapis.com')) {
             return NavigationDecision.navigate;
           }
           return NavigationDecision.prevent;
@@ -69,7 +67,7 @@ body { background:#000; overflow:hidden; }
 #fallback.show { display:flex; }
 #thumb { width:90%; border-radius:10px; max-height:160px; object-fit:cover; }
 #btn { margin-top:14px; background:#f00; color:#fff; padding:11px 22px;
-       border-radius:22px; text-decoration:none; font:bold 15px/1 sans-serif; }
+       border-radius:22px; border:none; cursor:pointer; font:bold 15px/1 sans-serif; }
 </style>
 </head>
 <body>
@@ -77,7 +75,7 @@ body { background:#000; overflow:hidden; }
   <div id="yt-player"></div>
   <div id="fallback">
     <img id="thumb" src="https://img.youtube.com/vi/$videoId/mqdefault.jpg">
-    <a id="btn" href="https://www.youtube.com/watch?v=$videoId">&#9654; In YouTube &#246;ffnen</a>
+    <button id="btn" onclick="window.location.href='https://m.youtube.com/watch?v=$videoId'">&#9654; Video abspielen</button>
   </div>
 </div>
 <script>
