@@ -3,7 +3,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 import '../services/youtube_service.dart';
 
 /// Inline YouTube-Player via WebView. Fängt Error 153 (Embedding-Sperre)
-/// per YT-IFrame-API ab und zeigt Fallback-Thumbnail + "In YouTube öffnen".
+/// per YT-IFrame-API ab und zeigt Fallback-Thumbnail + Button der intern in m.youtube.com öffnet.
 class YoutubePlayerInline extends StatefulWidget {
   final YoutubeVideo video;
   final VoidCallback? onClose;
