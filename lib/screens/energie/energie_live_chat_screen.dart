@@ -2560,16 +2560,11 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
     // Server-Update im Hintergrund (fire-and-forget)
     final messageId = msg['id']?.toString() ?? msg['message_id']?.toString() ?? '';
     if (messageId.isNotEmpty) {
-      _api.editChatMessage(
+      SupabaseChatService.instance.editMessage(
         messageId: messageId,
         newMessage: newContent,
-        userId: _userId,
-        username: _username,
-        roomId: _fullRoomId,
-        realm: 'energie',
       ).then((_) {
         if (kDebugMode) debugPrint('✅ Energie Edit gespeichert');
-        if (mounted) _loadMessages(silent: true);
       }).catchError((e) {
         if (kDebugMode) debugPrint('⚠️ Energie Edit server error (optimistic bleibt): $e');
       });
@@ -2814,13 +2809,9 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
       }
 
       try {
-        await _api.editChatMessage(
+        await SupabaseChatService.instance.editMessage(
           messageId: msgId,
-          roomId: _fullRoomId,
-          realm: 'energie',
           newMessage: trimmed,
-          userId: _userId,
-          username: _username,
         );
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -2891,12 +2882,8 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
       }
 
       try {
-        await _api.deleteChatMessage(
+        await SupabaseChatService.instance.deleteMessage(
           messageId: msgId,
-          roomId: _fullRoomId,
-          realm: 'energie',
-          userId: _userId,
-          username: _username,
         );
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -3705,12 +3692,8 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
 
       // Server-Update im Hintergrund
       if (messageId.isNotEmpty) {
-        _api.deleteChatMessage(
+        SupabaseChatService.instance.deleteMessage(
           messageId: messageId,
-          userId: _userId,
-          username: _username,
-          roomId: _fullRoomId,
-          realm: 'energie',
           isAdmin: true,
         ).then((_) {
           if (kDebugMode) debugPrint('✅ Admin-Delete gespeichert');
