@@ -921,7 +921,11 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
   }
   
   Widget _buildImagesTab(EnergieLocationDetail location) {
-    final allImages = [...location.imageUrls, ..._wikiImages];
+    // genspark.ai URLs sind temporäre KI-Bild-Links die nicht öffentlich zugänglich sind → filtern
+    final allImages = [
+      ...location.imageUrls.where((url) => !url.contains('genspark.ai')),
+      ..._wikiImages,
+    ];
 
     if (_wikiLoading && allImages.isEmpty) {
       return const Center(
