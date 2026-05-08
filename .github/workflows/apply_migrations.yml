@@ -62,7 +62,150 @@ jobs:
           }
 
           # Migrationen in chronologischer Reihenfolge anwenden.
-          # Alle sind idempotent (IF NOT EXISTS) → sicher bei Mehrfachausführung.
+          # Alle sind idempotent (IF NOT EXISTS / ON CONFLICT DO NOTHING) → sicher bei Mehrfachausführung.
+
+          # ── Basis-Schema (001–v15) ───────────────────────────────────────────
+          run_sql "001 initial_schema (profiles, articles, chat_rooms, notifications)" \
+            supabase/migrations/001_initial_schema.sql
+
+          run_sql "002 realtime Publikationen" \
+            supabase/migrations/002_realtime.sql
+
+          run_sql "003 storage buckets" \
+            supabase/migrations/003_storage.sql
+
+          run_sql "v3-v7 improvements (research_results, articles, profiles)" \
+            supabase/migrations/20260402_v3_v7_improvements.sql
+
+          run_sql "v10 full_schema (alle Core-Tabellen, tool_*, message_reactions)" \
+            supabase/migrations/20260402_v10_full_schema.sql
+
+          run_sql "v11 chat_livestream_fix" \
+            supabase/migrations/20260402_v11_chat_livestream_fix.sql
+
+          run_sql "v12 missing_tool_tables (tool_meditation_sessions, tool_kristalle, tool_geopolitics_events, tool_history_events, tool_healing_methods, tool_network_connections, tool_research_documents)" \
+            supabase/migrations/20260402_v12_missing_tool_tables.sql
+
+          run_sql "v13 push_subscriptions + notification_queue" \
+            supabase/migrations/20260403_v13_read_receipts_push_notifications.sql
+
+          run_sql "v14 chat_fixes" \
+            supabase/migrations/20260403_v14_chat_fixes.sql
+
+          run_sql "v15 avatar_emoji + RLS-Fix" \
+            supabase/migrations/20260403_v15_avatar_emoji_and_rls_fix.sql
+
+          run_sql "v18 grant anon writes" \
+            supabase/migrations/20260418_v18_grant_anon_writes.sql
+
+          # ── Spirituelle Feature-Tabellen (v19–v26) ────────────────────────────
+          run_sql "v19 moon_journal + moon_rituals + moon_calendar" \
+            supabase/migrations/20260418_v19_spirit_moon_calendar.sql
+
+          run_sql "v20 dream_journal_v2 + dream_symbols Schema" \
+            supabase/migrations/20260418_v20_dream_interpretation_schema.sql
+
+          run_sql "v20b dream seed: Elementar-Symbole" \
+            supabase/migrations/20260418_v20b_dream_seed_elements.sql
+
+          run_sql "v20c dream seed: Tiere" \
+            supabase/migrations/20260418_v20c_dream_seed_animals.sql
+
+          run_sql "v20d dream seed: Personen" \
+            supabase/migrations/20260418_v20d_dream_seed_people.sql
+
+          run_sql "v20e dream seed: Aktionen" \
+            supabase/migrations/20260418_v20e_dream_seed_actions.sql
+
+          run_sql "v21 body_scan_results + chakra_symptoms Schema" \
+            supabase/migrations/20260418_v21_body_scan_schema.sql
+
+          run_sql "v21b body scan seed: 7 Chakren × 8 Symptome" \
+            supabase/migrations/20260418_v21b_body_scan_seed.sql
+
+          run_sql "v22 soul_contracts + soul_number_meanings Schema" \
+            supabase/migrations/20260418_v22_soul_contract_schema.sql
+
+          run_sql "v22b soul seed: Lebenswegzahlen" \
+            supabase/migrations/20260418_v22b_soul_seed_life_path.sql
+
+          run_sql "v22c soul seed: Schicksalszahlen" \
+            supabase/migrations/20260418_v22c_soul_seed_destiny.sql
+
+          run_sql "v22d soul seed: Seelendrangzahlen" \
+            supabase/migrations/20260418_v22d_soul_seed_soul_urge.sql
+
+          run_sql "v22e soul seed: Persönlichkeit + Karmik" \
+            supabase/migrations/20260418_v22e_soul_seed_personality_karmic.sql
+
+          run_sql "v23 ancestors + ancestor_patterns + ancestral_rituals Schema" \
+            supabase/migrations/20260418_v23_ancestral_work_schema.sql
+
+          run_sql "v23b ancestral seed: Rituale" \
+            supabase/migrations/20260418_v23b_ancestral_rituals_seed.sql
+
+          run_sql "v24 shamanic_journeys + shamanic_journey_guides + shamanic_power_animals Schema" \
+            supabase/migrations/20260418_v24_shamanic_journey_schema.sql
+
+          run_sql "v24b shamanic seed: Journey-Guides" \
+            supabase/migrations/20260418_v24b_shamanic_guides_seed.sql
+
+          run_sql "v25 natal_charts + astrology_meanings Schema" \
+            supabase/migrations/20260418_v25_natal_chart_schema.sql
+
+          run_sql "v25b astrology seed: Tierkreiszeichen" \
+            supabase/migrations/20260418_v25b_astrology_seed_signs.sql
+
+          run_sql "v25c astrology seed: Planeten" \
+            supabase/migrations/20260418_v25c_astrology_seed_planets.sql
+
+          run_sql "v26 human_design_charts + hd_meanings Schema" \
+            supabase/migrations/20260418_v26_human_design_schema.sql
+
+          run_sql "v26b HD seed: Typen" \
+            supabase/migrations/20260418_v26b_hd_seed_types.sql
+
+          run_sql "v26c HD seed: Zentren" \
+            supabase/migrations/20260418_v26c_hd_seed_centers.sql
+
+          run_sql "v26d HD seed: Gates" \
+            supabase/migrations/20260418_v26d_hd_seed_gates.sql
+
+          # ── System + Chat v27–v36 ─────────────────────────────────────────────
+          run_sql "v27 user_tool_data" \
+            supabase/migrations/20260419_v27_user_tool_data.sql
+
+          run_sql "v28 fix role constraint" \
+            supabase/migrations/20260419_v28_fix_role_constraint.sql
+
+          run_sql "v29 app_config Tabelle" \
+            supabase/migrations/20260419_v29_app_config.sql
+
+          run_sql "v30 app_config v5.3.2" \
+            supabase/migrations/20260419_v30_app_config_v532.sql
+
+          run_sql "v31 app_config silent patch" \
+            supabase/migrations/20260419_v31_app_config_silent_patch.sql
+
+          run_sql "v32 app_config v5.3.3" \
+            supabase/migrations/20260419_v32_app_config_v533.sql
+
+          run_sql "v33 app_config silent patch v5.3.2" \
+            supabase/migrations/20260419_v33_app_config_silent_patch_v532.sql
+
+          run_sql "v34a app_config v5.3.4" \
+            supabase/migrations/20260419_v34_app_config_v534.sql
+
+          run_sql "v34b chat_rooms prefixed IDs (materie-*, energie-*)" \
+            supabase/migrations/20260419_v34_chat_rooms_prefixed_ids.sql
+
+          run_sql "v35 chat_read_receipts" \
+            supabase/migrations/20260419_v35_chat_read_receipts.sql
+
+          run_sql "v36 chat reply hard-delete 6h cleanup" \
+            supabase/migrations/20260420_v36_chat_reply_hard_delete_6h_cleanup.sql
+
+          # ── Ab v37 laufen alle Migrationen seit Einführung des CI ─────────────
 
           run_sql "v37 patch_changelog Spalte (app_config)" \
             supabase/migrations/20260420_v37_patch_changelog.sql
