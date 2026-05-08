@@ -103,6 +103,5 @@ jobs:
           run_sql "v49 Chat FK-Drop + vollständige RLS-Policies (Send/Edit/Delete Fix)" \
             supabase/migrations/20260508_v49_chat_fk_drop_and_rls_complete.sql
 
-
           echo ""
           echo "🎉 Alle Migrationen erfolgreich angewendet"
