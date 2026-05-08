@@ -25,7 +25,7 @@ rtc:
   port_range_start: 60001
   port_range_end: 61000
   use_external_ip: true
-  # node_ip weggelassen → use_external_ip ermittelt die IP automatisch (stabiler)
+  node_ip: 72.62.154.95  # Explizite externe IP → verhindert dass LiveKit interne Docker-IPs als ICE-Kandidaten bewirbt
 
 # LiveKit-interner TURN-Relay (identisch zu Mensaena-Ansatz der zuverlässig funktioniert).
 # domain: '' → LiveKit nutzt node_ip direkt (kein eigenes TLS-Cert nötig).
