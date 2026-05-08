@@ -87,11 +87,8 @@ jobs:
             printf '%s' "$RAW" > android/app/google-services.json
             echo "✅ google-services.json injiziert (rohes JSON)"
           else
-            echo "❌ GOOGLE_SERVICES_JSON_BASE64 ist weder gültiges base64 noch rohes JSON."
-            echo "   Fix: base64 -w 0 google-services.json | pbcopy  (macOS)"
-            echo "        base64 -w 0 google-services.json | xclip   (Linux)"
+            echo "⚠️  GOOGLE_SERVICES_JSON_BASE64 ist weder gültiges base64 noch rohes JSON — Patch läuft ohne FCM weiter."
             rm -f android/app/google-services.json
-            exit 1
           fi
 
       - name: 🩺 Shorebird-Status (vor Patch)
@@ -120,9 +117,13 @@ jobs:
         run: |
           set -euo pipefail
 
+          # Release-Version aus pubspec.yaml (inkl. Build-Nummer) für Shorebird
+          FULL_VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: //' | tr -d '[:space:]')
+          echo "Ziel-Release-Version: $FULL_VERSION (latest)"
+
           shorebird patch android \
             --allow-asset-diffs \
-            --release-version=latest \
+            --release-version="$FULL_VERSION" \
             -- \
             --target-platform=android-arm64,android-arm \
             --dart-define=APP_VERSION=${{ steps.version.outputs.version }} \
@@ -131,7 +132,7 @@ jobs:
             --dart-define=CLOUDFLARE_WORKER_URL=https://weltenbibliothek-api.brandy13062.workers.dev \
             --dart-define=LIVEKIT_URL=${{ secrets.LIVEKIT_URL || 'wss://livekit-wb.srv1438024.hstgr.cloud' }}
 
-          echo "✅ Patch an neueste Release-Version gesendet"
+          echo "✅ Patch an Release $FULL_VERSION gesendet"
 
       - name: 📝 Patch-Changelog in Supabase schreiben
         env:
