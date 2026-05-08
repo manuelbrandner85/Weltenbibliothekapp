@@ -21,6 +21,7 @@ BEGIN
 END;
 $$;
 
+DROP TRIGGER IF EXISTS chat_messages_count_trigger ON public.chat_messages;
 CREATE TRIGGER chat_messages_count_trigger
   AFTER INSERT ON public.chat_messages
   FOR EACH ROW EXECUTE FUNCTION public.update_room_message_count();

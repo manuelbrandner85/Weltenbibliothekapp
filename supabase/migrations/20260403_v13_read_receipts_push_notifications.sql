@@ -150,6 +150,7 @@ $$;
 
 -- Trigger nur wenn nicht already exists
 DROP TRIGGER IF EXISTS chat_message_push_trigger ON chat_messages;
+DROP TRIGGER IF EXISTS chat_message_push_trigger ON public.chat_messages;
 CREATE TRIGGER chat_message_push_trigger
   AFTER INSERT ON chat_messages
   FOR EACH ROW

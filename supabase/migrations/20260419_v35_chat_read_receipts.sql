@@ -30,6 +30,7 @@ $$ LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS trg_chat_read_receipts_updated_at
     ON public.chat_read_receipts;
+DROP TRIGGER IF EXISTS trg_chat_read_receipts_updated_at ON public.chat_read_receipts;
 CREATE TRIGGER trg_chat_read_receipts_updated_at
     BEFORE UPDATE ON public.chat_read_receipts
     FOR EACH ROW EXECUTE FUNCTION public.set_chat_read_receipts_updated_at();

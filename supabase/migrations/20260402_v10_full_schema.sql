@@ -540,7 +540,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
-DROP TRIGGER IF EXISTS on_like_notify ON likes;
+DROP TRIGGER IF EXISTS on_like_notify ON public.likes;
 CREATE TRIGGER on_like_notify
   AFTER INSERT ON likes
   FOR EACH ROW EXECUTE FUNCTION notify_on_like();
@@ -553,7 +553,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
-DROP TRIGGER IF EXISTS on_like_delete ON likes;
+DROP TRIGGER IF EXISTS on_like_delete ON public.likes;
 CREATE TRIGGER on_like_delete
   AFTER DELETE ON likes
   FOR EACH ROW EXECUTE FUNCTION on_unlike();
@@ -582,7 +582,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
-DROP TRIGGER IF EXISTS on_comment_notify ON comments;
+DROP TRIGGER IF EXISTS on_comment_notify ON public.comments;
 CREATE TRIGGER on_comment_notify
   AFTER INSERT ON comments
   FOR EACH ROW EXECUTE FUNCTION notify_on_comment();
@@ -598,13 +598,13 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-DROP TRIGGER IF EXISTS set_profiles_updated_at ON profiles;
+DROP TRIGGER IF EXISTS set_profiles_updated_at ON public.profiles;
 CREATE TRIGGER set_profiles_updated_at BEFORE UPDATE ON profiles FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
-DROP TRIGGER IF EXISTS set_articles_updated_at ON articles;
+DROP TRIGGER IF EXISTS set_articles_updated_at ON public.articles;
 CREATE TRIGGER set_articles_updated_at BEFORE UPDATE ON articles FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
-DROP TRIGGER IF EXISTS set_comments_updated_at ON comments;
+DROP TRIGGER IF EXISTS set_comments_updated_at ON public.comments;
 CREATE TRIGGER set_comments_updated_at BEFORE UPDATE ON comments FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
 -- ============================================================
