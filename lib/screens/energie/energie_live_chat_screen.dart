@@ -1951,6 +1951,8 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
     _scrollController.dispose();
     _realtimeChannel?.unsubscribe();
     _realtimeChannel = null;
+    _realtimeRetryTimer?.cancel();
+    _realtimeRetryTimer = null;
     PresenceService.instance.leave();
     ReadReceiptService.instance.leave();
     for (final t in _scheduledTimers) { t.cancel(); }
@@ -2239,6 +2241,8 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
         });
       },
       onSubscribed: () {
+        _realtimeRetryCount = 0;
+        _realtimeRetryTimer?.cancel();
         if (mounted && _reconnecting) {
           setState(() => _reconnecting = false);
         }
@@ -2248,9 +2252,29 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
         if (mounted && !_reconnecting) {
           setState(() => _reconnecting = true);
         }
+        _scheduleRealtimeReconnect(roomId);
       },
     );
     if (kDebugMode) debugPrint('🔴 [Energie Realtime] Subscribed to room: $roomId');
+  }
+
+  // C4: Realtime Auto-Reconnect mit Exponential Backoff
+  Timer? _realtimeRetryTimer;
+  int _realtimeRetryCount = 0;
+  void _scheduleRealtimeReconnect(String roomId) {
+    if (!mounted || roomId != _fullRoomId) return;
+    if (_realtimeRetryCount >= 6) return;
+    _realtimeRetryTimer?.cancel();
+    final delays = [2, 5, 10, 20, 40, 60];
+    final delaySec = delays[_realtimeRetryCount.clamp(0, delays.length - 1)];
+    _realtimeRetryCount++;
+    if (kDebugMode) {
+      debugPrint('🔁 [Realtime] Retry $_realtimeRetryCount in ${delaySec}s');
+    }
+    _realtimeRetryTimer = Timer(Duration(seconds: delaySec), () {
+      if (!mounted || roomId != _fullRoomId) return;
+      _subscribeToRoom(roomId);
+    });
   }
   
   // ✅ PROFIL-WARNUNG als Popup mit Navigation
@@ -2360,19 +2384,23 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
     );
   }
   
+  DateTime? _lastTypingBroadcast;
   void _sendTypingIndicator() {
     _typingTimer?.cancel();
-    
-    // ⌨️ Start typing indicator
-    _typingService.startTyping(_selectedRoom, _username);
-    
-    if (kDebugMode) {
-      debugPrint('⌨️ User is typing in room: $_selectedRoom');
+
+    // C3: Debounce — Broadcast nur alle 1.5s, nicht pro Tastenanschlag.
+    // Spart 80%+ Realtime-Broadcasts ohne UX-Verlust (Indicator hält 3s).
+    final now = DateTime.now();
+    if (_lastTypingBroadcast == null ||
+        now.difference(_lastTypingBroadcast!) > const Duration(milliseconds: 1500)) {
+      _typingService.startTyping(_selectedRoom, _username);
+      _lastTypingBroadcast = now;
     }
-    
-    // Stop after 3 seconds
+
+    // Stop nach 3s — bleibt unverändert
     _typingTimer = Timer(const Duration(seconds: 3), () {
       _typingService.stopTyping(_selectedRoom, _username);
+      _lastTypingBroadcast = null;
     });
   }
   

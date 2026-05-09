@@ -418,6 +418,8 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
     _pendingSub = null;
     _realtimeChannel?.unsubscribe();
     _realtimeChannel = null;
+    _realtimeRetryTimer?.cancel();
+    _realtimeRetryTimer = null;
     PresenceService.instance.leave();
     ReadReceiptService.instance.leave();
     for (final t in _scheduledTimers) { t.cancel(); }
@@ -562,6 +564,8 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
         });
       },
       onSubscribed: () {
+        _realtimeRetryCount = 0;
+        _realtimeRetryTimer?.cancel();
         if (mounted && _reconnecting) {
           setState(() => _reconnecting = false);
         }
@@ -571,11 +575,28 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
         if (mounted && !_reconnecting) {
           setState(() => _reconnecting = true);
         }
+        _scheduleRealtimeReconnect(roomId);
       },
     );
     if (kDebugMode) debugPrint('🔴 [Materie Realtime] Subscribed to room: $roomId');
-    Future<void>.delayed(const Duration(seconds: 2), () {
-      if (mounted && _reconnecting) setState(() => _reconnecting = false);
+  }
+
+  // C4: Realtime Auto-Reconnect mit Exponential Backoff
+  Timer? _realtimeRetryTimer;
+  int _realtimeRetryCount = 0;
+  void _scheduleRealtimeReconnect(String roomId) {
+    if (!mounted || roomId != _fullRoomId) return;
+    if (_realtimeRetryCount >= 6) return; // max ~2min Backoff dann aufgeben
+    _realtimeRetryTimer?.cancel();
+    final delays = [2, 5, 10, 20, 40, 60];
+    final delaySec = delays[_realtimeRetryCount.clamp(0, delays.length - 1)];
+    _realtimeRetryCount++;
+    if (kDebugMode) {
+      debugPrint('🔁 [Realtime] Retry $_realtimeRetryCount in ${delaySec}s');
+    }
+    _realtimeRetryTimer = Timer(Duration(seconds: delaySec), () {
+      if (!mounted || roomId != _fullRoomId) return;
+      _subscribeToRoom(roomId);
     });
   }
   
