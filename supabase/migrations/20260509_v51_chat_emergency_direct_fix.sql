@@ -33,18 +33,17 @@ ALTER TABLE public.chat_messages ALTER COLUMN is_deleted SET DEFAULT FALSE;
 UPDATE public.chat_messages SET is_deleted = FALSE WHERE is_deleted IS NULL;
 UPDATE public.chat_messages SET content = COALESCE(content, message, '') WHERE content IS NULL OR content = '';
 
--- ── 2. FK-Constraint auf room_id entfernen ───────────────────────────────────
+-- ── 2. ALLE FK-Constraints auf chat_messages entfernen ──────────────────────
 DO $$
-DECLARE fk_name TEXT;
+DECLARE fk RECORD;
 BEGIN
-  SELECT constraint_name INTO fk_name
-  FROM information_schema.table_constraints
-  WHERE table_schema = 'public' AND table_name = 'chat_messages'
-    AND constraint_type = 'FOREIGN KEY'
-  LIMIT 1;
-  IF fk_name IS NOT NULL THEN
-    EXECUTE format('ALTER TABLE public.chat_messages DROP CONSTRAINT %I', fk_name);
-  END IF;
+  FOR fk IN
+    SELECT constraint_name FROM information_schema.table_constraints
+    WHERE table_schema = 'public' AND table_name = 'chat_messages'
+      AND constraint_type = 'FOREIGN KEY'
+  LOOP
+    EXECUTE format('ALTER TABLE public.chat_messages DROP CONSTRAINT %I', fk.constraint_name);
+  END LOOP;
 END $$;
 
 -- ── 3. Alle 17 Chat-Räume (prefixed IDs) ────────────────────────────────────
