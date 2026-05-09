@@ -504,19 +504,19 @@ DROP POLICY IF EXISTS "media_public_read"      ON storage.objects;
 DROP POLICY IF EXISTS "media_auth_insert"      ON storage.objects;
 DROP POLICY IF EXISTS "media_owner_delete"     ON storage.objects;
 
-DROP POLICY IF EXISTS "avatars_public_read" ON public.storage;
+DROP POLICY IF EXISTS "avatars_public_read" ON storage.objects;
 CREATE POLICY "avatars_public_read"  ON storage.objects FOR SELECT USING (bucket_id = 'avatars');
-DROP POLICY IF EXISTS "avatars_auth_insert" ON public.storage;
+DROP POLICY IF EXISTS "avatars_auth_insert" ON storage.objects;
 CREATE POLICY "avatars_auth_insert"  ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'avatars' AND auth.uid() IS NOT NULL);
-DROP POLICY IF EXISTS "avatars_owner_update" ON public.storage;
+DROP POLICY IF EXISTS "avatars_owner_update" ON storage.objects;
 CREATE POLICY "avatars_owner_update" ON storage.objects FOR UPDATE USING (bucket_id = 'avatars' AND auth.uid()::text = (storage.foldername(name))[1]);
-DROP POLICY IF EXISTS "avatars_owner_delete" ON public.storage;
+DROP POLICY IF EXISTS "avatars_owner_delete" ON storage.objects;
 CREATE POLICY "avatars_owner_delete" ON storage.objects FOR DELETE USING (bucket_id = 'avatars' AND auth.uid()::text = (storage.foldername(name))[1]);
-DROP POLICY IF EXISTS "media_public_read" ON public.storage;
+DROP POLICY IF EXISTS "media_public_read" ON storage.objects;
 CREATE POLICY "media_public_read"    ON storage.objects FOR SELECT USING (bucket_id = 'media');
-DROP POLICY IF EXISTS "media_auth_insert" ON public.storage;
+DROP POLICY IF EXISTS "media_auth_insert" ON storage.objects;
 CREATE POLICY "media_auth_insert"    ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'media' AND auth.uid() IS NOT NULL);
-DROP POLICY IF EXISTS "media_owner_delete" ON public.storage;
+DROP POLICY IF EXISTS "media_owner_delete" ON storage.objects;
 CREATE POLICY "media_owner_delete"   ON storage.objects FOR DELETE USING (bucket_id = 'media' AND auth.uid()::text = (storage.foldername(name))[1]);
 
 -- ============================================================
