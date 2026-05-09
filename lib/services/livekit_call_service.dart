@@ -852,6 +852,9 @@ class LiveKitCallService extends ChangeNotifier {
     try {
       await _room?.disconnect();
     } catch (_) {}
+    try {
+      _room?.dispose();
+    } catch (_) {}
     _room = null;
     _connectionState = LiveKitConnectionState.disconnected;
     _roomName = null;
@@ -1540,18 +1543,23 @@ class LiveKitCallService extends ChangeNotifier {
   @override
   void dispose() {
     _stopDurationTimer();
-    // Token-Refresh-Timer war nicht abgebaut → Timer feuerte mit
-    // disposed Room/State weiter und hielt Service via Closure am Leben.
     _cancelTokenRefresh();
     try {
       _listener?.dispose();
     } catch (_) {}
+    _listener = null;
     try {
       _room?.disconnect();
     } catch (_) {}
     try {
+      _room?.dispose();
+    } catch (_) {}
+    _room = null;
+    try {
       _reactionsCtrl.close();
     } catch (_) {}
+    _remoteVolumes.clear();
+    _activeSpeakers = const {};
     super.dispose();
   }
 

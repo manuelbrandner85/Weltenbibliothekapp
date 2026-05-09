@@ -670,6 +670,8 @@ class SupabaseChatService {
     required void Function(Map<String, dynamic>) onMessage,
     void Function(Map<String, dynamic>)? onUpdate,
     void Function(String messageId)? onDelete,
+    void Function()? onSubscribed,
+    void Function(Object error)? onError,
   }) {
     // Wenn dieselbe Welt nochmal subscribed → erst alte Channel kappen,
     // damit keine doppelten Callbacks (z.B. nach Hot-Reload).
@@ -718,7 +720,15 @@ class SupabaseChatService {
             onDelete?.call(id);
           },
         )
-        .subscribe();
+        .subscribe((status, [err]) {
+          if (kDebugMode) debugPrint('🔌 [Chat] Status $roomId: $status');
+          if (status == RealtimeSubscribeStatus.subscribed) {
+            onSubscribed?.call();
+          } else if (status == RealtimeSubscribeStatus.channelError ||
+              status == RealtimeSubscribeStatus.timedOut) {
+            onError?.call(err ?? 'channel $status');
+          }
+        });
 
     _channels[roomId] = channel;
     if (kDebugMode) debugPrint('🔌 [Chat] Subscribed: $roomId');

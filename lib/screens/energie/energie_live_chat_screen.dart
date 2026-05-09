@@ -1936,20 +1936,25 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
     _headerAuraCtrl.dispose();
     _headerOrbitCtrl.dispose();
     _meditationSyncTimer?.cancel();
+    _meditationSyncTimer = null;
     _messageController.removeListener(_onInputChanged);
     _inputFocusNode.dispose();
     _refreshTimer?.cancel();
+    _refreshTimer = null;
     _pendingSub?.cancel();
-    _typingTimer?.cancel(); // 🆕
-    _typingService.dispose(); // 🧹 Bundle 4.1: StreamController nicht mehr leaken
+    _pendingSub = null;
+    _typingTimer?.cancel();
+    _typingTimer = null;
+    _typingService.dispose();
     _messageController.dispose();
-    _scrollController.removeListener(_onScroll); // ✨ Batch-1
+    _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
-    // Voice-Service-dispose entfällt — LiveKit-Service hat eigenen Lifecycle.
-    _realtimeChannel?.unsubscribe(); // 🔴 Realtime cleanup
+    _realtimeChannel?.unsubscribe();
+    _realtimeChannel = null;
     PresenceService.instance.leave();
     ReadReceiptService.instance.leave();
     for (final t in _scheduledTimers) { t.cancel(); }
+    _scheduledTimers.clear();
     super.dispose();
   }
 
@@ -2233,12 +2238,19 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
           _messages.removeWhere((m) => m['id']?.toString() == messageId);
         });
       },
+      onSubscribed: () {
+        if (mounted && _reconnecting) {
+          setState(() => _reconnecting = false);
+        }
+      },
+      onError: (e) {
+        if (kDebugMode) debugPrint('⚠️ Realtime error: $e');
+        if (mounted && !_reconnecting) {
+          setState(() => _reconnecting = true);
+        }
+      },
     );
     if (kDebugMode) debugPrint('🔴 [Energie Realtime] Subscribed to room: $roomId');
-    // Reconnect-Flag nach kurzer Zeit auf false fallen lassen (optimistisch).
-    Future<void>.delayed(const Duration(seconds: 2), () {
-      if (mounted && _reconnecting) setState(() => _reconnecting = false);
-    });
   }
   
   // ✅ PROFIL-WARNUNG als Popup mit Navigation

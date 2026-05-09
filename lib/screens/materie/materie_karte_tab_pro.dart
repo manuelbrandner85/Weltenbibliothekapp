@@ -861,10 +861,43 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro>
     }
 
     if (allImages.isEmpty) {
-      return Center(
-        child: Text(
-          'Keine Bilder gefunden',
-          style: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
+      return Container(
+        height: 240,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              const Color(0xFFE53935).withValues(alpha: 0.08),
+              Colors.black.withValues(alpha: 0.4),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.image_not_supported_rounded,
+                size: 48, color: Colors.white.withValues(alpha: 0.4)),
+            const SizedBox(height: 12),
+            Text(
+              'Kein Bild verfügbar',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.7),
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              location.title,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.5),
+                fontSize: 12,
+              ),
+            ),
+          ],
         ),
       );
     }

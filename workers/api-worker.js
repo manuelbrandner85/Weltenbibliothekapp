@@ -57,8 +57,23 @@ function jsonResponse(data, status = 200) {
   });
 }
 
-function errorResponse(message, status = 500) {
-  return jsonResponse({ error: message, status }, status);
+function errorResponse(message, status = 500, code = null, details = null) {
+  // Standardisierte Error-Response für alle Worker-Endpoints.
+  //   { error: "...", status: 500, code: "EXTERNAL_API_FAILED", details: {...} }
+  // code-Beispiele: MISSING_PARAM, INVALID_PARAM, EXTERNAL_API_FAILED,
+  //   RATE_LIMITED, NOT_FOUND, FORBIDDEN, INTERNAL_ERROR, AUTH_FAILED
+  const inferredCode = code ?? (
+    status === 400 ? 'INVALID_PARAM'
+    : status === 401 ? 'AUTH_FAILED'
+    : status === 403 ? 'FORBIDDEN'
+    : status === 404 ? 'NOT_FOUND'
+    : status === 429 ? 'RATE_LIMITED'
+    : status >= 500 ? 'INTERNAL_ERROR'
+    : 'ERROR'
+  );
+  const body = { error: message, status, code: inferredCode };
+  if (details !== null) body.details = details;
+  return jsonResponse(body, status);
 }
 
 // ── Auto-Übersetzung ins Deutsche (Google GTX, kein Key) ───────────────────

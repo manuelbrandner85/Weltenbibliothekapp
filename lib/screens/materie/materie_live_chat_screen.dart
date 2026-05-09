@@ -413,12 +413,15 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
     _scrollController.dispose();
     _inputFocusNode.dispose();
     _refreshTimer?.cancel();
+    _refreshTimer = null;
     _pendingSub?.cancel();
-    // _voiceParticipantsSub entfernt — LiveKit hat eigenen Lifecycle
+    _pendingSub = null;
     _realtimeChannel?.unsubscribe();
+    _realtimeChannel = null;
     PresenceService.instance.leave();
     ReadReceiptService.instance.leave();
     for (final t in _scheduledTimers) { t.cancel(); }
+    _scheduledTimers.clear();
     super.dispose();
   }
 
@@ -557,6 +560,17 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
         setState(() {
           _messages.removeWhere((m) => m['id']?.toString() == messageId);
         });
+      },
+      onSubscribed: () {
+        if (mounted && _reconnecting) {
+          setState(() => _reconnecting = false);
+        }
+      },
+      onError: (e) {
+        if (kDebugMode) debugPrint('⚠️ Realtime error: $e');
+        if (mounted && !_reconnecting) {
+          setState(() => _reconnecting = true);
+        }
       },
     );
     if (kDebugMode) debugPrint('🔴 [Materie Realtime] Subscribed to room: $roomId');
@@ -2714,15 +2728,23 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
         );
       }
 
-      // Server-Update im Hintergrund (fire-and-forget)
-      SupabaseChatService.instance.editMessage(
-        messageId: msgId,
-        newMessage: trimmed,
-      ).then((_) {
-        if (kDebugMode) debugPrint('✅ Edit erfolgreich gespeichert');
-      }).catchError((e) {
-        if (kDebugMode) debugPrint('⚠️ Edit server error (optimistic update bleibt): $e');
-      });
+      try {
+        await SupabaseChatService.instance.editMessage(
+          messageId: msgId,
+          newMessage: trimmed,
+        );
+      } catch (e) {
+        if (kDebugMode) debugPrint('❌ Edit fehlgeschlagen: $e');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('❌ Bearbeitung konnte nicht gespeichert werden'),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 4),
+            ),
+          );
+        }
+      }
     }
   }
   
