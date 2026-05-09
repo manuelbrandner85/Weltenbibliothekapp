@@ -431,11 +431,17 @@ class _LiveKitGroupCallScreenState
     switch (state) {
       case LiveKitConnectionState.connecting:
       case LiveKitConnectionState.reconnecting:
+        // L8: Sichtbarer Auto-Reconnect-State mit Retry-Counter
+        final attempt = svc.reconnectAttempt;
+        final isAutoReconnect = svc.isAutoReconnecting && attempt > 0;
+        final title = isAutoReconnect
+            ? 'Verbindung wird wiederhergestellt … (Versuch $attempt/5)'
+            : state == LiveKitConnectionState.reconnecting
+                ? 'Verbindung wird wiederhergestellt …'
+                : 'Verbinde mit dem Anruf …';
         return _StatusView(
           icon: Icons.cell_tower_rounded,
-          title: state == LiveKitConnectionState.reconnecting
-              ? 'Verbindung wird wiederhergestellt …'
-              : 'Verbinde mit dem Anruf …',
+          title: title,
           subtitle: 'Raum: ${_roomDisplayName(widget.roomName)}',
           accent: accent,
           showSpinner: true,

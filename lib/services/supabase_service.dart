@@ -720,13 +720,13 @@ class SupabaseChatService {
             onDelete?.call(id);
           },
         )
-        .subscribe((status, [err]) {
+        .subscribe((status, error) {
           if (kDebugMode) debugPrint('🔌 [Chat] Status $roomId: $status');
           if (status == RealtimeSubscribeStatus.subscribed) {
             onSubscribed?.call();
           } else if (status == RealtimeSubscribeStatus.channelError ||
               status == RealtimeSubscribeStatus.timedOut) {
-            onError?.call(err ?? 'channel $status');
+            onError?.call(error ?? 'channel $status');
           }
         });
 

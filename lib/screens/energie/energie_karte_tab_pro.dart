@@ -971,7 +971,7 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
             ),
             const SizedBox(height: 4),
             Text(
-              location.title,
+              location.name,
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.5),
                 fontSize: 12,

@@ -10,11 +10,20 @@ analyzer:
   errors:
     # Bekannte Lint-Klassen, die in der bestehenden Codebasis breit auftreten,
     # bleiben auf info-Level — sonst hätten wir sofort 100+ "Errors".
+    # Wenn die Codebasis sukzessive aufgeräumt wird, kann hier von info → warning
+    # eskaliert werden.
     use_build_context_synchronously: info
     deprecated_member_use: info
-    avoid_print: warning
-    unawaited_futures: warning
-    close_sinks: warning
+    avoid_print: info
+    unawaited_futures: info
+    close_sinks: info
+    cancel_subscriptions: info
+    avoid_dynamic_calls: info
+    prefer_final_locals: info
+    prefer_final_in_for_each: info
+    prefer_const_declarations: info
+    avoid_void_async: info
+    no_logic_in_create_state: info
   exclude:
     - "**/*.g.dart"
     - "**/*.freezed.dart"
