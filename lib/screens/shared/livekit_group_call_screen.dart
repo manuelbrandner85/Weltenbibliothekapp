@@ -2178,21 +2178,33 @@ class _ParticipantGrid extends StatelessWidget {
       final spotlight = (!isLocal && id.isNotEmpty && onSpotlight != null)
           ? () => _showSpotlightSheet(context, name, id, accent, onSpotlight!)
           : null;
-      return _ParticipantTile(
-        name: name,
-        isLocal: isLocal,
-        micEnabled: info.mic,
-        world: world,
-        accent: accent,
-        isSolo: false,
-        videoTrack: info.video,
-        handRaised: info.hand,
-        avatarUrl: info.avatar,
-        isActiveSpeaker: id.isNotEmpty && activeSpeakers.contains(id),
-        quality: id.isEmpty
-            ? LiveKitParticipantQuality.unknown
-            : qualityFor(id),
-        onLongPress: spotlight,
+      // B3: Identity-Key sorgt für stable Element-Tracking im Grid;
+      // TweenAnimationBuilder fadet Tile beim ersten Auftreten sanft ein.
+      return TweenAnimationBuilder<double>(
+        key: ValueKey('tile-${id.isEmpty ? 'local' : id}'),
+        tween: Tween(begin: 0.0, end: 1.0),
+        duration: const Duration(milliseconds: 360),
+        curve: Curves.easeOutCubic,
+        builder: (_, t, child) => Opacity(
+          opacity: t,
+          child: Transform.scale(scale: 0.92 + 0.08 * t, child: child),
+        ),
+        child: _ParticipantTile(
+          name: name,
+          isLocal: isLocal,
+          micEnabled: info.mic,
+          world: world,
+          accent: accent,
+          isSolo: false,
+          videoTrack: info.video,
+          handRaised: info.hand,
+          avatarUrl: info.avatar,
+          isActiveSpeaker: id.isNotEmpty && activeSpeakers.contains(id),
+          quality: id.isEmpty
+              ? LiveKitParticipantQuality.unknown
+              : qualityFor(id),
+          onLongPress: spotlight,
+        ),
       );
     });
 
@@ -2324,42 +2336,55 @@ class _ParticipantTileState extends State<_ParticipantTile>
       ],
     );
 
-    // 🌌 B3: Aktive-Sprecher-Aura — pulsierender Welt-farbiger Ring
-    // umschließt das Tile wenn die Person grade redet.
+    // 🌌 F1-Fix: Aura als separates Stack-Overlay HINTER dem Tile zeichnen,
+    // sodass die 60fps-Animation NICHT den Video-Subtree neu rendert (Flicker-Fix).
+    // Das Tile selbst ist in RepaintBoundary isoliert.
+    final isolatedTile = RepaintBoundary(child: tileWithQuality);
+
     Widget result;
     if (!widget.isActiveSpeaker) {
-      result = tileWithQuality;
+      result = isolatedTile;
     } else {
-      result = AnimatedBuilder(
-        animation: _pulseAnim,
-        builder: (_, __) {
-          final t = _pulseAnim.value; // 0.95..1.05
-          final c1 = isMaterie
-              ? const Color(0xFFE53935) // materie rot
-              : const Color(0xFF7C4DFF); // energie lila
-          final c2 = isMaterie
-              ? const Color(0xFF2979FF) // materie blau
-              : const Color(0xFF00E5FF); // energie cyan
-          final auraColor = Color.lerp(c1, c2, t) ?? widget.accent;
-          return Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(WbDesign.radiusCard + 4),
-              boxShadow: [
-                BoxShadow(
-                  color: auraColor.withValues(alpha: 0.55),
-                  blurRadius: 16 + (t * 8),
-                  spreadRadius: 2 + (t * 2),
+      final c1 = isMaterie ? const Color(0xFFE53935) : const Color(0xFF7C4DFF);
+      final c2 = isMaterie ? const Color(0xFF2979FF) : const Color(0xFF00E5FF);
+      result = Stack(
+        clipBehavior: Clip.none,
+        children: [
+          // Aura-Layer (animiert, IgnorePointer, separater Repaint-Boundary)
+          Positioned.fill(
+            child: IgnorePointer(
+              child: RepaintBoundary(
+                child: AnimatedBuilder(
+                  animation: _pulseAnim,
+                  builder: (_, __) {
+                    final t = _pulseAnim.value;
+                    final auraColor = Color.lerp(c1, c2, t) ?? widget.accent;
+                    return DecoratedBox(
+                      decoration: BoxDecoration(
+                        borderRadius:
+                            BorderRadius.circular(WbDesign.radiusCard + 4),
+                        boxShadow: [
+                          BoxShadow(
+                            color: auraColor.withValues(alpha: 0.55),
+                            blurRadius: 16 + (t * 8),
+                            spreadRadius: 2 + (t * 2),
+                          ),
+                          BoxShadow(
+                            color: auraColor.withValues(alpha: 0.18),
+                            blurRadius: 32 + (t * 16),
+                            spreadRadius: 6 + (t * 4),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
                 ),
-                BoxShadow(
-                  color: auraColor.withValues(alpha: 0.18),
-                  blurRadius: 32 + (t * 16),
-                  spreadRadius: 6 + (t * 4),
-                ),
-              ],
+              ),
             ),
-            child: tileWithQuality,
-          );
-        },
+          ),
+          // Tile-Layer (statisch, eigener Repaint-Boundary)
+          isolatedTile,
+        ],
       );
     }
 
@@ -2372,16 +2397,20 @@ class _ParticipantTileState extends State<_ParticipantTile>
 
   Widget _buildTileBody(BuildContext context, String initials, double avatarSize,
       double fontSize, bool isMaterie, bool hasVideo) {
-    return Container(
+    // B1 Glassmorphism: ClipRRect + BackdropFilter für echten Glaseffekt
+    // (nur ohne Video — Video füllt sowieso die ganze Tile).
+    final inner = Container(
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            WbDesign.surface(widget.world).withValues(alpha: 0.78),
-            WbDesign.surface(widget.world).withValues(alpha: 0.55),
-          ],
-        ),
+        gradient: hasVideo
+            ? null
+            : LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  WbDesign.surface(widget.world).withValues(alpha: 0.55),
+                  WbDesign.surface(widget.world).withValues(alpha: 0.32),
+                ],
+              ),
         borderRadius: BorderRadius.circular(WbDesign.radiusCard),
         border: Border.all(
           color: widget.micEnabled
@@ -2404,14 +2433,9 @@ class _ParticipantTileState extends State<_ParticipantTile>
           : Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Avatar mit Sprech-Glow — welt-spezifisch
-          AnimatedBuilder(
-            animation: _pulseAnim,
-            builder: (_, child) => Transform.scale(
-              scale: widget.micEnabled ? _pulseAnim.value : 1.0,
-              child: child,
-            ),
-            child: Stack(
+          // Avatar mit Sprech-Glow — welt-spezifisch (B2: kein Scale-Puls mehr,
+          // stattdessen Waveform-Balken unter dem Avatar)
+          Stack(
               alignment: Alignment.center,
               children: [
                 // Welt-spezifischer Glow-Ring (Hexagon für Materie, mehrlagiger Halo für Energie)
@@ -2527,7 +2551,16 @@ class _ParticipantTileState extends State<_ParticipantTile>
                   ),
               ],
             ),
-          ),
+          // B2: Audio-Waveform unter dem Avatar (3 Balken, animiert wenn Sprecher aktiv)
+          if (widget.isActiveSpeaker)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: _AudioWaveform(
+                color: widget.accent,
+                animation: _pulseAnim,
+                height: widget.isSolo ? 18 : 12,
+              ),
+            ),
           const SizedBox(height: 10),
           // Name
           Padding(
@@ -2585,6 +2618,16 @@ class _ParticipantTileState extends State<_ParticipantTile>
             ),
           ),
         ],
+      ),
+    );
+
+    if (hasVideo) return inner;
+    // B1: Glassmorphism — Avatar-Tile mit BackdropFilter.blur (10sigma)
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(WbDesign.radiusCard),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: inner,
       ),
     );
   }
@@ -3568,6 +3611,69 @@ class _PulsingDotState extends State<_PulsingDot>
               color: widget.color,
               shape: BoxShape.circle,
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// AUDIO WAVEFORM — 3 animierte Balken (Telegram-Stil) für aktiven Sprecher
+// ═══════════════════════════════════════════════════════════════════════════
+
+class _AudioWaveform extends StatelessWidget {
+  final Color color;
+  final Animation<double> animation;
+  final double height;
+
+  const _AudioWaveform({
+    required this.color,
+    required this.animation,
+    this.height = 14,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: height,
+      child: AnimatedBuilder(
+        animation: animation,
+        builder: (_, __) {
+          // Phasen-versetzte Werte 0..1 für 3 Balken
+          final t = animation.value; // 0.95..1.05 → normalisiere
+          final n = ((t - 0.95) / 0.10).clamp(0.0, 1.0); // 0..1
+          final h0 = 0.35 + 0.65 * (math.sin(n * math.pi * 2) * 0.5 + 0.5);
+          final h1 = 0.35 + 0.65 * (math.sin(n * math.pi * 2 + 2.1) * 0.5 + 0.5);
+          final h2 = 0.35 + 0.65 * (math.sin(n * math.pi * 2 + 4.2) * 0.5 + 0.5);
+          return Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              _bar(h0),
+              const SizedBox(width: 3),
+              _bar(h1),
+              const SizedBox(width: 3),
+              _bar(h2),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _bar(double heightFactor) {
+    return Container(
+      width: 3.5,
+      height: height * heightFactor,
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(2),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.45),
+            blurRadius: 4,
+            spreadRadius: 0,
           ),
         ],
       ),
