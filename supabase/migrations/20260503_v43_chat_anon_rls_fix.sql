@@ -20,6 +20,7 @@ DROP POLICY IF EXISTS "chat_messages_anon_insert"          ON public.chat_messag
 
 -- ── SELECT: Alle Rollen dürfen nicht-gelöschte Nachrichten lesen ─────────────
 -- (kein TO → gilt für anon + authenticated + service_role)
+DROP POLICY IF EXISTS "chat_messages_select" ON public.chat_messages;
 CREATE POLICY "chat_messages_select"
   ON public.chat_messages
   FOR SELECT
@@ -28,6 +29,7 @@ CREATE POLICY "chat_messages_select"
 -- ── INSERT: Anon + Authenticated erlaubt, Owner-Constraint ──────────────────
 -- Anon (kein Session-User): user_id muss NULL sein
 -- Authenticated (echte Session): user_id muss eigene UUID sein ODER NULL sein
+DROP POLICY IF EXISTS "chat_messages_insert" ON public.chat_messages;
 CREATE POLICY "chat_messages_insert"
   ON public.chat_messages
   FOR INSERT
@@ -38,6 +40,7 @@ CREATE POLICY "chat_messages_insert"
   );
 
 -- ── UPDATE: Nur eigene Nachrichten oder Moderatoren/Admins ──────────────────
+DROP POLICY IF EXISTS "chat_messages_update" ON public.chat_messages;
 CREATE POLICY "chat_messages_update"
   ON public.chat_messages
   FOR UPDATE

@@ -71,10 +71,12 @@ ALTER TABLE public.dream_journal_v2  ENABLE ROW LEVEL SECURITY;
 
 -- 4. Policies (idempotent) --------------------------------------
 DROP POLICY IF EXISTS "Traumsymbole öffentlich"        ON public.dream_symbols;
+DROP POLICY IF EXISTS "Traumsymbole öffentlich" ON public.dream_symbols;
 CREATE POLICY "Traumsymbole öffentlich" ON public.dream_symbols
   FOR SELECT TO anon, authenticated USING (true);
 
 DROP POLICY IF EXISTS "User sieht eigenes Traumbuch"   ON public.dream_journal_v2;
+DROP POLICY IF EXISTS "User sieht eigenes Traumbuch" ON public.dream_journal_v2;
 CREATE POLICY "User sieht eigenes Traumbuch" ON public.dream_journal_v2
   FOR ALL TO authenticated
   USING (auth.uid() = user_id)

@@ -330,8 +330,11 @@ ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "profiles_public_select"   ON profiles;
 DROP POLICY IF EXISTS "profiles_owner_update"    ON profiles;
 DROP POLICY IF EXISTS "profiles_insert_own"      ON profiles;
+DROP POLICY IF EXISTS "profiles_public_select" ON public.profiles;
 CREATE POLICY "profiles_public_select"  ON profiles FOR SELECT USING (true);
+DROP POLICY IF EXISTS "profiles_owner_update" ON public.profiles;
 CREATE POLICY "profiles_owner_update"   ON profiles FOR UPDATE USING (auth.uid() = id);
+DROP POLICY IF EXISTS "profiles_insert_own" ON public.profiles;
 CREATE POLICY "profiles_insert_own"     ON profiles FOR INSERT WITH CHECK (auth.uid() = id);
 
 -- ARTICLES
@@ -340,9 +343,13 @@ DROP POLICY IF EXISTS "articles_public_read"   ON articles;
 DROP POLICY IF EXISTS "articles_auth_insert"   ON articles;
 DROP POLICY IF EXISTS "articles_owner_update"  ON articles;
 DROP POLICY IF EXISTS "articles_owner_delete"  ON articles;
+DROP POLICY IF EXISTS "articles_public_read" ON public.articles;
 CREATE POLICY "articles_public_read"  ON articles FOR SELECT USING (is_published = true);
+DROP POLICY IF EXISTS "articles_auth_insert" ON public.articles;
 CREATE POLICY "articles_auth_insert"  ON articles FOR INSERT WITH CHECK (auth.uid() IS NOT NULL AND auth.uid() = user_id);
+DROP POLICY IF EXISTS "articles_owner_update" ON public.articles;
 CREATE POLICY "articles_owner_update" ON articles FOR UPDATE USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "articles_owner_delete" ON public.articles;
 CREATE POLICY "articles_owner_delete" ON articles FOR DELETE USING (auth.uid() = user_id);
 
 -- LIKES
@@ -351,7 +358,9 @@ DROP POLICY IF EXISTS "likes_public_select" ON likes;
 DROP POLICY IF EXISTS "likes_auth_insert"   ON likes;
 DROP POLICY IF EXISTS "likes_owner_delete"  ON likes;
 CREATE POLICY "likes_public_select" ON likes FOR SELECT USING (true);
+DROP POLICY IF EXISTS "likes_auth_insert" ON public.likes;
 CREATE POLICY "likes_auth_insert"   ON likes FOR INSERT WITH CHECK (auth.uid() IS NOT NULL AND auth.uid() = user_id);
+DROP POLICY IF EXISTS "likes_owner_delete" ON public.likes;
 CREATE POLICY "likes_owner_delete"  ON likes FOR DELETE USING (auth.uid() = user_id);
 
 -- BOOKMARKS
@@ -360,7 +369,9 @@ DROP POLICY IF EXISTS "bookmarks_owner_select" ON bookmarks;
 DROP POLICY IF EXISTS "bookmarks_auth_insert"  ON bookmarks;
 DROP POLICY IF EXISTS "bookmarks_owner_delete" ON bookmarks;
 CREATE POLICY "bookmarks_owner_select" ON bookmarks FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "bookmarks_auth_insert" ON public.bookmarks;
 CREATE POLICY "bookmarks_auth_insert"  ON bookmarks FOR INSERT WITH CHECK (auth.uid() IS NOT NULL AND auth.uid() = user_id);
+DROP POLICY IF EXISTS "bookmarks_owner_delete" ON public.bookmarks;
 CREATE POLICY "bookmarks_owner_delete" ON bookmarks FOR DELETE USING (auth.uid() = user_id);
 
 -- COMMENTS
@@ -369,9 +380,13 @@ DROP POLICY IF EXISTS "comments_public_select" ON comments;
 DROP POLICY IF EXISTS "comments_auth_insert"   ON comments;
 DROP POLICY IF EXISTS "comments_owner_update"  ON comments;
 DROP POLICY IF EXISTS "comments_owner_delete"  ON comments;
+DROP POLICY IF EXISTS "comments_public_select" ON public.comments;
 CREATE POLICY "comments_public_select" ON comments FOR SELECT USING (is_deleted = false);
+DROP POLICY IF EXISTS "comments_auth_insert" ON public.comments;
 CREATE POLICY "comments_auth_insert"   ON comments FOR INSERT WITH CHECK (auth.uid() IS NOT NULL AND auth.uid() = user_id);
+DROP POLICY IF EXISTS "comments_owner_update" ON public.comments;
 CREATE POLICY "comments_owner_update"  ON comments FOR UPDATE USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "comments_owner_delete" ON public.comments;
 CREATE POLICY "comments_owner_delete"  ON comments FOR DELETE USING (auth.uid() = user_id);
 
 -- CHAT ROOMS
@@ -379,6 +394,7 @@ ALTER TABLE chat_rooms ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "chat_rooms_public_select" ON chat_rooms;
 DROP POLICY IF EXISTS "chat_rooms_admin_insert"  ON chat_rooms;
 CREATE POLICY "chat_rooms_public_select" ON chat_rooms FOR SELECT USING (true);
+DROP POLICY IF EXISTS "chat_rooms_admin_insert" ON public.chat_rooms;
 CREATE POLICY "chat_rooms_admin_insert"  ON chat_rooms FOR INSERT WITH CHECK (
   auth.uid() IN (SELECT id FROM profiles WHERE role IN ('admin','root-admin'))
 );
@@ -388,16 +404,19 @@ ALTER TABLE chat_messages ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "chat_messages_select"      ON chat_messages;
 DROP POLICY IF EXISTS "chat_messages_insert"      ON chat_messages;
 DROP POLICY IF EXISTS "chat_messages_soft_delete" ON chat_messages;
+DROP POLICY IF EXISTS "chat_messages_select" ON public.chat_messages;
 CREATE POLICY "chat_messages_select"      ON chat_messages FOR SELECT USING (is_deleted = false);
 -- ✅ FIX v5.11: Erlaube auch anonyme Inserts (user_id = NULL) damit der Cloudflare Worker
 --    auch ohne Service-Role-Key Nachrichten einfügen kann.
 --    Authentifizierte Nutzer dürfen user_id setzen (muss zur eigenen UUID passen).
 --    Anonyme Nutzer (kein Auth-User) dürfen nur wenn user_id NULL ist.
+DROP POLICY IF EXISTS "chat_messages_insert" ON public.chat_messages;
 CREATE POLICY "chat_messages_insert" ON chat_messages FOR INSERT WITH CHECK (
   (auth.uid() IS NULL AND user_id IS NULL)          -- Anonym (Worker ohne Service-Key)
   OR (auth.uid() IS NOT NULL AND auth.uid() = user_id)  -- Eingeloggt: eigene UUID
   OR (auth.uid() IS NOT NULL AND user_id IS NULL)    -- Eingeloggt aber kein user_id gesetzt
 );
+DROP POLICY IF EXISTS "chat_messages_soft_delete" ON public.chat_messages;
 CREATE POLICY "chat_messages_soft_delete" ON chat_messages FOR UPDATE USING (auth.uid() = user_id OR auth.uid() IN (SELECT id FROM profiles WHERE role IN ('admin','root-admin','mod','moderator')));
 
 -- NOTIFICATIONS
@@ -405,8 +424,11 @@ ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "notifications_owner_select"     ON notifications;
 DROP POLICY IF EXISTS "notifications_owner_update"     ON notifications;
 DROP POLICY IF EXISTS "notifications_system_insert"    ON notifications;
+DROP POLICY IF EXISTS "notifications_owner_select" ON public.notifications;
 CREATE POLICY "notifications_owner_select"  ON notifications FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "notifications_owner_update" ON public.notifications;
 CREATE POLICY "notifications_owner_update"  ON notifications FOR UPDATE USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "notifications_system_insert" ON public.notifications;
 CREATE POLICY "notifications_system_insert" ON notifications FOR INSERT WITH CHECK (true);  -- Trigger/Edge-Function darf inserieren
 
 -- MESSAGE REACTIONS
@@ -414,8 +436,11 @@ ALTER TABLE message_reactions ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "reactions_public_select" ON message_reactions;
 DROP POLICY IF EXISTS "reactions_auth_insert"   ON message_reactions;
 DROP POLICY IF EXISTS "reactions_owner_delete"  ON message_reactions;
+DROP POLICY IF EXISTS "reactions_public_select" ON public.message_reactions;
 CREATE POLICY "reactions_public_select" ON message_reactions FOR SELECT USING (true);
+DROP POLICY IF EXISTS "reactions_auth_insert" ON public.message_reactions;
 CREATE POLICY "reactions_auth_insert"   ON message_reactions FOR INSERT WITH CHECK (auth.uid() IS NOT NULL AND auth.uid() = user_id);
+DROP POLICY IF EXISTS "reactions_owner_delete" ON public.message_reactions;
 CREATE POLICY "reactions_owner_delete"  ON message_reactions FOR DELETE USING (auth.uid() = user_id);
 
 -- VOICE PARTICIPANTS
@@ -423,8 +448,11 @@ ALTER TABLE voice_participants ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "voice_public_select" ON voice_participants;
 DROP POLICY IF EXISTS "voice_auth_insert"   ON voice_participants;
 DROP POLICY IF EXISTS "voice_owner_update"  ON voice_participants;
+DROP POLICY IF EXISTS "voice_public_select" ON public.voice_participants;
 CREATE POLICY "voice_public_select" ON voice_participants FOR SELECT USING (true);
+DROP POLICY IF EXISTS "voice_auth_insert" ON public.voice_participants;
 CREATE POLICY "voice_auth_insert"   ON voice_participants FOR INSERT WITH CHECK (auth.uid() IS NOT NULL AND auth.uid() = user_id);
+DROP POLICY IF EXISTS "voice_owner_update" ON public.voice_participants;
 CREATE POLICY "voice_owner_update"  ON voice_participants FOR UPDATE USING (auth.uid() = user_id);
 
 -- TOOL TABLES: öffentliches Lesen, Auth-Insert, Owner-Update/Delete
@@ -458,8 +486,11 @@ ALTER TABLE user_stats ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "stats_public_select"  ON user_stats;
 DROP POLICY IF EXISTS "stats_owner_update"   ON user_stats;
 DROP POLICY IF EXISTS "stats_system_insert"  ON user_stats;
+DROP POLICY IF EXISTS "stats_public_select" ON public.user_stats;
 CREATE POLICY "stats_public_select"  ON user_stats FOR SELECT USING (true);
+DROP POLICY IF EXISTS "stats_owner_update" ON public.user_stats;
 CREATE POLICY "stats_owner_update"   ON user_stats FOR UPDATE USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "stats_system_insert" ON public.user_stats;
 CREATE POLICY "stats_system_insert"  ON user_stats FOR INSERT WITH CHECK (true);
 
 -- ============================================================
@@ -473,12 +504,19 @@ DROP POLICY IF EXISTS "media_public_read"      ON storage.objects;
 DROP POLICY IF EXISTS "media_auth_insert"      ON storage.objects;
 DROP POLICY IF EXISTS "media_owner_delete"     ON storage.objects;
 
+DROP POLICY IF EXISTS "avatars_public_read" ON public.storage;
 CREATE POLICY "avatars_public_read"  ON storage.objects FOR SELECT USING (bucket_id = 'avatars');
+DROP POLICY IF EXISTS "avatars_auth_insert" ON public.storage;
 CREATE POLICY "avatars_auth_insert"  ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'avatars' AND auth.uid() IS NOT NULL);
+DROP POLICY IF EXISTS "avatars_owner_update" ON public.storage;
 CREATE POLICY "avatars_owner_update" ON storage.objects FOR UPDATE USING (bucket_id = 'avatars' AND auth.uid()::text = (storage.foldername(name))[1]);
+DROP POLICY IF EXISTS "avatars_owner_delete" ON public.storage;
 CREATE POLICY "avatars_owner_delete" ON storage.objects FOR DELETE USING (bucket_id = 'avatars' AND auth.uid()::text = (storage.foldername(name))[1]);
+DROP POLICY IF EXISTS "media_public_read" ON public.storage;
 CREATE POLICY "media_public_read"    ON storage.objects FOR SELECT USING (bucket_id = 'media');
+DROP POLICY IF EXISTS "media_auth_insert" ON public.storage;
 CREATE POLICY "media_auth_insert"    ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'media' AND auth.uid() IS NOT NULL);
+DROP POLICY IF EXISTS "media_owner_delete" ON public.storage;
 CREATE POLICY "media_owner_delete"   ON storage.objects FOR DELETE USING (bucket_id = 'media' AND auth.uid()::text = (storage.foldername(name))[1]);
 
 -- ============================================================

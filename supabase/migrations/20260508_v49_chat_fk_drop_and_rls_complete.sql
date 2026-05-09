@@ -79,12 +79,14 @@ DROP POLICY IF EXISTS "admins_can_edit_any_message"        ON public.chat_messag
 -- ── 5. Neue, saubere Policies ─────────────────────────────────────────────────
 
 -- SELECT: Alle Rollen dürfen nicht-gelöschte Nachrichten lesen
+DROP POLICY IF EXISTS "chat_select_all" ON public.chat_messages;
 CREATE POLICY "chat_select_all"
   ON public.chat_messages
   FOR SELECT
   USING (COALESCE(is_deleted, false) = false);
 
 -- INSERT: anon (user_id NULL) + authenticated (user_id = eigene UUID)
+DROP POLICY IF EXISTS "chat_insert_authenticated" ON public.chat_messages;
 CREATE POLICY "chat_insert_authenticated"
   ON public.chat_messages
   FOR INSERT
@@ -95,6 +97,7 @@ CREATE POLICY "chat_insert_authenticated"
   );
 
 -- UPDATE: User darf eigene Nachrichten bearbeiten (inkl. soft-delete via is_deleted)
+DROP POLICY IF EXISTS "chat_update_own" ON public.chat_messages;
 CREATE POLICY "chat_update_own"
   ON public.chat_messages
   FOR UPDATE
@@ -103,6 +106,7 @@ CREATE POLICY "chat_update_own"
   WITH CHECK (auth.uid() = user_id);
 
 -- UPDATE: Admins/Moderatoren dürfen alle Nachrichten bearbeiten
+DROP POLICY IF EXISTS "chat_update_admin" ON public.chat_messages;
 CREATE POLICY "chat_update_admin"
   ON public.chat_messages
   FOR UPDATE
@@ -117,6 +121,7 @@ CREATE POLICY "chat_update_admin"
   );
 
 -- DELETE: User darf eigene Nachrichten hard-löschen
+DROP POLICY IF EXISTS "chat_delete_own" ON public.chat_messages;
 CREATE POLICY "chat_delete_own"
   ON public.chat_messages
   FOR DELETE
@@ -124,6 +129,7 @@ CREATE POLICY "chat_delete_own"
   USING (auth.uid() = user_id);
 
 -- DELETE: Admins dürfen alle Nachrichten löschen
+DROP POLICY IF EXISTS "chat_delete_admin" ON public.chat_messages;
 CREATE POLICY "chat_delete_admin"
   ON public.chat_messages
   FOR DELETE

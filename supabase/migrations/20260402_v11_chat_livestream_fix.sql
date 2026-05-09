@@ -32,6 +32,7 @@ DROP POLICY IF EXISTS "chat_messages_anon_insert"     ON chat_messages;
 DROP POLICY IF EXISTS "chat_messages_auth_insert"     ON chat_messages;
 
 -- ✅ Neue kombinierte INSERT Policy
+DROP POLICY IF EXISTS "chat_messages_insert" ON public.chat_messages;
 CREATE POLICY "chat_messages_insert" ON chat_messages
   FOR INSERT WITH CHECK (
     -- Fall 1: Anonym (kein Auth-User) → user_id MUSS NULL sein
@@ -50,6 +51,7 @@ CREATE POLICY "chat_messages_select" ON chat_messages
 -- UPDATE (Soft-Delete / Edit): Eigener User oder Admin/Mod
 DROP POLICY IF EXISTS "chat_messages_soft_delete" ON chat_messages;
 DROP POLICY IF EXISTS "chat_messages_update"      ON chat_messages;
+DROP POLICY IF EXISTS "chat_messages_update" ON public.chat_messages;
 CREATE POLICY "chat_messages_update" ON chat_messages
   FOR UPDATE USING (
     auth.uid() = user_id

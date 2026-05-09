@@ -96,6 +96,7 @@ END $$;
 -- ── 6. Frische, saubere RLS-Policies ─────────────────────────────────────────
 
 -- SELECT: Jeder darf nicht-gelöschte Nachrichten lesen (anon + auth)
+DROP POLICY IF EXISTS "chat_select_all" ON public.chat_messages;
 CREATE POLICY "chat_select_all"
   ON public.chat_messages
   FOR SELECT
@@ -103,6 +104,7 @@ CREATE POLICY "chat_select_all"
 
 -- INSERT für authenticated: user_id MUSS = auth.uid() sein
 -- (kein anonymes Posten als Logged-in-User mehr — verhindert Spoofing)
+DROP POLICY IF EXISTS "chat_insert_auth_self" ON public.chat_messages;
 CREATE POLICY "chat_insert_auth_self"
   ON public.chat_messages
   FOR INSERT
@@ -110,6 +112,7 @@ CREATE POLICY "chat_insert_auth_self"
   WITH CHECK (auth.uid() = user_id);
 
 -- INSERT für anon: nur ohne user_id (echtes Anonym-Posting)
+DROP POLICY IF EXISTS "chat_insert_anon" ON public.chat_messages;
 CREATE POLICY "chat_insert_anon"
   ON public.chat_messages
   FOR INSERT
@@ -117,6 +120,7 @@ CREATE POLICY "chat_insert_anon"
   WITH CHECK (user_id IS NULL);
 
 -- UPDATE: User darf eigene Nachrichten bearbeiten
+DROP POLICY IF EXISTS "chat_update_own" ON public.chat_messages;
 CREATE POLICY "chat_update_own"
   ON public.chat_messages
   FOR UPDATE
@@ -125,6 +129,7 @@ CREATE POLICY "chat_update_own"
   WITH CHECK (auth.uid() = user_id);
 
 -- UPDATE: Admins/Moderatoren dürfen jede Nachricht bearbeiten
+DROP POLICY IF EXISTS "chat_update_admin" ON public.chat_messages;
 CREATE POLICY "chat_update_admin"
   ON public.chat_messages
   FOR UPDATE
@@ -147,6 +152,7 @@ CREATE POLICY "chat_update_admin"
   );
 
 -- DELETE: User darf eigene Nachrichten hard-löschen
+DROP POLICY IF EXISTS "chat_delete_own" ON public.chat_messages;
 CREATE POLICY "chat_delete_own"
   ON public.chat_messages
   FOR DELETE
@@ -154,6 +160,7 @@ CREATE POLICY "chat_delete_own"
   USING (auth.uid() = user_id);
 
 -- DELETE: Admins/Moderatoren dürfen jede Nachricht löschen
+DROP POLICY IF EXISTS "chat_delete_admin" ON public.chat_messages;
 CREATE POLICY "chat_delete_admin"
   ON public.chat_messages
   FOR DELETE
