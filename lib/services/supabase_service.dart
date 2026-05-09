@@ -612,13 +612,24 @@ class SupabaseChatService {
           (replyToSenderName ?? '').trim().isEmpty ? null : replyToSenderName!.trim();
     }
 
+    // maybeSingle() statt single() — gibt null zurück wenn SELECT-Policy die
+    // Zeile nicht sieht (z.B. nach JWT-Wechsel), anstatt eine Exception zu werfen.
+    // Der INSERT selbst ist trotzdem durchgelaufen.
     final response = await supabase
         .from('chat_messages')
         .insert(insertData)
         .select()
-        .single();
+        .maybeSingle();
 
-    return response;
+    if (response != null) return response;
+
+    // Fallback: INSERT war erfolgreich aber SELECT lieferte nichts.
+    // Konstruiere Antwort aus den gesendeten Daten.
+    return {
+      'id': 'local_${DateTime.now().millisecondsSinceEpoch}',
+      'created_at': DateTime.now().toUtc().toIso8601String(),
+      ...insertData,
+    };
   }
 
   /// Eigene Nachricht bearbeiten (RLS prüft Ownership).

@@ -843,7 +843,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
           msg = 'Bitte Profil anlegen oder erneut versuchen.';
         } else if (err.contains('permission denied') || err.contains('42501')
             || err.contains('violates row-level security')) {
-          msg = 'Keine Berechtigung. Bitte ausloggen + neu anmelden.';
+          msg = 'DB-Fehler: $err';
         } else if (err.contains('null value') || err.contains('not-null')) {
           msg = 'Profil unvollständig. Bitte Profil-Einstellungen prüfen.';
         } else if (err.contains('foreign key') || err.contains('23503')) {
