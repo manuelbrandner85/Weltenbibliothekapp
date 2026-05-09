@@ -170,7 +170,8 @@ INSERT INTO public.moon_rituals (moon_phase, title, description, steps, sort_ord
 2. Ein Bad, ein Spaziergang, ein Tee in Stille.
 3. Offene Frage an dich selbst, vor dem Einschlafen: "Was möchte beim nächsten Neumond durch mich entstehen?"
 4. Traum-Journal bereitlegen — heute könnten besonders klare Träume kommen.',
- 8);
+ 8)
+ON CONFLICT DO NOTHING;
 
 -- ============================================================
 -- Verifikation
