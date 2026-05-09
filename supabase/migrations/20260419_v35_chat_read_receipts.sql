@@ -67,4 +67,7 @@ CREATE POLICY "delete own receipt"
     USING (auth.uid() = user_id);
 
 -- Realtime aktivieren, damit Clients Receipts live sehen
-ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_read_receipts;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname='supabase_realtime' AND tablename='chat_read_receipts') THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_read_receipts; END IF;
+END $$;

@@ -484,9 +484,18 @@ CREATE POLICY "media_owner_delete"   ON storage.objects FOR DELETE USING (bucket
 -- ============================================================
 -- REALTIME AKTIVIEREN
 -- ============================================================
-ALTER PUBLICATION supabase_realtime ADD TABLE chat_messages;
-ALTER PUBLICATION supabase_realtime ADD TABLE notifications;
-ALTER PUBLICATION supabase_realtime ADD TABLE voice_participants;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname='supabase_realtime' AND tablename='chat_messages') THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE chat_messages; END IF;
+END $$;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname='supabase_realtime' AND tablename='notifications') THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE notifications; END IF;
+END $$;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname='supabase_realtime' AND tablename='voice_participants') THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE voice_participants; END IF;
+END $$;
 
 -- ============================================================
 -- TRIGGER: Auto-Profile bei Registration
