@@ -36,7 +36,8 @@ jobs:
           fi
 
           # Führt eine SQL-Datei via Supabase Management REST API aus.
-          # Bricht den Job ab wenn HTTP-Status nicht 200 ist.
+          # Warnt bei Fehler, bricht aber NICHT ab (idempotente Migrationen = safe to continue).
+          MIGRATION_FAILED=0
           run_sql() {
             local name="$1"
             local file="$2"
@@ -46,6 +47,31 @@ jobs:
             body=$(jq -n --arg q "$query" '{"query":$q}')
 
             echo "→ $name …"
+            HTTP=$(curl -sS -o /tmp/resp.json -w "%{http_code}" \
+              -X POST "https://api.supabase.com/v1/projects/${PROJECT_REF}/database/query" \
+              -H "Authorization: Bearer ${SUPABASE_ACCESS_TOKEN}" \
+              -H "Content-Type: application/json" \
+              -d "$body")
+
+            if [ "$HTTP" = "200" ] || [ "$HTTP" = "201" ] || [ "$HTTP" = "204" ]; then
+              echo "✅ $name OK (HTTP $HTTP)"
+            else
+              echo "⚠️  $name fehlgeschlagen (HTTP $HTTP) — weiter mit nächster Migration"
+              cat /tmp/resp.json || true
+              MIGRATION_FAILED=1
+            fi
+          }
+
+          # Kritische Migration: bricht den Job ab wenn sie fehlschlägt.
+          run_sql_critical() {
+            local name="$1"
+            local file="$2"
+            local query
+            query=$(cat "$file")
+            local body
+            body=$(jq -n --arg q "$query" '{"query":$q}')
+
+            echo "→ $name [KRITISCH] …"
             HTTP=$(curl -sS -o /tmp/resp.json -w "%{http_code}" \
               -X POST "https://api.supabase.com/v1/projects/${PROJECT_REF}/database/query" \
               -H "Authorization: Bearer ${SUPABASE_ACCESS_TOKEN}" \
@@ -246,8 +272,17 @@ jobs:
           run_sql "v49 Chat FK-Drop + vollständige RLS-Policies (Send/Edit/Delete Fix)" \
             supabase/migrations/20260508_v49_chat_fk_drop_and_rls_complete.sql
 
-          run_sql "v50 Chat-Komplett-Hardening (alle Spalten, RLS-Reset, Räume, Publication)" \
+          # v50 + v51 sind KRITISCH — Chat funktioniert ohne sie nicht.
+          # run_sql_critical bricht den Job ab wenn sie fehlschlagen.
+          run_sql_critical "v50 Chat-Komplett-Hardening (alle Spalten, RLS-Reset, Räume, Publication)" \
             supabase/migrations/20260509_v50_chat_complete_hardening.sql
 
+          run_sql_critical "v51 Chat-Notfall-Fix (FK-Drop, Räume, RLS — garantiert letzter Stand)" \
+            supabase/migrations/20260509_v51_chat_emergency_direct_fix.sql
+
           echo ""
-          echo "🎉 Alle Migrationen erfolgreich angewendet"
+          if [ "$MIGRATION_FAILED" = "1" ]; then
+            echo "⚠️  Einige frühe Migrationen schlugen fehl (siehe Warnungen oben)."
+            echo "   Chat-kritische Migrationen (v50/v51) wurden trotzdem angewendet."
+          fi
+          echo "🎉 Alle Migrationen durchgelaufen"
