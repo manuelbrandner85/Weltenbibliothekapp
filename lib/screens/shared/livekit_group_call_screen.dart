@@ -69,6 +69,7 @@ class _LiveKitGroupCallScreenState
     extends ConsumerState<LiveKitGroupCallScreen>
     with TickerProviderStateMixin, WidgetsBindingObserver {
   bool _hasJoined = false;
+  String? _lastShownError;
   bool _isLeaving = false;
   bool _captionsEnabled = false;
   // 🎵 B10.1/B10.2: Soundscape + Heilfrequenz
@@ -231,6 +232,25 @@ class _LiveKitGroupCallScreenState
     final state = svc.connectionState;
     final accent = WbDesign.accent(widget.world);
     final bg = WbDesign.background(widget.world);
+
+    // Errors die WÄHREND eines aktiven Anrufs auftreten (Mic-Toggle, Kamera, etc.)
+    // werden nicht durch _StatusView angezeigt — hier per SnackBar nachreichen.
+    final err = svc.errorMessage;
+    if (err != null &&
+        err != _lastShownError &&
+        state == LiveKitConnectionState.connected) {
+      _lastShownError = err;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(err),
+            backgroundColor: const Color(0xFFFF1744),
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      });
+    }
 
     // 📺 B10.3: Im PiP-Modus nur minimale UI anzeigen
     if (_pipActive) {
@@ -411,11 +431,17 @@ class _LiveKitGroupCallScreenState
     switch (state) {
       case LiveKitConnectionState.connecting:
       case LiveKitConnectionState.reconnecting:
+        // L8: Sichtbarer Auto-Reconnect-State mit Retry-Counter
+        final attempt = svc.reconnectAttempt;
+        final isAutoReconnect = svc.isAutoReconnecting && attempt > 0;
+        final title = isAutoReconnect
+            ? 'Verbindung wird wiederhergestellt … (Versuch $attempt/5)'
+            : state == LiveKitConnectionState.reconnecting
+                ? 'Verbindung wird wiederhergestellt …'
+                : 'Verbinde mit dem Anruf …';
         return _StatusView(
           icon: Icons.cell_tower_rounded,
-          title: state == LiveKitConnectionState.reconnecting
-              ? 'Verbindung wird wiederhergestellt …'
-              : 'Verbinde mit dem Anruf …',
+          title: title,
           subtitle: 'Raum: ${_roomDisplayName(widget.roomName)}',
           accent: accent,
           showSpinner: true,

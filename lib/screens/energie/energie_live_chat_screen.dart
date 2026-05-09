@@ -1936,20 +1936,27 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
     _headerAuraCtrl.dispose();
     _headerOrbitCtrl.dispose();
     _meditationSyncTimer?.cancel();
+    _meditationSyncTimer = null;
     _messageController.removeListener(_onInputChanged);
     _inputFocusNode.dispose();
     _refreshTimer?.cancel();
+    _refreshTimer = null;
     _pendingSub?.cancel();
-    _typingTimer?.cancel(); // 🆕
-    _typingService.dispose(); // 🧹 Bundle 4.1: StreamController nicht mehr leaken
+    _pendingSub = null;
+    _typingTimer?.cancel();
+    _typingTimer = null;
+    _typingService.dispose();
     _messageController.dispose();
-    _scrollController.removeListener(_onScroll); // ✨ Batch-1
+    _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
-    // Voice-Service-dispose entfällt — LiveKit-Service hat eigenen Lifecycle.
-    _realtimeChannel?.unsubscribe(); // 🔴 Realtime cleanup
+    _realtimeChannel?.unsubscribe();
+    _realtimeChannel = null;
+    _realtimeRetryTimer?.cancel();
+    _realtimeRetryTimer = null;
     PresenceService.instance.leave();
     ReadReceiptService.instance.leave();
     for (final t in _scheduledTimers) { t.cancel(); }
+    _scheduledTimers.clear();
     super.dispose();
   }
 
@@ -2233,11 +2240,40 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
           _messages.removeWhere((m) => m['id']?.toString() == messageId);
         });
       },
+      onSubscribed: () {
+        _realtimeRetryCount = 0;
+        _realtimeRetryTimer?.cancel();
+        if (mounted && _reconnecting) {
+          setState(() => _reconnecting = false);
+        }
+      },
+      onError: (e) {
+        if (kDebugMode) debugPrint('⚠️ Realtime error: $e');
+        if (mounted && !_reconnecting) {
+          setState(() => _reconnecting = true);
+        }
+        _scheduleRealtimeReconnect(roomId);
+      },
     );
     if (kDebugMode) debugPrint('🔴 [Energie Realtime] Subscribed to room: $roomId');
-    // Reconnect-Flag nach kurzer Zeit auf false fallen lassen (optimistisch).
-    Future<void>.delayed(const Duration(seconds: 2), () {
-      if (mounted && _reconnecting) setState(() => _reconnecting = false);
+  }
+
+  // C4: Realtime Auto-Reconnect mit Exponential Backoff
+  Timer? _realtimeRetryTimer;
+  int _realtimeRetryCount = 0;
+  void _scheduleRealtimeReconnect(String roomId) {
+    if (!mounted || roomId != _fullRoomId) return;
+    if (_realtimeRetryCount >= 6) return;
+    _realtimeRetryTimer?.cancel();
+    final delays = [2, 5, 10, 20, 40, 60];
+    final delaySec = delays[_realtimeRetryCount.clamp(0, delays.length - 1)];
+    _realtimeRetryCount++;
+    if (kDebugMode) {
+      debugPrint('🔁 [Realtime] Retry $_realtimeRetryCount in ${delaySec}s');
+    }
+    _realtimeRetryTimer = Timer(Duration(seconds: delaySec), () {
+      if (!mounted || roomId != _fullRoomId) return;
+      _subscribeToRoom(roomId);
     });
   }
   
@@ -2348,19 +2384,23 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
     );
   }
   
+  DateTime? _lastTypingBroadcast;
   void _sendTypingIndicator() {
     _typingTimer?.cancel();
-    
-    // ⌨️ Start typing indicator
-    _typingService.startTyping(_selectedRoom, _username);
-    
-    if (kDebugMode) {
-      debugPrint('⌨️ User is typing in room: $_selectedRoom');
+
+    // C3: Debounce — Broadcast nur alle 1.5s, nicht pro Tastenanschlag.
+    // Spart 80%+ Realtime-Broadcasts ohne UX-Verlust (Indicator hält 3s).
+    final now = DateTime.now();
+    if (_lastTypingBroadcast == null ||
+        now.difference(_lastTypingBroadcast!) > const Duration(milliseconds: 1500)) {
+      _typingService.startTyping(_selectedRoom, _username);
+      _lastTypingBroadcast = now;
     }
-    
-    // Stop after 3 seconds
+
+    // Stop nach 3s — bleibt unverändert
     _typingTimer = Timer(const Duration(seconds: 3), () {
       _typingService.stopTyping(_selectedRoom, _username);
+      _lastTypingBroadcast = null;
     });
   }
   

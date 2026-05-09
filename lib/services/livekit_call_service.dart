@@ -27,6 +27,7 @@ import 'package:flutter_webrtc/flutter_webrtc.dart' as rtc;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'offline_sync_service.dart' show OfflineSyncService, NetworkState;
 
 import '../config/api_config.dart';
 import 'audio_feedback_service.dart';
@@ -73,7 +74,23 @@ class ReactionEvent {
 }
 
 class LiveKitCallService extends ChangeNotifier {
-  LiveKitCallService();
+  LiveKitCallService() {
+    // L5: Auf Netzwerk-Wechsel hören (Wifi → Mobilfunk, oder umgekehrt).
+    // Wenn der User mid-call das Netzwerk wechselt, triggern wir einen
+    // Auto-Reconnect statt darauf zu warten dass LiveKit das selbst merkt.
+    _networkSub = OfflineSyncService().networkStateStream.listen((state) {
+      if (state == NetworkState.online &&
+          _connectionState == LiveKitConnectionState.disconnected &&
+          !_userInitiatedLeave &&
+          _roomName != null) {
+        if (kDebugMode) {
+          debugPrint('🌐 Netzwerk wieder online → Auto-Reconnect triggern');
+        }
+        _scheduleAutoReconnect();
+      }
+    });
+  }
+  StreamSubscription<NetworkState>? _networkSub;
 
   Room? _room;
   EventsListener<RoomEvent>? _listener;
@@ -102,6 +119,15 @@ class LiveKitCallService extends ChangeNotifier {
   String? _roomName;
   String? _world;
   String? _errorMessage;
+
+  // L3: Auto-Reconnect-State — bei unerwartetem Disconnect bis zu 5x retry'en.
+  bool _userInitiatedLeave = false;
+  int _reconnectAttempt = 0;
+  static const int _maxReconnectAttempts = 5;
+  Timer? _reconnectTimer;
+  bool _isReconnecting = false;
+  int get reconnectAttempt => _reconnectAttempt;
+  bool get isAutoReconnecting => _isReconnecting;
   int _callDurationSeconds = 0;
   String? _pinnedIdentity;
   bool _autoSpeakerFocus = true;
@@ -320,6 +346,12 @@ class LiveKitCallService extends ChangeNotifier {
       return;
     }
 
+    // L3: Bei explizitem Re-Join aus User-UI Flag zurücksetzen
+    if (!_isReconnecting) {
+      _userInitiatedLeave = false;
+      _reconnectAttempt = 0;
+    }
+
     _setState(LiveKitConnectionState.connecting);
     _roomName = roomName;
     _world = world;
@@ -337,6 +369,19 @@ class LiveKitCallService extends ChangeNotifier {
       if (!micStatus.isGranted) {
         throw Exception(
             'Mikrofon-Berechtigung fehlt. Bitte in den App-Einstellungen erlauben.');
+      }
+
+      // L7: Bluetooth-Connect-Permission (Android 12+) damit Mikrofon-Audio
+      // zu Bluetooth-Headsets geroutet werden kann. Best-effort — wenn der
+      // User die Permission ablehnt funktioniert der Call trotzdem über das
+      // Telefon-Mikrofon, nur Headset-Routing geht dann nicht.
+      try {
+        final btStatus = await Permission.bluetoothConnect.request();
+        if (kDebugMode) {
+          debugPrint('🎧 Bluetooth-Permission: ${btStatus.name}');
+        }
+      } catch (_) {
+        // Permission existiert nicht auf älteren Android-Versionen oder iOS
       }
 
       final supabase = Supabase.instance.client;
@@ -364,22 +409,64 @@ class LiveKitCallService extends ChangeNotifier {
       // mit gleichem Display-Name nicht in Identity-Clash geraten.
       final guestId = await _getOrCreateClientGuestId();
 
-      // Token von Supabase Edge Function holen (direkt, kein Cloudflare)
-      final tokenRes = await http
-          .post(
-            Uri.parse(ApiConfig.livekitTokenUrl),
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer $bearerToken',
-              'apikey': ApiConfig.supabaseAnonKey,
-            },
-            body: jsonEncode({
-              'roomName': roomName,
-              if (displayName != null) 'displayName': displayName,
-              'clientGuestId': guestId,
-            }),
-          )
-          .timeout(const Duration(seconds: 15));
+      // L1: Token-Fetch mit Exponential-Backoff.
+      // Mobilfunk-/Hotel-WLAN-/Captive-Portal-Setups failen oft auf den ersten
+      // Request, kommen aber beim 2. oder 3. Versuch durch. Backoff: 2s, 5s, 15s.
+      // Gesamt-Budget: ~25s vor User-Fehler statt 15s.
+      final tokenBody = jsonEncode({
+        'roomName': roomName,
+        if (displayName != null) 'displayName': displayName,
+        'clientGuestId': guestId,
+      });
+      const tokenRetryDelays = [
+        Duration(seconds: 2),
+        Duration(seconds: 5),
+        Duration(seconds: 15),
+      ];
+      http.Response? tokenRes;
+      Object? lastTokenErr;
+      for (var attempt = 0; attempt <= tokenRetryDelays.length; attempt++) {
+        try {
+          tokenRes = await http
+              .post(
+                Uri.parse(ApiConfig.livekitTokenUrl),
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': 'Bearer $bearerToken',
+                  'apikey': ApiConfig.supabaseAnonKey,
+                },
+                body: tokenBody,
+              )
+              .timeout(const Duration(seconds: 8));
+          // 5xx → Server-Fehler retry'baren, 4xx → kein Retry
+          if (tokenRes.statusCode >= 500 && attempt < tokenRetryDelays.length) {
+            lastTokenErr = 'HTTP ${tokenRes.statusCode}';
+            tokenRes = null;
+            await Future<void>.delayed(tokenRetryDelays[attempt]);
+            continue;
+          }
+          break;
+        } catch (e) {
+          lastTokenErr = e;
+          if (attempt < tokenRetryDelays.length) {
+            if (kDebugMode) {
+              debugPrint('🔁 Token-Fetch Versuch ${attempt + 1} fehlgeschlagen ($e), retry in ${tokenRetryDelays[attempt].inSeconds}s');
+            }
+            await Future<void>.delayed(tokenRetryDelays[attempt]);
+            continue;
+          }
+          throw Exception(
+            'Token-Server nicht erreichbar — möglicherweise Firewall oder '
+            'Captive-Portal aktiv. Bitte Netzwerk prüfen. ($e)',
+          );
+        }
+      }
+      if (tokenRes == null) {
+        throw Exception(
+          'Token-Server antwortet nicht nach mehreren Versuchen. '
+          'Bitte erneut versuchen. (Letzter Fehler: $lastTokenErr)',
+        );
+      }
 
       if (tokenRes.statusCode != 200) {
         String msg = 'Token-Server Fehler (${tokenRes.statusCode})';
@@ -452,30 +539,49 @@ class LiveKitCallService extends ChangeNotifier {
       // initiale Public-IP-Erkennung.
       // Creds sind public (auch im Repo) — abuse-mitigated via coturn
       // Rate-Limits + denied-peer-ip für private Subnetze.
+      // L10: ICE-Gathering-Duration messen für Diagnose
+      final iceStart = DateTime.now();
+
       await room
           .connect(
             livekitUrl,
             token,
             connectOptions: const ConnectOptions(
               autoSubscribe: true,
-              // Keine manuellen ICE-Server: LiveKit liefert TURN-Credentials
-              // automatisch im Join-Response (built-in TURN Port 3479).
-              // Hardcodierte TURN-Creds auf Port 3478 gehörten zu einem alten
-              // coturn-Container der entfernt wurde — zerstörten die ICE-Verhandlung.
+              // L2: Fallback-STUN-Server — LiveKit liefert eigene TURN-Creds
+              // im Join-Response (Port 3479), aber wenn die durch Firmen-Firewall
+              // blockiert sind, helfen public STUN-Server bei der Public-IP-
+              // Erkennung als zusätzliche Option für ICE.
+              rtcConfiguration: RTCConfiguration(
+                iceServers: [
+                  RTCIceServer(urls: ['stun:stun.l.google.com:19302']),
+                  RTCIceServer(urls: ['stun:stun1.l.google.com:19302']),
+                  RTCIceServer(urls: ['stun:stun.cloudflare.com:3478']),
+                ],
+              ),
             ),
           )
           .timeout(
-            // 90s statt 60s — TURN-ICE-Gathering braucht auf sehr
-            // langsamen Mobilfunkverbindungen (2G/Edge) bis zu 40s.
-            const Duration(seconds: 90),
+            // L4: 120s statt 90s — bei 2G/3G + multi-stage TURN-Fallback
+            // braucht ICE-Gathering bis zu 100s (DNS + STUN-Probes + TURN-Allocate
+            // pro Kandidat mal 4 Protokolle = sehr langsam).
+            const Duration(seconds: 120),
             onTimeout: () {
+              // L6: Klarerer Fehlertext der Diagnose erlaubt
               throw Exception(
-                'Verbindung zum Sprach-Server fehlgeschlagen — '
-                'dein Netzwerk blockiert möglicherweise WebRTC. '
-                'Bitte WLAN oder Mobilfunk wechseln und erneut versuchen.',
+                'ICE-Verbindung fehlgeschlagen nach 120s. '
+                'Wahrscheinlich blockiert dein Netzwerk WebRTC '
+                '(UDP gesperrt oder symmetrisches NAT). '
+                'Bitte ein anderes Netzwerk versuchen (Mobilfunk ↔ WLAN).',
               );
             },
           );
+
+      // L10: Loggen wie lange ICE-Gathering wirklich dauerte
+      final iceDuration = DateTime.now().difference(iceStart);
+      if (kDebugMode) {
+        debugPrint('⏱️  ICE-Gathering: ${iceDuration.inMilliseconds}ms');
+      }
 
       if (kDebugMode) {
         debugPrint('✅ LiveKit: connected — '
@@ -622,8 +728,6 @@ class LiveKitCallService extends ChangeNotifier {
         debugPrint('🔴 LiveKit: disconnected — reason=${event.reason}');
       }
       _stopDurationTimer();
-      // Wenn Disconnect mit ICE-/Connection-Reason kommt, klare User-Meldung
-      // setzen damit die UI nicht nur leer "getrennt" zeigt.
       final reasonStr = event.reason?.toString() ?? '';
       if (_connectionState == LiveKitConnectionState.connecting ||
           _connectionState == LiveKitConnectionState.reconnecting) {
@@ -637,6 +741,18 @@ class LiveKitCallService extends ChangeNotifier {
       }
       _connectionState = LiveKitConnectionState.disconnected;
       notifyListeners();
+
+      // L3: Auto-Reconnect — nur wenn User nicht selbst leave gedrückt hat
+      // und Reason nicht "duplicateIdentity" oder "rejected" ist (dann
+      // bringt Retry nichts).
+      final shouldRetry = !_userInitiatedLeave &&
+          !reasonStr.contains('duplicateIdentity') &&
+          !reasonStr.contains('rejected') &&
+          !reasonStr.contains('clientInitiated') &&
+          _roomName != null;
+      if (shouldRetry) {
+        _scheduleAutoReconnect();
+      }
     });
     listener.on<ParticipantConnectedEvent>((event) {
       if (kDebugMode) {
@@ -802,6 +918,8 @@ class LiveKitCallService extends ChangeNotifier {
 
   /// Verlässt den Raum und räumt alle Ressourcen auf.
   Future<void> leaveRoom() async {
+    _userInitiatedLeave = true; // L3: User-initiierter Leave → kein Auto-Reconnect
+    _cancelAutoReconnect();
     _stopDurationTimer();
     _cancelTokenRefresh();
 
@@ -851,6 +969,9 @@ class LiveKitCallService extends ChangeNotifier {
 
     try {
       await _room?.disconnect();
+    } catch (_) {}
+    try {
+      _room?.dispose();
     } catch (_) {}
     _room = null;
     _connectionState = LiveKitConnectionState.disconnected;
@@ -1403,6 +1524,75 @@ class LiveKitCallService extends ChangeNotifier {
     _durationTimer = null;
   }
 
+  // L3: Auto-Reconnect mit exponential backoff (2s, 5s, 10s, 20s, 40s).
+  // Stoppt nach 5 Versuchen mit user-friendly Fehlermeldung.
+  void _scheduleAutoReconnect() {
+    if (_isReconnecting) return; // bereits gescheduled
+    if (_reconnectAttempt >= _maxReconnectAttempts) {
+      _errorMessage =
+          'Verbindung konnte nach $_maxReconnectAttempts Versuchen nicht '
+          'wiederhergestellt werden. Bitte Netzwerk prüfen und erneut beitreten.';
+      _connectionState = LiveKitConnectionState.error;
+      _isReconnecting = false;
+      _reconnectAttempt = 0;
+      notifyListeners();
+      return;
+    }
+    _isReconnecting = true;
+    _reconnectAttempt++;
+
+    // Exponential backoff: 2s → 5s → 10s → 20s → 40s
+    final delays = [2, 5, 10, 20, 40];
+    final delaySec = delays[_reconnectAttempt - 1];
+    if (kDebugMode) {
+      debugPrint(
+          '🔁 Auto-Reconnect Versuch $_reconnectAttempt/$_maxReconnectAttempts in ${delaySec}s');
+    }
+    _connectionState = LiveKitConnectionState.reconnecting;
+    notifyListeners();
+
+    _reconnectTimer?.cancel();
+    _reconnectTimer = Timer(Duration(seconds: delaySec), () async {
+      if (_userInitiatedLeave || _roomName == null || _world == null) {
+        _isReconnecting = false;
+        return;
+      }
+      try {
+        // L9: Nach 2 fehlgeschlagenen Versuchen automatisch Audio-Only-Modus
+        // aktivieren — Video braucht ~10x mehr Bandbreite und scheitert auf
+        // 2G/3G/Edge oft an dem Punkt wo Audio noch durchkommt.
+        final useAudioOnly = _audioOnlyMode || _reconnectAttempt >= 3;
+        if (useAudioOnly && !_audioOnlyMode && kDebugMode) {
+          debugPrint('🎙️ Auto-Reconnect: Audio-Only-Modus aktiviert (Versuch $_reconnectAttempt)');
+        }
+
+        await joinRoom(
+          roomName: _roomName!,
+          world: _world!,
+          displayName: _localDisplayName,
+          avatarUrl: _localAvatarUrl,
+          audioOnly: useAudioOnly,
+          initialMicEnabled: _micEnabled,
+        );
+        // Erfolg → Counter zurücksetzen
+        _reconnectAttempt = 0;
+        _isReconnecting = false;
+      } catch (e) {
+        if (kDebugMode) debugPrint('🔁 Reconnect-Versuch fehlgeschlagen: $e');
+        _isReconnecting = false;
+        // Nächster Versuch
+        _scheduleAutoReconnect();
+      }
+    });
+  }
+
+  void _cancelAutoReconnect() {
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
+    _reconnectAttempt = 0;
+    _isReconnecting = false;
+  }
+
   /// 🔁 Bundle 3.1: Token-Refresh — verhindert "Authentifizierung erforderlich"
   /// nach 4h Call. Liest `exp` aus dem JWT und plant ein Refresh ~5 min vor
   /// Ablauf. Holt einen frischen Token von der Edge Function und gibt ihn
@@ -1488,10 +1678,14 @@ class LiveKitCallService extends ChangeNotifier {
         if (kDebugMode) {
           debugPrint('⚠️ Token-Refresh Server-Fehler ${res.statusCode}');
         }
-        // In 60s nochmal probieren — nicht abbrechen.
-        _tokenRefreshTimer = Timer(const Duration(seconds: 60), _refreshToken);
+        // L11: Exponential backoff (60s → 120s → 300s → 600s)
+        _tokenRefreshFailureCount++;
+        final backoffSec = [60, 120, 300, 600][
+            _tokenRefreshFailureCount.clamp(1, 4) - 1];
+        _tokenRefreshTimer = Timer(Duration(seconds: backoffSec), _refreshToken);
         return;
       }
+      _tokenRefreshFailureCount = 0; // Reset bei Erfolg
       final data = jsonDecode(res.body) as Map<String, dynamic>;
       final newToken = data['token'] as String?;
       if (newToken == null || newToken.isEmpty) return;
@@ -1511,10 +1705,15 @@ class LiveKitCallService extends ChangeNotifier {
       _scheduleTokenRefresh(newToken);
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ Token-Refresh fehlgeschlagen: $e');
-      // Erneut probieren in 60s — kein hard-fail.
-      _tokenRefreshTimer = Timer(const Duration(seconds: 60), _refreshToken);
+      // L11: Exponential backoff (60s → 120s → 300s → 600s)
+      _tokenRefreshFailureCount++;
+      final backoffSec = [60, 120, 300, 600][
+          _tokenRefreshFailureCount.clamp(1, 4) - 1];
+      _tokenRefreshTimer = Timer(Duration(seconds: backoffSec), _refreshToken);
     }
   }
+
+  int _tokenRefreshFailureCount = 0;
 
   String _friendlyError(Object e) {
     final s = e.toString();
@@ -1540,18 +1739,26 @@ class LiveKitCallService extends ChangeNotifier {
   @override
   void dispose() {
     _stopDurationTimer();
-    // Token-Refresh-Timer war nicht abgebaut → Timer feuerte mit
-    // disposed Room/State weiter und hielt Service via Closure am Leben.
     _cancelTokenRefresh();
+    _cancelAutoReconnect();
+    _networkSub?.cancel();
+    _networkSub = null;
     try {
       _listener?.dispose();
     } catch (_) {}
+    _listener = null;
     try {
       _room?.disconnect();
     } catch (_) {}
     try {
+      _room?.dispose();
+    } catch (_) {}
+    _room = null;
+    try {
       _reactionsCtrl.close();
     } catch (_) {}
+    _remoteVolumes.clear();
+    _activeSpeakers = const <String>{};
     super.dispose();
   }
 

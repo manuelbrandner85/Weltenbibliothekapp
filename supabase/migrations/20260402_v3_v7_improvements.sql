@@ -130,6 +130,7 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 DROP TRIGGER IF EXISTS on_like_notify ON likes;
+DROP TRIGGER IF EXISTS on_like_notify ON public.likes;
 CREATE TRIGGER on_like_notify
   AFTER INSERT ON likes
   FOR EACH ROW EXECUTE FUNCTION notify_on_like();
@@ -156,6 +157,7 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 DROP TRIGGER IF EXISTS on_comment_notify ON comments;
+DROP TRIGGER IF EXISTS on_comment_notify ON public.comments;
 CREATE TRIGGER on_comment_notify
   AFTER INSERT ON comments
   FOR EACH ROW EXECUTE FUNCTION notify_on_comment();
