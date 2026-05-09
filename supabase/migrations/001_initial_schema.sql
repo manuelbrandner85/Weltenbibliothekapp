@@ -203,6 +203,10 @@ CREATE TABLE IF NOT EXISTS public.articles (
   updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- Spalten nachrüsten falls Tabelle bereits ohne sie existiert (Idempotenz)
+ALTER TABLE public.articles ADD COLUMN IF NOT EXISTS published_at TIMESTAMPTZ;
+ALTER TABLE public.articles ADD COLUMN IF NOT EXISTS is_published BOOLEAN NOT NULL DEFAULT FALSE;
+
 CREATE INDEX IF NOT EXISTS articles_world_idx    ON public.articles(world);
 CREATE INDEX IF NOT EXISTS articles_category_idx ON public.articles(category);
 CREATE INDEX IF NOT EXISTS articles_published_idx ON public.articles(is_published, published_at DESC);
