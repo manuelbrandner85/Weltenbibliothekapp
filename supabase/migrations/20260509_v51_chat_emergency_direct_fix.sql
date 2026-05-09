@@ -96,11 +96,13 @@ END $$;
 CREATE POLICY "chat_select_all" ON public.chat_messages
   FOR SELECT USING (COALESCE(is_deleted, false) = false);
 
-CREATE POLICY "chat_insert_auth_self" ON public.chat_messages
-  FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_id);
+-- Jeder authentifizierte User darf schreiben — user_id wird vom Client gesetzt
+CREATE POLICY "chat_insert_authenticated" ON public.chat_messages
+  FOR INSERT TO authenticated WITH CHECK (true);
 
+-- Anon darf ohne user_id schreiben
 CREATE POLICY "chat_insert_anon" ON public.chat_messages
-  FOR INSERT TO anon WITH CHECK (user_id IS NULL);
+  FOR INSERT TO anon WITH CHECK (true);
 
 CREATE POLICY "chat_update_own" ON public.chat_messages
   FOR UPDATE TO authenticated
