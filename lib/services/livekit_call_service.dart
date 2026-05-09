@@ -1559,7 +1559,7 @@ class LiveKitCallService extends ChangeNotifier {
       _reactionsCtrl.close();
     } catch (_) {}
     _remoteVolumes.clear();
-    _activeSpeakers = const {};
+    _activeSpeakers = const <String>{};
     super.dispose();
   }
 
