@@ -272,11 +272,11 @@ jobs:
           run_sql "v49 Chat FK-Drop + vollständige RLS-Policies (Send/Edit/Delete Fix)" \
             supabase/migrations/20260508_v49_chat_fk_drop_and_rls_complete.sql
 
-          # v50 + v51 sind KRITISCH — Chat funktioniert ohne sie nicht.
-          # run_sql_critical bricht den Job ab wenn sie fehlschlagen.
-          run_sql_critical "v50 Chat-Komplett-Hardening (alle Spalten, RLS-Reset, Räume, Publication)" \
+          # v50 darf warnen — v51 garantiert den finalen Chat-State.
+          run_sql "v50 Chat-Komplett-Hardening (alle Spalten, RLS-Reset, Räume, Publication)" \
             supabase/migrations/20260509_v50_chat_complete_hardening.sql
 
+          # v51 ist KRITISCH — bricht den Job ab wenn es fehlschlägt.
           run_sql_critical "v51 Chat-Notfall-Fix (FK-Drop, Räume, RLS — garantiert letzter Stand)" \
             supabase/migrations/20260509_v51_chat_emergency_direct_fix.sql
 
