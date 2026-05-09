@@ -3,10 +3,24 @@
 -- ============================================================
 
 -- Enable realtime for chat_messages (live chat)
-ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime' AND tablename = 'chat_messages'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.chat_messages;
+  END IF;
+END $$;
 
 -- Enable realtime for notifications
-ALTER PUBLICATION supabase_realtime ADD TABLE public.notifications;
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime' AND tablename = 'notifications'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.notifications;
+  END IF;
+END $$;
 
 -- Message count trigger for chat_rooms
 CREATE OR REPLACE FUNCTION public.update_room_message_count()

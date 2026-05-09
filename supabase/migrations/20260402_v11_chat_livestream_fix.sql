@@ -65,7 +65,10 @@ CREATE POLICY "chat_messages_update" ON chat_messages
 
 -- Stelle sicher, dass Realtime für chat_messages aktiviert ist
 -- (wichtig: muss auch im Supabase Dashboard unter Realtime → Tables aktiviert sein!)
-ALTER PUBLICATION supabase_realtime ADD TABLE chat_messages;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname='supabase_realtime' AND tablename='chat_messages') THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE chat_messages; END IF;
+END $$;
 
 -- ============================================================
 -- 4. INDEX FÜR PERFORMANCE

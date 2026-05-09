@@ -841,12 +841,20 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
         final err = e.toString();
         if (err.contains('Nicht eingeloggt')) {
           msg = 'Bitte Profil anlegen oder erneut versuchen.';
-        } else if (err.contains('permission denied') || err.contains('42501')) {
-          msg = 'Keine Berechtigung – bitte App neu starten.';
-        } else if (err.contains('violates row-level security')) {
-          msg = 'Datenbank-Fehler – bitte App neu starten.';
+        } else if (err.contains('permission denied') || err.contains('42501')
+            || err.contains('violates row-level security')) {
+          msg = 'Keine Berechtigung. Bitte ausloggen + neu anmelden.';
+        } else if (err.contains('null value') || err.contains('not-null')) {
+          msg = 'Profil unvollständig. Bitte Profil-Einstellungen prüfen.';
+        } else if (err.contains('foreign key') || err.contains('23503')) {
+          msg = 'Raum nicht verfügbar. Bitte App neu starten.';
+        } else if (err.contains('SocketException') || err.contains('Failed host')
+            || err.contains('TimeoutException')) {
+          msg = 'Keine Verbindung. Bitte Netzwerk prüfen.';
         } else {
-          msg = 'Nachricht konnte nicht gesendet werden.';
+          // Echten Fehler (gekürzt) zeigen damit Probleme diagnostiziert werden können
+          final short = err.length > 80 ? '${err.substring(0, 80)}…' : err;
+          msg = 'Senden fehlgeschlagen: $short';
         }
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

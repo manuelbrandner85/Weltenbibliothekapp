@@ -160,4 +160,7 @@ CREATE TRIGGER chat_message_push_trigger
 -- ── 7. Realtime für chat_messages UPDATE aktivieren ───────────────
 -- (für read_by-Änderungen via Realtime zu empfangen)
 
-ALTER PUBLICATION supabase_realtime ADD TABLE chat_messages;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname='supabase_realtime' AND tablename='chat_messages') THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE chat_messages; END IF;
+END $$;

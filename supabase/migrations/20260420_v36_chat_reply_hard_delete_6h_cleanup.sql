@@ -31,8 +31,7 @@ CREATE POLICY "User kann eigene Nachrichten löschen" ON chat_messages
 
 -- 3) Realtime: DELETE-Events liefern, damit andere Clients die Message
 --    sofort aus ihrer In-Memory-Liste entfernen können.
-ALTER PUBLICATION supabase_realtime ADD TABLE chat_messages;
--- Idempotent: falls schon drin → no-op error, ignoriert in DO-Block:
+-- Idempotent: ALTER PUBLICATION nur wenn noch nicht enthalten
 DO $$
 BEGIN
   EXECUTE 'ALTER TABLE chat_messages REPLICA IDENTITY FULL';
