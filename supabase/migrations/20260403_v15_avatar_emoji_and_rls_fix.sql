@@ -11,10 +11,12 @@ ALTER TABLE chat_messages
 ALTER TABLE profiles 
   ADD COLUMN IF NOT EXISTS avatar_emoji TEXT DEFAULT NULL;
 
--- 3. Role Constraint erweitern: root_admin und content_editor erlauben
+-- 3. Role Constraint erweitern: alle je genutzten Rollen erlauben
+-- (weit gefasst damit idempotente Re-Runs nicht an bestehenden Daten scheitern)
 ALTER TABLE profiles DROP CONSTRAINT IF EXISTS profiles_role_check;
-ALTER TABLE profiles ADD CONSTRAINT profiles_role_check 
-  CHECK (role = ANY (ARRAY['user', 'moderator', 'admin', 'root_admin', 'content_editor']));
+ALTER TABLE profiles ADD CONSTRAINT profiles_role_check
+  CHECK (role = ANY (ARRAY['user', 'mod', 'moderator', 'admin', 'root_admin', 'root-admin',
+                            'content_editor', 'system', 'superadmin', 'root']));
 
 -- 4. Performance-Indizes für Chat
 CREATE INDEX IF NOT EXISTS idx_chat_messages_room_created 
