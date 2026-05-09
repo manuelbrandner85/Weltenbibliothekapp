@@ -58,10 +58,12 @@ CREATE OR REPLACE TRIGGER on_auth_user_created
 -- RLS
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "profiles_public_read" ON public.profiles;
 CREATE POLICY "profiles_public_read"
   ON public.profiles FOR SELECT TO authenticated, anon
   USING (true);
 
+DROP POLICY IF EXISTS "profiles_own_update" ON public.profiles;
 CREATE POLICY "profiles_own_update"
   ON public.profiles FOR UPDATE TO authenticated
   USING (auth.uid() = id);
@@ -85,6 +87,7 @@ CREATE TABLE IF NOT EXISTS public.chat_rooms (
 
 ALTER TABLE public.chat_rooms ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "chat_rooms_public_read" ON public.chat_rooms;
 CREATE POLICY "chat_rooms_public_read"
   ON public.chat_rooms FOR SELECT TO authenticated, anon
   USING (is_active = true);
@@ -130,18 +133,22 @@ CREATE INDEX IF NOT EXISTS chat_messages_created_at_idx ON public.chat_messages(
 
 ALTER TABLE public.chat_messages ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "chat_messages_authenticated_read" ON public.chat_messages;
 CREATE POLICY "chat_messages_authenticated_read"
   ON public.chat_messages FOR SELECT TO authenticated
   USING (deleted_at IS NULL);
 
+DROP POLICY IF EXISTS "chat_messages_own_insert" ON public.chat_messages;
 CREATE POLICY "chat_messages_own_insert"
   ON public.chat_messages FOR INSERT TO authenticated
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "chat_messages_own_update" ON public.chat_messages;
 CREATE POLICY "chat_messages_own_update"
   ON public.chat_messages FOR UPDATE TO authenticated
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "chat_messages_moderator_delete" ON public.chat_messages;
 CREATE POLICY "chat_messages_moderator_delete"
   ON public.chat_messages FOR UPDATE TO authenticated
   USING (
@@ -173,10 +180,12 @@ CREATE INDEX IF NOT EXISTS research_results_world_idx ON public.research_results
 
 ALTER TABLE public.research_results ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "research_results_public_read" ON public.research_results;
 CREATE POLICY "research_results_public_read"
   ON public.research_results FOR SELECT TO authenticated, anon
   USING (true);
 
+DROP POLICY IF EXISTS "research_results_authenticated_insert" ON public.research_results;
 CREATE POLICY "research_results_authenticated_insert"
   ON public.research_results FOR INSERT TO authenticated
   WITH CHECK (true);
@@ -214,10 +223,12 @@ CREATE INDEX IF NOT EXISTS articles_slug_idx     ON public.articles(slug);
 
 ALTER TABLE public.articles ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "articles_public_read" ON public.articles;
 CREATE POLICY "articles_public_read"
   ON public.articles FOR SELECT TO authenticated, anon
   USING (is_published = true);
 
+DROP POLICY IF EXISTS "articles_admin_all" ON public.articles;
 CREATE POLICY "articles_admin_all"
   ON public.articles FOR ALL TO authenticated
   USING (
@@ -245,10 +256,12 @@ CREATE INDEX IF NOT EXISTS notifications_user_id_idx ON public.notifications(use
 
 ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "notifications_own_read" ON public.notifications;
 CREATE POLICY "notifications_own_read"
   ON public.notifications FOR SELECT TO authenticated
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "notifications_own_update" ON public.notifications;
 CREATE POLICY "notifications_own_update"
   ON public.notifications FOR UPDATE TO authenticated
   USING (auth.uid() = user_id);

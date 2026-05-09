@@ -43,7 +43,8 @@ DO $d$ BEGIN
     WHERE tablename = 'notification_queue'
       AND policyname = 'Users read own notifications'
   ) THEN
-    CREATE POLICY "Users read own notifications"
+    DROP POLICY IF EXISTS "Users read own notifications" ON public.notification_queue;
+CREATE POLICY "Users read own notifications"
       ON public.notification_queue FOR SELECT
       USING (auth.uid() = user_id);
   END IF;

@@ -66,14 +66,17 @@ ALTER TABLE public.moon_journal      ENABLE ROW LEVEL SECURITY;
 
 -- 6. Policies (idempotent) --------------------------------------
 DROP POLICY IF EXISTS "Mondkalender öffentlich"         ON public.moon_calendar;
+DROP POLICY IF EXISTS "Mondkalender öffentlich" ON public.moon_calendar;
 CREATE POLICY "Mondkalender öffentlich" ON public.moon_calendar
   FOR SELECT TO anon, authenticated USING (true);
 
 DROP POLICY IF EXISTS "Rituale öffentlich"              ON public.moon_rituals;
+DROP POLICY IF EXISTS "Rituale öffentlich" ON public.moon_rituals;
 CREATE POLICY "Rituale öffentlich" ON public.moon_rituals
   FOR SELECT TO anon, authenticated USING (true);
 
 DROP POLICY IF EXISTS "User sieht eigene Intentionen"   ON public.moon_intentions;
+DROP POLICY IF EXISTS "User sieht eigene Intentionen" ON public.moon_intentions;
 CREATE POLICY "User sieht eigene Intentionen" ON public.moon_intentions
   FOR ALL TO authenticated
   USING (auth.uid() = user_id)

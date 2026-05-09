@@ -44,23 +44,27 @@ DROP POLICY IF EXISTS "update own receipt"     ON public.chat_read_receipts;
 DROP POLICY IF EXISTS "delete own receipt"     ON public.chat_read_receipts;
 
 -- Jede:r darf receipts lesen (zum Rendern des „Gelesen von N")
+DROP POLICY IF EXISTS "read all receipts" ON public.chat_read_receipts;
 CREATE POLICY "read all receipts"
     ON public.chat_read_receipts
     FOR SELECT
     USING (true);
 
 -- Nur der eigene User darf eigene Receipts schreiben
+DROP POLICY IF EXISTS "upsert own receipt" ON public.chat_read_receipts;
 CREATE POLICY "upsert own receipt"
     ON public.chat_read_receipts
     FOR INSERT
     WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "update own receipt" ON public.chat_read_receipts;
 CREATE POLICY "update own receipt"
     ON public.chat_read_receipts
     FOR UPDATE
     USING (auth.uid() = user_id)
     WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "delete own receipt" ON public.chat_read_receipts;
 CREATE POLICY "delete own receipt"
     ON public.chat_read_receipts
     FOR DELETE

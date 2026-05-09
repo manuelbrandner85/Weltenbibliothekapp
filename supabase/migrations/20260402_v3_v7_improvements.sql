@@ -13,12 +13,14 @@ DROP POLICY IF EXISTS "update own" ON profiles;
 DROP POLICY IF EXISTS "profiles_owner_update" ON profiles;
 DROP POLICY IF EXISTS "profiles_insert_own" ON profiles;
 
+DROP POLICY IF EXISTS "profiles_public_select" ON public.profiles;
 CREATE POLICY "profiles_public_select" ON profiles
   FOR SELECT USING (true);
 
 CREATE POLICY "profiles_owner_update" ON profiles
   FOR UPDATE USING (auth.uid() = id);
 
+DROP POLICY IF EXISTS "profiles_insert_own" ON public.profiles;
 CREATE POLICY "profiles_insert_own" ON profiles
   FOR INSERT WITH CHECK (auth.uid() = id);
 
@@ -33,9 +35,11 @@ DROP POLICY IF EXISTS "chat_messages_soft_delete" ON chat_messages;
 CREATE POLICY "chat_messages_select" ON chat_messages
   FOR SELECT USING (is_deleted = false);
 
+DROP POLICY IF EXISTS "chat_messages_insert" ON public.chat_messages;
 CREATE POLICY "chat_messages_insert" ON chat_messages
   FOR INSERT WITH CHECK (auth.uid() IS NOT NULL AND auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "chat_messages_soft_delete" ON public.chat_messages;
 CREATE POLICY "chat_messages_soft_delete" ON chat_messages
   FOR UPDATE USING (auth.uid() = user_id);
 
@@ -58,15 +62,19 @@ DROP POLICY IF EXISTS "update own" ON articles;
 DROP POLICY IF EXISTS "articles_owner_update" ON articles;
 DROP POLICY IF EXISTS "articles_owner_delete" ON articles;
 
+DROP POLICY IF EXISTS "articles_public_read" ON public.articles;
 CREATE POLICY "articles_public_read" ON articles
   FOR SELECT USING (is_published = true);
 
+DROP POLICY IF EXISTS "articles_auth_insert" ON public.articles;
 CREATE POLICY "articles_auth_insert" ON articles
   FOR INSERT WITH CHECK (auth.uid() IS NOT NULL AND auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "articles_owner_update" ON public.articles;
 CREATE POLICY "articles_owner_update" ON articles
   FOR UPDATE USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "articles_owner_delete" ON public.articles;
 CREATE POLICY "articles_owner_delete" ON articles
   FOR DELETE USING (auth.uid() = user_id);
 
@@ -83,24 +91,31 @@ DROP POLICY IF EXISTS "media_public_read" ON storage.objects;
 DROP POLICY IF EXISTS "media_auth_insert" ON storage.objects;
 DROP POLICY IF EXISTS "media_owner_delete" ON storage.objects;
 
+DROP POLICY IF EXISTS "avatars_public_read" ON public.storage;
 CREATE POLICY "avatars_public_read" ON storage.objects
   FOR SELECT USING (bucket_id = 'avatars');
 
+DROP POLICY IF EXISTS "avatars_auth_insert" ON public.storage;
 CREATE POLICY "avatars_auth_insert" ON storage.objects
   FOR INSERT WITH CHECK (bucket_id = 'avatars' AND auth.uid() IS NOT NULL);
 
+DROP POLICY IF EXISTS "avatars_owner_update" ON public.storage;
 CREATE POLICY "avatars_owner_update" ON storage.objects
   FOR UPDATE USING (bucket_id = 'avatars' AND auth.uid()::text = (storage.foldername(name))[1]);
 
+DROP POLICY IF EXISTS "avatars_owner_delete" ON public.storage;
 CREATE POLICY "avatars_owner_delete" ON storage.objects
   FOR DELETE USING (bucket_id = 'avatars' AND auth.uid()::text = (storage.foldername(name))[1]);
 
+DROP POLICY IF EXISTS "media_public_read" ON public.storage;
 CREATE POLICY "media_public_read" ON storage.objects
   FOR SELECT USING (bucket_id = 'media');
 
+DROP POLICY IF EXISTS "media_auth_insert" ON public.storage;
 CREATE POLICY "media_auth_insert" ON storage.objects
   FOR INSERT WITH CHECK (bucket_id = 'media' AND auth.uid() IS NOT NULL);
 
+DROP POLICY IF EXISTS "media_owner_delete" ON public.storage;
 CREATE POLICY "media_owner_delete" ON storage.objects
   FOR DELETE USING (bucket_id = 'media' AND auth.uid()::text = (storage.foldername(name))[1]);
 
