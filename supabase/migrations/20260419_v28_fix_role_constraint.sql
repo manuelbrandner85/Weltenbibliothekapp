@@ -1,12 +1,15 @@
 -- Migration v28: Fix role constraint to allow root_admin (underscore)
 -- and normalize existing root-admin (dash) values
 
+-- Normalize FIRST (vor dem Constraint-Add, sonst schlägt ADD CONSTRAINT fehl)
+UPDATE profiles SET role = 'root_admin' WHERE role = 'root-admin';
+UPDATE profiles SET role = 'moderator'  WHERE role = 'mod';
+UPDATE profiles SET role = 'user'       WHERE role NOT IN
+  ('user', 'moderator', 'admin', 'root_admin', 'content_editor', 'system');
+
 ALTER TABLE profiles DROP CONSTRAINT IF EXISTS profiles_role_check;
 ALTER TABLE profiles ADD CONSTRAINT profiles_role_check
-  CHECK (role = ANY (ARRAY['user', 'mod', 'moderator', 'admin', 'root_admin', 'content_editor', 'system']));
-
--- Normalize role values: root-admin (dash) → root_admin (underscore)
-UPDATE profiles SET role = 'root_admin' WHERE role = 'root-admin';
+  CHECK (role = ANY (ARRAY['user', 'moderator', 'admin', 'root_admin', 'content_editor', 'system']));
 
 -- Add auto-profile trigger if not exists
 CREATE OR REPLACE FUNCTION public.handle_new_user()

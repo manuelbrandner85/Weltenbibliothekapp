@@ -135,7 +135,8 @@ VALUES
 (7,'Kronenchakra','#E1BEE7','⚪','spirituell',
  'Kein Zugang zu Stille, Gebet oder meditativer Tiefe',2,76),
 (7,'Kronenchakra','#E1BEE7','⚪','spirituell',
- 'Spiritueller Hochmut oder totale Ablehnung des Spirituellen',2,77);
+ 'Spiritueller Hochmut oder totale Ablehnung des Spirituellen',2,77)
+ON CONFLICT DO NOTHING;
 
 -- ============================================================
 -- Verifikation:
