@@ -12,6 +12,9 @@
 import 'package:flutter/material.dart';
  // OpenClaw v2.0
 import '../services/daily_challenges_service.dart';
+import '../theme/wb_cinematic_tokens.dart';
+import '../widgets/cinematic/wb_glass_app_bar.dart';
+import '../widgets/cinematic/wb_vignette.dart';
 
 class DailyChallengesScreen extends StatefulWidget {
   const DailyChallengesScreen({super.key});
@@ -48,26 +51,27 @@ class _DailyChallengesScreenState extends State<DailyChallengesScreen>
     final completionPercent = _challengesService.completionPercent;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0E21),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text(
-          'TÄGLICHE HERAUSFORDERUNGEN',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.2,
-          ),
-        ),
+      backgroundColor: const Color(0xFF000004),
+      appBar: const WBGlassAppBar(
+        title: 'Tägliche Herausforderungen',
+        world: WBWorld.neutral,
         centerTitle: true,
       ),
-      body: CustomScrollView(
+      body: Stack(
+        children: [
+          const Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(0xFF0D0A1A), Color(0xFF050310), Color(0xFF000004)],
+                ),
+              ),
+            ),
+          ),
+          const Positioned.fill(child: IgnorePointer(child: WBVignette())),
+          CustomScrollView(
         slivers: [
           // HEADER - PROGRESS OVERVIEW
           SliverToBoxAdapter(
@@ -96,6 +100,8 @@ class _DailyChallengesScreenState extends State<DailyChallengesScreen>
           const SliverToBoxAdapter(
             child: SizedBox(height: 80),
           ),
+        ],
+      ),
         ],
       ),
     );
