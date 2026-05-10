@@ -308,15 +308,50 @@ class CloudflareApiService {
   }) async {
     if (kDebugMode) debugPrint('💬 [Chat] Send: $username → $roomId');
 
-    final messageType = switch (mediaType) {
-      'audio' => 'voice',
-      'image' => 'image',
-      'file'  => 'file',
-      _       => null,
-    };
-
+    // Route über den Cloudflare Worker (service_role) statt direkt zu Supabase.
+    // Grund: chat_messages hat noch einen FK → chat_rooms; anon/authenticated
+    // haben kein GRANT SELECT auf chat_rooms → FK-Check schlägt fehl mit
+    // "permission denied for table chat_rooms". Der Worker nutzt service_role
+    // und umgeht das Problem komplett.
     try {
-      final result = await SupabaseChatService.instance.sendMessage(
+      final body = <String, dynamic>{
+        'roomId': roomId,
+        'realm': realm,
+        'userId': userId,
+        'username': username,
+        'message': message,
+        if (avatarEmoji != null) 'avatarEmoji': avatarEmoji,
+        if (avatarUrl != null) 'avatarUrl': avatarUrl,
+        if (mediaType != null) 'mediaType': mediaType,
+        if (mediaUrl != null) 'mediaUrl': mediaUrl,
+        if (replyToId != null) 'replyToId': replyToId,
+        if (replyToContent != null) 'replyToContent': replyToContent,
+        if (replyToSenderName != null) 'replyToSenderName': replyToSenderName,
+      };
+
+      final uri = Uri.parse('$mainApiUrl/api/chat/messages');
+      final response = await http.post(
+        uri,
+        headers: {..._headers, 'Content-Type': 'application/json'},
+        body: jsonEncode(body),
+      ).timeout(const Duration(seconds: 15));
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final msg = data['message'] as Map<String, dynamic>? ?? data;
+        if (kDebugMode) debugPrint('✅ [Chat] Worker insert OK: ${msg['id']}');
+        return msg;
+      }
+
+      // Worker-Fehler: Fallback auf direkten Supabase-Insert
+      if (kDebugMode) debugPrint('⚠️ [Chat] Worker failed (${response.statusCode}), Supabase fallback');
+      final messageType = switch (mediaType) {
+        'audio' => 'voice',
+        'image' => 'image',
+        'file'  => 'file',
+        _       => null,
+      };
+      return await SupabaseChatService.instance.sendMessage(
         roomId: roomId,
         message: message,
         username: username,
@@ -329,8 +364,6 @@ class CloudflareApiService {
         replyToContent: replyToContent,
         replyToSenderName: replyToSenderName,
       );
-      if (kDebugMode) debugPrint('✅ [Chat] Supabase insert OK: ${result['id']}');
-      return Map<String, dynamic>.from(result);
     } catch (e) {
       if (kDebugMode) debugPrint('❌ [Chat] Send failed: $e');
       rethrow;

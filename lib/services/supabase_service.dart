@@ -633,7 +633,6 @@ class SupabaseChatService {
   }
 
   /// Eigene Nachricht bearbeiten (RLS prüft Ownership).
-  /// [isAdmin] = true: versucht auch fremde Nachrichten zu bearbeiten (admin-policy).
   Future<Map<String, dynamic>> editMessage({
     required String messageId,
     required String newMessage,
@@ -650,16 +649,22 @@ class SupabaseChatService {
       'edited_at': DateTime.now().toUtc().toIso8601String(),
     };
 
-    final query = supabase.from('chat_messages').update(updateData);
-    // Ownership-Check via RLS – kein .eq('user_id', user.id) nötig wenn Policy sauber.
-    // Für Admin: RLS-Policy für Admins sollte greifen.
-    final result = await query.eq('id', messageId).select().single();
+    // maybeSingle() statt single() — wirft keine Exception wenn 0 Zeilen zurück.
+    // 0 Zeilen = RLS hat die Zeile nicht gefunden (falsche user_id oder nicht existent).
+    final result = await supabase
+        .from('chat_messages')
+        .update(updateData)
+        .eq('id', messageId)
+        .select()
+        .maybeSingle();
+
+    if (result == null) {
+      throw Exception('Nachricht nicht gefunden oder keine Berechtigung zum Bearbeiten.');
+    }
     return result;
   }
 
-  /// Nachricht löschen — Hard-Delete (v36).
-  /// RLS-Policy "User kann eigene Nachrichten löschen" greift. Admin-Löschung
-  /// läuft über Worker-Endpoint mit SERVICE_ROLE (nicht hier).
+  /// Nachricht löschen (Soft-Delete).
   Future<void> deleteMessage({
     required String messageId,
     bool isAdmin = false,
@@ -669,12 +674,18 @@ class SupabaseChatService {
       throw Exception('Nicht eingeloggt – Löschen nicht möglich.');
     }
 
-    // Soft-Delete: Spalte is_deleted setzen statt Zeile entfernen.
-    // Konsistent mit getMessages-Filter (is_deleted = false).
-    await supabase
+    // Soft-Delete mit Ergebnis-Check: RLS erlaubt nur eigene Nachrichten.
+    // Ohne select().count() wäre ein silent-fail möglich (0 Zeilen, kein Fehler).
+    final result = await supabase
         .from('chat_messages')
         .update({'is_deleted': true, 'message': null, 'content': null})
-        .eq('id', messageId);
+        .eq('id', messageId)
+        .select('id')
+        .maybeSingle();
+
+    if (result == null) {
+      throw Exception('Nachricht nicht gefunden oder keine Berechtigung zum Löschen.');
+    }
   }
 
   /// Lädt alle Reactions für eine Liste von Nachrichten-IDs.
