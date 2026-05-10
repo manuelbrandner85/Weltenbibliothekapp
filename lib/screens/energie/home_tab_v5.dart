@@ -612,19 +612,19 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
           decoration: BoxDecoration(
             color: _worldSubscribed
                 ? _purple.withValues(alpha: 0.2)
-                : Colors.white.withValues(alpha: 0.07),
+                : Colors.white.withValues(alpha: 0.17),
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: _worldSubscribed
                   ? _purple.withValues(alpha: 0.6)
-                  : Colors.white.withValues(alpha: 0.12),
+                  : Colors.white.withValues(alpha: 0.30),
             ),
           ),
           child: Icon(
             _worldSubscribed
                 ? Icons.newspaper
                 : Icons.newspaper_outlined,
-            color: _worldSubscribed ? _purple : Colors.white60,
+            color: _worldSubscribed ? _purple : Colors.white,
             size: 20,
           ),
         ),
@@ -644,13 +644,13 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
           Container(
             width: 44, height: 44,
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.06),
+              color: Colors.white.withValues(alpha: 0.17),
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.30)),
             ),
             child: Icon(
               _notifs > 0 ? Icons.notifications : Icons.notifications_outlined,
-              color: _notifs > 0 ? _gold : Colors.white60,
+              color: _notifs > 0 ? _gold : Colors.white,
               size: 22,
             ),
           ),
@@ -680,19 +680,19 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
         height: 46,
         padding: const EdgeInsets.symmetric(horizontal: 14),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.05),
+          color: Colors.white.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.09)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.26)),
           boxShadow: [
-            BoxShadow(color: _purple.withValues(alpha: 0.08), blurRadius: 12),
+            BoxShadow(color: _purple.withValues(alpha: 0.12), blurRadius: 12),
           ],
         ),
         child: Row(children: [
-          Icon(Icons.search_rounded, color: _purpleL.withValues(alpha: 0.7), size: 20),
+          Icon(Icons.search_rounded, color: _purpleL.withValues(alpha: 0.9), size: 20),
           const SizedBox(width: 10),
           const Expanded(
             child: Text('Spirituelle Themen suchen…',
-                style: TextStyle(color: Colors.white30, fontSize: 14)),
+                style: TextStyle(color: Colors.white54, fontSize: 14)),
           ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),

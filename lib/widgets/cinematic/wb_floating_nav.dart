@@ -123,7 +123,7 @@ class _NavTab extends StatelessWidget {
                 size: 22,
                 color: active
                     ? Colors.white
-                    : Colors.white.withValues(alpha: 0.55),
+                    : Colors.white.withValues(alpha: 0.75),
               ),
             ),
             const SizedBox(height: 4),
@@ -135,7 +135,7 @@ class _NavTab extends StatelessWidget {
               decoration: BoxDecoration(
                 color: active
                     ? palette.primary
-                    : Colors.white.withValues(alpha: 0.10),
+                    : Colors.white.withValues(alpha: 0.35),
                 borderRadius: BorderRadius.circular(2),
                 boxShadow: active
                     ? [

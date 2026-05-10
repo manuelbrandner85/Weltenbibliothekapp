@@ -2053,7 +2053,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
                   gradient: LinearGradient(
                     colors: _hasText
                         ? [Colors.red, const Color(0xFFE53935)]
-                        : [Colors.grey.shade400, Colors.grey.shade500],
+                        : [const Color(0xFF1A5BC4), const Color(0xFF1246A0)],
                   ),
                   borderRadius: BorderRadius.circular(20),
                 ),
