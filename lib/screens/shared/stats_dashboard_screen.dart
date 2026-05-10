@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../widgets/stats/stats_charts.dart';
+import '../../theme/wb_cinematic_tokens.dart';
+import '../../widgets/cinematic/wb_glass_app_bar.dart';
+import '../../widgets/cinematic/wb_vignette.dart';
 
 /// 📊 Stats Dashboard – Echtzeit aus Supabase
 ///
@@ -267,40 +270,57 @@ class _StatsDashboardScreenState extends State<StatsDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final worldColor = widget.world == 'materie'
         ? const Color(0xFFE53935)
         : const Color(0xFF7C4DFF);
+    final wbWorld =
+        widget.world == 'materie' ? WBWorld.materie : WBWorld.energie;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Row(
+      backgroundColor: const Color(0xFF000004),
+      appBar: WBGlassAppBar(
+        world: wbWorld,
+        titleWidget: Row(
           children: [
-            Icon(Icons.analytics_outlined, color: worldColor),
+            Icon(Icons.analytics_outlined, color: worldColor, size: 20),
             const SizedBox(width: 8),
             Text(
               widget.world == 'materie'
                   ? 'Materie Statistiken'
                   : 'Energie Statistiken',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: worldColor,
+              style: const TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 16,
+                fontWeight: FontWeight.w400,
+                letterSpacing: 0.4,
+                color: Colors.white,
               ),
             ),
           ],
         ),
-        backgroundColor: isDark ? Colors.black : Colors.white,
-        elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(Icons.refresh, color: Colors.white),
             onPressed: () => _loadAll(),
             tooltip: 'Statistiken aktualisieren',
           ),
         ],
       ),
-      body: _isLoading
+      body: Stack(
+        children: [
+          const Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(0xFF0D0A1A), Color(0xFF050310), Color(0xFF000004)],
+                ),
+              ),
+            ),
+          ),
+          const Positioned.fill(child: IgnorePointer(child: WBVignette())),
+          _isLoading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
               onRefresh: _loadAll,
@@ -354,6 +374,8 @@ class _StatsDashboardScreenState extends State<StatsDashboardScreen> {
                 ),
               ),
             ),
+        ],
+      ),
     );
   }
 

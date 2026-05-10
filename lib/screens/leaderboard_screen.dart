@@ -13,6 +13,9 @@
 import 'package:flutter/material.dart';
  // OpenClaw v2.0
 import '../services/leaderboard_service.dart';
+import '../theme/wb_cinematic_tokens.dart';
+import '../widgets/cinematic/wb_glass_app_bar.dart';
+import '../widgets/cinematic/wb_vignette.dart';
 
 class LeaderboardScreen extends StatefulWidget {
   const LeaderboardScreen({super.key});
@@ -73,48 +76,55 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0E21),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text(
-          'BESTENLISTE',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.2,
+      backgroundColor: const Color(0xFF000004),
+      appBar: WBGlassAppBar(
+        title: 'Bestenliste',
+        world: WBWorld.neutral,
+        centerTitle: true,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(46),
+          child: TabBar(
+            controller: _tabController,
+            indicatorColor: Colors.amber,
+            indicatorWeight: 3,
+            labelColor: Colors.amber,
+            unselectedLabelColor: Colors.white.withValues(alpha: 0.6),
+            labelStyle: const TextStyle(fontWeight: FontWeight.bold),
+            tabs: LeaderboardType.values.map((type) {
+              return Tab(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(type.icon),
+                    const SizedBox(width: 4),
+                    Text(type.label),
+                  ],
+                ),
+              );
+            }).toList(),
           ),
         ),
-        centerTitle: true,
-        bottom: TabBar(
-          controller: _tabController,
-          indicatorColor: Colors.amber,
-          indicatorWeight: 3,
-          labelColor: Colors.amber,
-          unselectedLabelColor: Colors.white.withValues(alpha: 0.6),
-          labelStyle: const TextStyle(fontWeight: FontWeight.bold),
-          tabs: LeaderboardType.values.map((type) {
-            return Tab(
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(type.icon),
-                  const SizedBox(width: 4),
-                  Text(type.label),
-                ],
-              ),
-            );
-          }).toList(),
-        ),
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: Colors.amber))
-          : _buildLeaderboardView(),
+      body: Stack(
+        children: [
+          const Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(0xFF0D0A1A), Color(0xFF050310), Color(0xFF000004)],
+                ),
+              ),
+            ),
+          ),
+          const Positioned.fill(child: IgnorePointer(child: WBVignette())),
+          _isLoading
+              ? const Center(
+                  child: CircularProgressIndicator(color: Colors.amber))
+              : _buildLeaderboardView(),
+        ],
+      ),
     );
   }
 

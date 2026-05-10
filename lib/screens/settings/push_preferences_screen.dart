@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../config/wb_design.dart';
 import '../../services/push_preferences_service.dart';
+import '../../theme/wb_cinematic_tokens.dart';
+import '../../widgets/cinematic/wb_glass_app_bar.dart';
+import '../../widgets/cinematic/wb_vignette.dart';
 
 /// 🔔 Push Preferences Screen
 ///
@@ -41,17 +44,26 @@ class _PushPreferencesScreenState extends State<PushPreferencesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: WbDesign.bgNeutral,
-      appBar: AppBar(
-        backgroundColor: WbDesign.bgNeutral,
-        elevation: 0,
-        title: const Text(
-          'Benachrichtigungen',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-        iconTheme: const IconThemeData(color: Colors.white),
+      backgroundColor: const Color(0xFF000004),
+      appBar: const WBGlassAppBar(
+        title: 'Benachrichtigungen',
+        world: WBWorld.neutral,
       ),
-      body: _loading
+      body: Stack(
+        children: [
+          const Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(0xFF0D0A1A), Color(0xFF050310), Color(0xFF000004)],
+                ),
+              ),
+            ),
+          ),
+          const Positioned.fill(child: IgnorePointer(child: WBVignette())),
+          _loading
           ? const Center(child: CircularProgressIndicator())
           : ListView(
               padding: const EdgeInsets.all(WbDesign.space16),
@@ -137,6 +149,8 @@ class _PushPreferencesScreenState extends State<PushPreferencesScreen> {
                 const SizedBox(height: WbDesign.space40),
               ],
             ),
+        ],
+      ),
     );
   }
 

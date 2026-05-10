@@ -3504,7 +3504,17 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
               child: Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: isOwn ? const Color(0xFF9B51E0) : const Color(0xFF2A2A3E),
+                  gradient: isOwn
+                      ? const LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [Color(0xFFA855F7), Color(0xFF7E22CE)],
+                        )
+                      : null,
+                  color: isOwn ? null : const Color(0xCC1A1A24),
+                  border: isOwn
+                      ? null
+                      : Border.all(color: Colors.white.withValues(alpha: 0.07)),
                   borderRadius: BorderRadius.only(
                     topLeft: Radius.circular(isGrouped && !isOwn ? 4 : 16),
                     topRight: Radius.circular(isGrouped && isOwn ? 4 : 16),
@@ -3513,10 +3523,16 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.2),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
+                      color: Colors.black.withValues(alpha: 0.32),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
                     ),
+                    if (isOwn)
+                      BoxShadow(
+                        color: const Color(0xFFA855F7).withValues(alpha: 0.30),
+                        blurRadius: 18,
+                        offset: const Offset(0, 6),
+                      ),
                   ],
                 ),
               child: Column(

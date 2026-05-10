@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import '../../services/bookmark_service.dart';
+import '../../theme/wb_cinematic_tokens.dart';
+import '../../widgets/cinematic/wb_glass_app_bar.dart';
+import '../../widgets/cinematic/wb_vignette.dart';
 import 'package:intl/intl.dart';
 
 /// 🔖 BOOKMARKS SCREEN
@@ -139,24 +142,38 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Bookmarks'),
+      backgroundColor: const Color(0xFF000004),
+      appBar: WBGlassAppBar(
+        title: 'Bookmarks',
+        world: WBWorld.neutral,
         actions: [
-          // Statistics
           IconButton(
-            icon: const Icon(Icons.analytics_outlined),
+            icon: const Icon(Icons.analytics_outlined, color: Colors.white),
             onPressed: () => _showStatistics(),
             tooltip: 'Statistiken',
           ),
-          // Export
           IconButton(
-            icon: const Icon(Icons.file_download_outlined),
+            icon: const Icon(Icons.file_download_outlined, color: Colors.white),
             onPressed: _exportBookmarks,
             tooltip: 'Export',
           ),
         ],
       ),
-      body: Column(
+      body: Stack(
+        children: [
+          const Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(0xFF0D0A1A), Color(0xFF050310), Color(0xFF000004)],
+                ),
+              ),
+            ),
+          ),
+          const Positioned.fill(child: IgnorePointer(child: WBVignette())),
+          Column(
         children: [
           // Search Bar
           Padding(
@@ -223,6 +240,8 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
           Expanded(
             child: _buildContent(),
           ),
+        ],
+      ),
         ],
       ),
     );

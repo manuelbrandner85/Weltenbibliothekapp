@@ -3,6 +3,9 @@ import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:url_launcher/url_launcher.dart';
  // OpenClaw v2.0
 import '../config/wb_design.dart'; // 🎨 Design-Tokens
+import '../theme/wb_cinematic_tokens.dart';
+import '../widgets/cinematic/wb_glass_app_bar.dart';
+import '../widgets/cinematic/wb_vignette.dart';
 import '../services/storage_service.dart';
 import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart'; // 📸 Image Picker
@@ -232,13 +235,26 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: WbDesign.bgNeutral,
-      appBar: AppBar(
-        title: const Text('👤 Profil-Einstellungen'),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
+      backgroundColor: const Color(0xFF000004),
+      appBar: const WBGlassAppBar(
+        title: 'Profil-Einstellungen',
+        world: WBWorld.neutral,
       ),
-      body: _isLoading
+      body: Stack(
+        children: [
+          const Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(0xFF0D0A1A), Color(0xFF050310), Color(0xFF000004)],
+                ),
+              ),
+            ),
+          ),
+          const Positioned.fill(child: IgnorePointer(child: WBVignette())),
+          _isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16),
@@ -307,6 +323,8 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                 ],
               ),
             ),
+        ],
+      ),
     );
   }
   
