@@ -117,7 +117,7 @@ class _MaterieWorldScreenState extends ConsumerState<MaterieWorldScreen>
               activeIndex: _currentIndex,
               items: const [
                 WBFloatingNavItem(icon: Icons.home_outlined, label: 'Home'),
-                WBFloatingNavItem(icon: Icons.search_rounded, label: 'Recherche'),
+                WBFloatingNavItem(icon: Icons.search, label: 'Recherche'),
                 WBFloatingNavItem(icon: Icons.people_outline, label: 'Community'),
                 WBFloatingNavItem(icon: Icons.map_outlined, label: 'Karte'),
                 WBFloatingNavItem(icon: Icons.menu_book_outlined, label: 'Wissen'),
@@ -134,7 +134,7 @@ class _MaterieWorldScreenState extends ConsumerState<MaterieWorldScreen>
     return [
       // Portal-Wechsel
       IconButton(
-        icon: const Icon(Icons.swap_horiz_rounded, color: Color(0xFF7DA7FF)),
+        icon: const Icon(Icons.swap_horiz, color: Color(0xFF7DA7FF)),
         iconSize: 22,
         onPressed: () => Navigator.pop(context),
         tooltip: 'Zur Portal-Auswahl',
@@ -160,7 +160,7 @@ class _MaterieWorldScreenState extends ConsumerState<MaterieWorldScreen>
       // Admin-Dashboard (nur für Admins)
       if (adminState.isAdmin)
         IconButton(
-          icon: const Icon(Icons.admin_panel_settings_rounded,
+          icon: const Icon(Icons.admin_panel_settings,
               color: Colors.orange),
           iconSize: 22,
           onPressed: () async {
