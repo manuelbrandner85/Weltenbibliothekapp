@@ -17,6 +17,145 @@ class KaninchenbauService {
 
   final _free = FreeApiService.instance;
 
+  // ── Topic-Normalisierung ──────────────────────────────────────────────────
+  // "JFK Akten" → "JFK"  |  "Chemtrails Verschwörung" → "Chemtrails"
+  static const _deStopSuffixes = [
+    'akten', 'akte', 'affäre', 'affaere', 'verschwörung', 'verschwoerung',
+    'skandal', 'theorie', 'theorien', 'aufdeckung', 'enthüllung', 'enthuellung',
+    'geheimnis', 'geheimdokumente', 'dokumente', 'files', 'papers', 'report',
+    'leaks', 'leak', 'exposure', 'classified', 'declassified',
+    'geheimdienstakten', 'freigegebene', 'freigegebenen', 'vertuscht',
+    'vertuschung', 'komplott', 'netzwerk', 'operation', 'programm',
+    'projekt', 'plan', 'system', 'agenda',
+  ];
+
+  String normalizeTopic(String topic) {
+    var words = topic.trim().split(RegExp(r'\s+'));
+    while (words.length > 1 &&
+        _deStopSuffixes.contains(words.last.toLowerCase())) {
+      words = words.sublist(0, words.length - 1);
+    }
+    while (words.length > 1 &&
+        _deStopSuffixes.contains(words.first.toLowerCase())) {
+      words = words.sublist(1);
+    }
+    return words.join(' ');
+  }
+
+  // ── Wikipedia-Netzwerk-Fallback ───────────────────────────────────────────
+  Future<NetworkGraph> fetchWikipediaNetwork(String topic) async {
+    final centerNode = NetworkNode(
+        id: 'center', label: topic, type: 'concept', weight: 1.0);
+    try {
+      final resp = await http.get(
+        Uri.parse(
+            '${ApiConfig.workerUrl}/api/kaninchenbau/wikipedia-network?topic=${Uri.encodeQueryComponent(topic)}'),
+      ).timeout(const Duration(seconds: 15));
+      if (resp.statusCode != 200) return NetworkGraph(nodes: [centerNode], edges: const []);
+      final data = jsonDecode(resp.body) as Map<String, dynamic>;
+      if (data['found'] != true) return NetworkGraph(nodes: [centerNode], edges: const []);
+
+      final realCenter = NetworkNode(
+        id: 'center',
+        label: (data['title'] as String? ?? topic),
+        type: 'concept',
+        weight: 1.0,
+      );
+      final links = (data['links'] as List?)?.cast<String>() ?? const [];
+      final categories = (data['categories'] as List?)?.cast<String>() ?? const [];
+
+      final nodes = <NetworkNode>[realCenter];
+      final edges = <NetworkEdge>[];
+      var idx = 0;
+
+      for (final link in links.take(12)) {
+        final nodeId = 'wn$idx';
+        nodes.add(NetworkNode(
+          id: nodeId,
+          label: link,
+          type: 'concept',
+          weight: 0.65 - (idx * 0.02).clamp(0.0, 0.35),
+        ));
+        edges.add(NetworkEdge(
+          fromId: 'center',
+          toId: nodeId,
+          label: 'Wikipedia-Link',
+          strength: 0.55,
+        ));
+        idx++;
+      }
+      for (final cat in categories.take(6)) {
+        final nodeId = 'wc$idx';
+        nodes.add(NetworkNode(
+          id: nodeId,
+          label: cat,
+          type: 'org',
+          weight: 0.5,
+        ));
+        edges.add(NetworkEdge(
+          fromId: 'center',
+          toId: nodeId,
+          label: 'Kategorie',
+          strength: 0.4,
+        ));
+        idx++;
+      }
+      return NetworkGraph(nodes: nodes, edges: edges);
+    } catch (e) {
+      debugPrint('WikipediaNetwork-Error: $e');
+      return NetworkGraph(nodes: [centerNode], edges: const []);
+    }
+  }
+
+  // ── NARA — National Archives Catalog ─────────────────────────────────────
+  Future<List<Map<String, String>>> fetchNaraDocuments(String topic) async {
+    try {
+      final resp = await http.get(
+        Uri.parse('${ApiConfig.workerUrl}/api/kaninchenbau/nara?topic=${Uri.encodeQueryComponent(topic)}'),
+      ).timeout(const Duration(seconds: 15));
+      if (resp.statusCode != 200) return [];
+      final data = jsonDecode(resp.body) as Map<String, dynamic>;
+      return ((data['items'] as List?) ?? const []).map((e) {
+        final m = e as Map<String, dynamic>;
+        return {
+          'title': m['title']?.toString() ?? '',
+          'date': m['date']?.toString() ?? '',
+          'description': m['description']?.toString() ?? '',
+          'url': m['url']?.toString() ?? '',
+          'access': m['access']?.toString() ?? '',
+          'source': 'NARA',
+        };
+      }).where((e) => (e['title'] ?? '').isNotEmpty).toList();
+    } catch (e) {
+      debugPrint('NARA-Error: $e');
+      return [];
+    }
+  }
+
+  // ── Wikipedia keypersons fallback ─────────────────────────────────────────
+  Future<List<KeyPerson>> fetchKeyPersonsWikipedia(String topic) async {
+    try {
+      final resp = await http.get(
+        Uri.parse('${ApiConfig.workerUrl}/api/kaninchenbau/keypersons-wiki?topic=${Uri.encodeQueryComponent(topic)}'),
+      ).timeout(const Duration(seconds: 15));
+      if (resp.statusCode != 200) return [];
+      final data = jsonDecode(resp.body) as Map<String, dynamic>;
+      return ((data['persons'] as List?) ?? const []).map((m) {
+        final e = m as Map<String, dynamic>;
+        return KeyPerson(
+          id: e['id']?.toString() ?? '',
+          name: e['name']?.toString() ?? '',
+          description: e['description']?.toString() ?? '',
+          role: e['role']?.toString() ?? 'Erwähnt',
+          imageUrl: null,
+        );
+      }).where((p) => p.name.isNotEmpty).toList();
+    } catch (e) {
+      debugPrint('KeyPersonsWiki-Error: $e');
+      return [];
+    }
+  }
+
   /// Wikidata-Entity holen — Identität (Name, Beschreibung).
   Future<Map<String, dynamic>?> fetchIdentity(String topic) async {
     try {
@@ -40,22 +179,19 @@ class KaninchenbauService {
     return graph.nodes;
   }
 
-  /// ECHTER Netzwerk-Graph via Wikidata SPARQL.
-  ///
-  /// Holt für ein Thema die ECHTEN Wikidata-Beziehungen (12+ Property-Typen):
-  ///   • P108 employer · P102 party · P463 member of · P39 position
-  ///   • P26 spouse · P40 child · P22 father · P25 mother · P3373 sibling
-  ///   • P749 parent org · P127 owner · P488 chair · P169 CEO · P112 founded by
-  ///   • P710 participant · P1830 owns · P50 author · P184 advisor · P800 work
-  ///
-  /// Liefert echte Knoten (Person/Firma/Org/Ort) UND echte Kanten mit
-  /// deutschen Beziehungs-Labels ("Mitglied von", "Vorsitzender", "Ehepartner"…).
+  /// ECHTER Netzwerk-Graph via Wikidata SPARQL mit Wikipedia-Fallback.
   Future<NetworkGraph> fetchNetworkGraph(String topic) async {
     final centerNode =
         NetworkNode(id: 'center', label: topic, type: 'concept', weight: 1.0);
     try {
-      // 1. Entity-ID via Wikidata-Suche (deutsch bevorzugt)
-      final entries = await _free.fetchWikidataEntries(topic, limit: 1);
+      // Topic normalisieren für bessere API-Treffer ("JFK Akten" → "JFK")
+      final normalized = normalizeTopic(topic);
+
+      // 1. Entity-ID via Wikidata-Suche — erst normalisiert, dann original
+      List entries = await _free.fetchWikidataEntries(normalized, limit: 1);
+      if (entries.isEmpty && normalized != topic) {
+        entries = await _free.fetchWikidataEntries(topic, limit: 1);
+      }
       if (entries.isEmpty) {
         return NetworkGraph(nodes: [centerNode], edges: const []);
       }
@@ -151,8 +287,8 @@ LIMIT 30
       final nodes = <NetworkNode>[realCenter, ...nodeMap.values];
 
       if (nodes.length == 1) {
-        // Fallback: wenn SPARQL nichts findet, wenigstens die Search-Ergebnisse
-        final searchResults = await _free.fetchWikidataEntries(topic, limit: 6);
+        // Fallback 1: Wikidata-Suche für verwandte Einträge
+        final searchResults = await _free.fetchWikidataEntries(normalized.isNotEmpty ? normalized : topic, limit: 6);
         for (var i = 1; i < searchResults.length; i++) {
           final r = searchResults[i];
           nodes.add(NetworkNode(
@@ -167,6 +303,11 @@ LIMIT 30
               label: 'verwandt',
               strength: 0.4));
         }
+      }
+
+      // Fallback 2: Wikipedia-Netzwerk wenn immer noch leer
+      if (nodes.length <= 1) {
+        return fetchWikipediaNetwork(topic);
       }
 
       return NetworkGraph(nodes: nodes, edges: edges);
@@ -758,26 +899,35 @@ LIMIT 30
     return const _Cc('US', 'USA');
   }
 
-  /// Schlüsselpersonen einer Org via Wikidata SPARQL (CEO/Vorstand/Gründer/etc).
+  /// Schlüsselpersonen — Wikidata SPARQL + Wikipedia-Fallback.
   Future<List<KeyPerson>> fetchKeyPersons(String topic) async {
+    final normalized = normalizeTopic(topic);
     try {
-      final url = Uri.parse(
-          '${ApiConfig.workerUrl}/api/kaninchenbau/keypersons?topic=${Uri.encodeQueryComponent(topic)}');
-      final resp = await http.get(url).timeout(const Duration(seconds: 25));
-      if (resp.statusCode != 200) return [];
-      final data = jsonDecode(resp.body) as Map<String, dynamic>;
-      return ((data['persons'] as List?) ?? const [])
-          .map((m) => KeyPerson(
-                id: (m['id'] ?? '').toString(),
-                name: (m['name'] ?? '').toString(),
-                description: (m['description'] ?? '').toString(),
-                role: (m['role'] ?? '').toString(),
-                imageUrl: m['image'] as String?,
-              ))
-          .toList();
+      // Erst mit normalisiertem Begriff suchen, dann original
+      for (final q in {normalized, topic}) {
+        final url = Uri.parse(
+            '${ApiConfig.workerUrl}/api/kaninchenbau/keypersons?topic=${Uri.encodeQueryComponent(q)}');
+        final resp = await http.get(url).timeout(const Duration(seconds: 20));
+        if (resp.statusCode == 200) {
+          final data = jsonDecode(resp.body) as Map<String, dynamic>;
+          final persons = ((data['persons'] as List?) ?? const [])
+              .map((m) => KeyPerson(
+                    id: (m['id'] ?? '').toString(),
+                    name: (m['name'] ?? '').toString(),
+                    description: (m['description'] ?? '').toString(),
+                    role: (m['role'] ?? '').toString(),
+                    imageUrl: m['image'] as String?,
+                  ))
+              .where((p) => p.name.isNotEmpty)
+              .toList();
+          if (persons.isNotEmpty) return persons;
+        }
+      }
+      // Wikipedia-Fallback
+      return fetchKeyPersonsWikipedia(topic);
     } catch (e) {
       debugPrint('KeyPersons-Error: $e');
-      return [];
+      return fetchKeyPersonsWikipedia(topic);
     }
   }
 
@@ -1189,7 +1339,7 @@ LIMIT 30
       _fetchMindblow('fec', topic, FecCandidate.fromJson);
 
   Future<List<LittleSisEntity>> fetchLittleSis(String topic) =>
-      _fetchMindblow('littlesis', topic, LittleSisEntity.fromJson);
+      _fetchMindblow('littlesis', normalizeTopic(topic), LittleSisEntity.fromJson);
 
   Future<List<EveryPolitician>> fetchEveryPolitician(String topic) =>
       _fetchMindblow('everypolitician', topic, EveryPolitician.fromJson);

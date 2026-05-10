@@ -3185,6 +3185,771 @@ EMPFEHLUNG: [1 Satz — was sollte der User selbst recherchieren?]`;
       }
     }
 
+    // ════════════════════════════════════════════════════════════════════════
+    // TOPIC-NORMALISIERUNG — Hilfsfunktion für alle Kaninchenbau-Endpoints
+    // Extrahiert den Kern-Begriff aus deutschen Compound-Queries.
+    // "JFK Akten" → "JFK"  |  "Chemtrails Verschwörung" → "Chemtrails"
+    // ════════════════════════════════════════════════════════════════════════
+    const normalizeTopicForSearch = (raw) => {
+      const stopwords = [
+        'akten', 'akte', 'affäre', 'affaere', 'verschwörung', 'verschwoerung',
+        'skandal', 'theorie', 'theorien', 'aufdeckung', 'enthüllung', 'enthuellung',
+        'geheimnis', 'geheimdokumente', 'dokumente', 'files', 'papers', 'report',
+        'leaks', 'leak', 'exposure', 'whistleblower', 'classified', 'declassified',
+        'geheimdienstakten', 'freigegebene', 'freigegebenen', 'vertuscht', 'vertuschung',
+        'komplott', 'netzwerk', 'operation', 'programm', 'projekt', 'plan',
+      ];
+      let words = raw.trim().split(/\s+/);
+      // Entferne Stopwords am Ende (Compound-Suffix)
+      while (words.length > 1 && stopwords.includes(words[words.length - 1].toLowerCase())) {
+        words = words.slice(0, -1);
+      }
+      // Entferne Stopwords am Anfang
+      while (words.length > 1 && stopwords.includes(words[0].toLowerCase())) {
+        words = words.slice(1);
+      }
+      return words.join(' ');
+    };
+
+    // Wikipedia-zu-Englisch-Mapping für bekannte deutsche Suchbegriffe
+    const deToEnMap = {
+      'jfk': 'John F. Kennedy assassination',
+      'jfk akten': 'JFK assassination',
+      'mondlandung': 'Moon landing conspiracy theory',
+      'chemtrails': 'chemtrail conspiracy theory',
+      '9/11': 'September 11 attacks',
+      'nsa': 'National Security Agency',
+      'cia': 'Central Intelligence Agency',
+      'bilderberg': 'Bilderberg meeting',
+      'freimaurer': 'freemasonry',
+      'illuminaten': 'illuminati',
+      'trilaterale kommission': 'Trilateral Commission',
+      'tiefenstaat': 'deep state',
+      'deep state': 'deep state',
+      'wef': 'World Economic Forum',
+      'who': 'World Health Organization',
+      'gates': 'Bill Gates',
+      'great reset': 'Great Reset',
+      'agenda 2030': 'Agenda 2030',
+      'agenda 21': 'Agenda 21',
+      'mkultra': 'Project MKUltra',
+      'mk ultra': 'Project MKUltra',
+      'area 51': 'Area 51',
+      'roswell': 'Roswell UFO incident',
+      'snowden': 'Edward Snowden',
+      'assange': 'Julian Assange',
+      'wikileaks': 'WikiLeaks',
+      'pfizer': 'Pfizer',
+      'blackrock': 'BlackRock',
+      'vanguard': 'Vanguard Group',
+      'rothschild': 'Rothschild family',
+      'rockefeller': 'Rockefeller family',
+    };
+
+    const getEnglishTopic = (topic) => {
+      const lower = topic.toLowerCase();
+      return deToEnMap[lower] || normalizeTopicForSearch(topic);
+    };
+
+    // ── Wikipedia-Netzwerk — Fallback wenn Wikidata SPARQL leer ──
+    if (path === '/api/kaninchenbau/wikipedia-network' && method === 'GET') {
+      const topic = url.searchParams.get('topic');
+      if (!topic) return errorResponse('topic fehlt', 400);
+      const enTopic = getEnglishTopic(topic);
+      const normalized = normalizeTopicForSearch(topic);
+
+      try {
+        // 1. Versuche erst Deutsch, dann Englisch
+        const langs = [
+          { lang: 'de', q: normalized },
+          { lang: 'en', q: enTopic },
+        ];
+
+        let wikiData = null;
+        let links = [];
+
+        for (const { lang, q } of langs) {
+          const summaryUrl = `https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(q)}`;
+          const r = await fetch(summaryUrl, { signal: AbortSignal.timeout(6000) }).catch(() => null);
+          if (r?.ok) {
+            wikiData = await r.json();
+            // Links aus dem Artikel holen
+            const linksUrl = `https://${lang}.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(q)}&prop=links&pllimit=30&format=json&origin=*`;
+            const lr = await fetch(linksUrl, { signal: AbortSignal.timeout(6000) }).catch(() => null);
+            if (lr?.ok) {
+              const ld = await lr.json();
+              const pages = Object.values(ld?.query?.pages || {});
+              links = (pages[0]?.links || []).slice(0, 20).map(l => l.title).filter(t => t && !t.startsWith('Wikipedia:') && !t.startsWith('Kategorie:') && !t.startsWith('Category:'));
+            }
+            // Kategorien holen
+            const catUrl = `https://${lang}.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(q)}&prop=categories&cllimit=10&format=json&origin=*`;
+            const cr = await fetch(catUrl, { signal: AbortSignal.timeout(5000) }).catch(() => null);
+            let categories = [];
+            if (cr?.ok) {
+              const cd = await cr.json();
+              const cpages = Object.values(cd?.query?.pages || {});
+              categories = (cpages[0]?.categories || []).slice(0, 8).map(c => c.title.replace(/^(Kategorie:|Category:)/, '')).filter(c => !c.startsWith('!') && !c.includes('Wikipedia'));
+            }
+            if (wikiData?.title) {
+              return jsonResponse({
+                topic,
+                normalized: q,
+                lang,
+                title: wikiData.title,
+                extract: wikiData.extract?.slice(0, 500) || '',
+                thumbnail: wikiData.thumbnail?.source || null,
+                url: wikiData.content_urls?.desktop?.page || '',
+                links,
+                categories,
+                found: true,
+              });
+            }
+          }
+        }
+        return jsonResponse({ topic, found: false, links: [], categories: [] });
+      } catch (e) {
+        return jsonResponse({ topic, found: false, links: [], error: e.message });
+      }
+    }
+
+    // ── NARA — National Archives Catalog (US Gov, kein Key) ──
+    if (path === '/api/kaninchenbau/nara' && method === 'GET') {
+      const topic = url.searchParams.get('topic');
+      if (!topic) return errorResponse('topic fehlt', 400);
+      const q = getEnglishTopic(topic);
+      try {
+        const r = await fetch(
+          `https://catalog.archives.gov/api/v1?q=${encodeURIComponent(q)}&resultTypes=item&rows=8&offset=0`,
+          { signal: AbortSignal.timeout(12000), headers: { 'Accept': 'application/json' } }
+        );
+        if (!r.ok) return jsonResponse({ items: [], note: `NARA HTTP ${r.status}` });
+        const data = await r.json();
+        const results = data?.opaResponse?.results?.result || [];
+        const items = results.slice(0, 8).map(item => {
+          const d = item?.description || {};
+          return {
+            naId: item?.naId || '',
+            title: d?.item?.title || d?.fileUnit?.title || d?.series?.title || item?.title || '',
+            type: d?.item ? 'item' : d?.fileUnit ? 'fileUnit' : 'series',
+            date: d?.item?.productionDateArray?.[0]?.logicalDate || d?.item?.coverageStartDate?.logicalDate || '',
+            description: d?.item?.scopeAndContentNote?.slice(0, 200) || '',
+            url: `https://catalog.archives.gov/id/${item?.naId}`,
+            access: d?.item?.accessRestriction || 'Unrestricted',
+          };
+        }).filter(i => i.title);
+        const translated = await translateItems(items, ['title', 'description']);
+        return jsonResponse({ topic: q, items: translated });
+      } catch (e) {
+        return jsonResponse({ items: [], error: e.message });
+      }
+    }
+
+    // ── USASpending.gov — US-Regierungsausgaben (kein Key) ──
+    if (path === '/api/kaninchenbau/usaspending' && method === 'GET') {
+      const topic = url.searchParams.get('topic');
+      if (!topic) return errorResponse('topic fehlt', 400);
+      const q = getEnglishTopic(topic);
+      try {
+        const body = {
+          filters: { keywords: [q], time_period: [{ start_date: '2000-01-01', end_date: '2025-12-31' }] },
+          fields: ['Award ID', 'Recipient Name', 'Award Amount', 'Awarding Agency', 'Award Type', 'Description', 'Period of Performance Start Date'],
+          page: 1,
+          limit: 8,
+          sort: 'Award Amount',
+          order: 'desc',
+        };
+        const r = await fetch('https://api.usaspending.gov/api/v2/search/spending_by_award/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+          signal: AbortSignal.timeout(15000),
+        });
+        if (!r.ok) return jsonResponse({ items: [], note: `USASpending HTTP ${r.status}` });
+        const data = await r.json();
+        const items = (data?.results || []).slice(0, 8).map(a => ({
+          awardId: a['Award ID'] || '',
+          recipient: a['Recipient Name'] || '',
+          amount: a['Award Amount'] || 0,
+          agency: a['Awarding Agency'] || '',
+          type: a['Award Type'] || '',
+          description: (a['Description'] || '').slice(0, 150),
+          date: a['Period of Performance Start Date'] || '',
+          url: `https://www.usaspending.gov/award/${encodeURIComponent(a['Award ID'] || '')}`,
+        })).filter(i => i.recipient);
+        return jsonResponse({ topic: q, items });
+      } catch (e) {
+        return jsonResponse({ items: [], error: e.message });
+      }
+    }
+
+    // ── World Bank Projects — entwicklungsbezogene Projekte (kein Key) ──
+    if (path === '/api/kaninchenbau/worldbank' && method === 'GET') {
+      const topic = url.searchParams.get('topic');
+      if (!topic) return errorResponse('topic fehlt', 400);
+      const q = getEnglishTopic(topic);
+      try {
+        const r = await fetch(
+          `https://search.worldbank.org/api/v2/projects?format=json&qterm=${encodeURIComponent(q)}&rows=8&fl=id,project_name,pdo,country_name,totalamt,status,approvaldate,url`,
+          { signal: AbortSignal.timeout(12000) }
+        );
+        if (!r.ok) return jsonResponse({ items: [], note: `WorldBank HTTP ${r.status}` });
+        const data = await r.json();
+        const projects = Object.values(data?.projects || {}).slice(0, 8);
+        const items = projects.map(p => ({
+          id: p.id || '',
+          name: p.project_name || '',
+          description: (p.pdo || '').slice(0, 200),
+          country: p.country_name || '',
+          amount: p.totalamt || 0,
+          status: p.status || '',
+          date: p.approvaldate || '',
+          url: p.url || `https://projects.worldbank.org/en/projects-operations/project-detail/${p.id}`,
+        })).filter(p => p.name);
+        const translated = await translateItems(items, ['name', 'description']);
+        return jsonResponse({ topic: q, items: translated });
+      } catch (e) {
+        return jsonResponse({ items: [], error: e.message });
+      }
+    }
+
+    // ── CourtListener — US-Gerichtsakten + Urteile (Free Law Project) ──
+    if (path === '/api/kaninchenbau/courtlistener' && method === 'GET') {
+      const topic = url.searchParams.get('topic');
+      if (!topic) return errorResponse('topic fehlt', 400);
+      const q = getEnglishTopic(topic);
+      try {
+        const r = await fetch(
+          `https://www.courtlistener.com/api/rest/v4/search/?q=${encodeURIComponent(q)}&type=o&order_by=score+desc&format=json`,
+          { signal: AbortSignal.timeout(15000), headers: { 'Accept': 'application/json' } }
+        );
+        if (!r.ok) return jsonResponse({ items: [], note: `CourtListener HTTP ${r.status}` });
+        const data = await r.json();
+        const items = (data?.results || []).slice(0, 8).map(c => ({
+          id: c.id || '',
+          caseName: c.caseName || c.case_name || '',
+          court: c.court || c.court_id || '',
+          date: c.dateFiled || c.date_filed || '',
+          type: c.type || 'opinion',
+          snippet: (c.snippet || '').replace(/<[^>]*>/g, '').slice(0, 200),
+          url: c.absolute_url ? `https://www.courtlistener.com${c.absolute_url}` : '',
+          citations: c.citeCount || 0,
+        })).filter(c => c.caseName);
+        const translated = await translateItems(items, ['caseName', 'snippet']);
+        return jsonResponse({ topic: q, items: translated });
+      } catch (e) {
+        return jsonResponse({ items: [], error: e.message });
+      }
+    }
+
+    // ── MuckRock — FOIA-Anfragen (öffentliche Datenbank) ──
+    if (path === '/api/kaninchenbau/muckrock' && method === 'GET') {
+      const topic = url.searchParams.get('topic');
+      if (!topic) return errorResponse('topic fehlt', 400);
+      const q = getEnglishTopic(topic);
+      try {
+        const r = await fetch(
+          `https://www.muckrock.com/api_v1/foia/?q=${encodeURIComponent(q)}&format=json&page_size=8`,
+          { signal: AbortSignal.timeout(12000), headers: { 'Accept': 'application/json' } }
+        );
+        if (!r.ok) return jsonResponse({ items: [], note: `MuckRock HTTP ${r.status}` });
+        const data = await r.json();
+        const items = (data?.results || []).slice(0, 8).map(f => ({
+          id: f.id || '',
+          title: f.title || '',
+          agency: f.agency?.name || f.agency || '',
+          status: f.status || '',
+          date: f.datetime_submitted?.slice(0, 10) || '',
+          description: (f.public_notes || f.description || '').slice(0, 150),
+          url: f.absolute_url ? `https://www.muckrock.com${f.absolute_url}` : '',
+        })).filter(f => f.title);
+        const translated = await translateItems(items, ['title', 'description']);
+        return jsonResponse({ topic: q, items: translated });
+      } catch (e) {
+        return jsonResponse({ items: [], error: e.message });
+      }
+    }
+
+    // ── LittleSis — Power-Broker-Netzwerk (US-fokussiert) ──
+    if (path === '/api/kaninchenbau/littlesis' && method === 'GET') {
+      const topic = url.searchParams.get('topic');
+      if (!topic) return errorResponse('topic fehlt', 400);
+      const q = getEnglishTopic(topic);
+      try {
+        const r = await fetch(
+          `https://littlesis.org/api/entities/search?q=${encodeURIComponent(q)}&num=8`,
+          { signal: AbortSignal.timeout(12000), headers: { 'Accept': 'application/json' } }
+        );
+        if (!r.ok) return jsonResponse({ items: [], note: `LittleSis HTTP ${r.status}` });
+        const data = await r.json();
+        const entities = data?.data || data?.entities || [];
+        const items = entities.slice(0, 8).map(e => {
+          const attrs = e?.attributes || e;
+          return {
+            id: attrs.id || e.id || '',
+            name: attrs.name || '',
+            type: attrs.primary_ext || '',
+            blurb: (attrs.blurb || '').slice(0, 150),
+            summary: (attrs.summary || '').slice(0, 200),
+            url: attrs.url || `https://littlesis.org/org/${attrs.id}`,
+            relCount: attrs.links_count || 0,
+          };
+        }).filter(e => e.name);
+        return jsonResponse({ topic: q, items });
+      } catch (e) {
+        return jsonResponse({ items: [], error: e.message });
+      }
+    }
+
+    // ── DocumentCloud — Journalisten-Dokumenten-Datenbank ──
+    if (path === '/api/kaninchenbau/documentcloud' && method === 'GET') {
+      const topic = url.searchParams.get('topic');
+      if (!topic) return errorResponse('topic fehlt', 400);
+      const q = getEnglishTopic(topic);
+      try {
+        const r = await fetch(
+          `https://api.documentcloud.org/api/documents/search/?q=${encodeURIComponent(q)}&per_page=8&format=json`,
+          { signal: AbortSignal.timeout(12000), headers: { 'Accept': 'application/json' } }
+        );
+        if (!r.ok) return jsonResponse({ items: [], note: `DocumentCloud HTTP ${r.status}` });
+        const data = await r.json();
+        const items = (data?.results || []).slice(0, 8).map(d => ({
+          id: d.id || '',
+          title: d.title || '',
+          source: d.source || d.organization?.name || '',
+          date: d.created_at?.slice(0, 10) || '',
+          description: (d.description || '').slice(0, 150),
+          pages: d.page_count || 0,
+          url: d.canonical_url || `https://www.documentcloud.org/documents/${d.id}`,
+          thumbnail: d.image_url ? d.image_url.replace('{page}', '1').replace('{size}', 'thumbnail') : null,
+        })).filter(d => d.title);
+        const translated = await translateItems(items, ['title', 'description']);
+        return jsonResponse({ topic: q, items: translated });
+      } catch (e) {
+        return jsonResponse({ items: [], error: e.message });
+      }
+    }
+
+    // ── CIA CREST / FOIA — Freigegebene CIA-Dokumente ──
+    if (path === '/api/kaninchenbau/ciacrest' && method === 'GET') {
+      const topic = url.searchParams.get('topic');
+      if (!topic) return errorResponse('topic fehlt', 400);
+      const q = getEnglishTopic(topic);
+      // CIA Reading Room hat keine JSON-API — wir nutzen Internet Archive
+      // für CIA-spezifische Dokumente + geben direkten CIA-Such-Link zurück
+      try {
+        const [archiveR] = await Promise.allSettled([
+          fetch(
+            `https://archive.org/advancedsearch.php?q=${encodeURIComponent(q)}+AND+mediatype:texts+AND+subject:CIA&fl[]=identifier&fl[]=title&fl[]=date&fl[]=description&fl[]=creator&rows=6&output=json`,
+            { signal: AbortSignal.timeout(10000) }
+          ).then(r => r.ok ? r.json() : null).catch(() => null),
+        ]);
+
+        const archiveDocs = archiveR.status === 'fulfilled' && archiveR.value
+          ? (archiveR.value?.response?.docs || []).slice(0, 6).map(d => ({
+              id: d.identifier || '',
+              title: d.title || '',
+              date: d.date?.slice(0, 10) || '',
+              description: (Array.isArray(d.description) ? d.description[0] : d.description || '').slice(0, 150),
+              creator: Array.isArray(d.creator) ? d.creator[0] : d.creator || 'CIA',
+              url: `https://archive.org/details/${d.identifier}`,
+              source: 'Internet Archive / CIA',
+            })).filter(d => d.title)
+          : [];
+
+        // Immer CIA Reading Room Link anhängen
+        const links = [
+          { title: `CIA Reading Room: ${q}`, url: `https://www.cia.gov/readingroom/search/site/${encodeURIComponent(q)}`, source: 'CIA CREST', description: 'Freigegebene CIA-Dokumente (FOIA)' },
+          { title: `NARA JFK Collection: ${q}`, url: `https://catalog.archives.gov/search?q=${encodeURIComponent(q)}&f.levelOfDescription=item`, source: 'NARA', description: 'National Archives JFK Assassination Records' },
+          { title: `MFF: ${q}`, url: `https://www.maryferrell.org/search.html#q=${encodeURIComponent(q)}`, source: 'Mary Ferrell Foundation', description: 'JFK/CIA/FBI Aktendatenbank' },
+        ];
+
+        const translated = await translateItems([...archiveDocs, ...links.filter(l => !archiveDocs.length)], ['title', 'description']);
+        return jsonResponse({ topic: q, items: translated.length ? translated : links });
+      } catch (e) {
+        return jsonResponse({ items: [
+          { title: `CIA FOIA: ${topic}`, url: `https://www.cia.gov/readingroom/search/site/${encodeURIComponent(topic)}`, source: 'CIA CREST', description: 'Freigegebene CIA-Dokumente' },
+        ], error: e.message });
+      }
+    }
+
+    // ── Snowden / NSA Files — via Internet Archive + DDoSecrets ──
+    if (path === '/api/kaninchenbau/snowden' && method === 'GET') {
+      const topic = url.searchParams.get('topic');
+      if (!topic) return errorResponse('topic fehlt', 400);
+      const q = getEnglishTopic(topic);
+      try {
+        const r = await fetch(
+          `https://archive.org/advancedsearch.php?q=${encodeURIComponent(q)}+AND+(subject:NSA+OR+subject:Snowden+OR+subject:surveillance)&fl[]=identifier&fl[]=title&fl[]=date&fl[]=description&rows=6&output=json`,
+          { signal: AbortSignal.timeout(10000) }
+        );
+        const data = r.ok ? await r.json() : null;
+        const items = (data?.response?.docs || []).slice(0, 6).map(d => ({
+          id: d.identifier || '',
+          title: d.title || '',
+          date: d.date?.slice(0, 10) || '',
+          description: (Array.isArray(d.description) ? d.description[0] : d.description || '').slice(0, 150),
+          url: `https://archive.org/details/${d.identifier}`,
+          source: 'Internet Archive',
+        })).filter(d => d.title);
+
+        // Statische Snowden-Quellen immer anhängen
+        const staticLinks = [
+          { title: `DDoSecrets: ${topic}`, url: `https://ddosecrets.com/search?q=${encodeURIComponent(topic)}`, source: 'DDoSecrets', description: 'BlueLeaks, Hacker-Dumps, Geheimdienstakten' },
+          { title: `Snowden NSA Docs (Intercept)`, url: `https://theintercept.com/snowden-sidtoday/`, source: 'The Intercept', description: 'NSA-Interna aus den Snowden-Dokumenten' },
+        ];
+        const translated = await translateItems(items, ['title', 'description']);
+        return jsonResponse({ topic: q, items: [...translated, ...staticLinks] });
+      } catch (e) {
+        return jsonResponse({ items: [
+          { title: `DDoSecrets: ${topic}`, url: `https://ddosecrets.com/search?q=${encodeURIComponent(topic)}`, source: 'DDoSecrets', description: 'Geheimdienstakten + Whistleblower' },
+        ], error: e.message });
+      }
+    }
+
+    // ── OpenOwnership — Transparenz Firmenstrukturen (Beneficial Ownership) ──
+    if (path === '/api/kaninchenbau/openownership' && method === 'GET') {
+      const topic = url.searchParams.get('topic');
+      if (!topic) return errorResponse('topic fehlt', 400);
+      const q = getEnglishTopic(topic);
+      try {
+        const r = await fetch(
+          `https://api.openownership.org/entities?q=${encodeURIComponent(q)}&per_page=8`,
+          { signal: AbortSignal.timeout(10000), headers: { 'Accept': 'application/json' } }
+        );
+        if (!r.ok) return jsonResponse({ items: [], note: `OpenOwnership HTTP ${r.status}` });
+        const data = await r.json();
+        const items = (data?.data || []).slice(0, 8).map(e => ({
+          id: e.id || '',
+          name: e.name || '',
+          type: e.type || '',
+          country: e.jurisdiction_code || '',
+          source: e.source?.name || 'OpenOwnership',
+          url: e.links?.self ? `https://register.openownership.org${e.links.self}` : '',
+        })).filter(e => e.name);
+        return jsonResponse({ topic: q, items });
+      } catch (e) {
+        return jsonResponse({ items: [], error: e.message });
+      }
+    }
+
+    // ── OpenSpending — Regierungsausgaben weltweit ──
+    if (path === '/api/kaninchenbau/openspending' && method === 'GET') {
+      const topic = url.searchParams.get('topic');
+      if (!topic) return errorResponse('topic fehlt', 400);
+      const q = getEnglishTopic(topic);
+      try {
+        const r = await fetch(
+          `https://openspending.org/search?q=${encodeURIComponent(q)}&type=dataset&format=json&limit=8`,
+          { signal: AbortSignal.timeout(10000) }
+        );
+        if (!r.ok) {
+          // Fallback: OpenSpending hat kein stabiles API — statische Links
+          return jsonResponse({ items: [
+            { id: 'os-1', name: `OpenSpending: ${topic}`, country: 'Global', amount: 0, source: 'OpenSpending', url: `https://openspending.org/s/?q=${encodeURIComponent(topic)}` },
+          ]});
+        }
+        const data = await r.json();
+        const items = (data?.results || []).slice(0, 8).map(d => ({
+          id: d.id || '',
+          name: d.label || d.name || '',
+          country: d.territories?.[0] || '',
+          amount: d.total_budget || 0,
+          source: 'OpenSpending',
+          url: `https://openspending.org/${d.id}`,
+        })).filter(i => i.name);
+        return jsonResponse({ topic: q, items });
+      } catch (e) {
+        return jsonResponse({ items: [], error: e.message });
+      }
+    }
+
+    // ── HUDOC — Europäischer Gerichtshof für Menschenrechte ──
+    if (path === '/api/kaninchenbau/hudoc' && method === 'GET') {
+      const topic = url.searchParams.get('topic');
+      if (!topic) return errorResponse('topic fehlt', 400);
+      const q = getEnglishTopic(topic);
+      try {
+        const r = await fetch(
+          `https://hudoc.echr.coe.int/app/query/results?query=contentsitename:ECHR+AND+%28%22${encodeURIComponent(q)}%22%29&select=itemid,docname,kpdate,article,conclusion&sort=kpdate+Descending&start=0&length=8&language=ger`,
+          { signal: AbortSignal.timeout(12000), headers: { 'Accept': 'application/json' } }
+        );
+        if (!r.ok) return jsonResponse({ items: [] });
+        const data = await r.json();
+        const items = (data?.results?.result || []).slice(0, 8).map(c => {
+          const cols = c?.columns || {};
+          return {
+            id: cols?.itemid || '',
+            title: cols?.docname || '',
+            date: cols?.kpdate?.slice(0, 10) || '',
+            articles: cols?.article || '',
+            conclusion: (cols?.conclusion || '').slice(0, 150),
+            url: `https://hudoc.echr.coe.int/eng#{%22itemid%22:[%22${cols?.itemid}%22]}`,
+          };
+        }).filter(c => c.title);
+        const translated = await translateItems(items, ['title', 'conclusion']);
+        return jsonResponse({ topic: q, items: translated });
+      } catch (e) {
+        return jsonResponse({ items: [], error: e.message });
+      }
+    }
+
+    // ── EU-Curia — EU-Gerichtshof Urteile ──
+    if (path === '/api/kaninchenbau/eucuria' && method === 'GET') {
+      const topic = url.searchParams.get('topic');
+      if (!topic) return errorResponse('topic fehlt', 400);
+      try {
+        // EU-Curia hat kein offenes API — nutzen EUR-Lex als Alternative
+        const r = await fetch(
+          `https://api.eurlex.europa.eu/rest/eurlex/search?queryText=${encodeURIComponent(topic)}&pageSize=8&pageNum=1&language=de&includeCorrigenda=false`,
+          { signal: AbortSignal.timeout(12000), headers: { 'Accept': 'application/json' } }
+        );
+        let items = [];
+        if (r.ok) {
+          const data = await r.json();
+          items = (data?.results || []).slice(0, 8).map(d => ({
+            id: d.celexNumber || d.id || '',
+            title: d.title || d.longTitle || '',
+            date: d.date || '',
+            type: d.documentType || 'Urteil',
+            source: 'EUR-Lex',
+            url: d.uri || `https://eur-lex.europa.eu/legal-content/DE/TXT/?uri=CELEX:${d.celexNumber}`,
+          })).filter(i => i.title);
+        }
+        if (!items.length) {
+          // Static-Link-Fallback
+          items = [
+            { id: 'curia-1', title: `EU-Gerichtshof: ${topic}`, date: '', type: 'Suche', source: 'EU-Curia', url: `https://curia.europa.eu/juris/recherche.jsf?language=de&query=${encodeURIComponent(topic)}` },
+            { id: 'eurlex-1', title: `EUR-Lex: ${topic}`, date: '', type: 'Suche', source: 'EUR-Lex', url: `https://eur-lex.europa.eu/search.html?text=${encodeURIComponent(topic)}&lang=de` },
+          ];
+        }
+        const translated = await translateItems(items, ['title']);
+        return jsonResponse({ topic, items: translated });
+      } catch (e) {
+        return jsonResponse({ items: [], error: e.message });
+      }
+    }
+
+    // ── OpenSecrets — US-Wahlkampffinanzierung ──
+    if (path === '/api/kaninchenbau/opensecrets' && method === 'GET') {
+      const topic = url.searchParams.get('topic');
+      if (!topic) return errorResponse('topic fehlt', 400);
+      const q = getEnglishTopic(topic);
+      // OpenSecrets API braucht Key für Daten — wir geben statische Recherche-Links
+      const items = [
+        { id: 'os-1', name: `OpenSecrets: ${q}`, type: 'Suche', industry: '', amount: 0, year: new Date().getFullYear(), source: 'OpenSecrets', url: `https://www.opensecrets.org/search?q=${encodeURIComponent(q)}&cx=1` },
+        { id: 'os-2', name: `FollowTheMoney: ${q}`, type: 'Suche', industry: '', amount: 0, year: new Date().getFullYear(), source: 'FollowTheMoney', url: `https://www.followthemoney.org/show-me?s=${encodeURIComponent(q)}` },
+        { id: 'os-3', name: `FEC-Datenbank: ${q}`, type: 'Suche', industry: '', amount: 0, year: new Date().getFullYear(), source: 'FEC', url: `https://www.fec.gov/data/browse-data/?tab=bulk-data` },
+      ];
+      return jsonResponse({ topic: q, items });
+    }
+
+    // ── FEC — Federal Election Commission ──
+    if (path === '/api/kaninchenbau/fec' && method === 'GET') {
+      const topic = url.searchParams.get('topic');
+      if (!topic) return errorResponse('topic fehlt', 400);
+      const q = getEnglishTopic(topic);
+      try {
+        // FEC API — Kandidaten-Suche (kein Key für basic)
+        const r = await fetch(
+          `https://api.open.fec.gov/v1/candidates/search/?q=${encodeURIComponent(q)}&per_page=8&api_key=DEMO_KEY`,
+          { signal: AbortSignal.timeout(12000), headers: { 'Accept': 'application/json' } }
+        );
+        let items = [];
+        if (r.ok) {
+          const data = await r.json();
+          items = (data?.results || []).slice(0, 8).map(c => ({
+            id: c.candidate_id || '',
+            name: c.name || '',
+            party: c.party_full || '',
+            office: c.office_full || '',
+            state: c.state || '',
+            cycles: c.election_years || [],
+            url: `https://www.fec.gov/data/candidate/${c.candidate_id}/`,
+          })).filter(c => c.name);
+        }
+        if (!items.length) {
+          items = [{ id: 'fec-1', name: `FEC-Suche: ${q}`, party: '', office: '', state: '', cycles: [], url: `https://www.fec.gov/data/browse-data/?tab=candidates` }];
+        }
+        return jsonResponse({ topic: q, items });
+      } catch (e) {
+        return jsonResponse({ items: [], error: e.message });
+      }
+    }
+
+    // ── EveryPolitician — globale Politiker-Datenbank ──
+    if (path === '/api/kaninchenbau/everypolitician' && method === 'GET') {
+      const topic = url.searchParams.get('topic');
+      if (!topic) return errorResponse('topic fehlt', 400);
+      // EveryPolitician ist GitHub-based, kein dynamisches Suche-API
+      // Wir nutzen Wikidata SPARQL speziell für Politiker
+      const q = getEnglishTopic(topic);
+      try {
+        const sparql = `
+SELECT DISTINCT ?person ?personLabel ?countryLabel ?partyLabel ?positionLabel WHERE {
+  ?person wdt:P31 wd:Q5.
+  ?person wdt:P106 wd:Q82955.
+  { ?person rdfs:label ?searchLabel. FILTER(CONTAINS(LCASE(STR(?searchLabel)), "${q.toLowerCase()}")) }
+  UNION
+  { ?person wdt:P102 ?party. ?party rdfs:label ?partyLabel2. FILTER(CONTAINS(LCASE(STR(?partyLabel2)), "${q.toLowerCase()}")) }
+  OPTIONAL { ?person wdt:P27 ?country. }
+  OPTIONAL { ?person wdt:P102 ?party. }
+  OPTIONAL { ?person wdt:P39 ?position. }
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "de,en". }
+}
+LIMIT 15`;
+        const r = await fetch(
+          `https://query.wikidata.org/sparql?format=json&query=${encodeURIComponent(sparql)}`,
+          { signal: AbortSignal.timeout(15000), headers: { 'Accept': 'application/sparql-results+json', 'User-Agent': 'WeltenbibliothekKaninchenbau/1.0' } }
+        );
+        if (!r.ok) return jsonResponse({ items: [] });
+        const data = await r.json();
+        const seen = new Set();
+        const items = (data?.results?.bindings || [])
+          .map(b => ({
+            id: (b.person?.value || '').split('/').pop(),
+            name: b.personLabel?.value || '',
+            country: b.countryLabel?.value || '',
+            party: b.partyLabel?.value || '',
+            position: b.positionLabel?.value || '',
+            url: b.person?.value || '',
+          }))
+          .filter(p => p.name && !/^Q\d+$/.test(p.name) && !seen.has(p.id) && seen.add(p.id))
+          .slice(0, 12);
+        return jsonResponse({ topic: q, items });
+      } catch (e) {
+        return jsonResponse({ items: [], error: e.message });
+      }
+    }
+
+    // ── OC-Network — OpenCorporates Officer-Netzwerk ──
+    if (path === '/api/kaninchenbau/oc-network' && method === 'GET') {
+      const topic = url.searchParams.get('topic');
+      if (!topic) return errorResponse('topic fehlt', 400);
+      const q = getEnglishTopic(topic);
+      try {
+        const r = await fetch(
+          `https://api.opencorporates.com/v0.4/officers/search?q=${encodeURIComponent(q)}&per_page=8`,
+          { signal: AbortSignal.timeout(12000), headers: { 'Accept': 'application/json' } }
+        );
+        if (!r.ok) return jsonResponse({ items: [] });
+        const data = await r.json();
+        const officers = (data?.results?.officers || []).slice(0, 8);
+        const items = officers.map(o => {
+          const off = o.officer || o;
+          return {
+            id: off.id || '',
+            name: off.name || '',
+            position: off.position || '',
+            company: off.company?.name || '',
+            jurisdiction: off.company?.jurisdiction_code || '',
+            startDate: off.start_date || '',
+            endDate: off.end_date || '',
+            url: off.opencorporates_url || '',
+          };
+        }).filter(o => o.name);
+        return jsonResponse({ topic: q, items });
+      } catch (e) {
+        return jsonResponse({ items: [], error: e.message });
+      }
+    }
+
+    // ── CorpWatch — Unternehmens-Kritik und Compliance-Verletzungen ──
+    if (path === '/api/kaninchenbau/corpwatch' && method === 'GET') {
+      const topic = url.searchParams.get('topic');
+      if (!topic) return errorResponse('topic fehlt', 400);
+      const q = getEnglishTopic(topic);
+      // CorpWatch API ist veraltet — wir kombinieren mehrere Quellen
+      try {
+        const [goodJobsR, violarR] = await Promise.allSettled([
+          fetch(`https://www.goodjobsfirst.org/violation-tracker-api?company=${encodeURIComponent(q)}&limit=6`, { signal: AbortSignal.timeout(8000) }).then(r => r.ok ? r.json() : null).catch(() => null),
+          fetch(`https://api.violationtracker.goodjobsfirst.org/violations?company=${encodeURIComponent(q)}&limit=6`, { signal: AbortSignal.timeout(8000) }).then(r => r.ok ? r.json() : null).catch(() => null),
+        ]);
+        // Static Recherche-Links als Fallback
+        const items = [
+          { id: 'cw-1', name: `Violation Tracker: ${q}`, type: 'compliance', description: 'US-Unternehmensstrafen + Compliance-Verletzungen', penalty: 0, year: 0, source: 'Good Jobs First', url: `https://violationtracker.goodjobsfirst.org/?company_search=${encodeURIComponent(q)}` },
+          { id: 'cw-2', name: `CorpWatch: ${q}`, type: 'compliance', description: 'Unternehmens-Accountability-Datenbank', penalty: 0, year: 0, source: 'CorpWatch', url: `https://www.corpwatch.org/search/node/${encodeURIComponent(q)}` },
+          { id: 'cw-3', name: `OSHA Inspektionen: ${q}`, type: 'safety', description: 'Arbeitssicherheits-Verletzungen (USA)', penalty: 0, year: 0, source: 'OSHA', url: `https://www.osha.gov/pls/imis/establishment.html` },
+        ];
+        return jsonResponse({ topic: q, items });
+      } catch (e) {
+        return jsonResponse({ items: [], error: e.message });
+      }
+    }
+
+    // ── WikiLeaks Direkt-Suche ──
+    if (path === '/api/kaninchenbau/wikileaks' && method === 'GET') {
+      const topic = url.searchParams.get('topic');
+      if (!topic) return errorResponse('topic fehlt', 400);
+      const q = getEnglishTopic(topic);
+      // WikiLeaks hat kein öffentliches API — statische Quellen + Archive.org
+      try {
+        const r = await fetch(
+          `https://archive.org/advancedsearch.php?q=${encodeURIComponent(q)}+AND+(subject:WikiLeaks+OR+creator:WikiLeaks)&fl[]=identifier&fl[]=title&fl[]=date&fl[]=description&rows=5&output=json`,
+          { signal: AbortSignal.timeout(10000) }
+        );
+        const data = r.ok ? await r.json() : null;
+        const archiveItems = (data?.response?.docs || []).slice(0, 5).map(d => ({
+          id: d.identifier || '',
+          title: d.title || '',
+          date: d.date?.slice(0, 10) || '',
+          collection: 'WikiLeaks via Archive.org',
+          snippet: (Array.isArray(d.description) ? d.description[0] : d.description || '').slice(0, 150),
+          url: `https://archive.org/details/${d.identifier}`,
+        })).filter(d => d.title);
+
+        const staticItems = [
+          { id: 'wl-1', title: `WikiLeaks-Suche: ${q}`, date: '', collection: 'WikiLeaks', snippet: 'Diplomatische Depeschen, Geheimdienstberichte, interne Firmen-E-Mails', url: `https://search.wikileaks.org/?q=${encodeURIComponent(q)}` },
+          { id: 'wl-2', title: `WikiLeaks GI-Files: ${q}`, date: '', collection: 'WikiLeaks / Stratfor', snippet: 'Stratfor Global Intelligence E-Mails', url: `https://search.wikileaks.org/gifiles/?query=${encodeURIComponent(q)}` },
+        ];
+        const translated = await translateItems(archiveItems, ['title', 'snippet']);
+        return jsonResponse({ topic: q, items: [...translated, ...staticItems] });
+      } catch (e) {
+        return jsonResponse({ items: [
+          { id: 'wl-1', title: `WikiLeaks: ${q}`, date: '', collection: 'WikiLeaks', snippet: '', url: `https://search.wikileaks.org/?q=${encodeURIComponent(q)}` },
+        ], error: e.message });
+      }
+    }
+
+    // ── Verbesserte keypersons: Wikipedia-Fallback wenn Wikidata leer ──
+    // (Bereits implementiert oben — hier zusätzlicher Wikipedia-Extract-Endpoint)
+    if (path === '/api/kaninchenbau/keypersons-wiki' && method === 'GET') {
+      const topic = url.searchParams.get('topic');
+      if (!topic) return errorResponse('topic fehlt', 400);
+      const enTopic = getEnglishTopic(topic);
+      try {
+        // Wikipedia-Artikel holen + Personen-Mentions extrahieren
+        const langs = ['de', 'en'];
+        for (const lang of langs) {
+          const q = lang === 'en' ? enTopic : normalizeTopicForSearch(topic);
+          const linksUrl = `https://${lang}.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(q)}&prop=links&pllimit=50&plnamespace=0&format=json&origin=*`;
+          const lr = await fetch(linksUrl, { signal: AbortSignal.timeout(8000) }).catch(() => null);
+          if (!lr?.ok) continue;
+          const ld = await lr.json();
+          const pages = Object.values(ld?.query?.pages || {});
+          const links = pages[0]?.links || [];
+          // Filter: nur Links die wie Personennamen aussehen (Großbuchstabe + kein ':')
+          const personLinks = links
+            .map(l => l.title)
+            .filter(t => t && /^[A-ZÜÖÄ][a-züöäß]/.test(t) && !t.includes(':') && !t.includes('(') && t.split(' ').length >= 2)
+            .slice(0, 15);
+          if (personLinks.length >= 3) {
+            const persons = personLinks.map((name, i) => ({
+              id: `wiki-${i}`,
+              name,
+              description: `Erwähnt im Wikipedia-Artikel zu "${q}"`,
+              role: 'Erwähnt',
+              image: null,
+              url: `https://${lang}.wikipedia.org/wiki/${encodeURIComponent(name)}`,
+            }));
+            return jsonResponse({ topic, lang, persons });
+          }
+        }
+        return jsonResponse({ topic, persons: [] });
+      } catch (e) {
+        return jsonResponse({ persons: [], error: e.message });
+      }
+    }
+
     // ── Google Fact Check Tools (Worker-Proxy mit Server-Key) ──
     if (path === '/api/factcheck/search' && method === 'GET') {
       const q = url.searchParams.get('q');
