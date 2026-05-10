@@ -30,7 +30,7 @@ class RssMentionsCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.rss_feed_rounded,
+              const Icon(Icons.rss_feed,
                   color: Color(0xFF90CAF9), size: 18),
               const SizedBox(width: 8),
               const Text(
@@ -149,7 +149,7 @@ class RssMentionsCard extends StatelessWidget {
                   ),
                 ),
                 const Spacer(),
-                Icon(Icons.open_in_new_rounded,
+                Icon(Icons.open_in_new,
                     size: 12, color: Colors.white.withValues(alpha: 0.4)),
               ],
             ),

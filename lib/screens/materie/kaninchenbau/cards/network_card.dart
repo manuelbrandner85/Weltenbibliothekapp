@@ -75,7 +75,7 @@ class _NetworkCardState extends State<NetworkCard>
         children: [
           Row(
             children: [
-              Icon(Icons.hub_rounded,
+              Icon(Icons.hub,
                   color: KbDesign.neonRedSoft, size: 18),
               const SizedBox(width: 8),
               const Text(
@@ -115,7 +115,7 @@ class _NetworkCardState extends State<NetworkCard>
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.threed_rotation_rounded,
+                        Icon(Icons.threed_rotation,
                             size: 12, color: KbDesign.neonRedSoft),
                         const SizedBox(width: 4),
                         Text(
@@ -174,7 +174,7 @@ class _NetworkCardState extends State<NetworkCard>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.hub_rounded,
+            Icon(Icons.hub,
                 color: Colors.white.withValues(alpha: 0.18), size: 36),
             const SizedBox(height: 10),
             Text(

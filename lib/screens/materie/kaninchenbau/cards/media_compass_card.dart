@@ -29,7 +29,7 @@ class MediaCompassCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.explore_rounded,
+              Icon(Icons.explore,
                   color: KbDesign.lensOfficial, size: 18),
               const SizedBox(width: 8),
               const Text(

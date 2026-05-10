@@ -23,7 +23,7 @@ class UsaSpendingCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(children: [
-            const Icon(Icons.attach_money_rounded, color: _accent, size: 18),
+            const Icon(Icons.attach_money, color: _accent, size: 18),
             const SizedBox(width: 8),
             const Text('US-BUNDESAUSGABEN',
                 style: TextStyle(color: Colors.white70, fontSize: 11, letterSpacing: 2, fontWeight: FontWeight.bold)),
@@ -86,7 +86,7 @@ class UsaSpendingCard extends StatelessWidget {
           ),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
-              const Icon(Icons.business_rounded, color: _accent, size: 15),
+              const Icon(Icons.business, color: _accent, size: 15),
               const SizedBox(width: 8),
               Expanded(
                   child: Text(a.recipientName,

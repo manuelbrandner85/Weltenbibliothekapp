@@ -21,7 +21,7 @@ class DocumentCloudCard extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
-          const Icon(Icons.picture_as_pdf_rounded, color: _accent, size: 18),
+          const Icon(Icons.picture_as_pdf, color: _accent, size: 18),
           const SizedBox(width: 8),
           const Text('DOCUMENT CLOUD',
               style: TextStyle(color: Colors.white70, fontSize: 11, letterSpacing: 2, fontWeight: FontWeight.bold)),
@@ -58,7 +58,7 @@ class DocumentCloudCard extends StatelessWidget {
           decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.03), borderRadius: BorderRadius.circular(10), border: Border.all(color: _accent.withValues(alpha: 0.22))),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
-              const Icon(Icons.description_rounded, color: _accent, size: 15),
+              const Icon(Icons.description, color: _accent, size: 15),
               const SizedBox(width: 8),
               Expanded(child: Text(d.title, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600), maxLines: 2, overflow: TextOverflow.ellipsis)),
             ]),

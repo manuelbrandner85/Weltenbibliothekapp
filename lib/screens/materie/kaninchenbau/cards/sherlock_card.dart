@@ -71,7 +71,7 @@ class _SherlockCardState extends State<SherlockCard> {
         children: [
           Row(
             children: [
-              const Icon(Icons.fingerprint_rounded,
+              const Icon(Icons.fingerprint,
                   color: Color(0xFF4DD0E1), size: 18),
               const SizedBox(width: 8),
               const Text(
@@ -121,7 +121,7 @@ class _SherlockCardState extends State<SherlockCard> {
                     decoration: const InputDecoration(
                       hintText: 'username',
                       hintStyle: TextStyle(color: Colors.white38, fontSize: 13),
-                      prefixIcon: Icon(Icons.alternate_email_rounded,
+                      prefixIcon: Icon(Icons.alternate_email,
                           color: Color(0xFF4DD0E1), size: 18),
                       border: InputBorder.none,
                       contentPadding:
@@ -151,7 +151,7 @@ class _SherlockCardState extends State<SherlockCard> {
                           color: Colors.black,
                         ),
                       )
-                    : const Icon(Icons.search_rounded, size: 18),
+                    : const Icon(Icons.search, size: 18),
               ),
             ],
           ),
@@ -199,7 +199,7 @@ class _SherlockCardState extends State<SherlockCard> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.check_circle_rounded,
+            const Icon(Icons.check_circle,
                 size: 12, color: Color(0xFF4DD0E1)),
             const SizedBox(width: 6),
             Text(

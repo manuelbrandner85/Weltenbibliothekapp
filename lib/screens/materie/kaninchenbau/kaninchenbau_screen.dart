@@ -810,7 +810,7 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
                   // ── C: ABSCHNITT 1 — ÜBERSICHT ──────────────────────────
                   const _SectionHeader(
                     label: 'ÜBERSICHT',
-                    icon: Icons.search_rounded,
+                    icon: Icons.search,
                     color: Color(0xFFE53935),
                   ),
                   _stag(0, IdentityCard(
@@ -831,7 +831,7 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
                   // ── C: ABSCHNITT 2 — NETZWERK & MACHT ──────────────────
                   const _SectionHeader(
                     label: 'NETZWERK & MACHT',
-                    icon: Icons.hub_rounded,
+                    icon: Icons.hub,
                     color: Color(0xFFFFB300),
                   ),
                   _stag(250, NetworkCard(
@@ -875,7 +875,7 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
                   // ── C: ABSCHNITT 3 — KRITIK & GEGENDARSTELLUNG ──────────
                   const _SectionHeader(
                     label: 'KRITIK & GEGENDARSTELLUNG',
-                    icon: Icons.balance_rounded,
+                    icon: Icons.balance,
                     color: Color(0xFFAB47BC),
                   ),
                   const SizedBox(height: 16),
@@ -1025,7 +1025,7 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
                   // ── MINDBLOW: GELDFLÜSSE & WIRTSCHAFTSMACHT ─────────────
                   const _SectionHeader(
                     label: 'GELDFLÜSSE & WIRTSCHAFTSMACHT',
-                    icon: Icons.account_balance_rounded,
+                    icon: Icons.account_balance,
                     color: Color(0xFFFFB300),
                   ),
                   _stag(760, UsaSpendingCard(items: s.usaSpending, loading: s.usaSpendingLoading)),
@@ -1040,7 +1040,7 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
                   // ── MINDBLOW: GERICHTSAKTEN & RECHTSDOKUMENTE ───────────
                   const _SectionHeader(
                     label: 'GERICHTSAKTEN & RECHTSDOKUMENTE',
-                    icon: Icons.gavel_rounded,
+                    icon: Icons.gavel,
                     color: Color(0xFF7986CB),
                   ),
                   _stag(800, CourtListenerCard(items: s.courtListener, loading: s.courtListenerLoading)),
@@ -1055,7 +1055,7 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
                   // ── MINDBLOW: POLITISCHE FINANZIERUNG & NETZWERKE ───────
                   const _SectionHeader(
                     label: 'POLITISCHE FINANZIERUNG & NETZWERKE',
-                    icon: Icons.how_to_vote_rounded,
+                    icon: Icons.how_to_vote,
                     color: Color(0xFFEC407A),
                   ),
                   _stag(840, OpenSecretsCard(items: s.openSecrets, loading: s.openSecretsLoading)),
@@ -1070,7 +1070,7 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
                   // ── MINDBLOW: INVESTIGATIVE DOKUMENTE & WHISTLEBLOWER ───
                   const _SectionHeader(
                     label: 'INVESTIGATIVE DOKUMENTE & WHISTLEBLOWER',
-                    icon: Icons.warning_amber_rounded,
+                    icon: Icons.warning_amber,
                     color: Color(0xFFFF7043),
                   ),
                   _stag(880, DocumentCloudCard(items: s.documentCloud, loading: s.documentCloudLoading)),
@@ -1085,7 +1085,7 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
                   // ── MINDBLOW: UNTERNEHMENS-VERFLECHTUNGEN ───────────────
                   const _SectionHeader(
                     label: 'UNTERNEHMENS-VERFLECHTUNGEN',
-                    icon: Icons.business_center_rounded,
+                    icon: Icons.business_center,
                     color: Color(0xFF26A69A),
                   ),
                   _stag(920, OcNetworkCard(items: s.ocNetwork, loading: s.ocNetworkLoading)),
@@ -1237,7 +1237,7 @@ class _ResearchLoadingOverlayState extends State<_ResearchLoadingOverlay>
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.auto_awesome_rounded,
+                    Icon(Icons.auto_awesome,
                         size: 11,
                         color: KbDesign.goldAccent.withValues(alpha: 0.7)),
                     const SizedBox(width: 5),
@@ -1530,7 +1530,7 @@ class _ShareFabState extends State<_ShareFab>
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              Icons.ios_share_rounded,
+              Icons.ios_share,
               color: Colors.white.withValues(alpha: 0.7),
               size: 16,
             ),

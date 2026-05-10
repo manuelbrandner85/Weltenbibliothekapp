@@ -29,7 +29,7 @@ class FactCheckCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.fact_check_rounded,
+              const Icon(Icons.fact_check,
                   color: Color(0xFF66BB6A), size: 18),
               const SizedBox(width: 8),
               const Text(
@@ -132,7 +132,7 @@ class FactCheckCard extends StatelessWidget {
                 ),
                 if (c.url != null) ...[
                   const SizedBox(width: 6),
-                  Icon(Icons.open_in_new_rounded,
+                  Icon(Icons.open_in_new,
                       size: 13,
                       color: Colors.white.withValues(alpha: 0.5)),
                 ],

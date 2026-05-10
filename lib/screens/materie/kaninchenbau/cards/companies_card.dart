@@ -24,7 +24,7 @@ class CompaniesCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(children: [
-            const Icon(Icons.domain_rounded, color: _accent, size: 18),
+            const Icon(Icons.domain, color: _accent, size: 18),
             const SizedBox(width: 8),
             const Text('FIRMEN-REGISTER',
                 style: TextStyle(color: Colors.white70, fontSize: 11, letterSpacing: 2, fontWeight: FontWeight.bold)),

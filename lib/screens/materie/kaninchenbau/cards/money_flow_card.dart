@@ -24,7 +24,7 @@ class MoneyFlowCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.attach_money_rounded,
+              Icon(Icons.attach_money,
                   color: KbDesign.goldAccent, size: 18),
               const SizedBox(width: 8),
               const Text(
@@ -118,7 +118,7 @@ class MoneyFlowCard extends StatelessWidget {
                   ),
                 ),
               ),
-              Icon(Icons.arrow_forward_rounded,
+              Icon(Icons.arrow_forward,
                   size: 16,
                   color: KbDesign.goldAccent.withValues(alpha: 0.85)),
               const SizedBox(width: 6),

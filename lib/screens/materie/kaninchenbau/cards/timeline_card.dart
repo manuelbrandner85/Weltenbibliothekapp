@@ -26,7 +26,7 @@ class TimelineCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.history_toggle_off_rounded,
+              Icon(Icons.history_toggle_off,
                   color: KbDesign.goldAccent, size: 18),
               const SizedBox(width: 8),
               const Text(

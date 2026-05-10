@@ -21,7 +21,7 @@ class WorldBankCard extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
-          const Icon(Icons.public_rounded, color: _accent, size: 18),
+          const Icon(Icons.public, color: _accent, size: 18),
           const SizedBox(width: 8),
           const Text('WELTBANK-PROJEKTE',
               style: TextStyle(color: Colors.white70, fontSize: 11, letterSpacing: 2, fontWeight: FontWeight.bold)),
@@ -65,7 +65,7 @@ class WorldBankCard extends StatelessWidget {
           decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.03), borderRadius: BorderRadius.circular(10), border: Border.all(color: _accent.withValues(alpha: 0.22))),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
-              const Icon(Icons.account_balance_rounded, color: _accent, size: 15),
+              const Icon(Icons.account_balance, color: _accent, size: 15),
               const SizedBox(width: 8),
               Expanded(child: Text(p.name, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600), maxLines: 2, overflow: TextOverflow.ellipsis)),
             ]),

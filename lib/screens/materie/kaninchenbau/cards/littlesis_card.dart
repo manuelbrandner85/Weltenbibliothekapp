@@ -21,7 +21,7 @@ class LittleSisCard extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
-          const Icon(Icons.hub_rounded, color: _accent, size: 18),
+          const Icon(Icons.hub, color: _accent, size: 18),
           const SizedBox(width: 8),
           const Text('LITTLESIS-NETZWERK',
               style: TextStyle(color: Colors.white70, fontSize: 11, letterSpacing: 2, fontWeight: FontWeight.bold)),
@@ -59,7 +59,7 @@ class LittleSisCard extends StatelessWidget {
           decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.03), borderRadius: BorderRadius.circular(10), border: Border.all(color: _accent.withValues(alpha: 0.22))),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
-              Icon(isPerson ? Icons.person_rounded : Icons.business_rounded, color: _accent, size: 15),
+              Icon(isPerson ? Icons.person : Icons.business, color: _accent, size: 15),
               const SizedBox(width: 8),
               Expanded(child: Text(e.name, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis)),
               if (e.type.isNotEmpty)
