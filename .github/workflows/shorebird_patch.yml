@@ -57,10 +57,37 @@ jobs:
       # auf einen anderen Flutter-Engine-Snapshot — der Patch uploaded zwar, wird
       # aber vom Client auf dem Gerät still verworfen weil die Engine-Bytes nicht
       # zum registrierten Release passen. Deshalb fest pinnen.
-      - name: 🐦 Shorebird
+      - name: 🐦 Shorebird (Setup)
         uses: shorebirdtech/setup-shorebird@v1
-        with:
-          shorebird-version: 1.6.92
+
+      - name: 🔧 Shorebird CLI auf v1.6.92 downpinnen (gegen Engine-Drift)
+        # setup-shorebird@v1 akzeptiert keine `shorebird-version` Input mehr —
+        # die Warnung "Unexpected input(s) 'shorebird-version'" zeigt sich seit
+        # einer ganzen Weile in jedem Patch-Run. Damit lief die CLI bislang
+        # immer mit `latest` → Engine-Snapshot driftet weg vom registrierten
+        # Release v5.41.0 → Shorebird-Server akzeptiert den Upload, aber das
+        # Gerät verwirft den Patch silent beim Verifizieren.
+        #
+        # Manuell auf das letzte bekannte gute CLI-Tag (v1.6.92, kompatibel mit
+        # Flutter 3.41.6 rev 76ca3dff01) downchecken. Die Snapshot-Cache wird
+        # beim nächsten `shorebird`-Aufruf automatisch neu gebaut.
+        run: |
+          set -euo pipefail
+          SHOREBIRD_BIN=$(command -v shorebird)
+          SHOREBIRD_ROOT=$(dirname "$(dirname "$SHOREBIRD_BIN")")
+          echo "Shorebird install dir: $SHOREBIRD_ROOT"
+          cd "$SHOREBIRD_ROOT"
+          if [ ! -d .git ]; then
+            echo "❌ $SHOREBIRD_ROOT ist kein git-Klon — kann nicht pinnen"
+            exit 1
+          fi
+          git fetch --tags --force --depth=1 origin v1.6.92
+          git checkout --force v1.6.92
+          # Snapshot cache invalidieren damit shorebird mit der neuen Version
+          # neu bootstrapped
+          rm -f bin/cache/shorebird.snapshot bin/cache/shorebird.snapshot.tmp || true
+          echo "--- shorebird --version (nach Pin) ---"
+          shorebird --version
 
       - name: 📋 Version lesen
         id: version
