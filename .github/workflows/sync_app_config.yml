@@ -22,9 +22,8 @@ name: 🔁 Sync Supabase app_config
 on:
   push:
     branches: [main]
-    paths:
-      - 'pubspec.yaml'
-      - '.github/workflows/sync_app_config.yml'
+    # Kein paths-Filter: sync läuft bei JEDEM main-Push, damit app_config auch
+    # nach reinen Dart-/CI-Commits aktuell bleibt (nicht nur bei pubspec-Bumps).
   workflow_dispatch:
 
 permissions:
