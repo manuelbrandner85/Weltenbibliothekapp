@@ -24,7 +24,7 @@ class ArchiveCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(children: [
-            const Icon(Icons.archive_rounded, color: _accent, size: 18),
+            const Icon(Icons.archive, color: _accent, size: 18),
             const SizedBox(width: 8),
             const Text('INTERNET ARCHIVE',
                 style: TextStyle(color: Colors.white70, fontSize: 11, letterSpacing: 2, fontWeight: FontWeight.bold)),
@@ -119,7 +119,7 @@ class ArchiveCard extends StatelessWidget {
                 ],
               ]),
             ),
-            Icon(Icons.open_in_new_rounded, color: _accent, size: 13),
+            Icon(Icons.open_in_new, color: _accent, size: 13),
           ]),
         ),
       ),
@@ -151,11 +151,11 @@ class ArchiveCard extends StatelessWidget {
 
   IconData _iconForType(String type) {
     switch (type.toLowerCase()) {
-      case 'texts': return Icons.description_rounded;
-      case 'movies': return Icons.movie_rounded;
-      case 'audio': return Icons.headphones_rounded;
-      case 'image': return Icons.image_rounded;
-      default: return Icons.folder_rounded;
+      case 'texts': return Icons.description;
+      case 'movies': return Icons.movie;
+      case 'audio': return Icons.headphones;
+      case 'image': return Icons.image;
+      default: return Icons.folder;
     }
   }
 }

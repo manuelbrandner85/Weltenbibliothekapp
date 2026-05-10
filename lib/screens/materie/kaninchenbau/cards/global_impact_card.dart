@@ -32,7 +32,7 @@ class GlobalImpactCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.public_rounded,
+              const Icon(Icons.public,
                   color: Color(0xFF42A5F5), size: 18),
               const SizedBox(width: 8),
               const Text(

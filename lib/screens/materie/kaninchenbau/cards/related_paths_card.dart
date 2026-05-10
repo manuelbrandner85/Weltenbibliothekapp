@@ -115,7 +115,7 @@ class _ChipTile extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.arrow_outward_rounded,
+            const Icon(Icons.arrow_outward,
                 size: 14, color: KbDesign.neonRedSoft),
             const SizedBox(width: 6),
             Text(

@@ -34,7 +34,7 @@ class KeyPersonsCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.diversity_3_rounded,
+              const Icon(Icons.diversity_3,
                   color: _accent, size: 18),
               const SizedBox(width: 8),
               const Text(

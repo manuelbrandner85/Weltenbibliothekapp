@@ -116,12 +116,12 @@ class _Network3DViewState extends State<Network3DView>
               child: Row(
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.arrow_back_ios_new_rounded,
+                    icon: const Icon(Icons.arrow_back_ios_new,
                         color: Colors.white70),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                   const SizedBox(width: 4),
-                  Icon(Icons.threed_rotation_rounded,
+                  Icon(Icons.threed_rotation,
                       color: KbDesign.neonRedSoft, size: 18),
                   const SizedBox(width: 6),
                   const Text('3D NETZWERK',

@@ -29,7 +29,7 @@ class AcademicCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.school_rounded,
+              const Icon(Icons.school,
                   color: Color(0xFF26A69A), size: 18),
               const SizedBox(width: 8),
               const Text(
@@ -129,7 +129,7 @@ class AcademicCard extends StatelessWidget {
                 ),
                 if (p.url != null) ...[
                   const SizedBox(width: 6),
-                  Icon(Icons.open_in_new_rounded,
+                  Icon(Icons.open_in_new,
                       size: 13,
                       color: Colors.white.withValues(alpha: 0.5)),
                 ],
@@ -178,7 +178,7 @@ class AcademicCard extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.format_quote_rounded,
+                      const Icon(Icons.format_quote,
                           size: 10, color: Color(0xFF26A69A)),
                       const SizedBox(width: 3),
                       Text(

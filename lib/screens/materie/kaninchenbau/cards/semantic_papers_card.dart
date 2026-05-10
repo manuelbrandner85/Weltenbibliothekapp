@@ -24,7 +24,7 @@ class SemanticPapersCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(children: [
-            const Icon(Icons.schema_rounded, color: _accent, size: 18),
+            const Icon(Icons.schema, color: _accent, size: 18),
             const SizedBox(width: 8),
             const Text('WISSENSCHAFT · ZITATIONEN',
                 style: TextStyle(color: Colors.white70, fontSize: 11, letterSpacing: 2, fontWeight: FontWeight.bold)),
@@ -98,7 +98,7 @@ class SemanticPapersCard extends StatelessWidget {
             ]),
             const SizedBox(height: 6),
             Row(children: [
-              Icon(Icons.person_outline_rounded, color: Colors.white38, size: 11),
+              Icon(Icons.person_outline, color: Colors.white38, size: 11),
               const SizedBox(width: 4),
               Expanded(
                 child: Text(p.authors,
@@ -113,10 +113,10 @@ class SemanticPapersCard extends StatelessWidget {
             ]),
             const SizedBox(height: 4),
             Row(children: [
-              _citBadge(Icons.format_quote_rounded, '${p.citations}', Colors.amber),
+              _citBadge(Icons.format_quote, '${p.citations}', Colors.amber),
               const SizedBox(width: 8),
               if (p.influential > 0)
-                _citBadge(Icons.star_rounded, '${p.influential} einflussreich', const Color(0xFFFF7043)),
+                _citBadge(Icons.star, '${p.influential} einflussreich', const Color(0xFFFF7043)),
             ]),
             if ((p.abstract_ ?? '').isNotEmpty) ...[
               const SizedBox(height: 4),

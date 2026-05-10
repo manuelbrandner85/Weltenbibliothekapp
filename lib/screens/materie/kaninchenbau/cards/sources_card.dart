@@ -32,7 +32,7 @@ class _SourcesCardState extends State<SourcesCard> {
         children: [
           Row(
             children: [
-              Icon(Icons.menu_book_rounded,
+              Icon(Icons.menu_book,
                   color: KbDesign.lensOfficial, size: 18),
               const SizedBox(width: 8),
               const Text(
@@ -178,7 +178,7 @@ class _SourceTile extends StatelessWidget {
                   const Spacer(),
                   Icon(
                     item.credibility >= 80
-                        ? Icons.verified_rounded
+                        ? Icons.verified
                         : Icons.info_outlined,
                     size: 13,
                     color: _credColor(item.credibility),

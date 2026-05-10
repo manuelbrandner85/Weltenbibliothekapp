@@ -31,7 +31,7 @@ class LobbyingCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.attach_money_rounded, color: _accent, size: 18),
+              const Icon(Icons.attach_money, color: _accent, size: 18),
               const SizedBox(width: 8),
               const Text(
                 'LOBBYING · EU-EINFLUSS',

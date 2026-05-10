@@ -33,7 +33,7 @@ class SkandaleCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.local_fire_department_rounded,
+              const Icon(Icons.local_fire_department,
                   color: _accent, size: 18),
               const SizedBox(width: 8),
               const Text(

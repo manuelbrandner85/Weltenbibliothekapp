@@ -88,7 +88,7 @@ class _DeepResearchCardState extends State<DeepResearchCard> {
           // Header
           Row(
             children: [
-              const Icon(Icons.travel_explore_rounded,
+              const Icon(Icons.travel_explore,
                   color: _accent, size: 18),
               const SizedBox(width: 8),
               const Text(
@@ -303,7 +303,7 @@ class _DeepResearchCardState extends State<DeepResearchCard> {
                 ],
               ),
             ),
-            const Icon(Icons.open_in_new_rounded,
+            const Icon(Icons.open_in_new,
                 color: _accent, size: 16),
           ],
         ),

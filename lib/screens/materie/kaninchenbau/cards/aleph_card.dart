@@ -27,7 +27,7 @@ class AlephCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(children: [
-            const Icon(Icons.folder_special_rounded, color: _accent, size: 18),
+            const Icon(Icons.folder_special, color: _accent, size: 18),
             const SizedBox(width: 8),
             const Text('INVESTIGATIV-ARCHIVE',
                 style: TextStyle(color: Colors.white70, fontSize: 11, letterSpacing: 2, fontWeight: FontWeight.bold)),
@@ -131,10 +131,10 @@ class AlephCard extends StatelessWidget {
 
   IconData _iconForSchema(String schema) {
     final s = schema.toLowerCase();
-    if (s.contains('person')) return Icons.person_rounded;
-    if (s.contains('company') || s.contains('legal')) return Icons.business_rounded;
-    if (s.contains('document') || s.contains('email')) return Icons.description_rounded;
-    if (s.contains('payment') || s.contains('asset')) return Icons.account_balance_wallet_rounded;
-    return Icons.folder_rounded;
+    if (s.contains('person')) return Icons.person;
+    if (s.contains('company') || s.contains('legal')) return Icons.business;
+    if (s.contains('document') || s.contains('email')) return Icons.description;
+    if (s.contains('payment') || s.contains('asset')) return Icons.account_balance_wallet;
+    return Icons.folder;
   }
 }

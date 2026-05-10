@@ -27,7 +27,7 @@ class IdentityCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.psychology_rounded,
+              Icon(Icons.psychology,
                   color: KbDesign.neonRedSoft, size: 18),
               const SizedBox(width: 8),
               Text(

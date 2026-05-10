@@ -174,7 +174,7 @@ class _VirgilOrbState extends State<VirgilOrb>
           children: [
             Row(
               children: [
-                Icon(Icons.auto_awesome_rounded,
+                Icon(Icons.auto_awesome,
                     size: 14, color: KbDesign.goldAccent),
                 const SizedBox(width: 6),
                 const Text(

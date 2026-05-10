@@ -31,7 +31,7 @@ class AbgeordneteCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.gavel_rounded, color: _accent, size: 18),
+              const Icon(Icons.gavel, color: _accent, size: 18),
               const SizedBox(width: 8),
               const Text(
                 'POLITIK · BUNDESTAG',
@@ -186,7 +186,7 @@ class AbgeordneteCard extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right_rounded,
+              const Icon(Icons.chevron_right,
                   color: _accent, size: 18),
             ],
           ),
