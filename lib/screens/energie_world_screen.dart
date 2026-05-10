@@ -119,7 +119,7 @@ class _EnergieWorldScreenState extends ConsumerState<EnergieWorldScreen>
               activeIndex: _currentIndex,
               items: const [
                 WBFloatingNavItem(icon: Icons.home_outlined, label: 'Home'),
-                WBFloatingNavItem(icon: Icons.psychology_outlined, label: 'Spirit'),
+                WBFloatingNavItem(icon: Icons.self_improvement, label: 'Spirit'),
                 WBFloatingNavItem(icon: Icons.people_outline, label: 'Community'),
                 WBFloatingNavItem(icon: Icons.map_outlined, label: 'Karte'),
                 WBFloatingNavItem(icon: Icons.menu_book_outlined, label: 'Wissen'),
@@ -135,7 +135,7 @@ class _EnergieWorldScreenState extends ConsumerState<EnergieWorldScreen>
   List<Widget> _buildAppBarActions(BuildContext context, AdminState adminState) {
     return [
       IconButton(
-        icon: const Icon(Icons.swap_horiz_rounded, color: Color(0xFFC79AFF)),
+        icon: const Icon(Icons.swap_horiz, color: Color(0xFFC79AFF)),
         iconSize: 22,
         onPressed: () => Navigator.pop(context),
         tooltip: 'Zur Portal-Auswahl',
@@ -157,7 +157,7 @@ class _EnergieWorldScreenState extends ConsumerState<EnergieWorldScreen>
       if (kDebugMode) _DebugAdminBadge(adminState: adminState),
       if (adminState.isAdmin)
         IconButton(
-          icon: const Icon(Icons.admin_panel_settings_rounded,
+          icon: const Icon(Icons.admin_panel_settings,
               color: Colors.orange),
           iconSize: 22,
           onPressed: () async {
