@@ -296,6 +296,11 @@ jobs:
           run_sql_critical "v55 chat_messages Performance-Indexes" \
             supabase/migrations/20260510_v55_chat_messages_index.sql
 
+          # v56: chat_rooms GRANT + FK-Drop (idempotentes Re-Apply von v53)
+          # Behebt "permission denied for table chat_rooms" dauerhaft.
+          run_sql_critical "v56 chat_rooms GRANT SELECT + FK-Drop (permission-fix)" \
+            supabase/migrations/20260510_v56_chat_fk_drop_grant_fix.sql
+
           echo ""
           if [ "$MIGRATION_FAILED" = "1" ]; then
             echo "⚠️  Einige frühe Migrationen schlugen fehl (siehe Warnungen oben)."

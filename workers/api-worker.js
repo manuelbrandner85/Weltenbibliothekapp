@@ -868,15 +868,24 @@ export default {
           // Only use UUID if it's a valid format; null is allowed (user_id is nullable in DB)
           const finalUserId = isUUID ? rawUserId : null;
 
+          const replyToId      = body.replyToId || body.reply_to_id || null;
+          const replyToContent = body.replyToContent || body.reply_to_content || null;
+          const replyToSender  = body.replyToSenderName || body.reply_to_sender_name || null;
+          const mediaUrl       = body.mediaUrl || body.media_url || null;
+
           const insertBody = {
             room_id:      body.roomId || body.room_id || '',
-            user_id:      finalUserId,   // null if not a real auth UUID (DB allows NULL)
+            user_id:      finalUserId,
             username:     body.username || 'Anonym',
             avatar_url:   body.avatarUrl || body.avatar_url || null,
-            avatar_emoji: body.avatarEmoji || body.avatar_emoji || null,  // ✅ Spalte existiert nach Migration v14
+            avatar_emoji: body.avatarEmoji || body.avatar_emoji || null,
             content:      body.message || body.content || '',
             message:      body.message || body.content || '',
             message_type: body.mediaType === 'audio' ? 'voice' : (body.mediaType === 'image' ? 'image' : 'text'),
+            ...(mediaUrl       ? { media_url: mediaUrl }                  : {}),
+            ...(replyToId      ? { reply_to_id: replyToId }               : {}),
+            ...(replyToContent ? { reply_to_content: replyToContent.substring(0, 280) } : {}),
+            ...(replyToSender  ? { reply_to_sender_name: replyToSender }  : {}),
           };
 
           const res = await fetch(`${SUPABASE_URL}/rest/v1/chat_messages`, {
