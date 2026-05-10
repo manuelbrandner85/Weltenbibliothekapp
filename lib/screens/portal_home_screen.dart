@@ -926,7 +926,7 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> with TickerProvider
                         ),
                         Row(
                           children: [
-                            _buildIconBtn(Icons.person_outline_rounded, null),
+                            _buildIconBtn(Icons.person_outline, null),
                             const SizedBox(width: 8),
                             _buildIconBtn(Icons.settings_outlined, _handlePortalTap),
                           ],
@@ -1234,7 +1234,7 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> with TickerProvider
                 Container(
                   width: 32, height: 32,
                   decoration: BoxDecoration(shape: BoxShape.circle, color: primaryColor.withValues(alpha: 0.15)),
-                  child: Icon(Icons.chevron_right_rounded, color: Colors.white.withValues(alpha: 0.6), size: 20),
+                  child: Icon(Icons.chevron_right, color: Colors.white.withValues(alpha: 0.6), size: 20),
                 ),
               ],
             ),

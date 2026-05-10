@@ -497,7 +497,7 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.notifications_none_rounded,
+          Icon(Icons.notifications_none,
               color: Colors.white.withValues(alpha: 0.2), size: 72),
           const SizedBox(height: 20),
           Text(

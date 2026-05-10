@@ -472,7 +472,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                         ),
                         child: Icon(
                           _isUploadingAvatar
-                              ? Icons.hourglass_top_rounded
+                              ? Icons.hourglass_top
                               : Icons.camera_alt,
                           size: 12,
                           color: Colors.white,
@@ -1057,7 +1057,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              icon: const Icon(Icons.history_rounded),
+              icon: const Icon(Icons.history),
               label: const Text(
                 'Update-Verlauf',
                 style: TextStyle(
@@ -1427,7 +1427,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Icon(
-                  Icons.handshake_rounded,
+                  Icons.handshake,
                   color: teal,
                   size: 24,
                 ),
@@ -1461,7 +1461,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
             width: double.infinity,
             child: ElevatedButton.icon(
               onPressed: _openMensaena,
-              icon: const Icon(Icons.open_in_new_rounded, size: 18),
+              icon: const Icon(Icons.open_in_new, size: 18),
               label: const Text('Mensaena öffnen'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: teal,
@@ -1568,7 +1568,7 @@ class _VersionInfoCardState extends State<_VersionInfoCard> {
       ),
       child: Row(
         children: [
-          const Icon(Icons.info_outline_rounded,
+          const Icon(Icons.info_outline,
               color: Color(0xFF00E5FF), size: 16),
           const SizedBox(width: 10),
           Expanded(
@@ -1594,7 +1594,7 @@ class _VersionInfoCardState extends State<_VersionInfoCard> {
                     ),
                   )
                 : Icon(
-                    Icons.refresh_rounded,
+                    Icons.refresh,
                     size: 16,
                     color: isDebug
                         ? Colors.white.withValues(alpha: 0.2)

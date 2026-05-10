@@ -178,7 +178,7 @@ class _PushPreferencesScreenState extends State<PushPreferencesScreen> {
               borderRadius: BorderRadius.circular(WbDesign.radiusMedium),
             ),
             child: const Icon(
-              Icons.notifications_active_rounded,
+              Icons.notifications_active,
               color: Colors.white,
               size: 28,
             ),
