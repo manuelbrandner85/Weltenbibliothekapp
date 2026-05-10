@@ -1,6 +1,5 @@
-import 'package:flutter/material.dart';
- // OpenClaw v2.0
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'energie/home_tab_v5.dart';
 import 'energie/spirit_tab_modern.dart';
@@ -11,21 +10,16 @@ import 'shared/stats_dashboard_screen.dart';
 import 'shared/world_admin_dashboard.dart';
 import '../services/haptic_service.dart';
 import '../features/admin/state/admin_state.dart';
+import '../theme/wb_cinematic_tokens.dart';
+import '../widgets/cinematic/wb_glass_app_bar.dart';
+import '../widgets/cinematic/wb_floating_nav.dart';
+import '../widgets/cinematic/wb_vignette.dart';
 import 'profile_settings_screen.dart';
 
-/// 🌍 ENERGIE-WELT DASHBOARD (RIVERPOD VERSION)
+/// 🌍 ENERGIE-WELT DASHBOARD — Cinematic Chrome
 ///
-/// Migration von StatefulWidget → ConsumerStatefulWidget
-/// - Admin-Status kommt jetzt von Riverpod statt setState
-/// - Offline-First mit Backend-Sync
-/// - Automatische Refresh bei Profil-Änderungen
-///
-/// ARCHITEKTUR-VERBESSERUNGEN:
-/// ✅ Single Source of Truth (AdminStateNotifier)
-/// ✅ Kein Code-Duplikation mit Materie-Welt
-/// ✅ Backend-safe (Timeouts blockieren nie die UI)
-/// ✅ Automatische Refresh bei App-Resume
-
+/// Glassmorphic AppBar + Floating Bottom-Nav statt Material-Defaults.
+/// Tabs (Home/Spirit/Community/Karte/Wissen) bleiben unverändert.
 class EnergieWorldScreen extends ConsumerStatefulWidget {
   const EnergieWorldScreen({super.key});
 
@@ -40,22 +34,17 @@ class _EnergieWorldScreenState extends ConsumerState<EnergieWorldScreen>
   @override
   void initState() {
     super.initState();
-    // Observer für App-Lifecycle
     WidgetsBinding.instance.addObserver(this);
 
-    // 🔥 KRITISCHER FIX: Admin-State SOFORT beim Screen-Load laden
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        // Force-Load Admin-State aus Hive
         ref.read(adminStateProvider('energie').notifier).load();
-        
         if (kDebugMode) {
           debugPrint('✅ Energie Screen: Admin-State geladen');
         }
       }
     });
 
-    // Haptic Feedback beim Betreten
     Future.delayed(const Duration(milliseconds: 1000), () {
       HapticService.selectionClick();
     });
@@ -67,26 +56,20 @@ class _EnergieWorldScreenState extends ConsumerState<EnergieWorldScreen>
     super.dispose();
   }
 
-  // Refresh bei App-Resume
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      // Admin-Status neu laden
       ref.read(adminStateProvider('energie').notifier).refresh();
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // 🔥 RIVERPOD: Admin-Status aus State lesen
     final adminState = ref.watch(adminStateProvider('energie'));
 
-    // 🔥 CRITICAL: Tabs mit Key erstellen, damit sie neu gebaut werden wenn Admin-Status sich ändert
     final tabs = [
       EnergieHomeTabV5(
         key: ValueKey('home_${adminState.username}_${adminState.role}'),
-        // Home-Buttons wie "Spirit" schalten jetzt den Tab um →
-        // identische Darstellung wie der direkte Bottom-Nav-Klick.
         onSwitchTab: (idx) => setState(() => _currentIndex = idx),
       ),
       const SpiritTabModern(),
@@ -96,309 +79,210 @@ class _EnergieWorldScreenState extends ConsumerState<EnergieWorldScreen>
     ];
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0A),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF4A148C), // Lila
-              Color(0xFF1A1A1A), // Dunkelgrau
-              Color(0xFF000000), // Schwarz
-            ],
+      extendBody: true,
+      backgroundColor: const Color(0xFF000004),
+      appBar: WBGlassAppBar(
+        world: WBWorld.energie,
+        titleWidget: const Text(
+          'ENERGIE',
+          style: TextStyle(
+            fontFamily: 'Inter',
+            fontWeight: FontWeight.w300,
+            fontSize: 18,
+            letterSpacing: 4.0,
+            color: Colors.white,
           ),
         ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              // Custom Header
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      const Color(0xFF7B1FA2).withValues(alpha: 0.3),
-                      Colors.transparent,
-                    ],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                  ),
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        // Zurück-Button
-                        IconButton(
-                          icon: const Icon(Icons.arrow_back, color: Colors.white),
-                          onPressed: () => Navigator.pop(context),
-                        ),
-                        const SizedBox(width: 8),
-
-                        // Titel
-                        const Expanded(
-                          child: Text(
-                            'ENERGIE',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                              letterSpacing: 2,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.clip,
-                          ),
-                        ),
-
-                        // Portal-Wechsel Button
-                        Container(
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFFAB47BC).withValues(alpha: 0.5),
-                                blurRadius: 20,
-                                spreadRadius: 5,
-                              ),
-                            ],
-                          ),
-                          child: IconButton(
-                            icon: const Icon(Icons.swap_horiz, color: Color(0xFFAB47BC)),
-                            iconSize: 28,
-                            onPressed: () => Navigator.pop(context),
-                            tooltip: 'Zur Portal-Auswahl',
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-
-                        // Stats Button
-                        IconButton(
-                          icon: const Icon(Icons.analytics_outlined, color: Color(0xFFAB47BC)),
-                          iconSize: 24,
-                          onPressed: () {
-                            HapticService.selectionClick();
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const StatsDashboardScreen(world: 'energie'),
-                              ),
-                            );
-                          },
-                          tooltip: 'Statistiken',
-                        ),
-                        const SizedBox(width: 8),
-
-                        // 🐛 DEBUG BUTTON (Optional - kann später entfernt werden)
-                        if (kDebugMode)
-                          Container(
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: adminState.isAdmin ? Colors.green : Colors.red,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: (adminState.isAdmin ? Colors.green : Colors.red)
-                                      .withValues(alpha: 0.5),
-                                  blurRadius: 20,
-                                  spreadRadius: 5,
-                                ),
-                              ],
-                            ),
-                            child: IconButton(
-                              icon: Icon(
-                                adminState.isAdmin ? Icons.check_circle : Icons.cancel,
-                                color: Colors.white,
-                              ),
-                              iconSize: 24,
-                              onPressed: () {
-                                showDialog(
-                                  context: context,
-                                  builder: (context) => AlertDialog(
-                                    title: const Text('🐛 ADMIN STATUS DEBUG'),
-                                    content: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text('isAdmin: ${adminState.isAdmin}'),
-                                        Text('isRootAdmin: ${adminState.isRootAdmin}'),
-                                        Text('World: ${adminState.world}'),
-                                        Text('Backend Verified: ${adminState.backendVerified}'),
-                                        Text('Username: ${adminState.username ?? "null"}'),
-                                        Text('Role: ${adminState.role ?? "null"}'),
-                                      ],
-                                    ),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () {
-                                          // Refresh Admin-Status
-                                          ref.read(adminStateProvider('energie').notifier).refresh();
-                                          Navigator.pop(context);
-                                        },
-                                        child: const Text('🔄 REFRESH'),
-                                      ),
-                                      TextButton(
-                                        onPressed: () => Navigator.pop(context),
-                                        child: const Text('OK'),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              },
-                              tooltip: 'Debug: Admin-Status',
-                            ),
-                          ),
-
-                        // 🛡️ ADMIN BUTTON - NUR SICHTBAR FÜR ADMINS
-                        if (adminState.isAdmin) ...[
-                          const SizedBox(width: 8),
-                          Container(
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.orange.withValues(alpha: 0.5),
-                                  blurRadius: 20,
-                                  spreadRadius: 5,
-                                ),
-                              ],
-                            ),
-                            child: IconButton(
-                              icon: const Icon(
-                                Icons.admin_panel_settings,
-                                color: Colors.orange,
-                              ),
-                              iconSize: 28,
-                              onPressed: () async {
-                                HapticService.mediumImpact();
-                                
-                                // 🔥 KRITISCHER FIX: STATE KOMPLETT NEU LADEN VOR NAVIGATION
-                                if (kDebugMode) {
-                                  debugPrint('🛡️ Admin-Button geklickt - State wird resettet...');
-                                }
-                                
-                                // 1. State-Notifier holen
-                                final notifier = ref.read(adminStateProvider('energie').notifier);
-                                
-                                // 2. FORCE REFRESH (lädt Profil komplett neu aus Hive)
-                                await notifier.load();
-                                
-                                // 3. Kurz warten damit State garantiert aktualisiert ist
-                                await Future.delayed(const Duration(milliseconds: 200));
-                                
-                                // 4. Finalen State prüfen (Debug)
-                                if (kDebugMode) {
-                                  final finalState = ref.read(adminStateProvider('energie'));
-                                  debugPrint('✅ State vor Navigation:');
-                                  debugPrint('   username: ${finalState.username}');
-                                  debugPrint('   isAdmin: ${finalState.isAdmin}');
-                                  debugPrint('   isRootAdmin: ${finalState.isRootAdmin}');
-                                }
-                                
-                                // 5. JETZT ERST Dashboard öffnen (mit frischem State)
-                                if (mounted) {
-                                  Navigator.push(
-                                    // ignore: use_build_context_synchronously
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => const WorldAdminDashboard(world: 'energie'),
-                                    ),
-                                  );
-                                }
-                              },
-                              tooltip: 'Admin-Dashboard',
-                            ),
-                          ),
-                        ],
-
-                        // Profil-Einstellungen Button
-                        IconButton(
-                          icon: const Icon(Icons.settings, color: Colors.white),
-                          onPressed: () async {
-                            HapticService.selectionClick();
-                            await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const ProfileSettingsScreen(),
-                              ),
-                            );
-                            // 🔥 WICHTIG: Admin-Status nach Profil-Änderungen neu laden
-                            if (mounted) {
-                              ref.read(adminStateProvider('energie').notifier).refresh();
-                            }
-                          },
-                          tooltip: 'Profil-Einstellungen',
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-
-              // Tab Content
-              Expanded(
-                child: tabs[_currentIndex],
-              ),
-
-              // Bottom Navigation
-              Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Colors.transparent,
-                      const Color(0xFF7B1FA2).withValues(alpha: 0.2),
-                    ],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                  ),
-                ),
-                child: BottomNavigationBar(
-                  currentIndex: _currentIndex,
-                  onTap: (index) {
-                    HapticService.selectionClick();
-                    setState(() => _currentIndex = index);
-                  },
-                  backgroundColor: Colors.transparent,
-                  selectedItemColor: const Color(0xFFCE93D8),
-                  unselectedItemColor: Colors.white70,
-                  selectedLabelStyle: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.3,
-                  ),
-                  unselectedLabelStyle: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  type: BottomNavigationBarType.fixed,
-                  elevation: 0,
-                  items: const [
-                    BottomNavigationBarItem(
-                      icon: Icon(Icons.home),
-                      label: 'Home',
-                    ),
-                    BottomNavigationBarItem(
-                      icon: Icon(Icons.psychology),
-                      label: 'Spirit',
-                    ),
-                    BottomNavigationBarItem(
-                      icon: Icon(Icons.people),
-                      label: 'Community',
-                    ),
-                    BottomNavigationBarItem(
-                      icon: Icon(Icons.map),
-                      label: 'Karte',
-                    ),
-                    BottomNavigationBarItem(
-                      icon: Icon(Icons.menu_book),
-                      label: 'Wissen',
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
+        actions: _buildAppBarActions(context, adminState),
       ),
+      body: Stack(
+        children: [
+          // Cosmic-Hintergrund + Welt-Ambient
+          const Positioned.fill(child: _CosmicBackground(world: WBWorld.energie)),
+
+          // Tab-Content (Padding unten für Floating-Nav-Clearance)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 80),
+            child: tabs[_currentIndex],
+          ),
+
+          // Vignette als oberster atmosphärischer Layer
+          const Positioned.fill(
+            child: IgnorePointer(child: WBVignette()),
+          ),
+
+          // Floating Bottom-Nav
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: WBFloatingNav(
+              world: WBWorld.energie,
+              activeIndex: _currentIndex,
+              items: const [
+                WBFloatingNavItem(icon: Icons.home_outlined, label: 'Home'),
+                WBFloatingNavItem(icon: Icons.psychology_outlined, label: 'Spirit'),
+                WBFloatingNavItem(icon: Icons.people_outline, label: 'Community'),
+                WBFloatingNavItem(icon: Icons.map_outlined, label: 'Karte'),
+                WBFloatingNavItem(icon: Icons.menu_book_outlined, label: 'Wissen'),
+              ],
+              onChanged: (i) => setState(() => _currentIndex = i),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _buildAppBarActions(BuildContext context, AdminState adminState) {
+    return [
+      IconButton(
+        icon: const Icon(Icons.swap_horiz_rounded, color: Color(0xFFC79AFF)),
+        iconSize: 22,
+        onPressed: () => Navigator.pop(context),
+        tooltip: 'Zur Portal-Auswahl',
+      ),
+      IconButton(
+        icon: const Icon(Icons.analytics_outlined, color: Color(0xFFC79AFF)),
+        iconSize: 22,
+        onPressed: () {
+          HapticService.selectionClick();
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const StatsDashboardScreen(world: 'energie'),
+            ),
+          );
+        },
+        tooltip: 'Statistiken',
+      ),
+      if (kDebugMode) _DebugAdminBadge(adminState: adminState),
+      if (adminState.isAdmin)
+        IconButton(
+          icon: const Icon(Icons.admin_panel_settings_rounded,
+              color: Colors.orange),
+          iconSize: 22,
+          onPressed: () async {
+            HapticService.mediumImpact();
+            final notifier =
+                ref.read(adminStateProvider('energie').notifier);
+            await notifier.load();
+            await Future.delayed(const Duration(milliseconds: 200));
+            if (mounted) {
+              Navigator.push(
+                // ignore: use_build_context_synchronously
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>
+                      const WorldAdminDashboard(world: 'energie'),
+                ),
+              );
+            }
+          },
+          tooltip: 'Admin-Dashboard',
+        ),
+      IconButton(
+        icon: const Icon(Icons.settings_outlined, color: Colors.white),
+        iconSize: 22,
+        onPressed: () async {
+          HapticService.selectionClick();
+          await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const ProfileSettingsScreen(),
+            ),
+          );
+          if (mounted) {
+            ref.read(adminStateProvider('energie').notifier).refresh();
+          }
+        },
+        tooltip: 'Profil-Einstellungen',
+      ),
+    ];
+  }
+}
+
+/// Cosmic-Hintergrund mit subtiler Welt-Atmosphäre.
+class _CosmicBackground extends StatelessWidget {
+  final WBWorld world;
+  const _CosmicBackground({required this.world});
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.wb.palette(world);
+    return IgnorePointer(
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          const DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Color(0xFF0D0A1A),
+                  Color(0xFF050310),
+                  Color(0xFF000004),
+                ],
+              ),
+            ),
+          ),
+          DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: RadialGradient(
+                center: const Alignment(0, -0.7),
+                radius: 1.2,
+                colors: [
+                  palette.primary.withValues(alpha: 0.10),
+                  Colors.transparent,
+                ],
+                stops: const [0.0, 1.0],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DebugAdminBadge extends StatelessWidget {
+  final AdminState adminState;
+  const _DebugAdminBadge({required this.adminState});
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      icon: Icon(
+        adminState.isAdmin ? Icons.check_circle : Icons.cancel,
+        color: adminState.isAdmin ? Colors.green : Colors.redAccent,
+      ),
+      iconSize: 20,
+      onPressed: () {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('🐛 ADMIN STATUS'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('isAdmin: ${adminState.isAdmin}'),
+                Text('isRootAdmin: ${adminState.isRootAdmin}'),
+                Text('World: ${adminState.world}'),
+                Text('Backend Verified: ${adminState.backendVerified}'),
+                Text('Username: ${adminState.username ?? "null"}'),
+                Text('Role: ${adminState.role ?? "null"}'),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      },
+      tooltip: 'Debug: Admin-Status',
     );
   }
 }
