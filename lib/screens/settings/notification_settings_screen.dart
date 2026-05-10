@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import '../../services/cloudflare_push_service.dart';
 import '../../core/storage/unified_storage_service.dart';
+import '../../theme/wb_cinematic_tokens.dart';
+import '../../widgets/cinematic/wb_glass_app_bar.dart';
+import '../../widgets/cinematic/wb_vignette.dart';
 
 /// 🔔 Enhanced Notification Settings Screen
 /// Features:
@@ -124,24 +127,44 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('🔔 Benachrichtigungen')),
-        body: const Center(child: CircularProgressIndicator()),
+      return const Scaffold(
+        backgroundColor: Color(0xFF000004),
+        appBar: WBGlassAppBar(
+          title: 'Benachrichtigungen',
+          world: WBWorld.neutral,
+        ),
+        body: Center(child: CircularProgressIndicator()),
       );
     }
-    
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('🔔 Benachrichtigungen'),
+      backgroundColor: const Color(0xFF000004),
+      appBar: WBGlassAppBar(
+        title: 'Benachrichtigungen',
+        world: WBWorld.neutral,
         actions: [
           IconButton(
-            icon: const Icon(Icons.bug_report),
+            icon: const Icon(Icons.bug_report, color: Colors.white),
             onPressed: _sendTestNotification,
             tooltip: 'Test-Benachrichtigung senden',
           ),
         ],
       ),
-      body: ListView(
+      body: Stack(
+        children: [
+          const Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(0xFF0D0A1A), Color(0xFF050310), Color(0xFF000004)],
+                ),
+              ),
+            ),
+          ),
+          const Positioned.fill(child: IgnorePointer(child: WBVignette())),
+          ListView(
         padding: const EdgeInsets.all(16),
         children: [
           // Master toggle
@@ -259,9 +282,11 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
             }),
         ],
       ),
+        ],
+      ),
     );
   }
-  
+
   IconData _getNotificationIcon(String? type) {
     switch (type) {
       case 'breaking':
