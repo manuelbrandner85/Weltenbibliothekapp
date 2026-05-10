@@ -59,13 +59,14 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> with TickerProvider
   double _gyroY = 0.0; // ignore: prefer_final_fields
   
   // Portal Color Scheme (v5.39 - Dynamic Colors)
-  Color _portalColor1 = const Color(0xFF2196F3); // Blau
-  Color _portalColor2 = const Color(0xFF9C27B0); // Lila
+  Color _portalColor1 = const Color(0xFF3B82F6); // Materie Blue
+  Color _portalColor2 = const Color(0xFFA855F7); // Energie Purple
   String _currentColorScheme = 'Standard';
   
   // v5.40 - Easter Egg Improvements
   late AnimationController _tapPulseController;
   late AnimationController _progressRingController;
+  late AnimationController _wordmarkController;
   
   // Achievement System (v5.40 - 2.3)
   int _totalPortalTaps = 0;
@@ -130,7 +131,13 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> with TickerProvider
         duration: const Duration(milliseconds: 300),
         vsync: this,
       );
-      
+
+      // Wordmark letter-by-letter reveal
+      _wordmarkController = AnimationController(
+        duration: const Duration(milliseconds: 2400),
+        vsync: this,
+      )..forward();
+
       // Initialize 200 Particles
       _particles = List.generate(200, (i) => Particle(index: i));
       
@@ -192,6 +199,7 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> with TickerProvider
     _starsController.dispose();
     _tapPulseController.dispose();
     _progressRingController.dispose();
+    _wordmarkController.dispose();
     _gyroscopeSubscription?.cancel();
     super.dispose();
   }
@@ -755,12 +763,12 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> with TickerProvider
           height: double.infinity,
           decoration: const BoxDecoration(
             gradient: RadialGradient(
-              center: Alignment.center,
-              radius: 1.2,
+              center: Alignment(0, 0.3),
+              radius: 1.4,
               colors: [
-                Color(0xFF0A192F), // Deep Space Blue
-                Color(0xFF020C1B), // Darker
-                Color(0xFF000000), // Pure Black
+                Color(0xFF0D0A1A),
+                Color(0xFF050310),
+                Color(0xFF000004),
               ],
             ),
           ),
@@ -891,276 +899,189 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> with TickerProvider
               ),
             ),
             
-            // MAIN CONTENT
+            // MAIN CONTENT — Cinematic Portal Design
             SafeArea(
               child: Column(
                 children: [
-                  SizedBox(height: context.responsive(mobile: 20.0, tablet: 40.0, desktop: 40.0)),
-                  
-                  // PREMIUM LOGO with Glow (Mobile-Optimiert)
+                  // ── Top bar ──
                   Padding(
-                    padding: EdgeInsets.all(context.responsive(mobile: 8, tablet: 8 * 1.5, desktop: 8 * 2)),
-                    child: ShaderMask(
-                      shaderCallback: (bounds) => const LinearGradient(
-                        colors: [Color(0xFF64B5F6), Color(0xFFBA68C8)],
-                      ).createShader(bounds),
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text(
-                          'WELTENBIBLIOTHEK',
-                          style: TextStyle(
-                            fontSize: context.responsive(mobile: 16, tablet: 16 * 1.2, desktop: 16 * 1.4),
-                            fontWeight: FontWeight.w600, // Gut sichtbar
-                            color: Colors.white,
-                            letterSpacing: context.responsive(mobile: 3.0, tablet: 6.0, desktop: 10.0,
-                            ),
-                            shadows: [
-                              Shadow(color: _portalColor1, blurRadius: 20),
-                              Shadow(color: _portalColor2, blurRadius: 20),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  
-                  const Spacer(),
-                  
-                  // MATERIE BUTTON - Premium Glassmorphism (Mobile-Optimiert)
-                  Padding(
-                    padding: EdgeInsets.all(context.responsive(mobile: 16, tablet: 24, desktop: 16)),
-                    child: PortalLightReflection(
-                      key: _materieButtonKey,
-                      animation: _portalController,
-                      glowColor: _portalColor1,
-                      child: _buildPremiumButton(
-                        title: 'MATERIE',
-                        subtitle: 'Forschung · Fakten · Geopolitik · Wissen',
-                        icon: Icons.public,
-                        gradient: LinearGradient(
-                          colors: [_portalColor1.withValues(alpha: 0.8), _portalColor1],
-                        ),
-                        glowColor: _portalColor1,
-                        onTap: () => _navigateWithCinematicTransition(const MaterieWorldWrapper()),
-                      ),
-                    ),
-                  ),
-                  
-                  SizedBox(height: context.responsive(mobile: 30.0, tablet: 50.0, desktop: 50.0)),
-                  
-                  // CINEMA-QUALITY PORTAL (Mobile-Optimiert)
-                  Builder(
-                    builder: (context) {
-                      final portalSize = context.responsive(mobile: size.width * 0.8, tablet: 340.0, desktop: 340.0).clamp(240.0, 340.0);
-                      final ringSize = portalSize * 0.94; // 94% der Container-Größe
-                      final coreSize = portalSize * 0.65; // 65% der Container-Größe
-                      
-                      return GestureDetector(
-                        onTap: _handlePortalTap, // Easter Egg
-                        child: SizedBox(
-                          key: _portalKey,
-                          width: portalSize,
-                          height: portalSize,
-                          child: AnimatedBuilder(
-                          animation: Listenable.merge([_portalController, _nebulaController]),
-                          builder: (context, child) {
-                            return Stack(
-                              alignment: Alignment.center,
-                              children: [
-                                // Outer Glow Ring (Mobile-Optimiert)
-                                Container(
-                                  width: portalSize,
-                                  height: portalSize,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: _portalColor1.withValues(alpha: 0.4 * _nebulaController.value),
-                                    blurRadius: 120,
-                                    spreadRadius: 60,
-                                  ),
-                                  BoxShadow(
-                                    color: _portalColor2.withValues(alpha: 0.4 * (1 - _nebulaController.value)),
-                                    blurRadius: 120,
-                                    spreadRadius: 60,
-                                  ),
-                                ],
-                              ),
-                            ),
-                            
-                                // v5.40 - 1.1: Tap Progress Ring
-                                if (_portalTapCount > 0)
-                                  AnimatedBuilder(
-                                    animation: _progressRingController,
-                                    builder: (context, child) {
-                                      return CustomPaint(
-                                        size: Size(portalSize * 1.15, portalSize * 1.15),
-                                        painter: TapProgressRingPainter(
-                                          progress: _progressRingController.value,
-                                          tapCount: _portalTapCount,
-                                          color1: _portalColor1,
-                                          color2: _portalColor2,
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                
-                                // v5.40 - 1.3: Portal Pulse Animation
-                                AnimatedBuilder(
-                                  animation: _tapPulseController,
-                                  builder: (context, child) {
-                                    final scale = 1.0 + (_tapPulseController.value * 0.1);
-                                    return Transform.scale(
-                                      scale: scale,
-                                      child: child,
-                                    );
-                                  },
-                                  child: Container(
-                                    width: portalSize,
-                                    height: portalSize,
-                                    decoration: const BoxDecoration(
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                                ),
-                                // Rotating Portal Rings (Mobile-Optimiert)
-                                Transform.rotate(
-                                  angle: _portalController.value * 2 * math.pi,
-                                  child: CustomPaint(
-                                    size: Size(ringSize, ringSize),
-                                    painter: CinematicPortalPainter(_portalController.value),
-                                  ),
-                                ),
-                                
-                                // Inner Portal Core with Glassmorphism (Mobile-Optimiert)
-                                ClipOval(
-                                  child: BackdropFilter(
-                                    filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-                                    child: Container(
-                                      width: coreSize,
-                                      height: coreSize,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    gradient: RadialGradient(
-                                      colors: [
-                                        _portalColor1.withValues(alpha: 0.2),
-                                        _portalColor2.withValues(alpha: 0.2),
-                                        const Color(0xFF000000).withValues(alpha: 0.9),
-                                      ],
-                                    ),
-                                    border: Border.all(
-                                      width: 3,
-                                      color: Colors.white.withValues(alpha: 0.1),
-                                    ),
-                                  ),
-                                      child: Center(
-                                        child: Transform.translate(
-                                          // Gyroscope 3D Parallax (v5.37 - Improvement 5.4)
-                                          offset: Offset(_gyroX, _gyroY),
-                                          child: Transform.rotate(
-                                            angle: _portalController.value * 2 * math.pi,
-                                            child: Container(
-                                              width: coreSize * 0.85,
-                                              height: coreSize * 0.85,
-                                              decoration: BoxDecoration(
-                                                shape: BoxShape.circle,
-                                                image: const DecorationImage(
-                                                  image: AssetImage('assets/images/portal_energy_vortex.webp'),
-                                                  fit: BoxFit.cover,
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            );
-                          },
-                        ),
-                      ),
-                      ); // GestureDetector closing
-                    },
-                  ),
-                  
-                  SizedBox(height: context.responsive(mobile: 30.0, tablet: 50.0, desktop: 50.0)),
-                  
-                  // ENERGIE BUTTON - Premium Glassmorphism (Mobile-Optimiert)
-                  Padding(
-                    padding: EdgeInsets.all(context.responsive(mobile: 16, tablet: 24, desktop: 16)),
-                    child: PortalLightReflection(
-                      key: _energieButtonKey,
-                      animation: _portalController,
-                      glowColor: _portalColor2,
-                      child: _buildPremiumButton(
-                        title: 'ENERGIE',
-                        subtitle: 'Spirit · Bewusstsein · Archetypen · Symbolik',
-                        icon: Icons.self_improvement,
-                        gradient: LinearGradient(
-                          colors: [_portalColor2.withValues(alpha: 0.8), _portalColor2],
-                        ),
-                        glowColor: _portalColor2,
-                        onTap: () => _navigateWithCinematicTransition(const EnergieWorldWrapper()),
-                      ),
-                    ),
-                  ),
-                  
-                  const Spacer(),
-                  
-                  // "Heute aktiv" Indikator (v5.37 - Improvement 3.2)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: getTodayActiveColor().withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: getTodayActiveColor().withValues(alpha: 0.5),
-                        width: 1.5,
-                      ),
-                    ),
+                    padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
                     child: Row(
-                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(
-                          getTodayActiveWorld() == 'MATERIE' 
-                              ? Icons.public 
-                              : Icons.self_improvement,
-                          color: getTodayActiveColor(),
-                          size: 16,
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Text('Anno MMXXVI', style: TextStyle(fontSize: 10, letterSpacing: 4.2, color: Colors.white.withValues(alpha: 0.42), fontWeight: FontWeight.w500)),
+                                Container(width: 5, height: 5, margin: const EdgeInsets.symmetric(horizontal: 8), decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: 0.5))),
+                                Text('Vol. V', style: TextStyle(fontSize: 10, letterSpacing: 4.2, color: Colors.white.withValues(alpha: 0.42), fontWeight: FontWeight.w500)),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Text('Willkommen, Reisender', style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.78), fontWeight: FontWeight.w300, letterSpacing: 0.2)),
+                          ],
                         ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Heute populär: ${getTodayActiveWorld()}',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: getTodayActiveColor(),
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 1.0,
-                          ),
+                        Row(
+                          children: [
+                            _buildIconBtn(Icons.person_outline_rounded, null),
+                            const SizedBox(width: 8),
+                            _buildIconBtn(Icons.settings_outlined, _handlePortalTap),
+                          ],
                         ),
                       ],
                     ),
                   ),
-                  
-                  const SizedBox(height: 16),
-                  
-                  // Subtitle with fade (Mobile-Optimiert)
-                  Padding(
-                    padding: EdgeInsets.all(context.responsive(mobile: 8, tablet: 8 * 1.5, desktop: 8 * 2)),
-                    child: Text(
-                      'Wähle deine Welt',
-                      style: TextStyle(
-                        fontSize: context.responsive(mobile: 11, tablet: 11 * 1.2, desktop: 11 * 1.4),
-                        color: Colors.white.withValues(alpha: 0.85),
-                        letterSpacing: context.responsive(mobile: 2.0, tablet: 4.0, desktop: 4.0),
-                        fontWeight: FontWeight.w400,
+
+                  const Spacer(),
+
+                  // ── Wordmark ──
+                  AnimatedBuilder(
+                    animation: _wordmarkController,
+                    builder: (context, child) {
+                      return Column(
+                        children: [
+                          _buildWordmarkRow('WELTEN', _wordmarkController.value, 0.0, isGradient: false),
+                          const SizedBox(height: 2),
+                          _buildWordmarkRow('BIBLIOTHEK', _wordmarkController.value, 0.12, isGradient: true),
+                          const SizedBox(height: 18),
+                          Opacity(
+                            opacity: ((_wordmarkController.value - 0.7) / 0.3).clamp(0.0, 1.0),
+                            child: Text(
+                              'Wähle deine Welt · zwei Pfade, ein Ursprung',
+                              style: TextStyle(fontStyle: FontStyle.italic, fontSize: 13, color: Colors.white.withValues(alpha: 0.46), letterSpacing: 1.8, fontWeight: FontWeight.w300),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+
+                  const Spacer(),
+
+                  // ── Halo (tap = easter egg) ──
+                  GestureDetector(
+                    onTap: _handlePortalTap,
+                    child: SizedBox(
+                      key: _portalKey,
+                      width: 220,
+                      height: 240,
+                      child: AnimatedBuilder(
+                        animation: Listenable.merge([_portalController, _nebulaController, _tapPulseController]),
+                        builder: (context, child) {
+                          final pulse = 1.0 + _tapPulseController.value * 0.12;
+                          return Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              // Outer ambient glow
+                              Transform.scale(
+                                scale: pulse,
+                                child: Container(
+                                  width: 220, height: 220,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(color: _portalColor1.withValues(alpha: 0.18 * _nebulaController.value), blurRadius: 90, spreadRadius: 45),
+                                      BoxShadow(color: _portalColor2.withValues(alpha: 0.18 * (1 - _nebulaController.value)), blurRadius: 90, spreadRadius: 45),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              // Halo rings
+                              _buildHaloRing(196, 0.05 + 0.2 * _nebulaController.value),
+                              _buildHaloRing(212, 0.04 + 0.12 * (1 - _nebulaController.value)),
+                              _buildHaloRing(228, 0.03 + 0.08 * _nebulaController.value),
+                              // Tap progress ring
+                              if (_portalTapCount > 0)
+                                CustomPaint(
+                                  size: const Size(230, 230),
+                                  painter: TapProgressRingPainter(
+                                    progress: _portalTapCount / 10.0,
+                                    tapCount: _portalTapCount,
+                                    color1: _portalColor1,
+                                    color2: _portalColor2,
+                                  ),
+                                ),
+                              // Center dot pulse
+                              Opacity(
+                                opacity: _nebulaController.value,
+                                child: Container(
+                                  width: 10, height: 10,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Colors.white,
+                                    boxShadow: [
+                                      const BoxShadow(color: Colors.white, blurRadius: 28, spreadRadius: 6),
+                                      BoxShadow(color: _portalColor1.withValues(alpha: 0.6), blurRadius: 60, spreadRadius: 14),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              // Tap dots
+                              Positioned(
+                                bottom: 0,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: List.generate(10, (i) => Container(
+                                    width: 5, height: 5,
+                                    margin: const EdgeInsets.symmetric(horizontal: 2.5),
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: i < _portalTapCount
+                                          ? const Color(0xFFFFD479)
+                                          : Colors.white.withValues(alpha: 0.15),
+                                      boxShadow: i < _portalTapCount
+                                          ? [const BoxShadow(color: Color(0xFFFFD479), blurRadius: 8)]
+                                          : null,
+                                    ),
+                                  )),
+                                ),
+                              ),
+                            ],
+                          );
+                        },
                       ),
                     ),
                   ),
-                  
-                  SizedBox(height: context.responsive(mobile: 20.0, tablet: 30.0, desktop: 40.0) + 20),
+
+                  const Spacer(),
+
+                  // ── World buttons ──
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Column(
+                      children: [
+                        _buildWorldCard(
+                          cardKey: _materieButtonKey,
+                          eyebrow: 'Welt I',
+                          title: 'MATERIE',
+                          subtitle: 'Wissen · Logik · Fakten',
+                          primaryColor: const Color(0xFF3B82F6),
+                          deepColor: const Color(0xFF0A2452),
+                          orbHi: const Color(0xFFCFDFFF),
+                          labelColor: const Color(0xFF7DA7FF),
+                          onTap: () => _navigateWithCinematicTransition(const MaterieWorldWrapper()),
+                        ),
+                        const SizedBox(height: 14),
+                        _buildWorldCard(
+                          cardKey: _energieButtonKey,
+                          eyebrow: 'Welt II',
+                          title: 'ENERGIE',
+                          subtitle: 'Spiritualität · Mystik · Bewusstsein',
+                          primaryColor: const Color(0xFFA855F7),
+                          deepColor: const Color(0xFF3B0D6E),
+                          orbHi: const Color(0xFFE9CCFF),
+                          labelColor: const Color(0xFFC79AFF),
+                          onTap: () => _navigateWithCinematicTransition(const EnergieWorldWrapper()),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 36),
                 ],
               ),
             ),
@@ -1185,6 +1106,141 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> with TickerProvider
     // 📱 PWA INSTALL PROMPT (NEW Phase 3)
     const PWAInstallPrompt(),
     ],
+    );
+  }
+
+  // ── Design-bundle helpers ──
+
+  Widget _buildIconBtn(IconData icon, VoidCallback? onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 38, height: 38,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: Colors.white.withValues(alpha: 0.06),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+        ),
+        child: Icon(icon, size: 16, color: Colors.white.withValues(alpha: 0.85)),
+      ),
+    );
+  }
+
+  Widget _buildHaloRing(double size, double opacity) {
+    return Container(
+      width: size, height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.white.withValues(alpha: opacity), width: 1),
+        boxShadow: [BoxShadow(color: const Color(0xFF7878FF).withValues(alpha: 0.12), blurRadius: 80, spreadRadius: 6)],
+      ),
+    );
+  }
+
+  Widget _buildWordmarkRow(String text, double anim, double delayFrac, {required bool isGradient}) {
+    final letters = text.split('');
+    final total = letters.length;
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(total, (i) {
+        final start = delayFrac + i * (0.55 / total);
+        final end = (start + 0.18).clamp(0.0, 1.0);
+        final t = ((anim - start) / (end - start)).clamp(0.0, 1.0);
+        final child = Transform.translate(
+          offset: Offset(0, 40 * (1 - t)),
+          child: Opacity(
+            opacity: t,
+            child: isGradient
+                ? ShaderMask(
+                    shaderCallback: (b) => const LinearGradient(
+                      colors: [Color(0xFF5B8DEF), Color(0xFFA78BFA), Color(0xFFE879F9)],
+                    ).createShader(Rect.fromLTWH(0, 0, b.width * total, b.height)),
+                    child: Text(
+                      letters[i] == ' ' ? ' ' : letters[i],
+                      style: const TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w300, fontSize: 38, letterSpacing: 10, color: Colors.white, height: 1),
+                    ),
+                  )
+                : Text(
+                    letters[i] == ' ' ? ' ' : letters[i],
+                    style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w200, fontSize: 38, letterSpacing: 10, color: Colors.white.withValues(alpha: 0.96), height: 1,
+                      shadows: [Shadow(color: Colors.white.withValues(alpha: 0.18), blurRadius: 40)]),
+                  ),
+          ),
+        );
+        return child;
+      }),
+    );
+  }
+
+  Widget _buildWorldCard({
+    required Key cardKey,
+    required String eyebrow,
+    required String title,
+    required String subtitle,
+    required Color primaryColor,
+    required Color deepColor,
+    required Color orbHi,
+    required Color labelColor,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      key: cardKey,
+      onTap: () {
+        HapticService.mediumImpact();
+        onTap();
+      },
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              color: const Color(0xFF08080E).withValues(alpha: 0.55),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
+              boxShadow: [BoxShadow(color: primaryColor.withValues(alpha: 0.18), blurRadius: 28, offset: const Offset(0, 8))],
+            ),
+            child: Row(
+              children: [
+                // Orb
+                Container(
+                  width: 54, height: 54,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      center: const Alignment(-0.4, -0.4),
+                      colors: [orbHi, primaryColor, deepColor],
+                      stops: const [0.0, 0.35, 1.0],
+                    ),
+                    boxShadow: [BoxShadow(color: primaryColor.withValues(alpha: 0.7), blurRadius: 28)],
+                  ),
+                ),
+                const SizedBox(width: 18),
+                // Text
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(eyebrow, style: TextStyle(fontSize: 9, letterSpacing: 4.0, color: labelColor, fontWeight: FontWeight.w600)),
+                      const SizedBox(height: 4),
+                      Text(title, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w200, letterSpacing: 5.0, color: Colors.white, height: 1)),
+                      const SizedBox(height: 5),
+                      Text(subtitle, style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.5), letterSpacing: 0.4)),
+                    ],
+                  ),
+                ),
+                // Arrow
+                Container(
+                  width: 32, height: 32,
+                  decoration: BoxDecoration(shape: BoxShape.circle, color: primaryColor.withValues(alpha: 0.15)),
+                  child: Icon(Icons.chevron_right_rounded, color: Colors.white.withValues(alpha: 0.6), size: 20),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 
