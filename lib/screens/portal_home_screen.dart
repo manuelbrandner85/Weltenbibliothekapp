@@ -965,42 +965,90 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> with TickerProvider
 
                   const Spacer(),
 
-                  // ── Halo (tap = easter egg) ──
+                  // ── Cinematic Dual-World Portal (tap = easter egg) ──
                   GestureDetector(
                     onTap: _handlePortalTap,
                     child: SizedBox(
                       key: _portalKey,
-                      width: 220,
-                      height: 240,
+                      width: 260,
+                      height: 280,
                       child: AnimatedBuilder(
                         animation: Listenable.merge([_portalController, _nebulaController, _tapPulseController]),
                         builder: (context, child) {
-                          final pulse = 1.0 + _tapPulseController.value * 0.12;
+                          final tapScale = 1.0 + _tapPulseController.value * 0.14;
+                          final neo = _nebulaController.value;
                           return Stack(
                             alignment: Alignment.center,
                             children: [
-                              // Outer ambient glow
+                              // Dual ambient atmosphere
                               Transform.scale(
-                                scale: pulse,
+                                scale: tapScale,
                                 child: Container(
-                                  width: 220, height: 220,
+                                  width: 260, height: 260,
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
                                     boxShadow: [
-                                      BoxShadow(color: _portalColor1.withValues(alpha: 0.18 * _nebulaController.value), blurRadius: 90, spreadRadius: 45),
-                                      BoxShadow(color: _portalColor2.withValues(alpha: 0.18 * (1 - _nebulaController.value)), blurRadius: 90, spreadRadius: 45),
+                                      BoxShadow(color: _portalColor1.withValues(alpha: 0.22 * neo), blurRadius: 110, spreadRadius: 55),
+                                      BoxShadow(color: _portalColor2.withValues(alpha: 0.22 * (1 - neo)), blurRadius: 110, spreadRadius: 55),
                                     ],
                                   ),
                                 ),
                               ),
-                              // Halo rings
-                              _buildHaloRing(196, 0.05 + 0.2 * _nebulaController.value),
-                              _buildHaloRing(212, 0.04 + 0.12 * (1 - _nebulaController.value)),
-                              _buildHaloRing(228, 0.03 + 0.08 * _nebulaController.value),
+                              // Cinematic dual-world vortex painter
+                              CustomPaint(
+                                size: const Size(240, 240),
+                                painter: CinematicPortalPainter(
+                                  animation: _portalController.value,
+                                  pulse: neo,
+                                  materieColor: _portalColor1,
+                                  energieColor: _portalColor2,
+                                ),
+                              ),
+                              // Central division crack (world boundary)
+                              Container(
+                                width: 2.5,
+                                height: 112,
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors: [
+                                      Colors.transparent,
+                                      Colors.white.withValues(alpha: 0.82),
+                                      Colors.white,
+                                      Colors.white,
+                                      Colors.white.withValues(alpha: 0.82),
+                                      Colors.transparent,
+                                    ],
+                                    stops: const [0.0, 0.15, 0.35, 0.65, 0.85, 1.0],
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(color: Colors.white.withValues(alpha: 0.65), blurRadius: 14),
+                                    BoxShadow(color: _portalColor1.withValues(alpha: 0.45), blurRadius: 26, offset: const Offset(-10, 0)),
+                                    BoxShadow(color: _portalColor2.withValues(alpha: 0.45), blurRadius: 26, offset: const Offset(10, 0)),
+                                  ],
+                                ),
+                              ),
+                              // Nexus dot at the boundary
+                              Opacity(
+                                opacity: (0.7 + 0.3 * neo).clamp(0.0, 1.0),
+                                child: Container(
+                                  width: 12, height: 12,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Colors.white,
+                                    boxShadow: [
+                                      const BoxShadow(color: Colors.white, blurRadius: 30, spreadRadius: 8),
+                                      BoxShadow(color: _portalColor1.withValues(alpha: 0.55), blurRadius: 60, spreadRadius: 14, offset: const Offset(-7, 0)),
+                                      BoxShadow(color: _portalColor2.withValues(alpha: 0.55), blurRadius: 60, spreadRadius: 14, offset: const Offset(7, 0)),
+                                    ],
+                                  ),
+                                ),
+                              ),
                               // Tap progress ring
                               if (_portalTapCount > 0)
                                 CustomPaint(
-                                  size: const Size(230, 230),
+                                  size: const Size(256, 256),
                                   painter: TapProgressRingPainter(
                                     progress: _portalTapCount / 10.0,
                                     tapCount: _portalTapCount,
@@ -1008,21 +1056,6 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> with TickerProvider
                                     color2: _portalColor2,
                                   ),
                                 ),
-                              // Center dot pulse
-                              Opacity(
-                                opacity: _nebulaController.value,
-                                child: Container(
-                                  width: 10, height: 10,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: Colors.white,
-                                    boxShadow: [
-                                      const BoxShadow(color: Colors.white, blurRadius: 28, spreadRadius: 6),
-                                      BoxShadow(color: _portalColor1.withValues(alpha: 0.6), blurRadius: 60, spreadRadius: 14),
-                                    ],
-                                  ),
-                                ),
-                              ),
                               // Tap dots
                               Positioned(
                                 bottom: 0,
@@ -1052,32 +1085,34 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> with TickerProvider
 
                   const Spacer(),
 
-                  // ── World buttons ──
+                  // ── World cards ──
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Column(
                       children: [
                         _buildWorldCard(
                           cardKey: _materieButtonKey,
-                          eyebrow: 'Welt I',
+                          eyebrow: 'WELT I',
                           title: 'MATERIE',
                           subtitle: 'Wissen · Logik · Fakten',
+                          tags: const ['Geopolitik', 'Geschichte', 'UFOs', 'Forschung'],
                           primaryColor: const Color(0xFF3B82F6),
-                          deepColor: const Color(0xFF0A2452),
-                          orbHi: const Color(0xFFCFDFFF),
+                          deepColor: const Color(0xFF040D1F),
                           labelColor: const Color(0xFF7DA7FF),
+                          orbOffset: const Alignment(1.1, -1.0),
                           onTap: () => _navigateWithCinematicTransition(const MaterieWorldWrapper()),
                         ),
-                        const SizedBox(height: 14),
+                        _buildWorldsDivider(),
                         _buildWorldCard(
                           cardKey: _energieButtonKey,
-                          eyebrow: 'Welt II',
+                          eyebrow: 'WELT II',
                           title: 'ENERGIE',
                           subtitle: 'Spiritualität · Mystik · Bewusstsein',
+                          tags: const ['Chakren', 'Astrologie', 'Meditation', 'Kristalle'],
                           primaryColor: const Color(0xFFA855F7),
-                          deepColor: const Color(0xFF3B0D6E),
-                          orbHi: const Color(0xFFE9CCFF),
+                          deepColor: const Color(0xFF0C0318),
                           labelColor: const Color(0xFFC79AFF),
+                          orbOffset: const Alignment(-1.1, -1.0),
                           onTap: () => _navigateWithCinematicTransition(const EnergieWorldWrapper()),
                         ),
                       ],
@@ -1180,10 +1215,11 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> with TickerProvider
     required String eyebrow,
     required String title,
     required String subtitle,
+    required List<String> tags,
     required Color primaryColor,
     required Color deepColor,
-    required Color orbHi,
     required Color labelColor,
+    required Alignment orbOffset,
     required VoidCallback onTap,
   }) {
     return GestureDetector(
@@ -1193,56 +1229,157 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> with TickerProvider
         onTap();
       },
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(22),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
+          filter: ImageFilter.blur(sigmaX: 32, sigmaY: 32),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
+            height: 126,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              color: const Color(0xFF08080E).withValues(alpha: 0.55),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
-              boxShadow: [BoxShadow(color: primaryColor.withValues(alpha: 0.18), blurRadius: 28, offset: const Offset(0, 8))],
+              borderRadius: BorderRadius.circular(22),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  deepColor,
+                  Color.lerp(deepColor, primaryColor, 0.18)!,
+                ],
+              ),
+              border: Border.all(color: primaryColor.withValues(alpha: 0.28), width: 1.2),
+              boxShadow: [
+                BoxShadow(color: primaryColor.withValues(alpha: 0.26), blurRadius: 38, offset: const Offset(0, 12)),
+                BoxShadow(color: Colors.black.withValues(alpha: 0.55), blurRadius: 18, offset: const Offset(0, 5)),
+              ],
             ),
-            child: Row(
+            child: Stack(
               children: [
-                // Orb
-                Container(
-                  width: 54, height: 54,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      center: const Alignment(-0.4, -0.4),
-                      colors: [orbHi, primaryColor, deepColor],
-                      stops: const [0.0, 0.35, 1.0],
+                // Atmospheric orb glow in background
+                Positioned.fill(
+                  child: Align(
+                    alignment: orbOffset,
+                    child: Container(
+                      width: 170, height: 170,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: RadialGradient(
+                          colors: [
+                            primaryColor.withValues(alpha: 0.38),
+                            primaryColor.withValues(alpha: 0.10),
+                            Colors.transparent,
+                          ],
+                          stops: const [0.0, 0.45, 1.0],
+                        ),
+                      ),
                     ),
-                    boxShadow: [BoxShadow(color: primaryColor.withValues(alpha: 0.7), blurRadius: 28)],
                   ),
                 ),
-                const SizedBox(width: 18),
-                // Text
-                Expanded(
+                // Grid texture overlay
+                Positioned.fill(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(22),
+                    child: CustomPaint(painter: _GridLinePainter(primaryColor.withValues(alpha: 0.055))),
+                  ),
+                ),
+                // Content
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 14, 18, 14),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(eyebrow, style: TextStyle(fontSize: 9, letterSpacing: 4.0, color: labelColor, fontWeight: FontWeight.w600)),
-                      const SizedBox(height: 4),
-                      Text(title, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w200, letterSpacing: 5.0, color: Colors.white, height: 1)),
-                      const SizedBox(height: 5),
-                      Text(subtitle, style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.5), letterSpacing: 0.4)),
+                      // Top row: eyebrow chip + arrow
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: primaryColor.withValues(alpha: 0.18),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: primaryColor.withValues(alpha: 0.45), width: 0.8),
+                            ),
+                            child: Text(eyebrow, style: TextStyle(fontSize: 9, letterSpacing: 3.0, color: labelColor, fontWeight: FontWeight.w700)),
+                          ),
+                          const Spacer(),
+                          Container(
+                            width: 28, height: 28,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: primaryColor.withValues(alpha: 0.15),
+                              border: Border.all(color: primaryColor.withValues(alpha: 0.35), width: 0.8),
+                            ),
+                            child: Icon(Icons.arrow_forward, color: primaryColor, size: 14),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      // World name
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 26, fontWeight: FontWeight.w200,
+                          letterSpacing: 6.0, color: Colors.white, height: 1,
+                        ),
+                      ),
+                      const SizedBox(height: 9),
+                      // Tag pills
+                      Wrap(
+                        spacing: 5,
+                        runSpacing: 4,
+                        children: tags.map((tag) => Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.06),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: Colors.white.withValues(alpha: 0.11)),
+                          ),
+                          child: Text(tag, style: TextStyle(fontSize: 8.5, color: Colors.white.withValues(alpha: 0.52), letterSpacing: 0.3)),
+                        )).toList(),
+                      ),
                     ],
                   ),
-                ),
-                // Arrow
-                Container(
-                  width: 32, height: 32,
-                  decoration: BoxDecoration(shape: BoxShape.circle, color: primaryColor.withValues(alpha: 0.15)),
-                  child: Icon(Icons.chevron_right, color: Colors.white.withValues(alpha: 0.6), size: 20),
                 ),
               ],
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildWorldsDivider() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          Expanded(
+            child: Container(
+              height: 1,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Colors.transparent, Color(0xFF3B82F6)],
+                ),
+              ),
+            ),
+          ),
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 10),
+            width: 26, height: 26,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white.withValues(alpha: 0.04),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+            ),
+            child: Icon(Icons.compare_arrows, size: 13, color: Colors.white.withValues(alpha: 0.30)),
+          ),
+          Expanded(
+            child: Container(
+              height: 1,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFFA855F7), Colors.transparent],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -2108,41 +2245,126 @@ class NebulaPainter extends CustomPainter {
   bool shouldRepaint(NebulaPainter oldDelegate) => animation != oldDelegate.animation;
 }
 
-/// Cinematic Portal Painter with Aurora Rings
+/// Dual-World Cinematic Portal — Materie (blue, left) | Energie (purple, right)
 class CinematicPortalPainter extends CustomPainter {
   final double animation;
+  final double pulse;
+  final Color materieColor;
+  final Color energieColor;
 
-  CinematicPortalPainter(this.animation);
+  CinematicPortalPainter({
+    required this.animation,
+    required this.pulse,
+    required this.materieColor,
+    required this.energieColor,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    
-    // Multiple Aurora Rings
-    for (int ring = 0; ring < 12; ring++) {
-      final radius = (size.width / 2) - (ring * 15);
-      final rotation = animation + (ring * 0.3);
-      
-      final paint = Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 4 - (ring * 0.2)
-        ..shader = SweepGradient(
-          colors: [
-            Color(0xFF2196F3).withValues(alpha: 0.5 - ring * 0.03),
-            Color(0xFF9C27B0).withValues(alpha: 0.5 - ring * 0.03),
-            Color(0xFFFFD700).withValues(alpha: 0.4 - ring * 0.03),
-            Color(0xFF2196F3).withValues(alpha: 0.5 - ring * 0.03),
-          ],
-          transform: GradientRotation(rotation),
-        ).createShader(Rect.fromCircle(center: center, radius: radius))
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
-      
-      canvas.drawCircle(center, radius, paint);
+    final cx = size.width / 2;
+    final cy = size.height / 2;
+    final r = size.width / 2 - 4;
+    final center = Offset(cx, cy);
+
+    // Left hemisphere fill — Materie blue
+    final lPaint = Paint()
+      ..shader = RadialGradient(
+        center: const Alignment(-0.45, 0),
+        colors: [
+          materieColor.withValues(alpha: 0.52 + 0.10 * pulse),
+          materieColor.withValues(alpha: 0.18),
+          Colors.transparent,
+        ],
+        stops: const [0.0, 0.55, 1.0],
+      ).createShader(Rect.fromCircle(center: center, radius: r));
+    canvas.save();
+    canvas.clipRect(Rect.fromLTRB(0, 0, cx, size.height));
+    canvas.drawCircle(center, r * 0.86, lPaint);
+    canvas.restore();
+
+    // Right hemisphere fill — Energie purple
+    final rPaint = Paint()
+      ..shader = RadialGradient(
+        center: const Alignment(0.45, 0),
+        colors: [
+          energieColor.withValues(alpha: 0.52 + 0.10 * (1 - pulse)),
+          energieColor.withValues(alpha: 0.18),
+          Colors.transparent,
+        ],
+        stops: const [0.0, 0.55, 1.0],
+      ).createShader(Rect.fromCircle(center: center, radius: r));
+    canvas.save();
+    canvas.clipRect(Rect.fromLTRB(cx, 0, size.width, size.height));
+    canvas.drawCircle(center, r * 0.86, rPaint);
+    canvas.restore();
+
+    // Outer sweep ring (bicolor, rotating)
+    final outerRing = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.5
+      ..shader = SweepGradient(
+        colors: [
+          materieColor.withValues(alpha: 0.85),
+          energieColor.withValues(alpha: 0.85),
+          materieColor.withValues(alpha: 0.85),
+        ],
+        transform: GradientRotation(animation * 2 * math.pi),
+      ).createShader(Rect.fromCircle(center: center, radius: r));
+    canvas.drawCircle(center, r, outerRing);
+
+    // Inner counter-rotating ring
+    final innerRing = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.3
+      ..shader = SweepGradient(
+        colors: [
+          energieColor.withValues(alpha: 0.6),
+          materieColor.withValues(alpha: 0.6),
+          energieColor.withValues(alpha: 0.6),
+        ],
+        transform: GradientRotation(-animation * 2 * math.pi + math.pi),
+      ).createShader(Rect.fromCircle(center: center, radius: r * 0.7));
+    canvas.drawCircle(center, r * 0.7, innerRing);
+
+    // Materie spiral arms (left side, clockwise)
+    for (int i = 0; i < 3; i++) {
+      final angle = animation * 2 * math.pi + i * (2 * math.pi / 3);
+      _drawArm(canvas, cx, cy, r * 0.68, angle, materieColor, clockwise: true);
+    }
+
+    // Energie spiral arms (right side, counter-clockwise)
+    for (int i = 0; i < 3; i++) {
+      final angle = -animation * 2 * math.pi + i * (2 * math.pi / 3) + math.pi;
+      _drawArm(canvas, cx, cy, r * 0.68, angle, energieColor, clockwise: false);
     }
   }
 
+  void _drawArm(Canvas canvas, double cx, double cy, double maxR, double startAngle, Color color, {required bool clockwise}) {
+    final path = Path();
+    const steps = 22;
+    bool started = false;
+    for (int s = 0; s <= steps; s++) {
+      final t = s / steps;
+      final armR = maxR * t * 0.52;
+      final a = startAngle + t * math.pi * 0.65 * (clockwise ? 1 : -1);
+      final px = cx + math.cos(a) * armR;
+      final py = cy + math.sin(a) * armR;
+      if (!started) { path.moveTo(px, py); started = true; }
+      else { path.lineTo(px, py); }
+    }
+    canvas.drawPath(
+      path,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5
+        ..color = color.withValues(alpha: 0.36)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 1.2),
+    );
+  }
+
   @override
-  bool shouldRepaint(CinematicPortalPainter oldDelegate) => animation != oldDelegate.animation;
+  bool shouldRepaint(CinematicPortalPainter old) =>
+      old.animation != animation || old.pulse != pulse;
 }
 
 /// v5.40 - 1.1: Tap Progress Ring Painter
@@ -2231,4 +2453,25 @@ class TapProgressRingPainter extends CustomPainter {
   bool shouldRepaint(TapProgressRingPainter oldDelegate) {
     return progress != oldDelegate.progress || tapCount != oldDelegate.tapCount;
   }
+}
+
+/// Subtle grid-line texture for world cards.
+class _GridLinePainter extends CustomPainter {
+  final Color color;
+  _GridLinePainter(this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..color = color..strokeWidth = 0.6;
+    const step = 28.0;
+    for (double x = 0; x < size.width; x += step) {
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
+    }
+    for (double y = 0; y < size.height; y += step) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_GridLinePainter old) => old.color != color;
 }
