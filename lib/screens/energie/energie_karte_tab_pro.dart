@@ -229,7 +229,7 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.search_off_rounded,
+                    const Icon(Icons.search_off,
                         color: Color(0xFF9C27B0), size: 32),
                     const SizedBox(height: 8),
                     Text(
@@ -251,7 +251,7 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
                           _selectedCategory = null;
                         });
                       },
-                      icon: const Icon(Icons.clear_rounded, size: 16),
+                      icon: const Icon(Icons.clear, size: 16),
                       label: const Text('Filter zurücksetzen'),
                     ),
                   ],
@@ -367,69 +367,81 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
   Widget _buildTopBar() {
     return Container(
       margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: const Color(0xFF100B1E),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: const Color(0xFFAB47BC).withAlpha((0.4 * 255).round()),
-          width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFFAB47BC).withAlpha((0.15 * 255).round()),
-            blurRadius: 20,
-            spreadRadius: 2,
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.map, color: Colors.white, size: 24),
-          const SizedBox(width: 12),
-          Expanded(
-            child: TextField(
-              controller: _searchController,
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                hintText: 'Kraftorte, Chakren, Ley-Lines suchen...',
-                hintStyle: TextStyle(
-                  color: Colors.white.withAlpha((0.5 * 255).round()),
-                ),
-                border: InputBorder.none,
-                isDense: true,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: const Color(0xB31A0F2E),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: const Color(0xFFA855F7).withValues(alpha: 0.35),
+                width: 1,
               ),
-              onChanged: (value) {
-                setState(() {
-                  _searchQuery = value;
-                });
-              },
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF000000).withValues(alpha: 0.50),
+                  blurRadius: 24,
+                  offset: const Offset(0, 8),
+                ),
+                BoxShadow(
+                  color: const Color(0xFFA855F7).withValues(alpha: 0.14),
+                  blurRadius: 32,
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.map, color: Colors.white, size: 24),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextField(
+                    controller: _searchController,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      hintText: 'Kraftorte, Chakren, Ley-Lines suchen...',
+                      hintStyle: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.5),
+                      ),
+                      border: InputBorder.none,
+                      isDense: true,
+                    ),
+                    onChanged: (value) {
+                      setState(() {
+                        _searchQuery = value;
+                      });
+                    },
+                  ),
+                ),
+                if (_searchQuery.isNotEmpty)
+                  IconButton(
+                    icon: const Icon(Icons.clear, color: Colors.white70, size: 20),
+                    onPressed: () {
+                      setState(() {
+                        _searchController.clear();
+                        _searchQuery = '';
+                      });
+                    },
+                  ),
+                IconButton(
+                  icon: Icon(
+                    _showLeyLines ? Icons.visibility : Icons.visibility_off,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _showLeyLines = !_showLeyLines;
+                    });
+                  },
+                  tooltip: 'Ley-Lines ${_showLeyLines ? 'ausblenden' : 'einblenden'}',
+                ),
+              ],
             ),
           ),
-          if (_searchQuery.isNotEmpty)
-            IconButton(
-              icon: const Icon(Icons.clear, color: Colors.white70, size: 20),
-              onPressed: () {
-                setState(() {
-                  _searchController.clear();
-                  _searchQuery = '';
-                });
-              },
-            ),
-          IconButton(
-            icon: Icon(
-              _showLeyLines ? Icons.visibility : Icons.visibility_off,
-              color: Colors.white,
-              size: 20,
-            ),
-            onPressed: () {
-              setState(() {
-                _showLeyLines = !_showLeyLines;
-              });
-            },
-            tooltip: 'Ley-Lines ${_showLeyLines ? 'ausblenden' : 'einblenden'}',
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -489,23 +501,35 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
         decoration: BoxDecoration(
           gradient: isSelected
               ? LinearGradient(
                   colors: [
-                    color.withAlpha((0.3 * 255).round()),
-                    color.withAlpha((0.1 * 255).round()),
+                    color.withValues(alpha: 0.40),
+                    color.withValues(alpha: 0.18),
                   ],
                 )
               : null,
-          color: isSelected ? null : const Color(0xFF100B1E).withAlpha((0.9 * 255).round()),
-          borderRadius: BorderRadius.circular(20),
+          color: isSelected ? null : const Color(0xB30C1022),
+          borderRadius: BorderRadius.circular(22),
           border: Border.all(
-            color: isSelected ? color : Colors.white24,
-            width: isSelected ? 2 : 1,
+            color: isSelected
+                ? color
+                : Colors.white.withValues(alpha: 0.10),
+            width: isSelected ? 1.5 : 1,
           ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: color.withValues(alpha: 0.45),
+                    blurRadius: 16,
+                    spreadRadius: 0,
+                  ),
+                ]
+              : null,
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -958,7 +982,7 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.auto_awesome_rounded,
+            Icon(Icons.auto_awesome,
                 size: 48, color: Colors.white.withValues(alpha: 0.4)),
             const SizedBox(height: 12),
             Text(
@@ -1248,12 +1272,12 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
   
   // Feature E: Radial circular layer menu
   Widget _buildRadialLayerMenu() {
-    const accent = Color(0xFF9C27B0);
+    const accent = Color(0xFFA855F7);
     const layers = [
-      ('street', Icons.map_rounded, 'Straße'),
-      ('satellite', Icons.satellite_rounded, 'Satellit'),
-      ('terrain', Icons.terrain_rounded, 'Gelände'),
-      ('topo', Icons.layers_rounded, 'Topo'),
+      ('street', Icons.map, 'Straße'),
+      ('satellite', Icons.satellite, 'Satellit'),
+      ('terrain', Icons.terrain, 'Gelände'),
+      ('topo', Icons.layers, 'Topo'),
     ];
 
     return SizedBox(
@@ -1286,28 +1310,43 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
                       _currentMapLayer = layerType;
                       _layerMenuOpen = false;
                     }),
-                    child: Container(
-                      width: 42,
-                      height: 42,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: isSelected ? accent : const Color(0xFF100B1E),
-                        border: Border.all(
-                          color: isSelected ? accent : accent.withValues(alpha: 0.6),
-                          width: 1.5,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.5),
-                            blurRadius: 8,
+                    child: ClipOval(
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                        child: Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: isSelected
+                                ? accent.withValues(alpha: 0.85)
+                                : const Color(0xB31A0F2E),
+                            border: Border.all(
+                              color: isSelected
+                                  ? Colors.white.withValues(alpha: 0.85)
+                                  : Colors.white.withValues(alpha: 0.12),
+                              width: 1,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.45),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                              if (isSelected)
+                                BoxShadow(
+                                  color: accent.withValues(alpha: 0.55),
+                                  blurRadius: 18,
+                                ),
+                            ],
                           ),
-                        ],
+                          child: Icon(icon,
+                              size: 20,
+                              color: isSelected
+                                  ? Colors.white
+                                  : Colors.white.withValues(alpha: 0.75)),
+                        ),
                       ),
-                      child: Icon(icon,
-                          size: 20,
-                          color: isSelected
-                              ? Colors.white
-                              : Colors.white.withValues(alpha: 0.7)),
                     ),
                   ),
                 ),
@@ -1321,30 +1360,43 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
             left: 0,
             child: GestureDetector(
               onTap: () => setState(() => _layerMenuOpen = !_layerMenuOpen),
-              child: Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: _layerMenuOpen ? accent : const Color(0xFF100B1E),
-                  border: Border.all(color: accent.withValues(alpha: 0.6), width: 1.5),
-                  boxShadow: [
-                    BoxShadow(
+              child: ClipOval(
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                  child: Container(
+                    width: 52,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
                       color: _layerMenuOpen
-                          ? accent.withValues(alpha: 0.3)
-                          : Colors.black.withValues(alpha: 0.4),
-                      blurRadius: 12,
-                      spreadRadius: 1,
+                          ? accent.withValues(alpha: 0.85)
+                          : const Color(0xB31A0F2E),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.18),
+                        width: 1,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.55),
+                          blurRadius: 16,
+                          offset: const Offset(0, 6),
+                        ),
+                        BoxShadow(
+                          color: accent.withValues(
+                              alpha: _layerMenuOpen ? 0.55 : 0.25),
+                          blurRadius: _layerMenuOpen ? 22 : 14,
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-                child: AnimatedRotation(
-                  turns: _layerMenuOpen ? 0.125 : 0,
-                  duration: const Duration(milliseconds: 250),
-                  child: Icon(
-                    Icons.layers_rounded,
-                    size: 24,
-                    color: _layerMenuOpen ? Colors.white : accent,
+                    child: AnimatedRotation(
+                      turns: _layerMenuOpen ? 0.125 : 0,
+                      duration: const Duration(milliseconds: 250),
+                      child: Icon(
+                        Icons.layers,
+                        size: 24,
+                        color: _layerMenuOpen ? Colors.white : accent,
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -1402,7 +1454,7 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
             const SizedBox(height: 14),
             Row(
               children: [
-                const Icon(Icons.location_on_rounded, color: accent, size: 22),
+                const Icon(Icons.location_on, color: accent, size: 22),
                 const SizedBox(width: 8),
                 const Text(
                   'Live-Pin senden',
@@ -1473,7 +1525,7 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
                   child: ElevatedButton.icon(
                     onPressed: () =>
                         Navigator.pop(ctx, controller.text.trim()),
-                    icon: const Icon(Icons.send_rounded, size: 18),
+                    icon: const Icon(Icons.send, size: 18),
                     label: const Text('Pin senden'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: accent,

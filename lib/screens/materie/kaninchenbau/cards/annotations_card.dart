@@ -64,7 +64,7 @@ class _AnnotationsCardState extends State<AnnotationsCard> {
         children: [
           Row(
             children: [
-              const Icon(Icons.forum_rounded,
+              const Icon(Icons.forum,
                   color: Color(0xFFCE93D8), size: 18),
               const SizedBox(width: 8),
               const Text(
@@ -78,7 +78,7 @@ class _AnnotationsCardState extends State<AnnotationsCard> {
               ),
               const Spacer(),
               IconButton(
-                icon: const Icon(Icons.add_circle_rounded,
+                icon: const Icon(Icons.add_circle,
                     color: Color(0xFFCE93D8), size: 22),
                 onPressed: _addDialog,
                 tooltip: 'Hinweis hinzufügen',
@@ -121,7 +121,7 @@ class _AnnotationsCardState extends State<AnnotationsCard> {
             const SizedBox(height: 10),
             ElevatedButton.icon(
               onPressed: _addDialog,
-              icon: const Icon(Icons.edit_note_rounded, size: 18),
+              icon: const Icon(Icons.edit_note, size: 18),
               label: const Text('Ersten Hinweis posten'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFCE93D8),
@@ -150,8 +150,8 @@ class _AnnotationsCardState extends State<AnnotationsCard> {
             children: [
               Icon(
                 a.isAnonymous
-                    ? Icons.shield_rounded
-                    : Icons.person_rounded,
+                    ? Icons.shield
+                    : Icons.person,
                 size: 13,
                 color: a.isAnonymous
                     ? KbDesign.goldAccent
@@ -198,7 +198,7 @@ class _AnnotationsCardState extends State<AnnotationsCard> {
               },
               child: Row(
                 children: [
-                  Icon(Icons.link_rounded,
+                  Icon(Icons.link,
                       size: 12,
                       color: const Color(0xFFCE93D8).withValues(alpha: 0.9)),
                   const SizedBox(width: 4),
@@ -221,7 +221,7 @@ class _AnnotationsCardState extends State<AnnotationsCard> {
           Row(
             children: [
               _voteButton(
-                icon: Icons.arrow_upward_rounded,
+                icon: Icons.arrow_upward,
                 onTap: () async {
                   HapticFeedback.lightImpact();
                   await _service.voteAnnotation(a.id, 1);
@@ -230,7 +230,7 @@ class _AnnotationsCardState extends State<AnnotationsCard> {
               ),
               const SizedBox(width: 8),
               _voteButton(
-                icon: Icons.arrow_downward_rounded,
+                icon: Icons.arrow_downward,
                 onTap: () async {
                   HapticFeedback.lightImpact();
                   await _service.voteAnnotation(a.id, -1);
@@ -327,7 +327,7 @@ class _AddAnnotationDialogState extends State<_AddAnnotationDialog> {
       backgroundColor: KbDesign.cardSurface,
       title: Row(
         children: [
-          Icon(Icons.edit_note_rounded, color: const Color(0xFFCE93D8)),
+          Icon(Icons.edit_note, color: const Color(0xFFCE93D8)),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -361,7 +361,7 @@ class _AddAnnotationDialogState extends State<_AddAnnotationDialog> {
               decoration: const InputDecoration(
                 hintText: 'Quelle/Beleg-URL (optional)',
                 hintStyle: TextStyle(color: Colors.white38),
-                prefixIcon: Icon(Icons.link_rounded, color: Colors.white38),
+                prefixIcon: Icon(Icons.link, color: Colors.white38),
                 border: OutlineInputBorder(),
               ),
             ),

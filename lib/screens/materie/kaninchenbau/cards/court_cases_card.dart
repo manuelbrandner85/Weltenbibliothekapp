@@ -29,7 +29,7 @@ class CourtCasesCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.gavel_rounded,
+              const Icon(Icons.gavel,
                   color: Color(0xFFB39DDB), size: 18),
               const SizedBox(width: 8),
               const Text(
@@ -126,7 +126,7 @@ class CourtCasesCard extends StatelessWidget {
                   ),
                 ),
                 if (c.url != null)
-                  Icon(Icons.open_in_new_rounded,
+                  Icon(Icons.open_in_new,
                       size: 14,
                       color: Colors.white.withValues(alpha: 0.5)),
               ],

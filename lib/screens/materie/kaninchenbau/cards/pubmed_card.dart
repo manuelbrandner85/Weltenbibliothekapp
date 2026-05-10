@@ -24,7 +24,7 @@ class PubMedCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(children: [
-            const Icon(Icons.biotech_rounded, color: _accent, size: 18),
+            const Icon(Icons.biotech, color: _accent, size: 18),
             const SizedBox(width: 8),
             const Text('BIOMEDIZIN · STUDIEN',
                 style: TextStyle(color: Colors.white70, fontSize: 11, letterSpacing: 2, fontWeight: FontWeight.bold)),
@@ -97,7 +97,7 @@ class PubMedCard extends StatelessWidget {
             ]),
             const SizedBox(height: 6),
             Row(children: [
-              Icon(Icons.person_outline_rounded, color: Colors.white38, size: 11),
+              Icon(Icons.person_outline, color: Colors.white38, size: 11),
               const SizedBox(width: 4),
               Expanded(
                 child: Text(p.authors,
@@ -107,7 +107,7 @@ class PubMedCard extends StatelessWidget {
             ]),
             const SizedBox(height: 3),
             Row(children: [
-              Icon(Icons.science_rounded, color: Colors.white38, size: 11),
+              Icon(Icons.science, color: Colors.white38, size: 11),
               const SizedBox(width: 4),
               Expanded(
                 child: Text(p.journal,

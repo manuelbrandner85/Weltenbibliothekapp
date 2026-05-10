@@ -1889,7 +1889,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                           hintText: 'Nachricht',
                           hintStyle: const TextStyle(color: Colors.white38),
                           filled: true,
-                          fillColor: Colors.white.withValues(alpha: 0.05),
+                          fillColor: Colors.white.withValues(alpha: 0.13),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(20),
                             borderSide: BorderSide.none,
@@ -1917,7 +1917,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                         gradient: LinearGradient(
                           colors: _hasText
                               ? [const Color(0xFF9B51E0), const Color(0xFF6A5ACD)]
-                              : [Colors.grey.shade400, Colors.grey.shade500],
+                              : [const Color(0xFF6B4FA8), const Color(0xFF4A3580)],
                         ),
                         borderRadius: BorderRadius.circular(20),
                       ),

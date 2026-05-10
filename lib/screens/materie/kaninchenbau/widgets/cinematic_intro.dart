@@ -203,7 +203,7 @@ class _CinematicIntroState extends State<CinematicIntro>
                         top: MediaQuery.of(context).padding.top + 8,
                         left: 8,
                         child: IconButton(
-                          icon: const Icon(Icons.close_rounded,
+                          icon: const Icon(Icons.close,
                               color: Colors.white60, size: 26),
                           onPressed: () => Navigator.of(context).maybePop(),
                         ),
@@ -221,7 +221,7 @@ class _CinematicIntroState extends State<CinematicIntro>
                                   const MyInvestigationsScreen(),
                             ));
                           },
-                          icon: Icon(Icons.bookmark_rounded,
+                          icon: Icon(Icons.bookmark,
                               size: 16, color: KbDesign.goldAccent),
                           label: Text(
                             'Ermittlungen',
@@ -318,7 +318,7 @@ class _CinematicIntroState extends State<CinematicIntro>
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.auto_awesome_rounded,
+              Icon(Icons.auto_awesome,
                   size: 14, color: KbDesign.goldAccent),
               const SizedBox(width: 6),
               Text(
@@ -363,67 +363,120 @@ class _CinematicIntroState extends State<CinematicIntro>
             ),
           ),
           const SizedBox(height: 24),
-          // Suchring (Glas + Glow)
+          // Suchring (Materie-Blau-Border + roter Submit — recherche.html)
           AnimatedOpacity(
             duration: const Duration(milliseconds: 400),
             opacity: _typewriterDone ? 1.0 : 0.0,
             child: Container(
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(28),
+                borderRadius: BorderRadius.circular(16),
                 gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
                   colors: [
-                    Color(0xFF14141F),
-                    Color(0xFF0A0A12),
+                    Color(0xC714080F),
+                    Color(0xD108060A),
                   ],
                 ),
                 border: Border.all(
-                  color: KbDesign.neonRed.withValues(alpha: pulse * 0.65),
-                  width: 1.6,
+                  color: const Color(0xFF6AB2FF).withValues(alpha: 0.55),
+                  width: 1.5,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color:
-                        KbDesign.neonRed.withValues(alpha: 0.28 * pulse),
-                    blurRadius: 30 + 14 * pulse,
-                    spreadRadius: 2,
+                    color: const Color(0xFF2196F3)
+                        .withValues(alpha: 0.18 + 0.08 * pulse),
+                    blurRadius: 32,
+                  ),
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.55),
+                    blurRadius: 24,
+                    offset: const Offset(0, 8),
                   ),
                 ],
               ),
-              child: TextField(
-                controller: _ctrl,
-                focusNode: _focus,
-                textInputAction: TextInputAction.search,
-                onSubmitted: (_) => _submit(),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  letterSpacing: 0.3,
-                ),
-                cursorColor: KbDesign.neonRedSoft,
-                decoration: InputDecoration(
-                  hintText: 'Personen, Firmen, Ereignisse, Theorien…',
-                  hintStyle: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.32),
-                    fontSize: 15,
+              child: Row(
+                children: [
+                  // Roter Caret-Indikator vor Input
+                  Padding(
+                    padding: const EdgeInsets.only(left: 16, right: 10),
+                    child: Container(
+                      width: 2,
+                      height: 22,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFF5060),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFFFF5060)
+                                .withValues(alpha: 0.7),
+                            blurRadius: 8,
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                  prefixIcon: Padding(
-                    padding: const EdgeInsets.only(left: 14, right: 8),
-                    child: Icon(Icons.travel_explore_rounded,
-                        color: KbDesign.neonRedSoft.withValues(alpha: 0.85)),
+                  Expanded(
+                    child: TextField(
+                      controller: _ctrl,
+                      focusNode: _focus,
+                      textInputAction: TextInputAction.search,
+                      onSubmitted: (_) => _submit(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        letterSpacing: 0.2,
+                      ),
+                      cursorColor: KbDesign.neonRedSoft,
+                      decoration: InputDecoration(
+                        hintText: 'Personen, Firmen, Ereignisse, Theor…',
+                        hintStyle: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.42),
+                          fontSize: 15,
+                        ),
+                        border: InputBorder.none,
+                        isDense: true,
+                        contentPadding:
+                            const EdgeInsets.symmetric(vertical: 18),
+                      ),
+                    ),
                   ),
-                  prefixIconConstraints:
-                      const BoxConstraints(minWidth: 0, minHeight: 0),
-                  suffixIcon: IconButton(
-                    icon: const Icon(Icons.arrow_forward_rounded, size: 24),
-                    color: KbDesign.neonRedSoft,
-                    onPressed: () => _submit(),
+                  // Submit-Pfeil als roter Gradient-Kreis
+                  Padding(
+                    padding: const EdgeInsets.only(right: 10),
+                    child: GestureDetector(
+                      onTap: () => _submit(),
+                      child: Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: const RadialGradient(
+                            center: Alignment(-0.4, -0.4),
+                            radius: 0.9,
+                            colors: [
+                              Color(0xFFFF7280),
+                              Color(0xFFB8202D),
+                            ],
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFFF2638)
+                                  .withValues(alpha: 0.40),
+                              blurRadius: 14,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.25),
+                            width: 0.5,
+                          ),
+                        ),
+                        child: const Icon(Icons.arrow_forward,
+                            size: 18, color: Colors.white),
+                      ),
+                    ),
                   ),
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 4, vertical: 20),
-                ),
+                ],
               ),
             ),
           ),
@@ -437,7 +490,7 @@ class _CinematicIntroState extends State<CinematicIntro>
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.local_fire_department_rounded,
+                    Icon(Icons.local_fire_department,
                         size: 14,
                         color: KbDesign.goldAccent.withValues(alpha: 0.7)),
                     const SizedBox(width: 6),
@@ -489,13 +542,13 @@ class _CinematicIntroState extends State<CinematicIntro>
   }
 
   static const _osintTools = [
-    (Icons.account_balance_wallet_rounded, 'Panama Papers', 'ICIJ Offshore Leaks', Color(0xFFFFB300)),
-    (Icons.gavel_rounded, 'OpenSanctions', 'EU/UN/OFAC Sanktionen', Color(0xFFE53935)),
-    (Icons.folder_zip_rounded, 'Aleph OCCRP', 'FinCEN, LuxLeaks, Suisse Secrets', Color(0xFF7C4DFF)),
-    (Icons.science_rounded, 'PubMed', '35 Mio. Studien & Papers', Color(0xFF00BCD4)),
-    (Icons.auto_stories_rounded, 'Semantic Scholar', '200 Mio. wissenschaftliche Paper', Color(0xFF4CAF50)),
-    (Icons.archive_rounded, 'Internet Archive', '50 Mio. Dokumente & Wayback', Color(0xFFFF7043)),
-    (Icons.how_to_vote_rounded, 'EU-Parlament', 'Abstimmungen & Abgeordnete', Color(0xFF2196F3)),
+    (Icons.account_balance_wallet, 'Panama Papers', 'ICIJ Offshore Leaks', Color(0xFFFFB300)),
+    (Icons.gavel, 'OpenSanctions', 'EU/UN/OFAC Sanktionen', Color(0xFFE53935)),
+    (Icons.folder_zip, 'Aleph OCCRP', 'FinCEN, LuxLeaks, Suisse Secrets', Color(0xFF7C4DFF)),
+    (Icons.science, 'PubMed', '35 Mio. Studien & Papers', Color(0xFF00BCD4)),
+    (Icons.auto_stories, 'Semantic Scholar', '200 Mio. wissenschaftliche Paper', Color(0xFF4CAF50)),
+    (Icons.archive, 'Internet Archive', '50 Mio. Dokumente & Wayback', Color(0xFFFF7043)),
+    (Icons.how_to_vote, 'EU-Parlament', 'Abstimmungen & Abgeordnete', Color(0xFF2196F3)),
   ];
 
   Widget _buildOsintGrid() {
@@ -507,7 +560,7 @@ class _CinematicIntroState extends State<CinematicIntro>
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.manage_search_rounded,
+              Icon(Icons.manage_search,
                   size: 14, color: KbDesign.neonRedSoft.withValues(alpha: 0.8)),
               const SizedBox(width: 6),
               Text(

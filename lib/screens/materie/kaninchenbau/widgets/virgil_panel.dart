@@ -265,7 +265,7 @@ class _VirgilPanelState extends State<VirgilPanel>
               children: [
                 Row(
                   children: [
-                    Icon(Icons.auto_awesome_rounded,
+                    Icon(Icons.auto_awesome,
                         size: 11,
                         color: KbDesign.goldAccent.withValues(alpha: 0.8)),
                     const SizedBox(width: 4),
@@ -297,7 +297,7 @@ class _VirgilPanelState extends State<VirgilPanel>
           ),
           IconButton(
             icon:
-                const Icon(Icons.close_rounded, color: Colors.white60, size: 24),
+                const Icon(Icons.close, color: Colors.white60, size: 24),
             onPressed: _close,
           ),
         ],
@@ -534,7 +534,7 @@ class _VirgilPanelState extends State<VirgilPanel>
                         valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                       ),
                     )
-                  : const Icon(Icons.arrow_upward_rounded,
+                  : const Icon(Icons.arrow_upward,
                       color: Colors.white),
               onPressed: _sending ? null : _send,
             ),

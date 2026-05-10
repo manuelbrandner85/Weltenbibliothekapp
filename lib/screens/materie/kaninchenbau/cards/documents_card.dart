@@ -26,7 +26,7 @@ class DocumentsCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.folder_open_rounded,
+              const Icon(Icons.folder_open,
                   color: Color(0xFFFFB74D), size: 18),
               const SizedBox(width: 8),
               const Text(
@@ -122,7 +122,7 @@ class DocumentsCard extends StatelessWidget {
                   ),
                 ],
                 const Spacer(),
-                Icon(Icons.open_in_new_rounded,
+                Icon(Icons.open_in_new,
                     size: 14,
                     color: Colors.white.withValues(alpha: 0.5)),
               ],

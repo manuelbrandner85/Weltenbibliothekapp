@@ -30,7 +30,7 @@ class WaybackCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.history_rounded,
+              const Icon(Icons.history,
                   color: Color(0xFF7E57C2), size: 18),
               const SizedBox(width: 8),
               const Text(
@@ -142,7 +142,7 @@ class WaybackCard extends StatelessWidget {
                 ),
               ),
             ),
-            Icon(Icons.open_in_new_rounded,
+            Icon(Icons.open_in_new,
                 size: 14, color: Colors.white.withValues(alpha: 0.5)),
           ],
         ),

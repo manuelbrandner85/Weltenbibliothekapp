@@ -42,7 +42,7 @@ class BreadcrumbBar extends StatelessWidget {
       child: Row(
         children: [
           IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+            icon: const Icon(Icons.arrow_back_ios_new, size: 20),
             color: Colors.white70,
             onPressed: onClose,
           ),
@@ -58,7 +58,7 @@ class BreadcrumbBar extends StatelessWidget {
                     if (i > 0)
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 6),
-                        child: Icon(Icons.chevron_right_rounded,
+                        child: Icon(Icons.chevron_right,
                             size: 16,
                             color: Colors.white.withValues(alpha: 0.3)),
                       ),
@@ -105,8 +105,8 @@ class BreadcrumbBar extends StatelessWidget {
             IconButton(
               icon: Icon(
                 saved
-                    ? Icons.bookmark_rounded
-                    : Icons.bookmark_outline_rounded,
+                    ? Icons.bookmark
+                    : Icons.bookmark_outline,
                 color: saved ? KbDesign.goldAccent : Colors.white70,
                 size: 22,
               ),

@@ -287,7 +287,7 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro>
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.search_off_rounded,
+                    const Icon(Icons.search_off,
                         color: Color(0xFF2979FF), size: 32),
                     const SizedBox(height: 8),
                     Text(
@@ -309,7 +309,7 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro>
                           _selectedCategory = null;
                         });
                       },
-                      icon: const Icon(Icons.clear_rounded, size: 16),
+                      icon: const Icon(Icons.clear, size: 16),
                       label: const Text('Filter zurücksetzen'),
                     ),
                   ],
@@ -434,75 +434,86 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro>
   Widget _buildSearchAndFilterBar() {
     return Container(
       margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xFF0A1020),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: const Color(0xFF2979FF).withValues(alpha: 0.35),
-          width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF2979FF).withValues(alpha: 0.1),
-            blurRadius: 16,
-            spreadRadius: 1,
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.search, color: Colors.white, size: 20),
-          const SizedBox(width: 12),
-          Expanded(
-            child: TextField(
-              controller: _searchController,
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                hintText: 'Suche nach Orten, Ereignissen...',
-                hintStyle: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.5),
-                ),
-                border: InputBorder.none,
-                isDense: true,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              color: const Color(0xB30C1022),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: const Color(0xFF3B82F6).withValues(alpha: 0.35),
+                width: 1,
               ),
-              onChanged: (value) {
-                setState(() => _searchQuery = value);
-              },
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF000000).withValues(alpha: 0.50),
+                  blurRadius: 24,
+                  offset: const Offset(0, 8),
+                ),
+                BoxShadow(
+                  color: const Color(0xFF3B82F6).withValues(alpha: 0.14),
+                  blurRadius: 32,
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.search, color: Colors.white, size: 20),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextField(
+                    controller: _searchController,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      hintText: 'Suche nach Orten, Ereignissen...',
+                      hintStyle: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.5),
+                      ),
+                      border: InputBorder.none,
+                      isDense: true,
+                    ),
+                    onChanged: (value) {
+                      setState(() => _searchQuery = value);
+                    },
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(
+                    _showTimeline ? Icons.timeline : Icons.timeline_outlined,
+                    color: _showTimeline ? const Color(0xFF3B82F6) : Colors.white,
+                    size: 24,
+                  ),
+                  onPressed: () => setState(() => _showTimeline = !_showTimeline),
+                  tooltip: 'Zeitleiste',
+                ),
+                if (_searchQuery.isNotEmpty)
+                  IconButton(
+                    icon: const Icon(Icons.clear, color: Colors.white, size: 20),
+                    onPressed: () {
+                      setState(() {
+                        _searchQuery = '';
+                        _searchController.clear();
+                      });
+                    },
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                const SizedBox(width: 8),
+                Text(
+                  '${_filteredLocations.length}',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.7),
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
             ),
           ),
-          // TIMELINE TOGGLE BUTTON
-          IconButton(
-            icon: Icon(
-              _showTimeline ? Icons.timeline : Icons.timeline_outlined,
-              color: _showTimeline ? const Color(0xFF2979FF) : Colors.white,
-              size: 24,
-            ),
-            onPressed: () => setState(() => _showTimeline = !_showTimeline),
-            tooltip: 'Zeitleiste',
-          ),
-          if (_searchQuery.isNotEmpty)
-            IconButton(
-              icon: const Icon(Icons.clear, color: Colors.white, size: 20),
-              onPressed: () {
-                setState(() {
-                  _searchQuery = '';
-                  _searchController.clear();
-                });
-              },
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-            ),
-          const SizedBox(width: 8),
-          Text(
-            '${_filteredLocations.length}',
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.7),
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -878,7 +889,7 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.image_not_supported_rounded,
+            Icon(Icons.image_not_supported,
                 size: 48, color: Colors.white.withValues(alpha: 0.4)),
             const SizedBox(height: 12),
             Text(
@@ -1579,7 +1590,7 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro>
             const SizedBox(height: 14),
             Row(
               children: [
-                Icon(Icons.location_on_rounded, color: accent, size: 22),
+                Icon(Icons.location_on, color: accent, size: 22),
                 const SizedBox(width: 8),
                 const Text(
                   'Live-Pin senden',
@@ -1650,7 +1661,7 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro>
                   child: ElevatedButton.icon(
                     onPressed: () =>
                         Navigator.pop(ctx, controller.text.trim()),
-                    icon: const Icon(Icons.send_rounded, size: 18),
+                    icon: const Icon(Icons.send, size: 18),
                     label: const Text('Pin senden'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: accent,
@@ -1713,10 +1724,10 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro>
   Widget _buildRadialLayerMenu() {
     const accent = Color(0xFFE53935);
     const layers = [
-      ('street', Icons.map_rounded, 'Straße'),
-      ('satellite', Icons.satellite_rounded, 'Satellit'),
-      ('terrain', Icons.terrain_rounded, 'Gelände'),
-      ('topo', Icons.layers_rounded, 'Topo'),
+      ('street', Icons.map, 'Straße'),
+      ('satellite', Icons.satellite, 'Satellit'),
+      ('terrain', Icons.terrain, 'Gelände'),
+      ('topo', Icons.layers, 'Topo'),
     ];
 
     return SizedBox(
@@ -1748,28 +1759,43 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro>
                       _currentMapLayer = layerType;
                       _layerMenuOpen = false;
                     }),
-                    child: Container(
-                      width: 42,
-                      height: 42,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: isSelected ? accent : const Color(0xFF0A1020),
-                        border: Border.all(
-                          color: isSelected ? accent : accent.withValues(alpha: 0.6),
-                          width: 1.5,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.5),
-                            blurRadius: 8,
+                    child: ClipOval(
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                        child: Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: isSelected
+                                ? accent.withValues(alpha: 0.85)
+                                : const Color(0xB30C1022),
+                            border: Border.all(
+                              color: isSelected
+                                  ? Colors.white.withValues(alpha: 0.85)
+                                  : Colors.white.withValues(alpha: 0.12),
+                              width: 1,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.45),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                              if (isSelected)
+                                BoxShadow(
+                                  color: accent.withValues(alpha: 0.55),
+                                  blurRadius: 18,
+                                ),
+                            ],
                           ),
-                        ],
+                          child: Icon(icon,
+                              size: 20,
+                              color: isSelected
+                                  ? Colors.white
+                                  : Colors.white.withValues(alpha: 0.75)),
+                        ),
                       ),
-                      child: Icon(icon,
-                          size: 20,
-                          color: isSelected
-                              ? Colors.white
-                              : Colors.white.withValues(alpha: 0.7)),
                     ),
                   ),
                 ),
@@ -1783,30 +1809,43 @@ class _MaterieKarteTabProState extends State<MaterieKarteTabPro>
             left: 0,
             child: GestureDetector(
               onTap: () => setState(() => _layerMenuOpen = !_layerMenuOpen),
-              child: Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: _layerMenuOpen ? accent : const Color(0xFF0A1020),
-                  border: Border.all(color: accent.withValues(alpha: 0.6), width: 1.5),
-                  boxShadow: [
-                    BoxShadow(
+              child: ClipOval(
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                  child: Container(
+                    width: 52,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
                       color: _layerMenuOpen
-                          ? accent.withValues(alpha: 0.3)
-                          : Colors.black.withValues(alpha: 0.4),
-                      blurRadius: 12,
-                      spreadRadius: 1,
+                          ? accent.withValues(alpha: 0.85)
+                          : const Color(0xB30C1022),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.18),
+                        width: 1,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.55),
+                          blurRadius: 16,
+                          offset: const Offset(0, 6),
+                        ),
+                        BoxShadow(
+                          color: accent.withValues(
+                              alpha: _layerMenuOpen ? 0.55 : 0.25),
+                          blurRadius: _layerMenuOpen ? 22 : 14,
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-                child: AnimatedRotation(
-                  turns: _layerMenuOpen ? 0.125 : 0,
-                  duration: const Duration(milliseconds: 250),
-                  child: Icon(
-                    Icons.layers_rounded,
-                    size: 24,
-                    color: _layerMenuOpen ? Colors.white : accent,
+                    child: AnimatedRotation(
+                      turns: _layerMenuOpen ? 0.125 : 0,
+                      duration: const Duration(milliseconds: 250),
+                      child: Icon(
+                        Icons.layers,
+                        size: 24,
+                        color: _layerMenuOpen ? Colors.white : accent,
+                      ),
+                    ),
                   ),
                 ),
               ),

@@ -308,7 +308,7 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
                     _selectedCategory = null;
                   });
                 },
-                icon: const Icon(Icons.clear_rounded, size: 18),
+                icon: const Icon(Icons.clear, size: 18),
                 label: const Text('Filter zurücksetzen'),
               ),
             ],

@@ -45,7 +45,7 @@ class _MyInvestigationsScreenState extends State<MyInvestigationsScreen> {
         elevation: 0,
         title: Row(
           children: [
-            Icon(Icons.bookmark_rounded, color: KbDesign.neonRedSoft, size: 22),
+            Icon(Icons.bookmark, color: KbDesign.neonRedSoft, size: 22),
             const SizedBox(width: 10),
             const Text(
               'Meine Ermittlungen',
@@ -78,7 +78,7 @@ class _MyInvestigationsScreenState extends State<MyInvestigationsScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.bookmark_outline_rounded,
+            Icon(Icons.bookmark_outline,
                 size: 60, color: Colors.white.withValues(alpha: 0.3)),
             const SizedBox(height: 14),
             Text(
@@ -150,7 +150,7 @@ class _MyInvestigationsScreenState extends State<MyInvestigationsScreen> {
                     ),
                   ),
                 IconButton(
-                  icon: const Icon(Icons.delete_outline_rounded,
+                  icon: const Icon(Icons.delete_outline,
                       color: Colors.white54, size: 20),
                   onPressed: () async {
                     final ok = await showDialog<bool>(

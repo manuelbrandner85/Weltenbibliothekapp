@@ -32,7 +32,7 @@ class PropagandaCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.psychology_rounded, color: _accent, size: 18),
+              const Icon(Icons.psychology, color: _accent, size: 18),
               const SizedBox(width: 8),
               const Text(
                 'PROPAGANDA-LINSEN',
@@ -118,11 +118,11 @@ class PropagandaCard extends StatelessWidget {
     // Split nach den 5 erwarteten Sektionen
     final sections = <_Section>[];
     final patterns = {
-      'KERNNARRATIV': Icons.menu_book_rounded,
-      'GEGEN-NARRATIV': Icons.alternate_email_rounded,
+      'KERNNARRATIV': Icons.menu_book,
+      'GEGEN-NARRATIV': Icons.alternate_email,
       'AUSGELASSEN': Icons.gpp_bad,
-      'PROPAGANDA-MUSTER': Icons.fingerprint_rounded,
-      'EMPFEHLUNG': Icons.travel_explore_rounded,
+      'PROPAGANDA-MUSTER': Icons.fingerprint,
+      'EMPFEHLUNG': Icons.travel_explore,
     };
 
     for (final entry in patterns.entries) {

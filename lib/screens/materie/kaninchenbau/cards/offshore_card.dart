@@ -26,7 +26,7 @@ class OffshoreCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(children: [
-            const Icon(Icons.water_rounded, color: _accent, size: 18),
+            const Icon(Icons.water, color: _accent, size: 18),
             const SizedBox(width: 8),
             const Text('OFFSHORE-LEAKS',
                 style: TextStyle(color: Colors.white70, fontSize: 11, letterSpacing: 2, fontWeight: FontWeight.bold)),
@@ -106,7 +106,7 @@ class OffshoreCard extends StatelessWidget {
                 ]),
               ]),
             ),
-            if (e.url != null) Icon(Icons.open_in_new_rounded, color: _accent, size: 14),
+            if (e.url != null) Icon(Icons.open_in_new, color: _accent, size: 14),
           ]),
         ),
       ),
@@ -124,9 +124,9 @@ class OffshoreCard extends StatelessWidget {
 
   IconData _iconForType(String type) {
     final t = type.toLowerCase();
-    if (t.contains('officer') || t.contains('person')) return Icons.person_rounded;
-    if (t.contains('entity') || t.contains('company')) return Icons.business_rounded;
-    if (t.contains('address')) return Icons.location_on_rounded;
-    return Icons.account_balance_rounded;
+    if (t.contains('officer') || t.contains('person')) return Icons.person;
+    if (t.contains('entity') || t.contains('company')) return Icons.business;
+    if (t.contains('address')) return Icons.location_on;
+    return Icons.account_balance;
   }
 }

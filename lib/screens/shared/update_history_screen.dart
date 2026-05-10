@@ -127,7 +127,7 @@ class _UpdateHistoryScreenState extends State<UpdateHistoryScreen> {
           SizedBox(height: MediaQuery.of(context).size.height * 0.3),
           Column(
             children: [
-              Icon(Icons.history_rounded,
+              Icon(Icons.history,
                   size: 56, color: Colors.white.withValues(alpha: 0.15)),
               const SizedBox(height: 16),
               Text(
@@ -164,7 +164,7 @@ class _UpdateHistoryScreenState extends State<UpdateHistoryScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.cloud_off_rounded,
+            Icon(Icons.cloud_off,
                 size: 48, color: Colors.white.withValues(alpha: 0.2)),
             const SizedBox(height: 16),
             Text(
@@ -178,7 +178,7 @@ class _UpdateHistoryScreenState extends State<UpdateHistoryScreen> {
             const SizedBox(height: 20),
             OutlinedButton.icon(
               onPressed: _load,
-              icon: const Icon(Icons.refresh_rounded, size: 18),
+              icon: const Icon(Icons.refresh, size: 18),
               label: const Text('Erneut versuchen'),
               style: OutlinedButton.styleFrom(
                 foregroundColor: _cyan,
@@ -203,7 +203,7 @@ class _UpdateHistoryScreenState extends State<UpdateHistoryScreen> {
 
     final color = isRelease ? _purple : _cyan;
     final label = isRelease ? 'Release' : 'Patch';
-    final icon = isRelease ? Icons.new_releases_rounded : Icons.bolt_rounded;
+    final icon = isRelease ? Icons.new_releases : Icons.bolt;
 
     String title = 'v$version';
     if (!isRelease && patchNumber != null) title += ' · Patch $patchNumber';
@@ -276,7 +276,7 @@ class _UpdateHistoryScreenState extends State<UpdateHistoryScreen> {
               const SizedBox(height: 8),
               Row(
                 children: [
-                  Icon(Icons.open_in_new_rounded,
+                  Icon(Icons.open_in_new,
                       size: 11, color: Colors.white.withValues(alpha: 0.3)),
                   const SizedBox(width: 4),
                   Text('CI-Run',

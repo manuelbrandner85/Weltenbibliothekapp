@@ -24,7 +24,7 @@ class EuVotesCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(children: [
-            const Icon(Icons.how_to_vote_rounded, color: _accent, size: 18),
+            const Icon(Icons.how_to_vote, color: _accent, size: 18),
             const SizedBox(width: 8),
             const Text('EU-PARLAMENT · ABSTIMMUNGEN',
                 style: TextStyle(color: Colors.white70, fontSize: 11, letterSpacing: 2, fontWeight: FontWeight.bold)),

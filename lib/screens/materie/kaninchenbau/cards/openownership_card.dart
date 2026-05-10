@@ -21,7 +21,7 @@ class OpenOwnershipCard extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
-          const Icon(Icons.account_tree_rounded, color: _accent, size: 18),
+          const Icon(Icons.account_tree, color: _accent, size: 18),
           const SizedBox(width: 8),
           const Text('WIRTSCHAFTLICH BERECHTIGTE',
               style: TextStyle(color: Colors.white70, fontSize: 11, letterSpacing: 2, fontWeight: FontWeight.bold)),
@@ -44,7 +44,7 @@ class OpenOwnershipCard extends StatelessWidget {
   }
 
   Widget _buildItem(OpenOwnershipEntity e) {
-    final iconData = e.type.toLowerCase().contains('person') ? Icons.person_rounded : Icons.business_rounded;
+    final iconData = e.type.toLowerCase().contains('person') ? Icons.person : Icons.business;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: InkWell(

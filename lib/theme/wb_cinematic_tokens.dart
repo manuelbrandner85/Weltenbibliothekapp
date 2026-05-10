@@ -76,9 +76,9 @@ class WBCinematic extends ThemeExtension<WBCinematic> {
     bgDeep: Color(0xFF050310),
     bgSurface: Color(0xFF0D0A1A),
     glassBase: Color(0x8C08080E), // 0.55 alpha
-    glassElevated: Color(0xB30C1022), // 0.70 alpha
-    glassStroke: Color(0x12FFFFFF), // 0.07
-    glassStrokeHi: Color(0x2EFFFFFF), // 0.18
+    glassElevated: Color(0xCC0E1226), // 0.80 alpha — etwas heller
+    glassStroke: Color(0x38FFFFFF), // 0.22 — gut sichtbare Ränder
+    glassStrokeHi: Color(0x55FFFFFF), // 0.33 — highlight Ränder
     materie: WBWorldPalette(
       primary: Color(0xFF3B82F6),
       deep: Color(0xFF0A2452),

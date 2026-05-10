@@ -45,7 +45,7 @@ class AiInsightCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.auto_awesome_rounded,
+              Icon(Icons.auto_awesome,
                   color: KbDesign.goldAccent, size: 16),
               const SizedBox(width: 8),
               Text(
