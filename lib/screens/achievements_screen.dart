@@ -6,6 +6,9 @@ import 'package:flutter/material.dart';
  // OpenClaw v2.0
 import '../services/achievement_service.dart';
 import '../services/haptic_service.dart';
+import '../theme/wb_cinematic_tokens.dart';
+import '../widgets/cinematic/wb_glass_app_bar.dart';
+import '../widgets/cinematic/wb_vignette.dart';
 
 class AchievementsScreen extends StatefulWidget {
   const AchievementsScreen({super.key});
@@ -95,41 +98,54 @@ class _AchievementsScreenState extends State<AchievementsScreen>
     final completionPercent = (unlockedCount / totalCount * 100).round();
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0A),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF1A237E),
-        title: const Text(
-          '🏆 ACHIEVEMENTS',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.5,
+      backgroundColor: const Color(0xFF000004),
+      appBar: WBGlassAppBar(
+        title: 'Achievements',
+        world: WBWorld.neutral,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(46),
+          child: TabBar(
+            controller: _tabController,
+            isScrollable: true,
+            indicatorColor: Colors.amber,
+            labelColor: Colors.amber,
+            unselectedLabelColor: Colors.white70,
+            tabs: AchievementCategory.values.map((category) {
+              return Tab(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      _getCategoryIcon(category),
+                      style: const TextStyle(fontSize: 18),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      _getCategoryName(category),
+                      style: const TextStyle(fontSize: 13),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
           ),
         ),
-        bottom: TabBar(
-          controller: _tabController,
-          isScrollable: true,
-          indicatorColor: Colors.amber,
-          tabs: AchievementCategory.values.map((category) {
-            return Tab(
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    _getCategoryIcon(category),
-                    style: const TextStyle(fontSize: 20),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    _getCategoryName(category),
-                    style: const TextStyle(fontSize: 14),
-                  ),
-                ],
-              ),
-            );
-          }).toList(),
-        ),
       ),
-      body: Column(
+      body: Stack(
+        children: [
+          const Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(0xFF0D0A1A), Color(0xFF050310), Color(0xFF000004)],
+                ),
+              ),
+            ),
+          ),
+          const Positioned.fill(child: IgnorePointer(child: WBVignette())),
+          Column(
         children: [
           // User Stats Header
           _buildStatsHeader(userLevel, unlockedCount, totalCount, completionPercent),
@@ -143,6 +159,8 @@ class _AchievementsScreenState extends State<AchievementsScreen>
               }).toList(),
             ),
           ),
+        ],
+      ),
         ],
       ),
     );

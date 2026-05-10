@@ -4,7 +4,7 @@ import '../../theme/wb_cinematic_tokens.dart';
 
 /// Glassmorphic Welt-AppBar mit subtiler Welt-Akzent-Linie unten.
 ///
-/// Höhe = kToolbarHeight (56) + Statusbar.
+/// Höhe = kToolbarHeight (56) + Statusbar (+ optional `bottom`).
 /// Implementiert `PreferredSizeWidget`, kann direkt in `Scaffold(appBar:)`.
 class WBGlassAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String? title;
@@ -15,6 +15,10 @@ class WBGlassAppBar extends StatelessWidget implements PreferredSizeWidget {
   final bool centerTitle;
   final bool showAccentLine;
 
+  /// Optionaler Bottom-Slot (z.B. `TabBar`). Erweitert `preferredSize`
+  /// um die Höhe des Widgets — analog zum Material-`AppBar.bottom`.
+  final PreferredSizeWidget? bottom;
+
   const WBGlassAppBar({
     super.key,
     this.title,
@@ -24,73 +28,79 @@ class WBGlassAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.world = WBWorld.neutral,
     this.centerTitle = false,
     this.showAccentLine = true,
+    this.bottom,
   });
 
   @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+  Size get preferredSize {
+    final bottomHeight = bottom?.preferredSize.height ?? 0.0;
+    return Size.fromHeight(kToolbarHeight + bottomHeight);
+  }
 
   @override
   Widget build(BuildContext context) {
     final wb = context.wb;
     final palette = wb.palette(world);
+    final bottomHeight = bottom?.preferredSize.height ?? 0.0;
 
     return ClipRect(
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: wb.blurMedium, sigmaY: wb.blurMedium),
         child: Container(
-          decoration: BoxDecoration(
-            color: wb.glassElevated,
-            border: showAccentLine
-                ? Border(
-                    bottom: BorderSide(
-                      color: Colors.transparent,
-                      width: 0,
-                    ),
-                  )
-                : null,
-          ),
+          decoration: BoxDecoration(color: wb.glassElevated),
           child: Stack(
             children: [
               SafeArea(
                 bottom: false,
-                child: SizedBox(
-                  height: kToolbarHeight,
-                  child: Row(
-                    children: [
-                      if (leading != null)
-                        leading!
-                      else if (Navigator.of(context).canPop())
-                        IconButton(
-                          icon: const Icon(Icons.chevron_left_rounded,
-                              color: Colors.white),
-                          onPressed: () => Navigator.of(context).maybePop(),
-                        )
-                      else
-                        const SizedBox(width: WBSpace.lg),
-                      Expanded(
-                        child: Align(
-                          alignment: centerTitle
-                              ? Alignment.center
-                              : Alignment.centerLeft,
-                          child: titleWidget ??
-                              (title == null
-                                  ? const SizedBox.shrink()
-                                  : Text(
-                                      title!,
-                                      style: const TextStyle(
-                                        fontFamily: 'Inter',
-                                        fontWeight: FontWeight.w400,
-                                        fontSize: 16,
-                                        letterSpacing: 0.4,
-                                        color: Colors.white,
-                                      ),
-                                    )),
-                        ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(
+                      height: kToolbarHeight,
+                      child: Row(
+                        children: [
+                          if (leading != null)
+                            leading!
+                          else if (Navigator.of(context).canPop())
+                            IconButton(
+                              icon: const Icon(Icons.chevron_left_rounded,
+                                  color: Colors.white),
+                              onPressed: () =>
+                                  Navigator.of(context).maybePop(),
+                            )
+                          else
+                            const SizedBox(width: WBSpace.lg),
+                          Expanded(
+                            child: Align(
+                              alignment: centerTitle
+                                  ? Alignment.center
+                                  : Alignment.centerLeft,
+                              child: titleWidget ??
+                                  (title == null
+                                      ? const SizedBox.shrink()
+                                      : Text(
+                                          title!,
+                                          style: const TextStyle(
+                                            fontFamily: 'Inter',
+                                            fontWeight: FontWeight.w400,
+                                            fontSize: 16,
+                                            letterSpacing: 0.4,
+                                            color: Colors.white,
+                                          ),
+                                        )),
+                            ),
+                          ),
+                          ...actions,
+                          const SizedBox(width: WBSpace.sm),
+                        ],
                       ),
-                      ...actions,
-                      const SizedBox(width: WBSpace.sm),
-                    ],
-                  ),
+                    ),
+                    if (bottom != null)
+                      SizedBox(
+                        height: bottomHeight,
+                        child: bottom!,
+                      ),
+                  ],
                 ),
               ),
               if (showAccentLine)
