@@ -3422,7 +3422,17 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
               child: Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                color: isOwn ? Colors.red : Colors.grey[800],
+                gradient: isOwn
+                    ? const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Color(0xFFEF4444), Color(0xFFB91C1C)],
+                      )
+                    : null,
+                color: isOwn ? null : const Color(0xCC1A1A24),
+                border: isOwn
+                    ? null
+                    : Border.all(color: Colors.white.withValues(alpha: 0.07)),
                 borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(isGrouped && !isOwn ? 4 : 16),
                   topRight: Radius.circular(isGrouped && isOwn ? 4 : 16),
@@ -3431,10 +3441,16 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.2),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
+                    color: Colors.black.withValues(alpha: 0.32),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
                   ),
+                  if (isOwn)
+                    BoxShadow(
+                      color: const Color(0xFFEF4444).withValues(alpha: 0.30),
+                      blurRadius: 18,
+                      offset: const Offset(0, 6),
+                    ),
                 ],
               ),
               child: Column(
