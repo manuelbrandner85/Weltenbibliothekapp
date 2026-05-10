@@ -18,7 +18,8 @@ class FrequencyPlayerService {
   static dynamic _oscillator;
   static dynamic _gainNode;
   
-  static final List<StreamController<bool>> _playStateControllers = [];
+  static final StreamController<bool> _playStateCtrl =
+      StreamController<bool>.broadcast();
 
   /// Initialize Web Audio API (for web platform)
   static void _initWebAudio() {
@@ -164,11 +165,7 @@ class FrequencyPlayerService {
   static double get volume => _volume;
 
   /// Listen to play state changes
-  static Stream<bool> get playStateStream {
-    final controller = StreamController<bool>.broadcast();
-    _playStateControllers.add(controller);
-    return controller.stream;
-  }
+  static Stream<bool> get playStateStream => _playStateCtrl.stream;
 
   /// Simulate playback (for Android or fallback)
   static void _simulatePlayback() {
@@ -179,10 +176,8 @@ class FrequencyPlayerService {
 
   /// Notify all listeners of play state change
   static void _notifyPlayState() {
-    for (var controller in _playStateControllers) {
-      if (!controller.isClosed) {
-        controller.add(_isPlaying);
-      }
+    if (!_playStateCtrl.isClosed) {
+      _playStateCtrl.add(_isPlaying);
     }
   }
 
@@ -265,10 +260,9 @@ class FrequencyPlayerService {
     if (!kIsWeb) {
       await android_audio.FrequencyPlayerServiceAndroid.dispose();
     }
-    for (var controller in _playStateControllers) {
-      controller.close();
+    if (!_playStateCtrl.isClosed) {
+      _playStateCtrl.close();
     }
-    _playStateControllers.clear();
   }
 
   /// Calculate recommended listening duration (minutes)

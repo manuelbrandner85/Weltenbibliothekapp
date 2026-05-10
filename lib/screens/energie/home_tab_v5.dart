@@ -15,6 +15,7 @@ import '../shared/bookmarks_screen.dart';
 import '../shared/stats_dashboard_screen.dart';
 import '../shared/notification_center_screen.dart';
 import '../../services/world_subscription_service.dart';
+import '../../config/wb_design.dart';
 import 'spirit_tab_modern.dart';
 import 'calculators/chakra_calculator_screen.dart';
 
@@ -59,6 +60,7 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
   // ── State ──────────────────────────────────────────────────────────────
   EnergieProfile? _profile;
   bool _loading = true;
+  String? _errorMessage;
   int _articles = 0, _sessions = 0, _bookmarks = 0, _shares = 0;
   List<Map<String, dynamic>> _latestArticles = [];
   List<Map<String, dynamic>> _trending = [];
@@ -72,17 +74,17 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
   RealtimeChannel? _notifChannel;
   RealtimeChannel? _statsChannel;
 
-  // ── Colors ─────────────────────────────────────────────────────────────
-  static const _bg      = Color(0xFF06040F);
-  static const _card    = Color(0xFF100B1E);
-  static const _cardB   = Color(0xFF150E25);
-  static const _purple  = Color(0xFFAB47BC);
-  static const _purpleD = Color(0xFF4A148C);
-  static const _purpleL = Color(0xFFCE93D8);
-  static const _gold    = Color(0xFFFFD54F);
-  static const _teal    = Color(0xFF26C6DA);
-  static const _pink    = Color(0xFFEC407A);
-  static const _green   = Color(0xFF66BB6A);
+  // ── Colors (via WbDesign-Tokens wo möglich) ────────────────────────────
+  static const _bg      = WbDesign.bgEnergie;
+  static const _card    = WbDesign.surfaceEnergie;
+  static const _cardB   = WbDesign.surfaceEnergieAlt;
+  static const _purple  = WbDesign.energiePurple;
+  static const _purpleD = WbDesign.energiePurpleDark;
+  static const _purpleL = WbDesign.energiePurpleLight;
+  static const _gold    = WbDesign.energieGold;
+  static const _teal    = WbDesign.energieTeal;
+  static const _pink    = WbDesign.energiePink;
+  static const _green   = WbDesign.energieGreen;
   static const _indigo  = Color(0xFF5C6BC0);
 
   @override
@@ -97,7 +99,10 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
     _entryAnim = CurvedAnimation(parent: _entryCtrl, curve: Curves.easeOutCubic);
     _entryCtrl.forward();
     _scrollCtrl.addListener(() {
-      setState(() => _scrollOffset = _scrollCtrl.offset);
+      final newOffset = _scrollCtrl.offset;
+      if ((newOffset - _scrollOffset).abs() > 1.0) {
+        setState(() => _scrollOffset = newOffset);
+      }
     });
     _loadAll();
     _loadWorldSubscription();
@@ -120,9 +125,14 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
 
   // ── Data ───────────────────────────────────────────────────────────────
   Future<void> _loadAll() async {
-    if (mounted) setState(() => _loading = true);
-    await Future.wait([_loadProfile(), _loadStats(), _loadContent()]);
-    if (mounted) setState(() => _loading = false);
+    if (mounted) setState(() { _loading = true; _errorMessage = null; });
+    try {
+      await Future.wait([_loadProfile(), _loadStats(), _loadContent()]);
+    } catch (e) {
+      if (mounted) setState(() => _errorMessage = 'Daten konnten nicht geladen werden. Bitte Verbindung prüfen.');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
   Future<void> _loadProfile() async {
@@ -384,31 +394,59 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
       ),
       child: Scaffold(
         backgroundColor: _bg,
-        body: RefreshIndicator(
-          onRefresh: _loadAll,
-          color: _purple,
-          backgroundColor: _cardB,
-          displacement: 60,
-          child: CustomScrollView(
-            controller: _scrollCtrl,
-            physics: const BouncingScrollPhysics(
-                parent: AlwaysScrollableScrollPhysics()),
-            slivers: [
-              _buildHeroHeader(),
-              _buildMysticBanner(),
-              _buildDailyQuoteSliver(),
-              _buildCosmicEnergySliver(),
-              _buildLiveStatBanner(),
-              _buildActionGrid(),
-              _buildRecentRooms(),
-              _buildSectionTitle('✨ Spirituelle Themen', subtitle: 'Im Fokus'),
-              _buildTrendingChips(),
-              _buildSectionTitle('📿 Neueste Artikel', subtitle: 'Wissen & Weisheit'),
-              _buildArticleCards(),
-              _buildExploreSection(),
-              const SliverPadding(padding: EdgeInsets.only(bottom: 120)),
-            ],
-          ),
+        body: Column(
+          children: [
+            if (_errorMessage != null)
+              Material(
+                color: Colors.transparent,
+                child: Container(
+                  width: double.infinity,
+                  color: const Color(0xFF4A148C),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.wifi_off, color: Colors.white, size: 16),
+                      const SizedBox(width: 8),
+                      Expanded(child: Text(_errorMessage!, style: const TextStyle(color: Colors.white, fontSize: 13))),
+                      IconButton(
+                        icon: const Icon(Icons.refresh, color: Colors.white, size: 18),
+                        onPressed: _loadAll,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            Expanded(
+              child: RefreshIndicator(
+                onRefresh: _loadAll,
+                color: _purple,
+                backgroundColor: _cardB,
+                displacement: 60,
+                child: CustomScrollView(
+                  controller: _scrollCtrl,
+                  physics: const BouncingScrollPhysics(
+                      parent: AlwaysScrollableScrollPhysics()),
+                  slivers: [
+                    _buildHeroHeader(),
+                    _buildMysticBanner(),
+                    _buildDailyQuoteSliver(),
+                    _buildCosmicEnergySliver(),
+                    _buildLiveStatBanner(),
+                    _buildActionGrid(),
+                    _buildRecentRooms(),
+                    _buildSectionTitle('✨ Spirituelle Themen', subtitle: 'Im Fokus'),
+                    _buildTrendingChips(),
+                    _buildSectionTitle('📿 Neueste Artikel', subtitle: 'Wissen & Weisheit'),
+                    _buildArticleCards(),
+                    _buildExploreSection(),
+                    const SliverPadding(padding: EdgeInsets.only(bottom: 120)),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
