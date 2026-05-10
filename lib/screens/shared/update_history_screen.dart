@@ -7,6 +7,9 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../theme/wb_cinematic_tokens.dart';
+import '../../widgets/cinematic/wb_glass_app_bar.dart';
+import '../../widgets/cinematic/wb_vignette.dart';
 import '../../utils/changelog_translator.dart';
 
 class UpdateHistoryScreen extends StatefulWidget {
@@ -61,21 +64,28 @@ class _UpdateHistoryScreenState extends State<UpdateHistoryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _bg,
-      appBar: AppBar(
-        backgroundColor: _card,
-        foregroundColor: Colors.white,
-        title: const Text(
-          'Update-Verlauf',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        elevation: 0,
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(height: 1, color: _cyan.withValues(alpha: 0.2)),
-        ),
+      backgroundColor: const Color(0xFF000004),
+      appBar: const WBGlassAppBar(
+        title: 'Update-Verlauf',
+        world: WBWorld.neutral,
       ),
-      body: _buildBody(),
+      body: Stack(
+        children: [
+          const Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(0xFF0D0A1A), Color(0xFF050310), Color(0xFF000004)],
+                ),
+              ),
+            ),
+          ),
+          const Positioned.fill(child: IgnorePointer(child: WBVignette())),
+          _buildBody(),
+        ],
+      ),
     );
   }
 
