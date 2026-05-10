@@ -1,545 +1,1019 @@
+import 'dart:math' as math;
+import 'dart:ui';
 import 'package:flutter/material.dart';
- // OpenClaw v2.0
+import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../models/knowledge_extended_models.dart';
 import '../../services/unified_knowledge_service.dart';
-import 'knowledge_card_modern.dart';
 import 'knowledge_reader_mode.dart';
-import 'advanced_search_delegate.dart'; // 🔍 ADVANCED SEARCH
+import 'advanced_search_delegate.dart';
 
-/// ============================================
-/// UNIFIED KNOWLEDGE TAB - MEGA UPDATE
-/// Moderne UI mit allen Features:
-/// - Favoriten, Notizen, Lesefortschritt
-/// - Such & Filter
-/// - Kategorien
-/// - Statistiken
-/// - KI-Empfehlungen
-/// ============================================
+// ─────────────────────────────────────────────────────────────────────────────
+// CINEMATIC WISSEN-TAB  ·  Weltenbibliothek
+// ─────────────────────────────────────────────────────────────────────────────
 
 class UnifiedKnowledgeTab extends StatefulWidget {
-  final String world; // 'materie' oder 'energie'
-  
+  final String world;
   const UnifiedKnowledgeTab({super.key, required this.world});
 
   @override
   State<UnifiedKnowledgeTab> createState() => _UnifiedKnowledgeTabState();
 }
 
-class _UnifiedKnowledgeTabState extends State<UnifiedKnowledgeTab> with SingleTickerProviderStateMixin {
-  final _knowledgeService = UnifiedKnowledgeService();
-  final _searchController = TextEditingController();
-  
-  List<KnowledgeEntry> _allEntries = [];
-  List<KnowledgeEntry> _filteredEntries = [];
+class _UnifiedKnowledgeTabState extends State<UnifiedKnowledgeTab>
+    with TickerProviderStateMixin {
+  final _svc = UnifiedKnowledgeService();
+
+  List<KnowledgeEntry> _all = [];
+  List<KnowledgeEntry> _filtered = [];
   Map<String, int> _stats = {};
-  
   bool _isLoading = true;
-  String _selectedCategory = 'all';
-  // UNUSED FIELD: String _selectedView = 'grid'; // grid, list, favorites, read
-  
-  late TabController _tabController;
+  String _cat = 'all';
+  int _tab = 0; // 0 Entdecken | 1 Gespeichert | 2 Verlauf | 3 Für dich
+
+  late AnimationController _ambient;
+  late AnimationController _pulse;
+
+  // ── world palette ──────────────────────────────────────────────────────────
+  bool get _isMaterie => widget.world == 'materie';
+  Color get _primary => _isMaterie ? const Color(0xFF3B82F6) : const Color(0xFFA855F7);
+  Color get _primarySoft => _isMaterie ? const Color(0xFF60A5FA) : const Color(0xFFC084FC);
+  Color get _deep => _isMaterie ? const Color(0xFF020A1C) : const Color(0xFF0A0118);
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
-    _loadData();
-  }
-
-  Future<void> _loadData() async {
-    setState(() => _isLoading = true);
-    
-    try {
-      final entries = await _knowledgeService.getAllEntries(world: widget.world);
-      final stats = await _knowledgeService.getStatistics(widget.world);
-      
-      setState(() {
-        _allEntries = entries;
-        _filteredEntries = entries;
-        _stats = stats;
-        _isLoading = false;
-      });
-    } catch (e) {
-      debugPrint('❌ Load error: $e');
-      setState(() => _isLoading = false);
-    }
-  }
-
-  void _filterEntries() {
-    setState(() {
-      _filteredEntries = _allEntries.where((entry) {
-        // Category filter
-        if (_selectedCategory != 'all' && entry.category != _selectedCategory) {
-          return false;
-        }
-        
-        // Search filter
-        if (_searchController.text.isNotEmpty) {
-          final query = _searchController.text.toLowerCase();
-          return entry.title.toLowerCase().contains(query) ||
-                 entry.description.toLowerCase().contains(query) ||
-                 entry.tags.any((tag) => tag.toLowerCase().contains(query));
-        }
-        
-        return true;
-      }).toList();
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primaryColor = widget.world == 'materie' 
-        ? const Color(0xFF2196F3) 
-        : const Color(0xFF9C27B0);
-    
-    return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF0A0A0A) : Colors.grey[50],
-      body: Column(
-        children: [
-          // HEADER MIT STATISTIKEN
-          _buildHeader(primaryColor, isDark),
-          
-          // TAB BAR
-          _buildTabBar(primaryColor),
-          
-          // CONTENT
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildAllEntriesTab(),
-                _buildFavoritesTab(),
-                _buildReadEntriesTab(),
-                _buildRecommendationsTab(),
-              ],
-            ),
-          ),
-        ],
-      ),
-      
-      // FLOATING ACTION BUTTON: Erweiterte Suche
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          showSearch(
-            context: context,
-            delegate: AdvancedSearchDelegate(world: widget.world),
-          );
-        },
-        backgroundColor: primaryColor,
-        tooltip: 'Erweiterte Suche',
-        child: const Icon(Icons.search),
-      ),
-    );
-  }
-
-  Widget _buildHeader(Color primaryColor, bool isDark) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [primaryColor.withValues(alpha: 0.8), primaryColor],
-        ),
-      ),
-      child: SafeArea(
-        child: Column(
-          children: [
-            // Titel
-            Text(
-              widget.world == 'materie' ? '📚 MATERIE WISSEN' : '🧘 ENERGIE WISSEN',
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 16),
-            
-            // Statistiken
-            if (!_isLoading && _stats.isNotEmpty)
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _StatCard(
-                    icon: Icons.library_books,
-                    label: 'Gesamt',
-                    value: _stats['total']?.toString() ?? '0',
-                  ),
-                  _StatCard(
-                    icon: Icons.check_circle,
-                    label: 'Gelesen',
-                    value: _stats['read']?.toString() ?? '0',
-                  ),
-                  _StatCard(
-                    icon: Icons.star,
-                    label: 'Favoriten',
-                    value: _stats['favorites']?.toString() ?? '0',
-                  ),
-                  _StatCard(
-                    icon: Icons.note,
-                    label: 'Notizen',
-                    value: _stats['with_notes']?.toString() ?? '0',
-                  ),
-                ],
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTabBar(Color primaryColor) {
-    return Container(
-      color: Theme.of(context).brightness == Brightness.dark 
-          ? const Color(0xFF1A1A1A) 
-          : Colors.white,
-      child: TabBar(
-        controller: _tabController,
-        labelColor: primaryColor,
-        unselectedLabelColor: Colors.grey,
-        indicatorColor: primaryColor,
-        tabs: const [
-          Tab(icon: Icon(Icons.grid_view), text: 'Alle'),
-          Tab(icon: Icon(Icons.star), text: 'Favoriten'),
-          Tab(icon: Icon(Icons.check), text: 'Gelesen'),
-          Tab(icon: Icon(Icons.recommend), text: 'Empfehlungen'),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAllEntriesTab() {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    
-    return RefreshIndicator(
-      onRefresh: _loadData,
-      child: Column(
-        children: [
-          // Category Filter
-          _buildCategoryFilter(),
-          
-          // Entry Grid
-          Expanded(
-            child: _filteredEntries.isEmpty
-                ? _buildEmptyState()
-                : GridView.builder(
-                    padding: const EdgeInsets.all(16),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      childAspectRatio: 0.7,
-                      crossAxisSpacing: 16,
-                      mainAxisSpacing: 16,
-                    ),
-                    itemCount: _filteredEntries.length,
-                    itemBuilder: (context, index) {
-                      return _buildEntryCard(_filteredEntries[index]);
-                    },
-                  ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFavoritesTab() {
-    return FutureBuilder<List<KnowledgeEntry>>(
-      future: _knowledgeService.getFavorites(world: widget.world),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        
-        final favorites = snapshot.data!;
-        
-        if (favorites.isEmpty) {
-          return _buildEmptyState(
-            icon: Icons.star_border,
-            message: 'Keine Favoriten',
-            hint: 'Markiere Einträge als Favoriten!',
-          );
-        }
-        
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: favorites.length,
-          itemBuilder: (context, index) {
-            return _buildEntryListTile(favorites[index]);
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildReadEntriesTab() {
-    return FutureBuilder<List<KnowledgeEntry>>(
-      future: _knowledgeService.getReadEntries(world: widget.world),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        
-        final readEntries = snapshot.data!;
-        
-        if (readEntries.isEmpty) {
-          return _buildEmptyState(
-            icon: Icons.check_circle_outline,
-            message: 'Noch nichts gelesen',
-            hint: 'Starte mit dem ersten Eintrag!',
-          );
-        }
-        
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: readEntries.length,
-          itemBuilder: (context, index) {
-            return _buildEntryListTile(readEntries[index]);
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildRecommendationsTab() {
-    return FutureBuilder<List<KnowledgeEntry>>(
-      future: _knowledgeService.getRecommendations(widget.world, limit: 10),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        
-        final recommendations = snapshot.data!;
-        
-        if (recommendations.isEmpty) {
-          return _buildEmptyState(
-            icon: Icons.lightbulb_outline,
-            message: 'Keine Empfehlungen',
-            hint: 'Lies ein paar Einträge, um Empfehlungen zu erhalten!',
-          );
-        }
-        
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: recommendations.length,
-          itemBuilder: (context, index) {
-            return _buildEntryListTile(recommendations[index]);
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildCategoryFilter() {
-    final categories = ['all', 'conspiracy', 'ancientWisdom', 'forbiddenKnowledge', 
-                        'books', 'meditation', 'astrology', 'energyWork', 'consciousness'];
-    
-    return Container(
-      height: 60,
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: categories.length,
-        itemBuilder: (context, index) {
-          final category = categories[index];
-          final isSelected = _selectedCategory == category;
-          
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: FilterChip(
-              label: Text(category == 'all' ? 'Alle' : category),
-              selected: isSelected,
-              onSelected: (selected) {
-                setState(() {
-                  _selectedCategory = category;
-                  _filterEntries();
-                });
-              },
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildEntryCard(KnowledgeEntry entry) {
-    final primaryColor = widget.world == 'materie' 
-        ? const Color(0xFF2196F3) 
-        : const Color(0xFF9C27B0);
-    
-    return FutureBuilder<bool>(
-      future: _knowledgeService.isFavorite(entry.id),
-      builder: (context, snapshot) {
-        final isFav = snapshot.data ?? false;
-        
-        return KnowledgeCardModern(
-          entry: entry,
-          isFavorite: isFav,
-          onTap: () => _openEntryDetail(entry),
-          onFavoriteToggle: () async {
-            if (isFav) {
-              await _knowledgeService.removeFavorite(entry.id);
-            } else {
-              await _knowledgeService.addFavorite(entry.id);
-            }
-            setState(() {});
-          },
-          primaryColor: primaryColor,
-        );
-      },
-    );
-  }
-
-
-  Widget _buildEntryListTile(KnowledgeEntry entry) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: _getCategoryColor(entry.category),
-          child: const Icon(Icons.book, color: Colors.white, size: 20),
-        ),
-        title: Text(
-          entry.title,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-        ),
-        subtitle: Text(
-          entry.description,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        trailing: FutureBuilder<bool>(
-          future: _knowledgeService.isFavorite(entry.id),
-          builder: (context, snapshot) {
-            final isFav = snapshot.data ?? false;
-            return Icon(
-              isFav ? Icons.star : Icons.star_border,
-              color: Colors.amber,
-            );
-          },
-        ),
-        onTap: () => _openEntryDetail(entry),
-      ),
-    );
-  }
-
-  Widget _buildEmptyState({IconData? icon, String? message, String? hint}) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            icon ?? Icons.search_off,
-            size: 80,
-            color: Colors.grey,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            message ?? 'Keine Einträge gefunden',
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          if (hint != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              hint,
-              style: TextStyle(color: Colors.grey[600]),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  void _openEntryDetail(KnowledgeEntry entry) async {
-    // Increment view count
-    await _knowledgeService.incrementViewCount(entry.id);
-    
-    // Navigate to NEW Reader Mode
-    Navigator.push(
-      // ignore: use_build_context_synchronously
-      context,
-      MaterialPageRoute(
-        builder: (context) => KnowledgeReaderMode(
-          entry: entry,
-          world: widget.world,
-        ),
-      ),
-    ).then((_) => _loadData()); // Refresh after returning
-  }
-
-  // Unused: _showSearchDialog method (kept for future search feature)
-  // void _showSearchDialog() {
-    // showDialog(
-      // context: context,
-      // builder: (context) => AlertDialog(
-        // title: const Text('Suche'),
-        // content: TextField(
-          // controller: _searchController,
-          // decoration: const InputDecoration(
-            // hintText: 'Suchbegriff eingeben...',
-            // prefixIcon: Icon(Icons.search),
-          // ),
-          // onChanged: (_) => _filterEntries(),
-        // ),
-        // actions: [
-          // TextButton(
-            // onPressed: () {
-              // setState(() {
-                // _searchController.clear();
-                // _filterEntries();
-              // });
-              // Navigator.pop(context);
-            // },
-            // child: const Text('Löschen'),
-          // ),
-          // TextButton(
-            // onPressed: () => Navigator.pop(context),
-            // child: const Text('Schließen'),
-          // ),
-        // ],
-      // ),
-    // );
-  // }
-
-  Color _getCategoryColor(String category) {
-    switch (category) {
-      case 'conspiracy':
-        return const Color(0xFFE53935);
-      case 'ancientWisdom':
-        return const Color(0xFFFFB300);
-      case 'forbiddenKnowledge':
-        return const Color(0xFF6A1B9A);
-      case 'books':
-        return const Color(0xFF43A047);
-      case 'meditation':
-        return const Color(0xFF7E57C2);
-      case 'astrology':
-        return const Color(0xFFAB47BC);
-      case 'energyWork':
-        return const Color(0xFF26A69A);
-      case 'consciousness':
-        return const Color(0xFF29B6F6);
-      default:
-        return Colors.grey;
-    }
+    _ambient = AnimationController(vsync: this, duration: const Duration(seconds: 20))..repeat();
+    _pulse = AnimationController(vsync: this, duration: const Duration(seconds: 4))..repeat(reverse: true);
+    _load();
   }
 
   @override
   void dispose() {
-    _searchController.dispose();
-    _tabController.dispose();
+    _ambient.dispose();
+    _pulse.dispose();
     super.dispose();
+  }
+
+  Future<void> _load() async {
+    setState(() => _isLoading = true);
+    try {
+      final entries = await _svc.getAllEntries(world: widget.world);
+      final stats = await _svc.getStatistics(widget.world);
+      if (mounted) {
+        setState(() {
+          _all = entries;
+          _filtered = entries;
+          _stats = stats;
+          _isLoading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _applyFilter() {
+    setState(() {
+      _filtered = _all.where((e) => _cat == 'all' || e.category == _cat).toList();
+    });
+  }
+
+  void _openEntry(KnowledgeEntry entry) async {
+    await _svc.incrementViewCount(entry.id);
+    if (!mounted) return;
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => KnowledgeReaderMode(entry: entry, world: widget.world)),
+    );
+    _load();
+  }
+
+  // ── build ──────────────────────────────────────────────────────────────────
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) return _buildSkeleton();
+
+    return Scaffold(
+      backgroundColor: _deep,
+      body: Column(
+        children: [
+          _buildHeader(),
+          _buildTabPills(),
+          if (_tab == 0) _buildCategoryPills(),
+          Expanded(child: _buildContent()),
+        ],
+      ),
+      floatingActionButton: _tab == 0
+          ? _SearchFAB(
+              primary: _primary,
+              onTap: () => showSearch(
+                context: context,
+                delegate: AdvancedSearchDelegate(world: widget.world),
+              ),
+            )
+          : null,
+    );
+  }
+
+  // ── CINEMATIC HEADER ───────────────────────────────────────────────────────
+  Widget _buildHeader() {
+    final total = _stats['total'] ?? _all.length;
+    final read = _stats['read'] ?? 0;
+    final favs = _stats['favorites'] ?? 0;
+    final pct = total > 0 ? read / total : 0.0;
+
+    return SizedBox(
+      height: 210,
+      child: Stack(
+        children: [
+          // Animated ambient background
+          Positioned.fill(
+            child: AnimatedBuilder(
+              animation: Listenable.merge([_ambient, _pulse]),
+              builder: (_, __) => CustomPaint(
+                painter: _AmbientPainter(
+                  progress: _ambient.value,
+                  pulse: _pulse.value,
+                  primary: _primary,
+                  isMaterie: _isMaterie,
+                ),
+              ),
+            ),
+          ),
+          // Deep gradient overlay (bottom fade to bg)
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.transparent,
+                    _deep.withValues(alpha: 0.6),
+                    _deep,
+                  ],
+                  stops: const [0.0, 0.6, 1.0],
+                ),
+              ),
+            ),
+          ),
+          // Content
+          SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Eyebrow
+                  Row(children: [
+                    Container(
+                      width: 3, height: 12,
+                      decoration: BoxDecoration(
+                        color: _primary,
+                        borderRadius: BorderRadius.circular(2),
+                        boxShadow: [BoxShadow(color: _primary, blurRadius: 8)],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      _isMaterie ? 'MATERIE · BIBLIOTHEK' : 'ENERGIE · BIBLIOTHEK',
+                      style: TextStyle(
+                        fontSize: 10, letterSpacing: 3.5,
+                        color: _primary, fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ]),
+                  const SizedBox(height: 10),
+                  // Title
+                  Text(
+                    'Wissen',
+                    style: TextStyle(
+                      fontSize: 40, fontWeight: FontWeight.w200,
+                      letterSpacing: 3, color: Colors.white, height: 1,
+                      shadows: [Shadow(color: _primary.withValues(alpha: 0.4), blurRadius: 30)],
+                    ),
+                  ),
+                  const Spacer(),
+                  // Stats row
+                  Row(children: [
+                    _StatPill(icon: Icons.library_books, label: '$total Einträge', color: _primary),
+                    const SizedBox(width: 10),
+                    _StatPill(icon: Icons.check_circle, label: '$read gelesen', color: const Color(0xFF34D399)),
+                    const SizedBox(width: 10),
+                    _StatPill(icon: Icons.bookmark, label: '$favs gespeichert', color: const Color(0xFFFBBF24)),
+                  ]),
+                  const SizedBox(height: 10),
+                  // Progress bar
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(2),
+                    child: LinearProgressIndicator(
+                      value: pct.clamp(0.0, 1.0),
+                      backgroundColor: Colors.white.withValues(alpha: 0.08),
+                      valueColor: AlwaysStoppedAnimation<Color>(_primary),
+                      minHeight: 3,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── TAB PILLS ─────────────────────────────────────────────────────────────
+  Widget _buildTabPills() {
+    final tabs = [
+      (Icons.explore, 'Entdecken'),
+      (Icons.bookmark, 'Gespeichert'),
+      (Icons.history, 'Verlauf'),
+      (Icons.auto_awesome, 'Für dich'),
+    ];
+    return Container(
+      color: _deep,
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      child: Row(
+        children: List.generate(tabs.length, (i) {
+          final active = _tab == i;
+          return Expanded(
+            child: GestureDetector(
+              onTap: () {
+                HapticFeedback.selectionClick();
+                setState(() => _tab = i);
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeOutCubic,
+                margin: const EdgeInsets.symmetric(horizontal: 3),
+                padding: const EdgeInsets.symmetric(vertical: 9),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  color: active ? _primary.withValues(alpha: 0.18) : Colors.white.withValues(alpha: 0.05),
+                  border: Border.all(
+                    color: active ? _primary.withValues(alpha: 0.55) : Colors.white.withValues(alpha: 0.10),
+                    width: active ? 1.4 : 1,
+                  ),
+                  boxShadow: active
+                      ? [BoxShadow(color: _primary.withValues(alpha: 0.28), blurRadius: 12)]
+                      : null,
+                ),
+                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(tabs[i].$1, size: 15, color: active ? _primary : Colors.white.withValues(alpha: 0.45)),
+                  const SizedBox(height: 3),
+                  Text(tabs[i].$2, style: TextStyle(
+                    fontSize: 9,
+                    color: active ? _primary : Colors.white.withValues(alpha: 0.40),
+                    fontWeight: active ? FontWeight.w700 : FontWeight.w400,
+                    letterSpacing: 0.3,
+                  )),
+                ]),
+              ),
+            ),
+          );
+        }),
+      ),
+    );
+  }
+
+  // ── CATEGORY PILLS ────────────────────────────────────────────────────────
+  Widget _buildCategoryPills() {
+    final cats = _isMaterie
+        ? [
+            ('all', Icons.grid_view, 'Alle'),
+            ('conspiracy', Icons.visibility_off, 'Verschwörung'),
+            ('ancientWisdom', Icons.history_edu, 'Alte Weisheit'),
+            ('forbiddenKnowledge', Icons.lock, 'Verboten'),
+            ('books', Icons.menu_book, 'Bücher'),
+          ]
+        : [
+            ('all', Icons.grid_view, 'Alle'),
+            ('meditation', Icons.self_improvement, 'Meditation'),
+            ('astrology', Icons.stars, 'Astrologie'),
+            ('crystals', Icons.diamond, 'Kristalle'),
+            ('consciousness', Icons.psychology, 'Bewusstsein'),
+            ('energyWork', Icons.bolt, 'Energie'),
+          ];
+
+    return Container(
+      color: _deep,
+      height: 48,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: cats.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (_, i) {
+          final (id, icon, label) = cats[i];
+          final active = _cat == id;
+          return GestureDetector(
+            onTap: () {
+              HapticFeedback.selectionClick();
+              setState(() {
+                _cat = id;
+                _applyFilter();
+              });
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(22),
+                color: active ? _primary.withValues(alpha: 0.20) : Colors.white.withValues(alpha: 0.06),
+                border: Border.all(
+                  color: active ? _primary.withValues(alpha: 0.60) : Colors.white.withValues(alpha: 0.14),
+                  width: active ? 1.5 : 1,
+                ),
+                boxShadow: active ? [BoxShadow(color: _primary.withValues(alpha: 0.32), blurRadius: 10)] : null,
+              ),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(icon, size: 12, color: active ? _primary : Colors.white.withValues(alpha: 0.55)),
+                const SizedBox(width: 5),
+                Text(label, style: TextStyle(
+                  fontSize: 11, fontWeight: active ? FontWeight.w700 : FontWeight.w400,
+                  color: active ? _primary : Colors.white.withValues(alpha: 0.65),
+                )),
+              ]),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  // ── CONTENT ROUTER ────────────────────────────────────────────────────────
+  Widget _buildContent() {
+    return switch (_tab) {
+      0 => _buildExplore(),
+      1 => _buildSaved(),
+      2 => _buildHistory(),
+      _ => _buildForYou(),
+    };
+  }
+
+  // ── TAB 0: ENTDECKEN ──────────────────────────────────────────────────────
+  Widget _buildExplore() {
+    if (_filtered.isEmpty) return _buildEmptyState();
+    final featured = _all.where((e) => e.rating >= 4.0).take(6).toList();
+
+    return RefreshIndicator(
+      onRefresh: _load,
+      color: _primary,
+      backgroundColor: _deep,
+      child: CustomScrollView(
+        slivers: [
+          // Featured horizontal row
+          if (featured.isNotEmpty) ...[
+            SliverToBoxAdapter(child: _sectionHeader('EMPFOHLEN', Icons.auto_awesome)),
+            SliverToBoxAdapter(child: _buildFeaturedRow(featured)),
+            SliverToBoxAdapter(child: _sectionHeader('ALLE EINTRÄGE', Icons.grid_view)),
+          ],
+          // Grid
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            sliver: SliverGrid(
+              delegate: SliverChildBuilderDelegate(
+                (_, i) => _CinematicCard(
+                  entry: _filtered[i],
+                  primary: _primary,
+                  svc: _svc,
+                  onTap: () => _openEntry(_filtered[i]),
+                ),
+                childCount: _filtered.length,
+              ),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                childAspectRatio: 0.72,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+              ),
+            ),
+          ),
+          const SliverToBoxAdapter(child: SizedBox(height: 90)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFeaturedRow(List<KnowledgeEntry> items) {
+    return SizedBox(
+      height: 190,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+        itemCount: items.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 12),
+        itemBuilder: (_, i) => _FeaturedCard(
+          entry: items[i],
+          primary: _primary,
+          deep: _deep,
+          onTap: () => _openEntry(items[i]),
+        ),
+      ),
+    );
+  }
+
+  // ── TAB 1: GESPEICHERT ────────────────────────────────────────────────────
+  Widget _buildSaved() {
+    return FutureBuilder<List<KnowledgeEntry>>(
+      future: _svc.getFavorites(world: widget.world),
+      builder: (_, snap) {
+        if (!snap.hasData) return _buildSpinner();
+        final items = snap.data!;
+        if (items.isEmpty) {
+          return _buildEmptyState(
+            icon: Icons.bookmark_border,
+            title: 'Noch nichts gespeichert',
+            hint: 'Tippe das Lesezeichen-Symbol auf einer Karte.',
+          );
+        }
+        return _buildListView(items);
+      },
+    );
+  }
+
+  // ── TAB 2: VERLAUF ────────────────────────────────────────────────────────
+  Widget _buildHistory() {
+    return FutureBuilder<List<KnowledgeEntry>>(
+      future: _svc.getReadEntries(world: widget.world),
+      builder: (_, snap) {
+        if (!snap.hasData) return _buildSpinner();
+        final items = snap.data!;
+        if (items.isEmpty) {
+          return _buildEmptyState(
+            icon: Icons.history,
+            title: 'Noch nichts gelesen',
+            hint: 'Öffne einen Eintrag, um ihn im Verlauf zu sehen.',
+          );
+        }
+        return _buildListView(items);
+      },
+    );
+  }
+
+  // ── TAB 3: FÜR DICH ──────────────────────────────────────────────────────
+  Widget _buildForYou() {
+    return FutureBuilder<List<KnowledgeEntry>>(
+      future: _svc.getRecommendations(widget.world, limit: 12),
+      builder: (_, snap) {
+        if (!snap.hasData) return _buildSpinner();
+        final items = snap.data!;
+        if (items.isEmpty) {
+          return _buildEmptyState(
+            icon: Icons.auto_awesome,
+            title: 'Noch keine Empfehlungen',
+            hint: 'Lies ein paar Einträge — wir lernen dazu.',
+          );
+        }
+        return _buildListView(items);
+      },
+    );
+  }
+
+  Widget _buildListView(List<KnowledgeEntry> items) {
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+      itemCount: items.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 10),
+      itemBuilder: (_, i) => _ListCard(
+        entry: items[i],
+        primary: _primary,
+        svc: _svc,
+        onTap: () => _openEntry(items[i]),
+      ),
+    );
+  }
+
+  // ── UTILITIES ─────────────────────────────────────────────────────────────
+  Widget _sectionHeader(String label, IconData icon) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
+      child: Row(children: [
+        Container(
+          width: 3, height: 14,
+          decoration: BoxDecoration(
+            color: _primary,
+            borderRadius: BorderRadius.circular(2),
+            boxShadow: [BoxShadow(color: _primary, blurRadius: 8)],
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(label, style: TextStyle(
+          fontSize: 10, letterSpacing: 3,
+          color: _primarySoft, fontWeight: FontWeight.w700,
+        )),
+        const Spacer(),
+        Icon(icon, size: 14, color: _primary.withValues(alpha: 0.5)),
+      ]),
+    );
+  }
+
+  Widget _buildEmptyState({IconData? icon, String? title, String? hint}) {
+    return Center(
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Container(
+          width: 72, height: 72,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: _primary.withValues(alpha: 0.08),
+            border: Border.all(color: _primary.withValues(alpha: 0.25)),
+          ),
+          child: Icon(icon ?? Icons.search_off, size: 32, color: _primary.withValues(alpha: 0.55)),
+        ),
+        const SizedBox(height: 16),
+        Text(title ?? 'Keine Einträge', style: const TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.w500)),
+        if (hint != null) ...[
+          const SizedBox(height: 6),
+          Text(hint, style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.45)), textAlign: TextAlign.center),
+        ],
+      ]),
+    );
+  }
+
+  Widget _buildSpinner() {
+    return Center(child: CircularProgressIndicator(color: _primary, strokeWidth: 2));
+  }
+
+  Widget _buildSkeleton() {
+    return Scaffold(
+      backgroundColor: _deep,
+      body: Column(children: [
+        SizedBox(height: 210, child: Container(color: _primary.withValues(alpha: 0.06))),
+        const SizedBox(height: 56),
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: 5,
+            itemBuilder: (_, __) => Container(
+              height: 80,
+              margin: const EdgeInsets.only(bottom: 10),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(14),
+                color: Colors.white.withValues(alpha: 0.04),
+              ),
+            ),
+          ),
+        ),
+      ]),
+    );
   }
 }
 
-/// DETAIL SCREEN
+// ─────────────────────────────────────────────────────────────────────────────
+// FEATURED CARD (horizontal scroll)
+// ─────────────────────────────────────────────────────────────────────────────
+class _FeaturedCard extends StatelessWidget {
+  final KnowledgeEntry entry;
+  final Color primary;
+  final Color deep;
+  final VoidCallback onTap;
+
+  const _FeaturedCard({required this.entry, required this.primary, required this.deep, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final catColor = _catColor(entry.category);
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 210,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [deep, Color.lerp(deep, catColor, 0.22)!],
+          ),
+          border: Border.all(color: catColor.withValues(alpha: 0.35), width: 1.2),
+          boxShadow: [
+            BoxShadow(color: catColor.withValues(alpha: 0.22), blurRadius: 22, offset: const Offset(0, 8)),
+            BoxShadow(color: Colors.black.withValues(alpha: 0.5), blurRadius: 12),
+          ],
+        ),
+        child: Stack(children: [
+          // Background orb
+          Positioned(
+            right: -15, bottom: -15,
+            child: Container(
+              width: 110, height: 110,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(colors: [catColor.withValues(alpha: 0.22), Colors.transparent]),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              // Category chip
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+                decoration: BoxDecoration(
+                  color: catColor.withValues(alpha: 0.16),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: catColor.withValues(alpha: 0.45)),
+                ),
+                child: Text(_catLabel(entry.category), style: TextStyle(
+                  fontSize: 8.5, color: catColor, fontWeight: FontWeight.w700, letterSpacing: 0.6,
+                )),
+              ),
+              const SizedBox(height: 9),
+              Text(entry.title, maxLines: 3, overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white, height: 1.3)),
+              const Spacer(),
+              Row(children: [
+                Icon(Icons.timer_outlined, size: 11, color: Colors.white.withValues(alpha: 0.45)),
+                const SizedBox(width: 4),
+                Text('${entry.readingTimeMinutes} Min', style: TextStyle(fontSize: 10, color: Colors.white.withValues(alpha: 0.45))),
+                const Spacer(),
+                _StarRow(rating: entry.rating),
+              ]),
+            ]),
+          ),
+        ]),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CINEMATIC GRID CARD
+// ─────────────────────────────────────────────────────────────────────────────
+class _CinematicCard extends StatelessWidget {
+  final KnowledgeEntry entry;
+  final Color primary;
+  final UnifiedKnowledgeService svc;
+  final VoidCallback onTap;
+
+  const _CinematicCard({required this.entry, required this.primary, required this.svc, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final catColor = _catColor(entry.category);
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          color: const Color(0xFF0B0D1A),
+          border: Border(left: BorderSide(color: catColor, width: 3)),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withValues(alpha: 0.42), blurRadius: 14, offset: const Offset(0, 5)),
+            BoxShadow(color: catColor.withValues(alpha: 0.07), blurRadius: 20),
+          ],
+        ),
+        child: Stack(children: [
+          // Atmospheric orb
+          Positioned(
+            right: -12, top: -12,
+            child: Container(
+              width: 80, height: 80,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(colors: [catColor.withValues(alpha: 0.14), Colors.transparent]),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              // Type badge + bookmark
+              Row(children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: catColor.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(7),
+                    border: Border.all(color: catColor.withValues(alpha: 0.40)),
+                  ),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Icon(_typeIcon(entry.type), size: 9, color: catColor),
+                    const SizedBox(width: 3),
+                    Text(_typeLabel(entry.type), style: TextStyle(
+                      fontSize: 8, color: catColor, fontWeight: FontWeight.w700, letterSpacing: 0.4,
+                    )),
+                  ]),
+                ),
+                const Spacer(),
+                FutureBuilder<bool>(
+                  future: svc.isFavorite(entry.id),
+                  builder: (ctx, snap) {
+                    final isFav = snap.data ?? false;
+                    return GestureDetector(
+                      onTap: () async {
+                        HapticFeedback.selectionClick();
+                        if (isFav) await svc.removeFavorite(entry.id);
+                        else await svc.addFavorite(entry.id);
+                        (ctx as Element).markNeedsBuild();
+                      },
+                      child: Icon(
+                        isFav ? Icons.bookmark : Icons.bookmark_border,
+                        size: 17,
+                        color: isFav ? const Color(0xFFFBBF24) : Colors.white.withValues(alpha: 0.35),
+                      ),
+                    );
+                  },
+                ),
+              ]),
+              const SizedBox(height: 10),
+              // Title
+              Text(entry.title, maxLines: 4, overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white, height: 1.3)),
+              const Spacer(),
+              // Bottom: time + rating
+              Row(children: [
+                Icon(Icons.timer_outlined, size: 10, color: Colors.white.withValues(alpha: 0.38)),
+                const SizedBox(width: 3),
+                Text('${entry.readingTimeMinutes}m', style: TextStyle(fontSize: 9, color: Colors.white.withValues(alpha: 0.38))),
+                const Spacer(),
+                _StarRow(rating: entry.rating, size: 9),
+              ]),
+              const SizedBox(height: 7),
+              // Tags
+              Wrap(
+                spacing: 3, runSpacing: 3,
+                children: entry.tags.take(2).map((t) => Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.05),
+                    borderRadius: BorderRadius.circular(5),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.09)),
+                  ),
+                  child: Text('#$t', style: TextStyle(fontSize: 8, color: Colors.white.withValues(alpha: 0.40))),
+                )).toList(),
+              ),
+            ]),
+          ),
+        ]),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LIST CARD (Gespeichert / Verlauf / Für dich)
+// ─────────────────────────────────────────────────────────────────────────────
+class _ListCard extends StatelessWidget {
+  final KnowledgeEntry entry;
+  final Color primary;
+  final UnifiedKnowledgeService svc;
+  final VoidCallback onTap;
+
+  const _ListCard({required this.entry, required this.primary, required this.svc, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final catColor = _catColor(entry.category);
+    return GestureDetector(
+      onTap: onTap,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(14),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              color: const Color(0xFF0C0E1C),
+              borderRadius: BorderRadius.circular(14),
+              border: Border(left: BorderSide(color: catColor, width: 3)),
+              boxShadow: [
+                BoxShadow(color: Colors.black.withValues(alpha: 0.35), blurRadius: 12),
+              ],
+            ),
+            child: Row(children: [
+              // Icon circle
+              Container(
+                width: 42, height: 42,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: catColor.withValues(alpha: 0.14),
+                  border: Border.all(color: catColor.withValues(alpha: 0.40)),
+                ),
+                child: Icon(_typeIcon(entry.type), size: 18, color: catColor),
+              ),
+              const SizedBox(width: 12),
+              // Text
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(entry.title, maxLines: 2, overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white, height: 1.3)),
+                const SizedBox(height: 4),
+                Row(children: [
+                  Icon(Icons.timer_outlined, size: 10, color: Colors.white.withValues(alpha: 0.38)),
+                  const SizedBox(width: 3),
+                  Text('${entry.readingTimeMinutes} Min', style: TextStyle(fontSize: 9.5, color: Colors.white.withValues(alpha: 0.45))),
+                  const SizedBox(width: 10),
+                  Text(_catLabel(entry.category), style: TextStyle(fontSize: 9.5, color: catColor.withValues(alpha: 0.8))),
+                ]),
+              ])),
+              const SizedBox(width: 8),
+              // Arrow
+              Icon(Icons.chevron_right, size: 18, color: Colors.white.withValues(alpha: 0.25)),
+            ]),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// STAT PILL
+// ─────────────────────────────────────────────────────────────────────────────
+class _StatPill extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  const _StatPill({required this.icon, required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withValues(alpha: 0.35)),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(icon, size: 11, color: color),
+        const SizedBox(width: 5),
+        Text(label, style: TextStyle(fontSize: 10, color: color, fontWeight: FontWeight.w600)),
+      ]),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// STAR ROW
+// ─────────────────────────────────────────────────────────────────────────────
+class _StarRow extends StatelessWidget {
+  final double rating;
+  final double size;
+
+  const _StarRow({required this.rating, this.size = 10});
+
+  @override
+  Widget build(BuildContext context) {
+    if (rating <= 0) return const SizedBox.shrink();
+    return Row(mainAxisSize: MainAxisSize.min, children: List.generate(5, (i) => Icon(
+      i < rating.round() ? Icons.star : Icons.star_border,
+      size: size,
+      color: const Color(0xFFFBBF24).withValues(alpha: 0.75),
+    )));
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SEARCH FAB
+// ─────────────────────────────────────────────────────────────────────────────
+class _SearchFAB extends StatelessWidget {
+  final Color primary;
+  final VoidCallback onTap;
+
+  const _SearchFAB({required this.primary, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 54, height: 54,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: RadialGradient(
+            colors: [primary, Color.lerp(primary, Colors.black, 0.3)!],
+          ),
+          boxShadow: [
+            BoxShadow(color: primary.withValues(alpha: 0.5), blurRadius: 20, spreadRadius: 2),
+            BoxShadow(color: Colors.black.withValues(alpha: 0.4), blurRadius: 8, offset: const Offset(0, 4)),
+          ],
+        ),
+        child: const Icon(Icons.search, color: Colors.white, size: 22),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AMBIENT BACKGROUND PAINTER
+// ─────────────────────────────────────────────────────────────────────────────
+class _AmbientPainter extends CustomPainter {
+  final double progress;
+  final double pulse;
+  final Color primary;
+  final bool isMaterie;
+
+  const _AmbientPainter({required this.progress, required this.pulse, required this.primary, required this.isMaterie});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    // Animated nebula clouds
+    for (int i = 0; i < 3; i++) {
+      final x = size.width * (0.15 + i * 0.35 + math.sin(progress * math.pi * 2 + i * 1.2) * 0.08);
+      final y = size.height * (0.35 + math.cos(progress * math.pi * 2 + i * 0.8) * 0.22);
+      final r = 120.0 + i * 30.0 + pulse * 20;
+      canvas.drawCircle(
+        Offset(x, y), r,
+        Paint()..shader = RadialGradient(
+          colors: [primary.withValues(alpha: 0.22 + pulse * 0.08), Colors.transparent],
+        ).createShader(Rect.fromCircle(center: Offset(x, y), radius: r)),
+      );
+    }
+
+    // Grid lines (Materie: tight grid, Energie: wider)
+    final step = isMaterie ? 32.0 : 48.0;
+    final gridPaint = Paint()..color = primary.withValues(alpha: 0.045)..strokeWidth = 0.5;
+    for (double x = 0; x < size.width; x += step) {
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), gridPaint);
+    }
+    for (double y = 0; y < size.height; y += step) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
+    }
+
+    // Energie: zusätzliche Kreisringe als Mandala-Andeutung
+    if (!isMaterie) {
+      for (int i = 1; i <= 3; i++) {
+        canvas.drawCircle(
+          Offset(size.width / 2, size.height * 0.3),
+          i * 55.0 + pulse * 8,
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 0.5
+            ..color = primary.withValues(alpha: 0.08),
+        );
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_AmbientPainter old) => old.progress != progress || old.pulse != pulse;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// HELPER FUNCTIONS
+// ─────────────────────────────────────────────────────────────────────────────
+Color _catColor(String cat) {
+  switch (cat) {
+    case 'conspiracy':       return const Color(0xFFFF4757);
+    case 'ancientWisdom':    return const Color(0xFFFFB347);
+    case 'forbiddenKnowledge': return const Color(0xFFFF6B9D);
+    case 'books':            return const Color(0xFF4ECDC4);
+    case 'meditation':       return const Color(0xFFA78BFA);
+    case 'astrology':        return const Color(0xFF60A5FA);
+    case 'crystals':         return const Color(0xFF34D399);
+    case 'consciousness':    return const Color(0xFFF472B6);
+    case 'energyWork':       return const Color(0xFFFBBF24);
+    default:                 return const Color(0xFF94A3B8);
+  }
+}
+
+String _catLabel(String cat) {
+  switch (cat) {
+    case 'conspiracy':         return 'Verschwörung';
+    case 'ancientWisdom':      return 'Alte Weisheit';
+    case 'forbiddenKnowledge': return 'Verboten';
+    case 'books':              return 'Bücher';
+    case 'meditation':         return 'Meditation';
+    case 'astrology':          return 'Astrologie';
+    case 'crystals':           return 'Kristalle';
+    case 'consciousness':      return 'Bewusstsein';
+    case 'energyWork':         return 'Energiearbeit';
+    default:                   return cat;
+  }
+}
+
+IconData _typeIcon(String type) {
+  switch (type) {
+    case 'book':     return Icons.menu_book;
+    case 'article':  return Icons.article;
+    case 'video':    return Icons.play_circle;
+    case 'practice': return Icons.self_improvement;
+    case 'research': return Icons.science;
+    default:         return Icons.library_books;
+  }
+}
+
+String _typeLabel(String type) {
+  switch (type) {
+    case 'book':     return 'BUCH';
+    case 'article':  return 'ARTIKEL';
+    case 'video':    return 'VIDEO';
+    case 'practice': return 'PRAXIS';
+    case 'research': return 'FORSCHUNG';
+    default:         return 'WISSEN';
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// KNOWLEDGE DETAIL SCREEN (unverändert)
+// ─────────────────────────────────────────────────────────────────────────────
+
 class KnowledgeDetailScreen extends StatefulWidget {
   final KnowledgeEntry entry;
-  
+
   const KnowledgeDetailScreen({super.key, required this.entry});
 
   @override
@@ -549,7 +1023,7 @@ class KnowledgeDetailScreen extends StatefulWidget {
 class _KnowledgeDetailScreenState extends State<KnowledgeDetailScreen> {
   final _knowledgeService = UnifiedKnowledgeService();
   final _noteController = TextEditingController();
-  
+
   bool _isFavorite = false;
   bool _isRead = false;
   KnowledgeNote? _note;
@@ -564,29 +1038,29 @@ class _KnowledgeDetailScreenState extends State<KnowledgeDetailScreen> {
     final fav = await _knowledgeService.isFavorite(widget.entry.id);
     final progress = await _knowledgeService.getProgress(widget.entry.id);
     final note = await _knowledgeService.getNote(widget.entry.id);
-    
+
     setState(() {
       _isFavorite = fav;
       _isRead = progress?.isRead ?? false;
       _note = note;
-      if (note != null) {
-        _noteController.text = note.content;
-      }
+      if (note != null) _noteController.text = note.content;
     });
-    
-    // Update progress
+
     await _knowledgeService.updateProgress(widget.entry.id);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFF0A0A0A),
       appBar: AppBar(
-        title: const Text('Wissendetails'),
+        backgroundColor: const Color(0xFF111111),
+        title: Text(widget.entry.title,
+            maxLines: 1, overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 16, color: Colors.white)),
         actions: [
-          // Favorite Button
           IconButton(
-            icon: Icon(_isFavorite ? Icons.star : Icons.star_border),
+            icon: Icon(_isFavorite ? Icons.star : Icons.star_border, color: Colors.amber),
             onPressed: () async {
               if (_isFavorite) {
                 await _knowledgeService.removeFavorite(widget.entry.id);
@@ -596,151 +1070,21 @@ class _KnowledgeDetailScreenState extends State<KnowledgeDetailScreen> {
               setState(() => _isFavorite = !_isFavorite);
             },
           ),
-          
-          // Share Button
           IconButton(
-            icon: const Icon(Icons.share),
-            onPressed: () {
-              Share.share(
-                '${widget.entry.title}\n\n${widget.entry.description}\n\nQuelle: Weltenbibliothek',
-              );
-            },
-          ),
-          
-          // Read Toggle
-          IconButton(
-            icon: Icon(_isRead ? Icons.check_circle : Icons.check_circle_outline),
-            onPressed: () async {
-              await _knowledgeService.updateProgress(
-                widget.entry.id,
-                isRead: !_isRead,
-              );
-              setState(() => _isRead = !_isRead);
-            },
+            icon: const Icon(Icons.share, color: Colors.white),
+            onPressed: () => Share.share('${widget.entry.title}\n\n${widget.entry.description}'),
           ),
         ],
       ),
-      body: ListView(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
-        children: [
-          // Title
-          Text(
-            widget.entry.title,
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 12),
-          
-          // Metadata
-          Wrap(
-            spacing: 8,
-            children: [
-              Chip(
-                label: Text(widget.entry.category),
-                avatar: const Icon(Icons.category, size: 16),
-              ),
-              Chip(
-                label: Text(widget.entry.type),
-                avatar: const Icon(Icons.label, size: 16),
-              ),
-              Chip(
-                label: Text('${widget.entry.readingTimeMinutes} min'),
-                avatar: const Icon(Icons.schedule, size: 16),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          
-          // Description
-          Text(
-            widget.entry.description,
-            style: const TextStyle(
-              fontSize: 16,
-              fontStyle: FontStyle.italic,
-            ),
-          ),
-          const Divider(height: 40),
-          
-          // Full Content
-          Text(
-            widget.entry.fullContent,
-            style: const TextStyle(fontSize: 15, height: 1.6),
-          ),
-          const SizedBox(height: 30),
-          
-          // Tags
-          Wrap(
-            spacing: 8,
-            children: widget.entry.tags.map((tag) {
-              return Chip(
-                label: Text(tag),
-                backgroundColor: Colors.blue.withValues(alpha: 0.1),
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 30),
-          
-          // Notes Section
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Deine Notizen',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _noteController,
-                    maxLines: 5,
-                    decoration: const InputDecoration(
-                      hintText: 'Notiere deine Gedanken...',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      if (_note != null)
-                        TextButton.icon(
-                          icon: const Icon(Icons.delete, color: Colors.red),
-                          label: const Text('Löschen'),
-                          onPressed: () async {
-                            await _knowledgeService.deleteNote(widget.entry.id);
-                            setState(() {
-                              _note = null;
-                              _noteController.clear();
-                            });
-                          },
-                        ),
-                      const SizedBox(width: 8),
-                      ElevatedButton.icon(
-                        icon: const Icon(Icons.save),
-                        label: const Text('Speichern'),
-                        onPressed: () async {
-                          await _knowledgeService.saveNote(
-                            widget.entry.id,
-                            _noteController.text,
-                          );
-                          // ignore: use_build_context_synchronously
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Notiz gespeichert!')),
-                          );
-                          await _loadData();
-                        },
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(widget.entry.title,
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
+          const SizedBox(height: 8),
+          Text(widget.entry.fullContent,
+              style: const TextStyle(fontSize: 15, color: Colors.white70, height: 1.6)),
+        ]),
       ),
     );
   }
@@ -749,43 +1093,5 @@ class _KnowledgeDetailScreenState extends State<KnowledgeDetailScreen> {
   void dispose() {
     _noteController.dispose();
     super.dispose();
-  }
-}
-
-/// STAT CARD WIDGET
-class _StatCard extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-  
-  const _StatCard({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Icon(icon, color: Colors.white, size: 24),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        Text(
-          label,
-          style: const TextStyle(
-            color: Colors.white70,
-            fontSize: 12,
-          ),
-        ),
-      ],
-    );
   }
 }
