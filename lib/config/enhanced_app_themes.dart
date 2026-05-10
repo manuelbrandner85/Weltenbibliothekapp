@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/wb_cinematic_tokens.dart';
 
 /// 🎨 ENHANCED APP THEMES - UI/UX POLISH UPDATE
 /// 
@@ -243,6 +244,11 @@ class EnhancedAppThemes {
         backgroundColor: lightPrimary,
         foregroundColor: lightOnPrimary,
       ),
+
+      // Cinematic Token-System (auch im Light-Theme verfügbar)
+      extensions: const <ThemeExtension<dynamic>>[
+        WBCinematic.dark,
+      ],
     );
   }
 
@@ -393,6 +399,11 @@ class EnhancedAppThemes {
         backgroundColor: darkPrimary,
         foregroundColor: darkOnPrimary,
       ),
+
+      // Cinematic Token-System (Foundation für premium Glass-/Welt-Widgets)
+      extensions: const <ThemeExtension<dynamic>>[
+        WBCinematic.dark,
+      ],
     );
   }
 
