@@ -376,7 +376,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
       if (mounted) {
         setState(() {
           _username = profile!.username;
-          _userId = supabase.auth.currentUser?.id ?? 'user_${profile.username.toLowerCase()}';
+          _userId = supabase.auth.currentUser?.id ?? '';
           _avatar = profile.avatarEmoji ?? '👤';
           _avatarEmoji = profile.avatarEmoji;
           _avatarUrl = profile.avatarUrl;
@@ -2916,9 +2916,13 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
       }
 
       try {
-        await SupabaseChatService.instance.editMessage(
+        await _api.editChatMessage(
+          roomId: _fullRoomId,
           messageId: msgId,
+          userId: _userId,
+          username: _username,
           newMessage: trimmed,
+          realm: 'materie',
         );
       } catch (e) {
         if (kDebugMode) debugPrint('❌ Edit fehlgeschlagen: $e');
@@ -2934,7 +2938,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
       }
     }
   }
-  
+
   /// 🆕 DELETE MESSAGE
   Future<void> _deleteMessage(Map<String, dynamic> msg) async {
     final confirm = await showDialog<bool>(
@@ -2975,8 +2979,12 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
       }
 
       try {
-        await SupabaseChatService.instance.deleteMessage(
+        await _api.deleteChatMessage(
+          roomId: _fullRoomId,
           messageId: msgId,
+          userId: _userId,
+          username: _username,
+          realm: 'materie',
         );
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -3008,7 +3016,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
       }
     }
   }
-  
+
   // Feature #16: message scheduler — long-press send button
   void _showScheduleMessageDialog() {
     HapticFeedback.mediumImpact();
@@ -3827,8 +3835,12 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
 
       // Server-Update im Hintergrund
       if (messageId.isNotEmpty) {
-        SupabaseChatService.instance.deleteMessage(
+        _api.deleteChatMessage(
+          roomId: _fullRoomId,
           messageId: messageId,
+          userId: _userId,
+          username: _username,
+          realm: 'materie',
           isAdmin: true,
         ).then((_) {
           if (kDebugMode) debugPrint('✅ Materie Admin-Delete gespeichert');
