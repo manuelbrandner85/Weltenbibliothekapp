@@ -56,6 +56,25 @@ class CloudflareApiService {
   static final CloudflareApiService _instance = CloudflareApiService._internal();
   factory CloudflareApiService() => _instance;
   CloudflareApiService._internal();
+
+  static const _kTimeout = Duration(seconds: 15);
+
+  /// Zentraler HTTP-Wrapper mit Timeout + nutzerfreundlichem Fehler.
+  Future<http.Response> _get(Uri uri, {Map<String, String>? headers}) =>
+      http.get(uri, headers: headers ?? _headers).timeout(_kTimeout,
+          onTimeout: () => throw TimeoutException('Anfrage dauerte zu lange', _kTimeout));
+
+  Future<http.Response> _post(Uri uri, {Map<String, String>? headers, Object? body}) =>
+      http.post(uri, headers: headers ?? _headers, body: body).timeout(_kTimeout,
+          onTimeout: () => throw TimeoutException('Anfrage dauerte zu lange', _kTimeout));
+
+  Future<http.Response> _put(Uri uri, {Map<String, String>? headers, Object? body}) =>
+      http.put(uri, headers: headers ?? _headers, body: body).timeout(_kTimeout,
+          onTimeout: () => throw TimeoutException('Anfrage dauerte zu lange', _kTimeout));
+
+  Future<http.Response> _delete(Uri uri, {Map<String, String>? headers, Object? body}) =>
+      http.delete(uri, headers: headers ?? _headers, body: body).timeout(_kTimeout,
+          onTimeout: () => throw TimeoutException('Anfrage dauerte zu lange', _kTimeout));
   
   // Gemeinsame Headers (MIT Authorization für authentifizierte Requests)
   Map<String, String> get _headers {
@@ -107,7 +126,7 @@ class CloudflareApiService {
     if (category != null) params['category'] = category;
 
     final uri = Uri.parse('$baseUrl/api/articles').replace(queryParameters: params);
-    final response = await http.get(uri, headers: _headers);
+    final response = await _get(uri, headers: _headers);
 
     if (response.statusCode == 200) {
       final List<dynamic> data = json.decode(response.body);
@@ -119,7 +138,7 @@ class CloudflareApiService {
 
   /// Get single article by ID
   Future<Map<String, dynamic>> getArticle(String articleId) async {
-    final response = await http.get(
+    final response = await _get(
       Uri.parse('$baseUrl/api/articles/$articleId'),
       headers: _headers,
     );
@@ -133,7 +152,7 @@ class CloudflareApiService {
 
   /// Create new article
   Future<Map<String, dynamic>> createArticle(Map<String, dynamic> articleData) async {
-    final response = await http.post(
+    final response = await _post(
       Uri.parse('$baseUrl/api/articles'),
       headers: _headers,
       body: json.encode(articleData),
@@ -372,7 +391,7 @@ class CloudflareApiService {
     bool? isAdmin,
   }) async {
     if (kDebugMode) debugPrint('🔧 [Chat] Edit via Worker: $messageId');
-    final response = await http.put(
+    final response = await _put(
       Uri.parse('$baseUrl/api/chat/messages/$messageId'),
       headers: _authedHeaders,
       body: jsonEncode({
@@ -405,7 +424,7 @@ class CloudflareApiService {
     bool? isAdmin,
   }) async {
     if (kDebugMode) debugPrint('🗑️ [Chat] Delete via Worker: $messageId');
-    final response = await http.delete(
+    final response = await _delete(
       Uri.parse('$baseUrl/api/chat/messages/$messageId'),
       headers: _authedHeaders,
       body: jsonEncode({
@@ -433,7 +452,7 @@ class CloudflareApiService {
 
   /// Get user by ID
   Future<Map<String, dynamic>> getUser(String userId) async {
-    final response = await http.get(Uri.parse('$baseUrl/api/users/$userId'));
+    final response = await _get(Uri.parse('$baseUrl/api/users/$userId'));
 
     if (response.statusCode == 200) {
       return json.decode(response.body);
@@ -449,7 +468,7 @@ class CloudflareApiService {
     String? avatarUrl,
     String realm = 'both',
   }) async {
-    final response = await http.post(
+    final response = await _post(
       Uri.parse('$baseUrl/api/users'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode({
@@ -469,7 +488,7 @@ class CloudflareApiService {
 
   /// Update user
   Future<void> updateUser(String userId, Map<String, dynamic> updates) async {
-    final response = await http.put(
+    final response = await _put(
       Uri.parse('$baseUrl/api/users/$userId'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode(updates),
@@ -486,7 +505,7 @@ class CloudflareApiService {
 
   /// Get saved articles for user
   Future<List<Map<String, dynamic>>> getSavedArticles(String userId) async {
-    final response = await http.get(Uri.parse('$baseUrl/api/saved/$userId'));
+    final response = await _get(Uri.parse('$baseUrl/api/saved/$userId'));
 
     if (response.statusCode == 200) {
       final List<dynamic> data = json.decode(response.body);
@@ -498,7 +517,7 @@ class CloudflareApiService {
 
   /// Save article for user
   Future<void> saveArticle(String userId, String articleId) async {
-    final response = await http.post(
+    final response = await _post(
       Uri.parse('$baseUrl/api/saved'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode({
@@ -514,7 +533,7 @@ class CloudflareApiService {
 
   /// Unsave article
   Future<void> unsaveArticle(String userId, String articleId) async {
-    final response = await http.delete(
+    final response = await _delete(
       Uri.parse('$baseUrl/api/saved/$userId/$articleId'),
     );
 
@@ -541,7 +560,7 @@ class CloudflareApiService {
     if (realm != null) params['realm'] = realm;
 
     final uri = Uri.parse('$baseUrl/api/search').replace(queryParameters: params);
-    final response = await http.get(uri);
+    final response = await _get(uri);
 
     if (response.statusCode == 200) {
       final List<dynamic> data = json.decode(response.body);
@@ -569,7 +588,7 @@ class CloudflareApiService {
     if (type != null) params['type'] = type;
 
     final uri = Uri.parse('$baseUrl/api/content').replace(queryParameters: params);
-    final response = await http.get(uri);
+    final response = await _get(uri);
 
     if (response.statusCode == 200) {
       final List<dynamic> data = json.decode(response.body);
@@ -581,7 +600,7 @@ class CloudflareApiService {
 
   /// Create user content
   Future<Map<String, dynamic>> createUserContent(Map<String, dynamic> contentData) async {
-    final response = await http.post(
+    final response = await _post(
       Uri.parse('$baseUrl/api/content'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode(contentData),
@@ -601,7 +620,7 @@ class CloudflareApiService {
   /// Get notifications for user
   Future<List<Map<String, dynamic>>> getNotifications(String userId) async {
     try {
-      final response = await http.get(
+      final response = await _get(
         Uri.parse('$baseUrl/api/notifications/$userId')
       ).timeout(
         const Duration(seconds: 15),
@@ -629,7 +648,7 @@ class CloudflareApiService {
   /// Create notification
   Future<void> createNotification(Map<String, dynamic> notificationData) async {
     try {
-      final response = await http.post(
+      final response = await _post(
         Uri.parse('$baseUrl/api/notifications'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode(notificationData),
@@ -664,7 +683,7 @@ class CloudflareApiService {
     required String username,
   }) async {
     try {
-      final response = await http.post(
+      final response = await _post(
         Uri.parse('$baseUrl/api/articles/$articleId/like'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
@@ -699,7 +718,7 @@ class CloudflareApiService {
     required String userId,
   }) async {
     try {
-      final response = await http.delete(
+      final response = await _delete(
         Uri.parse('$baseUrl/api/articles/$articleId/like?user_id=$userId'),
       ).timeout(
         const Duration(seconds: 15),
@@ -724,7 +743,7 @@ class CloudflareApiService {
   /// Get article likes
   Future<List<Map<String, dynamic>>> getArticleLikes(String articleId) async {
     try {
-      final response = await http.get(
+      final response = await _get(
         Uri.parse('$baseUrl/api/articles/$articleId/likes'),
       ).timeout(
         const Duration(seconds: 15),
@@ -752,7 +771,7 @@ class CloudflareApiService {
   /// Get article comments
   Future<List<Map<String, dynamic>>> getArticleComments(String articleId) async {
     try {
-      final response = await http.get(
+      final response = await _get(
         Uri.parse('$baseUrl/api/articles/$articleId/comments'),
       ).timeout(
         const Duration(seconds: 15),
@@ -786,7 +805,7 @@ class CloudflareApiService {
     String? parentCommentId,
   }) async {
     try {
-      final response = await http.post(
+      final response = await _post(
         Uri.parse('$baseUrl/api/articles/$articleId/comments'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
@@ -823,7 +842,7 @@ class CloudflareApiService {
     required String content,
   }) async {
     try {
-      final response = await http.put(
+      final response = await _put(
         Uri.parse('$baseUrl/api/comments/$commentId'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'content': content}),
@@ -850,7 +869,7 @@ class CloudflareApiService {
   /// Delete comment
   Future<void> deleteComment(String commentId) async {
     try {
-      final response = await http.delete(
+      final response = await _delete(
         Uri.parse('$baseUrl/api/comments/$commentId'),
       ).timeout(
         const Duration(seconds: 15),
@@ -875,7 +894,7 @@ class CloudflareApiService {
   /// Get article stats (likes, comments, views, shares)
   Future<Map<String, dynamic>> getArticleStats(String articleId) async {
     try {
-      final response = await http.get(
+      final response = await _get(
         Uri.parse('$baseUrl/api/articles/$articleId/stats'),
       ).timeout(
         const Duration(seconds: 15),
@@ -902,7 +921,7 @@ class CloudflareApiService {
   /// Get user profile
   Future<Map<String, dynamic>> getUserProfile(String userId) async {
     try {
-      final response = await http.get(
+      final response = await _get(
         Uri.parse('$baseUrl/api/users/$userId/profile'),
       ).timeout(
         const Duration(seconds: 15),
@@ -936,7 +955,7 @@ class CloudflareApiService {
     String? bannerUrl,
     String? preferredRealm,
   }) async {
-    final response = await http.put(
+    final response = await _put(
       Uri.parse('$baseUrl/api/users/$userId/profile'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode({
@@ -970,7 +989,7 @@ class CloudflareApiService {
     if (date != null) params['date'] = date;
 
     final uri = Uri.parse('$baseUrl/api/analytics').replace(queryParameters: params);
-    final response = await http.get(uri);
+    final response = await _get(uri);
 
     if (response.statusCode == 200) {
       final List<dynamic> data = json.decode(response.body);
@@ -1045,7 +1064,7 @@ class CloudflareApiService {
   
   /// Get media file URL
   Future<String> getMediaUrl(String fileName) async {
-    final response = await http.get(
+    final response = await _get(
       Uri.parse('$mediaApiUrl/api/media/$fileName'),
       headers: _headers,
     );
@@ -1060,7 +1079,7 @@ class CloudflareApiService {
   
   /// Delete media file
   Future<void> deleteMedia(String fileName, String username) async {
-    final response = await http.delete(
+    final response = await _delete(
       Uri.parse('$mediaApiUrl/api/media/$fileName'),
       headers: {
         ..._headers,
@@ -1090,7 +1109,7 @@ class CloudflareApiService {
         debugPrint('👍 Adding reaction: $emoji to message $messageId by $username');
       }
       
-      final response = await http.post(
+      final response = await _post(
         Uri.parse('$reactionsApiUrl/chat/messages/$messageId/reactions'),
         headers: _authedHeaders, // 🔐 X-Supabase-Auth → Worker verifiziert
         body: json.encode({
@@ -1130,7 +1149,7 @@ class CloudflareApiService {
         debugPrint('👎 Removing reaction: $emoji from message $messageId by $username');
       }
       
-      final response = await http.delete(
+      final response = await _delete(
         Uri.parse('$reactionsApiUrl/chat/messages/$messageId/reactions/${Uri.encodeComponent(emoji)}'),
         headers: _authedHeaders, // 🔐 X-Supabase-Auth → Worker prüft Owner
       ).timeout(const Duration(seconds: 5));
@@ -1155,7 +1174,7 @@ class CloudflareApiService {
   
   /// Get all reactions for a message
   Future<Map<String, dynamic>> getMessageReactions(String messageId) async {
-    final response = await http.get(
+    final response = await _get(
       Uri.parse('$reactionsApiUrl/chat/messages/$messageId/reactions'),
       headers: _authedHeaders,
     );
@@ -1169,7 +1188,7 @@ class CloudflareApiService {
   
   /// Get user's reactions for a message
   Future<List<String>> getUserReactions(String messageId, String username) async {
-    final response = await http.get(
+    final response = await _get(
       Uri.parse('$reactionsApiUrl/chat/messages/$messageId/reactions/user/${Uri.encodeComponent(username)}'),
       headers: _authedHeaders,
     );
@@ -1192,7 +1211,7 @@ class CloudflareApiService {
     required String userId,
   }) async {
     try {
-      final response = await http.post(
+      final response = await _post(
         Uri.parse('$reactionsApiUrl/chat/pin'),
         headers: _headers,
         body: json.encode({
@@ -1214,7 +1233,7 @@ class CloudflareApiService {
   /// Get pinned message for room
   Future<Map<String, dynamic>?> getPinnedMessage(String room) async {
     try {
-      final response = await http.get(
+      final response = await _get(
         Uri.parse('$reactionsApiUrl/chat/pin/$room'),
         headers: _headers,
       );
@@ -1233,7 +1252,7 @@ class CloudflareApiService {
   /// Unpin message in room
   Future<void> unpinMessage(String room) async {
     try {
-      await http.delete(
+      await _delete(
         Uri.parse('$reactionsApiUrl/chat/pin/$room'),
         headers: _headers,
       );
@@ -1251,7 +1270,7 @@ class CloudflareApiService {
     required String username,
   }) async {
     try {
-      await http.post(
+      await _post(
         Uri.parse('$reactionsApiUrl/chat/read'),
         headers: _headers,
         body: json.encode({
@@ -1268,7 +1287,7 @@ class CloudflareApiService {
   /// Get read receipts for message
   Future<List<Map<String, dynamic>>> getReadReceipts(String messageId) async {
     try {
-      final response = await http.get(
+      final response = await _get(
         Uri.parse('$reactionsApiUrl/chat/read/$messageId'),
         headers: _headers,
       );
@@ -1296,7 +1315,7 @@ class CloudflareApiService {
     String? expiresAt,
   }) async {
     try {
-      final response = await http.post(
+      final response = await _post(
         Uri.parse('$reactionsApiUrl/chat/polls'),
         headers: _headers,
         body: json.encode({
@@ -1323,7 +1342,7 @@ class CloudflareApiService {
   /// Get polls for room
   Future<List<Map<String, dynamic>>> getPolls(String room) async {
     try {
-      final response = await http.get(
+      final response = await _get(
         Uri.parse('$reactionsApiUrl/chat/polls/$room'),
         headers: _headers,
       );
@@ -1347,7 +1366,7 @@ class CloudflareApiService {
     required int optionIndex,
   }) async {
     try {
-      await http.post(
+      await _post(
         Uri.parse('$reactionsApiUrl/chat/polls/$pollId/vote'),
         headers: _headers,
         body: json.encode({
@@ -1509,7 +1528,7 @@ class CloudflareApiService {
     try {
       final url = Uri.parse('${ApiConfig.profileApiUrl}/stats');
       
-      final response = await http.post(
+      final response = await _post(
         url,
         headers: _headers,
         body: json.encode({
@@ -1541,7 +1560,7 @@ class CloudflareApiService {
     try {
       final url = Uri.parse('${ApiConfig.profileApiUrl}/stats/$userId');
       
-      final response = await http.get(
+      final response = await _get(
         url,
         headers: _headers,
       ).timeout(
@@ -1579,7 +1598,7 @@ class CloudflareApiService {
       if (realm != null) params['realm'] = realm;
 
       final uri = Uri.parse('$baseUrl/api/recommendations').replace(queryParameters: params);
-      final response = await http.get(uri, headers: _headers).timeout(
+      final response = await _get(uri, headers: _headers).timeout(
         const Duration(seconds: 15),
       );
 
@@ -1609,7 +1628,7 @@ class CloudflareApiService {
       };
 
       final uri = Uri.parse('$baseUrl/api/users/$userId/activity').replace(queryParameters: params);
-      final response = await http.get(uri, headers: _headers).timeout(
+      final response = await _get(uri, headers: _headers).timeout(
         const Duration(seconds: 10),
       );
 
@@ -1633,7 +1652,7 @@ class CloudflareApiService {
   }) async {
     try {
       final uri = Uri.parse('$baseUrl/api/users/$userId/collections');
-      final response = await http.get(uri, headers: _headers).timeout(
+      final response = await _get(uri, headers: _headers).timeout(
         const Duration(seconds: 10),
       );
 
@@ -1658,7 +1677,7 @@ class CloudflareApiService {
   }) async {
     try {
       final uri = Uri.parse('$baseUrl/api/users/$currentUserId/following/$targetUserId');
-      final response = await http.get(uri, headers: _headers).timeout(
+      final response = await _get(uri, headers: _headers).timeout(
         const Duration(seconds: 5),
       );
 
@@ -1683,7 +1702,7 @@ class CloudflareApiService {
   }) async {
     try {
       final uri = Uri.parse('$baseUrl/api/users/$currentUserId/follow');
-      final response = await http.post(
+      final response = await _post(
         uri,
         headers: _headers,
         body: json.encode({'target_user_id': targetUserId}),
@@ -1714,7 +1733,7 @@ class CloudflareApiService {
   }) async {
     try {
       final uri = Uri.parse('$baseUrl/api/users/$currentUserId/unfollow');
-      final response = await http.post(
+      final response = await _post(
         uri,
         headers: _headers,
         body: json.encode({'target_user_id': targetUserId}),

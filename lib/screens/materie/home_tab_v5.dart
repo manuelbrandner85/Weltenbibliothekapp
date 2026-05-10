@@ -16,6 +16,7 @@ import 'tools/osint_tools_hub.dart';
 import '../shared/stats_dashboard_screen.dart';
 import '../shared/notification_center_screen.dart';
 import '../../services/world_subscription_service.dart';
+import '../../config/wb_design.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // MATERIE HOME DASHBOARD V7 – REDESIGN 2026
@@ -43,6 +44,7 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
   // ── State ──────────────────────────────────────────────────────────────
   MaterieProfile? _profile;
   bool _loading = true;
+  String? _errorMessage;
   int _articles = 0, _sessions = 0, _bookmarks = 0, _shares = 0;
   List<Map<String, dynamic>> _latestArticles = [];
   List<Map<String, dynamic>> _trending = [];
@@ -56,17 +58,17 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
   RealtimeChannel? _notifChannel;
   RealtimeChannel? _statsChannel;
 
-  // ── Design Colors ──────────────────────────────────────────────────────
-  static const _bg      = Color(0xFF04080F);
-  static const _card    = Color(0xFF0A1020);
-  static const _cardB   = Color(0xFF0D1528);
+  // ── Design Colors (via WbDesign-Tokens wo möglich) ────────────────────
+  static const _bg      = WbDesign.bgMaterie;
+  static const _card    = WbDesign.surfaceMaterie;
+  static const _cardB   = WbDesign.surfaceMaterieAlt;
   static const _blue    = Color(0xFF2979FF);
   static const _blueL   = Color(0xFF82B1FF);
   static const _blueD   = Color(0xFF1A237E);
-  static const _cyan    = Color(0xFF00E5FF);
+  static const _cyan    = WbDesign.materieCyan;
   static const _green   = Color(0xFF00E676);
   static const _amber   = Color(0xFFFFAB00);
-  static const _red     = Color(0xFFFF1744);
+  static const _red     = WbDesign.materieRed;
   static const _purple  = Color(0xFF7C4DFF);
 
   @override
@@ -81,7 +83,11 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
     _entryAnim = CurvedAnimation(parent: _entryCtrl, curve: Curves.easeOutCubic);
     _entryCtrl.forward();
     _scrollCtrl.addListener(() {
-      setState(() => _scrollOffset = _scrollCtrl.offset);
+      // Nur aktualisieren wenn sich der Offset signifikant ändert (verhindert 60fps rebuilds)
+      final newOffset = _scrollCtrl.offset;
+      if ((newOffset - _scrollOffset).abs() > 1.0) {
+        setState(() => _scrollOffset = newOffset);
+      }
     });
     _loadAll();
     _loadWorldSubscription();
@@ -103,9 +109,14 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
 
   // ── Data ───────────────────────────────────────────────────────────────
   Future<void> _loadAll() async {
-    if (mounted) setState(() => _loading = true);
-    await Future.wait([_loadProfile(), _loadStats(), _loadContent()]);
-    if (mounted) setState(() => _loading = false);
+    if (mounted) setState(() { _loading = true; _errorMessage = null; });
+    try {
+      await Future.wait([_loadProfile(), _loadStats(), _loadContent()]);
+    } catch (e) {
+      if (mounted) setState(() => _errorMessage = 'Daten konnten nicht geladen werden. Bitte Verbindung prüfen.');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
   Future<void> _loadProfile() async {
@@ -320,28 +331,56 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
       ),
       child: Scaffold(
         backgroundColor: _bg,
-        body: RefreshIndicator(
-          onRefresh: _loadAll,
-          color: _blue,
-          backgroundColor: _cardB,
-          displacement: 60,
-          child: CustomScrollView(
-            controller: _scrollCtrl,
-            physics: const BouncingScrollPhysics(
-                parent: AlwaysScrollableScrollPhysics()),
-            slivers: [
-              _buildHeroHeader(),
-              _buildLiveStatBanner(),
-              _buildActionGrid(),
-              _buildRecentRooms(),
-              _buildSectionTitle('🔥 Trending', subtitle: 'Heiß diskutiert'),
-              _buildTrendingChips(),
-              _buildSectionTitle('📰 Neueste Artikel', subtitle: 'Frisch aus der Welt'),
-              _buildArticleCards(),
-              _buildExploreSection(),
-              const SliverPadding(padding: EdgeInsets.only(bottom: 120)),
-            ],
-          ),
+        body: Column(
+          children: [
+            if (_errorMessage != null)
+              Material(
+                color: Colors.transparent,
+                child: Container(
+                  width: double.infinity,
+                  color: const Color(0xFFB71C1C),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.wifi_off, color: Colors.white, size: 16),
+                      const SizedBox(width: 8),
+                      Expanded(child: Text(_errorMessage!, style: const TextStyle(color: Colors.white, fontSize: 13))),
+                      IconButton(
+                        icon: const Icon(Icons.refresh, color: Colors.white, size: 18),
+                        onPressed: _loadAll,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            Expanded(
+              child: RefreshIndicator(
+                onRefresh: _loadAll,
+                color: _blue,
+                backgroundColor: _cardB,
+                displacement: 60,
+                child: CustomScrollView(
+                  controller: _scrollCtrl,
+                  physics: const BouncingScrollPhysics(
+                      parent: AlwaysScrollableScrollPhysics()),
+                  slivers: [
+                    _buildHeroHeader(),
+                    _buildLiveStatBanner(),
+                    _buildActionGrid(),
+                    _buildRecentRooms(),
+                    _buildSectionTitle('🔥 Trending', subtitle: 'Heiß diskutiert'),
+                    _buildTrendingChips(),
+                    _buildSectionTitle('📰 Neueste Artikel', subtitle: 'Frisch aus der Welt'),
+                    _buildArticleCards(),
+                    _buildExploreSection(),
+                    const SliverPadding(padding: EdgeInsets.only(bottom: 120)),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

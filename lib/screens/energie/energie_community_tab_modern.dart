@@ -920,9 +920,9 @@ class _EnergieCommunityTabModernState extends State<EnergieCommunityTabModern> w
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(child: Column(children: left.map(_buildPostCard).toList())),
+        Expanded(child: Column(children: left.map((p) => KeyedSubtree(key: ValueKey(p.id), child: _buildPostCard(p))).toList())),
         const SizedBox(width: 8),
-        Expanded(child: Column(children: right.map(_buildPostCard).toList())),
+        Expanded(child: Column(children: right.map((p) => KeyedSubtree(key: ValueKey(p.id), child: _buildPostCard(p))).toList())),
       ],
     );
   }

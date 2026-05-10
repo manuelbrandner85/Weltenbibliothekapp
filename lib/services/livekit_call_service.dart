@@ -475,7 +475,9 @@ class LiveKitCallService extends ChangeNotifier {
           if (body is Map && body['error'] is String) {
             msg = body['error'] as String;
           }
-        } catch (_) {}
+        } catch (e) {
+          if (kDebugMode) debugPrint('⚠️ [LiveKit] Token-Error-Parse fehlgeschlagen: $e');
+        }
         throw Exception(msg);
       }
 
@@ -704,7 +706,9 @@ class LiveKitCallService extends ChangeNotifier {
       // Best-effort cleanup
       try {
         await _room?.disconnect();
-      } catch (_) {}
+      } catch (e) {
+        if (kDebugMode) debugPrint('⚠️ [LiveKit] Disconnect bei Fehler: $e');
+      }
       _room = null;
       rethrow;
     }
@@ -876,7 +880,9 @@ class LiveKitCallService extends ChangeNotifier {
               : (from?.identity ?? 'Mitglied'),
           timestamp: DateTime.now(),
         ));
-      } catch (_) {}
+      } catch (e) {
+        if (kDebugMode) debugPrint('⚠️ [LiveKit] Chat-Nachricht-Parse: $e');
+      }
     });
 
     // Hand-Heben-Sync: andere User ändern Attribute → UI muss neu zeichnen.
@@ -934,7 +940,9 @@ class LiveKitCallService extends ChangeNotifier {
           try {
             await lp.removePublishedTrack(pub.sid).timeout(
                 const Duration(seconds: 3));
-          } catch (_) {}
+          } catch (e) {
+            if (kDebugMode) debugPrint('⚠️ [LiveKit] removePublishedTrack (leaveRoom): $e');
+          }
         }
       }
     }
@@ -945,11 +953,15 @@ class LiveKitCallService extends ChangeNotifier {
       if (kDebugMode) {
         debugPrint('🌙 Background-Service deaktiviert (Anruf verlassen)');
       }
-    } catch (_) {}
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ [LiveKit] Background deaktivieren: $e');
+    }
 
     try {
       await _listener?.dispose();
-    } catch (_) {}
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ [LiveKit] Listener dispose: $e');
+    }
     _listener = null;
 
     // 🎙️ B8: Caption-Service vom Raum trennen
@@ -969,10 +981,14 @@ class LiveKitCallService extends ChangeNotifier {
 
     try {
       await _room?.disconnect();
-    } catch (_) {}
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ [LiveKit] Room disconnect: $e');
+    }
     try {
       _room?.dispose();
-    } catch (_) {}
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ [LiveKit] Room dispose: $e');
+    }
     _room = null;
     _connectionState = LiveKitConnectionState.disconnected;
     _roomName = null;
@@ -1306,11 +1322,15 @@ class LiveKitCallService extends ChangeNotifier {
           try {
             await lp.removePublishedTrack(pub.sid).timeout(
                 const Duration(seconds: 3));
-          } catch (_) {}
+          } catch (e) {
+            if (kDebugMode) debugPrint('⚠️ [LiveKit] ScreenShare Track remove: $e');
+          }
         }
         try {
           await FlutterBackground.disableBackgroundExecution();
-        } catch (_) {}
+        } catch (e) {
+          if (kDebugMode) debugPrint('⚠️ [LiveKit] Background deaktivieren (ScreenShare): $e');
+        }
       }
       _errorMessage = null; // Erfolg → alte Fehler löschen
       _screenShareEnabled = target;
@@ -1432,7 +1452,7 @@ class LiveKitCallService extends ChangeNotifier {
             // ignore: avoid_dynamic_calls
             (pub as dynamic).subscribed = wantSubscribed;
             ok = true;
-          } catch (_) {}
+          } catch (_) {} // ignore: dynamic API nicht verfügbar → Fallback
           if (!ok) {
             try {
               if (wantSubscribed) {
@@ -1745,18 +1765,26 @@ class LiveKitCallService extends ChangeNotifier {
     _networkSub = null;
     try {
       _listener?.dispose();
-    } catch (_) {}
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ [LiveKit] dispose listener: $e');
+    }
     _listener = null;
     try {
       _room?.disconnect();
-    } catch (_) {}
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ [LiveKit] dispose disconnect: $e');
+    }
     try {
       _room?.dispose();
-    } catch (_) {}
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ [LiveKit] dispose room: $e');
+    }
     _room = null;
     try {
       _reactionsCtrl.close();
-    } catch (_) {}
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ [LiveKit] dispose reactionsCtrl: $e');
+    }
     _remoteVolumes.clear();
     _activeSpeakers = const <String>{};
     super.dispose();
