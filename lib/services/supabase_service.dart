@@ -669,7 +669,73 @@ class SupabaseChatService {
       throw Exception('Nicht eingeloggt – Löschen nicht möglich.');
     }
 
-    await supabase.from('chat_messages').delete().eq('id', messageId);
+    // Soft-Delete: Spalte is_deleted setzen statt Zeile entfernen.
+    // Konsistent mit getMessages-Filter (is_deleted = false).
+    await supabase
+        .from('chat_messages')
+        .update({'is_deleted': true, 'message': null, 'content': null})
+        .eq('id', messageId);
+  }
+
+  /// Lädt alle Reactions für eine Liste von Nachrichten-IDs.
+  /// Gibt Map<messageId, Map<emoji, List<username>>> zurück.
+  Future<Map<String, Map<String, List<String>>>> loadReactionsForMessages(
+      List<String> messageIds) async {
+    if (messageIds.isEmpty) return {};
+    try {
+      final rows = await supabase
+          .from('message_reactions')
+          .select('message_id, emoji, username')
+          .inFilter('message_id', messageIds)
+          .timeout(const Duration(seconds: 10));
+      final result = <String, Map<String, List<String>>>{};
+      for (final row in rows) {
+        final msgId = row['message_id']?.toString() ?? '';
+        final emoji = row['emoji']?.toString() ?? '';
+        final uname = row['username']?.toString() ?? '';
+        if (msgId.isEmpty || emoji.isEmpty) continue;
+        result.putIfAbsent(msgId, () => {}).putIfAbsent(emoji, () => []).add(uname);
+      }
+      return result;
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ [Reactions] loadReactions failed: $e');
+      return {};
+    }
+  }
+
+  /// Toggle einer Reaction (add wenn nicht vorhanden, delete wenn vorhanden).
+  Future<void> toggleReaction({
+    required String messageId,
+    required String emoji,
+    required String userId,
+    required String username,
+  }) async {
+    try {
+      final existing = await supabase
+          .from('message_reactions')
+          .select('id')
+          .eq('message_id', messageId)
+          .eq('emoji', emoji)
+          .eq('user_id', userId)
+          .maybeSingle();
+      if (existing != null) {
+        await supabase
+            .from('message_reactions')
+            .delete()
+            .eq('message_id', messageId)
+            .eq('emoji', emoji)
+            .eq('user_id', userId);
+      } else {
+        await supabase.from('message_reactions').insert({
+          'message_id': messageId,
+          'emoji': emoji,
+          'user_id': userId,
+          'username': username,
+        });
+      }
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ [Reactions] toggleReaction failed: $e');
+    }
   }
 
   /// Echtzeit-Subscription auf Chat-Nachrichten.
@@ -683,6 +749,7 @@ class SupabaseChatService {
     void Function(String messageId)? onDelete,
     void Function()? onSubscribed,
     void Function(Object error)? onError,
+    void Function(String userId, String username, bool isTyping)? onTyping,
   }) {
     // Wenn dieselbe Welt nochmal subscribed → erst alte Channel kappen,
     // damit keine doppelten Callbacks (z.B. nach Hot-Reload).
@@ -694,7 +761,7 @@ class SupabaseChatService {
       value: roomId,
     );
 
-    final channel = supabase
+    var channelBuilder = supabase
         .channel('chat_room_$roomId')
         .onPostgresChanges(
           event: PostgresChangeEvent.insert,
@@ -730,16 +797,29 @@ class SupabaseChatService {
             if (kDebugMode) debugPrint('🗑️ [Chat] DELETE $id');
             onDelete?.call(id);
           },
-        )
-        .subscribe((status, error) {
-          if (kDebugMode) debugPrint('🔌 [Chat] Status $roomId: $status');
-          if (status == RealtimeSubscribeStatus.subscribed) {
-            onSubscribed?.call();
-          } else if (status == RealtimeSubscribeStatus.channelError ||
-              status == RealtimeSubscribeStatus.timedOut) {
-            onError?.call(error ?? 'channel $status');
-          }
-        });
+        );
+
+    if (onTyping != null) {
+      channelBuilder = channelBuilder.onBroadcast(
+        event: 'typing',
+        callback: (payload) {
+          final userId = payload['userId'] as String? ?? '';
+          final username = payload['username'] as String? ?? '';
+          final isTyping = payload['isTyping'] as bool? ?? false;
+          onTyping(userId, username, isTyping);
+        },
+      );
+    }
+
+    final channel = channelBuilder.subscribe((status, error) {
+      if (kDebugMode) debugPrint('🔌 [Chat] Status $roomId: $status');
+      if (status == RealtimeSubscribeStatus.subscribed) {
+        onSubscribed?.call();
+      } else if (status == RealtimeSubscribeStatus.channelError ||
+          status == RealtimeSubscribeStatus.timedOut) {
+        onError?.call(error ?? 'channel $status');
+      }
+    });
 
     _channels[roomId] = channel;
     if (kDebugMode) debugPrint('🔌 [Chat] Subscribed: $roomId');

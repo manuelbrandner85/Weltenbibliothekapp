@@ -189,6 +189,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
   // ✨ Batch-1: Smart autoscroll + pagination + reconnect-state
   bool _isAtBottom = true;
   int _newMessagesCount = 0;
+  DateTime? _unreadSeparatorTime; // Zeitstempel der letzten Raum-Öffnung
   bool _loadingOlder = false;
   bool _hasMoreOlder = true;
   bool _reconnecting = false;
@@ -275,6 +276,10 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
     // ✨ Batch-1: Scroll-Listener für at-bottom Detection + Pagination
     _scrollController.addListener(_onScroll);
 
+    // Ungelesen-Separator: lastSeen vor markSeen speichern — Nachrichten danach sind neu
+    UnreadTrackerService.instance.lastSeen(_fullRoomId).then((t) {
+      if (mounted && t != null) setState(() => _unreadSeparatorTime = t);
+    });
     // ✨ Batch-1: Beim ersten Öffnen Raum als gesehen markieren.
     UnreadTrackerService.instance.markSeen(_fullRoomId);
 
@@ -412,7 +417,10 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
         _errorMessage = null;
       });
       }
-      
+
+      // Reactions aus DB nachladen und in _messages einpflegen
+      _loadReactionsForMessages(messages);
+
       // Auto-scroll zum Ende
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (_scrollController.hasClients) {
@@ -434,6 +442,28 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
     }
   }
   
+  Future<void> _loadReactionsForMessages(List<Map<String, dynamic>> messages) async {
+    if (messages.isEmpty || !mounted) return;
+    final ids = messages
+        .map((m) => m['id']?.toString())
+        .where((id) => id != null && !id.startsWith('pending_'))
+        .cast<String>()
+        .toList();
+    if (ids.isEmpty) return;
+    final reactionMap = await SupabaseChatService.instance.loadReactionsForMessages(ids);
+    if (!mounted || reactionMap.isEmpty) return;
+    setState(() {
+      for (final msg in _messages) {
+        final id = msg['id']?.toString();
+        if (id != null && reactionMap.containsKey(id)) {
+          msg['reactions'] = reactionMap[id]!.map(
+            (emoji, users) => MapEntry<String, dynamic>(emoji, List<dynamic>.from(users)),
+          );
+        }
+      }
+    });
+  }
+
   // 🆕 Load polls for current room
   Future<void> _loadPolls({bool silent = false}) async {
     try {
@@ -1620,6 +1650,10 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                                   .toList(growable: false);
                               // Feature #10/#11: pre-compute flat items with grouping + separators
                               final chatItems = <Map<String, dynamic>>[];
+                              final lastSeen = UnreadTrackerService.instance.countForSync(_fullRoomId) > 0
+                                  ? _unreadSeparatorTime
+                                  : null;
+                              bool unreadSeparatorInserted = false;
                               {
                                 DateTime? prevDate;
                                 String? prevSender;
@@ -1632,6 +1666,15 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                                     prevDate = msgDay;
                                     prevSender = null;
                                     prevTs = null;
+                                  }
+                                  // Ungelesen-Trennlinie einfügen vor der ersten ungelesenen Nachricht
+                                  if (!unreadSeparatorInserted && lastSeen != null && ts != null && ts.isAfter(lastSeen)) {
+                                    final isOwnMsg = (msg['username']?.toString() == _username) ||
+                                        (msg['user_id']?.toString() == _userId);
+                                    if (!isOwnMsg) {
+                                      chatItems.add({'type': 'unread_separator'});
+                                      unreadSeparatorInserted = true;
+                                    }
                                   }
                                   final isGrouped = prevSender != null &&
                                       prevSender == msg['username']?.toString() &&
@@ -1669,6 +1712,27 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                                   final item = chatItems[index - (_loadingOlder ? 1 : 0)];
                                   if (item['type'] == 'separator') {
                                     return _buildDateSeparator(item['date'] as DateTime, const Color(0xFF9B51E0));
+                                  }
+                                  if (item['type'] == 'unread_separator') {
+                                    return Container(
+                                      margin: const EdgeInsets.symmetric(vertical: 8),
+                                      child: Row(children: [
+                                        const Expanded(child: Divider(color: Color(0xFF9B51E0), thickness: 0.5)),
+                                        const SizedBox(width: 8),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFF9B51E0).withValues(alpha: 0.15),
+                                            borderRadius: BorderRadius.circular(20),
+                                            border: Border.all(color: const Color(0xFF9B51E0), width: 0.5),
+                                          ),
+                                          child: const Text('Neue Nachrichten',
+                                              style: TextStyle(color: Color(0xFF9B51E0), fontSize: 11, fontWeight: FontWeight.w600)),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        const Expanded(child: Divider(color: Color(0xFF9B51E0), thickness: 0.5)),
+                                      ]),
+                                    );
                                   }
                                   final msg = item['msg'] as Map<String, dynamic>;
                                   return RepaintBoundary(
@@ -1820,6 +1884,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                           }
                         },
                         style: const TextStyle(color: Colors.white),
+                        maxLength: 2000,
                         decoration: InputDecoration(
                           hintText: 'Nachricht',
                           hintStyle: const TextStyle(color: Colors.white38),
@@ -1834,6 +1899,10 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                             vertical: 10,
                           ),
                           isDense: true,
+                          counterText: _messageController.text.length > 1800
+                              ? '${_messageController.text.length}/2000'
+                              : '',
+                          counterStyle: const TextStyle(color: Colors.orange, fontSize: 10),
                         ),
                         minLines: 1,
                         maxLines: 5,
@@ -1903,7 +1972,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
             // ✨ Batch-1: Floating "X neue Nachrichten" Button
             Positioned(
               right: 16,
-              bottom: 90,
+              bottom: 140,
               child: ChatNewMessagesFab(
                 visible: !_isAtBottom && _newMessagesCount > 0,
                 count: _newMessagesCount,
@@ -2193,11 +2262,36 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
       roomId,
       onMessage: (newMsg) {
         if (!mounted) return;
+        // Raum-Wechsel-Guard: Events die noch vom alten Raum kommen ignorieren
+        final msgRoom = newMsg['room_id']?.toString();
+        if (msgRoom != null && msgRoom != _fullRoomId) return;
         if (_reconnecting) {
           setState(() => _reconnecting = false);
         }
-        // Deduplication: nur hinzufügen wenn unbekannte ID.
-        final exists = _messages.any((m) => m['id'] == newMsg['id']);
+        // Primärer Check via ID; sekundärer Check via username+content+Zeit
+        // fängt den Race-Condition-Fall ab wo Realtime vor Server-Antwort ankommt.
+        final newId = newMsg['id']?.toString();
+        final newContent = (newMsg['message'] ?? newMsg['content'] ?? '').toString();
+        final newUser = newMsg['username']?.toString() ?? '';
+        final newCreated = newMsg['created_at']?.toString() ?? '';
+        final exists = _messages.any((m) {
+          if (newId != null && m['id']?.toString() == newId) return true;
+          final mContent = (m['message'] ?? m['content'] ?? '').toString();
+          final mUser = m['username']?.toString() ?? '';
+          final mCreated = m['created_at']?.toString() ?? '';
+          return mUser == newUser &&
+              mContent == newContent &&
+              mCreated.isNotEmpty &&
+              newCreated.isNotEmpty &&
+              (mCreated == newCreated ||
+                  (DateTime.tryParse(mCreated) != null &&
+                      DateTime.tryParse(newCreated) != null &&
+                      DateTime.parse(mCreated)
+                              .difference(DateTime.parse(newCreated))
+                              .inSeconds
+                              .abs() <
+                          2));
+        });
         if (!exists) {
           final isOwn = (newMsg['username']?.toString() == _username) ||
               (newMsg['user_id']?.toString() == _userId);
@@ -2234,6 +2328,11 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
         if (!mounted) return;
         final id = updatedMsg['id']?.toString();
         if (id == null) return;
+        // Soft-Delete: is_deleted=true → aus lokaler Liste entfernen
+        if (updatedMsg['is_deleted'] == true) {
+          setState(() => _messages.removeWhere((m) => m['id']?.toString() == id));
+          return;
+        }
         final idx = _messages.indexWhere((m) => m['id']?.toString() == id);
         if (idx >= 0) {
           setState(() {
@@ -2260,6 +2359,14 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
           setState(() => _reconnecting = true);
         }
         _scheduleRealtimeReconnect(roomId);
+      },
+      onTyping: (userId, username, isTyping) {
+        if (!mounted || userId == _userId) return;
+        if (isTyping) {
+          _typingService.startTyping(_selectedRoom, username);
+        } else {
+          _typingService.stopTyping(_selectedRoom, username);
+        }
       },
     );
     if (kDebugMode) debugPrint('🔴 [Energie Realtime] Subscribed to room: $roomId');
@@ -2401,12 +2508,18 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
     if (_lastTypingBroadcast == null ||
         now.difference(_lastTypingBroadcast!) > const Duration(milliseconds: 1500)) {
       _typingService.startTyping(_selectedRoom, _username);
+      SupabaseChatService.instance.sendTypingIndicator(
+        roomId: _fullRoomId, userId: _userId, username: _username, isTyping: true,
+      );
       _lastTypingBroadcast = now;
     }
 
     // Stop nach 3s — bleibt unverändert
     _typingTimer = Timer(const Duration(seconds: 3), () {
       _typingService.stopTyping(_selectedRoom, _username);
+      SupabaseChatService.instance.sendTypingIndicator(
+        roomId: _fullRoomId, userId: _userId, username: _username, isTyping: false,
+      );
       _lastTypingBroadcast = null;
     });
   }
@@ -2498,7 +2611,19 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                 _showReactionPicker(msg);
               },
             ),
-            
+            ListTile(
+              leading: const Icon(Icons.copy, color: Colors.white70),
+              title: const Text('Kopieren', style: TextStyle(color: Colors.white)),
+              onTap: () {
+                Navigator.pop(context);
+                final text = (msg['message'] ?? msg['content'] ?? '').toString();
+                Clipboard.setData(ClipboardData(text: text));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Nachricht kopiert'), duration: Duration(seconds: 2)),
+                );
+              },
+            ),
+
             // 🔧 ADMIN MODERATION OPTIONS (Secure check via AdminPermissions)
             if (isAdmin) ...[
               const Divider(color: Color(0xFF9B51E0)),
@@ -2978,6 +3103,10 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
       _isAtBottom = true;
     });
     _messageController.text = ChatDraftService.instance.get(_fullRoomId);
+    // Ungelesen-Separator für neuen Raum laden, dann markSeen
+    UnreadTrackerService.instance.lastSeen(roomId).then((t) {
+      if (mounted) setState(() => _unreadSeparatorTime = t);
+    });
     UnreadTrackerService.instance.markSeen(_fullRoomId);
     // Voice-Service-switchRoom entfällt — LiveKit nutzt eigene Room-Logik.
     await _refreshPresence();
