@@ -2,6 +2,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
+import '../../theme/wb_cinematic_tokens.dart';
+import '../../widgets/cinematic/wb_glass_app_bar.dart';
+import '../../widgets/cinematic/wb_vignette.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // NOTIFICATION CENTER — Echtzeit-Benachrichtigungen
@@ -222,22 +225,22 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _bg,
-      appBar: AppBar(
-        backgroundColor: _card,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
-          color: Colors.white,
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Row(
+      backgroundColor: const Color(0xFF000004),
+      appBar: WBGlassAppBar(
+        world: WBWorld.neutral,
+        titleWidget: Row(
           children: [
-            Icon(Icons.notifications, color: _accentLight, size: 22),
+            Icon(Icons.notifications, color: _accentLight, size: 20),
             const SizedBox(width: 10),
             const Text(
               'Benachrichtigungen',
-              style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontFamily: 'Inter',
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w400,
+                letterSpacing: 0.4,
+              ),
             ),
             if (_unreadCount > 0) ...[
               const SizedBox(width: 10),
@@ -250,7 +253,9 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
                 child: Text(
                   '$_unreadCount',
                   style: const TextStyle(
-                      color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold),
                 ),
               ),
             ],
@@ -267,12 +272,24 @@ class _NotificationCenterScreenState extends State<NotificationCenterScreen> {
               ),
             ),
         ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(height: 1, color: Colors.white.withValues(alpha: 0.07)),
-        ),
       ),
-      body: _buildBody(),
+      body: Stack(
+        children: [
+          const Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(0xFF0D0A1A), Color(0xFF050310), Color(0xFF000004)],
+                ),
+              ),
+            ),
+          ),
+          const Positioned.fill(child: IgnorePointer(child: WBVignette())),
+          _buildBody(),
+        ],
+      ),
     );
   }
 
