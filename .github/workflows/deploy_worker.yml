@@ -80,10 +80,9 @@ jobs:
           echo "✅ Worker deployed — Cron-Trigger aktiv"
 
       - name: 🔑 Worker-Secrets setzen
-        # Setzt Secrets direkt via Cloudflare REST API (script-level secrets endpoint).
-        # wrangler secret bulk schlägt mit Error 10214 fehl wenn gerade eine neue
-        # Worker-Version deployed wurde (versioned-deployment conflict).
-        # Die REST API umgeht dieses Problem vollständig.
+        # Nutzt "wrangler secret put" via stdin — funktioniert korrekt mit Cloudflare
+        # Versioned Deployments (das alte script-level REST-API lehnt neue Secrets
+        # mit "latest version not deployed"-Fehler ab wenn versioned deployments aktiv).
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -95,24 +94,17 @@ jobs:
           GOOGLE_FACTCHECK_API_KEY: ${{ secrets.GOOGLE_FACTCHECK_API_KEY }}
           YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
           ALEPH_API_KEY: ${{ secrets.ALEPH_API_KEY }}
+        working-directory: workers
         run: |
           set -euo pipefail
-          ACCOUNT_ID="3472f5994537c3a30c5caeaff4de21fb"
-          SCRIPT_NAME="weltenbibliothek-api"
-          API="https://api.cloudflare.com/client/v4/accounts/${ACCOUNT_ID}/workers/scripts/${SCRIPT_NAME}/secrets"
 
           set_secret() {
             local name="$1"
             local value="$2"
-            local result
-            result=$(curl -s -X PUT "$API" \
-              -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
-              -H "Content-Type: application/json" \
-              -d "{\"name\":$(echo -n "$name" | jq -Rs .),\"text\":$(echo -n "$value" | jq -Rs .),\"type\":\"secret_text\"}")
-            if echo "$result" | jq -e '.success == true' > /dev/null 2>&1; then
+            if printf '%s' "$value" | npx -y wrangler@3 secret put "$name" 2>&1; then
               echo "✅ $name"
             else
-              echo "❌ $name: $(echo "$result" | jq -r '.errors[0].message // "unbekannter Fehler"')"
+              echo "❌ $name: wrangler secret put fehlgeschlagen"
               return 1
             fi
           }
