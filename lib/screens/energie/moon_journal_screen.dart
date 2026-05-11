@@ -127,6 +127,7 @@ class _MoonJournalScreenState extends State<MoonJournalScreen>
     if (_db == null) return;
 
     setState(() => _isSaving = true);
+    // ignore: unawaited_futures
     HapticFeedback.lightImpact();
 
     final now = DateTime.now();
@@ -158,6 +159,7 @@ class _MoonJournalScreenState extends State<MoonJournalScreen>
         _isSaving = false;
       });
     }
+    // ignore: unawaited_futures
     _entryCtrl.forward(from: 0);
   }
 
