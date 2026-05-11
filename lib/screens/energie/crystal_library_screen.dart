@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'dart:convert';
+import 'dart:math' as math;
+import 'dart:ui';
 import '../../services/group_tools_service.dart';
 import '../../services/user_service.dart';
 
@@ -19,13 +21,17 @@ class CrystalLibraryScreen extends StatefulWidget {
 }
 
 class _CrystalLibraryScreenState extends State<CrystalLibraryScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   final GroupToolsService _toolsService = GroupToolsService();
   final UserService _userService = UserService();
   final TextEditingController _searchController = TextEditingController();
   final TextEditingController _mineralSearchCtrl = TextEditingController();
 
   late final TabController _tabCtrl;
+
+  // Animations
+  late final AnimationController _shimmerCtrl;
+  late final AnimationController _orbCtrl;
 
   List<Map<String, dynamic>> _crystals = [];
   bool _isLoading = false;
@@ -43,6 +49,14 @@ class _CrystalLibraryScreenState extends State<CrystalLibraryScreen>
   void initState() {
     super.initState();
     _tabCtrl = TabController(length: 2, vsync: this);
+    _shimmerCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat();
+    _orbCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 3),
+    )..repeat(reverse: true);
     _loadUserData();
     _loadCrystals();
   }
@@ -50,6 +64,8 @@ class _CrystalLibraryScreenState extends State<CrystalLibraryScreen>
   @override
   void dispose() {
     _tabCtrl.dispose();
+    _shimmerCtrl.dispose();
+    _orbCtrl.dispose();
     _searchController.dispose();
     _mineralSearchCtrl.dispose();
     super.dispose();
