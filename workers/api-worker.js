@@ -947,8 +947,8 @@ export default {
           return errorResponse('Nachricht nicht gefunden', 404);
         }
         const existingMsg = checkData[0];
-        // Sicherheitscheck: Username muss übereinstimmen (oder isAdmin)
-        if (!isAdmin && username && existingMsg.username !== username) {
+        // Sicherheitscheck: Username muss übereinstimmen (oder isAdmin) — case-insensitive
+        if (!isAdmin && username && existingMsg.username?.toLowerCase() !== username.toLowerCase()) {
           return errorResponse('Keine Berechtigung zum Bearbeiten', 403);
         }
 
@@ -1013,7 +1013,7 @@ export default {
             return errorResponse('Nachricht nicht gefunden', 404);
           }
           const existingMsg = checkData[0];
-          if (username && existingMsg.username !== username) {
+          if (username && existingMsg.username?.toLowerCase() !== username.toLowerCase()) {
             return errorResponse('Keine Berechtigung zum Löschen', 403);
           }
         }

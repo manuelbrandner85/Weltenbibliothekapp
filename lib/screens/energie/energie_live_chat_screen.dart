@@ -358,7 +358,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
           _username = energieProfile!.username;
           _avatar = energieProfile.avatarEmoji ?? '🔮';
           _avatarUrl = energieProfile.avatarUrl;
-          _userId = supabase.auth.currentUser?.id ?? 'user_${energieProfile.username.toLowerCase()}';
+          _userId = supabase.auth.currentUser?.id ?? '';
         });
       }
       // Sync into user_data box so AdminStateNotifier can find it
@@ -2732,9 +2732,13 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
     // Server-Update im Hintergrund (fire-and-forget)
     final messageId = msg['id']?.toString() ?? msg['message_id']?.toString() ?? '';
     if (messageId.isNotEmpty) {
-      SupabaseChatService.instance.editMessage(
+      _api.editChatMessage(
+        roomId: _fullRoomId,
         messageId: messageId,
+        userId: _userId,
+        username: _username,
         newMessage: newContent,
+        realm: 'energie',
       ).then((_) {
         if (kDebugMode) debugPrint('✅ Energie Edit gespeichert');
       }).catchError((e) {
@@ -2981,9 +2985,13 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
       }
 
       try {
-        await SupabaseChatService.instance.editMessage(
+        await _api.editChatMessage(
+          roomId: _fullRoomId,
           messageId: msgId,
+          userId: _userId,
+          username: _username,
           newMessage: trimmed,
+          realm: 'energie',
         );
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -3013,7 +3021,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
       }
     }
   }
-  
+
   /// 🆕 DELETE MESSAGE
   Future<void> _deleteMessage(Map<String, dynamic> msg) async {
     final confirm = await showDialog<bool>(
@@ -3054,8 +3062,12 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
       }
 
       try {
-        await SupabaseChatService.instance.deleteMessage(
+        await _api.deleteChatMessage(
+          roomId: _fullRoomId,
           messageId: msgId,
+          userId: _userId,
+          username: _username,
+          realm: 'energie',
         );
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -3884,8 +3896,12 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
 
       // Server-Update im Hintergrund
       if (messageId.isNotEmpty) {
-        SupabaseChatService.instance.deleteMessage(
+        _api.deleteChatMessage(
+          roomId: _fullRoomId,
           messageId: messageId,
+          userId: _userId,
+          username: _username,
+          realm: 'energie',
           isAdmin: true,
         ).then((_) {
           if (kDebugMode) debugPrint('✅ Admin-Delete gespeichert');
@@ -3895,7 +3911,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
       }
     }
   }
-  
+
   /// 🔇 MUTE DIALOG: Temporarily or permanently mute user
   void _showMuteDialog(Map<String, dynamic> msg, bool isRootAdmin) {
     final reasonController = TextEditingController();
