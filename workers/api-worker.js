@@ -3963,20 +3963,118 @@ LIMIT 15`;
     if (path === '/api/factcheck/search' && method === 'GET') {
       const q = url.searchParams.get('q');
       if (!q) return errorResponse('q fehlt', 400);
-      if (!env.GOOGLE_FACTCHECK_API_KEY) {
-        // Fallback: leere Liste, Client zeigt Snopes/Politifact/Correctiv-Links
-        return jsonResponse({ claims: [], fallback: true });
+
+      // Verdict-Mapping: Englische Google-FactCheck-Verdicts → Deutsch
+      const verdictDE = v => {
+        if (!v) return v;
+        const map = {
+          'true': 'Wahr', 'mostly true': 'Größtenteils wahr',
+          'half true': 'Halb wahr', 'mixture': 'Teils wahr / teils falsch',
+          'mostly false': 'Größtenteils falsch', 'false': 'Falsch',
+          'pants on fire': 'Nachweislich falsch', 'misleading': 'Irreführend',
+          'unverified': 'Nicht verifiziert', 'unproven': 'Nicht bewiesen',
+          'disputed': 'Umstritten', 'satire': 'Satire',
+          'correct': 'Korrekt', 'incorrect': 'Falsch',
+          'accurate': 'Zutreffend', 'inaccurate': 'Unzutreffend',
+          'partially true': 'Teilweise wahr', 'partially false': 'Teilweise falsch',
+          'missing context': 'Kontext fehlt', 'outdated': 'Veraltet',
+          'no evidence': 'Kein Beleg', 'not credible': 'Nicht glaubwürdig',
+          'unsupported': 'Nicht belegt', 'exaggerated': 'Übertrieben',
+        };
+        const key = v.toLowerCase().trim();
+        return map[key] || v;
+      };
+
+      // Primär: Google FactCheck API (wenn Key vorhanden)
+      if (env.GOOGLE_FACTCHECK_API_KEY) {
+        try {
+          const r = await fetch(
+            `https://factchecktools.googleapis.com/v1alpha1/claims:search?query=${encodeURIComponent(q)}&pageSize=10&key=${env.GOOGLE_FACTCHECK_API_KEY}&languageCode=de`,
+            { signal: AbortSignal.timeout(12000) }
+          );
+          if (r.ok) {
+            const data = await r.json();
+            // Verdicts auf Deutsch übersetzen
+            const claims = (data.claims || []).map(c => ({
+              ...c,
+              claimReview: (c.claimReview || []).map(rv => ({
+                ...rv,
+                textualRating: verdictDE(rv.textualRating),
+              })),
+            }));
+            return jsonResponse({ claims });
+          }
+        } catch (_) {}
       }
+
+      // Fallback: Groq-basierte Faktenanalyse (kein Google-Key nötig)
+      if (env.GROQ_API_KEY) {
+        try {
+          const prompt = `Du bist ein Faktenprüfer. Analysiere die folgende Suchanfrage auf bekannte Falschinformationen und Fakten auf Deutsch.
+Suchanfrage: "${q}"
+
+Antworte NUR als gültiges JSON-Array mit bis zu 5 Einträgen im Format:
+[
+  {
+    "text": "Behauptung (kurz, konkret)",
+    "claimant": "Quelle/Urheber oder 'Verbreitet in sozialen Medien'",
+    "claimReview": [{"textualRating": "Wahr|Falsch|Irreführend|Umstritten|Teilweise wahr", "publisher": {"name": "KI-Analyse"}, "url": ""}]
+  }
+]
+Falls keine konkreten Behauptungen bekannt sind, gib 1 allgemeinen Eintrag zum Thema zurück.`;
+
+          const gr = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${env.GROQ_API_KEY}` },
+            body: JSON.stringify({
+              model: 'llama-3.3-70b-versatile',
+              messages: [{ role: 'user', content: prompt }],
+              max_tokens: 800,
+              temperature: 0.2,
+            }),
+            signal: AbortSignal.timeout(20000),
+          });
+          if (gr.ok) {
+            const gd = await gr.json();
+            const raw = gd?.choices?.[0]?.message?.content?.trim() || '[]';
+            const jsonStr = raw.replace(/^```json?\s*/i, '').replace(/\s*```$/, '');
+            const claims = JSON.parse(jsonStr);
+            if (Array.isArray(claims) && claims.length > 0) {
+              return jsonResponse({ claims, source: 'groq_analysis' });
+            }
+          }
+        } catch (_) {}
+      }
+
+      // Letzter Fallback: leere Liste → Client zeigt Directlinks
+      return jsonResponse({ claims: [], fallback: true });
+    }
+
+    // ── OpenAlex — akademische Paper mit Übersetzung (DE) ──
+    if (path === '/api/kaninchenbau/openalex' && method === 'GET') {
+      const topic = url.searchParams.get('topic');
+      const limit = parseInt(url.searchParams.get('limit') || '6', 10);
+      if (!topic) return errorResponse('topic fehlt', 400);
       try {
         const r = await fetch(
-          `https://factchecktools.googleapis.com/v1alpha1/claims:search?query=${encodeURIComponent(q)}&pageSize=10&key=${env.GOOGLE_FACTCHECK_API_KEY}&languageCode=de`,
-          { signal: AbortSignal.timeout(12000) }
+          `https://api.openalex.org/works?search=${encodeURIComponent(topic)}&per_page=${limit}&sort=cited_by_count:desc`,
+          { signal: AbortSignal.timeout(12000), headers: { 'User-Agent': 'WeltenbibliothekKaninchenbau/1.0 (mailto:dev@weltenbibliothek.app)' } }
         );
-        if (!r.ok) return jsonResponse({ claims: [], error: `Google ${r.status}` });
+        if (!r.ok) return jsonResponse({ results: [] });
         const data = await r.json();
-        return jsonResponse(data);
+        const raw = (data.results || []).slice(0, limit).map(m => ({
+          title: m.title || m.display_name || '',
+          doi: (m.doi || '').replace('https://doi.org/', ''),
+          authors: (m.authorships || []).slice(0, 4).map(a => a?.author?.display_name || '').filter(Boolean),
+          year: m.publication_year || null,
+          citations: m.cited_by_count || 0,
+          url: m.doi || m.id || '',
+          source: 'OpenAlex',
+        }));
+        const translated = await translateItems(raw, ['title']);
+        return jsonResponse({ topic, results: translated });
       } catch (e) {
-        return errorResponse(`FactCheck-Fehler: ${e.message}`);
+        return jsonResponse({ results: [], error: e.message });
       }
     }
 

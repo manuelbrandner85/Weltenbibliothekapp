@@ -28,13 +28,38 @@ class OsintApis {
   Future<List<AcademicPaper>> fetchOpenAlexPapers(String topic,
       {int limit = 6}) async {
     try {
-      final url = Uri.parse(
-          'https://api.openalex.org/works?search=${Uri.encodeComponent(topic)}&per_page=$limit&sort=cited_by_count:desc');
-      final resp = await http.get(url, headers: {
-        'User-Agent': 'WeltenbibliothekKaninchenbau/1.0 (mailto:dev@weltenbibliothek.app)',
-      }).timeout(const Duration(seconds: 12));
-      if (resp.statusCode != 200) return [];
-      final data = jsonDecode(resp.body) as Map<String, dynamic>;
+      // Über Worker-Proxy damit Titel auf Deutsch übersetzt werden
+      final resp = await http.get(
+        Uri.parse(
+            '${ApiConfig.workerUrl}/api/kaninchenbau/openalex?topic=${Uri.encodeComponent(topic)}&limit=$limit'),
+      ).timeout(const Duration(seconds: 18));
+      if (resp.statusCode == 200) {
+        final data = jsonDecode(resp.body) as Map<String, dynamic>;
+        final results = (data['results'] as List?) ?? const [];
+        return results.map((raw) {
+          final m = raw as Map<String, dynamic>;
+          return AcademicPaper(
+            title: (m['title'] ?? '').toString(),
+            doi: (m['doi'] ?? '').toString(),
+            authors: ((m['authors'] as List?) ?? const []).cast<String>(),
+            year: m['year'] as int?,
+            citations: (m['citations'] as int?) ?? 0,
+            url: (m['url'] ?? '').toString(),
+            source: 'OpenAlex',
+          );
+        }).toList();
+      }
+    } catch (_) {}
+
+    // Direkter Fallback wenn Worker nicht erreichbar
+    try {
+      final resp2 = await http.get(
+        Uri.parse(
+            'https://api.openalex.org/works?search=${Uri.encodeComponent(topic)}&per_page=$limit&sort=cited_by_count:desc'),
+        headers: {'User-Agent': 'WeltenbibliothekKaninchenbau/1.0 (mailto:dev@weltenbibliothek.app)'},
+      ).timeout(const Duration(seconds: 12));
+      if (resp2.statusCode != 200) return [];
+      final data = jsonDecode(resp2.body) as Map<String, dynamic>;
       final results = (data['results'] as List?) ?? const [];
       return results.map((raw) {
         final m = raw as Map<String, dynamic>;

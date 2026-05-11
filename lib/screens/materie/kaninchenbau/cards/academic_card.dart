@@ -44,7 +44,7 @@ class AcademicCard extends StatelessWidget {
               const Spacer(),
               if (papers.isNotEmpty)
                 Text(
-                  '${papers.length} Papers',
+                  '${papers.length} Publikationen',
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.4),
                     fontSize: 11,
@@ -89,7 +89,7 @@ class AcademicCard extends StatelessWidget {
   Widget _buildEmpty() => Padding(
         padding: const EdgeInsets.all(20),
         child: Text(
-          'Keine wissenschaftlichen Papers gefunden.',
+          'Keine wissenschaftlichen Publikationen gefunden.',
           style: TextStyle(color: Colors.white.withValues(alpha: 0.4)),
         ),
       );
