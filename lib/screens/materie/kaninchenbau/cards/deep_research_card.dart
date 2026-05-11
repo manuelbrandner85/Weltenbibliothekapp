@@ -373,7 +373,7 @@ class _DeepResearchCardState extends State<DeepResearchCard> {
 
   Widget _buildArxiv() {
     final items = (_data!['arxiv'] as List?) ?? [];
-    if (items.isEmpty) return _emptyBox('Keine arXiv-Papers gefunden.');
+    if (items.isEmpty) return _emptyBox('Keine arXiv-Publikationen gefunden.');
     return Column(
       children: items.map<Widget>((raw) {
         final m = raw as Map<String, dynamic>;
