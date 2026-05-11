@@ -90,8 +90,8 @@ class PlanetCalculator {
     return 'Abnehmend ☾';
   }
 
-  /// Planetare Aspekte: Winkel zwischen zwei Planeten
-  static List<_Aspect> getAspects(DateTime date) {
+  /// Planetare Aspekte: Winkel zwischen zwei Planeten (nur intern verwendet)
+  static List<_Aspect> _getAspects(DateTime date) {
     final planetNames = _planets.keys.toList();
     final aspects = <_Aspect>[];
     const aspectDefs = [
@@ -545,7 +545,7 @@ class _PlanetaryTransitScreenState extends State<PlanetaryTransitScreen>
   Widget _buildTransitEvents() {
     final moonPhase = PlanetCalculator.getMoonPhase(_today);
     final moonPhaseName = PlanetCalculator.getMoonPhaseName(moonPhase);
-    final aspects = PlanetCalculator.getAspects(_today);
+    final aspects = PlanetCalculator._getAspects(_today);
 
     // Retrograde Planeten
     final retrogrades = PlanetCalculator._planets.keys
@@ -701,7 +701,7 @@ class _PlanetaryTransitScreenState extends State<PlanetaryTransitScreen>
   }
 
   Widget _buildRetroCard(String planet) {
-    final color = _planetColors[planet]!;
+    final planetColor = _planetColors[planet]!;
     final emoji = _planetEmojis[planet]!;
     final degree = PlanetCalculator.getPlanetDegree(planet, _today);
     final sign = PlanetCalculator.getZodiacSign(degree);
@@ -712,8 +712,10 @@ class _PlanetaryTransitScreenState extends State<PlanetaryTransitScreen>
         color: _card,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: _retroRed.withValues(alpha: 0.4)),
-        boxShadow: [BoxShadow(color: _retroRed.withValues(alpha: 0.10),
-            blurRadius: 8)],
+        boxShadow: [
+          BoxShadow(color: _retroRed.withValues(alpha: 0.10), blurRadius: 8),
+          BoxShadow(color: planetColor.withValues(alpha: 0.06), blurRadius: 4),
+        ],
       ),
       child: Row(children: [
         Text(emoji, style: const TextStyle(fontSize: 24)),
@@ -726,16 +728,6 @@ class _PlanetaryTransitScreenState extends State<PlanetaryTransitScreen>
             Text('im $sign — Rückblick & Revision',
                 style: const TextStyle(color: Colors.white54, fontSize: 11)),
           ]),
-        ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: _retroRed.withValues(alpha: 0.18),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: _retroRed.withValues(alpha: 0.5)),
-          ),
-          child: Text(color.toString(), // unused — just style label
-              style: const TextStyle(fontSize: 0)),
         ),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

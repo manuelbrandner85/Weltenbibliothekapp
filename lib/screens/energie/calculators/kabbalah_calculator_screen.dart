@@ -141,7 +141,7 @@ class _KabbalahCalculatorScreenState extends State<KabbalahCalculatorScreen>
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeInOut,
           child: _selectedSephira != null
-              ? _buildSephiraDetail(_kSephiroth[_selectedSephira!])
+              ? _buildSephiraDetail(_kSephiroth[_selectedSephira!], _selectedSephira!)
               : Container(
                   padding: const EdgeInsets.all(16),
                   child: Text(
@@ -160,7 +160,7 @@ class _KabbalahCalculatorScreenState extends State<KabbalahCalculatorScreen>
     );
   }
 
-  Widget _buildSephiraDetail(Map<String, dynamic> s) {
+  Widget _buildSephiraDetail(Map<String, dynamic> s, int index) {
     final color = s['color'] as Color;
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
@@ -185,7 +185,7 @@ class _KabbalahCalculatorScreenState extends State<KabbalahCalculatorScreen>
                 ),
                 child: Center(
                   child: Text(
-                    '${_kSephiroth.indexOf(s) + 1}',
+                    '${index + 1}',
                     style: TextStyle(
                       color: color,
                       fontWeight: FontWeight.bold,

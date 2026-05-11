@@ -244,7 +244,7 @@ class _EnergieRechercheScreenState extends State<EnergieRechercheScreen>
     // Sanft nach unten scrollen
     await Future.delayed(const Duration(milliseconds: 400));
     if (_scrollCtrl.hasClients) {
-      _scrollCtrl.animateTo(
+      await _scrollCtrl.animateTo(
         _scrollCtrl.position.maxScrollExtent * 0.3,
         duration: const Duration(milliseconds: 600),
         curve: Curves.easeOutCubic,
@@ -291,7 +291,8 @@ class _EnergieRechercheScreenState extends State<EnergieRechercheScreen>
 
       if (searchResp.statusCode == 200) {
         final searchData = json.decode(searchResp.body) as Map<String, dynamic>;
-        final hits = (searchData['query']?['search'] as List<dynamic>?) ?? [];
+        final queryNode = searchData['query'] as Map<String, dynamic>?;
+        final hits = (queryNode?['search'] as List<dynamic>?) ?? [];
 
         final results = <_WikiResult>[];
         for (final hit in hits.take(3)) {
@@ -305,7 +306,9 @@ class _EnergieRechercheScreenState extends State<EnergieRechercheScreen>
             if (summaryResp.statusCode == 200) {
               final s = json.decode(summaryResp.body) as Map<String, dynamic>;
               final extract = (s['extract'] as String?) ?? '';
-              final url = (s['content_urls']?['desktop']?['page'] as String?) ?? '';
+              final contentUrls = s['content_urls'] as Map<String, dynamic>?;
+              final desktop = contentUrls?['desktop'] as Map<String, dynamic>?;
+              final url = (desktop?['page'] as String?) ?? '';
               if (extract.isNotEmpty) {
                 results.add(_WikiResult(
                   title: title,
@@ -333,7 +336,8 @@ class _EnergieRechercheScreenState extends State<EnergieRechercheScreen>
 
       if (resp.statusCode == 200) {
         final data = json.decode(resp.body) as Map<String, dynamic>;
-        final ids = ((data['esearchresult']?['idlist']) as List<dynamic>?)
+        final esearchResult = data['esearchresult'] as Map<String, dynamic>?;
+        final ids = (esearchResult?['idlist'] as List<dynamic>?)
                 ?.cast<String>() ??
             [];
 

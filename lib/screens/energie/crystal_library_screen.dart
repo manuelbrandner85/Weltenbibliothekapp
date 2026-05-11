@@ -173,61 +173,177 @@ class _CrystalLibraryScreenState extends State<CrystalLibraryScreen>
   void _showCrystalDetails(Map<String, dynamic> crystal) {
     showDialog(
       context: context,
-      builder: (context) => _CrystalDetailsDialog(crystal: crystal),
+      barrierColor: Colors.black.withValues(alpha: 0.6),
+      builder: (context) => BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+        child: _CrystalDetailsDialog(crystal: crystal),
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0F),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF1A1A2E),
-        title: const Text('💠 Kristall-Bibliothek'),
-        actions: [
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.sort, color: Colors.white70),
-            onSelected: (value) {
-              setState(() => _sortBy = value);
-              _loadCrystals();
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(value: 'likes', child: Text('🔥 Beliebteste')),
-              const PopupMenuItem(value: 'recent', child: Text('🕐 Neueste')),
-              const PopupMenuItem(value: 'name', child: Text('🔤 Name')),
+      backgroundColor: const Color(0xFF06040F),
+      body: NestedScrollView(
+        headerSliverBuilder: (context, innerBoxIsScrolled) => [
+          SliverAppBar(
+            backgroundColor: const Color(0xFF06040F),
+            expandedHeight: 180,
+            pinned: true,
+            actions: [
+              PopupMenuButton<String>(
+                icon: const Icon(Icons.sort, color: Colors.white70),
+                color: const Color(0xFF1A1A2E),
+                onSelected: (value) {
+                  setState(() => _sortBy = value);
+                  _loadCrystals();
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'likes',
+                    child: Text('Beliebteste', style: TextStyle(color: Colors.white)),
+                  ),
+                  const PopupMenuItem(
+                    value: 'recent',
+                    child: Text('Neueste', style: TextStyle(color: Colors.white)),
+                  ),
+                  const PopupMenuItem(
+                    value: 'name',
+                    child: Text('Name A-Z', style: TextStyle(color: Colors.white)),
+                  ),
+                ],
+              ),
+              IconButton(
+                icon: const Icon(Icons.refresh, color: Colors.white70),
+                onPressed: () => _loadCrystals(),
+              ),
             ],
-          ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () => _loadCrystals(),
+            flexibleSpace: FlexibleSpaceBar(
+              background: _buildAnimatedCrystalHeader(),
+            ),
+            bottom: TabBar(
+              controller: _tabCtrl,
+              indicatorColor: Colors.purple,
+              labelColor: Colors.purpleAccent,
+              unselectedLabelColor: Colors.white38,
+              tabs: [
+                Tab(text: 'Community (${_crystals.length})'),
+                Tab(text: 'Mineralien (${_kMinerals.length})'),
+              ],
+            ),
           ),
         ],
-        bottom: TabBar(
+        body: TabBarView(
           controller: _tabCtrl,
-          indicatorColor: Colors.purple,
-          labelColor: Colors.purple,
-          unselectedLabelColor: Colors.white54,
-          tabs: [
-            Tab(text: 'Community (${_crystals.length})'),
-            Tab(text: '🌍 Mineralien (${_kMinerals.length})'),
+          children: [
+            _buildCommunityTab(),
+            _buildMineralienTab(),
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabCtrl,
-        children: [
-          _buildCommunityTab(),
-          _buildMineralienTab(),
-        ],
+      floatingActionButton: AnimatedBuilder(
+        animation: _tabCtrl,
+        builder: (context, child) => _tabCtrl.index == 0
+            ? FloatingActionButton.extended(
+                onPressed: _showAddCrystalDialog,
+                backgroundColor: const Color(0xFF9C27B0),
+                icon: const Icon(Icons.add),
+                label: const Text('Kristall hinzufügen'),
+              )
+            : const SizedBox.shrink(),
       ),
-      floatingActionButton: _tabCtrl.index == 0
-          ? FloatingActionButton.extended(
-              onPressed: _showAddCrystalDialog,
-              backgroundColor: const Color(0xFF9C27B0),
-              icon: const Icon(Icons.add),
-              label: const Text('Kristall hinzufügen'),
-            )
-          : null,
+    );
+  }
+
+  // ── Animierter Kristall-Orb Header ───────────────────────────────────────
+
+  Widget _buildAnimatedCrystalHeader() {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFF1A0A2E), Color(0xFF06040F)],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+      ),
+      child: AnimatedBuilder(
+        animation: _orbCtrl,
+        builder: (context, child) {
+          final scale = 0.85 + _orbCtrl.value * 0.15;
+          final glowAlpha = 0.3 + _orbCtrl.value * 0.35;
+          return Stack(
+            alignment: Alignment.center,
+            children: [
+              // Outer glow
+              Transform.scale(
+                scale: scale + 0.2,
+                child: Container(
+                  width: 100,
+                  height: 100,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        const Color(0xFF9C27B0).withValues(alpha: glowAlpha),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              // Crystal diamond shape
+              Transform.scale(
+                scale: scale,
+                child: Transform.rotate(
+                  angle: _orbCtrl.value * math.pi * 0.1,
+                  child: Container(
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          const Color(0xFFCE93D8).withValues(alpha: 0.9),
+                          const Color(0xFF7C4DFF).withValues(alpha: 0.8),
+                          const Color(0xFF00BCD4).withValues(alpha: 0.7),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(6),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF9C27B0)
+                              .withValues(alpha: glowAlpha),
+                          blurRadius: 20,
+                          spreadRadius: 4,
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.diamond,
+                      color: Colors.white,
+                      size: 36,
+                    ),
+                  ),
+                ),
+              ),
+              // Title below orb
+              Positioned(
+                bottom: 48,
+                child: Text(
+                  'KRISTALL-BIBLIOTHEK',
+                  style: TextStyle(
+                    fontSize: 11,
+                    letterSpacing: 4,
+                    color: Colors.white.withValues(alpha: 0.5),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 
@@ -278,7 +394,7 @@ class _CrystalLibraryScreenState extends State<CrystalLibraryScreen>
           // Content
           Expanded(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
+                ? _buildShimmerLoading()
                 : _errorMessage != null
                     ? Center(
                         child: Column(
@@ -329,6 +445,37 @@ class _CrystalLibraryScreenState extends State<CrystalLibraryScreen>
           ),
         ],
       );
+  }
+
+  // ── Shimmer Skeleton Loading ──────────────────────────────────────────────
+
+  Widget _buildShimmerLoading() {
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: 5,
+      itemBuilder: (context, index) => AnimatedBuilder(
+        animation: _shimmerCtrl,
+        builder: (context, child) {
+          final shimmerPos = _shimmerCtrl.value;
+          return Container(
+            margin: const EdgeInsets.only(bottom: 16),
+            height: 120,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              gradient: LinearGradient(
+                begin: Alignment(-1.0 + shimmerPos * 2, 0),
+                end: Alignment(0.0 + shimmerPos * 2, 0),
+                colors: [
+                  Colors.white.withValues(alpha: 0.04),
+                  Colors.white.withValues(alpha: 0.10),
+                  Colors.white.withValues(alpha: 0.04),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
   }
 
   // ── Mineralien-Tab ────────────────────────────────────────────────────────
@@ -477,17 +624,18 @@ class _CrystalLibraryScreenState extends State<CrystalLibraryScreen>
     final uses = crystal['uses'] ?? '';
     final likes = crystal['likes'] ?? 0;
     final username = crystal['username'] ?? 'Anonym';
-    
+
     // Parse properties JSON
     List<String> properties = [];
     try {
       final propsJson = crystal['properties'];
       if (propsJson is String) {
         final decoded = List<String>.from(
-          (propsJson.isNotEmpty ? (propsJson.startsWith('[') 
-            ? (jsonDecode(propsJson) as List) 
-            : [propsJson]) 
-          : [])
+          (propsJson.isNotEmpty
+              ? (propsJson.startsWith('[')
+                  ? (jsonDecode(propsJson) as List)
+                  : [propsJson])
+              : []),
         );
         properties = decoded;
       } else if (propsJson is List) {
@@ -498,141 +646,169 @@ class _CrystalLibraryScreenState extends State<CrystalLibraryScreen>
         debugPrint('❌ Error parsing properties: $e');
       }
     }
-    
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      color: const Color(0xFF1A1A2E),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: InkWell(
-        onTap: () => _showCrystalDetails(crystal),
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              Row(
-                children: [
-                  // Kristall-Icon
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF9C27B0), Color(0xFF673AB7)],
-                      ),
-                    ),
-                    child: const Icon(Icons.diamond, color: Colors.white),
-                  ),
-                  const SizedBox(width: 12),
-                  // Name & Type
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          name,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        if (type.isNotEmpty)
-                          Text(
-                            type,
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.6),
-                              fontSize: 14,
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                  // Likes
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.purple.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.favorite, size: 16, color: Colors.purple),
-                        const SizedBox(width: 4),
-                        Text(
-                          likes.toString(),
-                          style: const TextStyle(color: Colors.white),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              
-              // Properties
-              if (properties.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: properties.take(5).map((prop) {
-                    return Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.purple.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.purple.withValues(alpha: 0.3)),
-                      ),
-                      child: Text(
-                        prop,
-                        style: const TextStyle(color: Colors.purple, fontSize: 12),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ],
-              
-              // Uses
-              if (uses.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                Text(
-                  uses,
-                  style: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-              
-              // Footer
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  const Icon(Icons.person, size: 16, color: Colors.white38),
-                  const SizedBox(width: 4),
-                  Text(
-                    username,
-                    style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 12),
-                  ),
-                  const Spacer(),
-                  TextButton.icon(
-                    onPressed: () => _showCrystalDetails(crystal),
-                    icon: const Icon(Icons.info_outline, size: 16),
-                    label: const Text('Details'),
-                    style: TextButton.styleFrom(
-                      foregroundColor: Colors.purple,
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+
+    return AnimatedBuilder(
+      animation: _shimmerCtrl,
+      builder: (context, child) {
+        // Animierter Purpur→Weiß Border-Shift
+        final borderColor = Color.lerp(
+          Colors.purple.withValues(alpha: 0.5),
+          Colors.white.withValues(alpha: 0.2),
+          _shimmerCtrl.value,
+        )!;
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.06),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: borderColor, width: 1.0),
           ),
-        ),
-      ),
+          child: InkWell(
+            onTap: () => _showCrystalDetails(crystal),
+            borderRadius: BorderRadius.circular(16),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header
+                  Row(
+                    children: [
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF9C27B0), Color(0xFF673AB7)],
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF9C27B0)
+                                  .withValues(alpha: 0.3 + _shimmerCtrl.value * 0.2),
+                              blurRadius: 10,
+                              spreadRadius: 1,
+                            ),
+                          ],
+                        ),
+                        child: const Icon(Icons.diamond, color: Colors.white),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              name,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 17,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            if (type.isNotEmpty)
+                              Text(
+                                type,
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.55),
+                                  fontSize: 13,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.purple.withValues(alpha: 0.18),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.favorite,
+                                size: 16, color: Colors.purple),
+                            const SizedBox(width: 4),
+                            Text(
+                              likes.toString(),
+                              style: const TextStyle(color: Colors.white),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  // Properties
+                  if (properties.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: properties.take(5).map((prop) {
+                        return Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: Colors.purple.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                                color: Colors.purple.withValues(alpha: 0.3)),
+                          ),
+                          child: Text(
+                            prop,
+                            style: const TextStyle(
+                                color: Colors.purple, fontSize: 11),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ],
+
+                  // Uses
+                  if (uses.isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    Text(
+                      uses,
+                      style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.65)),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+
+                  // Footer
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      const Icon(Icons.person, size: 14, color: Colors.white38),
+                      const SizedBox(width: 4),
+                      Text(
+                        username,
+                        style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.45),
+                            fontSize: 11),
+                      ),
+                      const Spacer(),
+                      TextButton.icon(
+                        onPressed: () => _showCrystalDetails(crystal),
+                        icon: const Icon(Icons.info_outline, size: 14),
+                        label: const Text('Details'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.purple,
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
