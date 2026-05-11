@@ -16,10 +16,14 @@ class GematriaCalculatorScreen extends StatefulWidget {
   State<GematriaCalculatorScreen> createState() => _GematriaCalculatorScreenState();
 }
 
-class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> with SingleTickerProviderStateMixin {
+class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> with TickerProviderStateMixin {
   late TabController _tabController;
   EnergieProfile? _profile;
   bool _isLoading = true;
+
+  // Cinema background
+  late AnimationController _bgCtrl;
+  late AnimationController _pulseCtrl;
 
   // Gematria Berechnungen
   int _hebrewFullName = 0;
@@ -55,10 +59,14 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
     super.initState();
     _tabController = TabController(length: 14, vsync: this); // 5 Original + 9 Neue Features
     _loadProfile();
+    _bgCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 8))..repeat(reverse: true);
+    _pulseCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 3))..repeat(reverse: true);
   }
 
   @override
   void dispose() {
+    _bgCtrl.dispose();
+    _pulseCtrl.dispose();
     _tabController.dispose();
     // Controllers disposed in their respective sections
     _journalController.dispose();
@@ -115,11 +123,24 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
 
   @override
   Widget build(BuildContext context) {
+    const Color primaryColor = Color(0xFF4CAF50);
+    const Color secondaryColor = Color(0xFFFFD700);
+
     return Scaffold(
+      backgroundColor: const Color(0xFF06040F),
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [primaryColor.withValues(alpha: 0.8), const Color(0xFF06040F)],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+          ),
+        ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
@@ -134,13 +155,28 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
           ),
         ),
       ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFF4A148C), Color(0xFF1A1A2E)],
-          ),
+      body: AnimatedBuilder(
+        animation: _bgCtrl,
+        builder: (context, child) => Stack(
+          children: [
+            Positioned.fill(child: Container(color: const Color(0xFF06040F))),
+            Positioned(
+              top: -80 + _bgCtrl.value * 50,
+              right: -60,
+              child: _CineOrb(color: primaryColor, size: 300, opacity: 0.10 + _bgCtrl.value * 0.05),
+            ),
+            Positioned(
+              bottom: -100 + _bgCtrl.value * 40,
+              left: -60,
+              child: _CineOrb(color: secondaryColor, size: 250, opacity: 0.08),
+            ),
+            Positioned(
+              top: MediaQuery.of(context).size.height * 0.5,
+              left: MediaQuery.of(context).size.width * 0.3,
+              child: _CineOrb(color: primaryColor, size: 180, opacity: 0.05 + _bgCtrl.value * 0.04),
+            ),
+            child!,
+          ],
         ),
         child: SafeArea(
           child: _isLoading
@@ -165,7 +201,7 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
                               _buildPresentTab(),
                               _buildFutureTab(),
                               _buildLifePhasesTab(),
-                              
+
                               // 🆕 NEUE 9 FEATURES
                               _buildInteractiveCalculatorTab(),
                               _buildCompatibilityTab(),
@@ -3524,4 +3560,22 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
       ],
     );
   }
+}
+
+class _CineOrb extends StatelessWidget {
+  final Color color;
+  final double size;
+  final double opacity;
+  const _CineOrb({required this.color, required this.size, required this.opacity});
+  @override
+  Widget build(BuildContext context) => Container(
+    width: size, height: size,
+    decoration: BoxDecoration(
+      shape: BoxShape.circle,
+      gradient: RadialGradient(colors: [
+        color.withValues(alpha: opacity),
+        color.withValues(alpha: 0),
+      ]),
+    ),
+  );
 }
