@@ -10,10 +10,13 @@ import '../../../services/human_design_service.dart';
 //   Tab 2: Lexikon   (Types, Authorities, Centers, 64 Gates)
 // ─────────────────────────────────────────────────────────────────────────────
 
-const _kTeal = Color(0xFF26C6DA);
-const _kDarkBg = Color(0xFF0A0A0F);
-const _kCardBg = Color(0xFF1A1A2E);
-const _kBorder = Color(0xFF2A2A4E);
+const _kPrimary   = Color(0xFF00BCD4); // Türkis
+const _kSecondary = Color(0xFF7C4DFF); // Lila
+// Legacy alias:
+const _kTeal   = _kPrimary;
+const _kDarkBg = Color(0xFF06040F);
+const _kCardBg = Color(0xFF080D14);
+const _kBorder = Color(0xFF0E2030);
 
 final _db = Supabase.instance.client;
 
@@ -25,17 +28,23 @@ class HumanDesignToolScreen extends StatefulWidget {
 }
 
 class _HumanDesignToolScreenState extends State<HumanDesignToolScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late final TabController _tabs;
+  late AnimationController _bgCtrl;
 
   @override
   void initState() {
     super.initState();
     _tabs = TabController(length: 3, vsync: this);
+    _bgCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 8),
+    )..repeat(reverse: true);
   }
 
   @override
   void dispose() {
+    _bgCtrl.dispose();
     _tabs.dispose();
     super.dispose();
   }
@@ -45,15 +54,24 @@ class _HumanDesignToolScreenState extends State<HumanDesignToolScreen>
     return Scaffold(
       backgroundColor: _kDarkBg,
       appBar: AppBar(
-        backgroundColor: _kCardBg,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF006064), Color(0xFF311B92)],
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+            ),
+          ),
+        ),
+        backgroundColor: Colors.transparent,
         title: const Text('🌀 Human Design',
             style:
                 TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         iconTheme: const IconThemeData(color: Colors.white),
         bottom: TabBar(
           controller: _tabs,
-          indicatorColor: _kTeal,
-          labelColor: _kTeal,
+          indicatorColor: _kPrimary,
+          labelColor: _kPrimary,
           unselectedLabelColor: Colors.white54,
           tabs: const [
             Tab(icon: Icon(Icons.auto_awesome), text: 'Neu'),
@@ -62,13 +80,49 @@ class _HumanDesignToolScreenState extends State<HumanDesignToolScreen>
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabs,
-        children: const [
-          _NewHdTab(),
-          _HdHistoryTab(),
-          _HdLexiconTab(),
-        ],
+      body: AnimatedBuilder(
+        animation: _bgCtrl,
+        builder: (context, child) => Stack(
+          children: [
+            Positioned.fill(child: Container(color: _kDarkBg)),
+            Positioned(
+              top: -80 + _bgCtrl.value * 50,
+              right: -60,
+              child: _CineOrb(
+                color: _kPrimary,
+                size: 280,
+                opacity: 0.10 + _bgCtrl.value * 0.05,
+              ),
+            ),
+            Positioned(
+              bottom: -80,
+              left: -60 + _bgCtrl.value * 30,
+              child: const _CineOrb(
+                color: _kSecondary,
+                size: 240,
+                opacity: 0.08,
+              ),
+            ),
+            Positioned(
+              top: 300 + _bgCtrl.value * 40,
+              left: 60,
+              child: _CineOrb(
+                color: _kPrimary,
+                size: 160,
+                opacity: 0.04 + _bgCtrl.value * 0.03,
+              ),
+            ),
+            child!,
+          ],
+        ),
+        child: TabBarView(
+          controller: _tabs,
+          children: const [
+            _NewHdTab(),
+            _HdHistoryTab(),
+            _HdLexiconTab(),
+          ],
+        ),
       ),
     );
   }
@@ -351,16 +405,30 @@ class _HdResultCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: _kCardBg,
+        gradient: LinearGradient(
+          colors: [
+            _kPrimary.withValues(alpha: 0.15),
+            _kSecondary.withValues(alpha: 0.08),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: _kBorder),
+        border: Border.all(color: _kPrimary.withValues(alpha: 0.4)),
+        boxShadow: [
+          BoxShadow(
+            color: _kPrimary.withValues(alpha: 0.18),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text('Dein Human-Design',
               style: TextStyle(
-                  color: _kTeal,
+                  color: _kPrimary,
                   fontWeight: FontWeight.bold,
                   fontSize: 18)),
           const SizedBox(height: 12),
@@ -1105,4 +1173,32 @@ class _HdLexiconCard extends StatelessWidget {
       ),
     );
   }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Cinema Orb – ambient background glow element
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _CineOrb extends StatelessWidget {
+  final Color color;
+  final double size;
+  final double opacity;
+  const _CineOrb({
+    required this.color,
+    required this.size,
+    required this.opacity,
+  });
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: RadialGradient(colors: [
+            color.withValues(alpha: opacity),
+            color.withValues(alpha: 0),
+          ]),
+        ),
+      );
 }

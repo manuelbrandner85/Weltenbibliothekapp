@@ -20,21 +20,26 @@ class DreamInterpretationToolScreen extends StatefulWidget {
 
 class _DreamInterpretationToolScreenState
     extends State<DreamInterpretationToolScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late final TabController _tabs;
+  late AnimationController _bgCtrl;
 
   static const _purple = Color(0xFF7C4DFF);
-  static const _darkBg = Color(0xFF0A0A0F);
-  static const _cardBg = Color(0xFF1A1A2E);
+  static const _teal = Color(0xFF26C6DA);
 
   @override
   void initState() {
     super.initState();
     _tabs = TabController(length: 4, vsync: this);
+    _bgCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 8),
+    )..repeat(reverse: true);
   }
 
   @override
   void dispose() {
+    _bgCtrl.dispose();
     _tabs.dispose();
     super.dispose();
   }
@@ -42,9 +47,9 @@ class _DreamInterpretationToolScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _darkBg,
+      backgroundColor: const Color(0xFF06040F),
       appBar: AppBar(
-        backgroundColor: _cardBg,
+        backgroundColor: Colors.white.withValues(alpha: 0.05),
         title: const Text('💭 Traumdeutung',
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         iconTheme: const IconThemeData(color: Colors.white),
@@ -61,14 +66,44 @@ class _DreamInterpretationToolScreenState
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabs,
-        children: const [
-          _NewDreamTab(),
-          _LexiconTab(),
-          _JournalTab(),
-          _PatternsTab(),
-        ],
+      body: AnimatedBuilder(
+        animation: _bgCtrl,
+        builder: (context, child) => Stack(
+          children: [
+            Positioned.fill(child: Container(color: const Color(0xFF06040F))),
+            Positioned(
+              top: -80 + _bgCtrl.value * 50,
+              right: -60,
+              child: _CineOrb(
+                  color: _purple,
+                  size: 280,
+                  opacity: 0.10 + _bgCtrl.value * 0.05),
+            ),
+            Positioned(
+              bottom: -80,
+              left: -60 + _bgCtrl.value * 30,
+              child: _CineOrb(color: _teal, size: 240, opacity: 0.08),
+            ),
+            Positioned(
+              top: MediaQuery.of(context).size.height * 0.45,
+              left: MediaQuery.of(context).size.width * 0.2,
+              child: _CineOrb(
+                  color: _purple,
+                  size: 160,
+                  opacity: 0.04 + _bgCtrl.value * 0.03),
+            ),
+            child!,
+          ],
+        ),
+        child: TabBarView(
+          controller: _tabs,
+          children: const [
+            _NewDreamTab(),
+            _LexiconTab(),
+            _JournalTab(),
+            _PatternsTab(),
+          ],
+        ),
       ),
     );
   }
@@ -79,8 +114,7 @@ class _DreamInterpretationToolScreenState
 // ─────────────────────────────────────────────────────────────────────────────
 
 const _kPurple = Color(0xFF7C4DFF);
-const _kCardBg = Color(0xFF1A1A2E);
-const _kBorder = Color(0xFF2A2A4E);
+const _kTeal = Color(0xFF26C6DA);
 
 final _db = Supabase.instance.client;
 
@@ -146,7 +180,8 @@ class _NewDreamTabState extends State<_NewDreamTab> {
     try {
       await _db.from('dream_journal_v2').insert({
         'user_id': uid,
-        'title': _titleCtrl.text.trim().isEmpty ? null : _titleCtrl.text.trim(),
+        'title':
+            _titleCtrl.text.trim().isEmpty ? null : _titleCtrl.text.trim(),
         'description': _descCtrl.text.trim(),
         'symbol_tags': _detectedTags,
         'mood': _mood,
@@ -198,15 +233,26 @@ class _NewDreamTabState extends State<_NewDreamTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
+          // Header – Glassmorphism card with Lila-Teal glow border
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF1A1A3E), Color(0xFF0D0D2B)],
+              gradient: LinearGradient(
+                colors: [
+                  _kPurple.withValues(alpha: 0.15),
+                  _kTeal.withValues(alpha: 0.07),
+                  const Color(0xFF06040F),
+                ],
               ),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: _kBorder),
+              border: Border.all(
+                  color: _kPurple.withValues(alpha: 0.4)),
+              boxShadow: [
+                BoxShadow(
+                    color: _kPurple.withValues(alpha: 0.15),
+                    blurRadius: 20,
+                    spreadRadius: 2),
+              ],
             ),
             child: const Row(
               children: [
@@ -222,8 +268,10 @@ class _NewDreamTabState extends State<_NewDreamTab> {
                               fontSize: 18,
                               fontWeight: FontWeight.bold)),
                       SizedBox(height: 4),
-                      Text('Beschreibe deinen Traum – Symbole werden automatisch erkannt.',
-                          style: TextStyle(color: Colors.white54, fontSize: 12)),
+                      Text(
+                          'Beschreibe deinen Traum – Symbole werden automatisch erkannt.',
+                          style: TextStyle(
+                              color: Colors.white54, fontSize: 12)),
                     ],
                   ),
                 ),
@@ -240,7 +288,7 @@ class _NewDreamTabState extends State<_NewDreamTab> {
           ),
           const SizedBox(height: 12),
 
-          // Beschreibung
+          // Beschreibung – Dark TextField mit Lila-Border
           TextField(
             controller: _descCtrl,
             style: const TextStyle(color: Colors.white),
@@ -267,20 +315,25 @@ class _NewDreamTabState extends State<_NewDreamTab> {
               return GestureDetector(
                 onTap: () => setState(() => _mood = m.$1),
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
-                    color: selected ? _kPurple : _kCardBg,
+                    color: selected
+                        ? _kPurple.withValues(alpha: 0.3)
+                        : Colors.white.withValues(alpha: 0.06),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                        color: selected ? _kPurple : _kBorder),
+                        color: selected
+                            ? _kPurple.withValues(alpha: 0.8)
+                            : Colors.white.withValues(alpha: 0.2)),
                   ),
                   child: Row(mainAxisSize: MainAxisSize.min, children: [
                     Text(m.$2, style: const TextStyle(fontSize: 16)),
                     const SizedBox(width: 4),
                     Text(m.$3,
                         style: TextStyle(
-                            color: selected ? Colors.white : Colors.white54,
+                            color:
+                                selected ? Colors.white : Colors.white54,
                             fontSize: 12)),
                   ]),
                 ),
@@ -289,12 +342,13 @@ class _NewDreamTabState extends State<_NewDreamTab> {
           ),
           const SizedBox(height: 12),
 
-          // Toggles
+          // Toggles – Glassmorphism container
           Container(
             decoration: BoxDecoration(
-              color: _kCardBg,
+              color: Colors.white.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: _kBorder),
+              border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.12)),
             ),
             child: Column(
               children: [
@@ -302,17 +356,21 @@ class _NewDreamTabState extends State<_NewDreamTab> {
                   title: const Text('Luzider Traum',
                       style: TextStyle(color: Colors.white)),
                   subtitle: const Text('Du wusstest, dass du träumst',
-                      style: TextStyle(color: Colors.white54, fontSize: 12)),
+                      style:
+                          TextStyle(color: Colors.white54, fontSize: 12)),
                   value: _lucid,
                   activeThumbColor: _kPurple,
                   onChanged: (v) => setState(() => _lucid = v),
                 ),
-                Divider(color: _kBorder, height: 1),
+                Divider(
+                    color: Colors.white.withValues(alpha: 0.1), height: 1),
                 SwitchListTile(
                   title: const Text('Wiederkehrender Traum',
                       style: TextStyle(color: Colors.white)),
-                  subtitle: const Text('Dieser Traum kehrt regelmäßig wieder',
-                      style: TextStyle(color: Colors.white54, fontSize: 12)),
+                  subtitle: const Text(
+                      'Dieser Traum kehrt regelmäßig wieder',
+                      style:
+                          TextStyle(color: Colors.white54, fontSize: 12)),
                   value: _recurring,
                   activeThumbColor: _kPurple,
                   onChanged: (v) => setState(() => _recurring = v),
@@ -322,7 +380,7 @@ class _NewDreamTabState extends State<_NewDreamTab> {
           ),
           const SizedBox(height: 16),
 
-          // Erkannte Symbole mit Kurzinterpretation
+          // Erkannte Symbole – Glassmorphic Dream-Symbol-Karten
           if (_detectedTags.isNotEmpty) ...[
             const Text('Erkannte Symbole',
                 style: TextStyle(
@@ -336,12 +394,18 @@ class _NewDreamTabState extends State<_NewDreamTab> {
               final preview = (meanings['jungian'] ??
                       meanings['spiritual'] ??
                       '') as String;
-              return Card(
-                color: const Color(0xFF1E1E3E),
+              return Container(
                 margin: const EdgeInsets.only(bottom: 8),
-                shape: RoundedRectangleBorder(
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.06),
                   borderRadius: BorderRadius.circular(10),
-                  side: const BorderSide(color: _kBorder),
+                  border: Border.all(
+                      color: _kTeal.withValues(alpha: 0.35)),
+                  boxShadow: [
+                    BoxShadow(
+                        color: _kPurple.withValues(alpha: 0.08),
+                        blurRadius: 8),
+                  ],
                 ),
                 child: ListTile(
                   leading: Text(sym['emoji'] as String? ?? '🔮',
@@ -361,8 +425,8 @@ class _NewDreamTabState extends State<_NewDreamTab> {
                       : null,
                   trailing: const Icon(Icons.info_outline,
                       color: Colors.white38, size: 18),
-                  onTap: () => _SymbolListTile(symbol: sym)
-                      .showDetailFrom(context),
+                  onTap: () =>
+                      _SymbolListTile(symbol: sym).showDetailFrom(context),
                 ),
               );
             }),
@@ -405,13 +469,15 @@ class _NewDreamTabState extends State<_NewDreamTab> {
       helperStyle: const TextStyle(color: Colors.white38, fontSize: 11),
       prefixIcon: Icon(icon, color: Colors.white38),
       filled: true,
-      fillColor: _kCardBg,
+      fillColor: Colors.white.withValues(alpha: 0.06),
       border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: _kBorder)),
+          borderSide:
+              BorderSide(color: Colors.white.withValues(alpha: 0.2))),
       enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: _kBorder)),
+          borderSide:
+              BorderSide(color: Colors.white.withValues(alpha: 0.2))),
       focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: _kPurple)),
@@ -485,7 +551,7 @@ class _LexiconTabState extends State<_LexiconTab> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // Search + filter bar
+        // Search bar
         Padding(
           padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
           child: TextField(
@@ -500,7 +566,7 @@ class _LexiconTabState extends State<_LexiconTab> {
               prefixIcon:
                   const Icon(Icons.search, color: Colors.white38),
               filled: true,
-              fillColor: _kCardBg,
+              fillColor: Colors.white.withValues(alpha: 0.07),
               border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none),
@@ -525,8 +591,13 @@ class _LexiconTabState extends State<_LexiconTab> {
                           color: sel ? Colors.white : Colors.white54,
                           fontSize: 12)),
                   selected: sel,
-                  selectedColor: _kPurple,
-                  backgroundColor: _kCardBg,
+                  selectedColor: _kPurple.withValues(alpha: 0.35),
+                  backgroundColor:
+                      Colors.white.withValues(alpha: 0.06),
+                  side: BorderSide(
+                      color: sel
+                          ? _kPurple.withValues(alpha: 0.7)
+                          : Colors.white.withValues(alpha: 0.2)),
                   onSelected: (_) => setState(() {
                     _selectedCategory = cat.$1;
                     _applyFilter();
@@ -545,7 +616,8 @@ class _LexiconTabState extends State<_LexiconTab> {
                       child: Text('Keine Symbole gefunden',
                           style: TextStyle(color: Colors.white38)))
                   : ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 12),
                       itemCount: _filtered.length,
                       itemBuilder: (_, i) =>
                           _SymbolListTile(symbol: _filtered[i]),
@@ -562,12 +634,13 @@ class _SymbolListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      color: _kCardBg,
+    return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-          side: const BorderSide(color: _kBorder)),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _kTeal.withValues(alpha: 0.25)),
+      ),
       child: ListTile(
         leading: Text(symbol['emoji'] ?? '🔮',
             style: const TextStyle(fontSize: 28)),
@@ -576,7 +649,8 @@ class _SymbolListTile extends StatelessWidget {
                 color: Colors.white, fontWeight: FontWeight.w600)),
         subtitle: Text(symbol['category'] ?? '',
             style: const TextStyle(color: Colors.white38, fontSize: 12)),
-        trailing: const Icon(Icons.chevron_right, color: Colors.white38),
+        trailing:
+            const Icon(Icons.chevron_right, color: Colors.white38),
         onTap: () => showDetailFrom(context),
       ),
     );
@@ -597,64 +671,77 @@ class _SymbolListTile extends StatelessWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: _kCardBg,
+      backgroundColor: Colors.transparent,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (_) => DraggableScrollableSheet(
-        initialChildSize: 0.7,
-        maxChildSize: 0.95,
-        minChildSize: 0.4,
-        expand: false,
-        builder: (_, sc) => ListView(
-          controller: sc,
-          padding: const EdgeInsets.all(20),
-          children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.white24,
-                  borderRadius: BorderRadius.circular(2),
+      builder: (_) => Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF0D0A1A),
+          borderRadius:
+              const BorderRadius.vertical(top: Radius.circular(20)),
+          border: Border.all(
+              color: _kPurple.withValues(alpha: 0.3), width: 1),
+        ),
+        child: DraggableScrollableSheet(
+          initialChildSize: 0.7,
+          maxChildSize: 0.95,
+          minChildSize: 0.4,
+          expand: false,
+          builder: (_, sc) => ListView(
+            controller: sc,
+            padding: const EdgeInsets.all(20),
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.white24,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 16),
-            Row(children: [
-              Text(symbol['emoji'] ?? '🔮',
-                  style: const TextStyle(fontSize: 40)),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Text(symbol['symbol_name'] ?? '',
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold)),
-              ),
-            ]),
-            const SizedBox(height: 20),
-            ...traditions.map((t) {
-              final text = meanings[t.$2] as String?;
-              if (text == null || text.isEmpty) return const SizedBox.shrink();
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(t.$1,
-                        style: const TextStyle(
-                            color: _kPurple,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14)),
-                    const SizedBox(height: 4),
-                    Text(text,
-                        style: const TextStyle(
-                            color: Colors.white70, fontSize: 13, height: 1.5)),
-                  ],
+              const SizedBox(height: 16),
+              Row(children: [
+                Text(symbol['emoji'] ?? '🔮',
+                    style: const TextStyle(fontSize: 40)),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(symbol['symbol_name'] ?? '',
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold)),
                 ),
-              );
-            }),
-          ],
+              ]),
+              const SizedBox(height: 20),
+              ...traditions.map((t) {
+                final text = meanings[t.$2] as String?;
+                if (text == null || text.isEmpty) {
+                  return const SizedBox.shrink();
+                }
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(t.$1,
+                          style: const TextStyle(
+                              color: _kPurple,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14)),
+                      const SizedBox(height: 4),
+                      Text(text,
+                          style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 13,
+                              height: 1.5)),
+                    ],
+                  ),
+                );
+              }),
+            ],
+          ),
         ),
       ),
     );
@@ -662,7 +749,7 @@ class _SymbolListTile extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Tab 2: Mein Traumjounal
+// Tab 2: Mein Traumjournal
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _JournalTab extends StatefulWidget {
@@ -709,7 +796,7 @@ class _JournalTabState extends State<_JournalTab> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        backgroundColor: _kCardBg,
+        backgroundColor: const Color(0xFF0D0A1A),
         title: const Text('Traum löschen?',
             style: TextStyle(color: Colors.white)),
         content: const Text('Dieser Eintrag wird dauerhaft gelöscht.',
@@ -749,7 +836,8 @@ class _JournalTabState extends State<_JournalTab> {
       return const Center(
         child: Padding(
           padding: EdgeInsets.all(24),
-          child: Text('Bitte einloggen um dein Traumtagebuch zu sehen.',
+          child: Text(
+              'Bitte einloggen um dein Traumtagebuch zu sehen.',
               style: TextStyle(color: Colors.white54),
               textAlign: TextAlign.center),
         ),
@@ -783,68 +871,72 @@ class _JournalTabState extends State<_JournalTab> {
           final tags = (e['symbol_tags'] as List?)?.cast<String>() ?? [];
           final mood = e['mood'] as String? ?? 'neutral';
           final lucid = e['lucid'] == true;
-          return Card(
-            color: _kCardBg,
+          return Container(
             margin: const EdgeInsets.only(bottom: 10),
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-                side: const BorderSide(color: _kBorder)),
-            child: Padding(
-              padding: const EdgeInsets.all(14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(children: [
-                    Expanded(
-                      child: Text(
-                          e['title'] as String? ??
-                              (e['description'] as String? ?? '')
-                                  .split(' ')
-                                  .take(5)
-                                  .join(' '),
-                          style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 15)),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline,
-                          color: Colors.redAccent, size: 20),
-                      onPressed: () => _delete(e['id'] as String),
-                      visualDensity: VisualDensity.compact,
-                    ),
-                  ]),
-                  const SizedBox(height: 4),
-                  Text(
-                      (e['description'] as String? ?? '').length > 120
-                          ? '${(e['description'] as String).substring(0, 120)}…'
-                          : (e['description'] as String? ?? ''),
-                      style: const TextStyle(
-                          color: Colors.white60, fontSize: 13)),
-                  const SizedBox(height: 8),
-                  Row(children: [
-                    if (lucid) ...[
-                      _pill('✨ Luzid', const Color(0xFF7C4DFF)),
-                      const SizedBox(width: 6),
-                    ],
-                    _pill(_moodEmoji(mood), _kCardBg),
-                    const Spacer(),
-                    Text(e['dream_date'] as String? ?? '',
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                  color: _kPurple.withValues(alpha: 0.25)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(children: [
+                  Expanded(
+                    child: Text(
+                        e['title'] as String? ??
+                            (e['description'] as String? ?? '')
+                                .split(' ')
+                                .take(5)
+                                .join(' '),
                         style: const TextStyle(
-                            color: Colors.white38, fontSize: 11)),
-                  ]),
-                  if (tags.isNotEmpty) ...[
-                    const SizedBox(height: 6),
-                    Wrap(
-                      spacing: 4,
-                      runSpacing: 4,
-                      children: tags
-                          .map((t) => _pill(t, const Color(0xFF263238)))
-                          .toList(),
-                    ),
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15)),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline,
+                        color: Colors.redAccent, size: 20),
+                    onPressed: () => _delete(e['id'] as String),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ]),
+                const SizedBox(height: 4),
+                Text(
+                    (e['description'] as String? ?? '').length > 120
+                        ? '${(e['description'] as String).substring(0, 120)}…'
+                        : (e['description'] as String? ?? ''),
+                    style: const TextStyle(
+                        color: Colors.white60, fontSize: 13)),
+                const SizedBox(height: 8),
+                Row(children: [
+                  if (lucid) ...[
+                    _pill('✨ Luzid', _kPurple.withValues(alpha: 0.35),
+                        border: _kPurple),
+                    const SizedBox(width: 6),
                   ],
+                  _pill(_moodEmoji(mood),
+                      Colors.white.withValues(alpha: 0.07)),
+                  const Spacer(),
+                  Text(e['dream_date'] as String? ?? '',
+                      style: const TextStyle(
+                          color: Colors.white38, fontSize: 11)),
+                ]),
+                if (tags.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 4,
+                    runSpacing: 4,
+                    children: tags
+                        .map((t) => _pill(
+                            t, Colors.white.withValues(alpha: 0.06),
+                            border: _kTeal))
+                        .toList(),
+                  ),
                 ],
-              ),
+              ],
             ),
           );
         },
@@ -852,15 +944,18 @@ class _JournalTabState extends State<_JournalTab> {
     );
   }
 
-  Widget _pill(String label, Color bg) => Container(
+  Widget _pill(String label, Color bg, {Color? border}) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
         decoration: BoxDecoration(
           color: bg,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: _kBorder),
+          border: Border.all(
+              color: border?.withValues(alpha: 0.5) ??
+                  Colors.white.withValues(alpha: 0.15)),
         ),
         child: Text(label,
-            style: const TextStyle(color: Colors.white70, fontSize: 11)),
+            style:
+                const TextStyle(color: Colors.white70, fontSize: 11)),
       );
 
   String _moodEmoji(String mood) {
@@ -923,7 +1018,8 @@ class _PatternsTabState extends State<_PatternsTab> {
         ..sort((a, b) => b.value.compareTo(a.value));
       if (!mounted) return;
       setState(() {
-        _topTags = sorted.take(10).map((e) => _TagFreq(e.key, e.value)).toList();
+        _topTags =
+            sorted.take(10).map((e) => _TagFreq(e.key, e.value)).toList();
         _moodCounts = moodCount;
         _total = entries.length;
         _loading = false;
@@ -944,7 +1040,8 @@ class _PatternsTabState extends State<_PatternsTab> {
     }
     if (_total == 0) {
       return const Center(
-        child: Text('Noch keine Daten.\nZeichne Träume auf um Muster zu sehen.',
+        child: Text(
+            'Noch keine Daten.\nZeichne Träume auf um Muster zu sehen.',
             style: TextStyle(color: Colors.white54),
             textAlign: TextAlign.center),
       );
@@ -959,7 +1056,8 @@ class _PatternsTabState extends State<_PatternsTab> {
           if (_topTags.isNotEmpty) ...[
             _sectionHeader('🔁 Häufigste Symbole'),
             const SizedBox(height: 8),
-            ..._topTags.map((t) => _TagBar(tag: t, max: _topTags.first.count)),
+            ..._topTags
+                .map((t) => _TagBar(tag: t, max: _topTags.first.count)),
             const SizedBox(height: 20),
           ],
           if (_moodCounts.isNotEmpty) ...[
@@ -969,7 +1067,8 @@ class _PatternsTabState extends State<_PatternsTab> {
               spacing: 8,
               runSpacing: 8,
               children: _moodCounts.entries
-                  .map((e) => _MoodBubble(mood: e.key, count: e.value))
+                  .map((e) =>
+                      _MoodBubble(mood: e.key, count: e.value))
                   .toList(),
             ),
           ],
@@ -980,9 +1079,7 @@ class _PatternsTabState extends State<_PatternsTab> {
 
   Widget _sectionHeader(String text) => Text(text,
       style: const TextStyle(
-          color: Colors.white,
-          fontSize: 15,
-          fontWeight: FontWeight.bold));
+          color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold));
 }
 
 class _TagFreq {
@@ -1010,15 +1107,15 @@ class _TagBar extends StatelessWidget {
                     style: const TextStyle(
                         color: Colors.white70, fontSize: 13))),
             Text('${tag.count}×',
-                style:
-                    const TextStyle(color: Colors.white38, fontSize: 12)),
+                style: const TextStyle(
+                    color: Colors.white38, fontSize: 12)),
           ]),
           const SizedBox(height: 4),
           ClipRRect(
             borderRadius: BorderRadius.circular(4),
             child: LinearProgressIndicator(
               value: pct,
-              backgroundColor: _kBorder,
+              backgroundColor: Colors.white.withValues(alpha: 0.1),
               valueColor:
                   const AlwaysStoppedAnimation<Color>(_kPurple),
               minHeight: 6,
@@ -1049,9 +1146,9 @@ class _MoodBubble extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: _kCardBg,
+        color: Colors.white.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _kBorder),
+        border: Border.all(color: _kPurple.withValues(alpha: 0.3)),
       ),
       child: Column(
         children: [
@@ -1059,9 +1156,34 @@ class _MoodBubble extends StatelessWidget {
               style: const TextStyle(fontSize: 24)),
           const SizedBox(height: 4),
           Text('$count×',
-              style: const TextStyle(color: Colors.white70, fontSize: 13)),
+              style:
+                  const TextStyle(color: Colors.white70, fontSize: 13)),
         ],
       ),
     );
   }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// _CineOrb – ambient background glow orb
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _CineOrb extends StatelessWidget {
+  final Color color;
+  final double size;
+  final double opacity;
+  const _CineOrb(
+      {required this.color, required this.size, required this.opacity});
+  @override
+  Widget build(BuildContext context) => Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: RadialGradient(colors: [
+            color.withValues(alpha: opacity),
+            color.withValues(alpha: 0),
+          ]),
+        ),
+      );
 }

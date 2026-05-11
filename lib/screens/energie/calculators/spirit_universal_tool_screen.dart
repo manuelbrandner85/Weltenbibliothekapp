@@ -26,16 +26,28 @@ class SpiritUniversalToolScreen extends StatefulWidget {
   State<SpiritUniversalToolScreen> createState() => _SpiritUniversalToolScreenState();
 }
 
-class _SpiritUniversalToolScreenState extends State<SpiritUniversalToolScreen> {
+class _SpiritUniversalToolScreenState extends State<SpiritUniversalToolScreen>
+    with SingleTickerProviderStateMixin {
   final StorageService _storage = StorageService();
   EnergieProfile? _profile;
   bool _isCalculating = false;
   dynamic _result; // Kann jeder Result-Typ sein
+  late AnimationController _bgCtrl;
 
   @override
   void initState() {
     super.initState();
+    _bgCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 8),
+    )..repeat(reverse: true);
     _loadProfile();
+  }
+
+  @override
+  void dispose() {
+    _bgCtrl.dispose();
+    super.dispose();
   }
 
   Future<void> _loadProfile() async {
@@ -174,8 +186,23 @@ class _SpiritUniversalToolScreenState extends State<SpiritUniversalToolScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F0F23),
+      backgroundColor: const Color(0xFF06040F),
       appBar: AppBar(
+        flexibleSpace: AnimatedBuilder(
+          animation: _bgCtrl,
+          builder: (_, __) => Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  widget.toolColor.withValues(alpha: 0.85),
+                  const Color(0xFF0D0D1A),
+                ],
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+              ),
+            ),
+          ),
+        ),
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
@@ -184,7 +211,7 @@ class _SpiritUniversalToolScreenState extends State<SpiritUniversalToolScreen> {
         ),
         title: Row(
           children: [
-            Icon(widget.toolIcon, color: widget.toolColor, size: 24),
+            Icon(widget.toolIcon, color: Colors.white, size: 24),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
@@ -199,7 +226,42 @@ class _SpiritUniversalToolScreenState extends State<SpiritUniversalToolScreen> {
           ],
         ),
       ),
-      body: SafeArea(
+      body: AnimatedBuilder(
+        animation: _bgCtrl,
+        builder: (context, child) => Stack(
+          children: [
+            Positioned.fill(child: Container(color: const Color(0xFF06040F))),
+            Positioned(
+              top: -80 + _bgCtrl.value * 50,
+              right: -60,
+              child: _CineOrb(
+                color: widget.toolColor,
+                size: 280,
+                opacity: 0.10 + _bgCtrl.value * 0.05,
+              ),
+            ),
+            Positioned(
+              bottom: -80,
+              left: -60 + _bgCtrl.value * 30,
+              child: _CineOrb(
+                color: const Color(0xFF7C4DFF),
+                size: 240,
+                opacity: 0.08,
+              ),
+            ),
+            Positioned(
+              top: 300 + _bgCtrl.value * 40,
+              left: 60,
+              child: _CineOrb(
+                color: widget.toolColor,
+                size: 160,
+                opacity: 0.04 + _bgCtrl.value * 0.03,
+              ),
+            ),
+            child!,
+          ],
+        ),
+        child: SafeArea(
         child: _profile == null
             ? ProfileRequiredWidget(
                 worldType: 'energie',
@@ -216,12 +278,22 @@ class _SpiritUniversalToolScreenState extends State<SpiritUniversalToolScreen> {
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [widget.toolColor.withValues(alpha: 0.2), widget.toolColor.withValues(alpha: 0.05)],
+                          colors: [
+                            widget.toolColor.withValues(alpha: 0.22),
+                            widget.toolColor.withValues(alpha: 0.05),
+                          ],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: widget.toolColor.withValues(alpha: 0.3)),
+                        border: Border.all(color: widget.toolColor.withValues(alpha: 0.45)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: widget.toolColor.withValues(alpha: 0.18),
+                            blurRadius: 18,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
                       ),
                       child: Row(
                         children: [
@@ -403,6 +475,7 @@ class _SpiritUniversalToolScreenState extends State<SpiritUniversalToolScreen> {
                   ],
                 ),
               ),
+        ),
       ),
     );
   }
@@ -652,9 +725,16 @@ class _SpiritUniversalToolScreenState extends State<SpiritUniversalToolScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1A2E),
+        color: Colors.white.withValues(alpha: 0.04),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: widget.toolColor.withValues(alpha: 0.2)),
+        border: Border.all(color: widget.toolColor.withValues(alpha: 0.3)),
+        boxShadow: [
+          BoxShadow(
+            color: widget.toolColor.withValues(alpha: 0.08),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Row(
         children: [
@@ -693,9 +773,16 @@ class _SpiritUniversalToolScreenState extends State<SpiritUniversalToolScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1A2E),
+        color: Colors.white.withValues(alpha: 0.04),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: widget.toolColor.withValues(alpha: 0.2)),
+        border: Border.all(color: widget.toolColor.withValues(alpha: 0.3)),
+        boxShadow: [
+          BoxShadow(
+            color: widget.toolColor.withValues(alpha: 0.08),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -770,4 +857,32 @@ class _SpiritUniversalToolScreenState extends State<SpiritUniversalToolScreen> {
       ),
     );
   }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Cinema Orb – ambient background glow element
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _CineOrb extends StatelessWidget {
+  final Color color;
+  final double size;
+  final double opacity;
+  const _CineOrb({
+    required this.color,
+    required this.size,
+    required this.opacity,
+  });
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: RadialGradient(colors: [
+            color.withValues(alpha: opacity),
+            color.withValues(alpha: 0),
+          ]),
+        ),
+      );
 }

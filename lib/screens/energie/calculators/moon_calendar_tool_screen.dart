@@ -16,6 +16,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../services/moon_calculator.dart';
 import '../../../services/moon_recommendations.dart';
 
+const _kPrimary   = Color(0xFF90CAF9); // Mondblau
+const _kSecondary = Color(0xFF7C4DFF); // Lila
+
 class MoonCalendarToolScreen extends StatefulWidget {
   const MoonCalendarToolScreen({super.key});
 
@@ -24,8 +27,9 @@ class MoonCalendarToolScreen extends StatefulWidget {
 }
 
 class _MoonCalendarToolScreenState extends State<MoonCalendarToolScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late final TabController _tabs;
+  late AnimationController _bgCtrl;
 
   /// Live aktualisierter Snapshot (für den Heute-Tab).
   MoonSnapshot _snapshot = calculateMoonSnapshot(DateTime.now().toUtc());
@@ -34,10 +38,15 @@ class _MoonCalendarToolScreenState extends State<MoonCalendarToolScreen>
   void initState() {
     super.initState();
     _tabs = TabController(length: 4, vsync: this);
+    _bgCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 8),
+    )..repeat(reverse: true);
   }
 
   @override
   void dispose() {
+    _bgCtrl.dispose();
     _tabs.dispose();
     super.dispose();
   }
@@ -51,16 +60,26 @@ class _MoonCalendarToolScreenState extends State<MoonCalendarToolScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0D1A),
+      backgroundColor: const Color(0xFF06040F),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF37474F),
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF0D1B3E), Color(0xFF1A0044)],
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+            ),
+          ),
+        ),
+        backgroundColor: Colors.transparent,
         foregroundColor: Colors.white,
-        title: const Text('Mondkalender'),
+        title: const Text('🌙 Mondkalender',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         bottom: TabBar(
           controller: _tabs,
-          indicatorColor: Colors.white,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white70,
+          indicatorColor: _kPrimary,
+          labelColor: _kPrimary,
+          unselectedLabelColor: Colors.white54,
           isScrollable: true,
           tabs: const [
             Tab(icon: Icon(Icons.today), text: 'Heute'),
@@ -77,14 +96,50 @@ class _MoonCalendarToolScreenState extends State<MoonCalendarToolScreen>
           ),
         ],
       ),
-      body: TabBarView(
-        controller: _tabs,
-        children: [
-          _TodayTab(snapshot: _snapshot),
-          const _MonthTab(),
-          _RitualsTab(currentPhaseKey: _snapshot.phaseKey),
-          _JournalTab(snapshot: _snapshot),
-        ],
+      body: AnimatedBuilder(
+        animation: _bgCtrl,
+        builder: (context, child) => Stack(
+          children: [
+            Positioned.fill(child: Container(color: const Color(0xFF06040F))),
+            Positioned(
+              top: -80 + _bgCtrl.value * 50,
+              right: -60,
+              child: _CineOrb(
+                color: _kPrimary,
+                size: 280,
+                opacity: 0.10 + _bgCtrl.value * 0.05,
+              ),
+            ),
+            Positioned(
+              bottom: -80,
+              left: -60 + _bgCtrl.value * 30,
+              child: const _CineOrb(
+                color: _kSecondary,
+                size: 240,
+                opacity: 0.08,
+              ),
+            ),
+            Positioned(
+              top: 300 + _bgCtrl.value * 40,
+              left: 60,
+              child: _CineOrb(
+                color: _kPrimary,
+                size: 160,
+                opacity: 0.04 + _bgCtrl.value * 0.03,
+              ),
+            ),
+            child!,
+          ],
+        ),
+        child: TabBarView(
+          controller: _tabs,
+          children: [
+            _TodayTab(snapshot: _snapshot),
+            const _MonthTab(),
+            _RitualsTab(currentPhaseKey: _snapshot.phaseKey),
+            _JournalTab(snapshot: _snapshot),
+          ],
+        ),
       ),
     );
   }
@@ -140,16 +195,20 @@ class _MoonHeroCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF1A237E), Color(0xFF37474F)],
+          colors: [
+            _kSecondary.withValues(alpha: 0.35),
+            _kPrimary.withValues(alpha: 0.15),
+          ],
         ),
         borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: _kPrimary.withValues(alpha: 0.4)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.35),
-            blurRadius: 16,
+            color: _kSecondary.withValues(alpha: 0.25),
+            blurRadius: 20,
             offset: const Offset(0, 6),
           ),
         ],
@@ -1479,4 +1538,32 @@ class _NewEntrySheetState extends State<_NewEntrySheet> {
       ),
     );
   }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Cinema Orb – ambient background glow element
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _CineOrb extends StatelessWidget {
+  final Color color;
+  final double size;
+  final double opacity;
+  const _CineOrb({
+    required this.color,
+    required this.size,
+    required this.opacity,
+  });
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: RadialGradient(colors: [
+            color.withValues(alpha: opacity),
+            color.withValues(alpha: 0),
+          ]),
+        ),
+      );
 }

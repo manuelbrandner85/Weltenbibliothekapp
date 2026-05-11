@@ -8,10 +8,13 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 //   Tab 2: Leitfäden  (6 öffentliche Guides)
 // ─────────────────────────────────────────────────────────────────────────────
 
-const _kDeep = Color(0xFF8E5AE2);
-const _kDarkBg = Color(0xFF0A0A0F);
-const _kCardBg = Color(0xFF1A1A2E);
-const _kBorder = Color(0xFF2A2A4E);
+const _kPrimary   = Color(0xFF795548); // Braun
+const _kSecondary = Color(0xFFFF7043); // Orange
+// Legacy alias so inner widgets still compile unchanged:
+const _kDeep   = _kPrimary;
+const _kDarkBg = Color(0xFF06040F);
+const _kCardBg = Color(0xFF140E0A);
+const _kBorder = Color(0xFF2A1F18);
 
 final _db = Supabase.instance.client;
 
@@ -24,17 +27,23 @@ class ShamanicJourneyToolScreen extends StatefulWidget {
 }
 
 class _ShamanicJourneyToolScreenState extends State<ShamanicJourneyToolScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late final TabController _tabs;
+  late AnimationController _bgCtrl;
 
   @override
   void initState() {
     super.initState();
     _tabs = TabController(length: 3, vsync: this);
+    _bgCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 8),
+    )..repeat(reverse: true);
   }
 
   @override
   void dispose() {
+    _bgCtrl.dispose();
     _tabs.dispose();
     super.dispose();
   }
@@ -44,15 +53,24 @@ class _ShamanicJourneyToolScreenState extends State<ShamanicJourneyToolScreen>
     return Scaffold(
       backgroundColor: _kDarkBg,
       appBar: AppBar(
-        backgroundColor: _kCardBg,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [_kPrimary, Color(0xFF4E342E)],
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+            ),
+          ),
+        ),
+        backgroundColor: Colors.transparent,
         title: const Text('🥁 Schamanische Reise',
             style: TextStyle(
                 color: Colors.white, fontWeight: FontWeight.bold)),
         iconTheme: const IconThemeData(color: Colors.white),
         bottom: TabBar(
           controller: _tabs,
-          indicatorColor: _kDeep,
-          labelColor: _kDeep,
+          indicatorColor: _kSecondary,
+          labelColor: _kSecondary,
           unselectedLabelColor: Colors.white54,
           tabs: const [
             Tab(icon: Icon(Icons.play_circle_outline), text: 'Neu'),
@@ -61,13 +79,49 @@ class _ShamanicJourneyToolScreenState extends State<ShamanicJourneyToolScreen>
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabs,
-        children: const [
-          _NewJourneyTab(),
-          _JourneyHistoryTab(),
-          _GuidesTab(),
-        ],
+      body: AnimatedBuilder(
+        animation: _bgCtrl,
+        builder: (context, child) => Stack(
+          children: [
+            Positioned.fill(child: Container(color: _kDarkBg)),
+            Positioned(
+              top: -80 + _bgCtrl.value * 50,
+              right: -60,
+              child: _CineOrb(
+                color: _kPrimary,
+                size: 280,
+                opacity: 0.10 + _bgCtrl.value * 0.05,
+              ),
+            ),
+            Positioned(
+              bottom: -80,
+              left: -60 + _bgCtrl.value * 30,
+              child: const _CineOrb(
+                color: _kSecondary,
+                size: 240,
+                opacity: 0.08,
+              ),
+            ),
+            Positioned(
+              top: 300 + _bgCtrl.value * 40,
+              left: 60,
+              child: _CineOrb(
+                color: _kPrimary,
+                size: 160,
+                opacity: 0.04 + _bgCtrl.value * 0.03,
+              ),
+            ),
+            child!,
+          ],
+        ),
+        child: TabBarView(
+          controller: _tabs,
+          children: const [
+            _NewJourneyTab(),
+            _JourneyHistoryTab(),
+            _GuidesTab(),
+          ],
+        ),
       ),
     );
   }
@@ -139,13 +193,20 @@ class _NewJourneyTabState extends State<_NewJourneyTab> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [_kDeep.withValues(alpha: 0.3), _kCardBg],
+              gradient: const LinearGradient(
+                colors: [Color(0xFF795548), Color(0xFF4E2B1A)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: _kDeep.withValues(alpha: 0.4)),
+              border: Border.all(color: _kSecondary.withValues(alpha: 0.45)),
+              boxShadow: [
+                BoxShadow(
+                  color: _kPrimary.withValues(alpha: 0.25),
+                  blurRadius: 20,
+                  offset: const Offset(0, 6),
+                ),
+              ],
             ),
             child: Row(children: [
               const Text('🥁', style: TextStyle(fontSize: 36)),
@@ -1762,4 +1823,32 @@ class _GuideDetailSheet extends StatelessWidget {
       ]),
     );
   }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Cinema Orb – ambient background glow element
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _CineOrb extends StatelessWidget {
+  final Color color;
+  final double size;
+  final double opacity;
+  const _CineOrb({
+    required this.color,
+    required this.size,
+    required this.opacity,
+  });
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: RadialGradient(colors: [
+            color.withValues(alpha: opacity),
+            color.withValues(alpha: 0),
+          ]),
+        ),
+      );
 }
