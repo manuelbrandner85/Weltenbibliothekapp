@@ -23,6 +23,8 @@ import 'calculators/natal_chart_tool_screen.dart'; // ♓ v25 Geburtshoroskop
 import 'calculators/human_design_tool_screen.dart'; // 🌀 v26 Human Design
 import 'frequency_generator_screen.dart';  // 🎵 FREQUENCY GENERATOR
 import '../spirit/spirit_tools_mega_screen.dart'; // 🆕 V115 MEGA UPDATE TOOLS
+import 'planetary_transit_screen.dart'; // 🪐 Planeten & Transite
+import 'energie_recherche_screen.dart'; // 🔮 Spirituelle Recherche
 
 /// Moderner Spirit-Tab mit ALLEN 16 originalen Tools
 class SpiritTabModern extends StatefulWidget {
@@ -579,6 +581,32 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'category': 'new',
         'screen': const IChingScreen(),
       },
+
+      // ═══════════════════════════════════════════════════════════
+      // 🌌 KOSMOS-TOOLS — Planeten & Recherche
+      // ═══════════════════════════════════════════════════════════
+
+      // 🪐 Planeten & Transite
+      {
+        'icon': Icons.public,
+        'iconEmoji': '🪐',
+        'title': 'Planeten & Transite',
+        'subtitle': 'Kosmische Einflüsse heute',
+        'color': const Color(0xFF1A237E),
+        'category': 'cosmos',
+        'screen': const PlanetaryTransitScreen(),
+      },
+
+      // 🔮 Spirituelle Recherche
+      {
+        'icon': Icons.search,
+        'iconEmoji': '🔮',
+        'title': 'Spirituelle Recherche',
+        'subtitle': 'Bücher, Studien & Wissen',
+        'color': const Color(0xFF4A148C),
+        'category': 'cosmos',
+        'screen': const EnergieRechercheScreen(),
+      },
     ];
   }
 
@@ -871,6 +899,8 @@ class _SpiritTabModernState extends State<SpiritTabModern>
                 _buildCategoryChip('meta',     '🌌 Meta',      _gold,   _getCategoryCount('meta')),
                 const SizedBox(width: 10),
                 _buildCategoryChip('new',      '🆕 Neu',       _green,  _getCategoryCount('new')),
+                const SizedBox(width: 10),
+                _buildCategoryChip('cosmos',   '🌌 Kosmos',    const Color(0xFF1A237E), _getCategoryCount('cosmos')),
               ]),
             ),
           ),

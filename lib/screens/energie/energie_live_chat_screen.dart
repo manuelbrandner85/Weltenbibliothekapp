@@ -1193,7 +1193,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
     if (_selectedRoom == 'meditation') {
       Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (context) => MeditationTimerScreen(roomId: _selectedRoom),
+          builder: (context) => const MeditationTimerScreen(),
         ),
       );
       return;
@@ -1202,7 +1202,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
     if (_selectedRoom == 'astralreisen') {
       Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (context) => AstralJournalScreen(roomId: _selectedRoom),
+          builder: (context) => const AstralJournalScreen(),
         ),
       );
       return;
