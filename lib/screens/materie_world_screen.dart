@@ -69,7 +69,8 @@ class _MaterieWorldScreenState extends ConsumerState<MaterieWorldScreen>
 
     final tabs = [
       MaterieHomeTabV5(
-          key: ValueKey('home_${adminState.username}_${adminState.role}')),
+          key: ValueKey('home_${adminState.username}_${adminState.role}'),
+          onSwitchTab: (idx) => setState(() => _currentIndex = idx)),
       const KaninchenbauScreen(),
       const MaterieCommunityTabModern(),
       const MaterieKarteTabPro(),
