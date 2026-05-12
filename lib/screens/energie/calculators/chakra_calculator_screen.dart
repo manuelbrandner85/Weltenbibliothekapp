@@ -3,6 +3,8 @@ import '../../../models/energie_profile.dart';
 import '../../../services/storage_service.dart';
 import '../../../services/spirit_calculations/chakra_engine.dart';
 import '../../../widgets/profile_required_widget.dart';
+import '../../../theme/wb_cinematic_tokens.dart';
+import '../../../widgets/cinematic/wb_glass_app_bar.dart';
 
 /// 🌈 CHAKRA-RECHNER SCREEN
 class ChakraCalculatorScreen extends StatefulWidget {
@@ -102,14 +104,13 @@ class _ChakraCalculatorScreenState extends State<ChakraCalculatorScreen> with Si
   Widget build(BuildContext context) {
     return Scaffold(
       extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
+      appBar: WBGlassAppBar(
+        world: WBWorld.energie,
+        title: 'CHAKRA-ANALYSE',
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('CHAKRA-ANALYSE', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
       ),
       body: Container(
         decoration: const BoxDecoration(

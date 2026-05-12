@@ -5,6 +5,8 @@ import '../../../services/storage_service.dart';
 import '../../../services/spirit_calculations/all_spirit_tools_engine.dart';
 import '../../../models/spirit_tool_results.dart';
 import '../../../widgets/profile_required_widget.dart';
+import '../../../theme/wb_cinematic_tokens.dart';
+import '../../../widgets/cinematic/wb_glass_app_bar.dart';
 
 /// Universal Spirit-Tool Screen
 /// Funktioniert für alle 10 neuen Tools
@@ -175,14 +177,9 @@ class _SpiritUniversalToolScreenState extends State<SpiritUniversalToolScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF0F0F23),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Row(
+      appBar: WBGlassAppBar(
+        world: WBWorld.energie,
+        titleWidget: Row(
           children: [
             Icon(widget.toolIcon, color: widget.toolColor, size: 24),
             const SizedBox(width: 12),
@@ -197,6 +194,10 @@ class _SpiritUniversalToolScreenState extends State<SpiritUniversalToolScreen> {
               ),
             ),
           ],
+        ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
         ),
       ),
       body: SafeArea(

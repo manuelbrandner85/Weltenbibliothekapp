@@ -5,6 +5,8 @@ import '../core/constants/roles.dart';
 import 'materie_world_screen.dart';
 import '../services/achievement_service.dart';
 import 'shared/world_admin_dashboard.dart';
+import '../theme/wb_cinematic_tokens.dart';
+import '../widgets/cinematic/wb_glass_app_bar.dart';
 
 /// Materie-Welt-Wrapper
 /// Admin-Check direkt über Supabase profiles.role (nicht OpenClaw).
@@ -63,15 +65,14 @@ class _MaterieWorldWrapperState extends State<MaterieWorldWrapper> {
     if (_isLoading) {
       return Scaffold(
         backgroundColor: Colors.black,
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          leading: IconButton(
+        appBar: WBGlassAppBar(
+        world: WBWorld.materie,
+        title: 'MATERIE',
+        leading: IconButton(
             icon: const Icon(Icons.arrow_back, color: Colors.blue),
             onPressed: () => Navigator.of(context).pop(),
           ),
-          title: const Text('MATERIE', style: TextStyle(color: Colors.blue)),
-        ),
+      ),
         body: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(

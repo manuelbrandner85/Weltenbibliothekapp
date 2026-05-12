@@ -81,6 +81,8 @@ import '../../services/chat/user_block_service.dart';
 import '../../services/chat/unread_tracker_service.dart';
 import '../../widgets/chat_animated_background.dart';
 import '../../widgets/live_room_banner.dart';
+import '../../theme/wb_cinematic_tokens.dart';
+import '../../widgets/cinematic/wb_glass_app_bar.dart';
 
 /// MATERIE-WELT LIVE-CHAT - Cloudflare Edition
 class MaterieLiveChatScreen extends StatefulWidget {
@@ -1377,26 +1379,10 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
   Widget build(BuildContext context) {
     return Scaffold(
       resizeToAvoidBottomInset: true, // 📱 Mobile: Keyboard doesn't cover input
-      backgroundColor: const Color(0xFF04080F), // home-dashboard bg
-      appBar: AppBar(
-        flexibleSpace: AnimatedBuilder(
-          animation: _headerAuraCtrl,
-          builder: (_, __) => Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  const Color(0xFF0D0A1A),
-                  Color.lerp(const Color(0xFF0A1020), const Color(0xFF1A0A0A), _headerAuraCtrl.value)!,
-                  const Color(0xFF080812),
-                ],
-              ),
-            ),
-          ),
-        ),
-        backgroundColor: Colors.transparent,
-        title: GestureDetector(
+      backgroundColor: const Color(0xFF050310), // home-dashboard bg
+      appBar: WBGlassAppBar(
+        world: WBWorld.materie,
+        titleWidget: GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: _showRoomInfoSheet,
           child: Column(
@@ -2614,7 +2600,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
     
     await showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF1A1A2E),
+      backgroundColor: const Color(0xFF050310),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),

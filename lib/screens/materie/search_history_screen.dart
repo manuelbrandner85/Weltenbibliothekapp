@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
  // OpenClaw v2.0
 import '../../services/search_history_service.dart';
 import '../../models/search_history.dart';
+import '../../theme/wb_cinematic_tokens.dart';
+import '../../widgets/cinematic/wb_glass_app_bar.dart';
 
 /// Search History Screen v8.0
 /// 
@@ -36,9 +38,9 @@ class _SearchHistoryScreenState extends State<SearchHistoryScreen> {
     
     return Scaffold(
       backgroundColor: const Color(0xFF0D47A1),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF1A1A1A),
-        title: const Row(
+      appBar: WBGlassAppBar(
+        world: WBWorld.materie,
+        titleWidget: const Row(
           children: [
             Icon(Icons.history, color: Colors.cyan, size: 24),
             SizedBox(width: 8),

@@ -5,6 +5,8 @@ library;
 import 'package:flutter/material.dart';
  // OpenClaw v2.0
 import '../../services/storage_service.dart';
+import '../../theme/wb_cinematic_tokens.dart';
+import '../../widgets/cinematic/wb_glass_app_bar.dart';
 
 class AchievementsScreen extends StatefulWidget {
   const AchievementsScreen({super.key});
@@ -130,9 +132,9 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
     
     return Scaffold(
       backgroundColor: Color(0xFF0A0A0A),
-      appBar: AppBar(
-        title: Text('🏆 Achievements'),
-        backgroundColor: Color(0xFFFFD700),
+      appBar: WBGlassAppBar(
+        world: WBWorld.energie,
+        title: '🏆 Achievements',
       ),
       body: Container(
         decoration: BoxDecoration(

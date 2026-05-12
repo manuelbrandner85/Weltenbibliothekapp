@@ -3,6 +3,8 @@
 library;
 
 import 'package:flutter/material.dart';
+import '../../theme/wb_cinematic_tokens.dart';
+import '../../widgets/cinematic/wb_glass_app_bar.dart';
  // OpenClaw v2.0
 
 class NotificationSettingsScreen extends StatefulWidget {
@@ -24,9 +26,9 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Color(0xFF0A0A0A),
-      appBar: AppBar(
-        title: Text('🔔 Benachrichtigungen'),
-        backgroundColor: Color(0xFFFF9800),
+      appBar: WBGlassAppBar(
+        world: WBWorld.energie,
+        title: '🔔 Benachrichtigungen',
       ),
       body: Container(
         decoration: BoxDecoration(

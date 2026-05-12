@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 import '../../../config/api_config.dart';
+import '../../../theme/wb_cinematic_tokens.dart';
+import '../../../widgets/cinematic/wb_glass_app_bar.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // A — Bildanalyse
@@ -81,15 +83,13 @@ class _ImageAnalysisToolState extends State<ImageAnalysisTool> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: _kBg,
-      appBar: AppBar(
-        backgroundColor: _kBg,
-        foregroundColor: _kText,
-        title: Row(children: [
+      appBar: WBGlassAppBar(
+        world: WBWorld.materie,
+        titleWidget: Row(children: [
           Icon(Icons.image_search_rounded, color: _kAccent, size: 22),
           const SizedBox(width: 8),
           const Text('Bildanalyse', style: TextStyle(color: _kText, fontWeight: FontWeight.bold)),
         ]),
-        elevation: 0,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),

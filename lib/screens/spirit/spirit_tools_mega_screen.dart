@@ -7,6 +7,8 @@ import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import '../../models/spirit_tools_models.dart';
 import '../../services/achievement_service.dart';
+import '../../theme/wb_cinematic_tokens.dart';
+import '../../widgets/cinematic/wb_glass_app_bar.dart';
 
 // ========================================
 // 📔 TRAUMTAGEBUCH SCREEN
@@ -73,10 +75,10 @@ class _DreamJournalScreenState extends State<DreamJournalScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0A),
-      appBar: AppBar(
-        title: const Text('📔 Traumtagebuch'),
-        backgroundColor: const Color(0xFF4A148C),
+      backgroundColor: const Color(0xFF050310),
+      appBar: WBGlassAppBar(
+        world: WBWorld.energie,
+        title: '📔 Traumtagebuch',
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -249,9 +251,9 @@ class _RuneOracleScreenState extends State<RuneOracleScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A0A),
-      appBar: AppBar(
-        title: const Text('🔮 Runen-Orakel'),
-        backgroundColor: const Color(0xFF1A237E),
+      appBar: WBGlassAppBar(
+        world: WBWorld.energie,
+        title: '🔮 Runen-Orakel',
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -388,9 +390,9 @@ class _AffirmationsScreenState extends State<AffirmationsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A0A),
-      appBar: AppBar(
-        title: const Text('🌟 Affirmationen'),
-        backgroundColor: const Color(0xFFD84315),
+      appBar: WBGlassAppBar(
+        world: WBWorld.energie,
+        title: '🌟 Affirmationen',
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
@@ -498,9 +500,9 @@ class _BiorhythmScreenState extends State<BiorhythmScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A0A),
-      appBar: AppBar(
-        title: const Text('📈 Biorhythmus'),
-        backgroundColor: const Color(0xFF00897B),
+      appBar: WBGlassAppBar(
+        world: WBWorld.energie,
+        title: '📈 Biorhythmus',
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -576,9 +578,9 @@ class _IChingScreenState extends State<IChingScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A0A),
-      appBar: AppBar(
-        title: const Text('📖 I-Ging Orakel'),
-        backgroundColor: const Color(0xFF6A1B9A),
+      appBar: WBGlassAppBar(
+        world: WBWorld.energie,
+        title: '📖 I-Ging Orakel',
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),

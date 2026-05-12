@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../theme/wb_cinematic_tokens.dart';
+import '../../../widgets/cinematic/wb_glass_app_bar.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ShamanicJourneyToolScreen – 3 Tabs
@@ -43,12 +45,9 @@ class _ShamanicJourneyToolScreenState extends State<ShamanicJourneyToolScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: _kDarkBg,
-      appBar: AppBar(
-        backgroundColor: _kCardBg,
-        title: const Text('🥁 Schamanische Reise',
-            style: TextStyle(
-                color: Colors.white, fontWeight: FontWeight.bold)),
-        iconTheme: const IconThemeData(color: Colors.white),
+      appBar: WBGlassAppBar(
+        world: WBWorld.energie,
+        title: '🥁 Schamanische Reise',
         bottom: TabBar(
           controller: _tabs,
           indicatorColor: _kDeep,
@@ -384,12 +383,9 @@ class _JourneyTimerScreenState extends State<_JourneyTimerScreen> {
     final progress = 1.0 - (_remaining / total);
     return Scaffold(
       backgroundColor: _kDarkBg,
-      appBar: AppBar(
-        backgroundColor: _kCardBg,
-        title: const Text('Reise läuft',
-            style: TextStyle(color: Colors.white)),
-        iconTheme: const IconThemeData(color: Colors.white),
-        automaticallyImplyLeading: false,
+      appBar: WBGlassAppBar(
+        world: WBWorld.energie,
+        title: 'Reise läuft',
       ),
       body: Padding(
         padding: const EdgeInsets.all(24),
@@ -570,11 +566,9 @@ class _JourneyJournalScreenState extends State<_JourneyJournalScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: _kDarkBg,
-      appBar: AppBar(
-        backgroundColor: _kCardBg,
-        title: const Text('Reise-Journal',
-            style: TextStyle(color: Colors.white)),
-        iconTheme: const IconThemeData(color: Colors.white),
+      appBar: WBGlassAppBar(
+        world: WBWorld.energie,
+        title: 'Reise-Journal',
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),

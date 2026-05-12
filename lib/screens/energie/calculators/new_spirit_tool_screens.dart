@@ -9,6 +9,8 @@ import 'package:weltenbibliothek/services/storage_service.dart';
 import 'package:weltenbibliothek/services/achievement_service.dart';
 import 'package:weltenbibliothek/models/app_data.dart';
 import 'package:weltenbibliothek/screens/energie/moon_journal_screen.dart';
+import '../../../theme/wb_cinematic_tokens.dart';
+import '../../../widgets/cinematic/wb_glass_app_bar.dart';
 
 // ═══════════════════════════════════════════════════════════
 // 1. 🌙 MONDPHASEN-TRACKER SCREEN
@@ -30,9 +32,9 @@ class _MoonPhaseTrackerScreenState extends State<MoonPhaseTrackerScreen> {
     
     return Scaffold(
       backgroundColor: Color(0xFF0A0A0A),
-      appBar: AppBar(
-        title: Text('🌙 Mondphasen-Tracker'),
-        backgroundColor: Color(0xFF1A237E),
+      appBar: WBGlassAppBar(
+        world: WBWorld.energie,
+        title: '🌙 Mondphasen-Tracker',
         actions: [
           // 🆕 "30-Tage Kalender" Button
           IconButton(
@@ -473,9 +475,9 @@ class _TarotDailyDrawScreenState extends State<TarotDailyDrawScreen> with Single
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Color(0xFF0A0A0A),
-      appBar: AppBar(
-        title: Text('🔮 Tarot-Ziehung'),
-        backgroundColor: Color(0xFF4A148C),
+      appBar: WBGlassAppBar(
+        world: WBWorld.energie,
+        title: '🔮 Tarot-Ziehung',
         actions: [
           IconButton(
             icon: Icon(Icons.view_list),
@@ -926,9 +928,9 @@ class _CrystalDatabaseScreenState extends State<CrystalDatabaseScreen> {
     
     return Scaffold(
       backgroundColor: Color(0xFF0A0A0A),
-      appBar: AppBar(
-        title: Text('💎 Kristall-Datenbank'),
-        backgroundColor: Color(0xFF1976D2),
+      appBar: WBGlassAppBar(
+        world: WBWorld.energie,
+        title: '💎 Kristall-Datenbank',
         actions: [
           PopupMenuButton<String>(
             icon: Icon(Icons.filter_list),
@@ -1625,10 +1627,10 @@ class _GuidedMeditationsScreenState extends State<GuidedMeditationsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0A),
-      appBar: AppBar(
-        title: const Text('🧘 Geführte Meditationen'),
-        backgroundColor: const Color(0xFF4527A0),
+      backgroundColor: const Color(0xFF050310),
+      appBar: WBGlassAppBar(
+        world: WBWorld.energie,
+        title: '🧘 Geführte Meditationen',
         actions: [
           IconButton(
             icon: const Icon(Icons.favorite),
@@ -1941,9 +1943,9 @@ class _MeditationSessionPlayerState extends State<MeditationSessionPlayer> {
     
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A0A),
-      appBar: AppBar(
-        title: Text(widget.session['title']),
-        backgroundColor: Color(widget.session['color']),
+      appBar: WBGlassAppBar(
+        world: WBWorld.energie,
+        titleWidget: Text(widget.session['title']),
       ),
       body: Container(
         decoration: BoxDecoration(
@@ -2065,9 +2067,9 @@ class _MeditationTimerScreenState extends State<MeditationTimerScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Color(0xFF0A0A0A),
-      appBar: AppBar(
-        title: Text('📿 Meditation-Timer'),
-        backgroundColor: Color(0xFF4527A0),
+      appBar: WBGlassAppBar(
+        world: WBWorld.energie,
+        title: '📿 Meditation-Timer',
       ),
       body: Container(
         decoration: BoxDecoration(
@@ -2301,9 +2303,9 @@ class _AuraColorReaderScreenState extends State<AuraColorReaderScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Color(0xFF0A0A0A),
-      appBar: AppBar(
-        title: Text('🌈 Aura-Farben Reader'),
-        backgroundColor: Color(0xFFAD1457),
+      appBar: WBGlassAppBar(
+        world: WBWorld.energie,
+        title: '🌈 Aura-Farben Reader',
       ),
       body: Container(
         decoration: BoxDecoration(
@@ -2533,9 +2535,9 @@ class _DnaActivationTrackerScreenState extends State<DnaActivationTrackerScreen>
     
     return Scaffold(
       backgroundColor: Color(0xFF0A0A0A),
-      appBar: AppBar(
-        title: Text('🧬 DNA-Aktivierung Tracker'),
-        backgroundColor: Color(0xFF00695C),
+      appBar: WBGlassAppBar(
+        world: WBWorld.energie,
+        title: '🧬 DNA-Aktivierung Tracker',
       ),
       body: Container(
         decoration: BoxDecoration(
@@ -2724,9 +2726,9 @@ class _FrequencyGeneratorScreenLegacyState extends State<FrequencyGeneratorScree
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Color(0xFF0A0A0A),
-      appBar: AppBar(
-        title: Text('🎵 Frequenz-Generator'),
-        backgroundColor: Color(0xFFD32F2F),
+      appBar: WBGlassAppBar(
+        world: WBWorld.energie,
+        title: '🎵 Frequenz-Generator',
       ),
       body: Container(
         decoration: BoxDecoration(
@@ -3001,9 +3003,9 @@ class _AkashaChronicleJournalScreenState extends State<AkashaChronicleJournalScr
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Color(0xFF0A0A0A),
-      appBar: AppBar(
-        title: Text('🌌 Akasha-Chronik Journal'),
-        backgroundColor: Color(0xFF311B92),
+      appBar: WBGlassAppBar(
+        world: WBWorld.energie,
+        title: '🌌 Akasha-Chronik Journal',
       ),
       body: Container(
         decoration: BoxDecoration(
@@ -3230,9 +3232,9 @@ class _MantraLibraryScreenState extends State<MantraLibraryScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Color(0xFF0A0A0A),
-      appBar: AppBar(
-        title: Text('🕉️ Mantra-Bibliothek'),
-        backgroundColor: Color(0xFFE65100),
+      appBar: WBGlassAppBar(
+        world: WBWorld.energie,
+        title: '🕉️ Mantra-Bibliothek',
       ),
       body: Container(
         decoration: BoxDecoration(
@@ -3447,9 +3449,9 @@ class _SacredGeometryScreenState extends State<SacredGeometryScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Color(0xFF0A0A0A),
-      appBar: AppBar(
-        title: Text('🔯 Heilige Geometrie'),
-        backgroundColor: Color(0xFF5E35B1),
+      appBar: WBGlassAppBar(
+        world: WBWorld.energie,
+        title: '🔯 Heilige Geometrie',
       ),
       body: Container(
         decoration: BoxDecoration(
@@ -3681,9 +3683,9 @@ class _GroundingExercisesScreenState extends State<GroundingExercisesScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Color(0xFF0A0A0A),
-      appBar: AppBar(
-        title: Text('🌍 Erdung-Übungen'),
-        backgroundColor: Color(0xFF6D4C41),
+      appBar: WBGlassAppBar(
+        world: WBWorld.energie,
+        title: '🌍 Erdung-Übungen',
       ),
       body: Container(
         decoration: BoxDecoration(
@@ -3902,9 +3904,9 @@ class _TransformationTrackerScreenState extends State<TransformationTrackerScree
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Color(0xFF0A0A0A),
-      appBar: AppBar(
-        title: Text('🦋 Transformation-Tracker'),
-        backgroundColor: Color(0xFF00796B),
+      appBar: WBGlassAppBar(
+        world: WBWorld.energie,
+        title: '🦋 Transformation-Tracker',
       ),
       body: Container(
         decoration: BoxDecoration(
@@ -4129,9 +4131,9 @@ class _LightLanguageDecoderScreenState extends State<LightLanguageDecoderScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Color(0xFF0A0A0A),
-      appBar: AppBar(
-        title: Text('🌟 Lichtsprache Decoder'),
-        backgroundColor: Color(0xFFFFA000),
+      appBar: WBGlassAppBar(
+        world: WBWorld.energie,
+        title: '🌟 Lichtsprache Decoder',
       ),
       body: Container(
         decoration: BoxDecoration(
@@ -4421,9 +4423,9 @@ class _YogaAsanaGuideScreenState extends State<YogaAsanaGuideScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Color(0xFF0A0A0A),
-      appBar: AppBar(
-        title: Text('🧘‍♀️ Yoga Asana Guide'),
-        backgroundColor: Color(0xFF7B1FA2),
+      appBar: WBGlassAppBar(
+        world: WBWorld.energie,
+        title: '🧘‍♀️ Yoga Asana Guide',
       ),
       body: Container(
         decoration: BoxDecoration(
@@ -4727,9 +4729,9 @@ class _GoddessOracleScreenState extends State<GoddessOracleScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Color(0xFF0A0A0A),
-      appBar: AppBar(
-        title: Text('🌺 Göttinnen & Götter Orakel'),
-        backgroundColor: Color(0xFFE91E63),
+      appBar: WBGlassAppBar(
+        world: WBWorld.energie,
+        title: '🌺 Göttinnen & Götter Orakel',
       ),
       body: Container(
         decoration: BoxDecoration(
@@ -4934,9 +4936,9 @@ class _MoonCalendarScreenState extends State<MoonCalendarScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A0A),
-      appBar: AppBar(
-        title: const Text('📅 Mondphasen-Kalender'),
-        backgroundColor: const Color(0xFF1A237E),
+      appBar: WBGlassAppBar(
+        world: WBWorld.energie,
+        title: '📅 Mondphasen-Kalender',
       ),
       body: Container(
         decoration: const BoxDecoration(
@@ -5595,9 +5597,9 @@ class _AstrologyCalculatorScreenState extends State<AstrologyCalculatorScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A0A),
-      appBar: AppBar(
-        title: const Text('♈ Astrologie-Rechner'),
-        backgroundColor: const Color(0xFF1976D2),
+      appBar: WBGlassAppBar(
+        world: WBWorld.energie,
+        title: '♈ Astrologie-Rechner',
       ),
       body: Container(
         decoration: const BoxDecoration(

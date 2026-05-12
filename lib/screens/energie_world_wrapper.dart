@@ -5,6 +5,8 @@ import '../core/constants/roles.dart';
 import 'energie_world_screen.dart';
 import '../services/achievement_service.dart';
 import 'shared/world_admin_dashboard.dart';
+import '../theme/wb_cinematic_tokens.dart';
+import '../widgets/cinematic/wb_glass_app_bar.dart';
 
 /// Energie-Welt-Wrapper
 /// Admin-Check direkt über Supabase profiles.role (nicht OpenClaw).
@@ -63,15 +65,14 @@ class _EnergieWorldWrapperState extends State<EnergieWorldWrapper> {
     if (_isLoading) {
       return Scaffold(
         backgroundColor: Colors.black,
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          leading: IconButton(
+        appBar: WBGlassAppBar(
+        world: WBWorld.energie,
+        title: 'ENERGIE',
+        leading: IconButton(
             icon: const Icon(Icons.arrow_back, color: Colors.purple),
             onPressed: () => Navigator.of(context).pop(),
           ),
-          title: const Text('ENERGIE', style: TextStyle(color: Colors.purple)),
-        ),
+      ),
         body: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(

@@ -6,6 +6,8 @@ import '../../../services/streak_tracking_service.dart';
 import '../../../widgets/profile_required_widget.dart';
 
 import '../../../widgets/micro_interactions.dart';
+import '../../../theme/wb_cinematic_tokens.dart';
+import '../../../widgets/cinematic/wb_glass_app_bar.dart';
 
 /// 🔢 NUMEROLOGIE-RECHNER
 /// Vollständige numerologische Analyse basierend auf Nutzerprofil
@@ -135,18 +137,10 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF1A1A2E),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF4A148C),
-        elevation: 0,
-        title: const Text(
-          'NUMEROLOGIE-RECHNER',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.5,
-          ),
-        ),
+      backgroundColor: const Color(0xFF050310),
+      appBar: WBGlassAppBar(
+        world: WBWorld.energie,
+        title: 'NUMEROLOGIE-RECHNER',
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: const Color(0xFFFFD700),

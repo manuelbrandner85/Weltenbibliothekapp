@@ -15,6 +15,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../services/moon_calculator.dart';
 import '../../../services/moon_recommendations.dart';
+import '../../../theme/wb_cinematic_tokens.dart';
+import '../../../widgets/cinematic/wb_glass_app_bar.dart';
 
 class MoonCalendarToolScreen extends StatefulWidget {
   const MoonCalendarToolScreen({super.key});
@@ -52,10 +54,16 @@ class _MoonCalendarToolScreenState extends State<MoonCalendarToolScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF0D0D1A),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF37474F),
-        foregroundColor: Colors.white,
-        title: const Text('Mondkalender'),
+      appBar: WBGlassAppBar(
+        world: WBWorld.energie,
+        title: 'Mondkalender',
+        actions: [
+          IconButton(
+            tooltip: 'Aktualisieren',
+            icon: const Icon(Icons.refresh),
+            onPressed: _refreshSnapshot,
+          ),
+        ],
         bottom: TabBar(
           controller: _tabs,
           indicatorColor: Colors.white,
@@ -69,13 +77,6 @@ class _MoonCalendarToolScreenState extends State<MoonCalendarToolScreen>
             Tab(icon: Icon(Icons.book), text: 'Tagebuch'),
           ],
         ),
-        actions: [
-          IconButton(
-            tooltip: 'Aktualisieren',
-            icon: const Icon(Icons.refresh),
-            onPressed: _refreshSnapshot,
-          ),
-        ],
       ),
       body: TabBarView(
         controller: _tabs,
@@ -989,7 +990,7 @@ class _JournalTabState extends State<_JournalTab> {
     final saved = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFF1A1A2E),
+      backgroundColor: const Color(0xFF050310),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
