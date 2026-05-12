@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 /// Welt-Identität für cinematic Komponenten.
-enum WBWorld { materie, energie, neutral }
+enum WBWorld { materie, energie, vorhang, ursprung, neutral }
 
 /// Welt-Farbpalette: alle Töne, die ein Screen pro Welt braucht.
 @immutable
@@ -47,6 +47,8 @@ class WBCinematic extends ThemeExtension<WBCinematic> {
   // Welt-Paletten
   final WBWorldPalette materie;
   final WBWorldPalette energie;
+  final WBWorldPalette vorhang;
+  final WBWorldPalette ursprung;
   final WBWorldPalette neutral;
 
   // Blur-Stufen
@@ -64,6 +66,8 @@ class WBCinematic extends ThemeExtension<WBCinematic> {
     required this.glassStrokeHi,
     required this.materie,
     required this.energie,
+    required this.vorhang,
+    required this.ursprung,
     required this.neutral,
     required this.blurLight,
     required this.blurMedium,
@@ -93,6 +97,20 @@ class WBCinematic extends ThemeExtension<WBCinematic> {
       label: Color(0xFFC79AFF),
       glow: Color(0x66A855F7),
     ),
+    vorhang: WBWorldPalette(
+      primary: Color(0xFFC9A84C),
+      deep: Color(0xFF1A1500),
+      highlight: Color(0xFFFFE9A0),
+      label: Color(0xFFE0C872),
+      glow: Color(0x66C9A84C),
+    ),
+    ursprung: WBWorldPalette(
+      primary: Color(0xFF00D4AA),
+      deep: Color(0xFF002B22),
+      highlight: Color(0xFFA0FFE0),
+      label: Color(0xFF40E8C0),
+      glow: Color(0x6600D4AA),
+    ),
     neutral: WBWorldPalette(
       primary: Color(0xFF8AA3FF),
       deep: Color(0xFF1A1A2E),
@@ -112,6 +130,10 @@ class WBCinematic extends ThemeExtension<WBCinematic> {
         return materie;
       case WBWorld.energie:
         return energie;
+      case WBWorld.vorhang:
+        return vorhang;
+      case WBWorld.ursprung:
+        return ursprung;
       case WBWorld.neutral:
         return neutral;
     }
@@ -128,6 +150,8 @@ class WBCinematic extends ThemeExtension<WBCinematic> {
     Color? glassStrokeHi,
     WBWorldPalette? materie,
     WBWorldPalette? energie,
+    WBWorldPalette? vorhang,
+    WBWorldPalette? ursprung,
     WBWorldPalette? neutral,
     double? blurLight,
     double? blurMedium,
@@ -143,6 +167,8 @@ class WBCinematic extends ThemeExtension<WBCinematic> {
         glassStrokeHi: glassStrokeHi ?? this.glassStrokeHi,
         materie: materie ?? this.materie,
         energie: energie ?? this.energie,
+        vorhang: vorhang ?? this.vorhang,
+        ursprung: ursprung ?? this.ursprung,
         neutral: neutral ?? this.neutral,
         blurLight: blurLight ?? this.blurLight,
         blurMedium: blurMedium ?? this.blurMedium,
@@ -162,6 +188,8 @@ class WBCinematic extends ThemeExtension<WBCinematic> {
       glassStrokeHi: Color.lerp(glassStrokeHi, other.glassStrokeHi, t)!,
       materie: materie.lerp(other.materie, t),
       energie: energie.lerp(other.energie, t),
+      vorhang: vorhang.lerp(other.vorhang, t),
+      ursprung: ursprung.lerp(other.ursprung, t),
       neutral: neutral.lerp(other.neutral, t),
       blurLight: blurLight + (other.blurLight - blurLight) * t,
       blurMedium: blurMedium + (other.blurMedium - blurMedium) * t,
