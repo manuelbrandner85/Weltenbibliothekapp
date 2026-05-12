@@ -6,6 +6,7 @@ import '../../../widgets/profile_required_widget.dart';
 import '../../../services/spirit_calculations/numerology_engine.dart';
 import '../../../theme/wb_cinematic_tokens.dart';
 import '../../../widgets/cinematic/wb_glass_app_bar.dart';
+import '../../../widgets/cinematic/wb_vignette.dart';
 
 /// 🎭 ARCHETYPEN-ANALYSE SCREEN
 /// 
@@ -110,6 +111,7 @@ class _ArchetypeCalculatorScreenState extends State<ArchetypeCalculatorScreen> w
   Widget build(BuildContext context) {
     return Scaffold(
       extendBodyBehindAppBar: true,
+      backgroundColor: const Color(0xFF06040F),
       appBar: WBGlassAppBar(
         world: WBWorld.energie,
         title: 'ARCHETYPEN-ANALYSE',

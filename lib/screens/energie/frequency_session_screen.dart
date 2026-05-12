@@ -6,6 +6,7 @@ import '../../services/user_service.dart'; // 🆕 User Service für Auth
 import '../../widgets/frequency_audio_player.dart';
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_glass_app_bar.dart';
+import '../../widgets/cinematic/wb_vignette.dart';
 
 /// 🎵 FREQUENZ-SESSIONS SCREEN
 /// Gemeinsame Heilfrequenz-Sessions mit Timer
@@ -249,7 +250,7 @@ class _FrequencySessionScreenState extends State<FrequencySessionScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0D1B2A),
+      backgroundColor: const Color(0xFF06040F),
       appBar: WBGlassAppBar(
         world: WBWorld.energie,
         title: '🎵 Frequenz-Sessions',

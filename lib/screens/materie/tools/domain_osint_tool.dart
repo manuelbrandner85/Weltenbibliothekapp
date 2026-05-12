@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import '../../../config/api_config.dart';
 import '../../../theme/wb_cinematic_tokens.dart';
 import '../../../widgets/cinematic/wb_glass_app_bar.dart';
+import '../../../widgets/cinematic/wb_vignette.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // D — Domain-OSINT
@@ -116,7 +117,7 @@ class _DomainOsintToolState extends State<DomainOsintTool> {
     final dns   = _result?['dns'] as Map<String, dynamic>?;
 
     return Scaffold(
-      backgroundColor: _kBg,
+      backgroundColor: const Color(0xFF04080F),
       appBar: WBGlassAppBar(
         world: WBWorld.materie,
         titleWidget: Row(children: [

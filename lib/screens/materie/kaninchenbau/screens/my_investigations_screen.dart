@@ -9,6 +9,7 @@ import '../services/saved_threads_service.dart';
 import '../widgets/kb_design.dart';
 import '../../../../theme/wb_cinematic_tokens.dart';
 import '../../../../widgets/cinematic/wb_glass_app_bar.dart';
+import '../../../../widgets/cinematic/wb_vignette.dart';
 
 class MyInvestigationsScreen extends StatefulWidget {
   const MyInvestigationsScreen({super.key});
@@ -41,7 +42,7 @@ class _MyInvestigationsScreenState extends State<MyInvestigationsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: KbDesign.voidBlack,
+      backgroundColor: const Color(0xFF04080F),
       appBar: WBGlassAppBar(
         world: WBWorld.materie,
         titleWidget: Row(

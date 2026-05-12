@@ -4,6 +4,7 @@ import '../../services/cloudflare_api_service.dart';
 import '../../core/storage/unified_storage_service.dart';
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_glass_app_bar.dart';
+import '../../widgets/cinematic/wb_vignette.dart';
 
 /// 👤 Enhanced User Profile Screen
 /// Features:
@@ -116,6 +117,8 @@ class _EnhancedProfileScreenState extends State<EnhancedProfileScreen> with Sing
   Widget build(BuildContext context) {
     if (_isLoading) {
       return Scaffold(
+        extendBodyBehindAppBar: true,
+      backgroundColor: const Color(0xFF0A0A0A),
         appBar: WBGlassAppBar(
         world: WBWorld.neutral,
         title: 'Profil',

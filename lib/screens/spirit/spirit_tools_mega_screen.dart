@@ -9,6 +9,7 @@ import '../../models/spirit_tools_models.dart';
 import '../../services/achievement_service.dart';
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_glass_app_bar.dart';
+import '../../widgets/cinematic/wb_vignette.dart';
 
 // ========================================
 // 📔 TRAUMTAGEBUCH SCREEN
@@ -75,7 +76,7 @@ class _DreamJournalScreenState extends State<DreamJournalScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF050310),
+      backgroundColor: const Color(0xFF06040F),
       appBar: WBGlassAppBar(
         world: WBWorld.energie,
         title: '📔 Traumtagebuch',

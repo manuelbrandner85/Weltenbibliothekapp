@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import '../../../config/api_config.dart';
 import '../../../theme/wb_cinematic_tokens.dart';
 import '../../../widgets/cinematic/wb_glass_app_bar.dart';
+import '../../../widgets/cinematic/wb_vignette.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // C — Krypto-Verfolger
@@ -94,7 +95,7 @@ class _CryptoTrackerToolState extends State<CryptoTrackerTool> {
     final txs = (_result?['transactions'] as List?)?.cast<Map<String, dynamic>>() ?? [];
 
     return Scaffold(
-      backgroundColor: _kBg,
+      backgroundColor: const Color(0xFF04080F),
       appBar: WBGlassAppBar(
         world: WBWorld.materie,
         titleWidget: Row(children: [
