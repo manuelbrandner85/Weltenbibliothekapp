@@ -781,7 +781,7 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
       backgroundColor: isDark ? const Color(0xFF0A0A0A) : Colors.grey[100],
       appBar: WBGlassAppBar(
         world: WBWorld.neutral,
-        title: '${widget.world == ',
+        title: '${widget.world == 'materie' ? 'Materie' : 'Energie'}-Profil bearbeiten',
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
