@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_vignette.dart';
+import '../../services/mentor_service.dart';
+import '../shared/mentor_chat_screen.dart';
 
 /// 🌀 URSPRUNG Home Tab — Realitätserschaffung & CIA-Bewusstseins-Codes
 ///
@@ -40,6 +42,10 @@ class UrsprungHomeTab extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
+            // ── 🧠 KI-Mentor Button ──
+            _buildMentorButton(context),
+            const SizedBox(height: 24),
+
             _buildLockedModule(
               icon: Icons.auto_awesome,
               title: 'Realitätserschaffung',
@@ -160,6 +166,81 @@ class UrsprungHomeTab extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildMentorButton(BuildContext context) {
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const MentorChatScreen(
+            personality: MentorPersonality.alchemist,
+            world: 'ursprung',
+          ),
+        ),
+      ),
+      child: Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          gradient: LinearGradient(
+            colors: [
+              _cyan.withValues(alpha: 0.12),
+              _cyan.withValues(alpha: 0.04),
+            ],
+          ),
+          border: Border.all(color: _cyan.withValues(alpha: 0.30)),
+          boxShadow: [
+            BoxShadow(
+              color: _cyan.withValues(alpha: 0.08),
+              blurRadius: 20,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  colors: [_cyan.withValues(alpha: 0.25), _cyan.withValues(alpha: 0.08)],
+                ),
+                border: Border.all(color: _cyan.withValues(alpha: 0.4)),
+              ),
+              child: Icon(Icons.all_inclusive, color: _cyan, size: 26),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Sprich mit dem Alchemisten',
+                    style: TextStyle(
+                      color: _cyan,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Dein KI-Mentor für Bewusstsein',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.5),
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.arrow_forward_ios, color: _cyan.withValues(alpha: 0.5), size: 16),
+          ],
+        ),
       ),
     );
   }
