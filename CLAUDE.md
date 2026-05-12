@@ -1561,3 +1561,159 @@ noch NICHT direkt benutzt — reserviert für künftige Erweiterung der Gateway-
 | Atemmeister                | (none)       | Visuelle Atem-Animation, kein Sound v1 |
 | Realitäts-Architekt        | (none)       | Reine Text-UI                          |
 | RV Trainer                 | (none)       | Reine Text-UI                          |
+
+---
+
+## 💓 Health Plugin (`health: ^13.1.4`) — AUFGABE 6: Biometric Feedback
+
+**Zweck:** Apple HealthKit (iOS) + Android Health Connect für HRV- und Herzfrequenz-
+basiertes Biometric Feedback. Wird vom `BiometricService` gekapselt und von
+Gateway-Kammer + Atemmeister verwendet, um den **WIRKUNGS-SCORE** zu berechnen
+(prozentuale HRV-Veränderung vor → nach Session).
+
+### Versions-Hinweis: spec'd `^11.0.0` → installiert `^13.1.4`
+
+Spec verlangte `health: ^11.0.0`, aber `flutter_localizations` aus dem Flutter SDK
+pinnt `intl 0.20.2`. `health` 10.x–11.x verlangt jedoch `intl >=0.18.0 <0.20.0` —
+unauflösbarer Konflikt. Pub solver schlug `health: ^13.1.4` vor (kompatibel mit
+`intl 0.20.2`). **Wichtige API-Änderung seit v12:** `HealthFactory` wurde durch
+das `Health()` Singleton ersetzt; `await health.configure()` muss einmal vor
+jedem API-Aufruf laufen.
+
+```yaml
+dependencies:
+  health: ^13.1.4   # 🆕 Apple HealthKit + Android Health Connect
+```
+
+### Android — `android/app/src/main/AndroidManifest.xml`
+
+```xml
+<!-- Health Connect Permissions -->
+<uses-permission android:name="android.permission.health.READ_HEART_RATE" />
+<uses-permission android:name="android.permission.health.READ_HEART_RATE_VARIABILITY" />
+<uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
+
+<!-- Inside <application> ... <activity android:name=".MainActivity"> -->
+<intent-filter>
+  <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
+</intent-filter>
+
+<!-- Activity-Alias for Health Connect permission rationale (Android 14+) -->
+<activity-alias
+    android:name="ViewPermissionUsageActivity"
+    android:exported="true"
+    android:targetActivity=".MainActivity"
+    android:permission="android.permission.START_VIEW_PERMISSION_USAGE">
+  <intent-filter>
+    <action android:name="android.intent.action.VIEW_PERMISSION_USAGE" />
+    <category android:name="android.intent.category.HEALTH_PERMISSIONS" />
+  </intent-filter>
+</activity-alias>
+
+<!-- Inside <queries> so the app can detect the Health Connect package -->
+<package android:name="com.google.android.apps.healthdata" />
+```
+
+### iOS — `ios/Runner/Info.plist` (📌 für künftiges iOS-Team)
+
+> Aktuell existiert kein `ios/`-Verzeichnis in diesem Repo. Sobald iOS-Build
+> aktiviert wird, müssen folgende Einträge in `ios/Runner/Info.plist` ergänzt
+> werden:
+
+```xml
+<key>NSHealthShareUsageDescription</key>
+<string>WeltenBauer misst HRV und Herzfrequenz, um den Wirkungs-Score deiner Meditationen zu berechnen.</string>
+<key>NSHealthUpdateUsageDescription</key>
+<string>WeltenBauer kann optional Sessions als Achtsamkeits-Einträge in Apple Health speichern.</string>
+```
+
+Außerdem in **Xcode → Signing & Capabilities → + HealthKit** aktivieren.
+
+### `BiometricService` Usage Pattern
+
+```dart
+final bio = BiometricService();
+
+// 1. Permission Flow (idempotent, sicher mehrfach aufrufbar)
+final granted = await bio.requestPermissions();
+if (!granted) return;  // → graceful degradation: Session ohne Biometrie
+
+// 2. Vor der Session: Start-Zeitpunkt merken
+final start = DateTime.now();
+
+// 3. … User macht 15-min Meditation …
+
+// 4. Nach Session: Vergleich messen
+final cmp = await bio.measureSessionEffect(
+  sessionStart: start,
+  sessionEnd: DateTime.now(),
+);
+final score = bio.calculateEffectivenessScore(cmp);  // e.g. +18.4 %
+
+// 5. Persistieren (kann offline scheitern → catch'd intern)
+await bio.saveReading(
+  sessionType: 'gateway',           // 'gateway' | 'breathmaster' | …
+  sessionWorld: 'ursprung',
+  data: cmp,
+  durationMinutes: 15,
+  notes: 'Focus 12',
+);
+
+// 6. UI anzeigen
+await BiometricResultSheet.show(context, comparison: cmp, …);
+```
+
+### Graceful-Degradation Policy
+
+`BiometricService` darf **niemals** den User-Flow blockieren:
+- Wenn `requestPermissions()` → `false`: SnackBar zeigen, Session ohne Biometrie starten.
+- Wenn `getHRV()` / `getRestingHeartRate()` → `null` (keine Daten verfügbar):
+  `BiometricResultSheet` zeigt automatisch "Keine biometrischen Daten" mit Hinweis,
+  Apple Watch / Fitness-Tracker zu verbinden.
+- Wenn `saveReading()` fehlschlägt (offline / RLS-Fehler): Try-catch schluckt den
+  Fehler — die Session-Logs in `ursprung_gateway_sessions` / Tool-Tabellen bleiben
+  davon unberührt.
+
+### URSPRUNG-Tool ↔ Health-Mapping
+
+| Tool                | Biometric-Flow? | `session_type`   | Begründung |
+|---------------------|:---------------:|------------------|------------|
+| Gateway-Kammer      | ✅              | `gateway`        | 15–45 min Meditation → klare HRV-Veränderung erwartet |
+| Atemmeister         | ✅              | `breathmaster`   | Resonant Tuning maximiert HRV-Coherence (HeartMath) |
+| Frequenz-Generator  | ❌              | —                | Reines Ton-Tester-Tool, keine Session-Struktur |
+| Realitäts-Architekt | ❌              | —                | Reine Text-/Vision-UI |
+| RV Trainer          | ❌              | —                | Cognitive Task, HRV-Effekt nicht primär |
+
+### Supabase: `biometric_readings`
+
+Migration: `supabase/migrations/20260514_v62_biometric_readings.sql`
+
+```sql
+CREATE TABLE biometric_readings (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  session_type text NOT NULL,        -- 'gateway' | 'breathmaster' | …
+  session_world text NOT NULL,       -- 'ursprung' (v1)
+  hrv_before double precision,
+  hrv_after double precision,
+  hr_before double precision,
+  hr_after double precision,
+  effectiveness_score double precision,
+  duration_minutes integer,
+  notes text,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+-- + Indexes (user_id, created_at DESC), (user_id, session_world)
+-- + RLS: auth.uid() = user_id für SELECT/INSERT/UPDATE/DELETE
+```
+
+### Build/Test-Hinweise
+
+- Native Plugin → **Full-Release** nötig (Shorebird-Patch reicht NICHT).
+- Erster Permission-Dialog erscheint nur einmal pro App-Install — zum Re-Testen
+  Health-App / Health-Connect öffnen und WeltenBauer aus den Berechtigungen entfernen.
+- Emulator-Test eingeschränkt: Health Connect läuft nur auf Android 14+, HealthKit
+  nicht im iOS-Simulator → echtes Gerät nötig.
+- Wirkungs-Score-Formel ist in `BiometricService.calculateEffectivenessScore`
+  zentralisiert und auf `[-100, 500]` geklemmt, um statistische Outlier (z.B.
+  HRV-Sprung von 5 → 50 ms direkt nach Aufwachen) abzufangen.

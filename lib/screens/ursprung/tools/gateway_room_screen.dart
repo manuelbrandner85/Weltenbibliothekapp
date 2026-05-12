@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../services/biometric_service.dart';
+import '../../shared/biometric_result_sheet.dart';
 
 /// 🚪 Gateway-Kammer — CIA Hemi-Sync Meditation Trainer
 ///
@@ -61,6 +63,12 @@ class _GatewayRoomScreenState extends State<GatewayRoomScreen>
   final AudioPlayer _player = AudioPlayer();
   bool _audioOn = false;
 
+  // ── Biometric Feedback ─────────────────────────────────────
+  final BiometricService _bio = BiometricService();
+  bool _biometricEnabled = false;
+  bool _measuringBaseline = false;
+  DateTime? _sessionStartedAt;
+
   @override
   void initState() {
     super.initState();
@@ -90,11 +98,75 @@ class _GatewayRoomScreenState extends State<GatewayRoomScreen>
     }
   }
 
-  void _start() {
+  Future<void> _askBiometric() async {
+    final res = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF080818),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: _cyan.withValues(alpha: 0.30)),
+        ),
+        title: const Text(
+          'Biometrisches Feedback?',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: Text(
+          'Möchtest du HRV + Herzfrequenz vor und nach der Session messen, '
+          'um den Wirkungs-Score zu berechnen?\n\n'
+          'Erfordert Apple Health bzw. Health Connect mit verbundener '
+          'Herzfrequenz-Quelle.',
+          style: TextStyle(color: Colors.white.withValues(alpha: 0.75)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Ohne',
+                style: TextStyle(color: Colors.white54)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _cyan,
+              foregroundColor: _bgDeep,
+            ),
+            child: const Text('Aktivieren'),
+          ),
+        ],
+      ),
+    );
+    if (res != true) {
+      _start(biometric: false);
+      return;
+    }
+    final granted = await _bio.requestPermissions();
+    if (!mounted) return;
+    if (!granted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+              'Health-Berechtigungen nicht gewährt — Session startet ohne Biometrie.'),
+        ),
+      );
+      _start(biometric: false);
+      return;
+    }
+    // 2-min baseline window: we simply mark "now" as the session start and
+    // rely on the BiometricService to pull the last 2 min before _sessionStartedAt.
+    setState(() => _measuringBaseline = true);
+    await Future<void>.delayed(const Duration(seconds: 1));
+    if (!mounted) return;
+    setState(() => _measuringBaseline = false);
+    _start(biometric: true);
+  }
+
+  void _start({required bool biometric}) {
     if (_isRunning) return;
     setState(() {
       _isRunning = true;
       _elapsedSeconds = 0;
+      _biometricEnabled = biometric;
+      _sessionStartedAt = DateTime.now();
     });
     _timer = Timer.periodic(const Duration(seconds: 1), (t) {
       if (!mounted) return;
@@ -118,16 +190,22 @@ class _GatewayRoomScreenState extends State<GatewayRoomScreen>
     _timer?.cancel();
     final level = _levels[_selectedLevelIdx];
     final actualMinutes = (_elapsedSeconds / 60).round();
+    final sessionStart = _sessionStartedAt ?? DateTime.now();
+    final sessionEnd = DateTime.now();
+    final wasBiometric = _biometricEnabled;
     setState(() {
       _isRunning = false;
       _audioOn = false;
     });
     if (_audioOn) await _player.stop();
 
+    // 1) Save the Gateway session row (independent of biometrics).
     try {
       final user = Supabase.instance.client.auth.currentUser;
       if (user != null) {
-        await Supabase.instance.client.from('ursprung_gateway_sessions').insert({
+        await Supabase.instance.client
+            .from('ursprung_gateway_sessions')
+            .insert({
           'user_id': user.id,
           'focus_level_reached': level.name,
           'duration_minutes': actualMinutes,
@@ -139,14 +217,49 @@ class _GatewayRoomScreenState extends State<GatewayRoomScreen>
     }
 
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: _cyan.withValues(alpha: 0.9),
-        content: Text(
-          'Gateway-Session abgeschlossen: ${level.name} · $actualMinutes min',
+
+    // 2) If biometrics was enabled, measure the after-window and show the
+    //    result sheet. Otherwise just show a snackbar.
+    if (wasBiometric) {
+      // 2-min after-window: short wait so HealthKit/Health Connect have time
+      // to commit the post-session samples. We tolerate this gracefully.
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: _cyan.withValues(alpha: 0.9),
+          content: const Text(
+              'Session abgeschlossen — biometrische Nachher-Messung läuft …'),
         ),
-      ),
-    );
+      );
+      final comparison = await _bio.measureSessionEffect(
+        sessionStart: sessionStart,
+        sessionEnd: sessionEnd,
+      );
+      // Persist into biometric_readings (graceful no-op when offline).
+      await _bio.saveReading(
+        sessionType: 'gateway',
+        sessionWorld: 'ursprung',
+        data: comparison,
+        durationMinutes: actualMinutes,
+        notes: level.name,
+      );
+      if (!mounted) return;
+      await BiometricResultSheet.show(
+        context,
+        comparison: comparison,
+        sessionType: 'gateway',
+        sessionWorld: 'ursprung',
+        durationMinutes: actualMinutes,
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: _cyan.withValues(alpha: 0.9),
+          content: Text(
+            'Gateway-Session abgeschlossen: ${level.name} · $actualMinutes min',
+          ),
+        ),
+      );
+    }
   }
 
   @override
@@ -324,7 +437,7 @@ class _GatewayRoomScreenState extends State<GatewayRoomScreen>
                 ),
                 const SizedBox(height: 24),
                 ElevatedButton(
-                  onPressed: _start,
+                  onPressed: _measuringBaseline ? null : _askBiometric,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _cyan,
                     foregroundColor: _bgDeep,
@@ -333,9 +446,9 @@ class _GatewayRoomScreenState extends State<GatewayRoomScreen>
                       borderRadius: BorderRadius.circular(14),
                     ),
                   ),
-                  child: const Text(
-                    'GATEWAY ÖFFNEN',
-                    style: TextStyle(
+                  child: Text(
+                    _measuringBaseline ? 'BASELINE MESSUNG …' : 'GATEWAY ÖFFNEN',
+                    style: const TextStyle(
                       fontWeight: FontWeight.w700,
                       letterSpacing: 3.0,
                     ),

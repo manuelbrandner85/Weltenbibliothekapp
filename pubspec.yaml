@@ -117,6 +117,7 @@ dependencies:
   flutter_tts: ^4.0.0               # Text-to-Speech
   geolocator: ^13.0.1               # GPS Location für AR
   web_socket_channel: ^3.0.3
+  health: ^13.1.4                   # 🆕 Apple HealthKit + Android Health Connect (HRV/HR Biometric Feedback) — v11.x kollidiert mit intl 0.20.2
   
   # 🔍 Epstein Files Research Tool
   webview_flutter: 4.10.0           # WebView – pinned for Dart 3.5 / Flutter 3.24 compatibility

@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../../../services/biometric_service.dart';
+import '../../shared/biometric_result_sheet.dart';
 
 /// 🌬️ Atemmeister — HeartMath / CIA Resonant Tuning Breathing
 ///
@@ -63,6 +65,12 @@ class _BreathmasterScreenState extends State<BreathmasterScreen>
   Timer? _timer;
   late final AnimationController _scaleCtrl;
 
+  // ── Biometric Feedback ─────────────────────────────────────
+  final BiometricService _bio = BiometricService();
+  bool _biometricEnabled = false;
+  bool _measuringBaseline = false;
+  DateTime? _sessionStartedAt;
+
   @override
   void initState() {
     super.initState();
@@ -79,13 +87,75 @@ class _BreathmasterScreenState extends State<BreathmasterScreen>
     super.dispose();
   }
 
-  void _start() {
+  Future<void> _askBiometric() async {
+    final res = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF080818),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: _cyan.withValues(alpha: 0.30)),
+        ),
+        title: const Text(
+          'Biometrisches Feedback?',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: Text(
+          'Möchtest du HRV + Herzfrequenz vor und nach der Atem-Session messen, '
+          'um den Wirkungs-Score zu berechnen?\n\n'
+          'Erfordert Apple Health bzw. Health Connect mit verbundener '
+          'Herzfrequenz-Quelle.',
+          style: TextStyle(color: Colors.white.withValues(alpha: 0.75)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Ohne',
+                style: TextStyle(color: Colors.white54)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _cyan,
+              foregroundColor: _bgDeep,
+            ),
+            child: const Text('Aktivieren'),
+          ),
+        ],
+      ),
+    );
+    if (res != true) {
+      _start(biometric: false);
+      return;
+    }
+    final granted = await _bio.requestPermissions();
+    if (!mounted) return;
+    if (!granted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+              'Health-Berechtigungen nicht gewährt — Session startet ohne Biometrie.'),
+        ),
+      );
+      _start(biometric: false);
+      return;
+    }
+    setState(() => _measuringBaseline = true);
+    await Future<void>.delayed(const Duration(seconds: 1));
+    if (!mounted) return;
+    setState(() => _measuringBaseline = false);
+    _start(biometric: true);
+  }
+
+  void _start({required bool biometric}) {
     final pattern = _patterns[_patternIdx];
     setState(() {
       _running = true;
       _stepIdx = 0;
       _cycleCount = 0;
       _stepRemaining = pattern.steps[0].seconds;
+      _biometricEnabled = biometric;
+      _sessionStartedAt = DateTime.now();
     });
     _animateStep();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
@@ -125,6 +195,47 @@ class _BreathmasterScreenState extends State<BreathmasterScreen>
     _timer?.cancel();
     _scaleCtrl.stop();
     setState(() => _running = false);
+    if (_biometricEnabled) {
+      // Fire-and-forget biometric finish flow.
+      unawaited(_finishBiometric());
+    }
+  }
+
+  Future<void> _finishBiometric() async {
+    final pattern = _patterns[_patternIdx];
+    final sessionStart = _sessionStartedAt ?? DateTime.now();
+    final sessionEnd = DateTime.now();
+    final durationMin = sessionEnd.difference(sessionStart).inSeconds ~/ 60;
+    final cycles = _cycleCount;
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: _cyan.withValues(alpha: 0.9),
+        content: const Text(
+            'Atem-Session abgeschlossen — biometrische Nachher-Messung läuft …'),
+      ),
+    );
+
+    final comparison = await _bio.measureSessionEffect(
+      sessionStart: sessionStart,
+      sessionEnd: sessionEnd,
+    );
+    await _bio.saveReading(
+      sessionType: 'breathmaster',
+      sessionWorld: 'ursprung',
+      data: comparison,
+      durationMinutes: durationMin,
+      notes: '${pattern.name} · $cycles Zyklen',
+    );
+    if (!mounted) return;
+    await BiometricResultSheet.show(
+      context,
+      comparison: comparison,
+      sessionType: 'breathmaster',
+      sessionWorld: 'ursprung',
+      durationMinutes: durationMin,
+    );
   }
 
   @override
@@ -307,7 +418,7 @@ class _BreathmasterScreenState extends State<BreathmasterScreen>
                 }),
                 const SizedBox(height: 12),
                 ElevatedButton(
-                  onPressed: _start,
+                  onPressed: _measuringBaseline ? null : _askBiometric,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _cyan,
                     foregroundColor: _bgDeep,
@@ -316,9 +427,11 @@ class _BreathmasterScreenState extends State<BreathmasterScreen>
                       borderRadius: BorderRadius.circular(14),
                     ),
                   ),
-                  child: const Text(
-                    'STARTE ATMUNG',
-                    style: TextStyle(
+                  child: Text(
+                    _measuringBaseline
+                        ? 'BASELINE MESSUNG …'
+                        : 'STARTE ATMUNG',
+                    style: const TextStyle(
                       fontWeight: FontWeight.w700,
                       letterSpacing: 3.0,
                     ),
