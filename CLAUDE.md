@@ -269,6 +269,10 @@ Flutter App (Client)
 | `SUPABASE_ANON_KEY` | ✅ (dart-define, public by design) | ✅ | — |
 | `SUPABASE_SERVICE_ROLE_KEY` | ❌ VERBOTEN | ❌ | ✅ |
 | `CLOUDFLARE_API_TOKEN` | ❌ VERBOTEN | ❌ | ✅ |
+| `GROQ_API_KEY` | ❌ VERBOTEN | ❌ | ✅ |
+| `YOUTUBE_API_KEY` | ❌ VERBOTEN | ❌ | ✅ |
+| `GOOGLE_FACTCHECK_API_KEY` | ❌ VERBOTEN | ❌ | ✅ |
+| `FCM_SERVICE_ACCOUNT` | ❌ VERBOTEN | ❌ | ✅ |
 
 ### Aktuelle Werte (öffentlich, da Anon-Key)
 
@@ -320,10 +324,17 @@ Weltenbibliothekapp/
 │   │   │   ├── materie_live_chat_screen.dart  # ⭐ Materie-Chat (Hauptscreen)
 │   │   │   ├── materie_community_tab.dart     # Community-Feed Materie
 │   │   │   └── ...
-│   │   ├── shared/                      # Shared Screens (Profil, Voice, etc.)
+│   │   ├── shared/                      # Shared Screens (Profil, Voice, Mentor, etc.)
+│   │   │   ├── mentor_chat_screen.dart  # 🧠 Mentor Chat UI (welt-abhängig)
+│   │   │   ├── skill_tree_screen.dart   # 🎮 Skill-Baum (Octalysis Gamification)
+│   │   │   ├── artifact_collection_screen.dart # 🏺 Artefakt-Sammlung
+│   │   │   └── destiny_card_screen.dart # 🃏 Schicksalskarte (täglich)
 │   │   └── release_update_screen.dart   # ⭐ Fullscreen-Update-Gate (In-App-APK-Download)
 │   ├── animations/
 │   │   └── world_transition_video.dart  # 🎬 4-Welten Cinematic Transition (Video + Procedural)
+│   ├── services/
+│   │   ├── mentor_service.dart          # 🧠 KI-Mentor Service (Singleton, 4 Persönlichkeiten)
+│   │   └── gamification_service.dart    # 🎮 Octalysis Gamification (XP, Skills, Artefakte, Karten)
 │   └── widgets/                         # Wiederverwendbare UI-Komponenten
 │       ├── update_gate.dart             # ⭐ Update-Koordinator (Stream-basiert, Stack-Overlay)
 │       ├── patch_ready_dialog.dart      # ⭐ Prominenter OTA-Patch-Dialog + Changelog (v5.36.0+)
@@ -338,7 +349,9 @@ Weltenbibliothekapp/
 │   └── migrations/                      # Alle SQL-Migrationen
 │       ├── 20260402_v10_full_schema.sql
 │       ├── 20260402_v11_chat_livestream_fix.sql
-│       └── 20260402_v12_missing_tool_tables.sql  # ⚠️ Noch nicht in DB!
+│       ├── 20260402_v12_missing_tool_tables.sql  # ⚠️ Noch nicht in DB!
+│       ├── 20260512_v58_mentor_sessions.sql      # 🧠 KI-Mentor Sessions + RLS
+│       └── 20260512_v59_gamification_tables.sql   # 🎮 Gamification (5 Tabellen + 20 Artefakte)
 └── CLAUDE.md                            # Diese Datei
 ```
 
@@ -392,6 +405,10 @@ tool_research_documents   ← materie/research
 | WS | `/voice/signaling` | WebRTC Signaling |
 | POST | `/api/push/register` | Push-Registrierung |
 | POST | `/recherche` | AI-Recherche |
+| POST | `/api/mentor/chat` | 🧠 KI-Mentor Chat (Groq/Workers AI) |
+| POST | `/api/mentor/factcheck` | Faktencheck (Google FactCheck + AI) |
+| GET | `/api/mentor/youtube-search` | YouTube-Suche (Piped + YT API v3) |
+| POST | `/api/mentor/investigate` | Tiefenrecherche (3 Depth-Stufen) |
 
 ### Worker deployen
 
@@ -453,6 +470,27 @@ chore(deps): Dependencies aktualisiert
 ---
 
 ## ✅ Aktueller Status & Offene Aufgaben
+
+### ✅ Erledigt (Mai 2026 — Welt 6 VORHANG)
+
+- [x] **30 VORHANG-Module** (V-01 bis V-30) in 6 Branches via `supabase/migrations/20260512_v60_vorhang_modules.sql`:
+  - **Branch 1 — Machtpsychologie** (V-01 bis V-05): 48 Gesetze, Cialdini, dunkle Triade, Soft Power, BOSS Machtmeister
+  - **Branch 2 — Manipulationserkennung** (V-06 bis V-10): Gaslighting, Love Bombing, DARVO, Sekten-Taktiken, BOSS Manipulationsabwehr
+  - **Branch 3 — Verhandlung & Überzeugung** (V-11 bis V-15): Harvard-Konzept, Voss-Taktiken, Reframing, Storytelling, BOSS Master-Negotiator
+  - **Branch 4 — Körpersprache & Nonverbales** (V-16 bis V-20): Mikroexpressionen (Ekman), Power-Posen, Stimme, Lügenerkennung, BOSS Körpersprache-Profi
+  - **Branch 5 — Strategisches Denken** (V-21 bis V-25): Sun Tzu, Spieltheorie, OODA-Loop, Systemisches Denken, BOSS Stratege
+  - **Branch 6 — Schattenarbeit** (V-26 bis V-30): Jung'scher Schatten, innerer Kritiker, Projektion, goldener Schatten, BOSS Integration
+  - Pro Modul: 14 Spalten — `module_code`, `branch`, `branch_order`, `title`, `subtitle`, `theory_content` (500+ Wörter), `case_study`, `exercise_description`, `test_questions` JSONB, `xp_reward` (50/100), `is_boss_module`, `prerequisites` TEXT[], `youtube_search_query`
+  - Boss-Module (V-05/10/15/20/25/30): 15 Fragen, 100 XP; reguläre Module: 5 Fragen, 50 XP
+- [x] **4 Cloudflare Worker Endpoints** in `workers/api-worker.js` (vor `// ── 404`):
+  - `GET /api/vorhang/modules?user_id=...` — Module gruppiert nach 6 Branches + `is_unlocked`/`is_completed`
+  - `GET /api/vorhang/module/:moduleCode?user_id=...` — Einzelmodul + User-Progress
+  - `POST /api/vorhang/progress` — Upsert (`on_conflict=user_id,module_code`); XP-Award via `rpc/add_user_xp` nur beim ersten Bestehen
+  - `GET /api/vorhang/youtube/:moduleCode` — Piped API primär, YouTube Data API Fallback
+- [x] **Flutter UI** (3 Screens, kein flutter_markdown — eigener RichText-Parser):
+  - `lib/screens/vorhang/vorhang_modules_screen.dart` — 6 ExpansionTiles, Status-Icons (✅ done / 🔓 unlocked / 🔒 locked), Per-Branch + Gesamt-Progress-Bar, BOSS-Badges
+  - `lib/screens/vorhang/vorhang_lesson_screen.dart` — DefaultTabController(length:5) mit Tabs **Theorie · Fallstudie · Übung · Test · Videos**; Quiz mit ≥80%-Pass-Regel; XP-Award via `GamificationService().addXp('vorhang', ...)`; YouTube-Videos lazy-loaded und via `launchUrl(..., LaunchMode.externalApplication)` extern geöffnet
+  - `lib/screens/vorhang/vorhang_home_tab.dart` — Hero + KI-Mentor-Button erhalten; Locked-Placeholders ersetzt durch horizontal scrollbare Branch-Progress-Cards, prominente "Next Module" Gold-Card, "Last completed" Liste und Button → VorhangModulesScreen
 
 ### ✅ Erledigt (April 2026)
 
@@ -812,6 +850,65 @@ chore(deps): Dependencies aktualisiert
   - **Worker**: `/api/voice/sessions?world=X` (GET aktive Sessions),
     `/api/voice/session/join` (POST), `/api/voice/session/leave` (POST)
 
+- [x] **KI-Mentor System mit 4 Persönlichkeiten** (2026-05-12, Patch ✓):
+  - **4 Cloudflare Worker Endpoints** in `workers/api-worker.js`:
+    - `POST /api/mentor/chat` — Groq LLM (llama-3.3-70b-versatile) primary, Workers AI (llama-3.1-8b) fallback
+    - `POST /api/mentor/factcheck` — Google Fact Check API + Groq/AI fallback
+    - `GET /api/mentor/youtube-search` — Piped API primary, YouTube Data API v3 fallback
+    - `POST /api/mentor/investigate` — Tiefenrecherche mit depth-Stufen (basic/deep/expert)
+    - In-memory Rate Limiting: 30 RPM / 14.400 RPD pro User (IP/Token-basiert)
+  - **`lib/services/mentor_service.dart`** (neu) — Singleton-Service:
+    - 6 Model-Klassen: `MentorResponse`, `FactCheckResponse`, `FactCheckSource`, `YouTubeVideo`, `InvestigationResult`, `InvestigationSource`, `MentorChatMessage`
+    - Enum `MentorPersonality` (stratege/alchemist/heiler/forscher) + Mapping-Funktionen
+    - 4 API-Methoden: `sendMessage()`, `factCheck()`, `searchYouTube()`, `investigate()`
+    - SQLite Chat-Verlauf via `SqliteStorageService` (box: `mentor_chats`, max 200 Nachrichten, 50 im Kontext)
+  - **`lib/screens/shared/mentor_chat_screen.dart`** (neu) — Vollständige Chat-UI:
+    - Welt-abhängige Farben (Gold/Cyan/Purple/Blue) + Mentor-Icons
+    - Typing-Indicator (animierte Dots), FactCheck-Card mit Verdict-Badge, YouTube-Carousel
+    - Tiefenrecherche-Dialog mit 3 Depth-Stufen, Chat-Löschen mit Bestätigung
+    - Action-Chips: Faktencheck, Recherche, YouTube
+  - **Mentor-Button in allen 4 World Home Tabs**:
+    - `vorhang_home_tab.dart` — Gold-Button → Stratege (Icons.psychology)
+    - `ursprung_home_tab.dart` — Cyan-Button → Alchemist (Icons.all_inclusive)
+    - `materie/home_tab_v5.dart` — Blue-Banner (SliverToBoxAdapter) → Forscher (Icons.science)
+    - `energie/home_tab_v5.dart` — Purple-Banner (SliverToBoxAdapter) → Heiler (Icons.favorite)
+  - **Supabase Migration v58** (`20260512_v58_mentor_sessions.sql`):
+    - `mentor_sessions` Tabelle mit RLS (4 Policies: SELECT/INSERT/UPDATE/DELETE eigene Sessions)
+    - Indexes auf user_id, world, (user_id, world)
+    - updated_at Trigger, Realtime-Publication
+  - **4 Mentor-Persönlichkeiten** (System-Prompts im Worker, deutsch):
+    - Stratege (Vorhang) — Machtanalyst, kalt-logisch, Machiavelli-inspiriert
+    - Alchemist (Ursprung) — Bewusstseinsexperte, mystisch, hermetisch
+    - Heiler (Energie) — Empathisch, heilend, Chakren/Meditation
+    - Forscher (Materie) — Wissenschaftlich, faktisch, interdisziplinär
+  - **Worker Secrets benötigt**: `GROQ_API_KEY`, `YOUTUBE_API_KEY`, `GOOGLE_FACTCHECK_API_KEY`
+  - **Workers AI Binding**: `env.AI` für kostenlose Llama 3.1 8B als Fallback (kein Secret nötig)
+
+- **🎮 Octalysis Gamification System** (Mai 2026):
+  - **Supabase Migration v59** (`20260512_v59_gamification_tables.sql`):
+    - 5 Tabellen: `user_skill_tree`, `artifacts`, `user_artifacts`, `user_titles`, `daily_destiny_cards`
+    - RLS auf allen User-Tabellen (`auth.uid() = user_id`), `artifacts` öffentlich lesbar
+    - 20 Seed-Artefakte (4 pro Welt × 5 Welten inkl. universal), 4 Seltenheiten
+    - `updated_at` Trigger, Realtime-Publication, idempotente INSERTS
+  - **Welten-Namen im Gamification**: `materie`, `energie`, `noir` (= Vorhang), `genesis` (= Ursprung)
+  - **`lib/services/gamification_service.dart`** (neu) — Singleton-Service:
+    - Level-Formel: `level = sqrt(totalXP / 100)`
+    - XP & Leveling: `addXp()`, `getProgress()`, Level-Up-Belohnungen
+    - Skill-Tree: 5 Skills pro Welt mit Prerequisites, `unlockOrUpgradeSkill()`
+    - Artefakt-System: Katalog, Erwerb, Ausrüsten/Ablegen
+    - Destiny Cards: 60-Karten-Pool (20 wisdom, 15 challenge, 15 boost, 10 mystery)
+    - Streak-System: Tagesstreak mit Freeze (1/Woche)
+    - SQLite-Persistenz via `SqliteStorageService` (5 Boxes)
+    - Supabase-Sync für Cloud-Backup
+  - **3 UI Screens** (alle unter `lib/screens/shared/`):
+    - `skill_tree_screen.dart` — Skill-Baum mit Pulse-Animation, XP-Bar, Streak-Anzeige
+    - `artifact_collection_screen.dart` — Katalog + Besitz-Grid, Rarity-Filter, Detail-Sheet
+    - `destiny_card_screen.dart` — Flip-Animation, CustomPainter-Kartenrücken, 7-Tage-Historie
+  - **3 Worker Endpoints**:
+    - `POST /api/gamification/add-xp` — XP-Sync zu Supabase
+    - `GET /api/gamification/artifacts` — Artefakt-Katalog (optional Welt-Filter)
+    - `POST /api/gamification/draw-card` — Schicksalskarte in DB persistieren (1/Tag)
+
 ### ⚠️ Noch ausstehend / bekannte Probleme
 
 0. **YouTube-Videos**: Piped API als primäre Quelle aktiv (PR #121). Worker `/api/map/youtube` gibt korrekt `{ items: [] }` zurück. Error-153-Fallback in `youtube_player_inline.dart` aktiv. Alle Karte-Locations haben hardcodierte Video-IDs als Fallback.
@@ -853,6 +950,23 @@ chore(deps): Dependencies aktualisiert
    Cache geladen (nicht mehr immer false); echter DB-Load bei erstem Aufruf via isLiked()
 
 7. **APK Build** – Kein Android SDK in Sandbox verfügbar, Build lokal oder via CI/CD nötig
+
+8. **🧠 KI-Mentor Worker Secrets** — Folgende Secrets müssen im Cloudflare Worker gesetzt werden:
+   ```bash
+   cd workers
+   echo "<KEY>" | npx wrangler secret put GROQ_API_KEY
+   echo "<KEY>" | npx wrangler secret put YOUTUBE_API_KEY
+   echo "<KEY>" | npx wrangler secret put GOOGLE_FACTCHECK_API_KEY
+   ```
+   Ohne diese Secrets fallen die Mentor-Endpoints auf Workers AI (kostenlos, `env.AI` Binding) zurück.
+   YouTube-Suche fällt auf Piped API zurück (kostenlos, kein Key nötig).
+
+9. **⚠️ `speech_to_text` Plugin-Warnung**: Das `speech_to_text` Plugin (falls in Zukunft für
+   Voice-Input im Mentor-Chat verwendet) hat bekannte Probleme:
+   - **Android**: Erfordert `RECORD_AUDIO` Permission + Manifest-Deklaration
+   - **iOS**: `NSSpeechRecognitionUsageDescription` + `NSMicrophoneUsageDescription` in Info.plist
+   - **Nativer Release nötig** bei Erstintegration (nicht patch-kompatibel)
+   - Aktuell NICHT implementiert — nur als Warnung für zukünftige Erweiterung dokumentiert
 
 ---
 
@@ -980,6 +1094,10 @@ const user_id = isUUID ? rawUserId : null;
 - `profile_settings_screen.dart` – Profil-Einstellungen
 - `modern_voice_chat_screen.dart` – Voice-Chat UI
 - `world_admin_dashboard.dart` – Admin-Panel
+- `mentor_chat_screen.dart` – 🧠 KI-Mentor Chat UI (alle 4 Welten)
+- `skill_tree_screen.dart` – 🎮 Skill-Baum pro Welt (Octalysis)
+- `artifact_collection_screen.dart` – 🏺 Artefakt-Sammlung (Katalog + Besitz)
+- `destiny_card_screen.dart` – 🃏 Tägliche Schicksalskarte + Historie
 
 ---
 
@@ -998,6 +1116,8 @@ const user_id = isUUID ? rawUserId : null;
 | `avatar_upload_service.dart` | Avatar-Upload zu Supabase Storage |
 | `favorites_service.dart` | Lokale Favoriten (Hive) |
 | `group_tools_service.dart` | Tool-Daten (nutzt 7 Tool-Tabellen) |
+| `mentor_service.dart` | 🧠 KI-Mentor (4 Persönlichkeiten, Groq/Workers AI, SQLite Chat) |
+| `gamification_service.dart` | 🎮 Octalysis Gamification (XP/Level, Skill-Tree, Artefakte, Destiny Cards, Streak) |
 
 ---
 

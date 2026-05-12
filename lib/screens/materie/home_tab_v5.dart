@@ -17,6 +17,8 @@ import '../shared/stats_dashboard_screen.dart';
 import '../shared/notification_center_screen.dart';
 import '../../services/world_subscription_service.dart';
 import '../../config/wb_design.dart';
+import '../../services/mentor_service.dart';
+import '../shared/mentor_chat_screen.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // MATERIE HOME DASHBOARD V7 – REDESIGN 2026
@@ -386,6 +388,7 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
                   slivers: [
                     _buildHeroHeader(),
                     _buildLiveStatBanner(),
+                    _buildMentorBanner(),
                     _buildActionGrid(),
                     _buildRecentRooms(),
                     _buildSectionTitle('🔥 Trending', subtitle: 'Heiß diskutiert'),
@@ -723,6 +726,88 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
                   ),
                 );
               }).toList(),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── 🧠 MENTOR BANNER ────────────────────────────────────────────────────
+  Widget _buildMentorBanner() {
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+        child: GestureDetector(
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const MentorChatScreen(
+                personality: MentorPersonality.forscher,
+                world: 'materie',
+              ),
+            ),
+          ),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              gradient: LinearGradient(
+                colors: [
+                  _blue.withValues(alpha: 0.15),
+                  _blue.withValues(alpha: 0.05),
+                ],
+              ),
+              border: Border.all(color: _blue.withValues(alpha: 0.3)),
+              boxShadow: [
+                BoxShadow(
+                  color: _blue.withValues(alpha: 0.08),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: [_blue.withValues(alpha: 0.3), _blue.withValues(alpha: 0.1)],
+                    ),
+                    border: Border.all(color: _blue.withValues(alpha: 0.5)),
+                  ),
+                  child: const Icon(Icons.science, color: Color(0xFF2979FF), size: 24),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Sprich mit dem Forscher',
+                        style: TextStyle(
+                          color: Color(0xFF82B1FF),
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        'Dein KI-Mentor für Wissenschaft & Fakten',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.5),
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(Icons.arrow_forward_ios,
+                    color: _blue.withValues(alpha: 0.5), size: 16),
+              ],
             ),
           ),
         ),
