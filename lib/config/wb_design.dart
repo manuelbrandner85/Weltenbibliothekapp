@@ -71,6 +71,24 @@ class WbDesign {
   static const Color materieGreen = Color(0xFF43A047);
   static const Color materiePurple = Color(0xFF9C27B0);
 
+  // Vorhang-Akzente (Gold-Spektrum)
+  static const Color vorhangGold = Color(0xFFC9A84C);
+  static const Color vorhangGoldDark = Color(0xFF8B7530);
+  static const Color vorhangGoldLight = Color(0xFFE0C872);
+  static const Color vorhangGoldAccent = Color(0xFFFFD700);
+  static const Color bgVorhang = Color(0xFF000000);
+  static const Color surfaceVorhang = Color(0xFF0D0B00);
+  static const Color surfaceVorhangAlt = Color(0xFF151200);
+
+  // Ursprung-Akzente (Cyan-Spektrum)
+  static const Color ursprungCyan = Color(0xFF00D4AA);
+  static const Color ursprungCyanDark = Color(0xFF008866);
+  static const Color ursprungCyanLight = Color(0xFF40E8C0);
+  static const Color ursprungCyanAccent = Color(0xFF00FFD4);
+  static const Color bgUrsprung = Color(0xFF050510);
+  static const Color surfaceUrsprung = Color(0xFF080818);
+  static const Color surfaceUrsprungAlt = Color(0xFF0A0A20);
+
   // ═══════════════════════════════════════════════════════════════════════
   // TEXT COLORS (klare Hierarchie)
   // ═══════════════════════════════════════════════════════════════════════
@@ -203,6 +221,68 @@ class WbDesign {
         ),
       ];
 
+  /// Hero-Header Gradient für Vorhang (Gold-Aura).
+  static LinearGradient heroVorhang() => const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [Color(0xFF1A1500), Color(0xFF8B7530), Color(0xFFC9A84C)],
+      );
+
+  /// Hero-Header Gradient für Ursprung (Cyan-Aura).
+  static LinearGradient heroUrsprung() => const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [Color(0xFF002B22), Color(0xFF008866), Color(0xFF00D4AA)],
+      );
+
+  /// Action-Tile Gradients für Vorhang (Gold-Varianten).
+  static List<LinearGradient> actionTilesVorhang() => const [
+        LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF1A1500), Color(0xFF8B7530), Color(0xFFC9A84C)],
+        ),
+        LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF2E1A00), Color(0xFF8B6914), Color(0xFFFFD700)],
+        ),
+        LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF1A0D00), Color(0xFF6B4E00), Color(0xFFE0C872)],
+        ),
+        LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF0D0D00), Color(0xFF4A4A00), Color(0xFFA09030)],
+        ),
+      ];
+
+  /// Action-Tile Gradients für Ursprung (Cyan-Varianten).
+  static List<LinearGradient> actionTilesUrsprung() => const [
+        LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF002B22), Color(0xFF008866), Color(0xFF00D4AA)],
+        ),
+        LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF001A2B), Color(0xFF006688), Color(0xFF00AAD4)],
+        ),
+        LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF002B1A), Color(0xFF008850), Color(0xFF00D488)],
+        ),
+        LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF0D1A2B), Color(0xFF1A5566), Color(0xFF40E8C0)],
+        ),
+      ];
+
   /// Patch-Update / Update-Dialog Gradient (cyaner Akzent — neutral).
   static const LinearGradient updateAccent = LinearGradient(
     begin: Alignment.topLeft,
@@ -284,29 +364,65 @@ class WbDesign {
   // HELPERS — Welt-aware Tokens
   // ═══════════════════════════════════════════════════════════════════════
 
-  /// Liefert den passenden Welt-Hintergrund. `world` = `'materie'`/`'energie'`.
-  static Color background(String world) =>
-      world == 'energie' ? bgEnergie : bgMaterie;
+  /// Liefert den passenden Welt-Hintergrund.
+  static Color background(String world) {
+    switch (world) {
+      case 'energie': return bgEnergie;
+      case 'vorhang': return bgVorhang;
+      case 'ursprung': return bgUrsprung;
+      default: return bgMaterie;
+    }
+  }
 
   /// Liefert die primäre Card-Surface der Welt.
-  static Color surface(String world) =>
-      world == 'energie' ? surfaceEnergie : surfaceMaterie;
+  static Color surface(String world) {
+    switch (world) {
+      case 'energie': return surfaceEnergie;
+      case 'vorhang': return surfaceVorhang;
+      case 'ursprung': return surfaceUrsprung;
+      default: return surfaceMaterie;
+    }
+  }
 
   /// Liefert die alternative Card-Surface der Welt.
-  static Color surfaceAlt(String world) =>
-      world == 'energie' ? surfaceEnergieAlt : surfaceMaterieAlt;
+  static Color surfaceAlt(String world) {
+    switch (world) {
+      case 'energie': return surfaceEnergieAlt;
+      case 'vorhang': return surfaceVorhangAlt;
+      case 'ursprung': return surfaceUrsprungAlt;
+      default: return surfaceMaterieAlt;
+    }
+  }
 
   /// Liefert den Hero-Gradient der Welt.
-  static LinearGradient hero(String world) =>
-      world == 'energie' ? heroEnergie() : heroMaterie();
+  static LinearGradient hero(String world) {
+    switch (world) {
+      case 'energie': return heroEnergie();
+      case 'vorhang': return heroVorhang();
+      case 'ursprung': return heroUrsprung();
+      default: return heroMaterie();
+    }
+  }
 
   /// Liefert die 4 Action-Tile-Gradients der Welt.
-  static List<LinearGradient> actionTiles(String world) =>
-      world == 'energie' ? actionTilesEnergie() : actionTilesMaterie();
+  static List<LinearGradient> actionTiles(String world) {
+    switch (world) {
+      case 'energie': return actionTilesEnergie();
+      case 'vorhang': return actionTilesVorhang();
+      case 'ursprung': return actionTilesUrsprung();
+      default: return actionTilesMaterie();
+    }
+  }
 
   /// Internal: Welt-Akzent für Border/Shadow.
-  static Color _accent(String world) =>
-      world == 'energie' ? energiePurple : materieBlue;
+  static Color _accent(String world) {
+    switch (world) {
+      case 'energie': return energiePurple;
+      case 'vorhang': return vorhangGold;
+      case 'ursprung': return ursprungCyan;
+      default: return materieBlue;
+    }
+  }
 
   /// Public Accent. Verwende in Buttons, Highlights, aktiven Tabs.
   static Color accent(String world) => _accent(world);

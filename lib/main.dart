@@ -22,6 +22,8 @@ import 'screens/cloudflare_notification_settings_screen.dart'; // CLOUDFLARE PUS
 import 'screens/materie/search_history_screen.dart';
 import 'screens/shared/update_history_screen.dart';
 import 'screens/shared/backend_health_monitor_screen.dart'; // 🏥 HEALTH MONITOR // 🆕 SEARCH HISTORY
+import 'screens/vorhang/vorhang_world_wrapper.dart'; // 🎭 VORHANG WORLD
+import 'screens/ursprung/ursprung_world_wrapper.dart'; // 🌀 URSPRUNG WORLD
 // REMOVED: Simple Voice Test Screen (deprecated)
 // KI-ANALYSE-TOOLS (für Recherche-Tab)
 import 'screens/materie/propaganda_detector_screen.dart';
@@ -372,6 +374,11 @@ class _WeltenbibliothekAppState extends State<WeltenbibliothekApp> {
             // 🔐 ADMIN-DASHBOARDS (World-specific)
             '/admin/materie': (context) => const WorldAdminDashboard(world: 'materie'),
             '/admin/energie': (context) => const WorldAdminDashboard(world: 'energie'),
+            '/admin/vorhang': (context) => const WorldAdminDashboard(world: 'vorhang'),
+            '/admin/ursprung': (context) => const WorldAdminDashboard(world: 'ursprung'),
+            // 🌍 NEUE WELTEN
+            '/vorhang': (context) => const VorhangWorldWrapper(),
+            '/ursprung': (context) => const UrsprungWorldWrapper(),
             // KI-ANALYSE-TOOLS (für Recherche-Tab)
             '/propaganda-detector': (context) => const PropagandaDetectorScreen(),
             '/image-forensics': (context) => const ImageForensicsScreen(),
