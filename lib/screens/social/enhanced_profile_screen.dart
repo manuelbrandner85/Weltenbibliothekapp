@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import '../../services/cloudflare_api_service.dart';
 import '../../core/storage/unified_storage_service.dart';
+import '../../theme/wb_cinematic_tokens.dart';
+import '../../widgets/cinematic/wb_glass_app_bar.dart';
 
 /// 👤 Enhanced User Profile Screen
 /// Features:
@@ -114,7 +116,10 @@ class _EnhancedProfileScreenState extends State<EnhancedProfileScreen> with Sing
   Widget build(BuildContext context) {
     if (_isLoading) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Profil')),
+        appBar: WBGlassAppBar(
+        world: WBWorld.neutral,
+        title: 'Profil',
+      ),
         body: const Center(child: CircularProgressIndicator()),
       );
     }

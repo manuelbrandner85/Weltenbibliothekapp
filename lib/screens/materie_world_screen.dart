@@ -14,6 +14,8 @@ import '../theme/wb_cinematic_tokens.dart';
 import '../widgets/cinematic/wb_glass_app_bar.dart';
 import '../widgets/cinematic/wb_floating_nav.dart';
 import '../widgets/cinematic/wb_vignette.dart';
+import '../widgets/cinematic/wb_ambient_particles.dart';
+import '../widgets/cinematic/wb_cinema_route.dart';
 import 'profile_settings_screen.dart';
 
 /// 🌍 MATERIE-WELT DASHBOARD — Cinematic Chrome
@@ -98,6 +100,11 @@ class _MaterieWorldScreenState extends ConsumerState<MaterieWorldScreen>
         children: [
           // Cosmic-Hintergrund + Welt-Ambient
           const Positioned.fill(child: _CosmicBackground(world: WBWorld.materie)),
+
+          // Ambient particles (Phase 6)
+          const Positioned.fill(
+            child: WBAmbientParticles(world: WBWorld.materie, count: 35),
+          ),
 
           // Tab-Content (Padding unten für Floating-Nav-Clearance)
           Padding(

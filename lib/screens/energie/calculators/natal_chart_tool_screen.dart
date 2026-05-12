@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../services/natal_astrology_service.dart';
+import '../../../theme/wb_cinematic_tokens.dart';
+import '../../../widgets/cinematic/wb_glass_app_bar.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // NatalChartToolScreen – Geburtshoroskop (Tool 1)
@@ -44,12 +46,9 @@ class _NatalChartToolScreenState extends State<NatalChartToolScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: _kDarkBg,
-      appBar: AppBar(
-        backgroundColor: _kCardBg,
-        title: const Text('♓ Geburtshoroskop',
-            style:
-                TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        iconTheme: const IconThemeData(color: Colors.white),
+      appBar: WBGlassAppBar(
+        world: WBWorld.energie,
+        title: '♓ Geburtshoroskop',
         bottom: TabBar(
           controller: _tabs,
           indicatorColor: _kIndigo,

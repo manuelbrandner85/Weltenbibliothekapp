@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../../../config/api_config.dart';
+import '../../../theme/wb_cinematic_tokens.dart';
+import '../../../widgets/cinematic/wb_glass_app_bar.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // C — Krypto-Verfolger
@@ -93,15 +95,13 @@ class _CryptoTrackerToolState extends State<CryptoTrackerTool> {
 
     return Scaffold(
       backgroundColor: _kBg,
-      appBar: AppBar(
-        backgroundColor: _kBg,
-        foregroundColor: _kText,
-        title: Row(children: [
+      appBar: WBGlassAppBar(
+        world: WBWorld.materie,
+        titleWidget: Row(children: [
           Icon(Icons.currency_bitcoin_rounded, color: _kAccent, size: 22),
           const SizedBox(width: 8),
           const Text('Krypto-Verfolger', style: TextStyle(color: _kText, fontWeight: FontWeight.bold)),
         ]),
-        elevation: 0,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),

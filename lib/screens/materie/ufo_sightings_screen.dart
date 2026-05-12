@@ -7,6 +7,8 @@ import 'package:http/http.dart' as http;
 import '../../services/free_api_service.dart';
 import '../../services/group_tools_service.dart';
 import '../../services/user_service.dart';
+import '../../theme/wb_cinematic_tokens.dart';
+import '../../widgets/cinematic/wb_glass_app_bar.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Design-Tokens (Materie – Rot)
@@ -344,11 +346,9 @@ class _UfoSightingsScreenState extends State<UfoSightingsScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: _kBg,
-      appBar: AppBar(
-        backgroundColor: _kSurface,
-        foregroundColor: _kText,
-        elevation: 0,
-        title: Row(
+      appBar: WBGlassAppBar(
+        world: WBWorld.materie,
+        titleWidget: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(6),

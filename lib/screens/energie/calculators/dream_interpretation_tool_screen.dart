@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../services/dream_symbol_matcher.dart';
+import '../../../theme/wb_cinematic_tokens.dart';
+import '../../../widgets/cinematic/wb_glass_app_bar.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DreamInterpretationToolScreen – 4 Tabs
@@ -43,11 +45,9 @@ class _DreamInterpretationToolScreenState
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: _darkBg,
-      appBar: AppBar(
-        backgroundColor: _cardBg,
-        title: const Text('💭 Traumdeutung',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        iconTheme: const IconThemeData(color: Colors.white),
+      appBar: WBGlassAppBar(
+        world: WBWorld.energie,
+        title: '💭 Traumdeutung',
         bottom: TabBar(
           controller: _tabs,
           indicatorColor: _purple,

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import '../../../theme/wb_cinematic_tokens.dart';
+import '../../../widgets/cinematic/wb_glass_app_bar.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // OSINT Datenbanken Hub — 7 direkte Datenbank-Zugänge via WebView
@@ -78,16 +80,14 @@ class OsintToolsHub extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: _kBg,
-      appBar: AppBar(
-        backgroundColor: _kBg,
-        foregroundColor: _kText,
-        title: Row(children: [
+      appBar: WBGlassAppBar(
+        world: WBWorld.materie,
+        titleWidget: Row(children: [
           Icon(Icons.manage_search_rounded, color: _kAccent, size: 22),
           const SizedBox(width: 8),
           const Text('OSINT Datenbanken',
               style: TextStyle(color: _kText, fontWeight: FontWeight.bold, fontSize: 18)),
         ]),
-        elevation: 0,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
           child: Container(height: 1, color: _kBorder),
@@ -209,17 +209,27 @@ class _OsintWebViewScreenState extends State<_OsintWebViewScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: _kBg,
-      appBar: AppBar(
-        backgroundColor: _kBg,
-        foregroundColor: _kText,
-        title: Row(children: [
+      appBar: WBGlassAppBar(
+        world: WBWorld.materie,
+        titleWidget: Row(children: [
           Icon(widget.db.icon, color: widget.db.color, size: 18),
           const SizedBox(width: 8),
           Text(widget.db.label,
               style: const TextStyle(
                   color: _kText, fontWeight: FontWeight.bold, fontSize: 16)),
         ]),
-        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh_rounded, size: 20),
+            onPressed: () => _ctrl.reload(),
+          ),
+          IconButton(
+            icon: const Icon(Icons.arrow_back_ios_rounded, size: 18),
+            onPressed: () async {
+              if (await _ctrl.canGoBack()) _ctrl.goBack();
+            },
+          ),
+        ],
         bottom: _loading
             ? PreferredSize(
                 preferredSize: const Size.fromHeight(3),
@@ -233,18 +243,6 @@ class _OsintWebViewScreenState extends State<_OsintWebViewScreen> {
                 preferredSize: const Size.fromHeight(1),
                 child: Container(height: 1, color: _kBorder),
               ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded, size: 20),
-            onPressed: () => _ctrl.reload(),
-          ),
-          IconButton(
-            icon: const Icon(Icons.arrow_back_ios_rounded, size: 18),
-            onPressed: () async {
-              if (await _ctrl.canGoBack()) _ctrl.goBack();
-            },
-          ),
-        ],
       ),
       body: WebViewWidget(controller: _ctrl),
     );

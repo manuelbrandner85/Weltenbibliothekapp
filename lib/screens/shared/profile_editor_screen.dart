@@ -17,6 +17,8 @@ import '../../models/energie_profile.dart';
 import '../../features/admin/state/admin_state.dart'; // 🆕 Admin State Provider
 import '../../core/persistence/auto_save_manager.dart'; // 🔄 Auto-Save System
 import '../../core/storage/unified_storage_service.dart'; // ✅ user_data Box Sync
+import '../../theme/wb_cinematic_tokens.dart';
+import '../../widgets/cinematic/wb_glass_app_bar.dart';
 
 /// Vollständiger Profil-Editor für Materie & Energie Welten
 /// Alle Felder bearbeitbar + neue Features (Avatar, Bio)
@@ -777,12 +779,9 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
       },
       child: Scaffold(
       backgroundColor: isDark ? const Color(0xFF0A0A0A) : Colors.grey[100],
-      appBar: AppBar(
-        title: Text(
-          '${widget.world == 'materie' ? 'Materie' : 'Energie'}-Profil bearbeiten',
-        ),
-        backgroundColor: worldColor,
-        elevation: 0,
+      appBar: WBGlassAppBar(
+        world: WBWorld.neutral,
+        title: '${widget.world == ',
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())

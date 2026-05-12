@@ -14,6 +14,7 @@ import '../theme/wb_cinematic_tokens.dart';
 import '../widgets/cinematic/wb_glass_app_bar.dart';
 import '../widgets/cinematic/wb_floating_nav.dart';
 import '../widgets/cinematic/wb_vignette.dart';
+import '../widgets/cinematic/wb_ambient_particles.dart';
 import 'profile_settings_screen.dart';
 
 /// 🌍 ENERGIE-WELT DASHBOARD — Cinematic Chrome
@@ -99,6 +100,11 @@ class _EnergieWorldScreenState extends ConsumerState<EnergieWorldScreen>
         children: [
           // Cosmic-Hintergrund + Welt-Ambient
           const Positioned.fill(child: _CosmicBackground(world: WBWorld.energie)),
+
+          // Ambient particles (Phase 6)
+          const Positioned.fill(
+            child: WBAmbientParticles(world: WBWorld.energie, count: 35),
+          ),
 
           // Tab-Content (Padding unten für Floating-Nav-Clearance)
           Padding(

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
  // OpenClaw v2.0
 import '../services/cloudflare_push_service.dart';
+import '../theme/wb_cinematic_tokens.dart';
+import '../widgets/cinematic/wb_glass_app_bar.dart';
 
 class CloudflareNotificationSettingsScreen extends StatefulWidget {
   const CloudflareNotificationSettingsScreen({super.key});
@@ -96,10 +98,10 @@ class _CloudflareNotificationSettingsScreenState
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0A),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF1A1A1A),
-        title: const Text('🔔 Push-Benachrichtigungen'),
+      backgroundColor: const Color(0xFF050310),
+      appBar: WBGlassAppBar(
+        world: WBWorld.neutral,
+        title: '🔔 Push-Benachrichtigungen',
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
