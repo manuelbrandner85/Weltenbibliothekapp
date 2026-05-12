@@ -24,7 +24,13 @@ import '../../config/wb_design.dart';
 // ═══════════════════════════════════════════════════════════════════════════
 
 class MaterieHomeTabV5 extends StatefulWidget {
-  const MaterieHomeTabV5({super.key});
+  /// Callback zum Umschalten der Bottom-Tab-Navigation des Parents.
+  /// Wenn gesetzt: Home-Buttons wie "Recherche" schalten den Tab um,
+  /// statt einen neuen Screen zu pushen → identische Darstellung
+  /// wie beim direkten Tab-Klick.
+  final ValueChanged<int>? onSwitchTab;
+
+  const MaterieHomeTabV5({super.key, this.onSwitchTab});
   @override
   State<MaterieHomeTabV5> createState() => _MaterieHomeTabV5State();
 }
@@ -298,12 +304,24 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
   Future<void> _go(Widget screen) => Navigator.push<void>(
       context, MaterialPageRoute(builder: (_) => screen));
 
+  /// Zum Recherche-Tab (Kaninchenbau) wechseln: bevorzugt via Parent-Tab-Switch
+  /// (identisches Look & State wie Bottom-Nav-Klick); fällt auf
+  /// Navigator.push zurück, wenn kein Callback vorhanden ist.
+  void _openRechercheTab() {
+    final cb = widget.onSwitchTab;
+    if (cb != null) {
+      cb(1); // Recherche/Kaninchenbau = Tab-Index 1 in MaterieWorldScreen
+    } else {
+      _go(const KaninchenbauScreen());
+    }
+  }
+
   void _goArticle(Map<String, dynamic> a) {
     final url = a['url'] as String?;
     if (url != null && url.isNotEmpty) {
       launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
     } else {
-      _go(const KaninchenbauScreen());
+      _openRechercheTab();
     }
   }
 
@@ -609,7 +627,7 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
 
   Widget _buildInlineSearch() {
     return GestureDetector(
-      onTap: () => _go(const KaninchenbauScreen()),
+      onTap: _openRechercheTab,
       child: Container(
         height: 46,
         padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -721,7 +739,7 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
         sub: 'Artikel & Fakten',
         gradient: [const Color(0xFF0D47A1), const Color(0xFF1565C0), const Color(0xFF2979FF)],
         badge: 0,
-        onTap: () => _go(const KaninchenbauScreen()),
+        onTap: _openRechercheTab,
       ),
       _TileDef(
         icon: Icons.forum_rounded,
@@ -737,7 +755,7 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
         sub: 'Geschichte & Ereignisse',
         gradient: [const Color(0xFF1B5E20), const Color(0xFF2E7D32), const Color(0xFF43A047)],
         badge: 0,
-        onTap: () => _go(const KaninchenbauScreen(initialTopic: 'Geschichte')),
+        onTap: _openRechercheTab,
       ),
       _TileDef(
         icon: Icons.collections_bookmark_rounded,
@@ -905,7 +923,7 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
             ]),
           ),
           GestureDetector(
-            onTap: () => _go(const KaninchenbauScreen()),
+            onTap: _openRechercheTab,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
@@ -1045,7 +1063,7 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
             final topic = topics[i];
             final c = chipColors[i % chipColors.length];
             return GestureDetector(
-              onTap: () => _go(const KaninchenbauScreen()),
+              onTap: _openRechercheTab,
               child: Container(
                 margin: const EdgeInsets.only(right: 10),
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -1084,7 +1102,7 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
     if (_latestArticles.isEmpty) {
       return SliverToBoxAdapter(
         child: GestureDetector(
-          onTap: () => _go(const KaninchenbauScreen()),
+          onTap: _openRechercheTab,
           child: Container(
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             padding: const EdgeInsets.all(28),
