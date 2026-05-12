@@ -210,6 +210,8 @@ Bewusstseins-Plattform mit zwei Welten:
 |------|-------|--------|
 | **Materie** | Rot `#E53935` | Geopolitik, Geschichte, UFOs, Verschwörungen, Forschung, Heilmethoden |
 | **Energie** | Lila/Blau `#7C4DFF` | Spiritualität, Meditation, Kristalle, Chakren, Astrologie, Bewusstsein |
+| **Vorhang** | Gold `#C9A84C` auf Schwarz | Verborgenes Wissen, Geheimgesellschaften, Enthüllungen |
+| **Ursprung** | Cyan `#00D4AA` auf Deep Dark `#050510` | Ursprüngliches Wissen, Naturvölker, Kosmologie |
 
 **Version**: 5.11.0+  
 **Flutter**: 3.x, Dart 3.9.2  
@@ -320,6 +322,8 @@ Weltenbibliothekapp/
 │   │   │   └── ...
 │   │   ├── shared/                      # Shared Screens (Profil, Voice, etc.)
 │   │   └── release_update_screen.dart   # ⭐ Fullscreen-Update-Gate (In-App-APK-Download)
+│   ├── animations/
+│   │   └── world_transition_video.dart  # 🎬 4-Welten Cinematic Transition (Video + Procedural)
 │   └── widgets/                         # Wiederverwendbare UI-Komponenten
 │       ├── update_gate.dart             # ⭐ Update-Koordinator (Stream-basiert, Stack-Overlay)
 │       ├── patch_ready_dialog.dart      # ⭐ Prominenter OTA-Patch-Dialog + Changelog (v5.36.0+)
@@ -698,6 +702,47 @@ chore(deps): Dependencies aktualisiert
     → triggert `deploy_livekit_wb.yml` → coturn deployed + Ports 3478/61001-62000 geöffnet
   - Fix Client: Cloudflare STUN als Fallback, Timeout 60s→90s
 
+- [x] **PR #168 — LiveStream Crash-Fix + universelle Konnektivität** (2026-05-12, Patch ✓):
+  - **Crash-Ursache**: Direkter Sprung zu `LiveKitGroupCallScreen` ohne Permission-Handling
+    → `joinRoom()` rief `Permission.microphone.request()` sofort in `initState` auf → Crash
+    bei Permission-Dialog-Lifecycle-Events auf manchen Geräten (Samsung OneUI, Xiaomi MIUI)
+  - **Konnektivitäts-Ursache**: Nur STUN-Server konfiguriert, kein TURN → User hinter
+    symmetrischem NAT (Hotel-WiFi, ausländische SIM, CGNAT, Firmen-VPN) konnten nie verbinden
+  - **Fix A — TURN-Server in ICE-Config** (`livekit_call_service.dart`):
+    - 3 STUN (Google×2 + Cloudflare) + 3 TURN-Stufen auf coturn (72.62.154.95):
+    - TURN/UDP:3478 (schnellster Relay), TURN/TCP:3478 (UDP-blocked Fallback),
+      TURNS/TLS:443 (ultimativer Fallback für Firewalls die nur HTTPS erlauben)
+    - Credentials: `wbuser` / `wbturn2025!` (public, rate-limited via coturn)
+  - **Fix B — PreJoinScreen aktiviert** (`materie_live_chat_screen.dart` + `energie_live_chat_screen.dart`):
+    - Video-Call-Button routet jetzt durch `LiveKitPreJoinScreen` statt direkt zu `LiveKitGroupCallScreen`
+    - PreJoin prüft Permissions graceful, zeigt Avatar-Preview, Audio-Only-Toggle, Mic-Toggle
+    - Gilt für BEIDE Welten (Materie + Energie)
+  - **Fix C — LiveRoomBanner durch PreJoinScreen** (beide Welten):
+    - `LiveRoomBanner.onJoin` Callback navigiert ebenfalls zu `LiveKitPreJoinScreen`
+    - Kein direkter Sprung mehr zu `LiveKitGroupCallScreen` von irgendwoher
+  - **Fix D — Error-Handling in `_join()`** (`livekit_group_call_screen.dart`):
+    - Vorher: `catch (_) { setState(() {}); }` — stumm, kein User-Feedback, leerer Screen
+    - Nachher: User-freundliche SnackBar (Mic-Fehler orange, Verbindungsfehler rot),
+      auto-Pop nach 800ms damit User nicht auf leerem Screen hängt bleibt
+  - **Fix E — Crash-safe Permission-Request** (`livekit_call_service.dart`):
+    - `Permission.microphone.request()` in try-catch gewrappt — fängt native Crashes ab
+    - Fallback: `Permission.microphone.status` wenn `.request()` crasht
+  - **Fix F — LiveRoomBanner vorhang/ursprung-ready** (`live_room_banner.dart`):
+    - `_roomDisplayName()` strippt jetzt auch `vorhang-` und `ursprung-` Prefixe
+  - **Fix G — Cinematic Transition für alle 4 Welten** (`world_transition_video.dart` + `portal_home_screen.dart`):
+    - Kompletter Rewrite von `WorldTransitionVideo` (170→618 Zeilen):
+      - Materie/Energie: weiterhin echte MP4-Video-Übergänge (bestehende Assets)
+      - Vorhang/Ursprung: programmatische Cinematic-Animation (2.5s) mit:
+        - `_VortexPainter`: expandierender radialer Glow mit Spiral-Ringen
+        - `_ParticleRingPainter`: 60 rotierende Lichtpartikel mit Glow-Effekten
+        - 4-Phasen-Animation: Vortex-Glow → Partikel+Weltname → Flash-Explosion → Fade-to-Black
+      - Welt-Farben: Vorhang Gold `#C9A84C`/`#E0C872`, Ursprung Cyan `#00D4AA`/`#40E8C0`
+    - Neue API: `targetWorld: String` (ersetzt `isMaterieToEnergie: bool`), Legacy-Kompatibilität erhalten
+    - Video-Fallback: wenn MP4-Laden fehlschlägt → automatisch programmatische Animation
+    - Safety-Net: 6s Rescue-Timeout falls weder Video noch Animation abschließt
+    - `_navigateWithCinematicTransition()` in `portal_home_screen.dart`:
+      - Neue `targetWorld`-Parameter + Auto-Detection aus Widget-Typ (4 Welten)
+      - Vorhang/Ursprung-Karten auf Portal profitieren automatisch (bestehende Aufrufe)
 
 - [x] **PR #121 — YouTube Videos + Error-153-Fallback + Karte-Medien + OSINT Direkt-Tools** (2026-05-06, Patch ✓):
   - **Worker `/api/map/youtube` kritischer Fix**: Worker gab `{ videos: [] }` zurück, Flutter erwartete `{ items: [] }` — Videos haben NIE funktioniert. Piped API (pipedapi.kavin.rocks) als primäre kostenlose Quelle, YouTube Data API v3 als Fallback.
@@ -791,7 +836,10 @@ chore(deps): Dependencies aktualisiert
    - Recording: `RecordingService` + Worker `/api/livekit/recording/start|stop` (Egress API)
    - Live-Banner: `live_room_banner.dart` via Supabase Realtime `voice_sessions`
    - LiveKit-Server: `livekit-weltenbibliothek` auf Hostinger VPS, eigene Instanz
-   - **TURN**: Built-in TURN Port 3479 (seit PR #113) — deckt Mobilfunk-CGNAT ab
+   - **TURN**: Built-in TURN Port 3479 (seit PR #113) + Client-TURN auf coturn 72.62.154.95
+     (UDP/TCP/TLS-443, seit PR #168) — deckt Mobilfunk-CGNAT, Hotel-WiFi, ausländische SIM ab
+   - **PreJoinScreen**: Seit PR #168 aktiv — alle Call-Einstiegspunkte (Video-Button + LiveRoomBanner)
+     in beiden Welten routen durch `LiveKitPreJoinScreen` mit Permission-Check vor dem Join
    - **Noch ausstehend: B10.7 3D-Avatar** (braucht Assets + evtl. neues Package)
    - **Recording-Voraussetzung**: LiveKit Egress Runner Container auf VPS nötig
 
