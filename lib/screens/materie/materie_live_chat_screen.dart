@@ -5,6 +5,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'dart:async';
 import '../../config/api_config.dart';
 import '../shared/livekit_group_call_screen.dart';
+import '../shared/livekit_prejoin_screen.dart';
 import 'kaninchenbau/kaninchenbau_screen.dart';
 import '../../services/supabase_service.dart'; // 🔥 supabase Auth
 import 'package:supabase_flutter/supabase_flutter.dart' show RealtimeChannel;
@@ -1442,13 +1443,11 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => LiveKitGroupCallScreen(
+                  builder: (_) => LiveKitPreJoinScreen(
                     roomName: 'wb-materie-$_selectedRoom',
                     world: 'materie',
                     displayName: _username.isNotEmpty ? _username : 'Mitglied',
                     avatarUrl: _avatarUrl,
-                    audioOnly: false,
-                    initialMicEnabled: true,
                   ),
                 ),
               );
@@ -1514,14 +1513,12 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
                     onJoin: (roomName) => Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => LiveKitGroupCallScreen(
+                        builder: (_) => LiveKitPreJoinScreen(
                           roomName: 'wb-$roomName',
                           world: 'materie',
                           displayName:
                               _username.isNotEmpty ? _username : 'Mitglied',
                           avatarUrl: _avatarUrl,
-                          audioOnly: false,
-                          initialMicEnabled: true,
                         ),
                       ),
                     ),

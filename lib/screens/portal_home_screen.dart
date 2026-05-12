@@ -1697,9 +1697,21 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> with TickerProvider
     );
   }
 
-  void _navigateWithCinematicTransition(Widget screen) async {
-    // Bestimme Welt-Typ
-    final isMaterieWorld = screen is MaterieWorldWrapper;
+  void _navigateWithCinematicTransition(Widget screen, {String targetWorld = ''}) async {
+    // Bestimme Welt-Typ automatisch wenn nicht explizit übergeben
+    if (targetWorld.isEmpty) {
+      if (screen is MaterieWorldWrapper) {
+        targetWorld = 'materie';
+      } else if (screen is EnergieWorldWrapper) {
+        targetWorld = 'energie';
+      } else if (screen is VorhangWorldWrapper) {
+        targetWorld = 'vorhang';
+      } else if (screen is UrsprungWorldWrapper) {
+        targetWorld = 'ursprung';
+      } else {
+        targetWorld = 'materie'; // Fallback
+      }
+    }
     
     // 📳 HAPTIC: Medium Impact beim Start (v5.40)
     HapticService.mediumImpact();
@@ -1712,19 +1724,15 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> with TickerProvider
     // 📳 HAPTIC: Heavy Impact beim Warp-Start (v5.40)
     HapticService.heavyImpact();
     
-    // 🎬 PROFESSIONELLER VIDEO-ÜBERGANG (ersetzt alte Animation)
-    // WICHTIG: Wir gehen ZUR Zielwelt, also kommt das Video in UMGEKEHRTER Richtung
-    // Gehen zu MATERIE → kommen von ENERGIE → Video: Energie zu Materie
-    // Gehen zu ENERGIE → kommen von MATERIE → Video: Materie zu Energie
-    final bool isMaterieToEnergie = !isMaterieWorld;
-    
-    // 🎨 NEW: Premium Page Transition mit Fade
+    // 🎬 CINEMATIC ÜBERGANG — Alle 4 Welten unterstützt
+    // Materie/Energie: echte MP4-Videos
+    // Vorhang/Ursprung: programmatische Vortex-Animation mit Welt-Farben
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => WorldTransitionVideo(
           targetScreen: screen,
-          isMaterieToEnergie: isMaterieToEnergie,
+          targetWorld: targetWorld,
         ),
       ),
     );

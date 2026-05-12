@@ -217,7 +217,9 @@ class _LiveRoomBannerState extends State<LiveRoomBanner>
   String _roomDisplayName(String roomName) {
     final suffix = roomName
         .replaceFirst('materie-', '')
-        .replaceFirst('energie-', '');
+        .replaceFirst('energie-', '')
+        .replaceFirst('vorhang-', '')
+        .replaceFirst('ursprung-', '');
     const names = {
       'politik': 'Politik',
       'geschichte': 'Geschichte',

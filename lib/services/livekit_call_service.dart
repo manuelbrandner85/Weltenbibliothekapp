@@ -365,7 +365,23 @@ class LiveKitCallService extends ChangeNotifier {
     try {
       // Mikrofon-Permission bevor Room-Connect — sonst kann LiveKit kein
       // Audio-Track publishen.
-      final micStatus = await Permission.microphone.request();
+      // Crash-safe: try-catch um das gesamte Permission-Request — auf manchen
+      // Geräten (Samsung OneUI, Xiaomi MIUI) kann der native Permission-Dialog
+      // einen App-Lifecycle-Event triggern der zum Crash führt.
+      PermissionStatus micStatus;
+      try {
+        micStatus = await Permission.microphone.request();
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('⚠️ Mikrofon-Permission-Request crashed: $e');
+        }
+        // Fallback: Status prüfen statt erneut zu requesten
+        try {
+          micStatus = await Permission.microphone.status;
+        } catch (_) {
+          micStatus = PermissionStatus.denied;
+        }
+      }
       if (!micStatus.isGranted) {
         throw Exception(
             'Mikrofon-Berechtigung fehlt. Bitte in den App-Einstellungen erlauben.');
@@ -548,17 +564,46 @@ class LiveKitCallService extends ChangeNotifier {
           .connect(
             livekitUrl,
             token,
-            connectOptions: const ConnectOptions(
+            connectOptions: ConnectOptions(
               autoSubscribe: true,
-              // L2: Fallback-STUN-Server — LiveKit liefert eigene TURN-Creds
-              // im Join-Response (Port 3479), aber wenn die durch Firmen-Firewall
-              // blockiert sind, helfen public STUN-Server bei der Public-IP-
-              // Erkennung als zusätzliche Option für ICE.
+              // L2: STUN + TURN Server — universelle Konnektivität.
+              //
+              // STUN: Public-IP-Erkennung für direkten P2P (günstiger Pfad).
+              // TURN: Relay für User hinter symmetrischem NAT, CGNAT, Hotel-WiFi,
+              //   Firmen-VPN, ausländische SIM-Karten — ohne TURN kommen diese
+              //   NIE durch und die App crasht/hängt bei ICE-Gathering.
+              //
+              // coturn läuft auf dem Hostinger VPS (72.62.154.95:3478).
+              // Creds sind public — abuse-mitigated via coturn rate-limits
+              // + denied-peer-ip für private Subnetze.
+              //
+              // Meek-TURN auf Port 443 (TLS): Durchdringt auch Firewalls
+              // die nur HTTPS (443) erlauben — Hotel-Captive-Portals, Firmen-Netze.
               rtcConfiguration: RTCConfiguration(
                 iceServers: [
-                  RTCIceServer(urls: ['stun:stun.l.google.com:19302']),
-                  RTCIceServer(urls: ['stun:stun1.l.google.com:19302']),
-                  RTCIceServer(urls: ['stun:stun.cloudflare.com:3478']),
+                  // STUN — öffentliche IP-Erkennung (kostenlos, schnell)
+                  const RTCIceServer(urls: ['stun:stun.l.google.com:19302']),
+                  const RTCIceServer(urls: ['stun:stun1.l.google.com:19302']),
+                  const RTCIceServer(urls: ['stun:stun.cloudflare.com:3478']),
+                  // TURN/UDP — schnellster Relay-Pfad für CGNAT/NAT
+                  RTCIceServer(
+                    urls: ['turn:72.62.154.95:3478?transport=udp'],
+                    username: 'wbuser',
+                    credential: 'wbturn2025!',
+                  ),
+                  // TURN/TCP — Fallback wenn UDP blockiert (manche Firmen-Netze)
+                  RTCIceServer(
+                    urls: ['turn:72.62.154.95:3478?transport=tcp'],
+                    username: 'wbuser',
+                    credential: 'wbturn2025!',
+                  ),
+                  // TURNS/TLS auf 443 — ultimativer Fallback: durchdringt
+                  // selbst Firewalls die nur HTTPS erlauben (Hotel, Flughafen)
+                  RTCIceServer(
+                    urls: ['turns:72.62.154.95:443?transport=tcp'],
+                    username: 'wbuser',
+                    credential: 'wbturn2025!',
+                  ),
                 ],
               ),
             ),
