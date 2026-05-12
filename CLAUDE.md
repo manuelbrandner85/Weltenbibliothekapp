@@ -1498,3 +1498,66 @@ Fails einer der drei Schritte, fixe ich **automatisch ohne Rückfrage**:
   SQL-Editor-Update empfehlen).
 - Secret `SUPABASE_SERVICE_ROLE_KEY` fehlt → dem User die Einrichtung ansagen,
   andere Release-Teile laufen weiter.
+
+---
+
+## 🔊 Audio Plugins (audioplayers / just_audio)
+
+**Eingeführt mit v61 (URSPRUNG-Welt) — verbindlich dokumentieren bei jeder Änderung an Audio-Tools.**
+
+### Plugin: `audioplayers: ^6.1.0`
+
+**Zweck:** Lokale Sound-Effects, Loop-Playback (binaural beats, breath cues, frequency
+tones) im **Frequenz-Generator**, in der **Gateway-Kammer** und im **Atemmeister**.
+
+**Bereits in `pubspec.yaml`:**
+```yaml
+dependencies:
+  audioplayers: ^6.1.0
+  just_audio: ^0.9.36
+```
+
+**Wichtige API-Punkte (audioplayers 6.x — Breaking Changes ggü. 5.x!):**
+
+- `final player = AudioPlayer();` — pro Tool eigenen Player, nicht global teilen.
+- `await player.setReleaseMode(ReleaseMode.loop);` — für endlos schleifende Töne
+  (binaural beats). `ReleaseMode.stop` ist Default (Sample wird nach play disposed).
+- `await player.play(AssetSource('audio/binaural_7_83.mp3'));` — Assets müssen in
+  `pubspec.yaml` unter `flutter.assets:` deklariert sein.
+- `await player.stop()` **und** `player.dispose()` im `dispose()` der Stateful-Widgets.
+  Sonst läuft der Ton weiter wenn der User die Seite verlässt.
+- `await player.setVolume(0.5);` — 0.0–1.0.
+- **Achtung Android 14+:** `android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK` muss
+  in `android/app/src/main/AndroidManifest.xml` deklariert sein, wenn Audio im
+  Hintergrund weiterlaufen soll. Für URSPRUNG-Tools NICHT nötig (Foreground only).
+- **iOS:** In `ios/Runner/Info.plist` `UIBackgroundModes` mit `audio` Eintrag falls
+  Background-Playback gewünscht — aktuell NICHT konfiguriert.
+
+### Plugin: `just_audio: ^0.9.36`
+
+**Zweck:** High-Level-Streaming für längere Audios (z.B. CIA Gateway Tape-Streams
+von Supabase Storage), Crossfade, Playlist. Wird in der aktuellen v61-Implementierung
+noch NICHT direkt benutzt — reserviert für künftige Erweiterung der Gateway-Kammer
+(Hemi-Sync-Track-Playlists).
+
+### Build/Test-Hinweise
+
+- Nach jeder Änderung an einem Audio-Tool: `flutter pub get` → `flutter analyze`
+  → manuelles Testen auf Android+iOS (Audio-Permissions unterscheiden sich).
+- **Shorebird-Patches:** Audio-Plugin-Änderungen, die NUR Dart-Code betreffen
+  (z.B. Frequenz-Slider-Logik), können per `shorebird patch` ausgerollt werden.
+  Native-Änderungen (z.B. Permission-Update in AndroidManifest) erfordern Full-Release.
+- Assets unter `assets/audio/` einchecken — Größe pro Datei < 1 MB halten oder
+  von Supabase Storage streamen.
+- Falls `audioplayers` Cocoapods-Probleme auf macOS macht: `cd ios && pod install
+  --repo-update`.
+
+### URSPRUNG-Tool-Mapping
+
+| Tool                       | Plugin       | Modus                                  |
+|----------------------------|--------------|----------------------------------------|
+| Frequenz-Generator         | audioplayers | Looping single-tone (1–40 Hz / 528 Hz) |
+| Gateway-Kammer             | audioplayers | Optional binaural beats (Focus 10/12/15/21) |
+| Atemmeister                | (none)       | Visuelle Atem-Animation, kein Sound v1 |
+| Realitäts-Architekt        | (none)       | Reine Text-UI                          |
+| RV Trainer                 | (none)       | Reine Text-UI                          |

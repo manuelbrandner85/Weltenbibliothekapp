@@ -6003,6 +6003,358 @@ Antworte in exakt diesem JSON-Format:
           return errorResponse(`Vorhang-YouTube Fehler: ${e.message}`);
         }
       }
+
+      // ════════════════════════════════════════════════════════════
+      // URSPRUNG-WELT — CIA Quanten-Code (25 Module, 5 Tools)
+      // Tables: ursprung_modules, user_ursprung_progress,
+      //         ursprung_gateway_sessions, ursprung_patterns,
+      //         rv_targets, rv_sessions
+      // ════════════════════════════════════════════════════════════
+
+      // ── GET /api/ursprung/modules ───────────────────────────────
+      // Returns all 25 URSPRUNG modules grouped by branch_order.
+      // Optional ?user_id=<uuid> includes user progress per module.
+      if (path === '/api/ursprung/modules' && method === 'GET') {
+        try {
+          const userId = url.searchParams.get('user_id');
+          const modRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/ursprung_modules?select=*&order=branch_order.asc,module_code.asc`,
+            { headers: sbHeaders }
+          );
+          if (!modRes.ok) {
+            const txt = await modRes.text().catch(() => '');
+            return errorResponse(`Ursprung-Module konnten nicht geladen werden: ${txt}`, modRes.status);
+          }
+          const modules = await modRes.json();
+
+          let progressMap = {};
+          if (userId) {
+            const progRes = await fetch(
+              `${SUPABASE_URL}/rest/v1/user_ursprung_progress?user_id=eq.${encodeURIComponent(userId)}&select=*`,
+              { headers: sbHeaders }
+            );
+            if (progRes.ok) {
+              const progArr = await progRes.json();
+              if (Array.isArray(progArr)) {
+                for (const p of progArr) {
+                  if (p.module_code) progressMap[p.module_code] = p;
+                }
+              }
+            }
+          }
+          return jsonResponse({ success: true, count: modules.length, modules, progress: progressMap });
+        } catch (e) {
+          return errorResponse(`Ursprung-Modules Fehler: ${e.message}`);
+        }
+      }
+
+      // ── GET /api/ursprung/module/:code ──────────────────────────
+      if (path.startsWith('/api/ursprung/module/') && method === 'GET') {
+        try {
+          const moduleCode = decodeURIComponent(path.split('/api/ursprung/module/')[1] || '').trim();
+          if (!moduleCode) return errorResponse('module_code fehlt', 400);
+          const userId = url.searchParams.get('user_id');
+          const modRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/ursprung_modules?module_code=eq.${encodeURIComponent(moduleCode)}&select=*&limit=1`,
+            { headers: sbHeaders }
+          );
+          if (!modRes.ok) {
+            const txt = await modRes.text().catch(() => '');
+            return errorResponse(`Modul konnte nicht geladen werden: ${txt}`, modRes.status);
+          }
+          const arr = await modRes.json();
+          if (!Array.isArray(arr) || arr.length === 0) {
+            return errorResponse(`Modul '${moduleCode}' nicht gefunden`, 404);
+          }
+          const module = arr[0];
+          let progress = null;
+          if (userId) {
+            const progRes = await fetch(
+              `${SUPABASE_URL}/rest/v1/user_ursprung_progress?user_id=eq.${encodeURIComponent(userId)}&module_code=eq.${encodeURIComponent(moduleCode)}&select=*&limit=1`,
+              { headers: sbHeaders }
+            );
+            if (progRes.ok) {
+              const pArr = await progRes.json();
+              if (Array.isArray(pArr) && pArr.length > 0) progress = pArr[0];
+            }
+          }
+          return jsonResponse({ success: true, module, progress });
+        } catch (e) {
+          return errorResponse(`Ursprung-Module Fehler: ${e.message}`);
+        }
+      }
+
+      // ── POST /api/ursprung/progress ─────────────────────────────
+      // Upserts user_ursprung_progress and awards XP on first completion.
+      if (path === '/api/ursprung/progress' && method === 'POST') {
+        try {
+          const body = await request.json().catch(() => ({}));
+          const { userId, moduleCode, theoryRead, caseStudyRead, exerciseCompleted, exerciseNotes, testScore, testPassed } = body || {};
+          if (!userId || !moduleCode) return errorResponse('userId und moduleCode erforderlich', 400);
+
+          const modRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/ursprung_modules?module_code=eq.${encodeURIComponent(moduleCode)}&select=id,xp_reward,is_boss_module&limit=1`,
+            { headers: sbHeaders }
+          );
+          if (!modRes.ok) return errorResponse('Modul nicht gefunden', 404);
+          const modArr = await modRes.json();
+          if (!Array.isArray(modArr) || modArr.length === 0) return errorResponse(`Modul '${moduleCode}' nicht gefunden`, 404);
+          const moduleId = modArr[0].id;
+          const xpReward = modArr[0].xp_reward || 50;
+
+          const exRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/user_ursprung_progress?user_id=eq.${encodeURIComponent(userId)}&module_code=eq.${encodeURIComponent(moduleCode)}&select=*&limit=1`,
+            { headers: sbHeaders }
+          );
+          let existing = null;
+          if (exRes.ok) {
+            const arr = await exRes.json();
+            if (Array.isArray(arr) && arr.length > 0) existing = arr[0];
+          }
+          const wasComplete = !!(existing && existing.test_passed);
+
+          const row = {
+            user_id: userId,
+            module_id: moduleId,
+            module_code: moduleCode,
+            theory_read: theoryRead ?? existing?.theory_read ?? false,
+            case_study_read: caseStudyRead ?? existing?.case_study_read ?? false,
+            exercise_completed: exerciseCompleted ?? existing?.exercise_completed ?? false,
+            exercise_notes: exerciseNotes ?? existing?.exercise_notes ?? null,
+            test_score: testScore ?? existing?.test_score ?? null,
+            test_passed: testPassed ?? existing?.test_passed ?? false,
+          };
+          if (row.test_passed && !existing?.completed_at) row.completed_at = new Date().toISOString();
+
+          const upRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/user_ursprung_progress?on_conflict=user_id,module_code`,
+            {
+              method: 'POST',
+              headers: { ...sbHeaders, 'Prefer': 'resolution=merge-duplicates,return=representation' },
+              body: JSON.stringify(row),
+            }
+          );
+          if (!upRes.ok) {
+            const txt = await upRes.text().catch(() => '');
+            return errorResponse(`Progress Upsert fehlgeschlagen: ${txt}`, upRes.status);
+          }
+
+          let xpAwarded = 0;
+          if (row.test_passed && !wasComplete) {
+            xpAwarded = xpReward;
+            try {
+              await fetch(`${SUPABASE_URL}/rest/v1/rpc/add_xp_to_user`, {
+                method: 'POST',
+                headers: sbHeaders,
+                body: JSON.stringify({ p_user_id: userId, p_amount: xpReward, p_reason: `ursprung_module:${moduleCode}` }),
+              });
+            } catch (_) { /* non-fatal */ }
+          }
+          return jsonResponse({ success: true, xpAwarded });
+        } catch (e) {
+          return errorResponse(`Ursprung-Progress Fehler: ${e.message}`);
+        }
+      }
+
+      // ── GET /api/ursprung/youtube/:moduleCode ───────────────────
+      if (path.startsWith('/api/ursprung/youtube/') && method === 'GET') {
+        try {
+          const moduleCode = decodeURIComponent(path.split('/api/ursprung/youtube/')[1] || '').trim();
+          if (!moduleCode) return errorResponse('module_code fehlt', 400);
+          const modRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/ursprung_modules?module_code=eq.${encodeURIComponent(moduleCode)}&select=youtube_search_query,title&limit=1`,
+            { headers: sbHeaders }
+          );
+          if (!modRes.ok) return errorResponse('Modul nicht gefunden', 404);
+          const arr = await modRes.json();
+          if (!Array.isArray(arr) || arr.length === 0) return errorResponse(`Modul '${moduleCode}' nicht gefunden`, 404);
+          const q = arr[0].youtube_search_query || arr[0].title || moduleCode;
+          const ytKey = env.YOUTUBE_API_KEY;
+          if (ytKey) {
+            const ytUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=5&q=${encodeURIComponent(q)}&key=${ytKey}`;
+            const ytRes = await fetch(ytUrl);
+            if (ytRes.ok) {
+              const data = await ytRes.json();
+              const videos = (data.items || []).map((i) => ({
+                videoId: i.id?.videoId,
+                title: i.snippet?.title || '',
+                thumbnail: i.snippet?.thumbnails?.medium?.url || '',
+                channelTitle: i.snippet?.channelTitle || '',
+                description: i.snippet?.description || '',
+              }));
+              return jsonResponse({ success: true, query: q, videos });
+            }
+          }
+          return jsonResponse({ success: true, query: q, videos: [] });
+        } catch (e) {
+          return errorResponse(`Ursprung-YouTube Fehler: ${e.message}`);
+        }
+      }
+
+      // ── POST /api/ursprung/gateway-session ──────────────────────
+      // Logs a Gateway-Kammer meditation session.
+      if (path === '/api/ursprung/gateway-session' && method === 'POST') {
+        try {
+          const body = await request.json().catch(() => ({}));
+          const { userId, focusLevel, durationMinutes, notes, biometricBefore, biometricAfter } = body || {};
+          if (!userId || !focusLevel) return errorResponse('userId und focusLevel erforderlich', 400);
+          const row = {
+            user_id: userId,
+            focus_level_reached: focusLevel,
+            duration_minutes: durationMinutes || 0,
+            notes: notes || null,
+            biometric_before: biometricBefore || null,
+            biometric_after: biometricAfter || null,
+          };
+          const res = await fetch(`${SUPABASE_URL}/rest/v1/ursprung_gateway_sessions`, {
+            method: 'POST',
+            headers: { ...sbHeaders, 'Prefer': 'return=representation' },
+            body: JSON.stringify(row),
+          });
+          if (!res.ok) {
+            const txt = await res.text().catch(() => '');
+            return errorResponse(`Gateway-Session Insert fehlgeschlagen: ${txt}`, res.status);
+          }
+          const data = await res.json();
+          return jsonResponse({ success: true, session: Array.isArray(data) ? data[0] : data });
+        } catch (e) {
+          return errorResponse(`Gateway-Session Fehler: ${e.message}`);
+        }
+      }
+
+      // ── POST /api/ursprung/pattern ──────────────────────────────
+      // Saves a Realitäts-Architekt pattern (Patterning/Manifestation).
+      if (path === '/api/ursprung/pattern' && method === 'POST') {
+        try {
+          const body = await request.json().catch(() => ({}));
+          const { userId, category, goalText, presentTense, senses, emotion, emotionIntensity, targetDate, status, notes } = body || {};
+          if (!userId || !goalText) return errorResponse('userId und goalText erforderlich', 400);
+          const row = {
+            user_id: userId,
+            category: category || 'general',
+            goal_text: goalText,
+            present_tense: presentTense || null,
+            senses: senses || null,
+            emotion: emotion || null,
+            emotion_intensity: emotionIntensity || null,
+            target_date: targetDate || null,
+            status: status || 'active',
+            notes: notes || null,
+          };
+          const res = await fetch(`${SUPABASE_URL}/rest/v1/ursprung_patterns`, {
+            method: 'POST',
+            headers: { ...sbHeaders, 'Prefer': 'return=representation' },
+            body: JSON.stringify(row),
+          });
+          if (!res.ok) {
+            const txt = await res.text().catch(() => '');
+            return errorResponse(`Pattern Insert fehlgeschlagen: ${txt}`, res.status);
+          }
+          const data = await res.json();
+          return jsonResponse({ success: true, pattern: Array.isArray(data) ? data[0] : data });
+        } catch (e) {
+          return errorResponse(`Pattern Fehler: ${e.message}`);
+        }
+      }
+
+      // ── GET /api/ursprung/patterns?userId=<uuid> ────────────────
+      if (path === '/api/ursprung/patterns' && method === 'GET') {
+        try {
+          const userId = url.searchParams.get('userId') || url.searchParams.get('user_id');
+          if (!userId) return errorResponse('userId erforderlich', 400);
+          const res = await fetch(
+            `${SUPABASE_URL}/rest/v1/ursprung_patterns?user_id=eq.${encodeURIComponent(userId)}&select=*&order=created_at.desc`,
+            { headers: sbHeaders }
+          );
+          if (!res.ok) {
+            const txt = await res.text().catch(() => '');
+            return errorResponse(`Patterns Query fehlgeschlagen: ${txt}`, res.status);
+          }
+          const patterns = await res.json();
+          return jsonResponse({ success: true, count: patterns.length, patterns });
+        } catch (e) {
+          return errorResponse(`Patterns Fehler: ${e.message}`);
+        }
+      }
+
+      // ── GET /api/ursprung/rv-target/random ──────────────────────
+      // Returns a random RV-Target WITHOUT revealing image/name.
+      if (path === '/api/ursprung/rv-target/random' && method === 'GET') {
+        try {
+          const res = await fetch(
+            `${SUPABASE_URL}/rest/v1/rv_targets?select=id,target_number,target_category&limit=200`,
+            { headers: sbHeaders }
+          );
+          if (!res.ok) {
+            const txt = await res.text().catch(() => '');
+            return errorResponse(`RV-Target Query fehlgeschlagen: ${txt}`, res.status);
+          }
+          const arr = await res.json();
+          if (!Array.isArray(arr) || arr.length === 0) return errorResponse('Keine RV-Targets vorhanden', 404);
+          const pick = arr[Math.floor(Math.random() * arr.length)];
+          return jsonResponse({
+            success: true,
+            target: { id: pick.id, target_number: pick.target_number, target_category_hint: null }
+          });
+        } catch (e) {
+          return errorResponse(`RV-Target Fehler: ${e.message}`);
+        }
+      }
+
+      // ── GET /api/ursprung/rv-target/:id/reveal ──────────────────
+      // Reveals the full target after the RV session is completed.
+      if (path.startsWith('/api/ursprung/rv-target/') && path.endsWith('/reveal') && method === 'GET') {
+        try {
+          const idPart = path.replace('/api/ursprung/rv-target/', '').replace('/reveal', '').trim();
+          if (!idPart) return errorResponse('target id fehlt', 400);
+          const res = await fetch(
+            `${SUPABASE_URL}/rest/v1/rv_targets?id=eq.${encodeURIComponent(idPart)}&select=*&limit=1`,
+            { headers: sbHeaders }
+          );
+          if (!res.ok) {
+            const txt = await res.text().catch(() => '');
+            return errorResponse(`Target-Reveal fehlgeschlagen: ${txt}`, res.status);
+          }
+          const arr = await res.json();
+          if (!Array.isArray(arr) || arr.length === 0) return errorResponse('Target nicht gefunden', 404);
+          return jsonResponse({ success: true, target: arr[0] });
+        } catch (e) {
+          return errorResponse(`RV-Target-Reveal Fehler: ${e.message}`);
+        }
+      }
+
+      // ── POST /api/ursprung/rv-session ───────────────────────────
+      // Logs an RV session (stage1/2/3 + score).
+      if (path === '/api/ursprung/rv-session' && method === 'POST') {
+        try {
+          const body = await request.json().catch(() => ({}));
+          const { userId, targetId, stage1Response, stage2Response, stage3SketchUrl, scorePercent, sessionMode, durationSeconds } = body || {};
+          if (!userId || !targetId) return errorResponse('userId und targetId erforderlich', 400);
+          const row = {
+            user_id: userId,
+            target_id: targetId,
+            stage1_response: stage1Response || null,
+            stage2_response: stage2Response || null,
+            stage3_sketch_url: stage3SketchUrl || null,
+            score_percent: scorePercent ?? null,
+            session_mode: sessionMode || 'training',
+            duration_seconds: durationSeconds || null,
+          };
+          const res = await fetch(`${SUPABASE_URL}/rest/v1/rv_sessions`, {
+            method: 'POST',
+            headers: { ...sbHeaders, 'Prefer': 'return=representation' },
+            body: JSON.stringify(row),
+          });
+          if (!res.ok) {
+            const txt = await res.text().catch(() => '');
+            return errorResponse(`RV-Session Insert fehlgeschlagen: ${txt}`, res.status);
+          }
+          const data = await res.json();
+          return jsonResponse({ success: true, session: Array.isArray(data) ? data[0] : data });
+        } catch (e) {
+          return errorResponse(`RV-Session Fehler: ${e.message}`);
+        }
+      }
     }
 
     // ── 404 ───────────────────────────────────────────────────
