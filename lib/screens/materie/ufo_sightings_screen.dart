@@ -9,6 +9,7 @@ import '../../services/group_tools_service.dart';
 import '../../services/user_service.dart';
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_glass_app_bar.dart';
+import '../../widgets/cinematic/wb_vignette.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Design-Tokens (Materie – Rot)
@@ -345,7 +346,7 @@ class _UfoSightingsScreenState extends State<UfoSightingsScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _kBg,
+      backgroundColor: const Color(0xFF04080F),
       appBar: WBGlassAppBar(
         world: WBWorld.materie,
         titleWidget: Row(

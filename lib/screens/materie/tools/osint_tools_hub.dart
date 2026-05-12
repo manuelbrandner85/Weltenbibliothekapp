@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import '../../../theme/wb_cinematic_tokens.dart';
 import '../../../widgets/cinematic/wb_glass_app_bar.dart';
+import '../../../widgets/cinematic/wb_vignette.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // OSINT Datenbanken Hub — 7 direkte Datenbank-Zugänge via WebView
@@ -79,7 +80,7 @@ class OsintToolsHub extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _kBg,
+      backgroundColor: const Color(0xFF04080F),
       appBar: WBGlassAppBar(
         world: WBWorld.materie,
         titleWidget: Row(children: [

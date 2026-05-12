@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_glass_app_bar.dart';
+import '../../widgets/cinematic/wb_vignette.dart';
 
 /// Kritische Gesundheits-Recherche — Materie-Welt (Rot)
 /// Tab 1: OpenFDA Nebenwirkungen
@@ -286,7 +287,7 @@ class _CriticalHealthScreenState extends State<CriticalHealthScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: const Color(0xFF04080F),
       appBar: WBGlassAppBar(
         world: WBWorld.materie,
         titleWidget: Row(

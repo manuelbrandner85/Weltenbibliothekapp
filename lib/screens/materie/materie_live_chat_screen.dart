@@ -83,6 +83,7 @@ import '../../widgets/chat_animated_background.dart';
 import '../../widgets/live_room_banner.dart';
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_glass_app_bar.dart';
+import '../../widgets/cinematic/wb_vignette.dart';
 
 /// MATERIE-WELT LIVE-CHAT - Cloudflare Edition
 class MaterieLiveChatScreen extends StatefulWidget {
@@ -1379,7 +1380,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
   Widget build(BuildContext context) {
     return Scaffold(
       resizeToAvoidBottomInset: true, // 📱 Mobile: Keyboard doesn't cover input
-      backgroundColor: const Color(0xFF050310), // home-dashboard bg
+      backgroundColor: const Color(0xFF04080F),
       appBar: WBGlassAppBar(
         world: WBWorld.materie,
         titleWidget: GestureDetector(

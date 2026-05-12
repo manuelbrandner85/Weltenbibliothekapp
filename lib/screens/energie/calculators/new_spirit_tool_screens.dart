@@ -11,6 +11,7 @@ import 'package:weltenbibliothek/models/app_data.dart';
 import 'package:weltenbibliothek/screens/energie/moon_journal_screen.dart';
 import '../../../theme/wb_cinematic_tokens.dart';
 import '../../../widgets/cinematic/wb_glass_app_bar.dart';
+import '../../../widgets/cinematic/wb_vignette.dart';
 
 // ═══════════════════════════════════════════════════════════
 // 1. 🌙 MONDPHASEN-TRACKER SCREEN
@@ -31,7 +32,7 @@ class _MoonPhaseTrackerScreenState extends State<MoonPhaseTrackerScreen> {
     final moonPhase = _getCurrentMoonPhase();
     
     return Scaffold(
-      backgroundColor: Color(0xFF0A0A0A),
+      backgroundColor: const Color(0xFF06040F),
       appBar: WBGlassAppBar(
         world: WBWorld.energie,
         title: '🌙 Mondphasen-Tracker',

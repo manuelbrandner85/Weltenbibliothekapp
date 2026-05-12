@@ -84,6 +84,7 @@ import '../../widgets/chat_animated_background.dart';
 import '../../widgets/live_room_banner.dart';
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_glass_app_bar.dart';
+import '../../widgets/cinematic/wb_vignette.dart';
 // 📷 Image Picker
 
 /// ✅ EINFACHER ENERGIE LIVE CHAT - MIT ALLEN 11 FEATURES!
@@ -1414,7 +1415,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
   Widget build(BuildContext context) {
     return Scaffold(
       resizeToAvoidBottomInset: true, // 📱 Mobile: Keyboard doesn't cover input
-      backgroundColor: const Color(0xFF050310), // home-dashboard bg
+      backgroundColor: const Color(0xFF06040F),
       appBar: WBGlassAppBar(
         world: WBWorld.energie,
         titleWidget: GestureDetector(

@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../services/human_design_service.dart';
 import '../../../theme/wb_cinematic_tokens.dart';
 import '../../../widgets/cinematic/wb_glass_app_bar.dart';
+import '../../../widgets/cinematic/wb_vignette.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // HumanDesignToolScreen – Tool 3
@@ -45,7 +46,7 @@ class _HumanDesignToolScreenState extends State<HumanDesignToolScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _kDarkBg,
+      backgroundColor: const Color(0xFF06040F),
       appBar: WBGlassAppBar(
         world: WBWorld.energie,
         title: '🌀 Human Design',

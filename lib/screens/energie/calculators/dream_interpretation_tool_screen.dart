@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../services/dream_symbol_matcher.dart';
 import '../../../theme/wb_cinematic_tokens.dart';
 import '../../../widgets/cinematic/wb_glass_app_bar.dart';
+import '../../../widgets/cinematic/wb_vignette.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DreamInterpretationToolScreen – 4 Tabs
@@ -44,7 +45,7 @@ class _DreamInterpretationToolScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _darkBg,
+      backgroundColor: const Color(0xFF06040F),
       appBar: WBGlassAppBar(
         world: WBWorld.energie,
         title: '💭 Traumdeutung',

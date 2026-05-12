@@ -17,6 +17,7 @@ import '../../../services/moon_calculator.dart';
 import '../../../services/moon_recommendations.dart';
 import '../../../theme/wb_cinematic_tokens.dart';
 import '../../../widgets/cinematic/wb_glass_app_bar.dart';
+import '../../../widgets/cinematic/wb_vignette.dart';
 
 class MoonCalendarToolScreen extends StatefulWidget {
   const MoonCalendarToolScreen({super.key});
@@ -53,7 +54,7 @@ class _MoonCalendarToolScreenState extends State<MoonCalendarToolScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0D1A),
+      backgroundColor: const Color(0xFF06040F),
       appBar: WBGlassAppBar(
         world: WBWorld.energie,
         title: 'Mondkalender',

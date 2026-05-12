@@ -15,6 +15,7 @@ import 'package:translator/translator.dart';
 import 'dart:io';
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_glass_app_bar.dart';
+import '../../widgets/cinematic/wb_vignette.dart';
 
 class EpsteinFilesSimpleScreen extends StatefulWidget {
   const EpsteinFilesSimpleScreen({super.key});
@@ -371,7 +372,7 @@ class _EpsteinFilesSimpleScreenState extends State<EpsteinFilesSimpleScreen> wit
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF050310),
+      backgroundColor: const Color(0xFF0A0A0A),
       appBar: WBGlassAppBar(
         world: WBWorld.neutral,
         titleWidget: Text(

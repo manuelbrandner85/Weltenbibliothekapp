@@ -8,6 +8,7 @@ import '../../../services/spirit_calculations/numerology_engine.dart';
 import '../../../services/cloudflare_api_service.dart';
 import '../../../theme/wb_cinematic_tokens.dart';
 import '../../../widgets/cinematic/wb_glass_app_bar.dart';
+import '../../../widgets/cinematic/wb_vignette.dart';
 
 /// 🔢 GEMATRIA LEBENS-READING
 /// Vollständige Lebensanalyse basierend auf der numerischen Schwingung des Namens
@@ -119,6 +120,7 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
   Widget build(BuildContext context) {
     return Scaffold(
       extendBodyBehindAppBar: true,
+      backgroundColor: const Color(0xFF06040F),
       appBar: WBGlassAppBar(
         world: WBWorld.energie,
         title: 'GEMATRIA LEBENS-READING',

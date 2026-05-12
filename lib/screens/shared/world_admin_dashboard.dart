@@ -9,6 +9,7 @@ import '../../features/admin/state/admin_state.dart';
 import '../../services/supabase_service.dart';
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_glass_app_bar.dart';
+import '../../widgets/cinematic/wb_vignette.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // WORLD ADMIN DASHBOARD – V2 PREMIUM
@@ -72,7 +73,7 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
     if (!admin.isAdmin) return _accessDeniedScaffold();
 
     return Scaffold(
-      backgroundColor: const Color(0xFF08080F),
+      backgroundColor: const Color(0xFF0A0A0A),
       appBar: WBGlassAppBar(
         world: WBWorld.neutral,
         titleWidget: Row(children: [

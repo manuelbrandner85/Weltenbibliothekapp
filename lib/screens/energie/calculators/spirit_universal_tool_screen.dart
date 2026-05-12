@@ -7,6 +7,7 @@ import '../../../models/spirit_tool_results.dart';
 import '../../../widgets/profile_required_widget.dart';
 import '../../../theme/wb_cinematic_tokens.dart';
 import '../../../widgets/cinematic/wb_glass_app_bar.dart';
+import '../../../widgets/cinematic/wb_vignette.dart';
 
 /// Universal Spirit-Tool Screen
 /// Funktioniert für alle 10 neuen Tools
@@ -176,7 +177,7 @@ class _SpiritUniversalToolScreenState extends State<SpiritUniversalToolScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F0F23),
+      backgroundColor: const Color(0xFF06040F),
       appBar: WBGlassAppBar(
         world: WBWorld.energie,
         titleWidget: Row(

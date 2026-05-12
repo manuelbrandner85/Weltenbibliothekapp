@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import '../../../config/api_config.dart';
 import '../../../theme/wb_cinematic_tokens.dart';
 import '../../../widgets/cinematic/wb_glass_app_bar.dart';
+import '../../../widgets/cinematic/wb_vignette.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // B — Datenleck-Prüfer
@@ -84,7 +85,7 @@ class _DataLeakToolState extends State<DataLeakTool> {
     final lines = (_result?['samples'] as List?)?.cast<String>() ?? [];
 
     return Scaffold(
-      backgroundColor: _kBg,
+      backgroundColor: const Color(0xFF04080F),
       appBar: WBGlassAppBar(
         world: WBWorld.materie,
         titleWidget: Row(children: [

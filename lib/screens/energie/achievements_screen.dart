@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import '../../services/storage_service.dart';
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_glass_app_bar.dart';
+import '../../widgets/cinematic/wb_vignette.dart';
 
 class AchievementsScreen extends StatefulWidget {
   const AchievementsScreen({super.key});
@@ -131,7 +132,7 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
     final progress = _achievements.isEmpty ? 0.0 : _unlockedCount / _achievements.length;
     
     return Scaffold(
-      backgroundColor: Color(0xFF0A0A0A),
+      backgroundColor: const Color(0xFF06040F),
       appBar: WBGlassAppBar(
         world: WBWorld.energie,
         title: '🏆 Achievements',
