@@ -13,6 +13,7 @@ import 'calculators/hermetic_calculator_screen.dart';
 import 'calculators/gematria_calculator_screen.dart';
 import 'calculators/spirit_universal_tool_screen.dart';
 import 'calculators/new_spirit_tool_screens.dart';
+import 'meditation_timer_screen.dart'; // MeditationTimerScreen (canonical, deduplicated)
 import 'calculators/moon_calendar_tool_screen.dart'; // 🌕 v19 Mondkalender
 import 'calculators/dream_interpretation_tool_screen.dart'; // 💭 v20 Traumdeutung
 import 'calculators/body_scan_tool_screen.dart'; // 🧘 v21 Körperscan
