@@ -4,6 +4,9 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../services/group_tools_service.dart';
 import '../../services/user_service.dart';
 import '../../services/free_api_service.dart';
+import '../../theme/wb_cinematic_tokens.dart';
+import '../../widgets/cinematic/wb_glass_app_bar.dart';
+import '../../widgets/cinematic/wb_vignette.dart';
 
 /// 💚 Alternative Heilmethoden + PubMed Wissenschafts-Studien
 class AlternativeHealingScreen extends StatefulWidget {
@@ -70,7 +73,7 @@ class _AlternativeHealingScreenState extends State<AlternativeHealingScreen>
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1A2E),
+        backgroundColor: const Color(0xFF050310),
         title: const Text('💚 Heilmethode hinzufügen', style: TextStyle(color: Colors.green)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -125,10 +128,10 @@ class _AlternativeHealingScreenState extends State<AlternativeHealingScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0D1B2A),
-      appBar: AppBar(
-        title: const Text('💚 Alternative Gesundheit'),
-        backgroundColor: const Color(0xFF1B263B),
+      backgroundColor: const Color(0xFF04080F),
+      appBar: WBGlassAppBar(
+        world: WBWorld.materie,
+        title: '💚 Alternative Gesundheit',
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),

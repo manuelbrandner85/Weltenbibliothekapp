@@ -4,6 +4,9 @@ import 'dart:async';
 import '../../services/group_tools_service.dart';
 import '../../services/user_service.dart'; // 🆕 User Service für Auth
 import '../../widgets/frequency_audio_player.dart';
+import '../../theme/wb_cinematic_tokens.dart';
+import '../../widgets/cinematic/wb_glass_app_bar.dart';
+import '../../widgets/cinematic/wb_vignette.dart';
 
 /// 🎵 FREQUENZ-SESSIONS SCREEN
 /// Gemeinsame Heilfrequenz-Sessions mit Timer
@@ -73,7 +76,7 @@ class _FrequencySessionScreenState extends State<FrequencySessionScreen> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: const Color(0xFF1A1A2E),
+          backgroundColor: const Color(0xFF050310),
           title: const Text('🎵 Neue Frequenz-Session', style: TextStyle(color: Colors.amber)),
           content: SingleChildScrollView(
             child: Column(
@@ -247,10 +250,10 @@ class _FrequencySessionScreenState extends State<FrequencySessionScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0D1B2A),
-      appBar: AppBar(
-        title: const Text('🎵 Frequenz-Sessions'),
-        backgroundColor: const Color(0xFF1B263B),
+      backgroundColor: const Color(0xFF06040F),
+      appBar: WBGlassAppBar(
+        world: WBWorld.energie,
+        title: '🎵 Frequenz-Sessions',
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),

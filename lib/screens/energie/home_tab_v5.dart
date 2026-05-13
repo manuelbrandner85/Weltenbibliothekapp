@@ -17,6 +17,8 @@ import '../shared/notification_center_screen.dart';
 import '../../services/world_subscription_service.dart';
 import '../../config/wb_design.dart';
 import 'spirit_tab_modern.dart';
+import '../../services/mentor_service.dart';
+import '../shared/mentor_chat_screen.dart';
 import 'calculators/chakra_calculator_screen.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -434,6 +436,7 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
                     _buildDailyQuoteSliver(),
                     _buildCosmicEnergySliver(),
                     _buildLiveStatBanner(),
+                    _buildMentorBanner(),
                     _buildActionGrid(),
                     _buildRecentRooms(),
                     _buildSectionTitle('✨ Spirituelle Themen', subtitle: 'Im Fokus'),
@@ -1134,6 +1137,88 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
                   ),
                 );
               }).toList(),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── 🧠 MENTOR BANNER ────────────────────────────────────────────────────
+  Widget _buildMentorBanner() {
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+        child: GestureDetector(
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const MentorChatScreen(
+                personality: MentorPersonality.heiler,
+                world: 'energie',
+              ),
+            ),
+          ),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              gradient: LinearGradient(
+                colors: [
+                  _purple.withValues(alpha: 0.15),
+                  _purple.withValues(alpha: 0.05),
+                ],
+              ),
+              border: Border.all(color: _purple.withValues(alpha: 0.3)),
+              boxShadow: [
+                BoxShadow(
+                  color: _purple.withValues(alpha: 0.08),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: [_purple.withValues(alpha: 0.3), _purple.withValues(alpha: 0.1)],
+                    ),
+                    border: Border.all(color: _purple.withValues(alpha: 0.5)),
+                  ),
+                  child: const Icon(Icons.favorite, color: Color(0xFF7C4DFF), size: 24),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Sprich mit dem Heiler',
+                        style: TextStyle(
+                          color: Color(0xFFCE93D8),
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        'Dein KI-Mentor für Energie & Heilung',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.5),
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(Icons.arrow_forward_ios,
+                    color: _purple.withValues(alpha: 0.5), size: 16),
+              ],
             ),
           ),
         ),

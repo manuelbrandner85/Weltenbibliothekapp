@@ -7,6 +7,9 @@ import '../../models/knowledge_extended_models.dart';
 import '../../services/unified_knowledge_service.dart';
 import 'knowledge_reader_mode.dart';
 import 'advanced_search_delegate.dart';
+import '../../theme/wb_cinematic_tokens.dart';
+import '../../widgets/cinematic/wb_glass_app_bar.dart';
+import '../../widgets/cinematic/wb_vignette.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CINEMATIC WISSEN-TAB  ·  Weltenbibliothek
@@ -95,7 +98,7 @@ class _UnifiedKnowledgeTabState extends State<UnifiedKnowledgeTab>
     if (_isLoading) return _buildSkeleton();
 
     return Scaffold(
-      backgroundColor: _deep,
+      backgroundColor: const Color(0xFF0A0A0A),
       body: Column(
         children: [
           _buildHeader(),
@@ -1052,10 +1055,10 @@ class _KnowledgeDetailScreenState extends State<KnowledgeDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0A),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF111111),
-        title: Text(widget.entry.title,
+      backgroundColor: const Color(0xFF050310),
+      appBar: WBGlassAppBar(
+        world: WBWorld.neutral,
+        titleWidget: Text(widget.entry.title,
             maxLines: 1, overflow: TextOverflow.ellipsis,
             style: const TextStyle(fontSize: 16, color: Colors.white)),
         actions: [

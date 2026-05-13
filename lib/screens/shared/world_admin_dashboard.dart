@@ -7,6 +7,9 @@ import '../../services/cloudflare_api_service.dart';
 import '../../services/health_check_service.dart';
 import '../../features/admin/state/admin_state.dart';
 import '../../services/supabase_service.dart';
+import '../../theme/wb_cinematic_tokens.dart';
+import '../../widgets/cinematic/wb_glass_app_bar.dart';
+import '../../widgets/cinematic/wb_vignette.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // WORLD ADMIN DASHBOARD – V2 PREMIUM
@@ -70,16 +73,10 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
     if (!admin.isAdmin) return _accessDeniedScaffold();
 
     return Scaffold(
-      backgroundColor: const Color(0xFF08080F),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF0D0D1A),
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_rounded, color: Colors.white70, size: 20),
-          onPressed: () => Navigator.pop(context),
-          tooltip: 'Zurück',
-        ),
-        title: Row(children: [
+      backgroundColor: const Color(0xFF0A0A0A),
+      appBar: WBGlassAppBar(
+        world: WBWorld.neutral,
+        titleWidget: Row(children: [
           Container(
             padding: const EdgeInsets.all(7),
             decoration: BoxDecoration(
@@ -165,6 +162,11 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
             },
           ),
         ],
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_rounded, color: Colors.white70, size: 20),
+          onPressed: () => Navigator.pop(context),
+          tooltip: 'Zurück',
+        ),
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: _accent,
@@ -216,15 +218,14 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
 
   Widget _accessDeniedScaffold({String? reason}) => Scaffold(
         backgroundColor: const Color(0xFF08080F),
-        appBar: AppBar(
-          backgroundColor: const Color(0xFF0D0D1A),
-          leading: IconButton(
+        appBar: WBGlassAppBar(
+        world: WBWorld.neutral,
+        title: 'Admin-Dashboard',
+        leading: IconButton(
             icon: const Icon(Icons.arrow_back_ios_rounded, color: Colors.white70, size: 20),
             onPressed: () => Navigator.pop(context),
           ),
-          title: const Text('Admin-Dashboard',
-              style: TextStyle(color: Colors.white, fontSize: 16)),
-        ),
+      ),
         body: Center(
           child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
             Container(
@@ -313,7 +314,7 @@ class _OverviewTabState extends State<_OverviewTab> {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1A2E),
+        backgroundColor: const Color(0xFF050310),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(label,
             style: TextStyle(color: widget.accentBright, fontWeight: FontWeight.bold)),

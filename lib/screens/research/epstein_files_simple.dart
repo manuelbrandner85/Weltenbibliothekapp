@@ -13,6 +13,9 @@ import 'package:webview_flutter/webview_flutter.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 import 'package:translator/translator.dart';
 import 'dart:io';
+import '../../theme/wb_cinematic_tokens.dart';
+import '../../widgets/cinematic/wb_glass_app_bar.dart';
+import '../../widgets/cinematic/wb_vignette.dart';
 
 class EpsteinFilesSimpleScreen extends StatefulWidget {
   const EpsteinFilesSimpleScreen({super.key});
@@ -370,33 +373,12 @@ class _EpsteinFilesSimpleScreenState extends State<EpsteinFilesSimpleScreen> wit
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A0A),
-      appBar: AppBar(
-        title: Text(
+      appBar: WBGlassAppBar(
+        world: WBWorld.neutral,
+        titleWidget: Text(
           _showPdfViewer ? 'PDF ANSICHT' : 'GOVERNMENT RESEARCH',
           style: const TextStyle(letterSpacing: 2),
         ),
-        backgroundColor: const Color(0xFF1A1A1A),
-        leading: _showPdfViewer
-            ? IconButton(
-                icon: const Icon(Icons.arrow_back),
-                onPressed: _closePdfViewer,
-                tooltip: 'Zurück',
-              )
-            : null,
-        bottom: _showPdfViewer 
-            ? null 
-            : TabBar(
-                controller: _tabController,
-                indicatorColor: const Color(0xFFD32F2F),
-                labelColor: Colors.white,
-                unselectedLabelColor: Colors.white.withValues(alpha: 0.5),
-                tabs: const [
-                  Tab(
-                    icon: Icon(Icons.folder_special),
-                    text: 'EPSTEIN FILES',
-                  ),
-                ],
-              ),
         actions: [
           if (!_showPdfViewer) ...[
             // 🌐 Übersetzungs-Toggle Button
@@ -425,6 +407,27 @@ class _EpsteinFilesSimpleScreenState extends State<EpsteinFilesSimpleScreen> wit
             ),
           ],
         ],
+        leading: _showPdfViewer
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: _closePdfViewer,
+                tooltip: 'Zurück',
+              )
+            : null,
+        bottom: _showPdfViewer 
+            ? null 
+            : TabBar(
+                controller: _tabController,
+                indicatorColor: const Color(0xFFD32F2F),
+                labelColor: Colors.white,
+                unselectedLabelColor: Colors.white.withValues(alpha: 0.5),
+                tabs: const [
+                  Tab(
+                    icon: Icon(Icons.folder_special),
+                    text: 'EPSTEIN FILES',
+                  ),
+                ],
+              ),
       ),
       body: _showPdfViewer 
           ? _buildPdfViewer() 

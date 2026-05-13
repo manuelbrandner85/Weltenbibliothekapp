@@ -5,6 +5,9 @@ import '../../../services/storage_service.dart';
 import '../../../services/spirit_calculations/archetype_engine.dart';
 import '../../../widgets/profile_required_widget.dart';
 import '../../../services/spirit_calculations/numerology_engine.dart';
+import '../../../theme/wb_cinematic_tokens.dart';
+import '../../../widgets/cinematic/wb_glass_app_bar.dart';
+import '../../../widgets/cinematic/wb_vignette.dart';
 
 /// 🎭 ARCHETYPEN-ANALYSE SCREEN
 ///
@@ -121,20 +124,13 @@ class _ArchetypeCalculatorScreenState extends State<ArchetypeCalculatorScreen> w
     return Scaffold(
       backgroundColor: const Color(0xFF06040F),
       extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
+      backgroundColor: const Color(0xFF06040F),
+      appBar: WBGlassAppBar(
+        world: WBWorld.energie,
+        title: 'ARCHETYPEN-ANALYSE',
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text(
-          'ARCHETYPEN-ANALYSE',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.5,
-          ),
         ),
       ),
       body: AnimatedBuilder(

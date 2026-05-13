@@ -6,6 +6,8 @@ import 'dart:async';
 import 'package:sensors_plus/sensors_plus.dart';
 import 'materie_world_wrapper.dart';
 import 'energie_world_wrapper.dart';
+import 'vorhang/vorhang_world_wrapper.dart';
+import 'ursprung/ursprung_world_wrapper.dart';
 import '../animations/world_transition_video.dart';
 import '../services/sound_service.dart';
 import '../services/haptic_service.dart';
@@ -953,7 +955,7 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> with TickerProvider
                           Opacity(
                             opacity: ((_wordmarkController.value - 0.7) / 0.3).clamp(0.0, 1.0),
                             child: Text(
-                              'Wähle deine Welt · zwei Pfade, ein Ursprung',
+                              'Wähle deine Welt · vier Pfade, ein Ursprung',
                               style: TextStyle(fontStyle: FontStyle.italic, fontSize: 13, color: Colors.white.withValues(alpha: 0.46), letterSpacing: 1.8, fontWeight: FontWeight.w300),
                               textAlign: TextAlign.center,
                             ),
@@ -1085,35 +1087,73 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> with TickerProvider
 
                   const Spacer(),
 
-                  // ── World cards ──
+                  // ── World cards (2×2 Quad-Portal Grid) ──
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Column(
                       children: [
-                        _buildWorldCard(
-                          cardKey: _materieButtonKey,
-                          eyebrow: 'WELT I',
-                          title: 'MATERIE',
-                          subtitle: 'Wissen · Logik · Fakten',
-                          tags: const ['Geopolitik', 'Geschichte', 'UFOs', 'Forschung'],
-                          primaryColor: const Color(0xFF3B82F6),
-                          deepColor: const Color(0xFF040D1F),
-                          labelColor: const Color(0xFF7DA7FF),
-                          orbOffset: const Alignment(1.1, -1.0),
-                          onTap: () => _navigateWithCinematicTransition(const MaterieWorldWrapper()),
+                        // Zeile 1: Materie + Energie
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildQuadWorldCard(
+                                cardKey: _materieButtonKey,
+                                eyebrow: 'WELT I',
+                                title: 'MATERIE',
+                                subtitle: 'Wissen · Fakten',
+                                primaryColor: const Color(0xFF3B82F6),
+                                deepColor: const Color(0xFF040D1F),
+                                labelColor: const Color(0xFF7DA7FF),
+                                icon: Icons.public,
+                                onTap: () => _navigateWithCinematicTransition(const MaterieWorldWrapper()),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: _buildQuadWorldCard(
+                                cardKey: _energieButtonKey,
+                                eyebrow: 'WELT II',
+                                title: 'ENERGIE',
+                                subtitle: 'Spirit · Mystik',
+                                primaryColor: const Color(0xFFA855F7),
+                                deepColor: const Color(0xFF0C0318),
+                                labelColor: const Color(0xFFC79AFF),
+                                icon: Icons.auto_awesome,
+                                onTap: () => _navigateWithCinematicTransition(const EnergieWorldWrapper()),
+                              ),
+                            ),
+                          ],
                         ),
-                        _buildWorldsDivider(),
-                        _buildWorldCard(
-                          cardKey: _energieButtonKey,
-                          eyebrow: 'WELT II',
-                          title: 'ENERGIE',
-                          subtitle: 'Spiritualität · Mystik · Bewusstsein',
-                          tags: const ['Chakren', 'Astrologie', 'Meditation', 'Kristalle'],
-                          primaryColor: const Color(0xFFA855F7),
-                          deepColor: const Color(0xFF0C0318),
-                          labelColor: const Color(0xFFC79AFF),
-                          orbOffset: const Alignment(-1.1, -1.0),
-                          onTap: () => _navigateWithCinematicTransition(const EnergieWorldWrapper()),
+                        const SizedBox(height: 10),
+                        // Zeile 2: Vorhang + Ursprung
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildQuadWorldCard(
+                                eyebrow: 'WELT III',
+                                title: 'VORHANG',
+                                subtitle: 'Psychologie · Macht',
+                                primaryColor: const Color(0xFFC9A84C),
+                                deepColor: const Color(0xFF0D0B00),
+                                labelColor: const Color(0xFFE0C872),
+                                icon: Icons.psychology,
+                                onTap: () => _navigateWithCinematicTransition(const VorhangWorldWrapper()),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: _buildQuadWorldCard(
+                                eyebrow: 'WELT IV',
+                                title: 'URSPRUNG',
+                                subtitle: 'Bewusstsein · CIA',
+                                primaryColor: const Color(0xFF00D4AA),
+                                deepColor: const Color(0xFF050510),
+                                labelColor: const Color(0xFF40E8C0),
+                                icon: Icons.all_inclusive,
+                                onTap: () => _navigateWithCinematicTransition(const UrsprungWorldWrapper()),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -1384,6 +1424,141 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> with TickerProvider
     );
   }
 
+  Widget _buildQuadWorldCard({
+    Key? cardKey,
+    required String eyebrow,
+    required String title,
+    required String subtitle,
+    required Color primaryColor,
+    required Color deepColor,
+    required Color labelColor,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      key: cardKey,
+      onTap: () {
+        HapticService.mediumImpact();
+        onTap();
+      },
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(18),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+          child: Container(
+            height: 150,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(18),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  deepColor,
+                  Color.lerp(deepColor, primaryColor, 0.14)!,
+                ],
+              ),
+              border: Border.all(color: primaryColor.withValues(alpha: 0.24), width: 1),
+              boxShadow: [
+                BoxShadow(color: primaryColor.withValues(alpha: 0.20), blurRadius: 28, offset: const Offset(0, 8)),
+                BoxShadow(color: Colors.black.withValues(alpha: 0.50), blurRadius: 14, offset: const Offset(0, 4)),
+              ],
+            ),
+            child: Stack(
+              children: [
+                // Atmospheric orb glow
+                Positioned(
+                  top: -30, right: -30,
+                  child: Container(
+                    width: 120, height: 120,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        colors: [
+                          primaryColor.withValues(alpha: 0.30),
+                          primaryColor.withValues(alpha: 0.05),
+                          Colors.transparent,
+                        ],
+                        stops: const [0.0, 0.5, 1.0],
+                      ),
+                    ),
+                  ),
+                ),
+                // Grid texture
+                Positioned.fill(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(18),
+                    child: CustomPaint(painter: _GridLinePainter(primaryColor.withValues(alpha: 0.04))),
+                  ),
+                ),
+                // Content
+                Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Eyebrow chip
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: primaryColor.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: primaryColor.withValues(alpha: 0.40), width: 0.8),
+                        ),
+                        child: Text(eyebrow, style: TextStyle(fontSize: 8, letterSpacing: 2.5, color: labelColor, fontWeight: FontWeight.w700)),
+                      ),
+                      const SizedBox(height: 10),
+                      // Icon + Title
+                      Row(
+                        children: [
+                          Icon(icon, color: primaryColor, size: 18),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              title,
+                              style: const TextStyle(
+                                fontSize: 18, fontWeight: FontWeight.w200,
+                                letterSpacing: 3.0, color: Colors.white, height: 1,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      // Subtitle
+                      Text(
+                        subtitle,
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: Colors.white.withValues(alpha: 0.48),
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                      const Spacer(),
+                      // Arrow
+                      Align(
+                        alignment: Alignment.bottomRight,
+                        child: Container(
+                          width: 24, height: 24,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: primaryColor.withValues(alpha: 0.12),
+                            border: Border.all(color: primaryColor.withValues(alpha: 0.30), width: 0.8),
+                          ),
+                          child: Icon(Icons.arrow_forward, color: primaryColor, size: 12),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildPremiumButton({
     required String title,
     required String subtitle,
@@ -1522,9 +1697,21 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> with TickerProvider
     );
   }
 
-  void _navigateWithCinematicTransition(Widget screen) async {
-    // Bestimme Welt-Typ
-    final isMaterieWorld = screen is MaterieWorldWrapper;
+  void _navigateWithCinematicTransition(Widget screen, {String targetWorld = ''}) async {
+    // Bestimme Welt-Typ automatisch wenn nicht explizit übergeben
+    if (targetWorld.isEmpty) {
+      if (screen is MaterieWorldWrapper) {
+        targetWorld = 'materie';
+      } else if (screen is EnergieWorldWrapper) {
+        targetWorld = 'energie';
+      } else if (screen is VorhangWorldWrapper) {
+        targetWorld = 'vorhang';
+      } else if (screen is UrsprungWorldWrapper) {
+        targetWorld = 'ursprung';
+      } else {
+        targetWorld = 'materie'; // Fallback
+      }
+    }
     
     // 📳 HAPTIC: Medium Impact beim Start (v5.40)
     HapticService.mediumImpact();
@@ -1537,19 +1724,15 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> with TickerProvider
     // 📳 HAPTIC: Heavy Impact beim Warp-Start (v5.40)
     HapticService.heavyImpact();
     
-    // 🎬 PROFESSIONELLER VIDEO-ÜBERGANG (ersetzt alte Animation)
-    // WICHTIG: Wir gehen ZUR Zielwelt, also kommt das Video in UMGEKEHRTER Richtung
-    // Gehen zu MATERIE → kommen von ENERGIE → Video: Energie zu Materie
-    // Gehen zu ENERGIE → kommen von MATERIE → Video: Materie zu Energie
-    final bool isMaterieToEnergie = !isMaterieWorld;
-    
-    // 🎨 NEW: Premium Page Transition mit Fade
+    // 🎬 CINEMATIC ÜBERGANG — Alle 4 Welten unterstützt
+    // Materie/Energie: echte MP4-Videos
+    // Vorhang/Ursprung: programmatische Vortex-Animation mit Welt-Farben
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => WorldTransitionVideo(
           targetScreen: screen,
-          isMaterieToEnergie: isMaterieToEnergie,
+          targetWorld: targetWorld,
         ),
       ),
     );

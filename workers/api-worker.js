@@ -5115,9 +5115,897 @@ Falls keine konkreten Behauptungen bekannt sind, gib 1 allgemeinen Eintrag zum T
       }
     }
 
+    // ═══════════════════════════════════════════════════════════════
+    // 🧠 KI-MENTOR SYSTEM — 4 Persönlichkeiten, Groq + Workers AI
+    // ═══════════════════════════════════════════════════════════════
+
+    // ── Rate-Limiter (In-Memory, pro Worker-Isolate) ──
+    // In Production wird das über mehrere Isolates verteilt, daher
+    // ist es ein "best effort" Rate-Limit, kein harter Block.
+    if (path.startsWith('/api/mentor/')) {
+      const MENTOR_RATE = { perMinute: 30, perDay: 14400 };
+      // Simple in-memory rate limit (resets on worker restart)
+      if (!globalThis._mentorRL) globalThis._mentorRL = {};
+      const rl = globalThis._mentorRL;
+
+      // Versuche User-ID aus Auth-Header zu extrahieren
+      const authHeader = request.headers.get('Authorization') || '';
+      const rlKey = authHeader.slice(-20) || request.headers.get('CF-Connecting-IP') || 'anon';
+      const now = Date.now();
+      if (!rl[rlKey]) rl[rlKey] = { min: [], day: [], dayStart: now };
+
+      // Cleanup alte Einträge
+      rl[rlKey].min = rl[rlKey].min.filter(t => now - t < 60000);
+      if (now - rl[rlKey].dayStart > 86400000) { rl[rlKey].day = []; rl[rlKey].dayStart = now; }
+
+      if (rl[rlKey].min.length >= MENTOR_RATE.perMinute) {
+        return errorResponse('Rate-Limit erreicht (30/min). Bitte warte einen Moment.', 429, 'RATE_LIMITED');
+      }
+      if (rl[rlKey].day.length >= MENTOR_RATE.perDay) {
+        return errorResponse('Tageslimit erreicht (14.400/Tag). Morgen geht es weiter!', 429, 'RATE_LIMITED');
+      }
+      rl[rlKey].min.push(now);
+      rl[rlKey].day.push(now);
+    }
+
+    // ── POST /api/mentor/chat ────────────────────────────────
+    if (path === '/api/mentor/chat' && method === 'POST') {
+      try {
+        const body = await request.json();
+        const { personality, message, conversationHistory, world } = body;
+        if (!personality || !message) {
+          return errorResponse('personality und message sind Pflichtfelder', 400, 'MISSING_PARAM');
+        }
+
+        // System-Prompts pro Persönlichkeit
+        const MENTOR_PROMPTS = {
+          stratege: `Du bist DER STRATEGE – ein eiskalt-analytischer Mentor der Weltenbibliothek.
+Dein Wissen umfasst: Machtpsychologie (Robert Greene, Machiavelli, Sun Tzu),
+dunkle Psychologie, Manipulationstechniken (zur Verteidigung),
+NLP, Verhandlungstaktiken, Körpersprache-Analyse, soziale Dynamiken.
+Sprich auf Deutsch. Sei direkt, präzise, strategisch.
+Verwende Metaphern aus Schach, Krieg und Geopolitik.
+Gib immer konkrete, umsetzbare Ratschläge.
+Warne den Nutzer wenn er Techniken unethisch einsetzen möchte.
+Beende jede Antwort mit einer strategischen Frage an den Nutzer.`,
+
+          alchemist: `Du bist DER ALCHEMIST – ein mystischer Bewusstseinsexperte der Weltenbibliothek.
+Dein Wissen umfasst: CIA Gateway Process (deklassifiziert 1983),
+Remote Viewing (Ingo Swann, SRI International, Project Stargate),
+Monroe Institute Focus Levels (1-49), Hemi-Sync Technologie,
+Manifestation & Patterning, holografisches Universum (Pribram/Bohm),
+Hermetische Prinzipien (Kybalion), Quantenphysik des Bewusstseins,
+REBAL, Energy Bar Tool, Out-of-Body Techniken.
+Sprich auf Deutsch. Sei tiefgründig, poetisch aber präzise.
+Verbinde immer altes Wissen mit moderner Wissenschaft.
+Gib praktische Übungen die der Nutzer sofort anwenden kann.
+Referenziere immer die Originalquelle (CIA-Dokument, Buch, Studie).`,
+
+          heiler: `Du bist DER HEILER – ein mitfühlender Energie-Mentor der Weltenbibliothek.
+Dein Wissen umfasst: Solfeggio-Frequenzen, Chakra-System,
+Atemtechniken (Pranayama, Wim Hof, 4-7-8),
+Meditation (Vipassana, Zen, Transzendentale Meditation),
+Klangtherapie, Energieheilung, Traumdeutung, Schattenarbeit,
+TCM Grundlagen, Ayurveda Grundlagen.
+Sprich auf Deutsch. Sei warm, empathisch, heilend.
+Stelle immer das Wohlbefinden des Nutzers in den Vordergrund.
+Gib sanfte, schrittweise Anleitungen.
+Erkenne emotionale Zustände und reagiere angemessen.`,
+
+          forscher: `Du bist DER FORSCHER – ein wissensbegieriger Mentor der Weltenbibliothek.
+Dein Wissen umfasst: Quantenphysik, Neurowissenschaften,
+Epigenetik, Biologie des Bewusstseins, Geschichte der Philosophie,
+Hermetik, Alchemie (historisch), Symbolik, Mythologie,
+Archäologie verborgener Zivilisationen, Numerologie, Astrologie (historisch).
+Sprich auf Deutsch. Sei neugierig, analytisch, begeistert.
+Stelle immer den wissenschaftlichen Kontext her.
+Unterscheide klar zwischen bewiesenem Wissen, Theorien und Spekulation.
+Empfehle immer weiterführende Quellen und Bücher.`,
+        };
+
+        const systemPrompt = MENTOR_PROMPTS[personality] || MENTOR_PROMPTS.forscher;
+
+        // Konversations-History aufbauen (max 50 Nachrichten)
+        const history = Array.isArray(conversationHistory)
+          ? conversationHistory.slice(-50).map(m => ({
+              role: m.role === 'user' ? 'user' : 'assistant',
+              content: String(m.content || ''),
+            }))
+          : [];
+
+        const messages = [
+          { role: 'system', content: systemPrompt },
+          ...history,
+          { role: 'user', content: message },
+        ];
+
+        // PRIMÄR: Groq API (Llama 3.3 70B, ~700 tok/s)
+        let modelUsed = '';
+        let reply = '';
+
+        if (env.GROQ_API_KEY) {
+          try {
+            const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${env.GROQ_API_KEY}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                model: 'llama-3.3-70b-versatile',
+                messages,
+                max_tokens: 1024,
+                temperature: 0.7,
+              }),
+            });
+            if (groqRes.ok) {
+              const data = await groqRes.json();
+              reply = data?.choices?.[0]?.message?.content || '';
+              modelUsed = 'groq-llama-3.3-70b';
+            }
+          } catch (_) { /* Fallback unten */ }
+        }
+
+        // FALLBACK: Workers AI (Llama 3.1 8B, kostenlos)
+        if (!reply && env.AI) {
+          try {
+            const aiRes = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+              messages,
+              max_tokens: 1024,
+            });
+            reply = aiRes?.response || '';
+            modelUsed = 'workers-ai-llama-3.1-8b';
+          } catch (_) { /* Beide fehlgeschlagen */ }
+        }
+
+        if (!reply) {
+          return errorResponse('Kein AI-Backend verfügbar. Bitte versuche es später.', 503);
+        }
+
+        return jsonResponse({
+          reply,
+          model_used: modelUsed,
+          timestamp: new Date().toISOString(),
+        });
+      } catch (e) {
+        return errorResponse(`Mentor-Chat-Fehler: ${e.message}`);
+      }
+    }
+
+    // ── POST /api/mentor/factcheck ───────────────────────────
+    if (path === '/api/mentor/factcheck' && method === 'POST') {
+      try {
+        const body = await request.json();
+        const claim = body.claim || body.message || '';
+        if (!claim) return errorResponse('claim ist ein Pflichtfeld', 400, 'MISSING_PARAM');
+
+        // Verdict-Mapping Englisch → Deutsch
+        const verdictDE = v => {
+          if (!v) return v;
+          const map = {
+            'true': 'Wahr', 'mostly true': 'Größtenteils wahr',
+            'half true': 'Halb wahr', 'mixture': 'Teils wahr / teils falsch',
+            'mostly false': 'Größtenteils falsch', 'false': 'Falsch',
+            'pants on fire': 'Nachweislich falsch', 'misleading': 'Irreführend',
+            'unverified': 'Nicht verifiziert', 'unproven': 'Nicht bewiesen',
+            'correct': 'Korrekt', 'incorrect': 'Falsch',
+            'missing context': 'Kontext fehlt', 'no evidence': 'Kein Beleg',
+            'exaggerated': 'Übertrieben', 'outdated': 'Veraltet',
+          };
+          return map[v.toLowerCase().trim()] || v;
+        };
+
+        let verdict = '';
+        let sources = [];
+        let explanation = '';
+
+        // 1. Google Fact Check API
+        if (env.GOOGLE_FACTCHECK_API_KEY) {
+          try {
+            const fcRes = await fetch(
+              `https://factchecktools.googleapis.com/v1alpha1/claims:search?query=${encodeURIComponent(claim)}&pageSize=5&key=${env.GOOGLE_FACTCHECK_API_KEY}&languageCode=de`,
+              { signal: AbortSignal.timeout(8000) }
+            );
+            if (fcRes.ok) {
+              const data = await fcRes.json();
+              const claims = data.claims || [];
+              if (claims.length > 0) {
+                const first = claims[0];
+                const review = first.claimReview?.[0];
+                verdict = verdictDE(review?.textualRating || 'Unbekannt');
+                explanation = `Behauptung: "${first.text || claim}"\nQuelle: ${review?.publisher?.name || 'Unbekannt'}\nBewertung: ${verdict}`;
+                sources = claims.slice(0, 5).map(c => ({
+                  claim: c.text || '',
+                  source: c.claimReview?.[0]?.publisher?.name || '',
+                  rating: verdictDE(c.claimReview?.[0]?.textualRating || ''),
+                  url: c.claimReview?.[0]?.url || '',
+                }));
+              }
+            }
+          } catch (_) { /* Fallback unten */ }
+        }
+
+        // 2. Fallback: KI-Analyse wenn keine Google-Ergebnisse
+        if (!verdict) {
+          const fcPrompt = `Analysiere diese Behauptung sachlich und auf Deutsch:
+"${claim}"
+
+Antworte in exakt diesem JSON-Format:
+{
+  "verdict": "Wahr|Teilweise wahr|Falsch|Unbewiesen|Irreführend|Umstritten",
+  "explanation": "Detaillierte Erklärung (3-5 Sätze)",
+  "sources": [{"claim": "...", "source": "...", "rating": "...", "url": ""}]
+}`;
+
+          let aiReply = '';
+          if (env.GROQ_API_KEY) {
+            try {
+              const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${env.GROQ_API_KEY}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  model: 'llama-3.3-70b-versatile',
+                  messages: [{ role: 'user', content: fcPrompt }],
+                  max_tokens: 800, temperature: 0.3,
+                }),
+              });
+              if (r.ok) {
+                const data = await r.json();
+                aiReply = data?.choices?.[0]?.message?.content || '';
+              }
+            } catch (_) {}
+          }
+          if (!aiReply && env.AI) {
+            try {
+              const res = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+                messages: [{ role: 'user', content: fcPrompt }],
+                max_tokens: 800,
+              });
+              aiReply = res?.response || '';
+            } catch (_) {}
+          }
+
+          // JSON aus der KI-Antwort parsen
+          if (aiReply) {
+            try {
+              const jsonMatch = aiReply.match(/\{[\s\S]*\}/);
+              if (jsonMatch) {
+                const parsed = JSON.parse(jsonMatch[0]);
+                verdict = parsed.verdict || 'Unbekannt';
+                explanation = parsed.explanation || aiReply;
+                sources = Array.isArray(parsed.sources) ? parsed.sources : [];
+              } else {
+                verdict = 'KI-Analyse';
+                explanation = aiReply;
+              }
+            } catch (_) {
+              verdict = 'KI-Analyse';
+              explanation = aiReply;
+            }
+          }
+        }
+
+        if (!verdict) {
+          return errorResponse('Faktencheck konnte nicht durchgeführt werden', 503);
+        }
+
+        return jsonResponse({ verdict, sources, explanation });
+      } catch (e) {
+        return errorResponse(`Faktencheck-Fehler: ${e.message}`);
+      }
+    }
+
+    // ── GET /api/mentor/youtube-search ────────────────────────
+    if (path === '/api/mentor/youtube-search' && method === 'GET') {
+      const q = url.searchParams.get('q') || '';
+      const maxResults = Math.min(parseInt(url.searchParams.get('maxResults') || '5', 10), 20);
+      if (!q) return errorResponse('q ist ein Pflichtfeld', 400, 'MISSING_PARAM');
+
+      try {
+        // Primär: Piped API (kostenlos, kein Key)
+        try {
+          const pipedRes = await fetch(
+            `https://pipedapi.kavin.rocks/search?q=${encodeURIComponent(q)}&filter=videos`,
+            { headers: { 'User-Agent': 'WeltenbibliothekApp/1.0' }, signal: AbortSignal.timeout(6000) }
+          );
+          if (pipedRes.ok) {
+            const pd = await pipedRes.json();
+            const videos = (pd.items || [])
+              .filter(i => i.url && i.url.startsWith('/watch?v='))
+              .slice(0, maxResults)
+              .map(i => ({
+                title: i.title || '',
+                videoId: i.url.replace('/watch?v=', '').split('&')[0],
+                thumbnail: i.thumbnail || `https://img.youtube.com/vi/${i.url.replace('/watch?v=', '').split('&')[0]}/mqdefault.jpg`,
+                channel: i.uploaderName || '',
+                description: i.shortDescription || '',
+              }));
+            if (videos.length > 0) return jsonResponse({ videos });
+          }
+        } catch (_) {}
+
+        // Fallback: YouTube Data API v3
+        if (env.YOUTUBE_API_KEY) {
+          const params = new URLSearchParams({
+            part: 'snippet', type: 'video',
+            q, maxResults: String(maxResults),
+            relevanceLanguage: 'de', key: env.YOUTUBE_API_KEY,
+          });
+          const ytRes = await fetch(
+            `https://www.googleapis.com/youtube/v3/search?${params}`,
+            { signal: AbortSignal.timeout(8000) }
+          );
+          if (ytRes.ok) {
+            const data = await ytRes.json();
+            const videos = (data.items || [])
+              .filter(i => i.id?.videoId)
+              .slice(0, maxResults)
+              .map(i => ({
+                title: i.snippet?.title || '',
+                videoId: i.id.videoId,
+                thumbnail: i.snippet?.thumbnails?.medium?.url || '',
+                channel: i.snippet?.channelTitle || '',
+                description: i.snippet?.description || '',
+              }));
+            return jsonResponse({ videos });
+          }
+        }
+
+        return jsonResponse({ videos: [] });
+      } catch (e) {
+        return jsonResponse({ videos: [] });
+      }
+    }
+
+    // ── POST /api/mentor/investigate ─────────────────────────
+    if (path === '/api/mentor/investigate' && method === 'POST') {
+      try {
+        const body = await request.json();
+        const topic = body.topic || '';
+        const depth = body.depth || 'basic';
+        if (!topic) return errorResponse('topic ist ein Pflichtfeld', 400, 'MISSING_PARAM');
+
+        const depthInstructions = {
+          basic: 'Kurze Übersicht (300-500 Wörter). 3-5 Kernfakten.',
+          deep: 'Ausführliche Analyse (500-800 Wörter). 5-8 Kernfakten mit Details.',
+          expert: 'Umfassende Experten-Analyse (800-1200 Wörter). 8-12 Kernfakten mit Quellenangaben.',
+        };
+
+        const investigatePrompt = `Erstelle eine umfassende Analyse zu: "${topic}".
+Tiefe: ${depth} — ${depthInstructions[depth] || depthInstructions.basic}
+Sprache: Deutsch.
+
+Antworte in exakt diesem JSON-Format:
+{
+  "summary": "Zusammenfassung (2-3 Absätze)",
+  "facts": ["Fakt 1", "Fakt 2", ...],
+  "sources": [{"author": "...", "title": "...", "year": "..."}],
+  "relatedTopics": ["Thema 1", "Thema 2", ...]
+}`;
+
+        let aiReply = '';
+        let modelUsed = '';
+
+        // Primär: Groq
+        if (env.GROQ_API_KEY) {
+          try {
+            const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+              method: 'POST',
+              headers: { 'Authorization': `Bearer ${env.GROQ_API_KEY}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                model: 'llama-3.3-70b-versatile',
+                messages: [{ role: 'user', content: investigatePrompt }],
+                max_tokens: 2048, temperature: 0.5,
+              }),
+            });
+            if (r.ok) {
+              const data = await r.json();
+              aiReply = data?.choices?.[0]?.message?.content || '';
+              modelUsed = 'groq-llama-3.3-70b';
+            }
+          } catch (_) {}
+        }
+
+        // Fallback: Workers AI
+        if (!aiReply && env.AI) {
+          try {
+            const res = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+              messages: [{ role: 'user', content: investigatePrompt }],
+              max_tokens: 2048,
+            });
+            aiReply = res?.response || '';
+            modelUsed = 'workers-ai-llama-3.1-8b';
+          } catch (_) {}
+        }
+
+        if (!aiReply) {
+          return errorResponse('Recherche konnte nicht durchgeführt werden', 503);
+        }
+
+        // JSON parsen
+        try {
+          const jsonMatch = aiReply.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            const parsed = JSON.parse(jsonMatch[0]);
+            return jsonResponse({
+              summary: parsed.summary || '',
+              facts: Array.isArray(parsed.facts) ? parsed.facts : [],
+              sources: Array.isArray(parsed.sources) ? parsed.sources : [],
+              relatedTopics: Array.isArray(parsed.relatedTopics) ? parsed.relatedTopics : [],
+              model_used: modelUsed,
+            });
+          }
+        } catch (_) {}
+
+        // Fallback: Rohe Antwort als Summary
+        return jsonResponse({
+          summary: aiReply,
+          facts: [],
+          sources: [],
+          relatedTopics: [],
+          model_used: modelUsed,
+        });
+      } catch (e) {
+        return errorResponse(`Recherche-Fehler: ${e.message}`);
+      }
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    // 🎮 GAMIFICATION ENDPOINTS (Octalysis)
+    // ══════════════════════════════════════════════════════════════
+
+    // ── POST /api/gamification/add-xp ────────────────────────────
+    if (path === '/api/gamification/add-xp' && method === 'POST') {
+      try {
+        const body = await request.json();
+        const { world, amount, reason, userId } = body;
+
+        if (!world || !amount || !userId) {
+          return errorResponse('world, amount und userId erforderlich', 400, 'MISSING_PARAM');
+        }
+        if (!['materie', 'energie', 'noir', 'genesis'].includes(world)) {
+          return errorResponse('Ungültige Welt', 400, 'INVALID_PARAM');
+        }
+        if (typeof amount !== 'number' || amount <= 0 || amount > 1000) {
+          return errorResponse('amount muss zwischen 1 und 1000 liegen', 400, 'INVALID_PARAM');
+        }
+
+        // Supabase: skill_tree XP aktualisieren (upsert)
+        const sbKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+        const upsertRes = await fetch(`${SUPABASE_URL}/rest/v1/user_skill_tree`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': sbKey,
+            'Authorization': `Bearer ${sbKey}`,
+            'Prefer': 'resolution=merge-duplicates,return=representation',
+          },
+          body: JSON.stringify({
+            user_id: userId,
+            world,
+            skill_key: reason || 'general_activity',
+            xp: amount,
+            level: Math.max(1, Math.floor(Math.sqrt(amount / 100))),
+          }),
+        });
+
+        const upsertOk = upsertRes.ok;
+        let record = null;
+        try { record = await upsertRes.json(); } catch (_) {}
+
+        return jsonResponse({
+          success: upsertOk,
+          world,
+          xp_added: amount,
+          reason: reason || 'activity',
+          record: Array.isArray(record) ? record[0] : record,
+        });
+      } catch (e) {
+        return errorResponse(`XP-Fehler: ${e.message}`);
+      }
+    }
+
+    // ── GET /api/gamification/artifacts ───────────────────────────
+    if (path === '/api/gamification/artifacts' && method === 'GET') {
+      try {
+        const sbKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+        const worldFilter = url.searchParams.get('world');
+        let query = `${SUPABASE_URL}/rest/v1/artifacts?select=*&order=rarity.desc,world.asc`;
+        if (worldFilter) {
+          query += `&or=(world.eq.${worldFilter},world.eq.universal)`;
+        }
+
+        const res = await fetch(query, {
+          headers: {
+            'apikey': sbKey,
+            'Authorization': `Bearer ${sbKey}`,
+          },
+        });
+
+        if (!res.ok) {
+          return errorResponse('Artefakte konnten nicht geladen werden', 502);
+        }
+
+        const artifacts = await res.json();
+        return jsonResponse({ artifacts, count: artifacts.length });
+      } catch (e) {
+        return errorResponse(`Artefakte-Fehler: ${e.message}`);
+      }
+    }
+
+    // ── POST /api/gamification/draw-card ──────────────────────────
+    if (path === '/api/gamification/draw-card' && method === 'POST') {
+      try {
+        const body = await request.json();
+        const { userId, cardType, cardIndex, titleDe, messageDe } = body;
+
+        if (!userId || cardType === undefined || cardIndex === undefined) {
+          return errorResponse('userId, cardType und cardIndex erforderlich', 400, 'MISSING_PARAM');
+        }
+        if (!['wisdom', 'challenge', 'boost', 'mystery'].includes(cardType)) {
+          return errorResponse('Ungültiger cardType', 400, 'INVALID_PARAM');
+        }
+
+        const sbKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+        const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+
+        // Prüfen ob heute bereits gezogen wurde
+        const checkRes = await fetch(
+          `${SUPABASE_URL}/rest/v1/daily_destiny_cards?user_id=eq.${userId}&drawn_at=eq.${today}&select=id`,
+          {
+            headers: {
+              'apikey': sbKey,
+              'Authorization': `Bearer ${sbKey}`,
+            },
+          }
+        );
+        const existing = await checkRes.json();
+        if (Array.isArray(existing) && existing.length > 0) {
+          return jsonResponse({
+            success: false,
+            message: 'Heute wurde bereits eine Karte gezogen',
+            already_drawn: true,
+          });
+        }
+
+        // Karte speichern
+        const insertRes = await fetch(`${SUPABASE_URL}/rest/v1/daily_destiny_cards`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': sbKey,
+            'Authorization': `Bearer ${sbKey}`,
+            'Prefer': 'return=representation',
+          },
+          body: JSON.stringify({
+            user_id: userId,
+            card_type: cardType,
+            card_index: cardIndex,
+            title_de: titleDe || '',
+            message_de: messageDe || '',
+            drawn_at: today,
+          }),
+        });
+
+        const insertOk = insertRes.ok;
+        let card = null;
+        try { card = await insertRes.json(); } catch (_) {}
+
+        return jsonResponse({
+          success: insertOk,
+          card: Array.isArray(card) ? card[0] : card,
+          drawn_at: today,
+        });
+      } catch (e) {
+        return errorResponse(`Schicksalskarten-Fehler: ${e.message}`);
+      }
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // ── VORHANG (Welt 6) ─────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────
+    {
+      const sbKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+      const sbHeaders = {
+        'Content-Type': 'application/json',
+        'apikey': sbKey,
+        'Authorization': `Bearer ${sbKey}`,
+      };
+
+      // ── GET /api/vorhang/modules ────────────────────────────────
+      // Returns all 30 Vorhang modules grouped by branch.
+      // Optional query: ?user_id=<uuid> → includes user progress per module.
+      if (path === '/api/vorhang/modules' && method === 'GET') {
+        try {
+          const userId = url.searchParams.get('user_id');
+          const modRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/vorhang_modules?select=*&order=branch_order.asc,module_code.asc`,
+            { headers: sbHeaders }
+          );
+          if (!modRes.ok) {
+            const txt = await modRes.text().catch(() => '');
+            return errorResponse(`Vorhang-Module konnten nicht geladen werden: ${txt}`, modRes.status);
+          }
+          const modules = await modRes.json();
+
+          let progressMap = {};
+          if (userId) {
+            const progRes = await fetch(
+              `${SUPABASE_URL}/rest/v1/user_vorhang_progress?user_id=eq.${encodeURIComponent(userId)}&select=*`,
+              { headers: sbHeaders }
+            );
+            if (progRes.ok) {
+              const progArr = await progRes.json();
+              if (Array.isArray(progArr)) {
+                for (const p of progArr) {
+                  if (p && p.module_code) progressMap[p.module_code] = p;
+                }
+              }
+            }
+          }
+
+          const branchOrder = [
+            'Machtpsychologie',
+            'Manipulationserkennung',
+            'Verhandlung & Überzeugung',
+            'Körpersprache & Nonverbales',
+            'Strategisches Denken',
+            'Schattenarbeit',
+          ];
+          const branches = {};
+          for (const b of branchOrder) branches[b] = [];
+          for (const m of modules) {
+            const enriched = { ...m, progress: progressMap[m.module_code] || null };
+            if (!branches[m.branch]) branches[m.branch] = [];
+            branches[m.branch].push(enriched);
+          }
+
+          // Compute unlock-status per module
+          const allCodes = new Set(modules.map(m => m.module_code));
+          for (const b of Object.keys(branches)) {
+            for (const m of branches[b]) {
+              const prereqs = Array.isArray(m.prerequisites) ? m.prerequisites : [];
+              const requiredCompleted = prereqs.filter(c => c !== m.module_code);
+              const completedSet = new Set(
+                Object.values(progressMap).filter(p => p.completed_at).map(p => p.module_code)
+              );
+              const unlocked = requiredCompleted.every(c => completedSet.has(c));
+              m.is_unlocked = unlocked;
+              m.is_completed = !!(progressMap[m.module_code] && progressMap[m.module_code].completed_at);
+            }
+          }
+
+          const totalCount = modules.length;
+          const completedCount = Object.values(progressMap).filter(p => p.completed_at).length;
+
+          return jsonResponse({
+            success: true,
+            total: totalCount,
+            completed: completedCount,
+            progress_percent: totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0,
+            branches,
+          });
+        } catch (e) {
+          return errorResponse(`Vorhang-Module Fehler: ${e.message}`);
+        }
+      }
+
+      // ── GET /api/vorhang/module/:id ─────────────────────────────
+      // :id is the module_code (e.g. "V-12"). Returns single module + user progress.
+      if (path.startsWith('/api/vorhang/module/') && method === 'GET') {
+        try {
+          const moduleCode = decodeURIComponent(path.split('/api/vorhang/module/')[1] || '').trim();
+          if (!moduleCode) return errorResponse('Modul-Code fehlt', 400, 'MISSING_MODULE_CODE');
+          const userId = url.searchParams.get('user_id');
+
+          const modRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/vorhang_modules?module_code=eq.${encodeURIComponent(moduleCode)}&select=*&limit=1`,
+            { headers: sbHeaders }
+          );
+          if (!modRes.ok) {
+            const txt = await modRes.text().catch(() => '');
+            return errorResponse(`Modul konnte nicht geladen werden: ${txt}`, modRes.status);
+          }
+          const modArr = await modRes.json();
+          if (!Array.isArray(modArr) || modArr.length === 0) {
+            return errorResponse(`Modul '${moduleCode}' nicht gefunden`, 404, 'MODULE_NOT_FOUND');
+          }
+          const moduleData = modArr[0];
+
+          let progress = null;
+          if (userId) {
+            const progRes = await fetch(
+              `${SUPABASE_URL}/rest/v1/user_vorhang_progress?user_id=eq.${encodeURIComponent(userId)}&module_code=eq.${encodeURIComponent(moduleCode)}&select=*&limit=1`,
+              { headers: sbHeaders }
+            );
+            if (progRes.ok) {
+              const arr = await progRes.json();
+              if (Array.isArray(arr) && arr.length > 0) progress = arr[0];
+            }
+          }
+
+          return jsonResponse({ success: true, module: moduleData, progress });
+        } catch (e) {
+          return errorResponse(`Modul-Detail Fehler: ${e.message}`);
+        }
+      }
+
+      // ── POST /api/vorhang/progress ──────────────────────────────
+      // Body: { user_id, module_code, test_score?, test_passed?, completed? }
+      // Upserts user_vorhang_progress and awards XP on first completion.
+      if (path === '/api/vorhang/progress' && method === 'POST') {
+        try {
+          const body = await request.json().catch(() => ({}));
+          const userId = body.user_id || body.userId;
+          const moduleCode = body.module_code || body.moduleCode;
+          if (!userId || !moduleCode) {
+            return errorResponse('user_id und module_code sind Pflichtfelder', 400, 'MISSING_PARAMS');
+          }
+
+          // Fetch module to know xp_reward
+          const modRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/vorhang_modules?module_code=eq.${encodeURIComponent(moduleCode)}&select=xp_reward,is_boss_module&limit=1`,
+            { headers: sbHeaders }
+          );
+          if (!modRes.ok) {
+            const txt = await modRes.text().catch(() => '');
+            return errorResponse(`Modul-Lookup fehlgeschlagen: ${txt}`, modRes.status);
+          }
+          const modArr = await modRes.json();
+          if (!Array.isArray(modArr) || modArr.length === 0) {
+            return errorResponse(`Modul '${moduleCode}' nicht gefunden`, 404, 'MODULE_NOT_FOUND');
+          }
+          const xpReward = Number(modArr[0].xp_reward || 50);
+
+          // Read existing progress
+          const existingRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/user_vorhang_progress?user_id=eq.${encodeURIComponent(userId)}&module_code=eq.${encodeURIComponent(moduleCode)}&select=*&limit=1`,
+            { headers: sbHeaders }
+          );
+          const existingArr = existingRes.ok ? await existingRes.json() : [];
+          const existing = Array.isArray(existingArr) && existingArr.length > 0 ? existingArr[0] : null;
+          const alreadyCompleted = !!(existing && existing.completed_at);
+
+          const nowIso = new Date().toISOString();
+          const testScore = body.test_score !== undefined ? Number(body.test_score) : (existing?.test_score ?? null);
+          const testPassed = body.test_passed !== undefined ? !!body.test_passed : (existing?.test_passed ?? false);
+          const shouldComplete = body.completed === true || (testPassed && !alreadyCompleted);
+
+          const payload = {
+            user_id: userId,
+            module_code: moduleCode,
+            test_score: testScore,
+            test_passed: testPassed,
+            completed_at: shouldComplete ? nowIso : (existing?.completed_at ?? null),
+            last_attempt_at: nowIso,
+            attempts: ((existing?.attempts ?? 0) + (body.test_score !== undefined ? 1 : 0)),
+          };
+
+          const upsertRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/user_vorhang_progress?on_conflict=user_id,module_code`,
+            {
+              method: 'POST',
+              headers: {
+                ...sbHeaders,
+                'Prefer': 'resolution=merge-duplicates,return=representation',
+              },
+              body: JSON.stringify(payload),
+            }
+          );
+          if (!upsertRes.ok) {
+            const txt = await upsertRes.text().catch(() => '');
+            return errorResponse(`Progress-Upsert fehlgeschlagen: ${txt}`, upsertRes.status);
+          }
+          const upsertData = await upsertRes.json().catch(() => null);
+          const progressRow = Array.isArray(upsertData) ? upsertData[0] : upsertData;
+
+          // XP award only on first-time completion
+          let xpAwarded = 0;
+          if (!alreadyCompleted && shouldComplete) {
+            xpAwarded = xpReward;
+            try {
+              await fetch(`${SUPABASE_URL}/rest/v1/rpc/add_user_xp`, {
+                method: 'POST',
+                headers: sbHeaders,
+                body: JSON.stringify({ p_user_id: userId, p_amount: xpReward, p_reason: `vorhang_module:${moduleCode}` }),
+              });
+            } catch (_) {
+              // RPC may not exist – ignore silently, client-side GamificationService handles fallback
+            }
+          }
+
+          return jsonResponse({
+            success: true,
+            progress: progressRow,
+            xp_awarded: xpAwarded,
+            already_completed: alreadyCompleted,
+          });
+        } catch (e) {
+          return errorResponse(`Vorhang-Progress Fehler: ${e.message}`);
+        }
+      }
+
+      // ── GET /api/vorhang/youtube/:moduleCode ────────────────────
+      // Looks up the module's youtube_search_query and returns videos via Piped/YouTube.
+      if (path.startsWith('/api/vorhang/youtube/') && method === 'GET') {
+        try {
+          const moduleCode = decodeURIComponent(path.split('/api/vorhang/youtube/')[1] || '').trim();
+          if (!moduleCode) return errorResponse('Modul-Code fehlt', 400, 'MISSING_MODULE_CODE');
+          const maxResults = Math.min(parseInt(url.searchParams.get('maxResults') || '5', 10), 20);
+
+          const modRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/vorhang_modules?module_code=eq.${encodeURIComponent(moduleCode)}&select=youtube_search_query,title&limit=1`,
+            { headers: sbHeaders }
+          );
+          if (!modRes.ok) {
+            const txt = await modRes.text().catch(() => '');
+            return errorResponse(`Modul-Lookup fehlgeschlagen: ${txt}`, modRes.status);
+          }
+          const modArr = await modRes.json();
+          if (!Array.isArray(modArr) || modArr.length === 0) {
+            return errorResponse(`Modul '${moduleCode}' nicht gefunden`, 404, 'MODULE_NOT_FOUND');
+          }
+          const q = modArr[0].youtube_search_query || modArr[0].title || moduleCode;
+
+          // Primary: Piped API (no key required)
+          try {
+            const pipedRes = await fetch(
+              `https://pipedapi.kavin.rocks/search?q=${encodeURIComponent(q)}&filter=videos`,
+              { headers: { 'User-Agent': 'WeltenbibliothekApp/1.0' }, signal: AbortSignal.timeout(6000) }
+            );
+            if (pipedRes.ok) {
+              const pd = await pipedRes.json();
+              const videos = (pd.items || [])
+                .filter(i => i.url && i.url.startsWith('/watch?v='))
+                .slice(0, maxResults)
+                .map(i => ({
+                  title: i.title || '',
+                  videoId: i.url.replace('/watch?v=', '').split('&')[0],
+                  thumbnail: i.thumbnail || `https://img.youtube.com/vi/${i.url.replace('/watch?v=', '').split('&')[0]}/mqdefault.jpg`,
+                  channel: i.uploaderName || '',
+                  description: i.shortDescription || '',
+                }));
+              if (videos.length > 0) {
+                return jsonResponse({ success: true, query: q, videos });
+              }
+            }
+          } catch (_) {}
+
+          // Fallback: YouTube Data API v3
+          if (env.YOUTUBE_API_KEY) {
+            const params = new URLSearchParams({
+              part: 'snippet', type: 'video',
+              q, maxResults: String(maxResults),
+              relevanceLanguage: 'de', key: env.YOUTUBE_API_KEY,
+            });
+            const ytRes = await fetch(
+              `https://www.googleapis.com/youtube/v3/search?${params}`,
+              { signal: AbortSignal.timeout(8000) }
+            );
+            if (ytRes.ok) {
+              const data = await ytRes.json();
+              const videos = (data.items || [])
+                .filter(i => i.id?.videoId)
+                .slice(0, maxResults)
+                .map(i => ({
+                  title: i.snippet?.title || '',
+                  videoId: i.id.videoId,
+                  thumbnail: i.snippet?.thumbnails?.medium?.url || '',
+                  channel: i.snippet?.channelTitle || '',
+                  description: i.snippet?.description || '',
+                }));
+              return jsonResponse({ success: true, query: q, videos });
+            }
+          }
+
+          return jsonResponse({ success: true, query: q, videos: [] });
+        } catch (e) {
+          return errorResponse(`Vorhang-YouTube Fehler: ${e.message}`);
+        }
+      }
+    }
+
     // ── 404 ───────────────────────────────────────────────────
     return errorResponse(`Endpoint '${path}' nicht gefunden`, 404);
   },
 };
-
-// PLACEHOLDER - wird unten eingefügt

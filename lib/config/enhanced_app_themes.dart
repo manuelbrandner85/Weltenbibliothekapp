@@ -35,6 +35,22 @@ class EnhancedAppThemes {
   static const Color materieGradientStart = Color(0xFFE53935);
   static const Color materieGradientEnd = Color(0xFFFF6F00);
   
+  // Vorhang-Welt (Dunkle Psychologie & Elite-Strategien)
+  static const Color vorhangPrimary = Color(0xFFC9A84C); // Gold
+  static const Color vorhangSecondary = Color(0xFFFFD700); // Goldglanz
+  static const Color vorhangAccent = Color(0xFFE0C872); // Helles Gold
+  static const Color vorhangGradientStart = Color(0xFFC9A84C);
+  static const Color vorhangGradientEnd = Color(0xFFFFD700);
+  static const Color vorhangBackground = Color(0xFF000000); // Schwarz
+  
+  // Ursprung-Welt (Realitätserschaffung & CIA-Bewusstseins-Codes)
+  static const Color ursprungPrimary = Color(0xFF00D4AA); // Cyan
+  static const Color ursprungSecondary = Color(0xFF00FFD4); // Neon-Cyan
+  static const Color ursprungAccent = Color(0xFF40E8C0); // Helles Cyan
+  static const Color ursprungGradientStart = Color(0xFF00D4AA);
+  static const Color ursprungGradientEnd = Color(0xFF00FFD4);
+  static const Color ursprungBackground = Color(0xFF050510); // Tiefes Dunkel
+  
   // Glassmorphism Colors
   static const Color glassDark = Color(0x33000000); // 20% black
   static const Color glassLight = Color(0x33FFFFFF); // 20% white

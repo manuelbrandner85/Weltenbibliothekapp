@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:graphview/GraphView.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../services/free_api_service.dart';
+import '../../theme/wb_cinematic_tokens.dart';
+import '../../widgets/cinematic/wb_glass_app_bar.dart';
+import '../../widgets/cinematic/wb_vignette.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Materie-Farben
@@ -140,14 +143,10 @@ class _ConspiracyNetworkScreenState extends State<ConspiracyNetworkScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _kBg,
-      appBar: AppBar(
-        backgroundColor: _kSurface,
-        title: const Text(
-          'Verschwörungs-Netzwerk',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-        iconTheme: const IconThemeData(color: Colors.white),
+      backgroundColor: const Color(0xFF04080F),
+      appBar: WBGlassAppBar(
+        world: WBWorld.materie,
+        title: 'Verschwörungs-Netzwerk',
         actions: [
           // Graph / Liste togglen
           IconButton(

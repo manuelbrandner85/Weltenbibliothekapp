@@ -11,6 +11,10 @@ library;
 import 'package:flutter/material.dart';
  // OpenClaw v2.0
 import '../../services/backend_health_service.dart';
+import '../../theme/wb_cinematic_tokens.dart';
+import '../../widgets/cinematic/wb_glass_app_bar.dart';
+import '../../widgets/cinematic/wb_glass_card.dart';
+import '../../widgets/cinematic/wb_vignette.dart';
 
 class BackendHealthMonitorScreen extends StatefulWidget {
   const BackendHealthMonitorScreen({super.key});
@@ -63,10 +67,10 @@ class _BackendHealthMonitorScreenState extends State<BackendHealthMonitorScreen>
     final totalCount = _healthStatuses.length;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0A0A0F),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF1A1A2E),
-        title: const Text('🏥 Backend Health Monitor'),
+      backgroundColor: const Color(0xFF050310),
+      appBar: WBGlassAppBar(
+        world: WBWorld.neutral,
+        title: '🏥 Backend Health Monitor',
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -75,16 +79,20 @@ class _BackendHealthMonitorScreenState extends State<BackendHealthMonitorScreen>
           ),
         ],
       ),
+      extendBodyBehindAppBar: true,
       body: _isLoading && _healthStatuses.isEmpty
-          ? const Center(
+          ? Center(
               child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+                valueColor: AlwaysStoppedAnimation<Color>(context.wb.palette(WBWorld.neutral).primary),
               ),
             )
-          : RefreshIndicator(
+          : Stack(
+            children: [
+              const Positioned.fill(child: WBVignette()),
+              RefreshIndicator(
               onRefresh: _checkHealth,
               child: ListView(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.fromLTRB(WBSpace.lg, kToolbarHeight + MediaQuery.of(context).padding.top + WBSpace.lg, WBSpace.lg, WBSpace.lg),
                 children: [
                   // 📊 OVERVIEW CARD
                   _buildOverviewCard(healthyCount, totalCount),
@@ -113,6 +121,8 @@ class _BackendHealthMonitorScreenState extends State<BackendHealthMonitorScreen>
                 ],
               ),
             ),
+            ],
+          ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _isLoading ? null : _checkHealth,
         backgroundColor: const Color(0xFF2196F3),
@@ -140,59 +150,40 @@ class _BackendHealthMonitorScreenState extends State<BackendHealthMonitorScreen>
             ? Colors.orange
             : Colors.red;
 
-    return Card(
-      color: const Color(0xFF1A1A2E),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Gesamtstatus',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+    return WBGlassCard(
+      world: WBWorld.neutral,
+      elevated: true,
+      padding: const EdgeInsets.all(WBSpace.xl),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Gesamtstatus',
+                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(WBRadius.pill),
+                  border: Border.all(color: color, width: 1),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: color, width: 1),
-                  ),
-                  child: Text(
-                    '$percentage%',
-                    style: TextStyle(
-                      color: color,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.check_circle, color: Colors.green, size: 20),
-                const SizedBox(width: 8),
-                Text(
-                  '$healthy von $total Services',
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 16,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
+                child: Text('$percentage%',
+                    style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 16)),
+              ),
+            ],
+          ),
+          const SizedBox(height: WBSpace.md),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.check_circle, color: Colors.green, size: 20),
+              const SizedBox(width: WBSpace.sm),
+              Text('$healthy von $total Services',
+                  style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 16)),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -202,44 +193,31 @@ class _BackendHealthMonitorScreenState extends State<BackendHealthMonitorScreen>
     final color = status.isHealthy ? Colors.green : Colors.red;
     final icon = status.isHealthy ? Icons.check_circle : Icons.error;
 
-    return Card(
-      color: const Color(0xFF1A1A2E),
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: WBSpace.md),
+      child: WBGlassCard(
+        world: WBWorld.neutral,
+        padding: const EdgeInsets.all(WBSpace.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
                 Icon(icon, color: color, size: 24),
-                const SizedBox(width: 12),
+                const SizedBox(width: WBSpace.md),
                 Expanded(
-                  child: Text(
-                    serviceName,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  child: Text(serviceName,
+                      style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
                 ),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: color.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(WBRadius.sm),
                     border: Border.all(color: color, width: 1),
                   ),
-                  child: Text(
-                    status.isHealthy ? 'ONLINE' : 'OFFLINE',
-                    style: TextStyle(
-                      color: color,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                    ),
-                  ),
+                  child: Text(status.isHealthy ? 'ONLINE' : 'OFFLINE',
+                      style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 12)),
                 ),
               ],
             ),
@@ -255,13 +233,8 @@ class _BackendHealthMonitorScreenState extends State<BackendHealthMonitorScreen>
             ],
             if (status.message != null) ...[
               const SizedBox(height: 4),
-              Text(
-                status.message!,
-                style: const TextStyle(
-                  color: Colors.white60,
-                  fontSize: 13,
-                ),
-              ),
+              Text(status.message!,
+                  style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 13)),
             ],
           ],
         ),

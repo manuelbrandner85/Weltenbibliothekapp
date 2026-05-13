@@ -4,6 +4,9 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../services/group_tools_service.dart';
 import '../../services/user_service.dart';
 import '../../services/free_api_service.dart';
+import '../../theme/wb_cinematic_tokens.dart';
+import '../../widgets/cinematic/wb_glass_app_bar.dart';
+import '../../widgets/cinematic/wb_vignette.dart';
 
 /// 🌿 Natürliche Heilmethoden + PubMed Forschung (Energie-Welt)
 class AlternativeHealingScreen extends StatefulWidget {
@@ -125,10 +128,10 @@ class _AlternativeHealingScreenState extends State<AlternativeHealingScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0D1A),
-      appBar: AppBar(
-        title: const Text('🌿 Natürliche Heilmethoden'),
-        backgroundColor: const Color(0xFF12121F),
+      backgroundColor: const Color(0xFF06040F),
+      appBar: WBGlassAppBar(
+        world: WBWorld.energie,
+        title: '🌿 Natürliche Heilmethoden',
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),

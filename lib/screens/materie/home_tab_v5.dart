@@ -17,6 +17,8 @@ import '../shared/stats_dashboard_screen.dart';
 import '../shared/notification_center_screen.dart';
 import '../../services/world_subscription_service.dart';
 import '../../config/wb_design.dart';
+import '../../services/mentor_service.dart';
+import '../shared/mentor_chat_screen.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // MATERIE HOME DASHBOARD V7 – REDESIGN 2026
@@ -24,7 +26,13 @@ import '../../config/wb_design.dart';
 // ═══════════════════════════════════════════════════════════════════════════
 
 class MaterieHomeTabV5 extends StatefulWidget {
-  const MaterieHomeTabV5({super.key});
+  /// Callback zum Umschalten der Bottom-Tab-Navigation des Parents.
+  /// Wenn gesetzt: Home-Buttons wie "Recherche" schalten den Tab um,
+  /// statt einen neuen Screen zu pushen → identische Darstellung
+  /// wie beim direkten Tab-Klick.
+  final ValueChanged<int>? onSwitchTab;
+
+  const MaterieHomeTabV5({super.key, this.onSwitchTab});
   @override
   State<MaterieHomeTabV5> createState() => _MaterieHomeTabV5State();
 }
@@ -298,12 +306,24 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
   Future<void> _go(Widget screen) => Navigator.push<void>(
       context, MaterialPageRoute(builder: (_) => screen));
 
+  /// Zum Recherche-Tab (Kaninchenbau) wechseln: bevorzugt via Parent-Tab-Switch
+  /// (identisches Look & State wie Bottom-Nav-Klick); fällt auf
+  /// Navigator.push zurück, wenn kein Callback vorhanden ist.
+  void _openRechercheTab() {
+    final cb = widget.onSwitchTab;
+    if (cb != null) {
+      cb(1); // Recherche/Kaninchenbau = Tab-Index 1 in MaterieWorldScreen
+    } else {
+      _go(const KaninchenbauScreen());
+    }
+  }
+
   void _goArticle(Map<String, dynamic> a) {
     final url = a['url'] as String?;
     if (url != null && url.isNotEmpty) {
       launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
     } else {
-      _go(const KaninchenbauScreen());
+      _openRechercheTab();
     }
   }
 
@@ -368,6 +388,7 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
                   slivers: [
                     _buildHeroHeader(),
                     _buildLiveStatBanner(),
+                    _buildMentorBanner(),
                     _buildActionGrid(),
                     _buildRecentRooms(),
                     _buildSectionTitle('🔥 Trending', subtitle: 'Heiß diskutiert'),
@@ -609,7 +630,7 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
 
   Widget _buildInlineSearch() {
     return GestureDetector(
-      onTap: () => _go(const KaninchenbauScreen()),
+      onTap: _openRechercheTab,
       child: Container(
         height: 46,
         padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -712,6 +733,88 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
     );
   }
 
+  // ── 🧠 MENTOR BANNER ────────────────────────────────────────────────────
+  Widget _buildMentorBanner() {
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+        child: GestureDetector(
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const MentorChatScreen(
+                personality: MentorPersonality.forscher,
+                world: 'materie',
+              ),
+            ),
+          ),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              gradient: LinearGradient(
+                colors: [
+                  _blue.withValues(alpha: 0.15),
+                  _blue.withValues(alpha: 0.05),
+                ],
+              ),
+              border: Border.all(color: _blue.withValues(alpha: 0.3)),
+              boxShadow: [
+                BoxShadow(
+                  color: _blue.withValues(alpha: 0.08),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: [_blue.withValues(alpha: 0.3), _blue.withValues(alpha: 0.1)],
+                    ),
+                    border: Border.all(color: _blue.withValues(alpha: 0.5)),
+                  ),
+                  child: const Icon(Icons.science, color: Color(0xFF2979FF), size: 24),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Sprich mit dem Forscher',
+                        style: TextStyle(
+                          color: Color(0xFF82B1FF),
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        'Dein KI-Mentor für Wissenschaft & Fakten',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.5),
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(Icons.arrow_forward_ios,
+                    color: _blue.withValues(alpha: 0.5), size: 16),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   // ── ACTION GRID (2×2 tiles) ─────────────────────────────────────────────
   Widget _buildActionGrid() {
     final tiles = [
@@ -721,7 +824,7 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
         sub: 'Artikel & Fakten',
         gradient: [const Color(0xFF0D47A1), const Color(0xFF1565C0), const Color(0xFF2979FF)],
         badge: 0,
-        onTap: () => _go(const KaninchenbauScreen()),
+        onTap: _openRechercheTab,
       ),
       _TileDef(
         icon: Icons.forum_rounded,
@@ -737,7 +840,7 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
         sub: 'Geschichte & Ereignisse',
         gradient: [const Color(0xFF1B5E20), const Color(0xFF2E7D32), const Color(0xFF43A047)],
         badge: 0,
-        onTap: () => _go(const KaninchenbauScreen(initialTopic: 'Geschichte')),
+        onTap: _openRechercheTab,
       ),
       _TileDef(
         icon: Icons.collections_bookmark_rounded,
@@ -905,7 +1008,7 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
             ]),
           ),
           GestureDetector(
-            onTap: () => _go(const KaninchenbauScreen()),
+            onTap: _openRechercheTab,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
@@ -1045,7 +1148,7 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
             final topic = topics[i];
             final c = chipColors[i % chipColors.length];
             return GestureDetector(
-              onTap: () => _go(const KaninchenbauScreen()),
+              onTap: _openRechercheTab,
               child: Container(
                 margin: const EdgeInsets.only(right: 10),
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -1084,7 +1187,7 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
     if (_latestArticles.isEmpty) {
       return SliverToBoxAdapter(
         child: GestureDetector(
-          onTap: () => _go(const KaninchenbauScreen()),
+          onTap: _openRechercheTab,
           child: Container(
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             padding: const EdgeInsets.all(28),

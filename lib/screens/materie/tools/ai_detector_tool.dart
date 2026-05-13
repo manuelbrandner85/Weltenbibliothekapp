@@ -3,6 +3,9 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../../../config/api_config.dart';
+import '../../../theme/wb_cinematic_tokens.dart';
+import '../../../widgets/cinematic/wb_glass_app_bar.dart';
+import '../../../widgets/cinematic/wb_vignette.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // F — KI-Content-Detektor
@@ -89,16 +92,14 @@ class _AiDetectorToolState extends State<AiDetectorTool> {
     final scoreColor = _scoreColor(score);
 
     return Scaffold(
-      backgroundColor: _kBg,
-      appBar: AppBar(
-        backgroundColor: _kBg,
-        foregroundColor: _kText,
-        title: Row(children: [
+      backgroundColor: const Color(0xFF04080F),
+      appBar: WBGlassAppBar(
+        world: WBWorld.materie,
+        titleWidget: Row(children: [
           Icon(Icons.smart_toy_rounded, color: _kAccent, size: 22),
           const SizedBox(width: 8),
           const Text('KI-Content-Detektor', style: TextStyle(color: _kText, fontWeight: FontWeight.bold)),
         ]),
-        elevation: 0,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),

@@ -1,303 +1,421 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../../config/wb_design.dart';
 import '../../widgets/knowledge_graph_widget.dart';
+import '../../widgets/cinematic/wb_glass_app_bar.dart';
+import '../../widgets/cinematic/wb_vignette.dart';
+import '../../theme/wb_cinematic_tokens.dart';
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 🕸️ KNOWLEDGE GRAPH SCREEN — Interaktiver Wissensgraph
+// Zeigt Wissensknoten + Kanten aus Supabase als Force-Directed-Graph.
+// Welt-Filter, Suche, Node-Detail-Sheet, Bookmarks.
+// ═══════════════════════════════════════════════════════════════════════════
 
 class KnowledgeGraphScreen extends StatefulWidget {
-  const KnowledgeGraphScreen({super.key});
+  final String world; // materie | energie | vorhang | ursprung
+  final String? initialQuery;
+
+  const KnowledgeGraphScreen({
+    super.key,
+    required this.world,
+    this.initialQuery,
+  });
 
   @override
   State<KnowledgeGraphScreen> createState() => _KnowledgeGraphScreenState();
 }
 
 class _KnowledgeGraphScreenState extends State<KnowledgeGraphScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   final _supabase = Supabase.instance.client;
   final _searchCtrl = TextEditingController();
-  final _ivCtrl = TransformationController();
 
   List<KnowledgeNode> _nodes = [];
   List<KnowledgeEdge> _edges = [];
-  Set<String> _discoveredIds = {};
-  String? _worldFilter;
+  Set<String> _bookmarkedIds = {};
+
+  bool _loading = false;
+  bool _showList = false; // false = Graph, true = Listenansicht
+  String? _highlightedNodeId;
   String _searchQuery = '';
-  bool _loading = true;
-  String? _error;
 
-  late AnimationController _bgCtrl;
+  // Filter
+  String _typeFilter = 'alle'; // alle | concept | person | event | …
+  static const _typeOptions = [
+    'alle',
+    'concept',
+    'person',
+    'event',
+    'theory',
+    'place',
+    'artifact',
+  ];
 
-  static const _worlds = ['ursprung', 'vorhang', 'energie', 'materie'];
-  static const _worldLabels = {
-    'ursprung': 'Ursprung',
-    'vorhang':  'Vorhang',
-    'energie':  'Energie',
-    'materie':  'Materie',
-  };
-  static const _worldColors = {
-    'ursprung': Color(0xFFFFD700),
-    'vorhang':  Color(0xFFE53935),
-    'energie':  Color(0xFF7C4DFF),
-    'materie':  Color(0xFF2196F3),
-  };
+  late AnimationController _fabCtrl;
 
   @override
   void initState() {
     super.initState();
-    _bgCtrl = AnimationController(
+    _fabCtrl = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 14),
-    )..repeat(reverse: true);
+      duration: const Duration(milliseconds: 280),
+    );
+    _searchQuery = widget.initialQuery ?? '';
+    if (_searchQuery.isNotEmpty) _searchCtrl.text = _searchQuery;
     _loadData();
+    _loadBookmarks();
   }
 
   @override
   void dispose() {
-    _bgCtrl.dispose();
     _searchCtrl.dispose();
-    _ivCtrl.dispose();
+    _fabCtrl.dispose();
     super.dispose();
   }
 
+  // ── Farben je nach Welt ────────────────────────────────────────────────────────────
+
+  Color get _accent {
+    switch (widget.world) {
+      case 'energie':
+        return WbDesign.energiePurple;
+      case 'vorhang':
+        return WbDesign.vorhangGold;
+      case 'ursprung':
+        return WbDesign.ursprungCyan;
+      default:
+        return WbDesign.materieBlue;
+    }
+  }
+
+  Color get _bg {
+    switch (widget.world) {
+      case 'energie':
+        return WbDesign.bgEnergie;
+      case 'vorhang':
+        return WbDesign.bgVorhang;
+      case 'ursprung':
+        return WbDesign.bgUrsprung;
+      default:
+        return WbDesign.bgMaterie;
+    }
+  }
+
+  WBWorld get _wbWorld {
+    switch (widget.world) {
+      case 'energie':
+        return WBWorld.energie;
+      case 'vorhang':
+        return WBWorld.vorhang;
+      case 'ursprung':
+        return WBWorld.ursprung;
+      default:
+        return WBWorld.materie;
+    }
+  }
+
+  // ── Daten laden ──────────────────────────────────────────────────────────────
+
   Future<void> _loadData() async {
-    setState(() { _loading = true; _error = null; });
+    if (!mounted) return;
+    setState(() => _loading = true);
     try {
-      final user = _supabase.auth.currentUser;
-
-      final nodeRows = await _supabase
-          .from('knowledge_nodes')
+      // Knoten laden
+      var nodeQuery = _supabase
+          .from('knowledge_graph_nodes')
           .select()
-          .order('level')
-          .timeout(const Duration(seconds: 12));
+          .or('world.eq.${widget.world},world.eq.universal')
+          .order('weight', ascending: false)
+          .limit(120);
 
-      final edgeRows = await _supabase
-          .from('knowledge_edges')
-          .select()
-          .timeout(const Duration(seconds: 12));
-
-      Set<String> discovered = {};
-      if (user != null) {
-        final progRows = await _supabase
-            .from('user_node_progress')
-            .select('node_id')
-            .eq('user_id', user.id)
-            .timeout(const Duration(seconds: 8));
-        discovered = {for (final r in progRows) r['node_id'] as String};
+      if (_typeFilter != 'alle') {
+        nodeQuery = _supabase
+            .from('knowledge_graph_nodes')
+            .select()
+            .or('world.eq.${widget.world},world.eq.universal')
+            .eq('node_type', _typeFilter)
+            .order('weight', ascending: false)
+            .limit(120);
       }
 
-      final nodes = nodeRows.map<KnowledgeNode>((r) => KnowledgeNode(
-        id:          r['id'] as String,
-        slug:        r['slug'] as String,
-        title:       r['title'] as String,
-        description: r['description'] as String?,
-        world:       r['world'] as String,
-        category:    r['category'] as String?,
-        icon:        r['icon'] as String?,
-        level:       (r['level'] as int?) ?? 1,
-        discovered:  discovered.contains(r['id'] as String),
-      )).toList();
+      final nodeRes = await nodeQuery.timeout(const Duration(seconds: 10));
 
-      final edges = edgeRows.map<KnowledgeEdge>((r) => KnowledgeEdge(
-        id:       r['id'] as String,
-        sourceId: r['source_id'] as String,
-        targetId: r['target_id'] as String,
-        relation: r['relation'] as String,
-        strength: (r['strength'] as num?)?.toDouble() ?? 1.0,
-      )).toList();
+      // Kanten laden (nur zwischen geladenen Knoten)
+      final nodeIds = (nodeRes as List)
+          .map((r) => r['id'] as String)
+          .toList();
 
+      List edgeRes = [];
+      if (nodeIds.isNotEmpty) {
+        edgeRes = await _supabase
+            .from('knowledge_graph_edges')
+            .select()
+            .inFilter('source_id', nodeIds)
+            .inFilter('target_id', nodeIds)
+            .limit(300)
+            .timeout(const Duration(seconds: 10));
+      }
+
+      if (!mounted) return;
       setState(() {
-        _nodes = nodes;
-        _edges = edges;
-        _discoveredIds = discovered;
+        _nodes = _parseNodes(nodeRes);
+        _edges = _parseEdges(edgeRes);
         _loading = false;
       });
     } catch (e) {
-      setState(() {
-        _error = 'Fehler beim Laden: $e';
-        _loading = false;
-      });
+      if (!mounted) return;
+      setState(() => _loading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Fehler beim Laden: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
-  Future<void> _discoverNode(KnowledgeNode node) async {
-    final user = _supabase.auth.currentUser;
-    if (user == null || _discoveredIds.contains(node.id)) return;
+  Future<void> _loadBookmarks() async {
+    final userId = _supabase.auth.currentUser?.id;
+    if (userId == null) return;
     try {
-      await _supabase.from('user_node_progress').upsert({
-        'user_id': user.id,
-        'node_id': node.id,
-      });
+      final res = await _supabase
+          .from('user_graph_bookmarks')
+          .select('node_id')
+          .eq('user_id', userId)
+          .timeout(const Duration(seconds: 8));
+      if (!mounted) return;
       setState(() {
-        _discoveredIds.add(node.id);
-        _nodes = _nodes.map((n) => n.id == node.id
-            ? KnowledgeNode(
-                id: n.id, slug: n.slug, title: n.title,
-                description: n.description, world: n.world,
-                category: n.category, icon: n.icon, level: n.level,
-                discovered: true,
-              )
-            : n).toList();
+        _bookmarkedIds = {
+          for (final r in res as List) r['node_id'] as String
+        };
       });
-    } catch (_) {}
+    } catch (_) {
+      // Bookmarks sind optional — kein Fehler anzeigen
+    }
   }
 
-  List<KnowledgeNode> get _visibleNodes {
-    var nodes = _worldFilter == null
-        ? _nodes
-        : _nodes.where((n) => n.world == _worldFilter).toList();
-    if (_searchQuery.isNotEmpty) {
-      final q = _searchQuery.toLowerCase();
-      nodes = nodes.where((n) =>
-          n.title.toLowerCase().contains(q) ||
-          (n.description?.toLowerCase().contains(q) ?? false) ||
-          (n.category?.toLowerCase().contains(q) ?? false)
-      ).toList();
+  Future<void> _toggleBookmark(KnowledgeNode node) async {
+    final userId = _supabase.auth.currentUser?.id;
+    if (userId == null) return;
+
+    final isBookmarked = _bookmarkedIds.contains(node.id);
+    setState(() {
+      if (isBookmarked) {
+        _bookmarkedIds.remove(node.id);
+      } else {
+        _bookmarkedIds.add(node.id);
+      }
+    });
+
+    try {
+      if (isBookmarked) {
+        await _supabase
+            .from('user_graph_bookmarks')
+            .delete()
+            .eq('user_id', userId)
+            .eq('node_id', node.id);
+      } else {
+        await _supabase.from('user_graph_bookmarks').upsert({
+          'user_id': userId,
+          'node_id': node.id,
+        });
+      }
+    } catch (e) {
+      // Rollback
+      if (mounted) {
+        setState(() {
+          if (isBookmarked) {
+            _bookmarkedIds.add(node.id);
+          } else {
+            _bookmarkedIds.remove(node.id);
+          }
+        });
+      }
     }
-    return nodes;
   }
+
+  // ── Parsing ───────────────────────────────────────────────────────────────────
+
+  List<KnowledgeNode> _parseNodes(List data) {
+    return data.map((r) {
+      Color color;
+      try {
+        final hex = (r['color_hex'] as String? ?? '#4A90D9')
+            .replaceAll('#', '');
+        color = Color(int.parse('FF$hex', radix: 16));
+      } catch (_) {
+        color = _accent;
+      }
+      return KnowledgeNode(
+        id: r['id'] as String,
+        label: r['label'] as String? ?? '?',
+        description: r['description'] as String?,
+        nodeType: r['node_type'] as String? ?? 'concept',
+        iconEmoji: r['icon_emoji'] as String? ?? '🔵',
+        color: color,
+        weight: (r['weight'] as int?) ?? 1,
+        isBookmarked: _bookmarkedIds.contains(r['id'] as String),
+      );
+    }).toList();
+  }
+
+  List<KnowledgeEdge> _parseEdges(List data) {
+    return data.map((r) {
+      return KnowledgeEdge(
+        sourceId: r['source_id'] as String,
+        targetId: r['target_id'] as String,
+        relation: r['relation'] as String? ?? 'related',
+        strength: (r['strength'] as int?) ?? 5,
+      );
+    }).toList();
+  }
+
+  // ── Gefilterte Knoten ─────────────────────────────────────────────────────────────
+
+  List<KnowledgeNode> get _filteredNodes {
+    final nodes = _nodes.map((n) {
+      return n.copyWith(isBookmarked: _bookmarkedIds.contains(n.id));
+    }).toList();
+
+    if (_searchQuery.isEmpty) return nodes;
+    final q = _searchQuery.toLowerCase();
+    return nodes
+        .where((n) =>
+            n.label.toLowerCase().contains(q) ||
+            (n.description?.toLowerCase().contains(q) ?? false))
+        .toList();
+  }
+
+  // ── Verbundene Knoten für Detail-Sheet ────────────────────────────────────
+
+  List<KnowledgeNode> _connectedNodes(KnowledgeNode node) {
+    final connectedIds = _edges
+        .where((e) => e.sourceId == node.id || e.targetId == node.id)
+        .map((e) => e.sourceId == node.id ? e.targetId : e.sourceId)
+        .toSet();
+    return _nodes.where((n) => connectedIds.contains(n.id)).toList();
+  }
+
+  // ── Node-Tap ────────────────────────────────────────────────────────────────────
 
   void _onNodeTap(KnowledgeNode node) {
-    HapticFeedback.lightImpact();
-    _discoverNode(node);
-    _showNodeBottomSheet(node);
-  }
-
-  void _showNodeBottomSheet(KnowledgeNode node) {
-    final edgesForNode = _edges.where((e) =>
-        e.sourceId == node.id || e.targetId == node.id).toList();
-    showModalBottomSheet(
+    setState(() => _highlightedNodeId = node.id);
+    NodeDetailSheet.show(
       context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (_) => _NodeBottomSheet(
-        node: node,
-        edges: edgesForNode,
-        allNodes: _nodes,
-        color: node.worldColor,
-      ),
+      node: node.copyWith(isBookmarked: _bookmarkedIds.contains(node.id)),
+      connectedNodes: _connectedNodes(node),
+      accentColor: _accent,
+      onBookmarkToggle: () {
+        _toggleBookmark(node);
+        Navigator.pop(context);
+      },
     );
   }
 
-  int get _totalDiscovered => _discoveredIds.length;
-  int get _totalNodes => _nodes.length;
+  // ── Build ───────────────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
+    final filtered = _filteredNodes;
+    // Kanten auf gefilterte Knoten einschränken
+    final filteredIds = {for (final n in filtered) n.id};
+    final filteredEdges = _edges
+        .where((e) =>
+            filteredIds.contains(e.sourceId) &&
+            filteredIds.contains(e.targetId))
+        .toList();
+
     return Scaffold(
-      backgroundColor: const Color(0xFF06040F),
-      body: AnimatedBuilder(
-        animation: _bgCtrl,
-        builder: (context, child) => Stack(
-          children: [
-            Positioned.fill(child: Container(color: const Color(0xFF06040F))),
-            Positioned(
-              top: -60 + _bgCtrl.value * 40, right: -40,
-              child: _CineOrb(color: const Color(0xFFFFD700), size: 320,
-                  opacity: 0.06 + _bgCtrl.value * 0.03),
+      backgroundColor: _bg,
+      appBar: WBGlassAppBar(
+        title: 'Wissensgraph',
+        world: _wbWorld,
+        actions: [
+          // Ansicht umschalten
+          IconButton(
+            icon: Icon(
+              _showList ? Icons.account_tree : Icons.list,
+              color: Colors.white70,
             ),
-            Positioned(
-              bottom: -60, left: -40 + _bgCtrl.value * 30,
-              child: _CineOrb(color: const Color(0xFF7C4DFF), size: 280, opacity: 0.07),
+            tooltip: _showList ? 'Graph-Ansicht' : 'Listen-Ansicht',
+            onPressed: () => setState(() => _showList = !_showList),
+          ),
+          // Neu laden
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Colors.white70),
+            tooltip: 'Neu laden',
+            onPressed: _loading ? null : _loadData,
+          ),
+        ],
+      ),
+      body: Stack(
+        children: [
+          // Hintergrund-Gradient
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    _bg,
+                    Color.lerp(_bg, Colors.black, 0.5) ?? Colors.black,
+                    Colors.black,
+                  ],
+                ),
+              ),
             ),
-            Positioned(
-              top: 200 + _bgCtrl.value * 20, left: -30,
-              child: _CineOrb(color: const Color(0xFF2196F3), size: 200,
-                  opacity: 0.05 + _bgCtrl.value * 0.02),
-            ),
-            child!,
-          ],
-        ),
-        child: SafeArea(
-          child: Column(
+          ),
+          const Positioned.fill(child: IgnorePointer(child: WBVignette())),
+
+          Column(
             children: [
-              _buildAppBar(),
-              _buildFilterChips(),
+              // Suchleiste + Filter
               _buildSearchBar(),
-              _buildProgressBanner(),
-              Expanded(child: _buildGraphArea()),
+              _buildTypeFilter(),
+
+              // Haupt-Inhalt
+              Expanded(
+                child: _loading
+                    ? _buildLoadingState()
+                    : _showList
+                        ? _buildListView(filtered)
+                        : _buildGraphView(filtered, filteredEdges),
+              ),
+
+              // Legende (nur im Graph-Modus)
+              if (!_showList && !_loading)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                  child: KnowledgeGraphLegend(accentColor: _accent),
+                ),
             ],
           ),
-        ),
+        ],
       ),
+      floatingActionButton: _buildFab(),
     );
   }
 
-  Widget _buildAppBar() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-      child: Row(
-        children: [
-          GestureDetector(
-            onTap: () => Navigator.of(context).pop(),
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.06),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
-              ),
-              child: const Icon(Icons.arrow_back_ios_new, color: Colors.white70, size: 18),
-            ),
-          ),
-          const SizedBox(width: 14),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Wissensgraph', style: TextStyle(
-                  color: Colors.white, fontSize: 20,
-                  fontWeight: FontWeight.w700, letterSpacing: 0.3,
-                )),
-                Text('Interaktives Wissensnetz',
-                    style: TextStyle(color: Colors.white38, fontSize: 12)),
-              ],
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded, color: Colors.white54),
-            onPressed: _loadData,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFilterChips() {
-    return SizedBox(
-      height: 44,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        children: [
-          _FilterChip(
-            label: 'Alle', selected: _worldFilter == null,
-            color: Colors.white70,
-            onTap: () => setState(() => _worldFilter = null),
-          ),
-          ..._worlds.map((w) => _FilterChip(
-            label: _worldLabels[w]!,
-            selected: _worldFilter == w,
-            color: _worldColors[w]!,
-            onTap: () => setState(() => _worldFilter = _worldFilter == w ? null : w),
-          )),
-        ],
-      ),
-    );
-  }
+  // ── Sub-Widgets ───────────────────────────────────────────────────────────────────
 
   Widget _buildSearchBar() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
       child: TextField(
         controller: _searchCtrl,
-        style: const TextStyle(color: Colors.white, fontSize: 14),
+        onChanged: (v) => setState(() => _searchQuery = v),
+        style: const TextStyle(color: Colors.white),
         decoration: InputDecoration(
-          hintText: 'Wissen durchsuchen…',
-          hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.35), fontSize: 14),
-          prefixIcon: Icon(Icons.search_rounded,
-              color: Colors.white.withValues(alpha: 0.4), size: 20),
+          hintText: 'Wissensgraph durchsuchen…',
+          hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4)),
+          prefixIcon:
+              Icon(Icons.search, color: _accent.withValues(alpha: 0.7)),
           suffixIcon: _searchQuery.isNotEmpty
               ? IconButton(
-                  icon: const Icon(Icons.close, color: Colors.white38, size: 18),
+                  icon: const Icon(Icons.clear, color: Colors.white54),
                   onPressed: () {
                     _searchCtrl.clear();
                     setState(() => _searchQuery = '');
@@ -305,362 +423,456 @@ class _KnowledgeGraphScreenState extends State<KnowledgeGraphScreen>
                 )
               : null,
           filled: true,
-          fillColor: Colors.white.withValues(alpha: 0.06),
-          contentPadding: const EdgeInsets.symmetric(vertical: 10),
+          fillColor: Colors.white.withValues(alpha: 0.07),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+            borderSide: BorderSide.none,
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFF7C4DFF), width: 1.5),
+            borderSide: BorderSide(color: _accent.withValues(alpha: 0.5)),
           ),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         ),
-        onChanged: (v) => setState(() => _searchQuery = v),
       ),
     );
   }
 
-  Widget _buildProgressBanner() {
-    if (_loading) return const SizedBox.shrink();
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.05),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-        ),
-        child: Row(
+  Widget _buildTypeFilter() {
+    return SizedBox(
+      height: 36,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        itemCount: _typeOptions.length,
+        itemBuilder: (context, i) {
+          final type = _typeOptions[i];
+          final isSelected = _typeFilter == type;
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: FilterChip(
+              label: Text(_typeLabel(type)),
+              selected: isSelected,
+              onSelected: (_) {
+                setState(() => _typeFilter = type);
+                _loadData();
+              },
+              selectedColor: _accent.withValues(alpha: 0.3),
+              checkmarkColor: _accent,
+              labelStyle: TextStyle(
+                color: isSelected ? _accent : Colors.white60,
+                fontSize: 12,
+              ),
+              backgroundColor: Colors.white.withValues(alpha: 0.06),
+              side: BorderSide(
+                color: isSelected
+                    ? _accent.withValues(alpha: 0.6)
+                    : Colors.white.withValues(alpha: 0.12),
+              ),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+              visualDensity: VisualDensity.compact,
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildGraphView(
+      List<KnowledgeNode> nodes, List<KnowledgeEdge> edges) {
+    return KnowledgeGraphWidget(
+      nodes: nodes,
+      edges: edges,
+      accentColor: _accent,
+      backgroundColor: _bg,
+      onNodeTap: _onNodeTap,
+      highlightedNodeId: _highlightedNodeId,
+    );
+  }
+
+  Widget _buildListView(List<KnowledgeNode> nodes) {
+    if (nodes.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.hub_rounded, color: Color(0xFF7C4DFF), size: 16),
-            const SizedBox(width: 8),
-            Text('$_totalDiscovered / $_totalNodes Knoten entdeckt',
-                style: const TextStyle(color: Colors.white70, fontSize: 12.5)),
-            const Spacer(),
-            SizedBox(
-              width: 100,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: LinearProgressIndicator(
-                  value: _totalNodes > 0 ? _totalDiscovered / _totalNodes : 0,
-                  backgroundColor: Colors.white12,
-                  valueColor: const AlwaysStoppedAnimation(Color(0xFF7C4DFF)),
-                  minHeight: 5,
-                ),
+            Icon(Icons.search_off,
+                size: 56, color: _accent.withValues(alpha: 0.3)),
+            const SizedBox(height: 16),
+            Text(
+              'Keine Ergebnisse',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.5),
+                fontSize: 16,
               ),
             ),
           ],
         ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      itemCount: nodes.length,
+      itemBuilder: (context, i) {
+        final node = nodes[i];
+        return _NodeListTile(
+          node: node,
+          accentColor: _accent,
+          onTap: () => _onNodeTap(node),
+          onBookmark: () => _toggleBookmark(node),
+        );
+      },
+    );
+  }
+
+  Widget _buildLoadingState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          SizedBox(
+            width: 40,
+            height: 40,
+            child: CircularProgressIndicator(
+              color: _accent,
+              strokeWidth: 2.5,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Wissensgraph lädt…',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.5),
+              fontSize: 14,
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildGraphArea() {
-    if (_loading) {
-      return const Center(child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          CircularProgressIndicator(color: Color(0xFF7C4DFF)),
-          SizedBox(height: 16),
-          Text('Lade Wissensgraph…',
-              style: TextStyle(color: Colors.white54, fontSize: 13)),
-        ],
-      ));
+  Widget _buildFab() {
+    return FloatingActionButton(
+      backgroundColor: _accent,
+      foregroundColor: Colors.white,
+      onPressed: _showAddNodeDialog,
+      tooltip: 'Knoten hinzufügen',
+      mini: true,
+      child: const Icon(Icons.add, size: 22),
+    );
+  }
+
+  // ── Neuen Knoten hinzufügen ───────────────────────────────────────────────
+
+  Future<void> _showAddNodeDialog() async {
+    final userId = _supabase.auth.currentUser?.id;
+    if (userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Bitte einloggen um Knoten hinzuzufügen'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
     }
-    if (_error != null) {
-      return Center(child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.cloud_off, color: Colors.white38, size: 48),
-            const SizedBox(height: 16),
-            Text(_error!, style: const TextStyle(color: Colors.white54, fontSize: 13),
-                textAlign: TextAlign.center),
-            const SizedBox(height: 20),
-            TextButton.icon(
-              onPressed: _loadData,
-              icon: const Icon(Icons.refresh, color: Color(0xFF7C4DFF)),
-              label: const Text('Erneut versuchen',
-                  style: TextStyle(color: Color(0xFF7C4DFF))),
+
+    final labelCtrl = TextEditingController();
+    final descCtrl = TextEditingController();
+    String selectedType = 'concept';
+
+    if (!mounted) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          backgroundColor: const Color(0xFF0D0D1E),
+          title: Text(
+            'Neuen Knoten erstellen',
+            style: TextStyle(color: _accent),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: labelCtrl,
+                autofocus: true,
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(
+                  hintText: 'Bezeichnung',
+                  hintStyle: TextStyle(color: Colors.white38),
+                  enabledBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: Colors.white24),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: descCtrl,
+                style: const TextStyle(color: Colors.white),
+                maxLines: 3,
+                decoration: const InputDecoration(
+                  hintText: 'Beschreibung (optional)',
+                  hintStyle: TextStyle(color: Colors.white38),
+                  enabledBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: Colors.white24),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                value: selectedType,
+                dropdownColor: const Color(0xFF1A1A2E),
+                style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(
+                  labelText: 'Typ',
+                  labelStyle: TextStyle(color: Colors.white54),
+                  enabledBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: Colors.white24),
+                  ),
+                ),
+                items: _typeOptions
+                    .where((t) => t != 'alle')
+                    .map((t) => DropdownMenuItem(
+                          value: t,
+                          child: Text(_typeLabel(t)),
+                        ))
+                    .toList(),
+                onChanged: (v) {
+                  if (v != null) setDialogState(() => selectedType = v);
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Abbrechen',
+                  style: TextStyle(color: Colors.white54)),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                  backgroundColor: _accent),
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Erstellen'),
             ),
           ],
         ),
-      ));
-    }
-    final visible = _visibleNodes;
-    if (visible.isEmpty) {
-      return Center(child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.search_off, color: Colors.white24, size: 48),
-          const SizedBox(height: 12),
-          Text(
-            _searchQuery.isNotEmpty
-                ? 'Keine Knoten für "$_searchQuery"'
-                : 'Keine Knoten für diesen Filter',
-            style: const TextStyle(color: Colors.white38, fontSize: 14),
-          ),
-        ],
-      ));
-    }
-    return InteractiveViewer(
-      transformationController: _ivCtrl,
-      boundaryMargin: const EdgeInsets.all(200),
-      minScale: 0.15,
-      maxScale: 3.5,
-      constrained: false,
-      child: KnowledgeGraphWidget(
-        nodes: visible,
-        edges: _edges,
-        worldFilter: _worldFilter,
-        searchQuery: _searchQuery,
-        onNodeTap: _onNodeTap,
       ),
     );
+
+    labelCtrl.dispose();
+    descCtrl.dispose();
+
+    if (confirmed != true || labelCtrl.text.trim().isEmpty) return;
+
+    try {
+      await _supabase.from('knowledge_graph_nodes').insert({
+        'world': widget.world,
+        'label': labelCtrl.text.trim(),
+        'description': descCtrl.text.trim().isEmpty
+            ? null
+            : descCtrl.text.trim(),
+        'node_type': selectedType,
+        'icon_emoji': _defaultEmoji(selectedType),
+        'color_hex': _hexColor(_accent),
+        'weight': 3,
+        'created_by': userId,
+      });
+      await _loadData();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Knoten erstellt'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Fehler: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  static String _typeLabel(String type) {
+    switch (type) {
+      case 'alle':
+        return 'Alle';
+      case 'concept':
+        return 'Konzepte';
+      case 'person':
+        return 'Personen';
+      case 'event':
+        return 'Ereignisse';
+      case 'theory':
+        return 'Theorien';
+      case 'place':
+        return 'Orte';
+      case 'artifact':
+        return 'Artefakte';
+      default:
+        return type;
+    }
+  }
+
+  static String _defaultEmoji(String type) {
+    switch (type) {
+      case 'person':
+        return '👤';
+      case 'event':
+        return '📅';
+      case 'place':
+        return '📍';
+      case 'artifact':
+        return '🎺';
+      case 'theory':
+        return '💡';
+      default:
+        return '🔵';
+    }
+  }
+
+  static String _hexColor(Color color) {
+    return '#${color.value.toRadixString(16).padLeft(8, '0').substring(2).toUpperCase()}';
   }
 }
 
-// ── NodeBottomSheet ──────────────────────────────────────────────────────────────────
-class _NodeBottomSheet extends StatelessWidget {
-  final KnowledgeNode node;
-  final List<KnowledgeEdge> edges;
-  final List<KnowledgeNode> allNodes;
-  final Color color;
+// ── Listen-Tile ────────────────────────────────────────────────────────────────────────────
 
-  const _NodeBottomSheet({
-    required this.node, required this.edges,
-    required this.allNodes, required this.color,
+class _NodeListTile extends StatelessWidget {
+  final KnowledgeNode node;
+  final Color accentColor;
+  final VoidCallback onTap;
+  final VoidCallback onBookmark;
+
+  const _NodeListTile({
+    required this.node,
+    required this.accentColor,
+    required this.onTap,
+    required this.onBookmark,
   });
 
-  String _nodeTitle(String id) {
-    try { return allNodes.firstWhere((n) => n.id == id).title; }
-    catch (_) { return id.substring(0, 8); }
-  }
-
-  String _relLabel(String rel) {
-    switch (rel) {
-      case 'basiert_auf':  return 'basiert auf';
-      case 'enthält':      return 'enthält';
-      case 'führt_zu':     return 'führt zu';
-      case 'ähnlich':      return 'ähnlich wie';
-      case 'widerspricht': return 'widerspricht';
-      default:             return rel;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    final outgoing = edges.where((e) => e.sourceId == node.id).toList();
-    final incoming = edges.where((e) => e.targetId == node.id).toList();
-
-    return Container(
-      margin: const EdgeInsets.fromLTRB(12, 0, 12, 16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF10101E),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
-        boxShadow: [BoxShadow(color: color.withValues(alpha: 0.15), blurRadius: 30)],
+    return Card(
+      margin: const EdgeInsets.only(bottom: 10),
+      color: Colors.white.withValues(alpha: 0.05),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: node.color.withValues(alpha: 0.25),
+          width: 1,
+        ),
       ),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(child: Container(
-              width: 40, height: 4,
-              margin: const EdgeInsets.only(bottom: 16),
-              decoration: BoxDecoration(
-                color: Colors.white24, borderRadius: BorderRadius.circular(2)),
-            )),
-            Row(
-              children: [
-                Container(
-                  width: 52, height: 52,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(colors: [
-                      color.withValues(alpha: 0.7),
-                      color.withValues(alpha: 0.2),
-                    ]),
-                    border: Border.all(color: color.withValues(alpha: 0.5), width: 1.5),
-                  ),
-                  child: Center(child: Text(node.icon ?? '?',
-                      style: const TextStyle(fontSize: 22))),
-                ),
-                const SizedBox(width: 14),
-                Expanded(child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(node.discovered ? node.title : '??? Unbekannter Knoten',
-                        style: const TextStyle(color: Colors.white, fontSize: 18,
-                            fontWeight: FontWeight.w700)),
-                    const SizedBox(height: 3),
-                    Row(children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: color.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: color.withValues(alpha: 0.3)),
-                        ),
-                        child: Text(node.world.toUpperCase(),
-                            style: TextStyle(color: color, fontSize: 10,
-                                fontWeight: FontWeight.w600, letterSpacing: 1)),
-                      ),
-                      if (node.category != null) ...[const SizedBox(width: 6),
-                        Text(node.category!, style: const TextStyle(
-                            color: Colors.white38, fontSize: 11))],
-                      const SizedBox(width: 6),
-                      ...List.generate(node.level, (_) =>
-                          const Text('★', style: TextStyle(
-                              color: Color(0xFFFFD700), fontSize: 10))),
-                    ]),
-                  ],
-                )),
-              ],
+      child: ListTile(
+        onTap: onTap,
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        leading: Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: node.color.withValues(alpha: 0.2),
+            border: Border.all(
+              color: node.color.withValues(alpha: 0.5),
+              width: 1.5,
             ),
-            if (node.discovered && node.description != null) ...[const SizedBox(height: 14),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.04),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+          ),
+          child: Center(
+            child: Text(
+              node.iconEmoji,
+              style: const TextStyle(fontSize: 20),
+            ),
+          ),
+        ),
+        title: Text(
+          node.label,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+          ),
+        ),
+        subtitle: node.description != null && node.description!.isNotEmpty
+            ? Text(
+                node.description!,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.5),
+                  fontSize: 12,
                 ),
-                child: Text(node.description!, style: const TextStyle(
-                    color: Colors.white70, fontSize: 13.5, height: 1.5)),
               )
-            ] else if (!node.discovered) ...[const SizedBox(height: 14),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.04),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Row(children: [
-                  Icon(Icons.lock_outline, color: Colors.white38, size: 16),
-                  SizedBox(width: 8),
-                  Text('Erkunde diesen Knoten um mehr zu erfahren',
-                      style: TextStyle(color: Colors.white38, fontSize: 13)),
-                ]),
+            : null,
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Typ-Badge
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+              decoration: BoxDecoration(
+                color: node.color.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(6),
               ),
-            ],
-            if (outgoing.isNotEmpty || incoming.isNotEmpty) ...[const SizedBox(height: 16),
-              const Text('Verbindungen', style: TextStyle(
-                  color: Colors.white54, fontSize: 12,
-                  fontWeight: FontWeight.w600, letterSpacing: 0.8)),
-              const SizedBox(height: 8),
-              ...outgoing.map((e) => _EdgeTile(prefix: '→',
-                  label: _relLabel(e.relation),
-                  target: _nodeTitle(e.targetId), color: e.relationColor)),
-              ...incoming.map((e) => _EdgeTile(prefix: '←',
-                  label: _relLabel(e.relation),
-                  target: _nodeTitle(e.sourceId),
-                  color: e.relationColor.withValues(alpha: 0.7))),
-            ],
-            const SizedBox(height: 8),
+              child: Text(
+                _shortType(node.nodeType),
+                style: TextStyle(
+                  color: node.color,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const SizedBox(width: 4),
+            IconButton(
+              icon: Icon(
+                node.isBookmarked
+                    ? Icons.bookmark
+                    : Icons.bookmark_border,
+                color: node.isBookmarked
+                    ? Colors.amber
+                    : Colors.white.withValues(alpha: 0.3),
+                size: 20,
+              ),
+              onPressed: onBookmark,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(
+                minWidth: 32,
+                minHeight: 32,
+              ),
+            ),
           ],
         ),
       ),
     );
   }
-}
 
-class _EdgeTile extends StatelessWidget {
-  final String prefix;
-  final String label;
-  final String target;
-  final Color color;
-  const _EdgeTile({required this.prefix, required this.label,
-      required this.target, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
-      child: Row(children: [
-        Text(prefix, style: TextStyle(color: color, fontSize: 14,
-            fontWeight: FontWeight.bold)),
-        const SizedBox(width: 6),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(5),
-          ),
-          child: Text(label, style: TextStyle(color: color, fontSize: 10)),
-        ),
-        const SizedBox(width: 6),
-        Flexible(child: Text(target,
-            style: const TextStyle(color: Colors.white70, fontSize: 13),
-            overflow: TextOverflow.ellipsis)),
-      ]),
-    );
+  static String _shortType(String type) {
+    switch (type) {
+      case 'concept':
+        return 'Konzept';
+      case 'person':
+        return 'Person';
+      case 'event':
+        return 'Event';
+      case 'theory':
+        return 'Theorie';
+      case 'place':
+        return 'Ort';
+      case 'artifact':
+        return 'Artefakt';
+      default:
+        return type;
+    }
   }
-}
-
-// ── FilterChip ─────────────────────────────────────────────────────────────────────────
-class _FilterChip extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final Color color;
-  final VoidCallback onTap;
-  const _FilterChip({required this.label, required this.selected,
-      required this.color, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        margin: const EdgeInsets.only(right: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
-        decoration: BoxDecoration(
-          color: selected
-              ? color.withValues(alpha: 0.25)
-              : Colors.white.withValues(alpha: 0.05),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: selected
-                ? color.withValues(alpha: 0.7)
-                : Colors.white.withValues(alpha: 0.12),
-            width: selected ? 1.5 : 1,
-          ),
-        ),
-        child: Text(label, style: TextStyle(
-          color: selected ? color : Colors.white54,
-          fontSize: 12.5,
-          fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-        )),
-      ),
-    );
-  }
-}
-
-// ── CineOrb ────────────────────────────────────────────────────────────────────────────
-class _CineOrb extends StatelessWidget {
-  final Color color;
-  final double size;
-  final double opacity;
-  const _CineOrb({required this.color, required this.size, required this.opacity});
-
-  @override
-  Widget build(BuildContext context) => Container(
-    width: size, height: size,
-    decoration: BoxDecoration(
-      shape: BoxShape.circle,
-      gradient: RadialGradient(colors: [
-        color.withValues(alpha: opacity),
-        color.withValues(alpha: 0),
-      ]),
-    ),
-  );
 }

@@ -6,6 +6,7 @@ import 'dart:async';
 import 'dart:io'; // File for uploads
 import '../../config/api_config.dart';
 import '../shared/livekit_group_call_screen.dart';
+import '../shared/livekit_prejoin_screen.dart';
 import '../../services/supabase_service.dart'; // 🔥 supabase client für Auth
 import 'package:supabase_flutter/supabase_flutter.dart' show RealtimeChannel;
 // Removed: dart:convert (unused after FIX 15)
@@ -82,6 +83,9 @@ import '../../services/chat/user_block_service.dart';
 import '../../services/chat/unread_tracker_service.dart';
 import '../../widgets/chat_animated_background.dart';
 import '../../widgets/live_room_banner.dart';
+import '../../theme/wb_cinematic_tokens.dart';
+import '../../widgets/cinematic/wb_glass_app_bar.dart';
+import '../../widgets/cinematic/wb_vignette.dart';
 // 📷 Image Picker
 
 /// ✅ EINFACHER ENERGIE LIVE CHAT - MIT ALLEN 11 FEATURES!
@@ -1019,7 +1023,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
   /// 🔧 NACHRICHT BEARBEITEN/LÖSCHEN MENÜ
     // showModalBottomSheet(
       // context: context,
-      // backgroundColor: const Color(0xFF1A1A2E),
+      // backgroundColor: const Color(0xFF050310),
       // shape: const RoundedRectangleBorder(
         // borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       // ),
@@ -1412,26 +1416,10 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
   Widget build(BuildContext context) {
     return Scaffold(
       resizeToAvoidBottomInset: true, // 📱 Mobile: Keyboard doesn't cover input
-      backgroundColor: const Color(0xFF06040F), // home-dashboard bg
-      appBar: AppBar(
-        flexibleSpace: AnimatedBuilder(
-          animation: _headerAuraCtrl,
-          builder: (_, __) => Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  const Color(0xFF1A0A2E),
-                  Color.lerp(const Color(0xFF100B1E), const Color(0xFF1E0A3A), _headerAuraCtrl.value)!,
-                  const Color(0xFF0D0820),
-                ],
-              ),
-            ),
-          ),
-        ),
-        backgroundColor: Colors.transparent,
-        title: GestureDetector(
+      backgroundColor: const Color(0xFF06040F),
+      appBar: WBGlassAppBar(
+        world: WBWorld.energie,
+        titleWidget: GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: _showRoomInfoSheet,
           child: Column(
@@ -1490,13 +1478,11 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => LiveKitGroupCallScreen(
+                  builder: (_) => LiveKitPreJoinScreen(
                     roomName: 'wb-energie-$_selectedRoom',
                     world: 'energie',
                     displayName: _username.isNotEmpty ? _username : 'Mitglied',
                     avatarUrl: _avatarUrl,
-                    audioOnly: false,
-                    initialMicEnabled: true,
                   ),
                 ),
               );
@@ -1561,14 +1547,12 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                     onJoin: (roomName) => Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => LiveKitGroupCallScreen(
+                        builder: (_) => LiveKitPreJoinScreen(
                           roomName: 'wb-$roomName',
                           world: 'energie',
                           displayName:
                               _username.isNotEmpty ? _username : 'Mitglied',
                           avatarUrl: _avatarUrl,
-                          audioOnly: false,
-                          initialMicEnabled: true,
                         ),
                       ),
                     ),

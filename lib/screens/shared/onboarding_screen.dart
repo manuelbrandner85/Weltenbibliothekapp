@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
  // OpenClaw v2.0
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../theme/wb_cinematic_tokens.dart';
+import '../../widgets/cinematic/wb_vignette.dart';
+import '../../widgets/cinematic/wb_glow_button.dart';
 
 /// 🎓 ONBOARDING FLOW
 /// 
@@ -27,25 +31,29 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       title: 'Willkommen in der\nWeltenbibliothek',
       description: 'Entdecke verborgenes Wissen aus zwei Welten:\nMaterie & Energie',
       icon: Icons.auto_stories,
-      gradient: const [Color(0xFF1E88E5), Color(0xFF7E57C2)],
+      gradient: const [Color(0xFF050310), Color(0xFF0D0A1A)],
+      world: WBWorld.neutral,
     ),
     OnboardingPage(
-      title: '100 Wissensdatenbank-\nEinträge',
-      description: '50 Materie-Themen (Verschwörungen, Forschung)\n50 Energie-Themen (Meditation, Astrologie)',
-      icon: Icons.library_books,
-      gradient: const [Color(0xFF1E88E5), Color(0xFF0D47A1)],
+      title: 'Materie — Fakten\n& Recherche',
+      description: '50 Materie-Themen: Geopolitik, Verschwörungen,\nOSINT-Tools und investigative Recherche',
+      icon: Icons.search,
+      gradient: const [Color(0xFF050310), Color(0xFF0A2452)],
+      world: WBWorld.materie,
     ),
     OnboardingPage(
-      title: 'Favoriten & Notizen',
-      description: 'Speichere Lieblingsartikel, schreibe persönliche Notizen\nund verfolge deinen Lesefortschritt',
-      icon: Icons.favorite,
-      gradient: const [Color(0xFFE53935), Color(0xFFC62828)],
+      title: 'Energie — Spirit\n& Bewusstsein',
+      description: '50 Energie-Themen: Meditation, Astrologie,\nChakren, Numerologie und Healing',
+      icon: Icons.self_improvement,
+      gradient: const [Color(0xFF050310), Color(0xFF3B0D6E)],
+      world: WBWorld.energie,
     ),
     OnboardingPage(
-      title: 'Statistiken & Insights',
-      description: 'Visualisiere deinen Fortschritt mit Charts,\nStreaks und detaillierten Statistiken',
-      icon: Icons.analytics,
-      gradient: const [Color(0xFF7E57C2), Color(0xFF4A148C)],
+      title: 'Community &\nLive-Features',
+      description: 'Echtzeit-Chat, Lesezeichen, Statistiken\nund gemeinsames Erforschen',
+      icon: Icons.people,
+      gradient: const [Color(0xFF050310), Color(0xFF1A1A2E)],
+      world: WBWorld.neutral,
     ),
   ];
 
@@ -70,8 +78,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFF050310),
       body: Stack(
         children: [
+          // Vignette background
+          const Positioned.fill(child: WBVignette()),
+
           // PageView
           PageView.builder(
             controller: _pageController,
@@ -160,39 +172,27 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
                     const SizedBox(height: 16),
 
-                    // Next/Start button
-                    SizedBox(
-                      width: double.infinity,
-                      height: 56,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          if (_currentPage == _pages.length - 1) {
-                            _completeOnboarding();
-                          } else {
-                            _pageController.nextPage(
-                              duration: const Duration(milliseconds: 300),
-                              curve: Curves.easeInOut,
-                            );
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: _pages[_currentPage].gradient[0],
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          elevation: 8,
-                        ),
-                        child: Text(
-                          _currentPage == _pages.length - 1
-                              ? 'Los geht\'s!'
-                              : 'Weiter',
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
+                    // Next/Start button — Cinema WBGlowButton
+                    WBGlowButton(
+                      label: _currentPage == _pages.length - 1
+                          ? 'LOS GEHTS'
+                          : 'WEITER',
+                      icon: _currentPage == _pages.length - 1
+                          ? Icons.rocket_launch
+                          : Icons.arrow_forward,
+                      world: _pages[_currentPage].world,
+                      fullWidth: true,
+                      onPressed: () {
+                        HapticFeedback.lightImpact();
+                        if (_currentPage == _pages.length - 1) {
+                          _completeOnboarding();
+                        } else {
+                          _pageController.nextPage(
+                            duration: WBMotion.page,
+                            curve: WBMotion.enterCurve,
+                          );
+                        }
+                      },
                     ),
                   ],
                 ),
@@ -205,24 +205,25 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Widget _buildPage(OnboardingPage page) {
+    final palette = context.wb.palette(page.world);
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
           colors: page.gradient,
         ),
       ),
       child: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(WBSpace.xxl),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Animated Icon
+              // Animated Icon with world-glow
               TweenAnimationBuilder<double>(
                 tween: Tween(begin: 0.0, end: 1.0),
-                duration: const Duration(milliseconds: 600),
+                duration: WBMotion.hero,
                 curve: Curves.elasticOut,
                 builder: (context, value, child) {
                   return Transform.scale(
@@ -231,26 +232,33 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       width: 120,
                       height: 120,
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.2),
+                        color: palette.primary.withValues(alpha: 0.15),
                         shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: palette.primary.withValues(alpha: 0.3),
+                            blurRadius: 40,
+                            spreadRadius: 10,
+                          ),
+                        ],
                       ),
                       child: Icon(
                         page.icon,
-                        size: 64,
-                        color: Colors.white,
+                        size: 56,
+                        color: palette.label,
                       ),
                     ),
                   );
                 },
               ),
 
-              const SizedBox(height: 48),
+              const SizedBox(height: WBSpace.huge),
 
-              // Title
+              // Title — cinema typography
               TweenAnimationBuilder<double>(
                 tween: Tween(begin: 0.0, end: 1.0),
-                duration: const Duration(milliseconds: 600),
-                curve: Curves.easeOut,
+                duration: WBMotion.card,
+                curve: WBMotion.enterCurve,
                 builder: (context, value, child) {
                   return Opacity(
                     opacity: value,
@@ -259,11 +267,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       child: Text(
                         page.title,
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 32,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          height: 1.2,
+                        style: WBType.hero.copyWith(
+                          fontSize: 28,
+                          letterSpacing: 3.0,
+                          height: 1.3,
                         ),
                       ),
                     ),
@@ -271,13 +278,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 },
               ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: WBSpace.xxl),
 
               // Description
               TweenAnimationBuilder<double>(
                 tween: Tween(begin: 0.0, end: 1.0),
                 duration: const Duration(milliseconds: 800),
-                curve: Curves.easeOut,
+                curve: WBMotion.enterCurve,
                 builder: (context, value, child) {
                   return Opacity(
                     opacity: value,
@@ -286,10 +293,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       child: Text(
                         page.description,
                         textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.white.withValues(alpha: 0.9),
-                          height: 1.5,
+                        style: WBType.body.copyWith(
+                          fontSize: 15,
+                          height: 1.6,
+                          color: Colors.white.withValues(alpha: 0.75),
                         ),
                       ),
                     ),
@@ -322,11 +329,13 @@ class OnboardingPage {
   final String description;
   final IconData icon;
   final List<Color> gradient;
+  final WBWorld world;
 
   OnboardingPage({
     required this.title,
     required this.description,
     required this.icon,
     required this.gradient,
+    this.world = WBWorld.neutral,
   });
 }

@@ -1,0 +1,512 @@
+import 'dart:convert';
+
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../../config/api_config.dart';
+import '../../theme/wb_cinematic_tokens.dart';
+import '../../widgets/cinematic/wb_glass_app_bar.dart';
+import 'vorhang_lesson_screen.dart';
+
+/// 🎭 VORHANG Modules Screen
+///
+/// Zeigt alle 30 Vorhang-Module (V-01 … V-30) gruppiert in 6 Branches
+/// (Machtpsychologie, Manipulationserkennung, Verhandlung & Überzeugung,
+///  Körpersprache & Nonverbales, Strategisches Denken, Schattenarbeit).
+///
+/// Jede Branche ist eine ExpansionTile mit:
+/// - Branch-Icon + Titel + Fortschrittsbalken
+/// - 5 ListTiles (eine pro Modul) mit Status-Icon
+///   ✅ completed | 🔓 available | 🔒 locked
+/// Tap auf freigeschaltetes Modul → VorhangLessonScreen.
+class VorhangModulesScreen extends StatefulWidget {
+  const VorhangModulesScreen({super.key});
+
+  @override
+  State<VorhangModulesScreen> createState() => _VorhangModulesScreenState();
+}
+
+class _VorhangModulesScreenState extends State<VorhangModulesScreen> {
+  static const _gold = Color(0xFFC9A84C);
+  static const _goldDim = Color(0xFF8A7531);
+  static const _bgBlack = Color(0xFF000000);
+  static const _surface = Color(0xFF0D0B00);
+
+  bool _loading = true;
+  String? _error;
+  Map<String, List<Map<String, dynamic>>> _branches = {};
+  int _totalCount = 0;
+  int _completedCount = 0;
+
+  // Branche → Icon
+  static const Map<String, IconData> _branchIcons = {
+    'Machtpsychologie': Icons.psychology,
+    'Manipulationserkennung': Icons.shield,
+    'Verhandlung & Überzeugung': Icons.handshake,
+    'Körpersprache & Nonverbales': Icons.accessibility_new,
+    'Strategisches Denken': Icons.military_tech,
+    'Schattenarbeit': Icons.dark_mode,
+  };
+
+  // Erwartete Reihenfolge der 6 Branches
+  static const List<String> _branchOrder = [
+    'Machtpsychologie',
+    'Manipulationserkennung',
+    'Verhandlung & Überzeugung',
+    'Körpersprache & Nonverbales',
+    'Strategisches Denken',
+    'Schattenarbeit',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchModules();
+  }
+
+  Future<void> _fetchModules() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+      final userIdQuery = user != null ? '?user_id=${Uri.encodeComponent(user.id)}' : '';
+      final uri = Uri.parse('${ApiConfig.workerUrl}/api/vorhang/modules$userIdQuery');
+      final res = await http
+          .get(uri, headers: {'Accept': 'application/json'})
+          .timeout(const Duration(seconds: 12));
+      if (res.statusCode != 200) {
+        throw Exception('HTTP ${res.statusCode}: ${res.body}');
+      }
+      final data = jsonDecode(res.body) as Map<String, dynamic>;
+      final rawBranches = (data['branches'] as Map?) ?? {};
+      final mapped = <String, List<Map<String, dynamic>>>{};
+      for (final b in _branchOrder) {
+        final list = (rawBranches[b] as List?) ?? const [];
+        mapped[b] = list
+            .whereType<Map>()
+            .map((e) => e.cast<String, dynamic>())
+            .toList();
+      }
+      setState(() {
+        _branches = mapped;
+        _totalCount = (data['total'] as num?)?.toInt() ?? 0;
+        _completedCount = (data['completed'] as num?)?.toInt() ?? 0;
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
+    }
+  }
+
+  void _openLesson(Map<String, dynamic> module) {
+    final code = module['module_code'] as String?;
+    if (code == null) return;
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => VorhangLessonScreen(moduleCode: code),
+      ),
+    ).then((_) => _fetchModules());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      extendBodyBehindAppBar: true,
+      backgroundColor: _bgBlack,
+      appBar: WBGlassAppBar(
+        world: WBWorld.vorhang,
+        title: 'VORHANG MODULE',
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: _gold),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh, color: _gold),
+            tooltip: 'Neu laden',
+            onPressed: _fetchModules,
+          ),
+        ],
+      ),
+      body: SafeArea(
+        child: _loading
+            ? const Center(
+                child: CircularProgressIndicator(
+                  color: _gold,
+                  strokeWidth: 2,
+                ),
+              )
+            : _error != null
+                ? _buildError()
+                : _buildContent(),
+      ),
+    );
+  }
+
+  Widget _buildError() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, color: _gold.withValues(alpha: 0.6), size: 48),
+            const SizedBox(height: 16),
+            Text(
+              'Module konnten nicht geladen werden',
+              style: TextStyle(
+                color: _gold,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _error ?? '',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 12),
+            ),
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              onPressed: _fetchModules,
+              icon: const Icon(Icons.refresh, color: _gold),
+              label: const Text('Erneut versuchen', style: TextStyle(color: _gold)),
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(color: _gold.withValues(alpha: 0.4)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContent() {
+    final percent = _totalCount > 0 ? _completedCount / _totalCount : 0.0;
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 100, 16, 32),
+      children: [
+        // Overall progress card
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                _surface,
+                _gold.withValues(alpha: 0.08),
+                _bgBlack,
+              ],
+            ),
+            border: Border.all(color: _gold.withValues(alpha: 0.3)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.auto_stories, color: _gold, size: 22),
+                  const SizedBox(width: 10),
+                  const Text(
+                    'GESAMTFORTSCHRITT',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 4.0,
+                      color: _gold,
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    '$_completedCount / $_totalCount',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: LinearProgressIndicator(
+                  value: percent,
+                  minHeight: 8,
+                  backgroundColor: _gold.withValues(alpha: 0.1),
+                  valueColor: const AlwaysStoppedAnimation(_gold),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                '${(percent * 100).round()}% des Vorhangs gelüftet',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.6),
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+
+        // 6 Branches
+        for (final branchName in _branchOrder)
+          _buildBranchTile(branchName, _branches[branchName] ?? const []),
+      ],
+    );
+  }
+
+  Widget _buildBranchTile(String branchName, List<Map<String, dynamic>> modules) {
+    final icon = _branchIcons[branchName] ?? Icons.folder;
+    final completed = modules.where((m) => m['is_completed'] == true).length;
+    final total = modules.length;
+    final percent = total > 0 ? completed / total : 0.0;
+    final allDone = total > 0 && completed == total;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        color: _surface.withValues(alpha: 0.55),
+        border: Border.all(
+          color: allDone
+              ? _gold.withValues(alpha: 0.5)
+              : _gold.withValues(alpha: 0.18),
+        ),
+      ),
+      child: Theme(
+        data: Theme.of(context).copyWith(
+          dividerColor: Colors.transparent,
+          unselectedWidgetColor: _gold,
+          colorScheme: Theme.of(context).colorScheme.copyWith(primary: _gold),
+        ),
+        child: ExpansionTile(
+          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          childrenPadding: const EdgeInsets.fromLTRB(8, 0, 8, 12),
+          iconColor: _gold,
+          collapsedIconColor: _gold,
+          leading: Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(
+                colors: [
+                  _gold.withValues(alpha: 0.3),
+                  _gold.withValues(alpha: 0.08),
+                ],
+              ),
+              border: Border.all(color: _gold.withValues(alpha: 0.45)),
+            ),
+            child: Icon(icon, color: _gold, size: 22),
+          ),
+          title: Text(
+            branchName,
+            style: const TextStyle(
+              color: _gold,
+              fontWeight: FontWeight.w700,
+              fontSize: 14,
+              letterSpacing: 0.5,
+            ),
+          ),
+          subtitle: Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(6),
+                        child: LinearProgressIndicator(
+                          value: percent,
+                          minHeight: 5,
+                          backgroundColor: _gold.withValues(alpha: 0.1),
+                          valueColor: AlwaysStoppedAnimation(
+                            allDone ? _gold : _goldDim,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      '$completed/$total',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.65),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          children: [
+            for (final module in modules) _buildModuleTile(module),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildModuleTile(Map<String, dynamic> module) {
+    final isCompleted = module['is_completed'] == true;
+    final isUnlocked = module['is_unlocked'] == true;
+    final isBoss = module['is_boss_module'] == true;
+    final title = (module['title'] as String?) ?? '?';
+    final subtitle = (module['subtitle'] as String?) ?? '';
+    final code = (module['module_code'] as String?) ?? '';
+    final xp = (module['xp_reward'] as num?)?.toInt() ?? 50;
+
+    IconData statusIcon;
+    Color statusColor;
+    String statusLabel;
+    if (isCompleted) {
+      statusIcon = Icons.check_circle;
+      statusColor = const Color(0xFF4CAF50);
+      statusLabel = 'Abgeschlossen';
+    } else if (isUnlocked) {
+      statusIcon = Icons.lock_open;
+      statusColor = _gold;
+      statusLabel = 'Verfügbar';
+    } else {
+      statusIcon = Icons.lock;
+      statusColor = Colors.white.withValues(alpha: 0.3);
+      statusLabel = 'Gesperrt';
+    }
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: isUnlocked || isCompleted ? () => _openLesson(module) : null,
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            color: isCompleted
+                ? _gold.withValues(alpha: 0.06)
+                : Colors.transparent,
+            border: Border.all(
+              color: isBoss
+                  ? _gold.withValues(alpha: 0.6)
+                  : Colors.white.withValues(alpha: 0.05),
+              width: isBoss ? 1.2 : 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(statusIcon, color: statusColor, size: 22),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: _gold.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            code,
+                            style: const TextStyle(
+                              color: _gold,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 1.0,
+                            ),
+                          ),
+                        ),
+                        if (isBoss) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(colors: [
+                                _gold,
+                                _gold.withValues(alpha: 0.7),
+                              ]),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: const Text(
+                              'BOSS',
+                              style: TextStyle(
+                                color: Colors.black,
+                                fontSize: 9,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 1.0,
+                              ),
+                            ),
+                          ),
+                        ],
+                        const Spacer(),
+                        Text(
+                          '+$xp XP',
+                          style: TextStyle(
+                            color: _gold.withValues(alpha: 0.9),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      title,
+                      style: TextStyle(
+                        color: isUnlocked || isCompleted
+                            ? Colors.white
+                            : Colors.white.withValues(alpha: 0.4),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    if (subtitle.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.45),
+                          fontSize: 11,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                    const SizedBox(height: 4),
+                    Text(
+                      statusLabel,
+                      style: TextStyle(
+                        color: statusColor,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (isUnlocked || isCompleted)
+                Icon(Icons.chevron_right, color: _gold.withValues(alpha: 0.6), size: 20),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
