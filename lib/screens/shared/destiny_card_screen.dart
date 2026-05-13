@@ -512,22 +512,6 @@ class _DestinyCardScreenState extends State<DestinyCardScreen>
   }
 }
 
-/// AnimatedBuilder for the flip animation.
-class AnimatedBuilder extends AnimatedWidget {
-  final Widget Function(BuildContext context, Widget? child) builder;
-  final Widget? child;
-
-  const AnimatedBuilder({
-    super.key,
-    required super.listenable,
-    required this.builder,
-    this.child,
-  });
-
-  @override
-  Widget build(BuildContext context) => builder(context, child);
-}
-
 /// Custom painter for the card back pattern.
 class _CardPatternPainter extends CustomPainter {
   @override

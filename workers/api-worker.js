@@ -6004,6 +6004,7 @@ Antworte in exakt diesem JSON-Format:
         }
       }
 
+
       // ════════════════════════════════════════════════════════════
       // URSPRUNG-WELT — CIA Quanten-Code (25 Module, 5 Tools)
       // Tables: ursprung_modules, user_ursprung_progress,
@@ -6355,6 +6356,7 @@ Antworte in exakt diesem JSON-Format:
           return errorResponse(`RV-Session Fehler: ${e.message}`);
         }
       }
+
     }
 
     // ── 404 ───────────────────────────────────────────────────

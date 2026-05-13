@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../../models/energie_profile.dart';
 import '../../../services/storage_service.dart';
@@ -9,7 +10,7 @@ import '../../../widgets/cinematic/wb_glass_app_bar.dart';
 import '../../../widgets/cinematic/wb_vignette.dart';
 
 /// 🎭 ARCHETYPEN-ANALYSE SCREEN
-/// 
+///
 /// Basiert auf C.G. Jung's 12 Archetypen
 /// - Primär-Archetyp (Lebenszahl)
 /// - Sekundär-Archetyp (Ausdruckszahl)
@@ -22,7 +23,7 @@ class ArchetypeCalculatorScreen extends StatefulWidget {
   State<ArchetypeCalculatorScreen> createState() => _ArchetypeCalculatorScreenState();
 }
 
-class _ArchetypeCalculatorScreenState extends State<ArchetypeCalculatorScreen> with SingleTickerProviderStateMixin {
+class _ArchetypeCalculatorScreenState extends State<ArchetypeCalculatorScreen> with TickerProviderStateMixin {
   late TabController _tabController;
   EnergieProfile? _profile;
   bool _isLoading = true;
@@ -36,16 +37,27 @@ class _ArchetypeCalculatorScreenState extends State<ArchetypeCalculatorScreen> w
   Map<String, int> _elementDistribution = {};
   List<String> _recommendations = [];
 
+  // Cinematic animation controllers
+  late AnimationController _bgCtrl;
+  late AnimationController _mandalaCtrl;
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
     _loadProfile();
+
+    _bgCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 8))
+      ..repeat(reverse: true);
+    _mandalaCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 20))
+      ..repeat();
   }
 
   @override
   void dispose() {
     _tabController.dispose();
+    _bgCtrl.dispose();
+    _mandalaCtrl.dispose();
     super.dispose();
   }
 
@@ -110,8 +122,8 @@ class _ArchetypeCalculatorScreenState extends State<ArchetypeCalculatorScreen> w
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBodyBehindAppBar: true,
       backgroundColor: const Color(0xFF06040F),
+      extendBodyBehindAppBar: true,
       appBar: WBGlassAppBar(
         world: WBWorld.energie,
         title: 'ARCHETYPEN-ANALYSE',
@@ -120,37 +132,130 @@ class _ArchetypeCalculatorScreenState extends State<ArchetypeCalculatorScreen> w
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFF4A148C), Color(0xFF1A1A2E)],
-          ),
-        ),
-        child: SafeArea(
-          child: _isLoading
-              ? const Center(child: CircularProgressIndicator(color: Colors.white))
-              : _profile == null
-                  ? _buildNoProfileView()
-                  : Column(
-                      children: [
-                        _buildProfileHeader(),
-                        _buildTabBar(),
-                        Expanded(
-                          child: TabBarView(
-                            controller: _tabController,
+      body: AnimatedBuilder(
+        animation: Listenable.merge([_bgCtrl, _mandalaCtrl]),
+        builder: (context, child) {
+          return Stack(
+            children: [
+              // Dark base
+              const Positioned.fill(
+                child: ColoredBox(color: Color(0xFF06040F)),
+              ),
+              // Ambient Orb 1 — Lila oben links
+              Positioned(
+                top: -80 + _bgCtrl.value * 40,
+                left: -60 + _bgCtrl.value * 30,
+                child: const _CineOrb(
+                  color: Color(0xFF9C27B0),
+                  size: 320,
+                  opacity: 0.18,
+                ),
+              ),
+              // Ambient Orb 2 — Gold unten rechts
+              Positioned(
+                bottom: -60 + (1 - _bgCtrl.value) * 40,
+                right: -80 + (1 - _bgCtrl.value) * 30,
+                child: const _CineOrb(
+                  color: Color(0xFFFFD700),
+                  size: 280,
+                  opacity: 0.12,
+                ),
+              ),
+              // Ambient Orb 3 — Dunkel-Lila Mitte
+              Positioned(
+                top: 300 + _bgCtrl.value * 60,
+                left: 80,
+                child: const _CineOrb(
+                  color: Color(0xFF7E57C2),
+                  size: 200,
+                  opacity: 0.10,
+                ),
+              ),
+              // Main content
+              SafeArea(
+                child: _isLoading
+                    ? const Center(child: CircularProgressIndicator(color: Colors.white))
+                    : _profile == null
+                        ? _buildNoProfileView()
+                        : Column(
                             children: [
-                              _buildPrimaryTab(),
-                              _buildSecondaryAndShadowTab(),
-                              _buildIntegrationTab(),
-                              _buildAllArchetypesTab(),
+                              _buildMandalaHeader(),
+                              _buildProfileHeader(),
+                              _buildTabBar(),
+                              Expanded(
+                                child: TabBarView(
+                                  controller: _tabController,
+                                  children: [
+                                    _buildPrimaryTab(),
+                                    _buildSecondaryAndShadowTab(),
+                                    _buildIntegrationTab(),
+                                    _buildAllArchetypesTab(),
+                                  ],
+                                ),
+                              ),
                             ],
                           ),
-                        ),
-                      ],
-                    ),
-        ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  /// Animierter Mandala-Header (200px hoch)
+  Widget _buildMandalaHeader() {
+    final primaryColor = _primaryArchetype != null
+        ? (_primaryArchetype!['color'] as Color? ?? const Color(0xFF9C27B0))
+        : const Color(0xFF9C27B0);
+
+    return SizedBox(
+      height: 200,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Hintergrund-Gradient
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  primaryColor.withValues(alpha: 0.25),
+                  const Color(0xFF06040F).withValues(alpha: 0.0),
+                ],
+              ),
+            ),
+          ),
+          // Rotierendes Mandala
+          CustomPaint(
+            size: const Size(180, 180),
+            painter: _MandalaPainter(
+              rotation: _mandalaCtrl.value * 2 * math.pi,
+              color: primaryColor,
+            ),
+          ),
+          // Inneres Glow
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  primaryColor.withValues(alpha: 0.5),
+                  primaryColor.withValues(alpha: 0.0),
+                ],
+              ),
+            ),
+          ),
+          // Archetyp-Icon in der Mitte
+          if (_primaryArchetype != null)
+            Text(
+              '🎭',
+              style: const TextStyle(fontSize: 28),
+            ),
+        ],
       ),
     );
   }
@@ -165,47 +270,50 @@ class _ArchetypeCalculatorScreenState extends State<ArchetypeCalculatorScreen> w
 
   Widget _buildProfileHeader() {
     return Container(
-      margin: const EdgeInsets.all(20),
-      padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF9C27B0), Color(0xFF4A148C)],
-        ),
+        color: Colors.white.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
       ),
-      child: Column(
+      child: Row(
         children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: const BoxDecoration(
-                  color: Colors.white24,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.person, color: Colors.white, size: 32),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF9C27B0), Color(0xFF4A148C)],
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${_profile!.firstName} ${_profile!.lastName}',
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    Text(
-                      'Geboren: ${_profile!.birthDate.day}.${_profile!.birthDate.month}.${_profile!.birthDate.year}',
-                      style: const TextStyle(fontSize: 14, color: Colors.white70),
-                    ),
-                  ],
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF9C27B0).withValues(alpha: 0.4),
+                  blurRadius: 12,
                 ),
-              ),
-            ],
+              ],
+            ),
+            child: const Icon(Icons.person, color: Colors.white, size: 28),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${_profile!.firstName} ${_profile!.lastName}',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                Text(
+                  'Geboren: ${_profile!.birthDate.day}.${_profile!.birthDate.month}.${_profile!.birthDate.year}',
+                  style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.6)),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -216,8 +324,9 @@ class _ArchetypeCalculatorScreenState extends State<ArchetypeCalculatorScreen> w
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
+        color: Colors.white.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
       ),
       child: TabBar(
         controller: _tabController,
@@ -228,7 +337,7 @@ class _ArchetypeCalculatorScreenState extends State<ArchetypeCalculatorScreen> w
           borderRadius: BorderRadius.circular(12),
         ),
         labelColor: Colors.white,
-        unselectedLabelColor: Colors.white54,
+        unselectedLabelColor: Colors.white.withValues(alpha: 0.45),
         labelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
         tabs: const [
           Tab(text: 'PRIMÄR'),
@@ -294,7 +403,7 @@ class _ArchetypeCalculatorScreenState extends State<ArchetypeCalculatorScreen> w
 
   Widget _buildAllArchetypesTab() {
     final allArchetypes = ArchetypeEngine.getAllArchetypes();
-    
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -312,13 +421,17 @@ class _ArchetypeCalculatorScreenState extends State<ArchetypeCalculatorScreen> w
           const SizedBox(height: 16),
           ...allArchetypes.entries.map((entry) {
             final archetype = entry.value;
+            final archetypeColor = archetype['color'] as Color;
             return Container(
               margin: const EdgeInsets.only(bottom: 12),
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xFF1E1E1E),
+                color: Colors.white.withValues(alpha: 0.06),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: archetype['color'] as Color, width: 2),
+                border: Border.all(
+                  color: archetypeColor.withValues(alpha: 0.5),
+                  width: 1.5,
+                ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -329,8 +442,19 @@ class _ArchetypeCalculatorScreenState extends State<ArchetypeCalculatorScreen> w
                         width: 40,
                         height: 40,
                         decoration: BoxDecoration(
-                          color: archetype['color'] as Color,
+                          gradient: RadialGradient(
+                            colors: [
+                              archetypeColor.withValues(alpha: 0.8),
+                              archetypeColor.withValues(alpha: 0.4),
+                            ],
+                          ),
                           shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: archetypeColor.withValues(alpha: 0.35),
+                              blurRadius: 8,
+                            ),
+                          ],
                         ),
                         child: Center(
                           child: Text(
@@ -357,7 +481,7 @@ class _ArchetypeCalculatorScreenState extends State<ArchetypeCalculatorScreen> w
                             ),
                             Text(
                               archetype['englishName'] as String,
-                              style: const TextStyle(fontSize: 12, color: Colors.white54),
+                              style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.45)),
                             ),
                           ],
                         ),
@@ -367,7 +491,7 @@ class _ArchetypeCalculatorScreenState extends State<ArchetypeCalculatorScreen> w
                   const SizedBox(height: 8),
                   Text(
                     archetype['description'] as String,
-                    style: const TextStyle(fontSize: 13, color: Colors.white70),
+                    style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.65)),
                   ),
                 ],
               ),
@@ -379,104 +503,168 @@ class _ArchetypeCalculatorScreenState extends State<ArchetypeCalculatorScreen> w
   }
 
   Widget _buildArchetypeCard(Map<String, dynamic> archetype, String label, {bool isPrimary = false, bool isShadow = false, bool isActivation = false}) {
+    final archetypeColor = archetype['color'] as Color;
+    final archetypeName = archetype['name'] as String;
+
+    // Stärken-Chips aus Stärken-Text ableiten (erste 3 Stichwörter als Chips)
+    final strengthText = _getPersonalizedStrength(archetypeName);
+    final chipLabels = _extractStrengthChips(archetypeName);
+
     return Container(
-      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            (archetype['color'] as Color).withValues(alpha: 0.3),
-            const Color(0xFF1E1E1E),
-          ],
-        ),
+        color: Colors.white.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: archetype['color'] as Color, width: 2),
+        border: Border.all(
+          color: archetypeColor.withValues(alpha: 0.45),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: archetypeColor.withValues(alpha: 0.12),
+            blurRadius: 20,
+            spreadRadius: 0,
+          ),
+        ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: archetype['color'] as Color,
-              letterSpacing: 1.5,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: archetype['color'] as Color,
-                  shape: BoxShape.circle,
-                ),
-                child: Center(
-                  child: Icon(
-                    isPrimary ? Icons.star : isShadow ? Icons.nightlight : isActivation ? Icons.flash_on : Icons.person,
-                    color: Colors.white,
-                    size: 32,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      archetype['name'] as String,
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    Text(
-                      archetype['englishName'] as String,
-                      style: const TextStyle(fontSize: 14, color: Colors.white54),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          const SizedBox(height: 12),
+          // Glassmorphischer Header-Bereich mit großem Emoji
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(vertical: 24),
             decoration: BoxDecoration(
-              color: const Color(0xFF0D0D0D).withValues(alpha: 0.6),
-              borderRadius: BorderRadius.circular(12),
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  archetypeColor.withValues(alpha: 0.22),
+                  archetypeColor.withValues(alpha: 0.04),
+                ],
+              ),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
             ),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Label
                 Text(
-                  _getPersonalizedArchetypeIntro(archetype['name'] as String, isPrimary, isShadow, isActivation),
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                    height: 1.6,
+                  label,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: archetypeColor,
+                    letterSpacing: 2.0,
                   ),
                 ),
                 const SizedBox(height: 16),
-                _buildDetailedInfoRow('🎯 Was dich antreibt', _getPersonalizedMotivation(archetype['name'] as String)),
-                _buildDetailedInfoRow('😨 Was du fürchtest', _getPersonalizedFear(archetype['name'] as String)),
-                _buildDetailedInfoRow('💪 Deine Superkraft', _getPersonalizedStrength(archetype['name'] as String)),
-                _buildDetailedInfoRow('⚠️ Deine Falle', _getPersonalizedWeakness(archetype['name'] as String)),
-                _buildDetailedInfoRow('🌍 Dein Element', '${archetype['element']}'),
+                // Großes Emoji / Symbol
+                Text(
+                  isPrimary ? '⭐' : isShadow ? '🌑' : isActivation ? '⚡' : '🔮',
+                  style: const TextStyle(fontSize: 56),
+                ),
+                const SizedBox(height: 12),
+                // Archetyp-Name
+                Text(
+                  archetypeName,
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  archetype['englishName'] as String,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.white.withValues(alpha: 0.55),
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // Stärken-Chips
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 6,
+                  alignment: WrapAlignment.center,
+                  children: chipLabels.map((chip) => Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: archetypeColor.withValues(alpha: 0.20),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: archetypeColor.withValues(alpha: 0.45)),
+                    ),
+                    child: Text(
+                      chip,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: archetypeColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  )).toList(),
+                ),
+              ],
+            ),
+          ),
+          // Details-Bereich
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.25),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _getPersonalizedArchetypeIntro(archetypeName, isPrimary, isShadow, isActivation),
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.white.withValues(alpha: 0.88),
+                          fontWeight: FontWeight.w500,
+                          height: 1.6,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      _buildDetailedInfoRow('🎯 Was dich antreibt', strengthText.substring(0, math.min(160, strengthText.length)) + '…'),
+                      _buildDetailedInfoRow('😨 Was du fürchtest', _getPersonalizedFear(archetypeName)),
+                      _buildDetailedInfoRow('💪 Deine Superkraft', _getPersonalizedStrength(archetypeName).substring(0, math.min(140, _getPersonalizedStrength(archetypeName).length)) + '…'),
+                      _buildDetailedInfoRow('⚠️ Deine Falle', _getPersonalizedWeakness(archetypeName)),
+                      _buildDetailedInfoRow('🌍 Dein Element', '${archetype['element']}'),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
         ],
       ),
     );
+  }
+
+  /// Ableitung von 3 Stärken-Chips anhand des Archetyp-Namens
+  List<String> _extractStrengthChips(String archetypeName) {
+    const chipMap = <String, List<String>>{
+      'Der Unschuldige': ['Reinheit', 'Hoffnung', 'Vertrauen'],
+      'Der Weise': ['Klarheit', 'Analyse', 'Wahrheit'],
+      'Der Entdecker': ['Freiheit', 'Neugier', 'Mut'],
+      'Der Held': ['Tapferkeit', 'Disziplin', 'Stärke'],
+      'Der Magier': ['Transformation', 'Vision', 'Manifest'],
+      'Der Rebell': ['Wandel', 'Rebellion', 'Gerechtigkeit'],
+      'Der Liebende': ['Intimität', 'Passion', 'Verbindung'],
+      'Der Schöpfer': ['Kreativität', 'Originalität', 'Vision'],
+      'Der Narr': ['Freude', 'Spontan', 'Leichtigkeit'],
+      'Der Fürsorgliche': ['Mitgefühl', 'Fürsorge', 'Schutz'],
+      'Der Herrscher': ['Führung', 'Struktur', 'Stabilität'],
+    };
+    return chipMap[archetypeName] ?? ['Kraft', 'Weisheit', 'Wachstum'];
   }
 
   Widget _buildDetailedInfoRow(String label, String value) {
@@ -510,7 +698,7 @@ class _ArchetypeCalculatorScreenState extends State<ArchetypeCalculatorScreen> w
 
   String _getPersonalizedArchetypeIntro(String archetypeName, bool isPrimary, bool isShadow, bool isActivation) {
     final name = _profile?.firstName ?? 'Du';
-    
+
     if (isPrimary) {
       return '$name, dein Kern-Archetyp ist der $archetypeName! Dies ist die tiefste Schicht deiner Persönlichkeit - das, wer du wirklich bist, wenn alle Masken fallen. Dieser Archetyp prägt deine gesamte Lebensreise.';
     } else if (isShadow) {
@@ -524,7 +712,7 @@ class _ArchetypeCalculatorScreenState extends State<ArchetypeCalculatorScreen> w
 
   String _getPersonalizedMotivation(String archetypeName) {
     final name = _profile?.firstName ?? 'Du';
-    
+
     switch (archetypeName) {
       case 'Der Unschuldige':
         return '$name, tief in dir brennt die Sehnsucht nach einer reinen, einfachen Welt, in der Ehrlichkeit und Güte die Norm sind. Du möchtest an das Gute glauben und Sicherheit finden, denn dein Herz ist voller Hoffnung, dass das Leben im Kern gut ist. Du suchst nach Vertrauen und Geborgenheit in einer komplexen Welt, und diese Hoffnung treibt dich an, selbst nach Enttäuschungen wieder aufzustehen. Du möchtest eine Welt schaffen, in der Menschen einander mit Respekt begegnen und Vertrauen nicht enttäuscht wird. Jede Begegnung ist für dich eine Chance, Reinheit und Güte zu bewahren und anderen zu zeigen, dass Optimismus keine Naivität ist, sondern eine bewusste Entscheidung für das Licht. Du bist der Hüter der Hoffnung, und dein tiefster Wunsch ist es, zu beweisen, dass Liebe und Vertrauen stärker sind als Angst und Misstrauen.';
@@ -555,7 +743,7 @@ class _ArchetypeCalculatorScreenState extends State<ArchetypeCalculatorScreen> w
 
   String _getPersonalizedFear(String archetypeName) {
     final name = _profile?.firstName ?? 'Du';
-    
+
     switch (archetypeName) {
       case 'Der Unschuldige':
         return '$name, deine tiefste Angst ist Verlassenheit und Bestrafung. Du fürchtest, dass die Welt unsicher ist und du im Stich gelassen wirst. Jede Verletzung deines Vertrauens trifft dich tief.';
@@ -586,7 +774,7 @@ class _ArchetypeCalculatorScreenState extends State<ArchetypeCalculatorScreen> w
 
   String _getPersonalizedStrength(String archetypeName) {
     final name = _profile?.firstName ?? 'Du';
-    
+
     switch (archetypeName) {
       case 'Der Unschuldige':
         return '$name, deine größte Superkraft ist dein unerschütterlich reines Herz und deine außergewöhnliche Fähigkeit, trotz aller Enttäuschungen wieder zu vertrauen! Du siehst das Gute in Menschen, selbst wenn sie es selbst nicht mehr sehen können, und du kannst Hoffnung schenken und Licht bringen, wenn andere in tiefster Verzweiflung sind. Deine Ehrlichkeit und Offenheit sind erfrischend wie ein klarer Bergquell in einer Welt voller Täuschung und Manipulation. Du hast die seltene Gabe, Menschen daran zu erinnern, dass Güte und Reinheit existieren und dass es sich lohnt, an das Gute zu glauben. Dein Optimismus ist keine Naivität, sondern eine bewusste Wahl und eine Form von Mut. Du bist ein Leuchtturm der Hoffnung in stürmischen Zeiten und deine Präsenz allein kann Menschen helfen, ihren Glauben an die Menschheit wiederzufinden.';
@@ -617,7 +805,7 @@ class _ArchetypeCalculatorScreenState extends State<ArchetypeCalculatorScreen> w
 
   String _getPersonalizedWeakness(String archetypeName) {
     final name = _profile?.firstName ?? 'Du';
-    
+
     switch (archetypeName) {
       case 'Der Unschuldige':
         return '$name, pass auf: Deine Naivität kann dich verletzbar machen. Manchmal übersiehst du rote Flaggen, weil du das Gute sehen willst. Lerne, gesund misstrauisch zu sein.';
@@ -650,10 +838,15 @@ class _ArchetypeCalculatorScreenState extends State<ArchetypeCalculatorScreen> w
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF9C27B0), Color(0xFF1E1E1E)],
-        ),
+        color: Colors.white.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFF9C27B0).withValues(alpha: 0.45)),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF9C27B0).withValues(alpha: 0.12),
+            blurRadius: 20,
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -683,11 +876,14 @@ class _ArchetypeCalculatorScreenState extends State<ArchetypeCalculatorScreen> w
                       ),
                     ),
                     const SizedBox(height: 8),
-                    LinearProgressIndicator(
-                      value: _integrationScore / 100,
-                      backgroundColor: Colors.white24,
-                      valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFFFD700)),
-                      minHeight: 8,
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(
+                        value: _integrationScore / 100,
+                        backgroundColor: Colors.white.withValues(alpha: 0.12),
+                        valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFFFD700)),
+                        minHeight: 8,
+                      ),
                     ),
                   ],
                 ),
@@ -697,7 +893,7 @@ class _ArchetypeCalculatorScreenState extends State<ArchetypeCalculatorScreen> w
           const SizedBox(height: 12),
           Text(
             _getIntegrationMessage(_integrationScore),
-            style: const TextStyle(fontSize: 14, color: Colors.white70),
+            style: TextStyle(fontSize: 14, color: Colors.white.withValues(alpha: 0.65)),
           ),
         ],
       ),
@@ -715,9 +911,9 @@ class _ArchetypeCalculatorScreenState extends State<ArchetypeCalculatorScreen> w
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
+        color: Colors.white.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF9C27B0).withValues(alpha: 0.3)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -752,11 +948,14 @@ class _ArchetypeCalculatorScreenState extends State<ArchetypeCalculatorScreen> w
                     ],
                   ),
                   const SizedBox(height: 4),
-                  LinearProgressIndicator(
-                    value: entry.value / 6,
-                    backgroundColor: Colors.white24,
-                    valueColor: AlwaysStoppedAnimation<Color>(_getElementColor(entry.key)),
-                    minHeight: 6,
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: entry.value / 6,
+                      backgroundColor: Colors.white.withValues(alpha: 0.12),
+                      valueColor: AlwaysStoppedAnimation<Color>(_getElementColor(entry.key)),
+                      minHeight: 6,
+                    ),
                   ),
                 ],
               ),
@@ -788,9 +987,9 @@ class _ArchetypeCalculatorScreenState extends State<ArchetypeCalculatorScreen> w
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
+        color: Colors.white.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF9C27B0).withValues(alpha: 0.3)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -816,7 +1015,7 @@ class _ArchetypeCalculatorScreenState extends State<ArchetypeCalculatorScreen> w
                   Expanded(
                     child: Text(
                       rec,
-                      style: const TextStyle(fontSize: 14, color: Colors.white70),
+                      style: TextStyle(fontSize: 14, color: Colors.white.withValues(alpha: 0.65)),
                     ),
                   ),
                 ],
@@ -827,4 +1026,77 @@ class _ArchetypeCalculatorScreenState extends State<ArchetypeCalculatorScreen> w
       ),
     );
   }
+}
+
+// ─── Mandala CustomPainter ────────────────────────────────────────────────────
+
+class _MandalaPainter extends CustomPainter {
+  final double rotation;
+  final Color color;
+  _MandalaPainter({required this.rotation, required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final paint = Paint()
+      ..color = color.withValues(alpha: 0.3)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0;
+
+    canvas.save();
+    canvas.translate(center.dx, center.dy);
+    canvas.rotate(rotation);
+
+    for (int i = 0; i < 12; i++) {
+      final angle = i * math.pi / 6;
+      canvas.save();
+      canvas.rotate(angle);
+      canvas.drawOval(
+        Rect.fromCenter(
+          center: Offset(0, -size.width * 0.2),
+          width: size.width * 0.15,
+          height: size.width * 0.3,
+        ),
+        paint..color = color.withValues(alpha: 0.3),
+      );
+      canvas.restore();
+    }
+    // Innere Kreise
+    for (int r = 1; r <= 3; r++) {
+      final alpha = math.max(0.02, 0.15 - r * 0.03);
+      canvas.drawCircle(
+        Offset.zero,
+        size.width * 0.1 * r,
+        paint..color = color.withValues(alpha: alpha),
+      );
+    }
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(_MandalaPainter old) => old.rotation != rotation || old.color != color;
+}
+
+// ─── Cinematic Orb Widget ─────────────────────────────────────────────────────
+
+class _CineOrb extends StatelessWidget {
+  final Color color;
+  final double size;
+  final double opacity;
+  const _CineOrb({required this.color, required this.size, required this.opacity});
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: RadialGradient(
+            colors: [
+              color.withValues(alpha: opacity),
+              color.withValues(alpha: 0),
+            ],
+          ),
+        ),
+      );
 }
