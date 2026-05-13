@@ -1074,7 +1074,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
             child: OutlinedButton.icon(
               onPressed: () {
                 Navigator.push(context, MaterialPageRoute(
-                  builder: (_) => const KnowledgeGraphScreen(),
+                  builder: (_) => const KnowledgeGraphScreen(world: 'energie'),
                 ));
               },
               style: OutlinedButton.styleFrom(
