@@ -9,7 +9,7 @@ import 'package:graphview/GraphView.dart';
 // Einsatz: KnowledgeGraphScreen + eingebettet in World-Home-Tabs
 // ═══════════════════════════════════════════════════════════════════════════
 
-// ── Daten-Modelle ──────────────────────────────────────────────────────────
+// ── Daten-Modelle ────────────────────────────────────────────────────────────
 
 class KnowledgeNode {
   final String id;
@@ -58,12 +58,12 @@ class KnowledgeEdge {
   });
 }
 
-// ── Callback-Typen ─────────────────────────────────────────────────────────
+// ── Callback-Typen ──────────────────────────────────────────────────────────────
 
 typedef OnNodeTap = void Function(KnowledgeNode node);
 typedef OnNodeLongPress = void Function(KnowledgeNode node);
 
-// ── Haupt-Widget ────────────────────────────────────────────────────────────
+// ── Haupt-Widget ────────────────────────────────────────────────────────────────────
 
 /// Interaktiver Force-Directed Knowledge-Graph basierend auf `graphview`.
 ///
@@ -140,7 +140,7 @@ class _KnowledgeGraphWidgetState extends State<KnowledgeGraphWidget>
     super.dispose();
   }
 
-  // ── Graph aufbauen ────────────────────────────────────────────────────────
+  // ── Graph aufbauen ───────────────────────────────────────────────────────────────
 
   void _buildGraph() {
     _graph.nodes.clear();
@@ -185,11 +185,11 @@ class _KnowledgeGraphWidgetState extends State<KnowledgeGraphWidget>
       ..style = PaintingStyle.stroke;
   }
 
-  // ── Node-Größe aus weight ─────────────────────────────────────────────────
+  // ── Node-Größe aus weight ─────────────────────────────────────────────────────────────
 
   double _nodeSize(int weight) => 32.0 + weight * 4.0;
 
-  // ── Node-Widget ───────────────────────────────────────────────────────────
+  // ── Node-Widget ─────────────────────────────────────────────────────────────────────
 
   Widget _buildNodeWidget(KnowledgeNode kn) {
     final size = _nodeSize(kn.weight);
@@ -252,7 +252,7 @@ class _KnowledgeGraphWidgetState extends State<KnowledgeGraphWidget>
     );
   }
 
-  // ── Build ─────────────────────────────────────────────────────────────────
+  // ── Build ───────────────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -351,7 +351,7 @@ class _KnowledgeGraphWidgetState extends State<KnowledgeGraphWidget>
   }
 }
 
-// ── Legende ──────────────────────────────────────────────────────────────────
+// ── Legende ────────────────────────────────────────────────────────────────────────────
 
 /// Kompakte Legende für Kanten-Relationen
 class KnowledgeGraphLegend extends StatelessWidget {
@@ -406,7 +406,7 @@ class KnowledgeGraphLegend extends StatelessWidget {
   }
 }
 
-// ── Node-Detail-Sheet ────────────────────────────────────────────────────────
+// ── Node-Detail-Sheet ──────────────────────────────────────────────────────────────────
 
 /// Bottom-Sheet mit Details zu einem Wissensknoten
 class NodeDetailSheet extends StatelessWidget {
@@ -654,7 +654,7 @@ class NodeDetailSheet extends StatelessWidget {
   }
 }
 
-// ── Mini-Graph (einbettbar in Home-Tabs) ─────────────────────────────────────
+// ── Mini-Graph (einbettbar in Home-Tabs) ─────────────────────────────────────────────────────
 
 /// Kleiner, nicht-interaktiver Graph-Preview für Home-Tabs.
 /// Nutzt CustomPaint für Performance — kein graphview overhead.

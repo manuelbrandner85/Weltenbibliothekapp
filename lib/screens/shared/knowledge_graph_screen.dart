@@ -75,7 +75,7 @@ class _KnowledgeGraphScreenState extends State<KnowledgeGraphScreen>
     super.dispose();
   }
 
-  // ── Farben je nach Welt ───────────────────────────────────────────────────
+  // ── Farben je nach Welt ────────────────────────────────────────────────────────────
 
   Color get _accent {
     switch (widget.world) {
@@ -116,7 +116,7 @@ class _KnowledgeGraphScreenState extends State<KnowledgeGraphScreen>
     }
   }
 
-  // ── Daten laden ──────────────────────────────────────────────────────────
+  // ── Daten laden ──────────────────────────────────────────────────────────────
 
   Future<void> _loadData() async {
     if (!mounted) return;
@@ -236,7 +236,7 @@ class _KnowledgeGraphScreenState extends State<KnowledgeGraphScreen>
     }
   }
 
-  // ── Parsing ───────────────────────────────────────────────────────────────
+  // ── Parsing ───────────────────────────────────────────────────────────────────
 
   List<KnowledgeNode> _parseNodes(List data) {
     return data.map((r) {
@@ -272,7 +272,7 @@ class _KnowledgeGraphScreenState extends State<KnowledgeGraphScreen>
     }).toList();
   }
 
-  // ── Gefilterte Knoten ─────────────────────────────────────────────────────
+  // ── Gefilterte Knoten ─────────────────────────────────────────────────────────────
 
   List<KnowledgeNode> get _filteredNodes {
     final nodes = _nodes.map((n) {
@@ -288,7 +288,7 @@ class _KnowledgeGraphScreenState extends State<KnowledgeGraphScreen>
         .toList();
   }
 
-  // ── Verbundene Knoten für Detail-Sheet ─────────────────────────────────
+  // ── Verbundene Knoten für Detail-Sheet ────────────────────────────────────
 
   List<KnowledgeNode> _connectedNodes(KnowledgeNode node) {
     final connectedIds = _edges
@@ -298,7 +298,7 @@ class _KnowledgeGraphScreenState extends State<KnowledgeGraphScreen>
     return _nodes.where((n) => connectedIds.contains(n.id)).toList();
   }
 
-  // ── Node-Tap ─────────────────────────────────────────────────────────────
+  // ── Node-Tap ────────────────────────────────────────────────────────────────────
 
   void _onNodeTap(KnowledgeNode node) {
     setState(() => _highlightedNodeId = node.id);
@@ -314,7 +314,7 @@ class _KnowledgeGraphScreenState extends State<KnowledgeGraphScreen>
     );
   }
 
-  // ── Build ─────────────────────────────────────────────────────────────────
+  // ── Build ───────────────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
@@ -399,7 +399,7 @@ class _KnowledgeGraphScreenState extends State<KnowledgeGraphScreen>
     );
   }
 
-  // ── Sub-Widgets ───────────────────────────────────────────────────────────
+  // ── Sub-Widgets ───────────────────────────────────────────────────────────────────
 
   Widget _buildSearchBar() {
     return Padding(
@@ -565,7 +565,7 @@ class _KnowledgeGraphScreenState extends State<KnowledgeGraphScreen>
     );
   }
 
-  // ── Neuen Knoten hinzufügen ────────────────────────────────────────────
+  // ── Neuen Knoten hinzufügen ───────────────────────────────────────────────
 
   Future<void> _showAddNodeDialog() async {
     final userId = _supabase.auth.currentUser?.id;
@@ -732,7 +732,7 @@ class _KnowledgeGraphScreenState extends State<KnowledgeGraphScreen>
       case 'place':
         return '📍';
       case 'artifact':
-        return '🏺';
+        return '🎺';
       case 'theory':
         return '💡';
       default:
@@ -745,7 +745,7 @@ class _KnowledgeGraphScreenState extends State<KnowledgeGraphScreen>
   }
 }
 
-// ── Listen-Tile ───────────────────────────────────────────────────────────────
+// ── Listen-Tile ────────────────────────────────────────────────────────────────────────────
 
 class _NodeListTile extends StatelessWidget {
   final KnowledgeNode node;
