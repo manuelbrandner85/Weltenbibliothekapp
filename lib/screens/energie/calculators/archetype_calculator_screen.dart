@@ -124,7 +124,6 @@ class _ArchetypeCalculatorScreenState extends State<ArchetypeCalculatorScreen> w
     return Scaffold(
       backgroundColor: const Color(0xFF06040F),
       extendBodyBehindAppBar: true,
-      backgroundColor: const Color(0xFF06040F),
       appBar: WBGlassAppBar(
         world: WBWorld.energie,
         title: 'ARCHETYPEN-ANALYSE',
