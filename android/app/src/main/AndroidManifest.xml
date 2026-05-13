@@ -39,6 +39,12 @@
     <!-- 🔔 Push-Benachrichtigungen (Android 13+, runtime permission) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!-- 💓 HEALTH CONNECT (Android Health Connect, API 26+) - Biometric Feedback
+         Required for HRV + Heart Rate readings before/after meditation sessions. -->
+    <uses-permission android:name="android.permission.health.READ_HEART_RATE" />
+    <uses-permission android:name="android.permission.health.READ_HEART_RATE_VARIABILITY" />
+    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
+
     <application
         android:label="Weltenbibliothek"
         android:name="${applicationName}"
@@ -68,7 +74,22 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+            <!-- 💓 Health Connect: Privacy-Policy-Intent (verpflichtend ab Android 14) -->
+            <intent-filter>
+                <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
+            </intent-filter>
         </activity>
+        <!-- 💓 Health Connect: Alias-Activity für Privacy-Policy-Ziel auf älteren Android-Versionen -->
+        <activity-alias
+            android:name="ViewPermissionUsageActivity"
+            android:exported="true"
+            android:targetActivity=".MainActivity"
+            android:permission="android.permission.START_VIEW_PERMISSION_USAGE">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW_PERMISSION_USAGE" />
+                <category android:name="android.intent.category.HEALTH_PERMISSIONS" />
+            </intent-filter>
+        </activity-alias>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data
@@ -109,6 +130,8 @@
             <action android:name="android.intent.action.VIEW" />
             <data android:mimeType="application/vnd.android.package-archive" />
         </intent>
+        <!-- 💓 Health Connect: Package-Visibility-Query (Android 11+) -->
+        <package android:name="com.google.android.apps.healthdata" />
     </queries>
 </manifest>
 
