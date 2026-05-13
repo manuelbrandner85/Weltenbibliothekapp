@@ -90,7 +90,7 @@ jobs:
           # Migrationen in chronologischer Reihenfolge anwenden.
           # Alle sind idempotent (IF NOT EXISTS / ON CONFLICT DO NOTHING) → sicher bei Mehrfachausführung.
 
-          # ── Basis-Schema (001–v15) ───────────────────────────────────────────
+          # ── Basis-Schema (001–v15) ────────────────────────────────────────────────
           run_sql "001 initial_schema (profiles, articles, chat_rooms, notifications)" \
             supabase/migrations/001_initial_schema.sql
 
@@ -124,7 +124,7 @@ jobs:
           run_sql "v18 grant anon writes" \
             supabase/migrations/20260418_v18_grant_anon_writes.sql
 
-          # ── Spirituelle Feature-Tabellen (v19–v26) ────────────────────────────
+          # ── Spirituelle Feature-Tabellen (v19–v26) ────────────────────────────────────
           run_sql "v19 moon_journal + moon_rituals + moon_calendar" \
             supabase/migrations/20260418_v19_spirit_moon_calendar.sql
 
@@ -197,7 +197,7 @@ jobs:
           run_sql "v26d HD seed: Gates" \
             supabase/migrations/20260418_v26d_hd_seed_gates.sql
 
-          # ── System + Chat v27–v36 ─────────────────────────────────────────────
+          # ── System + Chat v27–v36 ──────────────────────────────────────────────────
           run_sql "v27 user_tool_data" \
             supabase/migrations/20260419_v27_user_tool_data.sql
 
@@ -231,7 +231,7 @@ jobs:
           run_sql "v36 chat reply hard-delete 6h cleanup" \
             supabase/migrations/20260420_v36_chat_reply_hard_delete_6h_cleanup.sql
 
-          # ── Ab v37 laufen alle Migrationen seit Einführung des CI ─────────────
+          # ── Ab v37 laufen alle Migrationen seit Einführung des CI ─────────────────
 
           run_sql "v37 patch_changelog Spalte (app_config)" \
             supabase/migrations/20260420_v37_patch_changelog.sql
@@ -300,6 +300,34 @@ jobs:
           # Behebt "permission denied for table chat_rooms" dauerhaft.
           run_sql_critical "v56 chat_rooms GRANT SELECT + FK-Drop (permission-fix)" \
             supabase/migrations/20260510_v56_chat_fk_drop_grant_fix.sql
+
+          # v57: Chat-Räume für VORHANG & URSPRUNG Welten
+          run_sql "v57 Chat-Räume Vorhang + Ursprung" \
+            supabase/migrations/20260512_v57_vorhang_ursprung_chat_rooms.sql
+
+          # v58: KI-Mentor Sessions Tabelle
+          run_sql "v58 mentor_sessions" \
+            supabase/migrations/20260512_v58_mentor_sessions.sql
+
+          # v59: Octalysis Gamification System
+          run_sql "v59 Gamification-Tabellen (skill_tree, artefakte, titel, schicksalskarten)" \
+            supabase/migrations/20260512_v59_gamification_tables.sql
+
+          # v60: Vorhang Module System
+          run_sql "v60 Vorhang Module System (30 Module, 6 Branches)" \
+            supabase/migrations/20260512_v60_vorhang_modules.sql
+
+          # v61: Ursprung Tables (Module + Progress + Gateway + Patterns + RV)
+          run_sql "v61 Ursprung Tables (Module, Progress, Gateway, Patterns, RV)" \
+            supabase/migrations/20260513_v61_ursprung_tables.sql
+
+          # v62: Biometric Readings (HRV/HR Snapshots)
+          run_sql "v62 biometric_readings (HRV/HR per Session)" \
+            supabase/migrations/20260514_v62_biometric_readings.sql
+
+          # v63: Knowledge Graph (knowledge_nodes, knowledge_edges, user_node_progress)
+          run_sql "v63 Knowledge Graph (nodes, edges, user_node_progress + 48/52 Seed)" \
+            supabase/migrations/20260514_v63_knowledge_graph.sql
 
           echo ""
           if [ "$MIGRATION_FAILED" = "1" ]; then
