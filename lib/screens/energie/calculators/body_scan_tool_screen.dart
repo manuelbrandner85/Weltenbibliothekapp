@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../../theme/wb_cinematic_tokens.dart';
-import '../../../widgets/cinematic/wb_glass_app_bar.dart';
-import '../../../widgets/cinematic/wb_vignette.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // BodyScanToolScreen – 3 Tabs
@@ -12,9 +9,11 @@ import '../../../widgets/cinematic/wb_vignette.dart';
 // ─────────────────────────────────────────────────────────────────────────────
 
 const _kPink = Color(0xFFE91E63);
-const _kDarkBg = Color(0xFF0A0A0F);
-const _kCardBg = Color(0xFF1A1A2E);
-const _kBorder = Color(0xFF2A2A4E);
+const _kLila = Color(0xFF9C27B0);
+const _kDarkBg = Color(0xFF06040F);
+// Glassmorphism card/border values (used inline as withValues)
+const _kCardBgBase = Color(0xFF1A1A2E);
+const _kBorderBase = Color(0xFF2A2A4E);
 
 final _db = Supabase.instance.client;
 
@@ -34,17 +33,23 @@ class BodyScanToolScreen extends StatefulWidget {
 }
 
 class _BodyScanToolScreenState extends State<BodyScanToolScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late final TabController _tabs;
+  late AnimationController _bgCtrl;
 
   @override
   void initState() {
     super.initState();
     _tabs = TabController(length: 3, vsync: this);
+    _bgCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 8),
+    )..repeat(reverse: true);
   }
 
   @override
   void dispose() {
+    _bgCtrl.dispose();
     _tabs.dispose();
     super.dispose();
   }
@@ -53,9 +58,11 @@ class _BodyScanToolScreenState extends State<BodyScanToolScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF06040F),
-      appBar: WBGlassAppBar(
-        world: WBWorld.energie,
-        title: '🧘 Körperscan',
+      appBar: AppBar(
+        backgroundColor: Colors.white.withValues(alpha: 0.05),
+        title: const Text('🧘 Körperscan',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        iconTheme: const IconThemeData(color: Colors.white),
         bottom: TabBar(
           controller: _tabs,
           indicatorColor: _kPink,
@@ -68,20 +75,50 @@ class _BodyScanToolScreenState extends State<BodyScanToolScreen>
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabs,
-        children: const [
-          _ScanTab(),
-          _HistoryTab(),
-          _InfoTab(),
-        ],
+      body: AnimatedBuilder(
+        animation: _bgCtrl,
+        builder: (context, child) => Stack(
+          children: [
+            Positioned.fill(child: Container(color: const Color(0xFF06040F))),
+            Positioned(
+              top: -80 + _bgCtrl.value * 50,
+              right: -60,
+              child: _CineOrb(
+                  color: _kPink,
+                  size: 280,
+                  opacity: 0.10 + _bgCtrl.value * 0.05),
+            ),
+            Positioned(
+              bottom: -80,
+              left: -60 + _bgCtrl.value * 30,
+              child: _CineOrb(color: _kLila, size: 240, opacity: 0.08),
+            ),
+            Positioned(
+              top: MediaQuery.of(context).size.height * 0.45,
+              left: MediaQuery.of(context).size.width * 0.2,
+              child: _CineOrb(
+                  color: _kPink,
+                  size: 160,
+                  opacity: 0.04 + _bgCtrl.value * 0.03),
+            ),
+            child!,
+          ],
+        ),
+        child: TabBarView(
+          controller: _tabs,
+          children: const [
+            _ScanTab(),
+            _HistoryTab(),
+            _InfoTab(),
+          ],
+        ),
       ),
     );
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Tab 0: Scan  (Phase 7.2b/c/d füllen diesen Stub)
+// Tab 0: Scan
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _ScanTab extends StatefulWidget {
@@ -129,14 +166,12 @@ class _ScanTabState extends State<_ScanTab> {
               style: TextStyle(color: Colors.white54)));
     }
 
-    // Filter nach Kategorie
     final filtered = _filterCategory == 'alle'
         ? _symptoms
         : _symptoms
             .where((s) => s['symptom_category'] == _filterCategory)
             .toList();
 
-    // Gruppieren nach Chakra
     final byChakra = <int, List<Map<String, dynamic>>>{};
     for (final s in filtered) {
       final n = s['chakra_number'] as int;
@@ -147,122 +182,130 @@ class _ScanTabState extends State<_ScanTab> {
     return Stack(
       children: [
         Column(
-      children: [
-        // Filter-Chips
-        SizedBox(
-          height: 44,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            itemCount: _categories.length,
-            itemBuilder: (_, i) {
-              final cat = _categories[i];
-              final sel = _filterCategory == cat.$1;
-              return Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: FilterChip(
-                  label: Text(cat.$2,
-                      style: TextStyle(
-                          color: sel ? Colors.white : Colors.white54,
-                          fontSize: 12)),
-                  selected: sel,
-                  selectedColor: _kPink,
-                  backgroundColor: _kCardBg,
-                  side: const BorderSide(color: _kBorder),
-                  onSelected: (_) =>
-                      setState(() => _filterCategory = cat.$1),
-                ),
-              );
-            },
-          ),
-        ),
-        // Selected-Counter
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            children: [
-              Text('${_selected.length} Symptom(e) ausgewählt',
-                  style:
-                      const TextStyle(color: Colors.white54, fontSize: 12)),
-              const Spacer(),
-              if (_selected.isNotEmpty)
-                TextButton(
-                  onPressed: () => setState(() => _selected.clear()),
-                  child: const Text('Zurücksetzen',
-                      style: TextStyle(color: _kPink, fontSize: 12)),
-                ),
-            ],
-          ),
-        ),
-        // Symptom-Liste
-        Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.fromLTRB(12, 0, 12, 80),
-            itemCount: chakraKeys.length,
-            itemBuilder: (_, i) {
-              final chakra = chakraKeys[i];
-              final items = byChakra[chakra]!;
-              final first = items.first;
-              return Card(
-                color: _kCardBg,
-                margin: const EdgeInsets.only(bottom: 8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(
-                      color: _parseColor(first['chakra_color'] as String?)
-                          .withValues(alpha: 0.3)),
-                ),
-                child: Theme(
-                  data: Theme.of(context)
-                      .copyWith(dividerColor: Colors.transparent),
-                  child: ExpansionTile(
-                    initiallyExpanded: true,
-                    iconColor: Colors.white54,
-                    collapsedIconColor: Colors.white54,
-                    title: Row(children: [
-                      Text(first['chakra_emoji'] as String? ?? '',
-                          style: const TextStyle(fontSize: 20)),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(first['chakra_name'] as String? ?? '',
-                            style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600)),
+          children: [
+            // Filter-Chips (Glassmorphism)
+            SizedBox(
+              height: 44,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                itemCount: _categories.length,
+                itemBuilder: (_, i) {
+                  final cat = _categories[i];
+                  final sel = _filterCategory == cat.$1;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: FilterChip(
+                      label: Text(cat.$2,
+                          style: TextStyle(
+                              color: sel ? Colors.white : Colors.white54,
+                              fontSize: 12)),
+                      selected: sel,
+                      selectedColor: _kPink.withValues(alpha: 0.3),
+                      backgroundColor:
+                          Colors.white.withValues(alpha: 0.07),
+                      side: BorderSide(
+                          color: sel
+                              ? _kPink.withValues(alpha: 0.7)
+                              : Colors.white.withValues(alpha: 0.2)),
+                      onSelected: (_) =>
+                          setState(() => _filterCategory = cat.$1),
+                    ),
+                  );
+                },
+              ),
+            ),
+            // Selected-Counter
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  Text('${_selected.length} Symptom(e) ausgewählt',
+                      style: const TextStyle(
+                          color: Colors.white54, fontSize: 12)),
+                  const Spacer(),
+                  if (_selected.isNotEmpty)
+                    TextButton(
+                      onPressed: () => setState(() => _selected.clear()),
+                      child: const Text('Zurücksetzen',
+                          style: TextStyle(color: _kPink, fontSize: 12)),
+                    ),
+                ],
+              ),
+            ),
+            // Symptom-Liste
+            Expanded(
+              child: ListView.builder(
+                padding: const EdgeInsets.fromLTRB(12, 0, 12, 80),
+                itemCount: chakraKeys.length,
+                itemBuilder: (_, i) {
+                  final chakra = chakraKeys[i];
+                  final items = byChakra[chakra]!;
+                  final first = items.first;
+                  final chakraColor = _parseColor(
+                      first['chakra_color'] as String?);
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                          color: chakraColor.withValues(alpha: 0.3)),
+                    ),
+                    child: Theme(
+                      data: Theme.of(context)
+                          .copyWith(dividerColor: Colors.transparent),
+                      child: ExpansionTile(
+                        initiallyExpanded: true,
+                        iconColor: Colors.white54,
+                        collapsedIconColor: Colors.white54,
+                        title: Row(children: [
+                          Text(first['chakra_emoji'] as String? ?? '',
+                              style: const TextStyle(fontSize: 20)),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                                first['chakra_name'] as String? ?? '',
+                                style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600)),
+                          ),
+                          Text('${items.length}',
+                              style: const TextStyle(
+                                  color: Colors.white38, fontSize: 12)),
+                        ]),
+                        children: items.map((s) {
+                          final id = s['id'] as String;
+                          final sel = _selected.contains(id);
+                          return CheckboxListTile(
+                            dense: true,
+                            value: sel,
+                            onChanged: (v) => setState(() {
+                              if (v == true) {
+                                _selected.add(id);
+                              } else {
+                                _selected.remove(id);
+                              }
+                            }),
+                            activeColor: _kPink,
+                            checkColor: Colors.white,
+                            title: Text(s['symptom_text'] as String,
+                                style: const TextStyle(
+                                    color: Colors.white70, fontSize: 13)),
+                            subtitle: Text(
+                                s['symptom_category'] as String,
+                                style: const TextStyle(
+                                    color: Colors.white38, fontSize: 10)),
+                          );
+                        }).toList(),
                       ),
-                      Text('${items.length}',
-                          style: const TextStyle(
-                              color: Colors.white38, fontSize: 12)),
-                    ]),
-                    children: items.map((s) {
-                      final id = s['id'] as String;
-                      final sel = _selected.contains(id);
-                      return CheckboxListTile(
-                        dense: true,
-                        value: sel,
-                        onChanged: (v) => setState(() {
-                          if (v == true) {
-                            _selected.add(id);
-                          } else {
-                            _selected.remove(id);
-                          }
-                        }),
-                        activeColor: _kPink,
-                        checkColor: Colors.white,
-                        title: Text(s['symptom_text'] as String,
-                            style: const TextStyle(
-                                color: Colors.white70, fontSize: 13)),
-                        subtitle: Text(s['symptom_category'] as String,
-                            style: const TextStyle(
-                                color: Colors.white38, fontSize: 10)),
-                      );
-                    }).toList(),
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
         ),
         // Auswerten-Button (unten pinned)
         Positioned(
@@ -280,7 +323,8 @@ class _ScanTabState extends State<_ScanTab> {
               style: ElevatedButton.styleFrom(
                   backgroundColor: _kPink,
                   foregroundColor: Colors.white,
-                  disabledBackgroundColor: _kBorder,
+                  disabledBackgroundColor:
+                      Colors.white.withValues(alpha: 0.1),
                   disabledForegroundColor: Colors.white38,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
@@ -298,7 +342,6 @@ class _ScanTabState extends State<_ScanTab> {
     return Color(int.parse('FF$cleaned', radix: 16));
   }
 
-  // ────── Phase 7.2c: Score-Berechnung + Ergebnis ──────
   Map<int, int> _computeScores() {
     final scores = <int, int>{};
     for (final s in _symptoms) {
@@ -343,7 +386,6 @@ class _ScanTabState extends State<_ScanTab> {
     if (user == null) {
       throw Exception('Nicht angemeldet');
     }
-    // chakra_scores JSONB erwartet String-Keys
     final jsonScores = <String, int>{
       for (final e in scores.entries) e.key.toString(): e.value,
     };
@@ -364,8 +406,9 @@ class _ScanTabState extends State<_ScanTab> {
     }
     final scores = _computeScores();
     final primary = _primaryBlocked(scores);
-    final maxScore =
-        scores.values.isEmpty ? 1 : scores.values.reduce((a, b) => a > b ? a : b);
+    final maxScore = scores.values.isEmpty
+        ? 1
+        : scores.values.reduce((a, b) => a > b ? a : b);
 
     final notesCtrl = TextEditingController();
     bool saving = false;
@@ -374,175 +417,201 @@ class _ScanTabState extends State<_ScanTab> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: _kCardBg,
+      backgroundColor: Colors.transparent,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (sheetCtx) => StatefulBuilder(
-        builder: (sheetCtx2, setSheet) => DraggableScrollableSheet(
-        initialChildSize: 0.7,
-        maxChildSize: 0.95,
-        minChildSize: 0.4,
-        expand: false,
-        builder: (_, sc) => ListView(
-          controller: sc,
-          padding: const EdgeInsets.all(20),
-          children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                    color: Colors.white24,
-                    borderRadius: BorderRadius.circular(2)),
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text('🔮 Dein Scan-Ergebnis',
-                style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold)),
-            const SizedBox(height: 4),
-            Text('Basierend auf ${_selected.length} Symptom(en)',
-                style: const TextStyle(color: Colors.white54, fontSize: 13)),
-            const SizedBox(height: 20),
-            if (primary != null) ...[
-              _PrimaryChakraCard(
-                chakra: _chakraInfoRows()
-                    .firstWhere((c) => c['chakra_number'] == primary),
-                score: scores[primary]!,
-              ),
-              const SizedBox(height: 20),
-            ],
-            const Text('Alle Chakren-Scores',
-                style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600)),
-            const SizedBox(height: 8),
-            ..._chakraInfoRows().map((c) {
-              final n = c['chakra_number'] as int;
-              final score = scores[n] ?? 0;
-              final pct = maxScore > 0 ? score / maxScore : 0.0;
-              final color = _parseColor(c['chakra_color'] as String?);
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(children: [
-                      Text(c['chakra_emoji'] as String? ?? '',
-                          style: const TextStyle(fontSize: 18)),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(c['chakra_name'] as String? ?? '',
-                            style: const TextStyle(
-                                color: Colors.white70, fontSize: 13)),
-                      ),
-                      Text(score > 0 ? '$score' : '–',
-                          style: TextStyle(
-                              color: score > 0 ? color : Colors.white38,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 13)),
-                    ]),
-                    const SizedBox(height: 4),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: LinearProgressIndicator(
-                        value: pct,
-                        backgroundColor: _kBorder,
-                        valueColor: AlwaysStoppedAnimation<Color>(color),
-                        minHeight: 6,
-                      ),
+        builder: (sheetCtx2, setSheet) => Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF0D0A1A),
+            borderRadius:
+                const BorderRadius.vertical(top: Radius.circular(20)),
+            border: Border.all(
+                color: _kPink.withValues(alpha: 0.3), width: 1),
+          ),
+          child: DraggableScrollableSheet(
+            initialChildSize: 0.7,
+            maxChildSize: 0.95,
+            minChildSize: 0.4,
+            expand: false,
+            builder: (_, sc) => ListView(
+              controller: sc,
+              padding: const EdgeInsets.all(20),
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                        color: Colors.white24,
+                        borderRadius: BorderRadius.circular(2)),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text('🔮 Dein Scan-Ergebnis',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold)),
+                const SizedBox(height: 4),
+                Text('Basierend auf ${_selected.length} Symptom(en)',
+                    style: const TextStyle(
+                        color: Colors.white54, fontSize: 13)),
+                const SizedBox(height: 20),
+                if (primary != null) ...[
+                  _PrimaryChakraCard(
+                    chakra: _chakraInfoRows()
+                        .firstWhere(
+                            (c) => c['chakra_number'] == primary),
+                    score: scores[primary]!,
+                  ),
+                  const SizedBox(height: 20),
+                ],
+                const Text('Alle Chakren-Scores',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600)),
+                const SizedBox(height: 8),
+                ..._chakraInfoRows().map((c) {
+                  final n = c['chakra_number'] as int;
+                  final score = scores[n] ?? 0;
+                  final pct = maxScore > 0 ? score / maxScore : 0.0;
+                  final color =
+                      _parseColor(c['chakra_color'] as String?);
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(children: [
+                          Text(c['chakra_emoji'] as String? ?? '',
+                              style: const TextStyle(fontSize: 18)),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                                c['chakra_name'] as String? ?? '',
+                                style: const TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 13)),
+                          ),
+                          Text(score > 0 ? '$score' : '–',
+                              style: TextStyle(
+                                  color: score > 0
+                                      ? color
+                                      : Colors.white38,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 13)),
+                        ]),
+                        const SizedBox(height: 4),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: LinearProgressIndicator(
+                            value: pct,
+                            backgroundColor:
+                                Colors.white.withValues(alpha: 0.1),
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(color),
+                            minHeight: 6,
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
+                  );
+                }),
+                const SizedBox(height: 24),
+                TextField(
+                  controller: notesCtrl,
+                  enabled: !saving && !saved,
+                  maxLines: 3,
+                  minLines: 2,
+                  style:
+                      const TextStyle(color: Colors.white, fontSize: 13),
+                  decoration: InputDecoration(
+                    hintText: 'Optionale Notiz zu diesem Scan …',
+                    hintStyle: const TextStyle(
+                        color: Colors.white38, fontSize: 13),
+                    filled: true,
+                    fillColor: Colors.white.withValues(alpha: 0.06),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                          color: Colors.white.withValues(alpha: 0.2)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                          color: Colors.white.withValues(alpha: 0.2)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide:
+                          const BorderSide(color: _kPink),
+                    ),
+                  ),
                 ),
-              );
-            }),
-            const SizedBox(height: 24),
-            // Freitext-Notiz
-            TextField(
-              controller: notesCtrl,
-              enabled: !saving && !saved,
-              maxLines: 3,
-              minLines: 2,
-              style: const TextStyle(color: Colors.white, fontSize: 13),
-              decoration: InputDecoration(
-                hintText: 'Optionale Notiz zu diesem Scan …',
-                hintStyle:
-                    const TextStyle(color: Colors.white38, fontSize: 13),
-                filled: true,
-                fillColor: _kDarkBg,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: _kBorder),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: (saving || saved)
+                        ? null
+                        : () async {
+                            setSheet(() => saving = true);
+                            try {
+                              await _saveScan(
+                                scores: scores,
+                                primary: primary,
+                                notes: notesCtrl.text,
+                              );
+                              if (!sheetCtx2.mounted) return;
+                              setSheet(() {
+                                saving = false;
+                                saved = true;
+                              });
+                              ScaffoldMessenger.of(sheetCtx2)
+                                  .showSnackBar(const SnackBar(
+                                      content:
+                                          Text('✅ Scan gespeichert')));
+                            } catch (e) {
+                              if (!sheetCtx2.mounted) return;
+                              setSheet(() => saving = false);
+                              ScaffoldMessenger.of(sheetCtx2)
+                                  .showSnackBar(SnackBar(
+                                      content: Text(
+                                          'Fehler beim Speichern: $e')));
+                            }
+                          },
+                    icon: saving
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white))
+                        : Icon(saved
+                            ? Icons.check_circle
+                            : Icons.save),
+                    label: Text(saving
+                        ? 'Speichern …'
+                        : (saved ? 'Gespeichert' : 'Scan speichern')),
+                    style: ElevatedButton.styleFrom(
+                        backgroundColor: saved ? Colors.green : _kPink,
+                        foregroundColor: Colors.white,
+                        disabledBackgroundColor: saved
+                            ? Colors.green
+                            : Colors.white.withValues(alpha: 0.1),
+                        disabledForegroundColor: Colors.white70,
+                        padding:
+                            const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12))),
+                  ),
                 ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: _kBorder),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: _kPink),
-                ),
-              ),
+              ],
             ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: (saving || saved)
-                    ? null
-                    : () async {
-                        setSheet(() => saving = true);
-                        try {
-                          await _saveScan(
-                            scores: scores,
-                            primary: primary,
-                            notes: notesCtrl.text,
-                          );
-                          if (!sheetCtx2.mounted) return;
-                          setSheet(() {
-                            saving = false;
-                            saved = true;
-                          });
-                          ScaffoldMessenger.of(sheetCtx2).showSnackBar(
-                              const SnackBar(
-                                  content:
-                                      Text('✅ Scan gespeichert')));
-                        } catch (e) {
-                          if (!sheetCtx2.mounted) return;
-                          setSheet(() => saving = false);
-                          ScaffoldMessenger.of(sheetCtx2).showSnackBar(
-                              SnackBar(
-                                  content: Text(
-                                      'Fehler beim Speichern: $e')));
-                        }
-                      },
-                icon: saving
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white))
-                    : Icon(saved ? Icons.check_circle : Icons.save),
-                label: Text(saving
-                    ? 'Speichern …'
-                    : (saved ? 'Gespeichert' : 'Scan speichern')),
-                style: ElevatedButton.styleFrom(
-                    backgroundColor: saved ? Colors.green : _kPink,
-                    foregroundColor: Colors.white,
-                    disabledBackgroundColor:
-                        saved ? Colors.green : _kBorder,
-                    disabledForegroundColor: Colors.white70,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12))),
-              ),
-            ),
-          ],
+          ),
         ),
-      ),
       ),
     ).whenComplete(() {
       notesCtrl.dispose();
@@ -567,10 +636,20 @@ class _PrimaryChakraCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [color.withValues(alpha: 0.3), _kCardBg],
+          colors: [
+            color.withValues(alpha: 0.25),
+            _kLila.withValues(alpha: 0.15),
+            const Color(0xFF06040F),
+          ],
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color),
+        border: Border.all(color: color.withValues(alpha: 0.6)),
+        boxShadow: [
+          BoxShadow(
+              color: color.withValues(alpha: 0.2),
+              blurRadius: 16,
+              spreadRadius: 2),
+        ],
       ),
       child: Row(
         children: [
@@ -582,7 +661,8 @@ class _PrimaryChakraCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text('Hauptblockade',
-                    style: TextStyle(color: Colors.white70, fontSize: 12)),
+                    style:
+                        TextStyle(color: Colors.white70, fontSize: 12)),
                 const SizedBox(height: 2),
                 Text(chakra['chakra_name'] as String? ?? '',
                     style: const TextStyle(
@@ -602,7 +682,7 @@ class _PrimaryChakraCard extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Tab 1: Verlauf (Phase 7.2e füllt diesen Stub)
+// Tab 1: Verlauf
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _HistoryTab extends StatefulWidget {
@@ -638,7 +718,6 @@ class _HistoryTabState extends State<_HistoryTab> {
         });
         return;
       }
-      // Chakra-Meta aus chakra_symptoms aggregieren (für Emoji/Farbe)
       final metaRows = await _db
           .from('chakra_symptoms')
           .select('chakra_number, chakra_name, chakra_color, chakra_emoji');
@@ -671,7 +750,7 @@ class _HistoryTabState extends State<_HistoryTab> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: _kCardBg,
+        backgroundColor: const Color(0xFF0D0A1A),
         title: const Text('Scan löschen?',
             style: TextStyle(color: Colors.white)),
         content: const Text('Dieser Scan wird unwiderruflich gelöscht.',
@@ -683,8 +762,8 @@ class _HistoryTabState extends State<_HistoryTab> {
                   style: TextStyle(color: Colors.white54))),
           TextButton(
               onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Löschen',
-                  style: TextStyle(color: _kPink))),
+              child:
+                  const Text('Löschen', style: TextStyle(color: _kPink))),
         ],
       ),
     );
@@ -765,64 +844,67 @@ class _HistoryTabState extends State<_HistoryTab> {
             for (final e in (scoresRaw ?? const {}).entries)
               int.parse(e.key.toString()): (e.value as num).toInt(),
           };
-          final count = (r['selected_symptom_ids'] as List?)?.length ?? 0;
+          final count =
+              (r['selected_symptom_ids'] as List?)?.length ?? 0;
           final notes = r['notes'] as String?;
-          return Card(
-            color: _kCardBg,
+          return Container(
             margin: const EdgeInsets.only(bottom: 8),
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-                side: BorderSide(color: color.withValues(alpha: 0.3))),
-            child: Padding(
-              padding: const EdgeInsets.all(14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(children: [
-                    Text(meta?['chakra_emoji'] as String? ?? '🌀',
-                        style: const TextStyle(fontSize: 28)),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(meta?['chakra_name'] as String? ?? 'Scan',
-                              style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w600)),
-                          const SizedBox(height: 2),
-                          Text(_formatDate(r['scanned_at'] as String),
-                              style: const TextStyle(
-                                  color: Colors.white54, fontSize: 11)),
-                        ],
-                      ),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: color.withValues(alpha: 0.3)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(children: [
+                  Text(meta?['chakra_emoji'] as String? ?? '🌀',
+                      style: const TextStyle(fontSize: 28)),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(meta?['chakra_name'] as String? ?? 'Scan',
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600)),
+                        const SizedBox(height: 2),
+                        Text(_formatDate(r['scanned_at'] as String),
+                            style: const TextStyle(
+                                color: Colors.white54, fontSize: 11)),
+                      ],
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline,
-                          color: Colors.white38, size: 20),
-                      onPressed: () => _deleteScan(r['id'] as String),
-                    ),
-                  ]),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline,
+                        color: Colors.white38, size: 20),
+                    onPressed: () => _deleteScan(r['id'] as String),
+                  ),
+                ]),
+                const SizedBox(height: 8),
+                Text(
+                    '$count Symptom(e) • Scores: ${scores.entries.map((e) => '${e.key}:${e.value}').join(' ')}',
+                    style: const TextStyle(
+                        color: Colors.white54, fontSize: 11)),
+                if (notes != null && notes.isNotEmpty) ...[
                   const SizedBox(height: 8),
-                  Text('$count Symptom(e) • Scores: ${scores.entries.map((e) => '${e.key}:${e.value}').join(' ')}',
-                      style: const TextStyle(
-                          color: Colors.white54, fontSize: 11)),
-                  if (notes != null && notes.isNotEmpty) ...[
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                          color: _kDarkBg,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: _kBorder)),
-                      child: Text(notes,
-                          style: const TextStyle(
-                              color: Colors.white70, fontSize: 12)),
-                    ),
-                  ],
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                            color:
+                                Colors.white.withValues(alpha: 0.15))),
+                    child: Text(notes,
+                        style: const TextStyle(
+                            color: Colors.white70, fontSize: 12)),
+                  ),
                 ],
-              ),
+              ],
             ),
           );
         },
@@ -832,7 +914,7 @@ class _HistoryTabState extends State<_HistoryTab> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Tab 2: Info (Phase 7.2f füllt diesen Stub)
+// Tab 2: Info
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _InfoTab extends StatelessWidget {
@@ -932,8 +1014,7 @@ class _InfoTab extends StatelessWidget {
           'Klare Intuition, lebendige Träume, innere Führung, Weitsicht.',
       'blockade':
           'Migräne, Überanalyse, Fantasie-Realität-Vermischung, Zweifel an Intuition.',
-      'heal':
-          'Meditation, Amethyst, Traumjournal, Stille, Yoga Nidra.',
+      'heal': 'Meditation, Amethyst, Traumjournal, Stille, Yoga Nidra.',
     },
     {
       'nr': 7,
@@ -966,18 +1047,21 @@ class _InfoTab extends StatelessWidget {
       itemBuilder: (_, i) {
         final c = _chakras[i];
         final color = _parseColor(c['color'] as String);
-        return Card(
-          color: _kCardBg,
+        return Container(
           margin: const EdgeInsets.only(bottom: 10),
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
-              side: BorderSide(color: color.withValues(alpha: 0.4))),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: color.withValues(alpha: 0.4)),
+          ),
           child: Theme(
-            data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+            data:
+                Theme.of(context).copyWith(dividerColor: Colors.transparent),
             child: ExpansionTile(
               iconColor: Colors.white70,
               collapsedIconColor: Colors.white54,
-              tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+              tilePadding:
+                  const EdgeInsets.symmetric(horizontal: 16),
               childrenPadding:
                   const EdgeInsets.fromLTRB(16, 0, 16, 16),
               title: Row(children: [
@@ -985,8 +1069,10 @@ class _InfoTab extends StatelessWidget {
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                        colors: [color.withValues(alpha: 0.4), _kDarkBg]),
+                    gradient: LinearGradient(colors: [
+                      color.withValues(alpha: 0.4),
+                      const Color(0xFF06040F)
+                    ]),
                     shape: BoxShape.circle,
                     border: Border.all(color: color),
                   ),
@@ -1013,7 +1099,9 @@ class _InfoTab extends StatelessWidget {
               ]),
               children: [
                 _InfoRow(
-                    label: 'Ort', value: c['location'] as String, color: color),
+                    label: 'Ort',
+                    value: c['location'] as String,
+                    color: color),
                 _InfoRow(
                     label: 'Element',
                     value: c['element'] as String,
@@ -1062,8 +1150,8 @@ class _InfoRow extends StatelessWidget {
           SizedBox(
             width: 72,
             child: Text(label,
-                style: const TextStyle(
-                    color: Colors.white54, fontSize: 12)),
+                style:
+                    const TextStyle(color: Colors.white54, fontSize: 12)),
           ),
           Expanded(
             child: Text(value,
@@ -1087,7 +1175,7 @@ class _InfoBlock extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-          color: _kDarkBg,
+          color: color.withValues(alpha: 0.07),
           borderRadius: BorderRadius.circular(10),
           border: Border.all(color: color.withValues(alpha: 0.4))),
       child: Column(
@@ -1095,7 +1183,9 @@ class _InfoBlock extends StatelessWidget {
         children: [
           Text(title,
               style: TextStyle(
-                  color: color, fontSize: 12, fontWeight: FontWeight.w600)),
+                  color: color,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600)),
           const SizedBox(height: 4),
           Text(text,
               style: const TextStyle(
@@ -1104,4 +1194,28 @@ class _InfoBlock extends StatelessWidget {
       ),
     );
   }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// _CineOrb – ambient background glow orb
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _CineOrb extends StatelessWidget {
+  final Color color;
+  final double size;
+  final double opacity;
+  const _CineOrb(
+      {required this.color, required this.size, required this.opacity});
+  @override
+  Widget build(BuildContext context) => Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: RadialGradient(colors: [
+            color.withValues(alpha: opacity),
+            color.withValues(alpha: 0),
+          ]),
+        ),
+      );
 }
