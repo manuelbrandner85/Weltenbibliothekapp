@@ -164,41 +164,9 @@ class _LiveKitGroupCallScreenState
       if (mounted) setState(() => _hasJoined = true);
     } catch (e) {
       debugPrint('❌ LiveKit _join() fehlgeschlagen: $e');
-      if (!mounted) return;
-      setState(() {});
-
-      // User-freundliche Fehlermeldung als SnackBar — nicht stumm schlucken.
-      // Danach automatisch zurück navigieren damit der User nicht auf einem
-      // leeren/kaputten Screen hängen bleibt.
-      final msg = e.toString().replaceFirst('Exception: ', '');
-      final isMicError = msg.toLowerCase().contains('mikrofon') ||
-          msg.toLowerCase().contains('permission');
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              isMicError
-                  ? '🎤 $msg'
-                  : '⚠️ Verbindung fehlgeschlagen: $msg',
-              style: const TextStyle(color: Colors.white),
-            ),
-            backgroundColor: isMicError
-                ? const Color(0xFFFF6D00)
-                : const Color(0xFFD32F2F),
-            duration: const Duration(seconds: 5),
-            behavior: SnackBarBehavior.floating,
-            action: SnackBarAction(
-              label: 'OK',
-              textColor: Colors.white,
-              onPressed: () {},
-            ),
-          ),
-        );
-        // Kurz warten damit der User die Meldung sieht, dann zurück navigieren
-        await Future<void>.delayed(const Duration(milliseconds: 800));
-        if (mounted) Navigator.of(context).pop();
-      }
+      // _StatusView(error) wird jetzt angezeigt — svc.errorMessage ist gesetzt.
+      // Kein Auto-Pop: User sieht den Fehler + "Erneut versuchen"-Button.
+      if (mounted) setState(() {});
     }
   }
 
