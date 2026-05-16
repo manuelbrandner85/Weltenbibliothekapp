@@ -9,7 +9,7 @@
 /// - Avatar management
 library;
 
-import 'dart:io';
+import 'dart:io' if (dart.library.html) '../stubs/dart_io_stub.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -34,6 +34,7 @@ class AvatarUploadService {
   
   /// Pick image from gallery
   Future<File?> pickImageFromGallery() async {
+    if (kIsWeb) return null;
     try {
       final XFile? image = await _picker.pickImage(
         source: ImageSource.gallery,
@@ -59,6 +60,7 @@ class AvatarUploadService {
   
   /// Pick image from camera
   Future<File?> pickImageFromCamera() async {
+    if (kIsWeb) return null;
     try {
       final XFile? image = await _picker.pickImage(
         source: ImageSource.camera,

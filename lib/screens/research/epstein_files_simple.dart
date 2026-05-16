@@ -12,7 +12,7 @@ import 'package:flutter/foundation.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 import 'package:translator/translator.dart';
-import 'dart:io';
+import 'dart:io' if (dart.library.html) '../../stubs/dart_io_stub.dart';
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_glass_app_bar.dart';
 import '../../widgets/cinematic/wb_vignette.dart';
@@ -153,6 +153,14 @@ class _EpsteinFilesSimpleScreenState extends State<EpsteinFilesSimpleScreen> wit
   
   // ignore: unused_element
   Future<void> _openPdfInApp(String pdfUrl) async {
+    if (kIsWeb) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('PDF-Anzeige auf Web nicht verfügbar')),
+        );
+      }
+      return;
+    }
     if (_isLoadingPdf) {
       if (kDebugMode) {
         debugPrint('⚠️ PDF wird bereits geladen, ignoriere Klick');

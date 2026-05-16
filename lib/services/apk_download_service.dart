@@ -13,7 +13,7 @@
 //   - Ist die Datei bereits komplett: sofort zurückgeben (kein Download nötig)
 
 import 'dart:async';
-import 'dart:io';
+import 'dart:io' if (dart.library.html) '../stubs/dart_io_stub.dart';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -49,6 +49,9 @@ class ApkDownloadService {
     required String version,
     required void Function(ApkDownloadProgress) onProgress,
   }) async {
+    if (kIsWeb) {
+      throw UnsupportedError('APK-Download auf Web nicht verfügbar');
+    }
     _cancelToken?.cancel('new-download');
     _cancelToken = CancelToken();
 
@@ -223,6 +226,7 @@ class ApkDownloadService {
   /// Öffnet die APK im System-Installer. Der User muss dann im Dialog
   /// "Installieren" tippen. Liefert false wenn das nicht möglich war.
   Future<bool> installApk(File file) async {
+    if (kIsWeb) return false;
     try {
       final result = await OpenFilex.open(
         file.path,

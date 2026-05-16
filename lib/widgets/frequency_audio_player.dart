@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:audioplayers/audioplayers.dart';
+import 'package:audioplayers/audioplayers.dart' if (dart.library.html) '../stubs/audioplayers_stub.dart';
 import 'dart:async';
 
 /// 🎵 FREQUENCY AUDIO PLAYER WIDGET

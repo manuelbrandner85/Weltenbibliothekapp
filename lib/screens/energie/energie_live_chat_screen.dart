@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart'; // kDebugMode
 import 'package:cached_network_image/cached_network_image.dart';
 import 'dart:async';
-import 'dart:io'; // File for uploads
+import 'dart:io' if (dart.library.html) '../../stubs/dart_io_stub.dart'; // File for uploads
 import '../../config/api_config.dart';
 import '../shared/livekit_group_call_screen.dart';
 import '../shared/livekit_prejoin_screen.dart';

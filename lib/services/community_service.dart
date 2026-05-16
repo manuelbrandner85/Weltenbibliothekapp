@@ -1,7 +1,7 @@
 import '../config/api_config.dart';
 import 'dart:convert';
 import 'dart:async';  // ✅ TimeoutException
-import 'dart:io';  // ✅ SocketException
+import 'dart:io' if (dart.library.html) '../stubs/dart_io_stub.dart';  // ✅ SocketException
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
