@@ -1,6 +1,7 @@
-import 'dart:async' show Timer;
+import 'dart:async' show Timer, unawaited;
 
 import 'package:flutter/material.dart';
+import '../../services/spirit_profile_service.dart';
 import '../../services/storage_service.dart';
 import '../../services/username_availability_service.dart';
 import 'package:flutter/services.dart'; // ✅ Für InputFormatters
@@ -727,6 +728,25 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
           ),
         );
         
+        // 🌍 Spirit-Daten weltübergreifend in Supabase profiles speichern
+        if (_selectedBirthDate != null ||
+            _birthPlaceController.text.isNotEmpty ||
+            _birthTimeController.text.isNotEmpty) {
+          final fullName = widget.world == 'energie'
+              ? '${_firstNameController.text.trim()} ${_lastNameController.text.trim()}'.trim()
+              : _nameController.text.trim();
+          unawaited(SpiritProfileService.instance.save(
+            fullName: fullName.isNotEmpty ? fullName : null,
+            birthDate: _selectedBirthDate,
+            birthTime: _birthTimeController.text.trim().isNotEmpty
+                ? _birthTimeController.text.trim()
+                : null,
+            birthPlace: _birthPlaceController.text.trim().isNotEmpty
+                ? _birthPlaceController.text.trim()
+                : null,
+          ));
+        }
+
         // 🆕 RIVERPOD: Admin-State aktualisieren nach Profil-Speicherung
         ref.read(adminStateProvider(widget.world).notifier).refresh();
         
