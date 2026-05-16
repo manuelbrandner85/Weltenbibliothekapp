@@ -1295,7 +1295,7 @@ class LiveKitCallService extends ChangeNotifier {
       }
       _errorMessage = null;
       if (kDebugMode) {
-        debugPrint('📷 Camera gewechselt → ${next.label}');
+        debugPrint('📷 Camera gewechselt → ${(next as dynamic).label ?? _cameraIndex}');
       }
       notifyListeners();
     } catch (e) {

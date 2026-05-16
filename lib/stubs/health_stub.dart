@@ -22,7 +22,15 @@ class NumericHealthValue extends HealthValue {
 class HealthDataPoint {
   final HealthValue value;
   final HealthDataType type;
-  const HealthDataPoint({required this.value, required this.type});
+  final DateTime dateFrom;
+  final DateTime dateTo;
+  HealthDataPoint({
+    required this.value,
+    required this.type,
+    DateTime? dateFrom,
+    DateTime? dateTo,
+  })  : dateFrom = dateFrom ?? DateTime.now(),
+        dateTo = dateTo ?? DateTime.now();
 }
 
 class Health {
