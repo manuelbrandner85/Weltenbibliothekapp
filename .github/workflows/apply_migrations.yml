@@ -324,6 +324,9 @@ jobs:
           run_sql "v63 knowledge_graph_nodes + knowledge_graph_edges + user_graph_bookmarks" \
             supabase/migrations/20260514_v63_knowledge_graph.sql
 
+          run_sql "v64 Web-Auth (web_user_profiles + web_admin_notifications)" \
+            supabase/migrations/20260516_v64_web_auth.sql
+
           echo ""
           if [ "$MIGRATION_FAILED" = "1" ]; then
             echo "⚠️  Einige frühe Migrationen schlugen fehl (siehe Warnungen oben)."

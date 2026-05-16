@@ -1,17 +1,21 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter/material.dart';
 // ✅ FÜR kDebugMode
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart' as provider; // ✅ Provider aliased
 import 'package:flutter_riverpod/flutter_riverpod.dart'; // 🆕 RIVERPOD für Admin-System
-import 'services/sqlite_storage_service.dart'; // 🗄️ SQLITE LOCAL STORAGE
+import 'services/sqlite_storage_service.dart'; // 🗄️ SQLITE LOCAL STORAGE (Mobile)
 // 💾 SHARED PREFERENCES
 // Firebase DEAKTIVIERT - Jetzt Cloudflare
 // import 'package:firebase_core/firebase_core.dart';
 // import 'firebase_options.dart';
 import 'screens/intro_image_screen.dart';
 import 'screens/portal_home_screen.dart'; // 🌀 Portal (NACH Tutorial)
+import 'screens/web/web_auth_gate.dart'; // 🌐 Web Auth Gate
+import 'screens/web/web_admin_panel.dart'; // 👑 Web Admin Panel
 import 'widgets/livekit_mini_bar.dart'; // 📞 Mini-Bar für aktiven LiveKit-Call
 import 'screens/energie_world_screen.dart'; // ✅ FIXED: Correct path
 import 'screens/energie/achievements_screen.dart';
@@ -61,53 +65,63 @@ final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 🔔 FIREBASE — vor allem anderen initialisieren (Background-Handler muss
-  // VOR runApp() registriert werden, sonst verschluckt das Isolate die Nachricht).
+  // 🔔 FIREBASE — nur auf Mobile initialisieren (nicht auf Web)
   // Fail-safe: Wenn keine google-services.json vorhanden ist oder Play Services
   // fehlen, läuft die App auf den In-App-Polling-Kanal zurück (kein Crash).
-  try {
-    await Firebase.initializeApp();
-    FirebaseMessaging.onBackgroundMessage(fcmBackgroundHandler);
-  } catch (e) {
-    debugPrint('⚠️ Firebase init skipped (no config / no Play Services): $e');
+  if (!kIsWeb) {
+    try {
+      await Firebase.initializeApp();
+      FirebaseMessaging.onBackgroundMessage(fcmBackgroundHandler);
+    } catch (e) {
+      debugPrint('⚠️ Firebase init skipped (no config / no Play Services): $e');
+    }
   }
 
   // 🟢 SUPABASE - Muss als ERSTES initialisiert werden (vor allen anderen Services)
   await initSupabase();
 
-  // 🗄️ SQLITE LOCAL STORAGE - Initialize SQLite database
-  await SqliteStorageService.instance.init();
+  // 🗄️ SQLITE LOCAL STORAGE - Initialize SQLite database (nur auf Mobile)
+  if (!kIsWeb) {
+    await SqliteStorageService.instance.init();
+  } else {
+    // Web: SharedPreferences-basierter Storage
+    // Wird lazy initialisiert wenn benötigt (kein sqflite auf Web)
+  }
 
   // 🛡️ ERROR BOUNDARY - Verhindert App-Crashes
   ErrorBoundary.initialize();
-  
-  // 📊 ANALYTICS - Track app start
-  final analytics = PrivacyAnalyticsService();
-  await analytics.trackEvent(PrivacyAnalyticsService.eventAppOpen);
-  
-  // 📊 CLOUDFLARE ANALYTICS - Initialize (NEW)
-  final cloudflareAnalytics = CloudflareAnalyticsService();
-  cloudflareAnalytics.initialize(); // Anonymous zuerst, userId wird nach Login gesetzt
-  
-  // 🚨 ERROR REPORTING - Initialize (NEW Phase 2)
-  await ErrorReportingService().initialize();
-  
-  // 🖼️ IMAGE CACHE - Initialize (NEW Phase 2)
-  ImageCacheService().initialize();
-  await ImageCacheService().cleanupOnStart();
-  
-  // 📳 HAPTIC FEEDBACK - Initialize (NEW Phase 3)
-  await HapticFeedbackService().initialize();
-  
-  // 📡 OFFLINE SYNC - Initialize (NEW Phase 3)
-  await OfflineSyncService().initialize();
 
-  // 📺 PiP-SERVICE - MethodChannel-Handler registrieren
-  await PipService.instance.init();
+  if (!kIsWeb) {
+    // 📊 ANALYTICS - Track app start (Mobile only)
+    final analytics = PrivacyAnalyticsService();
+    await analytics.trackEvent(PrivacyAnalyticsService.eventAppOpen);
 
-  // 🔔 PUSH NOTIFICATION MANAGER - Auto-Register + in-app polling
+    // 📊 CLOUDFLARE ANALYTICS - Initialize (Mobile only)
+    final cloudflareAnalytics = CloudflareAnalyticsService();
+    cloudflareAnalytics.initialize();
+
+    // 🚨 ERROR REPORTING - Initialize (Mobile only)
+    await ErrorReportingService().initialize();
+
+    // 🖼️ IMAGE CACHE - Initialize (Mobile only)
+    ImageCacheService().initialize();
+    await ImageCacheService().cleanupOnStart();
+
+    // 📳 HAPTIC FEEDBACK - Initialize (Mobile only)
+    await HapticFeedbackService().initialize();
+
+    // 📡 OFFLINE SYNC - Initialize (Mobile only — sqflite nicht auf Web)
+    await OfflineSyncService().initialize();
+  }
+
+  // 📺 PiP-SERVICE - MethodChannel-Handler registrieren (nur auf Mobile)
+  if (!kIsWeb) {
+    await PipService.instance.init();
+  }
+
+  // 🔔 PUSH NOTIFICATION MANAGER - Auto-Register + in-app polling (nur Mobile)
   // (fire-and-forget; init itself is awaitable but non-critical)
-  unawaited(PushNotificationManager.instance.init(
+  if (!kIsWeb) unawaited(PushNotificationManager.instance.init(
     onDeepLink: (data) {
       final nav = appNavigatorKey.currentState;
       if (nav == null) return;
@@ -149,27 +163,29 @@ void main() async {
   ));
   
   // ═══════════════════════════════════════════════════════════
-  // MOBILE SYSTEM UI OPTIMIERUNGEN (SYNC - SCHNELL)
+  // MOBILE SYSTEM UI OPTIMIERUNGEN (SYNC - SCHNELL) — nur auf Mobile
   // ═══════════════════════════════════════════════════════════
-  
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.light,
-      statusBarBrightness: Brightness.dark,
-      systemNavigationBarColor: Color(0xFF0D47A1),
-      systemNavigationBarIconBrightness: Brightness.light,
-    ),
-  );
-  
-  await SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
-    DeviceOrientation.landscapeLeft,
-    DeviceOrientation.landscapeRight,
-  ]);
-  
-  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+
+  if (!kIsWeb) {
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
+        systemNavigationBarColor: Color(0xFF0D47A1),
+        systemNavigationBarIconBrightness: Brightness.light,
+      ),
+    );
+
+    await SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
+
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  }
   
   // ═══════════════════════════════════════════════════════════
   // KRITISCHE SERVICES (SYNC - NUR DIESE BLOCKIEREN START)
@@ -180,26 +196,28 @@ void main() async {
   // Managed by ServiceManager - NO arbitrary delays!
   // ═══════════════════════════════════════════════════════════
   
-  try {
-    await ServiceManager().initializeCriticalServices();
-    debugPrint('✅ Critical services ready (Storage + Theme)');
-  } catch (e) {
-    debugPrint('⚠️ Critical service init error: $e');
-    // App cannot start without critical services
-    rethrow;
-  }
-
-  // 🔄 PROFIL-WIEDERHERSTELLUNG - Im Hintergrund (nicht blockierend)
-  // Stellt Profil aus Cloud wieder her falls Hive nach Neuinstallation leer ist
-  ProfileRestoreService().checkAndRestoreProfiles().then((result) {
-    if (result.anyRestored) {
-      debugPrint('✅ Profile wiederhergestellt: ${result.toString()}');
-    } else if (!result.anyProfilePresent) {
-      debugPrint('ℹ️ Kein Profil vorhanden – normaler Onboarding-Flow');
+  if (!kIsWeb) {
+    try {
+      await ServiceManager().initializeCriticalServices();
+      debugPrint('✅ Critical services ready (Storage + Theme)');
+    } catch (e) {
+      debugPrint('⚠️ Critical service init error: $e');
+      // App cannot start without critical services on mobile
+      rethrow;
     }
-  }).catchError((e) {
-    debugPrint('⚠️ Profile-Restore Fehler (ignoriert): $e');
-  });
+
+    // 🔄 PROFIL-WIEDERHERSTELLUNG - Im Hintergrund (nicht blockierend)
+    // Stellt Profil aus Cloud wieder her falls Hive nach Neuinstallation leer ist
+    ProfileRestoreService().checkAndRestoreProfiles().then((result) {
+      if (result.anyRestored) {
+        debugPrint('✅ Profile wiederhergestellt: ${result.toString()}');
+      } else if (!result.anyProfilePresent) {
+        debugPrint('ℹ️ Kein Profil vorhanden – normaler Onboarding-Flow');
+      }
+    }).catchError((e) {
+      debugPrint('⚠️ Profile-Restore Fehler (ignoriert): $e');
+    });
+  }
   
   // ═══════════════════════════════════════════════════════════
   // APP STARTEN (NICHT BLOCKIEREND)
@@ -220,7 +238,22 @@ void main() async {
   // Managed by ServiceManager - Priority-based loading
   // ═══════════════════════════════════════════════════════════
   
-  ServiceManager().initializeBackgroundServices();
+  if (!kIsWeb) {
+    ServiceManager().initializeBackgroundServices();
+  }
+}
+
+/// ScrollBehavior für Web: ermöglicht Touch- und Maus-Drag zum Scrollen.
+class _WebScrollBehavior extends MaterialScrollBehavior {
+  const _WebScrollBehavior();
+
+  @override
+  Set<PointerDeviceKind> get dragDevices => {
+        PointerDeviceKind.touch,
+        PointerDeviceKind.mouse,
+        PointerDeviceKind.trackpad,
+        PointerDeviceKind.stylus,
+      };
 }
 
 class WeltenbibliothekApp extends StatefulWidget {
@@ -324,12 +357,14 @@ class _WeltenbibliothekAppState extends State<WeltenbibliothekApp> {
           darkTheme: EnhancedAppThemes.darkTheme,
           
           // ═══════════════════════════════════════════════════════════
-          // MOBILE SCROLL PERFORMANCE
+          // SCROLL PERFORMANCE (angepasst für Web und Mobile)
           // ═══════════════════════════════════════════════════════════
-          scrollBehavior: const MaterialScrollBehavior().copyWith(
-            physics: const BouncingScrollPhysics(),
-            scrollbars: false, // Keine Scrollbars auf Mobile
-          ),
+          scrollBehavior: kIsWeb
+              ? const _WebScrollBehavior()
+              : const MaterialScrollBehavior().copyWith(
+                  physics: const BouncingScrollPhysics(),
+                  scrollbars: false, // Keine Scrollbars auf Mobile
+                ),
           localizationsDelegates: const [
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,
@@ -341,8 +376,9 @@ class _WeltenbibliothekAppState extends State<WeltenbibliothekApp> {
           ],
           locale: const Locale('de', 'DE'),
           // Mini-Bar für aktiven Sprach-Anruf wird ÜBER allen Screens injiziert
-          // damit User während Live in der App weiternavigieren kann.
+          // Auf Web: keine LiveKit Mini-Bar (WebRTC nicht unterstützt)
           builder: (context, child) {
+            if (kIsWeb) return child ?? const SizedBox.shrink();
             return Stack(
               children: [
                 child ?? const SizedBox.shrink(),
@@ -355,10 +391,11 @@ class _WeltenbibliothekAppState extends State<WeltenbibliothekApp> {
               ],
             );
           },
-          // ✅ FIXED: DIREKT ZUM PORTAL - KEIN INTRO, KEINE CHECKS
-          // UpdateGate zeigt beim ersten Frame + bei App-Resume Update-Meldungen
-          // (Release-Update-Dialog / OTA-Patch-Bereit-Banner)
-          home: const UpdateGate(child: PortalHomeScreen()), // 🌀 Portal + Update-Check
+          // Web: Login-Gate vor dem Portal
+          // Mobile: direkt zum Portal + UpdateGate für OTA-Patch-Dialog
+          home: kIsWeb
+              ? const WebAuthGate()
+              : const UpdateGate(child: PortalHomeScreen()),
           routes: {
             '/home': (context) => const IntroImageScreen(),
             '/dashboard': (context) => const EnergieWorldScreen(), // ✅ FIXED
@@ -384,6 +421,8 @@ class _WeltenbibliothekAppState extends State<WeltenbibliothekApp> {
             '/image-forensics': (context) => const ImageForensicsScreen(),
             '/power-network-mapper': (context) => const PowerNetworkMapperScreen(),
             '/event-predictor': (context) => const EventPredictorScreen(),
+            // 🌐 WEB-ADMIN (Web-Zugänge verwalten)
+            '/admin/web-users': (context) => const WebAdminPanel(),
           },
         );
       },

@@ -1,0 +1,74 @@
+name: Build & Deploy Web (Cloudflare Pages)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'lib/**'
+      - 'web/**'
+      - 'pubspec.yaml'
+      - 'pubspec.lock'
+      - '.github/workflows/build_web.yml'
+  workflow_dispatch:
+
+# Nur einen Web-Deploy gleichzeitig — ältere Jobs werden abgebrochen
+concurrency:
+  group: web-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-web:
+    name: Flutter Web Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🐦 Flutter Setup
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.x'
+          channel: 'stable'
+          cache: true
+
+      - name: 📦 Flutter pub get
+        run: flutter pub get
+
+      - name: 🌐 Flutter Web Build
+        run: |
+          flutter build web --release \
+            --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} \
+            --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }} \
+            --dart-define=CLOUDFLARE_WORKER_URL=${{ secrets.CLOUDFLARE_WORKER_URL }} \
+            --dart-define=APP_VERSION="web-$(date +%Y%m%d%H%M)" \
+            --web-renderer=canvaskit \
+            --pwa-strategy=offline-first
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          CLOUDFLARE_WORKER_URL: ${{ secrets.CLOUDFLARE_WORKER_URL }}
+
+      - name: 🔍 Verify build output
+        run: |
+          ls -la build/web/
+          echo "Build size: $(du -sh build/web/ | cut -f1)"
+
+      - name: 🚀 Deploy to Cloudflare Pages
+        if: ${{ secrets.CLOUDFLARE_PAGES_TOKEN != '' }}
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_PAGES_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: weltenbibliothek-web
+          directory: build/web
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          wranglerVersion: '3'
+
+      - name: 📦 Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-build-${{ github.sha }}
+          path: build/web/
+          retention-days: 7

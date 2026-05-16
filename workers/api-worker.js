@@ -46,7 +46,8 @@ const SUPABASE_URL = 'https://adtviduaftdquvfjpojb.supabase.co';
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization, apikey, Prefer',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, apikey, Prefer, X-Supabase-Auth',
+  'Access-Control-Max-Age': '86400',
   'Content-Type': 'application/json',
 };
 
