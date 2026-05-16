@@ -72,22 +72,28 @@ jobs:
         # Flutter 3.41.6 rev 76ca3dff01) downchecken. Die Snapshot-Cache wird
         # beim nächsten `shorebird`-Aufruf automatisch neu gebaut.
         run: |
-          set -euo pipefail
-          SHOREBIRD_BIN=$(command -v shorebird)
+          SHOREBIRD_BIN=$(command -v shorebird || true)
+          if [ -z "$SHOREBIRD_BIN" ]; then
+            echo "⚠️  shorebird nicht im PATH — Pinning übersprungen"
+            exit 0
+          fi
           SHOREBIRD_ROOT=$(dirname "$(dirname "$SHOREBIRD_BIN")")
           echo "Shorebird install dir: $SHOREBIRD_ROOT"
           cd "$SHOREBIRD_ROOT"
           if [ ! -d .git ]; then
-            echo "❌ $SHOREBIRD_ROOT ist kein git-Klon — kann nicht pinnen"
-            exit 1
+            echo "⚠️  $SHOREBIRD_ROOT ist kein git-Klon — Pinning übersprungen, nutze installierte Version"
+            shorebird --version || true
+            exit 0
           fi
-          git fetch --tags --force --depth=1 origin v1.6.92
-          git checkout --force v1.6.92
-          # Snapshot cache invalidieren damit shorebird mit der neuen Version
-          # neu bootstrapped
-          rm -f bin/cache/shorebird.snapshot bin/cache/shorebird.snapshot.tmp || true
-          echo "--- shorebird --version (nach Pin) ---"
-          shorebird --version
+          if git fetch --tags --force --depth=1 origin v1.6.92 2>/dev/null \
+              && git checkout --force v1.6.92 2>/dev/null; then
+            rm -f bin/cache/shorebird.snapshot bin/cache/shorebird.snapshot.tmp || true
+            echo "✅ Shorebird CLI auf v1.6.92 gepinnt"
+          else
+            echo "⚠️  Tag v1.6.92 nicht erreichbar — nutze installierte Version"
+          fi
+          echo "--- shorebird --version ---"
+          shorebird --version || true
 
       - name: 📋 Version lesen
         id: version

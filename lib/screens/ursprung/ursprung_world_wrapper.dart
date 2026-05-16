@@ -7,7 +7,7 @@ import '../../services/achievement_service.dart';
 import '../shared/world_admin_dashboard.dart';
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_glass_app_bar.dart';
-import '../../widgets/cinematic/wb_vignette.dart';
+
 import '../onboarding/world_onboarding_screen.dart';
 
 /// 🌀 Ursprung-Welt-Wrapper
