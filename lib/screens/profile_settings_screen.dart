@@ -18,6 +18,8 @@ import '../services/haptic_service.dart';
 import '../services/haptic_feedback_service.dart'; // 📳 NEW: Haptic Feedback
 import '../widgets/theme_toggle_widget.dart';
 import 'shared/profile_editor_screen.dart'; // 🆕 NEW EDITOR
+import 'shared/secret_library_screen.dart'; // 📚 Geheime Bibliothek
+import '../services/gamification_service.dart';
 import '../services/update_service.dart';
 import 'shared/knowledge_graph_screen.dart';
 
@@ -314,6 +316,13 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                   _buildSectionHeader('📳 HAPTIC FEEDBACK', Colors.orange),
                   const SizedBox(height: 12),
                   _buildHapticFeedbackCard(),
+
+                  const SizedBox(height: 32),
+
+                  // 📚 GEHEIME BIBLIOTHEK — Ab Level 10
+                  _buildSectionHeader('📚 GEHEIME BIBLIOTHEK', const Color(0xFFC9A84C)),
+                  const SizedBox(height: 12),
+                  _buildSecretLibraryCard(),
 
                   const SizedBox(height: 32),
 
@@ -1428,6 +1437,93 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
   }
 
   /// 🤝 Mensaena — Schwester-Plattform für Nachbarschaftshilfe.
+  /// 📚 Geheime Bibliothek — Card mit Lock-State je nach Global-Level.
+  Widget _buildSecretLibraryCard() {
+    const gold = Color(0xFFC9A84C);
+    const goldLight = Color(0xFFE0C872);
+    final level = GamificationService().globalLevel;
+    final unlocked = level >= SecretLibraryScreen.requiredLevel;
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(14),
+      onTap: () {
+        HapticService.lightImpact();
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const SecretLibraryScreen()),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: unlocked
+                ? [gold.withValues(alpha: 0.25), gold.withValues(alpha: 0.08)]
+                : [Colors.white.withValues(alpha: 0.04), Colors.white.withValues(alpha: 0.02)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: unlocked
+                ? gold.withValues(alpha: 0.6)
+                : Colors.white.withValues(alpha: 0.1),
+            width: unlocked ? 1.4 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: unlocked
+                    ? gold.withValues(alpha: 0.2)
+                    : Colors.white.withValues(alpha: 0.06),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                unlocked ? Icons.menu_book : Icons.lock_outline,
+                color: unlocked ? goldLight : Colors.white54,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    unlocked ? 'Die Geheime Bibliothek' : 'Geheime Bibliothek',
+                    style: TextStyle(
+                      color: unlocked ? goldLight : Colors.white70,
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    unlocked
+                        ? 'Originalquellen · 6 Kategorien'
+                        : 'Ab Level ${SecretLibraryScreen.requiredLevel} (aktuell: Level $level)',
+                    style: TextStyle(
+                      color: unlocked
+                          ? goldLight.withValues(alpha: 0.75)
+                          : Colors.white.withValues(alpha: 0.5),
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.chevron_right,
+              color: unlocked ? goldLight : Colors.white38,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   /// Optionaler Banner der den User auf mensaena.de verlinkt. Bewusst
   /// dezent gehalten damit es nicht aufdringlich wirkt.
   Widget _buildMensaenaCard() {
