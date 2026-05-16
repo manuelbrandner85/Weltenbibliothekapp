@@ -330,6 +330,9 @@ jobs:
           run_sql "v66 Profiles Spirit-Felder (full_name, birth_date, birth_time, birth_place) + world nullable" \
             supabase/migrations/20260516_v66_profiles_spirit_fields.sql
 
+          run_sql "v67 bibliothek_books (Geheime Bibliothek - Originalquellen)" \
+            supabase/migrations/20260516_v67_bibliothek_books.sql
+
           echo ""
           if [ "$MIGRATION_FAILED" = "1" ]; then
             echo "⚠️  Einige frühe Migrationen schlugen fehl (siehe Warnungen oben)."
