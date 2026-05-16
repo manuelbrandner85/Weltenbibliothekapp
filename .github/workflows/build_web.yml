@@ -78,9 +78,12 @@ jobs:
 
       - name: 🌐 Flutter Web Build
         run: |
+          # Fallbacks: URL und anon key sind für Web öffentlich (kein Geheimnis).
+          _SUPA_URL="${SUPABASE_URL:-https://zctufcfjsixfgmmwvnmv.supabase.co}"
+          _SUPA_ANON="${SUPABASE_ANON_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpjdHVmY2Zqc2l4ZmdtbXd2bm12Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4OTc4NDgsImV4cCI6MjA5NDQ3Mzg0OH0.2ksXwZsZPHVp2Z9l1e52AUXJYH4zahKAP5xDOR4X2rw}"
           flutter build web --release \
-            --dart-define=SUPABASE_URL=$SUPABASE_URL \
-            --dart-define=SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY \
+            --dart-define=SUPABASE_URL=$_SUPA_URL \
+            --dart-define=SUPABASE_ANON_KEY=$_SUPA_ANON \
             --dart-define=CLOUDFLARE_WORKER_URL=https://weltenbibliothek-api.brandy13062.workers.dev \
             --dart-define=APP_VERSION="web-$(date +%Y%m%d%H%M)"
 

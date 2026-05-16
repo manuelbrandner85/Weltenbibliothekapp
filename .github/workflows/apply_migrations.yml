@@ -353,6 +353,9 @@ jobs:
           run_sql "v69 Web-Access v2 (Admin-Rolle für 'Weltenbibliothek' + Tabellen-Cleanup)" \
             supabase/migrations/20260517_web_access_v2.sql
 
+          run_sql "v70 Web-Access Cleanup (Admin-Name aus web_access_requests entfernen + Trigger)" \
+            supabase/migrations/20260517_v70_web_access_cleanup.sql
+
           echo ""
           if [ "$MIGRATION_FAILED" = "1" ]; then
             echo "⚠️  Einige frühe Migrationen schlugen fehl (siehe Warnungen oben)."

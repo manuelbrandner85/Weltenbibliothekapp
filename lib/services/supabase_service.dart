@@ -41,15 +41,17 @@ Future<void> initSupabase() async {
   final client = Supabase.instance.client;
   if (client.auth.currentUser == null) {
     try {
-      await client.auth.signInAnonymously();
+      // Timeout verhindert ewiges Hängen auf Web wenn Dashboard-Setting fehlt.
+      await client.auth.signInAnonymously()
+          .timeout(const Duration(seconds: 8));
       if (kDebugMode) {
         debugPrint('✅ [Supabase] Anonyme Session erstellt: ${client.auth.currentUser?.id}');
       }
     } catch (e) {
-      // Tritt auf wenn Anonymous Sign-ins im Dashboard nicht aktiviert.
+      // Tritt auf wenn Anonymous Sign-ins nicht aktiviert oder Timeout.
       // App funktioniert trotzdem via allowAnonymous=true in sendMessage.
       if (kDebugMode) {
-        debugPrint('⚠️ [Supabase] signInAnonymously fehlgeschlagen (Dashboard-Setting?): $e');
+        debugPrint('⚠️ [Supabase] signInAnonymously fehlgeschlagen: $e');
       }
     }
   }

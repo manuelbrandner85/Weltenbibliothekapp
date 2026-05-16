@@ -830,6 +830,27 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
         world: WBWorld.neutral,
         title: '${widget.world == 'materie' ? 'Materie' : 'Energie'}-Profil bearbeiten',
       ),
+      // Speichern-FAB — immer sichtbar, auch wenn Tastatur offen ist
+      floatingActionButton: _isLoading
+          ? null
+          : FloatingActionButton.extended(
+              heroTag: 'profile_save_fab',
+              onPressed: _isSaving ? null : _saveProfile,
+              backgroundColor: widget.world == 'materie'
+                  ? const Color(0xFF1E88E5)
+                  : const Color(0xFF7E57C2),
+              foregroundColor: Colors.white,
+              icon: _isSaving
+                  ? const SizedBox(
+                      width: 18, height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    )
+                  : const Icon(Icons.check_rounded),
+              label: Text(
+                _isSaving ? 'Wird gespeichert…' : 'Speichern',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(

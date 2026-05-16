@@ -50,7 +50,7 @@ class _WebLoginScreenState extends State<WebLoginScreen>
       vsync: this,
       duration: const Duration(milliseconds: 300),
     );
-    _passwordHeight = Tween<double>(begin: 0, end: 80).animate(
+    _passwordHeight = Tween<double>(begin: 0, end: 110).animate(
       CurvedAnimation(parent: _passwordAnim, curve: Curves.easeOutCubic),
     );
     _passwordOpacity = Tween<double>(begin: 0, end: 1).animate(
