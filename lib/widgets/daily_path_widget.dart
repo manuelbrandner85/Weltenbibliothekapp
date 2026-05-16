@@ -194,7 +194,7 @@ class _DailyPathWidgetState extends State<DailyPathWidget> {
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 itemCount: p.activities.length,
-                separatorBuilder: (_, _) => const SizedBox(width: 10),
+                separatorBuilder: (_, __) => const SizedBox(width: 10),
                 itemBuilder: (_, i) =>
                     _ActivityCard(activity: p.activities[i], color: _worldColor(p.activities[i].world)),
               ),

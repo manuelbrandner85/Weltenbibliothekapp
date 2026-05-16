@@ -481,10 +481,10 @@ class _ShimmerGridState extends State<_ShimmerGrid>
         childAspectRatio: 0.68,
       ),
       itemCount: 6,
-      itemBuilder: (_, _) {
+      itemBuilder: (_, __) {
         return AnimatedBuilder(
           animation: _c,
-          builder: (_, _) {
+          builder: (_, __) {
             return Container(
               decoration: BoxDecoration(
                 color: const Color(0xFF3A2410).withValues(alpha: 0.4 + _c.value * 0.25),
