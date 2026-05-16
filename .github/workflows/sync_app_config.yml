@@ -99,7 +99,6 @@ jobs:
       - name: 📢 UPSERT Supabase app_config
         if: steps.release_check.outputs.exists == 'true'
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           VERSION: ${{ steps.read.outputs.version }}
           MIN_VERSION: ${{ steps.read.outputs.min_version }}
@@ -110,6 +109,20 @@ jobs:
             echo "❌ SUPABASE_SERVICE_ROLE_KEY Repo-Secret fehlt"
             exit 1
           fi
+
+          # Supabase URL aus Service Role Key JWT dekodieren (unabhängig von SUPABASE_URL Secret)
+          # Der JWT-Payload enthält das Feld "ref" mit der Projekt-ID
+          _PAYLOAD=$(echo "${SUPABASE_SERVICE_ROLE_KEY}" | cut -d'.' -f2)
+          _PAD=$(( (4 - ${#_PAYLOAD} % 4) % 4 ))
+          _PADDED="${_PAYLOAD}$(printf '=%.0s' $(seq 1 $_PAD) 2>/dev/null || true)"
+          SUPABASE_URL=$(echo "${_PADDED}" | base64 -d 2>/dev/null \
+            | python3 -c "import sys,json; d=json.load(sys.stdin); print('https://'+d['ref']+'.supabase.co')" 2>/dev/null || echo "")
+
+          if [ -z "${SUPABASE_URL}" ]; then
+            echo "❌ Konnte Supabase-URL nicht aus Service Role Key ableiten"
+            exit 1
+          fi
+          echo "📌 Supabase: ${SUPABASE_URL}"
 
           APK_URL="https://github.com/manuelbrandner85/Weltenbibliothekapp/releases/download/v${VERSION}/weltenbibliothek-v${VERSION}-universal.apk"
           NOTES_URL="https://github.com/manuelbrandner85/Weltenbibliothekapp/releases/tag/v${VERSION}"
