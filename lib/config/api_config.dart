@@ -38,19 +38,11 @@ class ApiConfig {
   // 🟢 SUPABASE (Auth, Datenbank, Realtime, Storage)
   // ──────────────────────────────────────────────────────────────
 
-  static const String supabaseUrl = String.fromEnvironment(
-    'SUPABASE_URL',
-    defaultValue: 'https://adtviduaftdquvfjpojb.supabase.co',
-  );
+  // Werte kommen IMMER aus --dart-define (CI: GitHub Secrets SUPABASE_URL / SUPABASE_ANON_KEY).
+  // Kein Hardcode – falsches Projekt wird so strukturell unmöglich.
+  static const String supabaseUrl = String.fromEnvironment('SUPABASE_URL');
 
-  /// Anon Key ist öffentlich – darf im Client sein.
-  /// Wird durch Row Level Security (RLS) auf Server-Seite abgesichert.
-  static const String supabaseAnonKey = String.fromEnvironment(
-    'SUPABASE_ANON_KEY',
-    // Anon Key ist public, darf hier als Fallback stehen
-    defaultValue:
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkdHZpZHVhZnRkcXV2Zmpwb2piIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxMzY3OTcsImV4cCI6MjA5MDcxMjc5N30.LPtmnjukb6o2CA16RDjoStqYb_1bipNULD4tgOfuD98',
-  );
+  static const String supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
 
   // Service Role Key: NIEMALS im Client – nur als Wrangler Secret auf dem Server!
   // static const String supabaseServiceRoleKey = '...'; // ← VERBOTEN

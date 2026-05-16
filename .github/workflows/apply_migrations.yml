@@ -18,7 +18,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      PROJECT_REF: adtviduaftdquvfjpojb
+      # PROJECT_REF wird aus SUPABASE_URL abgeleitet – kein Hardcode nötig
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
     steps:
@@ -39,6 +40,14 @@ jobs:
             echo "   Bitte unter Settings → Secrets → Actions als 'SUPABASE_ACCESS_TOKEN' hinterlegen."
             exit 0
           fi
+          if [ -z "${SUPABASE_URL:-}" ]; then
+            echo "⚠️  SUPABASE_URL Secret fehlt — Migration übersprungen"
+            exit 0
+          fi
+
+          # PROJECT_REF aus SUPABASE_URL ableiten (https://<ref>.supabase.co → <ref>)
+          PROJECT_REF=$(echo "${SUPABASE_URL}" | sed 's|https://||' | cut -d'.' -f1)
+          echo "📌 Supabase Projekt: $PROJECT_REF"
 
           MIGRATION_FAILED=0
 
