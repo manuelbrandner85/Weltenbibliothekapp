@@ -364,6 +364,10 @@ jobs:
           run_sql_critical "v72 Chat FK nuclear drop + GRANT-Absicherung (permission denied fix)" \
             supabase/migrations/20260517_v72_chat_fk_nuclear_drop.sql
 
+          # v73: Vorhang Reseed + Schema-Fix (UNIQUE-Constraint + module_code in user_vorhang_progress)
+          run_sql "v73 Vorhang Module Reseed + Schema-Fix (UNIQUE, module_code, 30 Module)" \
+            supabase/migrations/20260517_v73_vorhang_reseed_schema_fix.sql
+
           echo ""
           if [ "$MIGRATION_FAILED" = "1" ]; then
             echo "⚠️  Einige frühe Migrationen schlugen fehl (siehe Warnungen oben)."
