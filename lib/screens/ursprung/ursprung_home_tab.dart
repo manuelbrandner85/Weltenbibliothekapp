@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../services/mentor_service.dart';
 import '../shared/mentor_chat_screen.dart';
+import '../../widgets/daily_path_widget.dart';
 import 'ursprung_modules_screen.dart';
 import 'tools/gateway_room_screen.dart';
 import 'tools/frequency_generator_screen.dart';
@@ -36,6 +37,10 @@ class UrsprungHomeTab extends StatelessWidget {
 
             // ── Mentor: Der Alchemist ──
             _buildMentorButton(context),
+            const SizedBox(height: 28),
+
+            // ── Ambient Tagespfad ──
+            const DailyPathWidget(),
             const SizedBox(height: 28),
 
             // ── 5 Branches ──

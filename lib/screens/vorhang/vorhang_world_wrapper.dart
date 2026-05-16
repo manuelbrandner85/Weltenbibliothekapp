@@ -8,6 +8,7 @@ import '../shared/world_admin_dashboard.dart';
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_glass_app_bar.dart';
 import '../../widgets/cinematic/wb_vignette.dart';
+import '../onboarding/world_onboarding_screen.dart';
 
 /// 🎭 Vorhang-Welt-Wrapper
 /// Admin-Check direkt über Supabase profiles.role (nicht OpenClaw).
@@ -27,6 +28,20 @@ class _VorhangWorldWrapperState extends State<VorhangWorldWrapper> {
     super.initState();
     _checkAdminAndLoad();
     _trackWorldVisit();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeShowOnboarding());
+  }
+
+  Future<void> _maybeShowOnboarding() async {
+    final done = await WorldOnboardingScreen.isCompleted('vorhang');
+    if (done || !mounted) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => WorldOnboardingScreen.vorhang(
+          onComplete: () => Navigator.of(context).pop(),
+        ),
+        fullscreenDialog: true,
+      ),
+    );
   }
 
   Future<void> _checkAdminAndLoad() async {

@@ -7,6 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../config/api_config.dart';
 import '../../services/mentor_service.dart';
 import '../shared/mentor_chat_screen.dart';
+import '../../widgets/daily_path_widget.dart';
 import 'vorhang_lesson_screen.dart';
 import 'vorhang_modules_screen.dart';
 
@@ -176,6 +177,10 @@ class _VorhangHomeTabState extends State<VorhangHomeTab> {
               ),
               const SizedBox(height: 12),
               _buildMentorButton(context),
+              const SizedBox(height: 28),
+
+              // ── Ambient Tagespfad ──
+              const DailyPathWidget(),
               const SizedBox(height: 28),
 
               // ── NEW: Branch Progress horizontal scroll ──

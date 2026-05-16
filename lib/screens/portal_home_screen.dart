@@ -23,7 +23,6 @@ import '../data/hidden_facts.dart';
 import '../data/achievement_data.dart';
 import '../widgets/mini_game.dart';
 import '../services/achievement_service.dart';
-import '../widgets/daily_path_widget.dart';
 
 /// CINEMA-QUALITY Portal mit Nebula-Effekt und Advanced Particle System
 class PortalHomeScreen extends StatefulWidget {
@@ -1087,9 +1086,6 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> with TickerProvider
                   ),
 
                   const Spacer(),
-
-                  // ── Ambient Daily Path (zwischen Portal und Welten-Grid) ──
-                  const DailyPathWidget(),
 
                   // ── World cards (2×2 Quad-Portal Grid) ──
                   Padding(
