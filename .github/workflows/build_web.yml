@@ -103,6 +103,22 @@ jobs:
           echo "::add-mask::${_CF_TOKEN}"
           echo "CF_DEPLOY_TOKEN=${_CF_TOKEN}" >> $GITHUB_ENV
 
+      - name: ☁️ Cloudflare Pages-Projekt anlegen (falls nicht vorhanden)
+        run: |
+          HTTP=$(curl -s -o /tmp/cf_resp.json -w "%{http_code}" \
+            -X POST "https://api.cloudflare.com/client/v4/accounts/3472f5994537c3a30c5caeaff4de21fb/pages/projects" \
+            -H "Authorization: Bearer ${CF_DEPLOY_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d '{"name":"weltenbibliothek-web","production_branch":"main"}')
+          if [ "$HTTP" = "200" ] || [ "$HTTP" = "201" ]; then
+            echo "✅ Pages-Projekt 'weltenbibliothek-web' angelegt"
+          elif [ "$HTTP" = "409" ]; then
+            echo "ℹ️  Projekt existiert bereits — weiter mit Deploy"
+          else
+            echo "⚠️  Projekt-Anlage HTTP $HTTP (möglicherweise fehlende Berechtigung)"
+            cat /tmp/cf_resp.json || true
+          fi
+
       - name: 🚀 Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
         with:
