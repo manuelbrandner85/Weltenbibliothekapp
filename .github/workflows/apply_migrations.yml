@@ -350,6 +350,9 @@ jobs:
           run_sql "v68 Web-Access-Requests (name-only Zugangsmodell, kein Supabase Auth)" \
             supabase/migrations/20260516_v68_web_access_requests.sql
 
+          run_sql "v69 Web-Access v2 (Admin-Rolle für 'Weltenbibliothek' + Tabellen-Cleanup)" \
+            supabase/migrations/20260517_web_access_v2.sql
+
           echo ""
           if [ "$MIGRATION_FAILED" = "1" ]; then
             echo "⚠️  Einige frühe Migrationen schlugen fehl (siehe Warnungen oben)."

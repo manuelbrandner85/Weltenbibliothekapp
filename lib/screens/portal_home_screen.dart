@@ -20,6 +20,8 @@ import '../painters/energy_effects_painter.dart';
 import '../widgets/tutorial_overlay.dart';
 import '../widgets/pwa_install_prompt.dart'; // 📱 PWA INSTALL PROMPT (NEW Phase 3)
 import '../widgets/web_admin_fab.dart'; // 👑 WEB ADMIN FAB
+import '../widgets/web_logout_button.dart'; // 🚪 WEB LOGOUT BUTTON
+import 'package:flutter/foundation.dart' show kIsWeb;
 import '../data/hidden_facts.dart';
 import '../data/achievement_data.dart';
 import '../widgets/mini_game.dart';
@@ -1186,11 +1188,20 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> with TickerProvider
     const PWAInstallPrompt(),
 
     // 👑 WEB ADMIN FAB (nur auf Web für Admins sichtbar)
-    const Positioned(
-      bottom: 24,
-      right: 24,
-      child: WebAdminFab(),
-    ),
+    if (kIsWeb)
+      const Positioned(
+        bottom: 20,
+        right: 20,
+        child: WebAdminFab(),
+      ),
+
+    // 🚪 WEB LOGOUT (nur auf Web sichtbar)
+    if (kIsWeb)
+      const Positioned(
+        top: 40,
+        right: 16,
+        child: WebLogoutButton(),
+      ),
     ],
     );
   }

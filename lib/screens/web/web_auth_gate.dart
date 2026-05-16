@@ -77,7 +77,7 @@ class _WebAuthGateState extends State<WebAuthGate> {
   Widget build(BuildContext context) {
     if (_loggedIn == null) return const _LoadingScreen();
     if (_loggedIn == true) return const PortalHomeScreen();
-    return const WebLoginScreen();
+    return WebLoginScreen(onLoginSuccess: _checkLoginState);
   }
 }
 

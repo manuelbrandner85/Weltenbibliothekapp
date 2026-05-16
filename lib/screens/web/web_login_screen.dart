@@ -9,7 +9,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class WebLoginScreen extends StatefulWidget {
-  const WebLoginScreen({super.key});
+  final VoidCallback? onLoginSuccess;
+  const WebLoginScreen({super.key, this.onLoginSuccess});
 
   @override
   State<WebLoginScreen> createState() => _WebLoginScreenState();
@@ -123,6 +124,7 @@ class _WebLoginScreenState extends State<WebLoginScreen>
 
       if (!mounted) return;
       setState(() => _loading = false);
+      widget.onLoginSuccess?.call();
       return;
     }
 
@@ -167,6 +169,7 @@ class _WebLoginScreenState extends State<WebLoginScreen>
 
         if (!mounted) return;
         setState(() => _loading = false);
+        widget.onLoginSuccess?.call();
       } else if (status == 'pending') {
         setState(() {
           _errorMessage =
