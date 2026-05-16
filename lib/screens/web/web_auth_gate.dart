@@ -1,20 +1,16 @@
-// 🔐 WEB AUTH GATE
-// Zentraler Auth-Zustandsautomat für die Web-Version.
-//
+// 🔐 WEB AUTH GATE v2
+// SharedPreferences-basierter Auth-Check — kein Supabase Auth.
 // Zustände:
-//   1. Kein eingeloggter User        → WebLoginScreen
-//   2. Eingeloggt, noch nicht genehmigt → WebWaitingApprovalScreen
-//   3. Eingeloggt und genehmigt      → PortalHomeScreen
-//
-// Bei erstem Web-Login wird automatisch ein Eintrag in web_user_profiles
-// angelegt (is_approved=false), wenn noch keiner existiert.
+//   null  = Laden (prüft SharedPreferences)
+//   false = Nicht eingeloggt → WebLoginScreen
+//   true  = Eingeloggt → PortalHomeScreen
 
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../portal_home_screen.dart';
 import 'web_login_screen.dart';
-import 'web_waiting_approval_screen.dart';
 
 class WebAuthGate extends StatefulWidget {
   const WebAuthGate({super.key});
@@ -24,115 +20,67 @@ class WebAuthGate extends StatefulWidget {
 }
 
 class _WebAuthGateState extends State<WebAuthGate> {
-  // null = Laden, false = abgelehnt/ausstehend, true = freigegeben
-  bool? _approved;
-  bool _checkingProfile = false;
+  bool? _loggedIn;
 
   @override
   void initState() {
     super.initState();
-    // Initiale Session prüfen
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final session = Supabase.instance.client.auth.currentSession;
-      if (session != null) _checkProfile(session.user);
-    });
-
-    // Auth-State-Änderungen überwachen
-    Supabase.instance.client.auth.onAuthStateChange.listen((data) {
-      if (!mounted) return;
-      final event = data.event;
-      final session = data.session;
-
-      if (event == AuthChangeEvent.signedOut ||
-          event == AuthChangeEvent.userDeleted) {
-        setState(() => _approved = null);
-        return;
-      }
-
-      if (session != null &&
-          (event == AuthChangeEvent.signedIn ||
-              event == AuthChangeEvent.tokenRefreshed)) {
-        _checkProfile(session.user);
-      }
-    });
+    _checkLoginState();
   }
 
-  Future<void> _checkProfile(User user) async {
-    if (_checkingProfile) return;
-    _checkingProfile = true;
+  Future<void> _checkLoginState() async {
+    final prefs = await SharedPreferences.getInstance();
+    final loggedIn = prefs.getBool('web_logged_in') ?? false;
 
+    if (!loggedIn) {
+      if (mounted) setState(() => _loggedIn = false);
+      return;
+    }
+
+    final name = prefs.getString('web_user_name') ?? '';
+    final isAdmin = prefs.getBool('web_is_admin') ?? false;
+
+    // Admin braucht keinen DB-Check
+    if (isAdmin) {
+      if (mounted) setState(() => _loggedIn = true);
+      return;
+    }
+
+    // Regulärer User: prüfen ob noch approved in DB
     try {
-      final supabase = Supabase.instance.client;
+      final existing = await Supabase.instance.client
+          .from('web_access_requests')
+          .select('status')
+          .eq('display_name', name)
+          .maybeSingle()
+          .timeout(const Duration(seconds: 5));
 
-      // Profil in web_user_profiles prüfen / anlegen
-      final existing = await supabase
-          .from('web_user_profiles')
-          .select('is_approved')
-          .eq('user_id', user.id)
-          .maybeSingle();
+      if (!mounted) return;
 
-      if (!mounted) {
-        _checkingProfile = false;
-        return;
-      }
-
-      if (existing == null) {
-        // Erster Login auf Web → Eintrag anlegen
-        await supabase.from('web_user_profiles').insert({
-          'user_id': user.id,
-          'email': user.email ?? '',
-          'is_approved': false,
-          'requested_at': DateTime.now().toIso8601String(),
-        });
-
-        // Admin-Benachrichtigung
-        try {
-          await supabase.from('web_admin_notifications').insert({
-            'user_id': user.id,
-            'email': user.email ?? '',
-            'type': 'access_request',
-            'message': 'Neuer Zugangsantrag von ${user.email}',
-          });
-        } catch (_) {}
-
-        if (mounted) setState(() => _approved = false);
+      final status = existing?['status'] as String? ?? 'pending';
+      if (status == 'approved') {
+        setState(() => _loggedIn = true);
       } else {
-        final approved = existing['is_approved'] as bool? ?? false;
-        if (mounted) setState(() => _approved = approved);
+        // Zugang widerrufen oder abgelehnt → ausloggen
+        await prefs.remove('web_logged_in');
+        await prefs.remove('web_user_name');
+        await prefs.remove('web_is_admin');
+        if (mounted) setState(() => _loggedIn = false);
       }
     } catch (e) {
-      debugPrint('⚠️ [WebAuthGate] Profil-Check fehlgeschlagen: $e');
-      if (mounted) setState(() => _approved = false);
-    } finally {
-      _checkingProfile = false;
+      // Bei Fehler eingeloggt lassen (offline-friendly)
+      if (mounted) setState(() => _loggedIn = true);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final session = Supabase.instance.client.auth.currentSession;
-
-    // Kein User eingeloggt
-    if (session == null) {
-      return const WebLoginScreen();
-    }
-
-    // User eingeloggt, aber Status wird noch geladen
-    if (_approved == null) {
-      return const _LoadingScreen();
-    }
-
-    // Freigegeben → normale App
-    if (_approved == true) {
-      return const PortalHomeScreen();
-    }
-
-    // Warten auf Freigabe
-    return const WebWaitingApprovalScreen();
+    if (_loggedIn == null) return const _LoadingScreen();
+    if (_loggedIn == true) return const PortalHomeScreen();
+    return const WebLoginScreen();
   }
 }
 
-// Lade-Bildschirm während Profil-Check
 class _LoadingScreen extends StatelessWidget {
   const _LoadingScreen();
 

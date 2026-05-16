@@ -19,6 +19,7 @@ import '../utils/portal_enhancements.dart';
 import '../painters/energy_effects_painter.dart';
 import '../widgets/tutorial_overlay.dart';
 import '../widgets/pwa_install_prompt.dart'; // 📱 PWA INSTALL PROMPT (NEW Phase 3)
+import '../widgets/web_admin_fab.dart'; // 👑 WEB ADMIN FAB
 import '../data/hidden_facts.dart';
 import '../data/achievement_data.dart';
 import '../widgets/mini_game.dart';
@@ -1183,6 +1184,13 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> with TickerProvider
       
     // 📱 PWA INSTALL PROMPT (NEW Phase 3)
     const PWAInstallPrompt(),
+
+    // 👑 WEB ADMIN FAB (nur auf Web für Admins sichtbar)
+    const Positioned(
+      bottom: 24,
+      right: 24,
+      child: WebAdminFab(),
+    ),
     ],
     );
   }
