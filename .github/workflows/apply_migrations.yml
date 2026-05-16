@@ -57,17 +57,15 @@ jobs:
           run_sql() {
             local name="$1"
             local file="$2"
-            local query
-            query=$(cat "$file")
-            local body
-            body=$(jq -n --arg q "$query" '{"query":$q}')
+            # Body in temp-Datei schreiben — verhindert "Argument list too long" bei großen SQLs
+            jq -n --rawfile q "$file" '{"query":$q}' > /tmp/body.json
 
             echo "→ $name …"
             HTTP=$(curl -sS -o /tmp/resp.json -w "%{http_code}" \
               -X POST "https://api.supabase.com/v1/projects/${PROJECT_REF}/database/query" \
               -H "Authorization: Bearer ${SUPABASE_ACCESS_TOKEN}" \
               -H "Content-Type: application/json" \
-              -d "$body")
+              --data-binary @/tmp/body.json)
 
             if [ "$HTTP" = "200" ] || [ "$HTTP" = "201" ] || [ "$HTTP" = "204" ]; then
               echo "✅ $name OK (HTTP $HTTP)"
@@ -82,17 +80,14 @@ jobs:
           run_sql_critical() {
             local name="$1"
             local file="$2"
-            local query
-            query=$(cat "$file")
-            local body
-            body=$(jq -n --arg q "$query" '{"query":$q}')
+            jq -n --rawfile q "$file" '{"query":$q}' > /tmp/body.json
 
             echo "→ $name [KRITISCH] …"
             HTTP=$(curl -sS -o /tmp/resp.json -w "%{http_code}" \
               -X POST "https://api.supabase.com/v1/projects/${PROJECT_REF}/database/query" \
               -H "Authorization: Bearer ${SUPABASE_ACCESS_TOKEN}" \
               -H "Content-Type: application/json" \
-              -d "$body")
+              --data-binary @/tmp/body.json)
 
             if [ "$HTTP" = "200" ] || [ "$HTTP" = "201" ] || [ "$HTTP" = "204" ]; then
               echo "✅ $name OK (HTTP $HTTP)"
