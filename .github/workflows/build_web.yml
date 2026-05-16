@@ -89,11 +89,26 @@ jobs:
           ls -lh build/web/index.html build/web/flutter.js build/web/flutter_service_worker.js 2>/dev/null || true
           echo "Build size: $(du -sh build/web/ | cut -f1)"
 
+      - name: 🔑 Cloudflare Deploy-Token setzen
+        run: |
+          # CLOUDFLARE_PAGES_TOKEN hat Vorrang; Fallback auf CLOUDFLARE_API_TOKEN (Worker-Token)
+          _CF_TOKEN="${{ secrets.CLOUDFLARE_PAGES_TOKEN }}"
+          if [ -z "${_CF_TOKEN}" ]; then
+            _CF_TOKEN="${{ secrets.CLOUDFLARE_API_TOKEN }}"
+          fi
+          if [ -z "${_CF_TOKEN}" ]; then
+            echo "❌ Weder CLOUDFLARE_PAGES_TOKEN noch CLOUDFLARE_API_TOKEN gesetzt"
+            exit 1
+          fi
+          echo "::add-mask::${_CF_TOKEN}"
+          echo "CF_DEPLOY_TOKEN=${_CF_TOKEN}" >> $GITHUB_ENV
+
       - name: 🚀 Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
         with:
-          apiToken: ${{ secrets.CLOUDFLARE_PAGES_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          apiToken: ${{ env.CF_DEPLOY_TOKEN }}
+          # Account-ID ist öffentlich (aus CLAUDE.md / wrangler.toml)
+          accountId: 3472f5994537c3a30c5caeaff4de21fb
           command: pages deploy build/web --project-name=weltenbibliothek-web --branch=main
 
       - name: 📦 Upload build artifact
