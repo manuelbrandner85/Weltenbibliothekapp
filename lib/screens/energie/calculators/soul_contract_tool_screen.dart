@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../services/soul_numerology_service.dart';
-import '../../../theme/wb_cinematic_tokens.dart';
-import '../../../widgets/cinematic/wb_glass_app_bar.dart';
-import '../../../widgets/cinematic/wb_vignette.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SoulContractToolScreen – 3 Tabs
@@ -12,10 +9,10 @@ import '../../../widgets/cinematic/wb_vignette.dart';
 //   Tab 2: Zahlen (numerologisches Lexikon mit Kategorie-Filter)
 // ─────────────────────────────────────────────────────────────────────────────
 
-const _kGold = Color(0xFFFFB300);
-const _kDarkBg = Color(0xFF0A0A0F);
-const _kCardBg = Color(0xFF1A1A2E);
-const _kBorder = Color(0xFF2A2A4E);
+const _kGold = Color(0xFFFFD54F);
+const _kGoldDeep = Color(0xFFFFB300);
+const _kLila = Color(0xFF9C27B0);
+const _kDarkBg = Color(0xFF06040F);
 
 final _db = Supabase.instance.client;
 
@@ -28,17 +25,23 @@ class SoulContractToolScreen extends StatefulWidget {
 }
 
 class _SoulContractToolScreenState extends State<SoulContractToolScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late final TabController _tabs;
+  late AnimationController _bgCtrl;
 
   @override
   void initState() {
     super.initState();
     _tabs = TabController(length: 3, vsync: this);
+    _bgCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 8),
+    )..repeat(reverse: true);
   }
 
   @override
   void dispose() {
+    _bgCtrl.dispose();
     _tabs.dispose();
     super.dispose();
   }
@@ -47,9 +50,12 @@ class _SoulContractToolScreenState extends State<SoulContractToolScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF06040F),
-      appBar: WBGlassAppBar(
-        world: WBWorld.energie,
-        title: '📜 Seelenvertrag',
+      appBar: AppBar(
+        backgroundColor: Colors.white.withValues(alpha: 0.05),
+        title: const Text('📜 Seelenvertrag',
+            style: TextStyle(
+                color: Colors.white, fontWeight: FontWeight.bold)),
+        iconTheme: const IconThemeData(color: Colors.white),
         bottom: TabBar(
           controller: _tabs,
           indicatorColor: _kGold,
@@ -62,20 +68,50 @@ class _SoulContractToolScreenState extends State<SoulContractToolScreen>
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabs,
-        children: const [
-          _NewContractTab(),
-          _HistoryTab(),
-          _NumbersGuideTab(),
-        ],
+      body: AnimatedBuilder(
+        animation: _bgCtrl,
+        builder: (context, child) => Stack(
+          children: [
+            Positioned.fill(child: Container(color: const Color(0xFF06040F))),
+            Positioned(
+              top: -80 + _bgCtrl.value * 50,
+              right: -60,
+              child: _CineOrb(
+                  color: _kGold,
+                  size: 280,
+                  opacity: 0.10 + _bgCtrl.value * 0.05),
+            ),
+            Positioned(
+              bottom: -80,
+              left: -60 + _bgCtrl.value * 30,
+              child: _CineOrb(color: _kLila, size: 240, opacity: 0.08),
+            ),
+            Positioned(
+              top: MediaQuery.of(context).size.height * 0.45,
+              left: MediaQuery.of(context).size.width * 0.2,
+              child: _CineOrb(
+                  color: _kGold,
+                  size: 160,
+                  opacity: 0.04 + _bgCtrl.value * 0.03),
+            ),
+            child!,
+          ],
+        ),
+        child: TabBarView(
+          controller: _tabs,
+          children: const [
+            _NewContractTab(),
+            _HistoryTab(),
+            _NumbersGuideTab(),
+          ],
+        ),
       ),
     );
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Tab 0: Neu  (Phase 5.2b füllt diesen Stub)
+// Tab 0: Neu
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _NewContractTab extends StatefulWidget {
@@ -100,7 +136,8 @@ class _NewContractTabState extends State<_NewContractTab> {
     final now = DateTime.now();
     final picked = await showDatePicker(
       context: context,
-      initialDate: _birthDate ?? DateTime(now.year - 30, now.month, now.day),
+      initialDate:
+          _birthDate ?? DateTime(now.year - 30, now.month, now.day),
       firstDate: DateTime(1900),
       lastDate: now,
       builder: (ctx, child) => Theme(
@@ -108,7 +145,7 @@ class _NewContractTabState extends State<_NewContractTab> {
           colorScheme: ColorScheme.dark(
             primary: _kGold,
             onPrimary: Colors.black,
-            surface: _kCardBg,
+            surface: const Color(0xFF0D0A1A),
             onSurface: Colors.white,
           ),
         ),
@@ -151,17 +188,50 @@ class _NewContractTabState extends State<_NewContractTab> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text(
-              '📜 Seelenvertrag erstellen',
-              style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 4),
-            const Text(
-              'Vollständiger Geburtsname + Geburtsdatum → Numerologie des Seelenvertrags.',
-              style: TextStyle(color: Colors.white54, fontSize: 13),
+            // Mystische Header-Karte mit goldener Atmosphäre
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    _kGold.withValues(alpha: 0.12),
+                    _kLila.withValues(alpha: 0.07),
+                    const Color(0xFF06040F),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                    color: _kGold.withValues(alpha: 0.4)),
+                boxShadow: [
+                  BoxShadow(
+                      color: _kGold.withValues(alpha: 0.15),
+                      blurRadius: 20,
+                      spreadRadius: 2),
+                ],
+              ),
+              child: const Row(
+                children: [
+                  Text('📜', style: TextStyle(fontSize: 32)),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Seelenvertrag erstellen',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold)),
+                        SizedBox(height: 4),
+                        Text(
+                            'Vollständiger Geburtsname + Geburtsdatum → Numerologie des Seelenvertrags.',
+                            style: TextStyle(
+                                color: Colors.white54, fontSize: 12)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 24),
             // Name
@@ -179,7 +249,7 @@ class _NewContractTabState extends State<_NewContractTab> {
               },
             ),
             const SizedBox(height: 16),
-            // Birthdate
+            // Birthdate picker – Glassmorphism
             InkWell(
               onTap: _pickBirthDate,
               borderRadius: BorderRadius.circular(12),
@@ -187,9 +257,10 @@ class _NewContractTabState extends State<_NewContractTab> {
                 padding: const EdgeInsets.symmetric(
                     horizontal: 16, vertical: 16),
                 decoration: BoxDecoration(
-                  color: _kCardBg,
+                  color: Colors.white.withValues(alpha: 0.06),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: _kBorder),
+                  border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.2)),
                 ),
                 child: Row(children: [
                   const Icon(Icons.calendar_month, color: _kGold),
@@ -217,7 +288,7 @@ class _NewContractTabState extends State<_NewContractTab> {
                 icon: const Icon(Icons.auto_awesome),
                 label: const Text('Berechnen'),
                 style: ElevatedButton.styleFrom(
-                    backgroundColor: _kGold,
+                    backgroundColor: _kGoldDeep,
                     foregroundColor: Colors.black,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
@@ -234,12 +305,14 @@ class _NewContractTabState extends State<_NewContractTab> {
                   icon: const Icon(Icons.menu_book),
                   label: const Text('Deutung & Speichern'),
                   style: ElevatedButton.styleFrom(
-                      backgroundColor: _kCardBg,
+                      backgroundColor:
+                          Colors.white.withValues(alpha: 0.07),
                       foregroundColor: _kGold,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      padding:
+                          const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
-                          side: const BorderSide(color: _kGold))),
+                          side: const BorderSide(color: _kGoldDeep))),
                 ),
               ),
             ],
@@ -251,7 +324,6 @@ class _NewContractTabState extends State<_NewContractTab> {
 
   Future<List<Map<String, dynamic>>> _loadMeanings(
       SoulNumerologyResult r) async {
-    // Lade genau die relevanten (number, category)-Kombinationen.
     final wanted = <List<dynamic>>[
       [r.lifePath, 'life_path'],
       [r.destiny, 'destiny'],
@@ -261,7 +333,8 @@ class _NewContractTabState extends State<_NewContractTab> {
     ];
     final rows = await _db
         .from('soul_number_meanings')
-        .select('number, category, title, keywords, short_text, deep_text, practice_text');
+        .select(
+            'number, category, title, keywords, short_text, deep_text, practice_text');
     final byKey = <String, Map<String, dynamic>>{
       for (final m in rows)
         '${m['number']}_${m['category']}': Map<String, dynamic>.from(m)
@@ -301,132 +374,155 @@ class _NewContractTabState extends State<_NewContractTab> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: _kCardBg,
+      backgroundColor: Colors.transparent,
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (sheetCtx) => StatefulBuilder(
-        builder: (sheetCtx2, setSheet) => DraggableScrollableSheet(
-          initialChildSize: 0.85,
-          maxChildSize: 0.95,
-          minChildSize: 0.5,
-          expand: false,
-          builder: (_, sc) => FutureBuilder<List<Map<String, dynamic>>>(
-            future: _loadMeanings(r),
-            builder: (_, snap) {
-              if (snap.connectionState != ConnectionState.done) {
-                return const Center(
-                    child: CircularProgressIndicator(color: _kGold));
-              }
-              if (snap.hasError) {
-                return Center(
-                    child: Text('Fehler: ${snap.error}',
-                        style: const TextStyle(color: Colors.white54)));
-              }
-              final meanings = snap.data ?? [];
-              return ListView(
-                controller: sc,
-                padding: const EdgeInsets.all(20),
-                children: [
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                          color: Colors.white24,
-                          borderRadius: BorderRadius.circular(2)),
+        builder: (sheetCtx2, setSheet) => Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF0D0A1A),
+            borderRadius:
+                const BorderRadius.vertical(top: Radius.circular(20)),
+            border: Border.all(
+                color: _kGold.withValues(alpha: 0.3), width: 1),
+          ),
+          child: DraggableScrollableSheet(
+            initialChildSize: 0.85,
+            maxChildSize: 0.95,
+            minChildSize: 0.5,
+            expand: false,
+            builder: (_, sc) =>
+                FutureBuilder<List<Map<String, dynamic>>>(
+              future: _loadMeanings(r),
+              builder: (_, snap) {
+                if (snap.connectionState != ConnectionState.done) {
+                  return const Center(
+                      child: CircularProgressIndicator(color: _kGold));
+                }
+                if (snap.hasError) {
+                  return Center(
+                      child: Text('Fehler: ${snap.error}',
+                          style: const TextStyle(
+                              color: Colors.white54)));
+                }
+                final meanings = snap.data ?? [];
+                return ListView(
+                  controller: sc,
+                  padding: const EdgeInsets.all(20),
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                            color: Colors.white24,
+                            borderRadius: BorderRadius.circular(2)),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  const Text('📜 Deutung deines Seelenvertrags',
-                      style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 16),
-                  ...meanings.map((m) => _MeaningCard(meaning: m)),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: notesCtrl,
-                    enabled: !saving && !saved,
-                    maxLines: 3,
-                    minLines: 2,
-                    style: const TextStyle(
-                        color: Colors.white, fontSize: 13),
-                    decoration: InputDecoration(
-                      hintText: 'Optionale Notiz …',
-                      hintStyle: const TextStyle(
-                          color: Colors.white38, fontSize: 13),
-                      filled: true,
-                      fillColor: _kDarkBg,
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide:
-                              const BorderSide(color: _kBorder)),
-                      enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide:
-                              const BorderSide(color: _kBorder)),
-                      focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide:
-                              const BorderSide(color: _kGold)),
+                    const SizedBox(height: 16),
+                    const Text('📜 Deutung deines Seelenvertrags',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 16),
+                    ...meanings
+                        .map((m) => _MeaningCard(meaning: m)),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: notesCtrl,
+                      enabled: !saving && !saved,
+                      maxLines: 3,
+                      minLines: 2,
+                      style: const TextStyle(
+                          color: Colors.white, fontSize: 13),
+                      decoration: InputDecoration(
+                        hintText: 'Optionale Notiz …',
+                        hintStyle: const TextStyle(
+                            color: Colors.white38, fontSize: 13),
+                        filled: true,
+                        fillColor:
+                            Colors.white.withValues(alpha: 0.06),
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                                color: Colors.white
+                                    .withValues(alpha: 0.2))),
+                        enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(
+                                color: Colors.white
+                                    .withValues(alpha: 0.2))),
+                        focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(
+                                color: _kGold)),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: (saving || saved)
-                          ? null
-                          : () async {
-                              setSheet(() => saving = true);
-                              try {
-                                await _saveContract(r, notesCtrl.text);
-                                if (!sheetCtx2.mounted) return;
-                                setSheet(() {
-                                  saving = false;
-                                  saved = true;
-                                });
-                                ScaffoldMessenger.of(sheetCtx2).showSnackBar(
-                                    const SnackBar(
-                                        content: Text(
-                                            '✅ Seelenvertrag gespeichert')));
-                              } catch (e) {
-                                if (!sheetCtx2.mounted) return;
-                                setSheet(() => saving = false);
-                                ScaffoldMessenger.of(sheetCtx2).showSnackBar(
-                                    SnackBar(
-                                        content: Text('Fehler: $e')));
-                              }
-                            },
-                      icon: saving
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.black))
-                          : Icon(saved ? Icons.check_circle : Icons.save),
-                      label: Text(saving
-                          ? 'Speichern …'
-                          : (saved ? 'Gespeichert' : 'Vertrag speichern')),
-                      style: ElevatedButton.styleFrom(
-                          backgroundColor:
-                              saved ? Colors.green : _kGold,
-                          foregroundColor: Colors.black,
-                          disabledBackgroundColor:
-                              saved ? Colors.green : _kBorder,
-                          disabledForegroundColor: Colors.white70,
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 14),
-                          shape: RoundedRectangleBorder(
-                              borderRadius:
-                                  BorderRadius.circular(12))),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: (saving || saved)
+                            ? null
+                            : () async {
+                                setSheet(() => saving = true);
+                                try {
+                                  await _saveContract(
+                                      r, notesCtrl.text);
+                                  if (!sheetCtx2.mounted) return;
+                                  setSheet(() {
+                                    saving = false;
+                                    saved = true;
+                                  });
+                                  ScaffoldMessenger.of(sheetCtx2)
+                                      .showSnackBar(const SnackBar(
+                                          content: Text(
+                                              '✅ Seelenvertrag gespeichert')));
+                                } catch (e) {
+                                  if (!sheetCtx2.mounted) return;
+                                  setSheet(() => saving = false);
+                                  ScaffoldMessenger.of(sheetCtx2)
+                                      .showSnackBar(SnackBar(
+                                          content:
+                                              Text('Fehler: $e')));
+                                }
+                              },
+                        icon: saving
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.black))
+                            : Icon(saved
+                                ? Icons.check_circle
+                                : Icons.save),
+                        label: Text(saving
+                            ? 'Speichern …'
+                            : (saved
+                                ? 'Gespeichert'
+                                : 'Vertrag speichern')),
+                        style: ElevatedButton.styleFrom(
+                            backgroundColor:
+                                saved ? Colors.green : _kGoldDeep,
+                            foregroundColor: Colors.black,
+                            disabledBackgroundColor: saved
+                                ? Colors.green
+                                : Colors.white
+                                    .withValues(alpha: 0.1),
+                            disabledForegroundColor: Colors.white70,
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 14),
+                            shape: RoundedRectangleBorder(
+                                borderRadius:
+                                    BorderRadius.circular(12))),
+                      ),
                     ),
-                  ),
-                ],
-              );
-            },
+                  ],
+                );
+              },
+            ),
           ),
         ),
       ),
@@ -440,14 +536,16 @@ class _NewContractTabState extends State<_NewContractTab> {
       labelStyle: const TextStyle(color: Colors.white70),
       hintStyle: const TextStyle(color: Colors.white38),
       filled: true,
-      fillColor: _kCardBg,
+      fillColor: Colors.white.withValues(alpha: 0.06),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: _kBorder),
+        borderSide:
+            BorderSide(color: Colors.white.withValues(alpha: 0.2)),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: _kBorder),
+        borderSide:
+            BorderSide(color: Colors.white.withValues(alpha: 0.2)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
@@ -457,7 +555,7 @@ class _NewContractTabState extends State<_NewContractTab> {
   }
 }
 
-// Phase 5.2d füllt dieses Preview komplett aus (mit Meaning-Rows + Save)
+// Result Preview – große goldene Zahlen mit Glow-Effekt
 class _ResultPreview extends StatelessWidget {
   final SoulNumerologyResult result;
   const _ResultPreview({required this.result});
@@ -467,9 +565,22 @@ class _ResultPreview extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-          color: _kCardBg,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: _kGold.withValues(alpha: 0.4))),
+        gradient: LinearGradient(
+          colors: [
+            _kGold.withValues(alpha: 0.12),
+            _kLila.withValues(alpha: 0.06),
+            const Color(0xFF06040F),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _kGold.withValues(alpha: 0.5)),
+        boxShadow: [
+          BoxShadow(
+              color: _kGold.withValues(alpha: 0.15),
+              blurRadius: 16,
+              spreadRadius: 1),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -481,9 +592,11 @@ class _ResultPreview extends StatelessWidget {
           const SizedBox(height: 12),
           _ResultRow(
               label: 'Lebensweg', value: result.lifePath.toString()),
-          _ResultRow(label: 'Ausdruck', value: result.destiny.toString()),
           _ResultRow(
-              label: 'Seelenantrieb', value: result.soulUrge.toString()),
+              label: 'Ausdruck', value: result.destiny.toString()),
+          _ResultRow(
+              label: 'Seelenantrieb',
+              value: result.soulUrge.toString()),
           _ResultRow(
               label: 'Persönlichkeit',
               value: result.personality.toString()),
@@ -499,7 +612,7 @@ class _ResultPreview extends StatelessWidget {
           ],
           const SizedBox(height: 12),
           const Text(
-            'Tippe im nächsten Schritt „Deutung ansehen" für die detaillierten Texte (Phase 5.2c/d).',
+            'Tippe im nächsten Schritt „Deutung ansehen" für die detaillierten Texte.',
             style: TextStyle(color: Colors.white54, fontSize: 11),
           ),
         ],
@@ -524,19 +637,26 @@ class _ResultRow extends StatelessWidget {
                 style: const TextStyle(
                     color: Colors.white70, fontSize: 14)),
           ),
+          // Große goldene Zahl mit Glow-Effekt
           Container(
-            width: 36,
-            height: 36,
+            width: 40,
+            height: 40,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: _kDarkBg,
+              color: Colors.black.withValues(alpha: 0.3),
               shape: BoxShape.circle,
-              border: Border.all(color: _kGold),
+              border: Border.all(color: _kGold, width: 1.5),
+              boxShadow: [
+                BoxShadow(
+                    color: _kGold.withValues(alpha: 0.3),
+                    blurRadius: 8,
+                    spreadRadius: 1),
+              ],
             ),
             child: Text(value,
                 style: const TextStyle(
                     color: _kGold,
-                    fontSize: 15,
+                    fontSize: 16,
                     fontWeight: FontWeight.bold)),
           ),
         ],
@@ -546,7 +666,7 @@ class _ResultRow extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Tab 1: Verlauf (Phase 5.2e füllt diesen Stub)
+// Tab 1: Verlauf
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _HistoryTab extends StatefulWidget {
@@ -604,7 +724,7 @@ class _HistoryTabState extends State<_HistoryTab> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: _kCardBg,
+        backgroundColor: const Color(0xFF0D0A1A),
         title: const Text('Seelenvertrag löschen?',
             style: TextStyle(color: Colors.white)),
         content: const Text(
@@ -617,8 +737,8 @@ class _HistoryTabState extends State<_HistoryTab> {
                   style: TextStyle(color: Colors.white54))),
           TextButton(
               onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Löschen',
-                  style: TextStyle(color: _kGold))),
+              child:
+                  const Text('Löschen', style: TextStyle(color: _kGold))),
         ],
       ),
     );
@@ -690,81 +810,85 @@ class _HistoryTabState extends State<_HistoryTab> {
           final r = _rows[i];
           final karmic = (r['karmic_debts'] as List?) ?? const [];
           final notes = r['notes'] as String?;
-          return Card(
-            color: _kCardBg,
+          return Container(
             margin: const EdgeInsets.only(bottom: 10),
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-                side: BorderSide(color: _kGold.withValues(alpha: 0.3))),
-            child: Padding(
-              padding: const EdgeInsets.all(14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(children: [
-                    const Icon(Icons.auto_stories, color: _kGold),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(r['full_name'] as String? ?? '—',
-                              style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w600)),
-                          const SizedBox(height: 2),
-                          Text(
-                              '★ ${r['birth_date']}  •  ${_formatDate(r['computed_at'] as String)}',
-                              style: const TextStyle(
-                                  color: Colors.white54, fontSize: 11)),
-                        ],
-                      ),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: _kGold.withValues(alpha: 0.3)),
+              boxShadow: [
+                BoxShadow(
+                    color: _kGold.withValues(alpha: 0.05),
+                    blurRadius: 8),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(children: [
+                  const Icon(Icons.auto_stories, color: _kGold),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(r['full_name'] as String? ?? '—',
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600)),
+                        const SizedBox(height: 2),
+                        Text(
+                            '★ ${r['birth_date']}  •  ${_formatDate(r['computed_at'] as String)}',
+                            style: const TextStyle(
+                                color: Colors.white54, fontSize: 11)),
+                      ],
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline,
-                          color: Colors.white38, size: 20),
-                      onPressed: () => _delete(r['id'] as String),
-                    ),
-                  ]),
-                  const SizedBox(height: 10),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 6,
-                    children: [
-                      _NumBadge(
-                          label: 'Lebensweg', value: r['life_path']),
-                      _NumBadge(
-                          label: 'Ausdruck', value: r['destiny']),
-                      _NumBadge(
-                          label: 'Seele', value: r['soul_urge']),
-                      _NumBadge(
-                          label: 'Persönl.', value: r['personality']),
-                      _NumBadge(
-                          label: 'Geburtstag', value: r['birth_day']),
-                    ],
                   ),
-                  if (karmic.isNotEmpty) ...[
-                    const SizedBox(height: 10),
-                    Text('⚖️ Karmische Schulden: ${karmic.join(", ")}',
-                        style: const TextStyle(
-                            color: Colors.orangeAccent, fontSize: 12)),
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline,
+                        color: Colors.white38, size: 20),
+                    onPressed: () => _delete(r['id'] as String),
+                  ),
+                ]),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 6,
+                  children: [
+                    _NumBadge(label: 'Lebensweg', value: r['life_path']),
+                    _NumBadge(label: 'Ausdruck', value: r['destiny']),
+                    _NumBadge(label: 'Seele', value: r['soul_urge']),
+                    _NumBadge(
+                        label: 'Persönl.', value: r['personality']),
+                    _NumBadge(
+                        label: 'Geburtstag', value: r['birth_day']),
                   ],
-                  if (notes != null && notes.isNotEmpty) ...[
-                    const SizedBox(height: 10),
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                          color: _kDarkBg,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: _kBorder)),
-                      child: Text(notes,
-                          style: const TextStyle(
-                              color: Colors.white70, fontSize: 12)),
-                    ),
-                  ],
+                ),
+                if (karmic.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  Text(
+                      '⚖️ Karmische Schulden: ${karmic.join(", ")}',
+                      style: const TextStyle(
+                          color: Colors.orangeAccent, fontSize: 12)),
                 ],
-              ),
+                if (notes != null && notes.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                            color:
+                                Colors.white.withValues(alpha: 0.15))),
+                    child: Text(notes,
+                        style: const TextStyle(
+                            color: Colors.white70, fontSize: 12)),
+                  ),
+                ],
+              ],
             ),
           );
         },
@@ -783,9 +907,14 @@ class _NumBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-          color: _kDarkBg,
+          color: _kGold.withValues(alpha: 0.07),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: _kGold.withValues(alpha: 0.4))),
+          border: Border.all(color: _kGold.withValues(alpha: 0.4)),
+          boxShadow: [
+            BoxShadow(
+                color: _kGold.withValues(alpha: 0.1),
+                blurRadius: 4),
+          ]),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -804,7 +933,7 @@ class _NumBadge extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Tab 2: Zahlen-Guide (Phase 5.2f füllt diesen Stub)
+// Tab 2: Zahlen-Guide
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _NumbersGuideTab extends StatefulWidget {
@@ -878,8 +1007,12 @@ class _NumbersGuideTabState extends State<_NumbersGuideTab> {
                           fontSize: 12)),
                   selected: sel,
                   selectedColor: _kGold,
-                  backgroundColor: _kCardBg,
-                  side: const BorderSide(color: _kBorder),
+                  backgroundColor:
+                      Colors.white.withValues(alpha: 0.06),
+                  side: BorderSide(
+                      color: sel
+                          ? _kGold
+                          : Colors.white.withValues(alpha: 0.2)),
                   onSelected: (_) => setState(() => _category = t.$1),
                 ),
               );
@@ -929,26 +1062,39 @@ class _MeaningCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 14),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-          color: _kDarkBg,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: accent.withValues(alpha: 0.4))),
+        color: Colors.white.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: accent.withValues(alpha: 0.4)),
+        boxShadow: [
+          BoxShadow(
+              color: accent.withValues(alpha: 0.08),
+              blurRadius: 8),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(children: [
+            // Große goldene Zahl mit Glow
             Container(
-              width: 48,
-              height: 48,
+              width: 52,
+              height: 52,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                  color: _kCardBg,
+                  color: Colors.black.withValues(alpha: 0.3),
                   shape: BoxShape.circle,
-                  border: Border.all(color: accent, width: 2)),
+                  border: Border.all(color: accent, width: 2),
+                  boxShadow: [
+                    BoxShadow(
+                        color: accent.withValues(alpha: 0.3),
+                        blurRadius: 10,
+                        spreadRadius: 1),
+                  ]),
               child: Text('$number',
                   style: TextStyle(
                       color: accent,
                       fontWeight: FontWeight.bold,
-                      fontSize: 18)),
+                      fontSize: 20)),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -980,10 +1126,10 @@ class _MeaningCard extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
-                            color: _kCardBg,
+                            color: accent.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(20),
-                            border:
-                                Border.all(color: _kBorder)),
+                            border: Border.all(
+                                color: accent.withValues(alpha: 0.35))),
                         child: Text('$k',
                             style: const TextStyle(
                                 color: Colors.white70, fontSize: 11)),
@@ -1006,7 +1152,7 @@ class _MeaningCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                  color: _kCardBg,
+                  color: Colors.lightGreenAccent.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
                       color: Colors.lightGreenAccent
@@ -1033,4 +1179,28 @@ class _MeaningCard extends StatelessWidget {
       ),
     );
   }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// _CineOrb – ambient background glow orb
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _CineOrb extends StatelessWidget {
+  final Color color;
+  final double size;
+  final double opacity;
+  const _CineOrb(
+      {required this.color, required this.size, required this.opacity});
+  @override
+  Widget build(BuildContext context) => Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: RadialGradient(colors: [
+            color.withValues(alpha: opacity),
+            color.withValues(alpha: 0),
+          ]),
+        ),
+      );
 }

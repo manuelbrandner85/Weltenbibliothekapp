@@ -377,7 +377,7 @@ beim Build-Schritt mitgeben:
   run: |
     flutter build apk --release \
       --dart-define=CLOUDFLARE_WORKER_URL=https://weltenbibliothek-api.brandy13062.workers.dev \
-      --dart-define=SUPABASE_URL=https://adtviduaftdquvfjpojb.supabase.co \
+      --dart-define=SUPABASE_URL=https://zctufcfjsixfgmmwvnmv.supabase.co \
       --dart-define=SUPABASE_ANON_KEY=eyJ... \
       --dart-define=LIVEKIT_URL=$LIVEKIT_URL
 ```

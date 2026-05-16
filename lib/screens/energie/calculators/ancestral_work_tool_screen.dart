@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../../theme/wb_cinematic_tokens.dart';
-import '../../../widgets/cinematic/wb_glass_app_bar.dart';
-import '../../../widgets/cinematic/wb_vignette.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // AncestralWorkToolScreen – 3 Tabs
@@ -12,9 +9,11 @@ import '../../../widgets/cinematic/wb_vignette.dart';
 // ─────────────────────────────────────────────────────────────────────────────
 
 const _kAmber = Color(0xFFD4A24C);
-const _kDarkBg = Color(0xFF0A0A0F);
+const _kDarkBg = Color(0xFF06040F);
 const _kCardBg = Color(0xFF1A1A2E);
 const _kBorder = Color(0xFF2A2A4E);
+const _kPrimary = Color(0xFF8D6E63);
+const _kSecondary = Color(0xFF66BB6A);
 
 final _db = Supabase.instance.client;
 
@@ -27,28 +26,50 @@ class AncestralWorkToolScreen extends StatefulWidget {
 }
 
 class _AncestralWorkToolScreenState extends State<AncestralWorkToolScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late final TabController _tabs;
+  late AnimationController _bgCtrl;
 
   @override
   void initState() {
     super.initState();
     _tabs = TabController(length: 3, vsync: this);
+    _bgCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 8),
+    )..repeat(reverse: true);
   }
 
   @override
   void dispose() {
     _tabs.dispose();
+    _bgCtrl.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF06040F),
-      appBar: WBGlassAppBar(
-        world: WBWorld.energie,
-        title: '🕯️ Ahnenarbeit',
+      backgroundColor: _kDarkBg,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                _kPrimary.withValues(alpha: 0.85),
+                const Color(0xFF06040F),
+              ],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+          ),
+        ),
+        title: const Text('🕯️ Ahnenarbeit',
+            style: TextStyle(
+                color: Colors.white, fontWeight: FontWeight.bold)),
+        iconTheme: const IconThemeData(color: Colors.white),
         bottom: TabBar(
           controller: _tabs,
           indicatorColor: _kAmber,
@@ -61,16 +82,59 @@ class _AncestralWorkToolScreenState extends State<AncestralWorkToolScreen>
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabs,
-        children: const [
-          _AncestorsTab(),
-          _PatternsTab(),
-          _RitualsTab(),
-        ],
+      body: AnimatedBuilder(
+        animation: _bgCtrl,
+        builder: (context, child) => Stack(
+          children: [
+            Positioned.fill(child: Container(color: _kDarkBg)),
+            Positioned(
+              top: -80 + _bgCtrl.value * 50,
+              right: -60,
+              child: _CineOrb(color: _kPrimary, size: 280, opacity: 0.10 + _bgCtrl.value * 0.05),
+            ),
+            Positioned(
+              bottom: -80,
+              left: -60 + _bgCtrl.value * 30,
+              child: _CineOrb(color: _kSecondary, size: 240, opacity: 0.08),
+            ),
+            Positioned(
+              top: MediaQuery.of(context).size.height * 0.45,
+              left: MediaQuery.of(context).size.width * 0.2,
+              child: _CineOrb(color: _kAmber, size: 160, opacity: 0.04 + _bgCtrl.value * 0.03),
+            ),
+            child!,
+          ],
+        ),
+        child: TabBarView(
+          controller: _tabs,
+          children: const [
+            _AncestorsTab(),
+            _PatternsTab(),
+            _RitualsTab(),
+          ],
+        ),
       ),
     );
   }
+}
+
+class _CineOrb extends StatelessWidget {
+  final Color color;
+  final double size;
+  final double opacity;
+  const _CineOrb({required this.color, required this.size, required this.opacity});
+  @override
+  Widget build(BuildContext context) => Container(
+    width: size,
+    height: size,
+    decoration: BoxDecoration(
+      shape: BoxShape.circle,
+      gradient: RadialGradient(colors: [
+        color.withValues(alpha: opacity),
+        color.withValues(alpha: 0),
+      ]),
+    ),
+  );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

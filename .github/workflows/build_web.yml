@@ -42,8 +42,7 @@ jobs:
             --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} \
             --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }} \
             --dart-define=CLOUDFLARE_WORKER_URL=${{ secrets.CLOUDFLARE_WORKER_URL }} \
-            --dart-define=APP_VERSION="web-$(date +%Y%m%d%H%M)" \
-            --pwa-strategy=offline-first
+            --dart-define=APP_VERSION="web-$(date +%Y%m%d%H%M)"
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}

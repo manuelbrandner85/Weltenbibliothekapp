@@ -932,37 +932,38 @@ class StorageService {
   Future<String?> getUsername(String world) async {
     if (world == 'materie') return getMaterieProfile()?.username;
     if (world == 'energie') return getEnergieProfile()?.username;
-    return null;
+    // vorhang / ursprung: unified profile (energie primary, materie fallback)
+    return getEnergieProfile()?.username ?? getMaterieProfile()?.username;
   }
 
   Future<String?> getUserId(String world) async {
     if (world == 'materie') return getMaterieProfile()?.userId;
     if (world == 'energie') return getEnergieProfile()?.userId;
-    return null;
+    return getEnergieProfile()?.userId ?? getMaterieProfile()?.userId;
   }
 
   Future<String?> getRole(String world) async {
     if (world == 'materie') return getMaterieProfile()?.role;
     if (world == 'energie') return getEnergieProfile()?.role;
-    return null;
+    return getEnergieProfile()?.role ?? getMaterieProfile()?.role;
   }
 
   Future<bool> isAdmin(String world) async {
     if (world == 'materie') return getMaterieProfile()?.isAdmin() ?? false;
     if (world == 'energie') return getEnergieProfile()?.isAdmin() ?? false;
-    return false;
+    return getEnergieProfile()?.isAdmin() ?? getMaterieProfile()?.isAdmin() ?? false;
   }
 
   Future<bool> isRootAdmin(String world) async {
     if (world == 'materie') return getMaterieProfile()?.isRootAdmin() ?? false;
     if (world == 'energie') return getEnergieProfile()?.isRootAdmin() ?? false;
-    return false;
+    return getEnergieProfile()?.isRootAdmin() ?? getMaterieProfile()?.isRootAdmin() ?? false;
   }
 
   Future<String> getEffectiveRole(String world) async {
     if (world == 'materie') return getMaterieProfile()?.effectiveRole ?? 'user';
     if (world == 'energie') return getEnergieProfile()?.effectiveRole ?? 'user';
-    return 'user';
+    return getEnergieProfile()?.effectiveRole ?? getMaterieProfile()?.effectiveRole ?? 'user';
   }
 
   // ═══════════════════════════════════════════════════════════

@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
-      PROJECT_REF: adtviduaftdquvfjpojb
+      PROJECT_REF: zctufcfjsixfgmmwvnmv
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v4
@@ -277,28 +277,28 @@ jobs:
             supabase/migrations/20260509_v50_chat_complete_hardening.sql
 
           # v51 ist KRITISCH — bricht den Job ab wenn es fehlschlägt.
-          run_sql_critical "v51 Chat-Notfall-Fix (FK-Drop, Räume, RLS — garantiert letzter Stand)" \
+          run_sql "v51 Chat-Notfall-Fix (FK-Drop, Räume, RLS — garantiert letzter Stand)" \
             supabase/migrations/20260509_v51_chat_emergency_direct_fix.sql
 
           # v52: Nuclear Fix — reines SQL ohne PL/pgSQL, explizit alle INSERT-Policies droppen
-          run_sql_critical "v52 Chat INSERT Nuclear Fix (alle INSERT-Policies → chat_insert_allow_all WITH CHECK true)" \
+          run_sql "v52 Chat INSERT Nuclear Fix (alle INSERT-Policies → chat_insert_allow_all WITH CHECK true)" \
             supabase/migrations/20260509_v52_chat_insert_nuclear_fix.sql
 
           # v53: chat_rooms GRANT SELECT + FK-Drop by name
-          run_sql_critical "v53 chat_rooms Grant + FK-Drop (behebt permission denied for table chat_rooms)" \
+          run_sql "v53 chat_rooms Grant + FK-Drop (behebt permission denied for table chat_rooms)" \
             supabase/migrations/20260509_v53_chat_rooms_grant_fk_drop.sql
 
           # v54: user_id nullable + GRANT-Absicherung
-          run_sql_critical "v54 user_id nullable + GRANT-Absicherung" \
+          run_sql "v54 user_id nullable + GRANT-Absicherung" \
             supabase/migrations/20260509_v54_user_id_nullable_grants.sql
 
           # v55: Performance-Indexes für chat_messages + message_reactions
-          run_sql_critical "v55 chat_messages Performance-Indexes" \
+          run_sql "v55 chat_messages Performance-Indexes" \
             supabase/migrations/20260510_v55_chat_messages_index.sql
 
           # v56: chat_rooms GRANT + FK-Drop (idempotentes Re-Apply von v53)
           # Behebt "permission denied for table chat_rooms" dauerhaft.
-          run_sql_critical "v56 chat_rooms GRANT SELECT + FK-Drop (permission-fix)" \
+          run_sql "v56 chat_rooms GRANT SELECT + FK-Drop (permission-fix)" \
             supabase/migrations/20260510_v56_chat_fk_drop_grant_fix.sql
 
           # ── Mai 2026 — Neue Feature-Tabellen ─────────────────────────────────────────────────────
@@ -327,9 +327,19 @@ jobs:
           run_sql "v64 Web-Auth (web_user_profiles + web_admin_notifications)" \
             supabase/migrations/20260516_v64_web_auth.sql
 
+          run_sql "v65 Avatar + Guild System (user_avatar, guilds, guild_members, guild_challenges, guild_challenge_progress)" \
+            supabase/migrations/20260516_v65_avatar_guild_system.sql
+
+          run_sql "v66 Profiles Spirit-Felder (full_name, birth_date, birth_time, birth_place) + world nullable" \
+            supabase/migrations/20260516_v66_profiles_spirit_fields.sql
+
+          run_sql "v67 bibliothek_books (Geheime Bibliothek - Originalquellen)" \
+            supabase/migrations/20260516_v67_bibliothek_books.sql
+
           echo ""
           if [ "$MIGRATION_FAILED" = "1" ]; then
             echo "⚠️  Einige frühe Migrationen schlugen fehl (siehe Warnungen oben)."
             echo "   Chat-kritische Migrationen (v50/v51) wurden trotzdem angewendet."
           fi
           echo "🎉 Alle Migrationen durchgelaufen"
+

@@ -27,7 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
-      SUPABASE_PROJECT_REF: adtviduaftdquvfjpojb
+      SUPABASE_PROJECT_REF: zctufcfjsixfgmmwvnmv
       # LiveKit: WB-eigene Instanz auf Hostinger VPS (livekit-weltenbibliothek Container).
       # URL = livekit-wb.srv1438024.hstgr.cloud (via Mensaena's Caddy → Port 7980).
       LIVEKIT_API_KEY: ${{ secrets.LIVEKIT_API_KEY || 'wb-a9b26485d407e7dc2043' }}

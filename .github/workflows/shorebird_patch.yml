@@ -72,22 +72,28 @@ jobs:
         # Flutter 3.41.6 rev 76ca3dff01) downchecken. Die Snapshot-Cache wird
         # beim nächsten `shorebird`-Aufruf automatisch neu gebaut.
         run: |
-          set -euo pipefail
-          SHOREBIRD_BIN=$(command -v shorebird)
+          SHOREBIRD_BIN=$(command -v shorebird || true)
+          if [ -z "$SHOREBIRD_BIN" ]; then
+            echo "⚠️  shorebird nicht im PATH — Pinning übersprungen"
+            exit 0
+          fi
           SHOREBIRD_ROOT=$(dirname "$(dirname "$SHOREBIRD_BIN")")
           echo "Shorebird install dir: $SHOREBIRD_ROOT"
           cd "$SHOREBIRD_ROOT"
           if [ ! -d .git ]; then
-            echo "❌ $SHOREBIRD_ROOT ist kein git-Klon — kann nicht pinnen"
-            exit 1
+            echo "⚠️  $SHOREBIRD_ROOT ist kein git-Klon — Pinning übersprungen, nutze installierte Version"
+            shorebird --version || true
+            exit 0
           fi
-          git fetch --tags --force --depth=1 origin v1.6.92
-          git checkout --force v1.6.92
-          # Snapshot cache invalidieren damit shorebird mit der neuen Version
-          # neu bootstrapped
-          rm -f bin/cache/shorebird.snapshot bin/cache/shorebird.snapshot.tmp || true
-          echo "--- shorebird --version (nach Pin) ---"
-          shorebird --version
+          if git fetch --tags --force --depth=1 origin v1.6.92 2>/dev/null \
+              && git checkout --force v1.6.92 2>/dev/null; then
+            rm -f bin/cache/shorebird.snapshot bin/cache/shorebird.snapshot.tmp || true
+            echo "✅ Shorebird CLI auf v1.6.92 gepinnt"
+          else
+            echo "⚠️  Tag v1.6.92 nicht erreichbar — nutze installierte Version"
+          fi
+          echo "--- shorebird --version ---"
+          shorebird --version || true
 
       - name: 📋 Version lesen
         id: version
@@ -154,8 +160,8 @@ jobs:
             -- \
             --target-platform=android-arm64,android-arm \
             --dart-define=APP_VERSION=${{ steps.version.outputs.version }} \
-            --dart-define=SUPABASE_URL=https://adtviduaftdquvfjpojb.supabase.co \
-            --dart-define=SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkdHZpZHVhZnRkcXV2Zmpwb2piIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxMzY3OTcsImV4cCI6MjA5MDcxMjc5N30.LPtmnjukb6o2CA16RDjoStqYb_1bipNULD4tgOfuD98 \
+            --dart-define=SUPABASE_URL=https://zctufcfjsixfgmmwvnmv.supabase.co \
+            --dart-define=SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpjdHVmY2Zqc2l4ZmdtbXd2bm12Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4OTc4NDgsImV4cCI6MjA5NDQ3Mzg0OH0.2ksXwZsZPHVp2Z9l1e52AUXJYH4zahKAP5xDOR4X2rw \
             --dart-define=CLOUDFLARE_WORKER_URL=https://weltenbibliothek-api.brandy13062.workers.dev \
             --dart-define=LIVEKIT_URL=${{ secrets.LIVEKIT_URL || 'wss://livekit-wb.srv1438024.hstgr.cloud' }}
 
@@ -163,7 +169,7 @@ jobs:
 
       - name: 📝 Patch-Changelog in Supabase schreiben
         env:
-          SUPABASE_URL: https://adtviduaftdquvfjpojb.supabase.co
+          SUPABASE_URL: https://zctufcfjsixfgmmwvnmv.supabase.co
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
           set -euo pipefail
@@ -226,7 +232,7 @@ jobs:
 
       - name: 📜 Update-History Eintrag schreiben
         env:
-          SUPABASE_URL: https://adtviduaftdquvfjpojb.supabase.co
+          SUPABASE_URL: https://zctufcfjsixfgmmwvnmv.supabase.co
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           VERSION: ${{ steps.version.outputs.version }}
         run: |

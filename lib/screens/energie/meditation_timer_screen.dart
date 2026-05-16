@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:math' as math;
 import 'dart:async';
-import 'package:sqflite/sqflite.dart';
+import 'package:sqflite/sqflite.dart'
+    if (dart.library.html) '../../stubs/sqflite_stub.dart';
 import 'package:path/path.dart' as p;
 import 'package:intl/intl.dart';
 

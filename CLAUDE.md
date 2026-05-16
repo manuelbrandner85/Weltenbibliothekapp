@@ -277,8 +277,8 @@ Flutter App (Client)
 ### Aktuelle Werte (öffentlich, da Anon-Key)
 
 ```
-SUPABASE_URL      = https://adtviduaftdquvfjpojb.supabase.co
-SUPABASE_ANON_KEY = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkdHZpZHVhZnRkcXV2Zmpwb2piIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxMzY3OTcsImV4cCI6MjA5MDcxMjc5N30.LPtmnjukb6o2CA16RDjoStqYb_1bipNULD4tgOfuD98
+SUPABASE_URL      = https://zctufcfjsixfgmmwvnmv.supabase.co
+SUPABASE_ANON_KEY = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpjdHVmY2Zqc2l4ZmdtbXd2bm12Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4OTc4NDgsImV4cCI6MjA5NDQ3Mzg0OH0.2ksXwZsZPHVp2Z9l1e52AUXJYH4zahKAP5xDOR4X2rw
 CLOUDFLARE_WORKER_URL = https://weltenbibliothek-api.brandy13062.workers.dev
 CLOUDFLARE_ACCOUNT_ID = 3472f5994537c3a30c5caeaff4de21fb
 ```
@@ -288,8 +288,8 @@ CLOUDFLARE_ACCOUNT_ID = 3472f5994537c3a30c5caeaff4de21fb
 ```bash
 flutter build apk --release \
   --dart-define=CLOUDFLARE_WORKER_URL=https://weltenbibliothek-api.brandy13062.workers.dev \
-  --dart-define=SUPABASE_URL=https://adtviduaftdquvfjpojb.supabase.co \
-  --dart-define=SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkdHZpZHVhZnRkcXV2Zmpwb2piIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxMzY3OTcsImV4cCI6MjA5MDcxMjc5N30.LPtmnjukb6o2CA16RDjoStqYb_1bipNULD4tgOfuD98
+  --dart-define=SUPABASE_URL=https://zctufcfjsixfgmmwvnmv.supabase.co \
+  --dart-define=SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpjdHVmY2Zqc2l4ZmdtbXd2bm12Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4OTc4NDgsImV4cCI6MjA5NDQ3Mzg0OH0.2ksXwZsZPHVp2Z9l1e52AUXJYH4zahKAP5xDOR4X2rw
 ```
 
 ---
@@ -384,7 +384,7 @@ tool_network_connections  ← materie/network
 tool_research_documents   ← materie/research
 ```
 
-**SQL ausführen unter**: https://supabase.com/dashboard/project/adtviduaftdquvfjpojb/sql/new
+**SQL ausführen unter**: https://supabase.com/dashboard/project/zctufcfjsixfgmmwvnmv/sql/new
 
 ---
 
@@ -433,9 +433,12 @@ echo "SERVICE_ROLE_KEY" | npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY
 ### Branch-Strategie
 
 ```
-main                   ← Produktions-Branch (stable)
-genspark_ai_developer  ← Dein Arbeits-Branch (IMMER dieser!)
+main  ← Produktions-Branch — IMMER DIREKT AUF MAIN PUSHEN
 ```
+
+> **STANDING RULE (verbindlich):** Alle Änderungen gehen DIREKT auf `main`.
+> Kein Feature-Branch, kein PR-Workflow, kein `genspark_ai_developer`.
+> Shorebird-Patch feuert automatisch nach jedem main-Push.
 
 ### Workflow nach JEDER Änderung
 
@@ -444,17 +447,8 @@ genspark_ai_developer  ← Dein Arbeits-Branch (IMMER dieser!)
 git add -A
 git commit -m "type(scope): beschreibung"
 
-# 2. Mit Remote synchronisieren
-git fetch origin main
-git rebase origin/main
-
-# 3. Pushen
-git push origin genspark_ai_developer
-
-# 4. PR aktualisieren (PR #1 existiert bereits)
-gh pr edit 1 --body "Neue Beschreibung..."
-# oder neuen PR erstellen wenn #1 gemerged:
-gh pr create --base main --head genspark_ai_developer --title "..." --body "..."
+# 2. Direkt auf main pushen
+git push origin main
 ```
 
 ### Commit-Konventionen
@@ -1128,25 +1122,17 @@ const user_id = isUUID ? rawUserId : null;
 cd /home/user/webapp/Weltenbibliothekapp
 
 # 2. Auf AI-Developer-Branch sicherstellen
-git checkout genspark_ai_developer
+git pull origin main
 
-# 3. Letzten Stand holen
-git pull origin genspark_ai_developer
+# 3. Flutter-Analyse (0 Errors = OK)
+export PATH="$PATH:/tmp/flutter/bin"
+flutter analyze --no-pub 2>&1 | grep "error •" | head -20
 
-# 4. Flutter-Analyse (0 Errors = OK)
-export PATH="$PATH:/home/user/flutter/bin"
-flutter analyze 2>&1 | grep "^  error" | head -20
+# 4. Änderungen vornehmen...
 
-# 5. Änderungen vornehmen...
-
-# 6. Committen & pushen
+# 5. Committen & direkt auf main pushen
 git add -A && git commit -m "fix/feat: beschreibung"
-git fetch origin main && git rebase origin/main
-git push origin genspark_ai_developer
-
-# 7. PR aktualisieren
-gh pr list --head genspark_ai_developer
-gh pr edit <NR> --body "Neue Beschreibung"
+git push origin main
 ```
 
 ---
@@ -1238,7 +1224,7 @@ gh pr edit <NR> --body "Neue Beschreibung"
    ```
 
 7. **`SUPABASE_ANON_KEY` ist ein echter JWT mit Payload
-   `{"iss":"supabase","ref":"adtviduaftdquvfjpojb","role":"anon",...}`.**
+   `{"iss":"supabase","ref":"zctufcfjsixfgmmwvnmv","role":"anon",...}`.**
    Nicht kürzen, nicht "verkürzen", nicht durch Platzhalter ersetzen — sonst bootet die App
    nicht mehr gegen Supabase.
 

@@ -102,7 +102,7 @@ class _DestinyCardScreenState extends State<DestinyCardScreen>
   Widget _buildMainCard() {
     return Center(
       child: AnimatedBuilder(
-        listenable: _flipAnim,
+        animation: _flipAnim,
         builder: (ctx, child) {
           final angle = _flipAnim.value * pi;
           final isBack = angle < pi / 2;
@@ -510,22 +510,6 @@ class _DestinyCardScreenState extends State<DestinyCardScreen>
       if (mounted) setState(() => _isDrawing = false);
     }
   }
-}
-
-/// AnimatedBuilder for the flip animation.
-class AnimatedBuilder extends AnimatedWidget {
-  final Widget Function(BuildContext context, Widget? child) builder;
-  final Widget? child;
-
-  const AnimatedBuilder({
-    super.key,
-    required super.listenable,
-    required this.builder,
-    this.child,
-  });
-
-  @override
-  Widget build(BuildContext context) => builder(context, child);
 }
 
 /// Custom painter for the card back pattern.

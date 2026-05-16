@@ -10,7 +10,7 @@
 /// VERWENDUNG (Build-Befehl):
 ///   flutter build apk \
 ///     --dart-define=CLOUDFLARE_WORKER_URL=https://weltenbibliothek-api.brandy13062.workers.dev \
-///     --dart-define=SUPABASE_URL=https://adtviduaftdquvfjpojb.supabase.co \
+///     --dart-define=SUPABASE_URL=https://zctufcfjsixfgmmwvnmv.supabase.co \
 ///     --dart-define=SUPABASE_ANON_KEY=eyJ...
 library;
 
@@ -40,7 +40,7 @@ class ApiConfig {
 
   static const String supabaseUrl = String.fromEnvironment(
     'SUPABASE_URL',
-    defaultValue: 'https://adtviduaftdquvfjpojb.supabase.co',
+    defaultValue: 'https://zctufcfjsixfgmmwvnmv.supabase.co',
   );
 
   /// Anon Key ist öffentlich – darf im Client sein.
@@ -49,7 +49,7 @@ class ApiConfig {
     'SUPABASE_ANON_KEY',
     // Anon Key ist public, darf hier als Fallback stehen
     defaultValue:
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkdHZpZHVhZnRkcXV2Zmpwb2piIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxMzY3OTcsImV4cCI6MjA5MDcxMjc5N30.LPtmnjukb6o2CA16RDjoStqYb_1bipNULD4tgOfuD98',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpjdHVmY2Zqc2l4ZmdtbXd2bm12Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4OTc4NDgsImV4cCI6MjA5NDQ3Mzg0OH0.2ksXwZsZPHVp2Z9l1e52AUXJYH4zahKAP5xDOR4X2rw',
   );
 
   // Service Role Key: NIEMALS im Client – nur als Wrangler Secret auf dem Server!

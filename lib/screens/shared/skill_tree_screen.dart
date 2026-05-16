@@ -280,7 +280,7 @@ class _SkillTreeScreenState extends State<SkillTreeScreen>
               ? () => _onSkillTap(def, isUnlocked)
               : null,
           child: AnimatedBuilder(
-            listenable: _pulseAnim,
+            animation: _pulseAnim,
             builder: (ctx, child) {
               final glowAlpha = canUnlock && !isUnlocked
                   ? _pulseAnim.value * 0.3
@@ -528,21 +528,3 @@ class _SkillTreeScreenState extends State<SkillTreeScreen>
   }
 }
 
-/// AnimatedBuilder alias for consistency with existing codebase patterns.
-/// Provides animation-driven rebuilds using the Listenable pattern.
-class AnimatedBuilder extends AnimatedWidget {
-  final Widget Function(BuildContext context, Widget? child) builder;
-  final Widget? child;
-
-  const AnimatedBuilder({
-    super.key,
-    required super.listenable,
-    required this.builder,
-    this.child,
-  });
-
-  Animation<double> get animation => listenable as Animation<double>;
-
-  @override
-  Widget build(BuildContext context) => builder(context, child);
-}
