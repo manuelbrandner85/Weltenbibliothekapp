@@ -347,6 +347,9 @@ jobs:
           run_sql "v67 Bibliothek Books (bibliothek_books, user_book_progress, book_reviews)" \
             supabase/migrations/20260516_v67_bibliothek_books.sql
 
+          run_sql "v68 Web-Access-Requests (name-only Zugangsmodell, kein Supabase Auth)" \
+            supabase/migrations/20260516_v68_web_access_requests.sql
+
           echo ""
           if [ "$MIGRATION_FAILED" = "1" ]; then
             echo "⚠️  Einige frühe Migrationen schlugen fehl (siehe Warnungen oben)."
