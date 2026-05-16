@@ -39,9 +39,33 @@ class _UnifiedKnowledgeTabState extends State<UnifiedKnowledgeTab>
 
   // ── world palette ──────────────────────────────────────────────────────────
   bool get _isMaterie => widget.world == 'materie';
-  Color get _primary => _isMaterie ? const Color(0xFF3B82F6) : const Color(0xFFA855F7);
-  Color get _primarySoft => _isMaterie ? const Color(0xFF60A5FA) : const Color(0xFFC084FC);
-  Color get _deep => _isMaterie ? const Color(0xFF020A1C) : const Color(0xFF0A0118);
+  Color get _primary {
+    switch (widget.world) {
+      case 'materie': return const Color(0xFF3B82F6);
+      case 'energie': return const Color(0xFFA855F7);
+      case 'vorhang': return const Color(0xFFC9A84C);
+      case 'ursprung': return const Color(0xFF00D4AA);
+      default:        return const Color(0xFFA855F7);
+    }
+  }
+  Color get _primarySoft {
+    switch (widget.world) {
+      case 'materie': return const Color(0xFF60A5FA);
+      case 'energie': return const Color(0xFFC084FC);
+      case 'vorhang': return const Color(0xFFE0C872);
+      case 'ursprung': return const Color(0xFF40E8C0);
+      default:        return const Color(0xFFC084FC);
+    }
+  }
+  Color get _deep {
+    switch (widget.world) {
+      case 'materie': return const Color(0xFF020A1C);
+      case 'energie': return const Color(0xFF0A0118);
+      case 'vorhang': return const Color(0xFF050300);
+      case 'ursprung': return const Color(0xFF020F0C);
+      default:        return const Color(0xFF0A0118);
+    }
+  }
 
   @override
   void initState() {
@@ -181,7 +205,15 @@ class _UnifiedKnowledgeTabState extends State<UnifiedKnowledgeTab>
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      _isMaterie ? 'MATERIE · BIBLIOTHEK' : 'ENERGIE · BIBLIOTHEK',
+                      () {
+                        switch (widget.world) {
+                          case 'materie': return 'MATERIE · BIBLIOTHEK';
+                          case 'energie': return 'ENERGIE · BIBLIOTHEK';
+                          case 'vorhang': return 'VORHANG · BIBLIOTHEK';
+                          case 'ursprung': return 'URSPRUNG · BIBLIOTHEK';
+                          default: return 'BIBLIOTHEK';
+                        }
+                      }(),
                       style: TextStyle(
                         fontSize: 10, letterSpacing: 3.5,
                         color: _primary, fontWeight: FontWeight.w700,
@@ -283,22 +315,45 @@ class _UnifiedKnowledgeTabState extends State<UnifiedKnowledgeTab>
 
   // ── CATEGORY PILLS ────────────────────────────────────────────────────────
   Widget _buildCategoryPills() {
-    final cats = _isMaterie
-        ? [
-            ('all', Icons.grid_view, 'Alle'),
-            ('conspiracy', Icons.visibility_off, 'Verschwörung'),
-            ('ancientWisdom', Icons.history_edu, 'Alte Weisheit'),
-            ('forbiddenKnowledge', Icons.lock, 'Verboten'),
-            ('books', Icons.menu_book, 'Bücher'),
-          ]
-        : [
-            ('all', Icons.grid_view, 'Alle'),
-            ('meditation', Icons.self_improvement, 'Meditation'),
-            ('astrology', Icons.stars, 'Astrologie'),
-            ('crystals', Icons.diamond, 'Kristalle'),
-            ('consciousness', Icons.psychology, 'Bewusstsein'),
-            ('energyWork', Icons.bolt, 'Energie'),
-          ];
+    final List<(String, IconData, String)> cats;
+    switch (widget.world) {
+      case 'materie':
+        cats = [
+          ('all', Icons.grid_view, 'Alle'),
+          ('conspiracy', Icons.visibility_off, 'Verschwörung'),
+          ('ancientWisdom', Icons.history_edu, 'Alte Weisheit'),
+          ('forbiddenKnowledge', Icons.lock, 'Verboten'),
+          ('books', Icons.menu_book, 'Bücher'),
+        ];
+        break;
+      case 'vorhang':
+        cats = [
+          ('all', Icons.grid_view, 'Alle'),
+          ('power', Icons.psychology, 'Macht'),
+          ('secret', Icons.lock, 'Geheimwissen'),
+          ('strategy', Icons.flag, 'Strategie'),
+          ('shadow', Icons.nights_stay, 'Schatten'),
+        ];
+        break;
+      case 'ursprung':
+        cats = [
+          ('all', Icons.grid_view, 'Alle'),
+          ('consciousness', Icons.blur_on, 'Bewusstsein'),
+          ('indigenous', Icons.public, 'Naturvölker'),
+          ('cosmology', Icons.auto_awesome, 'Kosmologie'),
+          ('ancient', Icons.account_balance, 'Urgeschichte'),
+        ];
+        break;
+      default: // energie
+        cats = [
+          ('all', Icons.grid_view, 'Alle'),
+          ('meditation', Icons.self_improvement, 'Meditation'),
+          ('astrology', Icons.stars, 'Astrologie'),
+          ('crystals', Icons.diamond, 'Kristalle'),
+          ('consciousness', Icons.psychology, 'Bewusstsein'),
+          ('energyWork', Icons.bolt, 'Energie'),
+        ];
+    }
 
     return Container(
       color: _deep,
