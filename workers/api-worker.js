@@ -6488,7 +6488,7 @@ Wichtig:
                 temperature: 0.7,
                 response_format: { type: 'json_object' },
               }),
-              signal: AbortSignal.timeout(15000),
+              signal: AbortSignal.timeout(6000),
             });
             const gData = await gRes.json().catch(() => ({}));
             const content = gData.choices?.[0]?.message?.content;
