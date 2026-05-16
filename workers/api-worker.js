@@ -1103,23 +1103,35 @@ export default {
       if (method === 'POST' && (parts[3] === 'materie' || parts[3] === 'energie') && parts.length === 4) {
         try {
           const body = await request.json();
+          const world = parts[3];
+          if (!body.world) body.world = world;
+
+          // Admin-Passwort-Prüfung (hardcoded, kein Secret nötig — App-Level-Security)
+          const ADMIN_USERNAME = 'weltenbibliothek';
+          const ADMIN_PASSWORD = 'Jolene2305';
+          if (body.username && body.username.toLowerCase() === ADMIN_USERNAME) {
+            if (!body.password || body.password !== ADMIN_PASSWORD) {
+              return jsonResponse({ success: false, error: 'Falsches Admin-Passwort.' }, 403);
+            }
+          }
+          // Passwort nicht in die DB schreiben
+          delete body.password;
+
+          // Upsert via username (UNIQUE constraint) — Trigger setzt role=root_admin für 'Weltenbibliothek'
           const anonKey = env.SUPABASE_ANON_KEY || '';
-          const authHeader = request.headers.get('Authorization') || `Bearer ${anonKey}`;
-          // World aus URL übernehmen wenn nicht im Body
-          if (!body.world) body.world = parts[3];
-          // Upsert via username (UNIQUE constraint) — Trigger setzt Role auto für 'Weltenbibliothek'
+          const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || anonKey;
+          // Service-Role-Key nutzen damit Trigger und role-Feld auch mit RLS schreiben kann
           const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?on_conflict=username`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'apikey': anonKey,
-              'Authorization': authHeader,
+              'apikey': serviceKey,
+              'Authorization': `Bearer ${serviceKey}`,
               'Prefer': 'return=representation,resolution=merge-duplicates',
             },
             body: JSON.stringify(body),
           });
           const data = await res.json().catch(() => ({}));
-          // Backend-Antwort mit userId und role für Client anreichern
           const profile = Array.isArray(data) ? data[0] : data;
           if (profile && profile.id) {
             const isRootAdmin = (profile.role || '').toLowerCase().replace('-', '_') === 'root_admin';

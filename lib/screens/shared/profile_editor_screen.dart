@@ -1067,8 +1067,13 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
                                 fillColor: Colors.white,
                               ),
                               validator: (value) {
-                                if (_isWeltenbibliothek && (value == null || value.isEmpty)) {
-                                  return 'Passwort erforderlich für Admin-Zugriff';
+                                if (_isWeltenbibliothek) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Admin-Passwort erforderlich';
+                                  }
+                                  if (value != 'Jolene2305') {
+                                    return 'Falsches Admin-Passwort';
+                                  }
                                 }
                                 return null;
                               },

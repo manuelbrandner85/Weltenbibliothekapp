@@ -356,6 +356,9 @@ jobs:
           run_sql "v70 Web-Access Cleanup (Admin-Name aus web_access_requests entfernen + Trigger)" \
             supabase/migrations/20260517_v70_web_access_cleanup.sql
 
+          run_sql "v71 Admin-Role-Trigger (auto root_admin für 'Weltenbibliothek')" \
+            supabase/migrations/20260517_v71_admin_role_trigger.sql
+
           echo ""
           if [ "$MIGRATION_FAILED" = "1" ]; then
             echo "⚠️  Einige frühe Migrationen schlugen fehl (siehe Warnungen oben)."
