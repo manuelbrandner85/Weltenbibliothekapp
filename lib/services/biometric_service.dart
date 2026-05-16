@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import 'package:health/health.dart';
+import 'package:health/health.dart'
+    if (dart.library.html) '../stubs/health_stub.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// 💓 BiometricService — Apple HealthKit + Android Health Connect bridge.
