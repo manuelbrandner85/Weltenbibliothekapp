@@ -72,28 +72,22 @@ jobs:
         # Flutter 3.41.6 rev 76ca3dff01) downchecken. Die Snapshot-Cache wird
         # beim nächsten `shorebird`-Aufruf automatisch neu gebaut.
         run: |
-          SHOREBIRD_BIN=$(command -v shorebird || true)
-          if [ -z "$SHOREBIRD_BIN" ]; then
-            echo "⚠️  shorebird nicht im PATH — Pinning übersprungen"
-            exit 0
-          fi
+          set -euo pipefail
+          SHOREBIRD_BIN=$(command -v shorebird)
           SHOREBIRD_ROOT=$(dirname "$(dirname "$SHOREBIRD_BIN")")
           echo "Shorebird install dir: $SHOREBIRD_ROOT"
           cd "$SHOREBIRD_ROOT"
           if [ ! -d .git ]; then
-            echo "⚠️  $SHOREBIRD_ROOT ist kein git-Klon — Pinning übersprungen, nutze installierte Version"
-            shorebird --version || true
-            exit 0
+            echo "❌ $SHOREBIRD_ROOT ist kein git-Klon — kann nicht pinnen"
+            exit 1
           fi
-          if git fetch --tags --force --depth=1 origin v1.6.92 2>/dev/null \
-              && git checkout --force v1.6.92 2>/dev/null; then
-            rm -f bin/cache/shorebird.snapshot bin/cache/shorebird.snapshot.tmp || true
-            echo "✅ Shorebird CLI auf v1.6.92 gepinnt"
-          else
-            echo "⚠️  Tag v1.6.92 nicht erreichbar — nutze installierte Version"
-          fi
-          echo "--- shorebird --version ---"
-          shorebird --version || true
+          git fetch --tags --force --depth=1 origin v1.6.92
+          git checkout --force v1.6.92
+          # Snapshot cache invalidieren damit shorebird mit der neuen Version
+          # neu bootstrapped
+          rm -f bin/cache/shorebird.snapshot bin/cache/shorebird.snapshot.tmp || true
+          echo "--- shorebird --version (nach Pin) ---"
+          shorebird --version
 
       - name: 📋 Version lesen
         id: version
@@ -101,6 +95,49 @@ jobs:
           VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: //' | sed 's/+.*//')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "APP_VERSION = $VERSION"
+
+      - name: 🔑 Supabase-Credentials ableiten (nur aus GitHub Secrets)
+        env:
+          SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          set -euo pipefail
+
+          # SUPABASE_URL aus SUPABASE_PROJECT_ID ableiten (kein SUPABASE_URL-Secret nötig)
+          if [ -n "${SUPABASE_PROJECT_ID:-}" ]; then
+            _URL="https://${SUPABASE_PROJECT_ID}.supabase.co"
+          else
+            # Fallback: aus JWT des Service-Role-Keys dekodieren
+            _PAYLOAD=$(echo "${SUPABASE_SERVICE_ROLE_KEY}" | cut -d'.' -f2)
+            _PAD=$(( (4 - ${#_PAYLOAD} % 4) % 4 ))
+            _PADDED="${_PAYLOAD}$(printf '=%.0s' $(seq 1 $_PAD) 2>/dev/null || true)"
+            _URL=$(echo "${_PADDED}" | base64 -d 2>/dev/null \
+              | python3 -c "import sys,json; d=json.load(sys.stdin); print('https://'+d['ref']+'.supabase.co')" 2>/dev/null || echo "")
+          fi
+          if [ -z "${_URL:-}" ]; then
+            echo "❌ Supabase-URL konnte nicht ermittelt werden — SUPABASE_PROJECT_ID oder SUPABASE_SERVICE_ROLE_KEY prüfen"
+            exit 1
+          fi
+          echo "SUPABASE_URL=${_URL}" >> $GITHUB_ENV
+          echo "📌 SUPABASE_URL=${_URL}"
+
+          # SUPABASE_ANON_KEY über Supabase Management-API holen (kein SUPABASE_ANON_KEY-Secret nötig)
+          _ANON_KEY=""
+          if [ -n "${SUPABASE_ACCESS_TOKEN:-}" ] && [ -n "${SUPABASE_PROJECT_ID:-}" ]; then
+            _ANON_KEY=$(curl -sf \
+              -H "Authorization: Bearer ${SUPABASE_ACCESS_TOKEN}" \
+              "https://api.supabase.com/v1/projects/${SUPABASE_PROJECT_ID}/api-keys" \
+              | python3 -c "import sys,json; keys=json.load(sys.stdin); print(next((k['api_key'] for k in keys if k['name']=='anon'), ''))" \
+              2>/dev/null || echo "")
+          fi
+          if [ -n "${_ANON_KEY:-}" ]; then
+            echo "SUPABASE_ANON_KEY=${_ANON_KEY}" >> $GITHUB_ENV
+            echo "✅ anon key abgerufen"
+          else
+            echo "⚠️  anon key nicht verfügbar — App nutzt eingebettete Konfiguration"
+            echo "SUPABASE_ANON_KEY=" >> $GITHUB_ENV
+          fi
 
       - name: 🔔 google-services.json aus Secret dekodieren (FCM)
         # Patches bauen ebenfalls ein APK (zur Engine-Snapshot-Diff). Damit das
@@ -160,8 +197,8 @@ jobs:
             -- \
             --target-platform=android-arm64,android-arm \
             --dart-define=APP_VERSION=${{ steps.version.outputs.version }} \
-            --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} \
-            --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }} \
+            --dart-define=SUPABASE_URL=$SUPABASE_URL \
+            --dart-define=SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY \
             --dart-define=CLOUDFLARE_WORKER_URL=https://weltenbibliothek-api.brandy13062.workers.dev \
             --dart-define=LIVEKIT_URL=${{ secrets.LIVEKIT_URL || 'wss://livekit-wb.srv1438024.hstgr.cloud' }}
 

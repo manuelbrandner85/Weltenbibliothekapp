@@ -80,6 +80,28 @@ jobs:
           } >> $GITHUB_OUTPUT
           echo "✅ version=$VERSION min_version=$PREV_VERSION"
 
+      - name: 🔑 Supabase-URL ableiten (nur aus GitHub Secrets)
+        env:
+          SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -n "${SUPABASE_PROJECT_ID:-}" ]; then
+            _URL="https://${SUPABASE_PROJECT_ID}.supabase.co"
+          else
+            _PAYLOAD=$(echo "${SUPABASE_SERVICE_ROLE_KEY}" | cut -d'.' -f2)
+            _PAD=$(( (4 - ${#_PAYLOAD} % 4) % 4 ))
+            _PADDED="${_PAYLOAD}$(printf '=%.0s' $(seq 1 $_PAD) 2>/dev/null || true)"
+            _URL=$(echo "${_PADDED}" | base64 -d 2>/dev/null \
+              | python3 -c "import sys,json; d=json.load(sys.stdin); print('https://'+d['ref']+'.supabase.co')" 2>/dev/null || echo "")
+          fi
+          if [ -z "${_URL:-}" ]; then
+            echo "❌ Supabase-URL konnte nicht ermittelt werden"
+            exit 1
+          fi
+          echo "SUPABASE_URL=${_URL}" >> $GITHUB_ENV
+          echo "📌 SUPABASE_URL=${_URL}"
+
       - name: 🔎 GitHub Release prüfen
         id: release_check
         env:
