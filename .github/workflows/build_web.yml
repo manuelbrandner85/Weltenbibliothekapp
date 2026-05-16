@@ -43,7 +43,6 @@ jobs:
             --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }} \
             --dart-define=CLOUDFLARE_WORKER_URL=${{ secrets.CLOUDFLARE_WORKER_URL }} \
             --dart-define=APP_VERSION="web-$(date +%Y%m%d%H%M)" \
-            --web-renderer=canvaskit \
             --pwa-strategy=offline-first
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
