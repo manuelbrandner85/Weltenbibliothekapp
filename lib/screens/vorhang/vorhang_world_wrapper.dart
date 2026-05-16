@@ -110,8 +110,28 @@ class _VorhangWorldWrapperState extends State<VorhangWorldWrapper> {
     }
 
     if (_isAdmin) {
-      if (kDebugMode) debugPrint('👑 VORHANG → Admin Dashboard');
-      return const WorldAdminDashboard(world: 'vorhang');
+      if (kDebugMode) debugPrint('👑 VORHANG → Admin FAB aktiv');
+      return Stack(
+        children: [
+          const VorhangWorldScreen(),
+          Positioned(
+            bottom: 80,
+            right: 16,
+            child: FloatingActionButton.extended(
+              heroTag: 'admin_fab_vorhang',
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const WorldAdminDashboard(world: 'vorhang'),
+                ),
+              ),
+              backgroundColor: const Color(0xFFC9A84C),
+              foregroundColor: Colors.black,
+              icon: const Icon(Icons.admin_panel_settings_rounded),
+              label: const Text('Admin', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+          ),
+        ],
+      );
     }
 
     return const VorhangWorldScreen();

@@ -110,8 +110,28 @@ class _UrsprungWorldWrapperState extends State<UrsprungWorldWrapper> {
     }
 
     if (_isAdmin) {
-      if (kDebugMode) debugPrint('👑 URSPRUNG → Admin Dashboard');
-      return const WorldAdminDashboard(world: 'ursprung');
+      if (kDebugMode) debugPrint('👑 URSPRUNG → Admin FAB aktiv');
+      return Stack(
+        children: [
+          const UrsprungWorldScreen(),
+          Positioned(
+            bottom: 80,
+            right: 16,
+            child: FloatingActionButton.extended(
+              heroTag: 'admin_fab_ursprung',
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const WorldAdminDashboard(world: 'ursprung'),
+                ),
+              ),
+              backgroundColor: const Color(0xFFC9A84C),
+              foregroundColor: Colors.black,
+              icon: const Icon(Icons.admin_panel_settings_rounded),
+              label: const Text('Admin', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+          ),
+        ],
+      );
     }
 
     return const UrsprungWorldScreen();

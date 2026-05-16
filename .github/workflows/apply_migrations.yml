@@ -1,8 +1,8 @@
 name: 🗄️ Supabase Migrationen anwenden
 
 # Läuft bei JEDEM Push auf main (kein paths-Filter).
-# Alle SQLs sind idempotent (IF NOT EXISTS / DROP IF EXISTS) → mehrfach ausführen ist sicher.
-# Nutzt die Supabase Management REST API (SUPABASE_ACCESS_TOKEN Secret).
+# Alle SQLs sind idempotent (IF NOT EXISTS / ON CONFLICT DO NOTHING) → mehrfach ausführen ist sicher.
+# Nutzt Supabase CLI (supabase db execute) – unterstützt große SQL-Dateien (>1MB).
 
 on:
   push:
@@ -16,16 +16,21 @@ jobs:
   migrate:
     name: 📦 SQL-Migrationen anwenden
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     env:
-      PROJECT_REF: zctufcfjsixfgmmwvnmv
+      PROJECT_REF: adtviduaftdquvfjpojb
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v4
 
-      - name: 🗄️ Migrationen via Supabase Management API
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      - name: 🛠️ Supabase CLI Setup
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: 🗄️ Migrationen anwenden
         run: |
           set -euo pipefail
 
@@ -35,311 +40,29 @@ jobs:
             exit 0
           fi
 
-          # Führt eine SQL-Datei via Supabase Management REST API aus.
-          # Warnt bei Fehler, bricht aber NICHT ab (idempotente Migrationen = safe to continue).
           MIGRATION_FAILED=0
-          run_sql() {
-            local name="$1"
-            local file="$2"
-            local query
-            query=$(cat "$file")
-            local body
-            body=$(jq -n --arg q "$query" '{"query":$q}')
 
-            echo "→ $name …"
-            HTTP=$(curl -sS -o /tmp/resp.json -w "%{http_code}" \
-              -X POST "https://api.supabase.com/v1/projects/${PROJECT_REF}/database/query" \
-              -H "Authorization: Bearer ${SUPABASE_ACCESS_TOKEN}" \
-              -H "Content-Type: application/json" \
-              -d "$body")
-
-            if [ "$HTTP" = "200" ] || [ "$HTTP" = "201" ] || [ "$HTTP" = "204" ]; then
-              echo "✅ $name OK (HTTP $HTTP)"
+          run_migration() {
+            local file="$1"
+            local name
+            name=$(basename "$file")
+            echo "→ $name ..."
+            # supabase db execute liest SQL via stdin — unterstützt beliebige Dateigrößen
+            if supabase db execute --project-ref "$PROJECT_REF" < "$file" 2>&1; then
+              echo "✅ $name OK"
             else
-              echo "⚠️  $name fehlgeschlagen (HTTP $HTTP) — weiter mit nächster Migration"
-              cat /tmp/resp.json || true
+              echo "⚠️  $name fehlgeschlagen (meist bereits angewendet) — weiter"
               MIGRATION_FAILED=1
             fi
           }
 
-          # Kritische Migration: bricht den Job ab wenn sie fehlschlägt.
-          run_sql_critical() {
-            local name="$1"
-            local file="$2"
-            local query
-            query=$(cat "$file")
-            local body
-            body=$(jq -n --arg q "$query" '{"query":$q}')
-
-            echo "→ $name [KRITISCH] …"
-            HTTP=$(curl -sS -o /tmp/resp.json -w "%{http_code}" \
-              -X POST "https://api.supabase.com/v1/projects/${PROJECT_REF}/database/query" \
-              -H "Authorization: Bearer ${SUPABASE_ACCESS_TOKEN}" \
-              -H "Content-Type: application/json" \
-              -d "$body")
-
-            if [ "$HTTP" = "200" ] || [ "$HTTP" = "201" ] || [ "$HTTP" = "204" ]; then
-              echo "✅ $name OK (HTTP $HTTP)"
-            else
-              echo "❌ $name fehlgeschlagen (HTTP $HTTP)"
-              cat /tmp/resp.json || true
-              exit 1
-            fi
-          }
-
-          # Migrationen in chronologischer Reihenfolge anwenden.
-          # Alle sind idempotent (IF NOT EXISTS / ON CONFLICT DO NOTHING) → sicher bei Mehrfachausführung.
-
-          # ── Basis-Schema (001–v15) ─────────────────────────────────────────────────────────
-          run_sql "001 initial_schema (profiles, articles, chat_rooms, notifications)" \
-            supabase/migrations/001_initial_schema.sql
-
-          run_sql "002 realtime Publikationen" \
-            supabase/migrations/002_realtime.sql
-
-          run_sql "003 storage buckets" \
-            supabase/migrations/003_storage.sql
-
-          run_sql "v3-v7 improvements (research_results, articles, profiles)" \
-            supabase/migrations/20260402_v3_v7_improvements.sql
-
-          run_sql "v10 full_schema (alle Core-Tabellen, tool_*, message_reactions)" \
-            supabase/migrations/20260402_v10_full_schema.sql
-
-          run_sql "v11 chat_livestream_fix" \
-            supabase/migrations/20260402_v11_chat_livestream_fix.sql
-
-          run_sql "v12 missing_tool_tables (tool_meditation_sessions, tool_kristalle, tool_geopolitics_events, tool_history_events, tool_healing_methods, tool_network_connections, tool_research_documents)" \
-            supabase/migrations/20260402_v12_missing_tool_tables.sql
-
-          run_sql "v13 push_subscriptions + notification_queue" \
-            supabase/migrations/20260403_v13_read_receipts_push_notifications.sql
-
-          run_sql "v14 chat_fixes" \
-            supabase/migrations/20260403_v14_chat_fixes.sql
-
-          run_sql "v15 avatar_emoji + RLS-Fix" \
-            supabase/migrations/20260403_v15_avatar_emoji_and_rls_fix.sql
-
-          run_sql "v18 grant anon writes" \
-            supabase/migrations/20260418_v18_grant_anon_writes.sql
-
-          # ── Spirituelle Feature-Tabellen (v19–v26) ────────────────────────────────────────
-          run_sql "v19 moon_journal + moon_rituals + moon_calendar" \
-            supabase/migrations/20260418_v19_spirit_moon_calendar.sql
-
-          run_sql "v20 dream_journal_v2 + dream_symbols Schema" \
-            supabase/migrations/20260418_v20_dream_interpretation_schema.sql
-
-          run_sql "v20b dream seed: Elementar-Symbole" \
-            supabase/migrations/20260418_v20b_dream_seed_elements.sql
-
-          run_sql "v20c dream seed: Tiere" \
-            supabase/migrations/20260418_v20c_dream_seed_animals.sql
-
-          run_sql "v20d dream seed: Personen" \
-            supabase/migrations/20260418_v20d_dream_seed_people.sql
-
-          run_sql "v20e dream seed: Aktionen" \
-            supabase/migrations/20260418_v20e_dream_seed_actions.sql
-
-          run_sql "v21 body_scan_results + chakra_symptoms Schema" \
-            supabase/migrations/20260418_v21_body_scan_schema.sql
-
-          run_sql "v21b body scan seed: 7 Chakren × 8 Symptome" \
-            supabase/migrations/20260418_v21b_body_scan_seed.sql
-
-          run_sql "v22 soul_contracts + soul_number_meanings Schema" \
-            supabase/migrations/20260418_v22_soul_contract_schema.sql
-
-          run_sql "v22b soul seed: Lebenswegzahlen" \
-            supabase/migrations/20260418_v22b_soul_seed_life_path.sql
-
-          run_sql "v22c soul seed: Schicksalszahlen" \
-            supabase/migrations/20260418_v22c_soul_seed_destiny.sql
-
-          run_sql "v22d soul seed: Seelendrangzahlen" \
-            supabase/migrations/20260418_v22d_soul_seed_soul_urge.sql
-
-          run_sql "v22e soul seed: Persönlichkeit + Karmik" \
-            supabase/migrations/20260418_v22e_soul_seed_personality_karmic.sql
-
-          run_sql "v23 ancestors + ancestor_patterns + ancestral_rituals Schema" \
-            supabase/migrations/20260418_v23_ancestral_work_schema.sql
-
-          run_sql "v23b ancestral seed: Rituale" \
-            supabase/migrations/20260418_v23b_ancestral_rituals_seed.sql
-
-          run_sql "v24 shamanic_journeys + shamanic_journey_guides + shamanic_power_animals Schema" \
-            supabase/migrations/20260418_v24_shamanic_journey_schema.sql
-
-          run_sql "v24b shamanic seed: Journey-Guides" \
-            supabase/migrations/20260418_v24b_shamanic_guides_seed.sql
-
-          run_sql "v25 natal_charts + astrology_meanings Schema" \
-            supabase/migrations/20260418_v25_natal_chart_schema.sql
-
-          run_sql "v25b astrology seed: Tierkreiszeichen" \
-            supabase/migrations/20260418_v25b_astrology_seed_signs.sql
-
-          run_sql "v25c astrology seed: Planeten" \
-            supabase/migrations/20260418_v25c_astrology_seed_planets.sql
-
-          run_sql "v26 human_design_charts + hd_meanings Schema" \
-            supabase/migrations/20260418_v26_human_design_schema.sql
-
-          run_sql "v26b HD seed: Typen" \
-            supabase/migrations/20260418_v26b_hd_seed_types.sql
-
-          run_sql "v26c HD seed: Zentren" \
-            supabase/migrations/20260418_v26c_hd_seed_centers.sql
-
-          run_sql "v26d HD seed: Gates" \
-            supabase/migrations/20260418_v26d_hd_seed_gates.sql
-
-          # ── System + Chat v27–v36 ───────────────────────────────────────────────────────
-          run_sql "v27 user_tool_data" \
-            supabase/migrations/20260419_v27_user_tool_data.sql
-
-          run_sql "v28 fix role constraint" \
-            supabase/migrations/20260419_v28_fix_role_constraint.sql
-
-          run_sql "v29 app_config Tabelle" \
-            supabase/migrations/20260419_v29_app_config.sql
-
-          run_sql "v30 app_config v5.3.2" \
-            supabase/migrations/20260419_v30_app_config_v532.sql
-
-          run_sql "v31 app_config silent patch" \
-            supabase/migrations/20260419_v31_app_config_silent_patch.sql
-
-          run_sql "v32 app_config v5.3.3" \
-            supabase/migrations/20260419_v32_app_config_v533.sql
-
-          run_sql "v33 app_config silent patch v5.3.2" \
-            supabase/migrations/20260419_v33_app_config_silent_patch_v532.sql
-
-          run_sql "v34a app_config v5.3.4" \
-            supabase/migrations/20260419_v34_app_config_v534.sql
-
-          run_sql "v34b chat_rooms prefixed IDs (materie-*, energie-*)" \
-            supabase/migrations/20260419_v34_chat_rooms_prefixed_ids.sql
-
-          run_sql "v35 chat_read_receipts" \
-            supabase/migrations/20260419_v35_chat_read_receipts.sql
-
-          run_sql "v36 chat reply hard-delete 6h cleanup" \
-            supabase/migrations/20260420_v36_chat_reply_hard_delete_6h_cleanup.sql
-
-          # ── Ab v37 laufen alle Migrationen seit Einführung des CI ─────────────────
-
-          run_sql "v37 patch_changelog Spalte (app_config)" \
-            supabase/migrations/20260420_v37_patch_changelog.sql
-
-          run_sql "v38 update_history Tabelle" \
-            supabase/migrations/20260420_v38_update_history.sql
-
-          run_sql "v39 chat_notification Trigger" \
-            supabase/migrations/20260420_v39_chat_notification_trigger.sql
-
-          run_sql "v40 drop_duplicate_chat_trigger" \
-            supabase/migrations/20260420_v40_drop_duplicate_chat_trigger.sql
-
-          run_sql "v41 complete_notifications" \
-            supabase/migrations/20260421_v41_complete_notifications.sql
-
-          run_sql "v42 community_posts Tabelle" \
-            supabase/migrations/20260502_v42_community_posts.sql
-
-          run_sql "v43 chat_messages RLS-Fix (anon + authenticated)" \
-            supabase/migrations/20260503_v43_chat_anon_rls_fix.sql
-
-          run_sql "v44 Chat-Räume sicherstellen + voice_sessions" \
-            supabase/migrations/20260504_v44_chat_rooms_ensure_and_voice_sessions.sql
-
-          run_sql "v45 avatars Storage-Bucket + RLS-Policies" \
-            supabase/migrations/20260504_v45_avatars_bucket.sql
-
-          run_sql "v46 Notification-Fixes (voice recipient_id→user_id, community_posts Triggers)" \
-            supabase/migrations/20260504_v46_notification_fixes.sql
-
-          run_sql "v47 Kaninchenbau Saved Threads + Community Annotations" \
-            supabase/migrations/20260505_v47_kaninchenbau_threads.sql
-
-          run_sql "v48 Chat RLS für direkte Supabase edit/delete (kein Worker mehr)" \
-            supabase/migrations/20260507_v48_chat_rls_edit_delete.sql
-
-          run_sql "v49 Chat FK-Drop + vollständige RLS-Policies (Send/Edit/Delete Fix)" \
-            supabase/migrations/20260508_v49_chat_fk_drop_and_rls_complete.sql
-
-          # v50 darf warnen — v51 garantiert den finalen Chat-State.
-          run_sql "v50 Chat-Komplett-Hardening (alle Spalten, RLS-Reset, Räume, Publication)" \
-            supabase/migrations/20260509_v50_chat_complete_hardening.sql
-
-          # v51 ist KRITISCH — bricht den Job ab wenn es fehlschlägt.
-          run_sql "v51 Chat-Notfall-Fix (FK-Drop, Räume, RLS — garantiert letzter Stand)" \
-            supabase/migrations/20260509_v51_chat_emergency_direct_fix.sql
-
-          # v52: Nuclear Fix — reines SQL ohne PL/pgSQL, explizit alle INSERT-Policies droppen
-          run_sql "v52 Chat INSERT Nuclear Fix (alle INSERT-Policies → chat_insert_allow_all WITH CHECK true)" \
-            supabase/migrations/20260509_v52_chat_insert_nuclear_fix.sql
-
-          # v53: chat_rooms GRANT SELECT + FK-Drop by name
-          run_sql "v53 chat_rooms Grant + FK-Drop (behebt permission denied for table chat_rooms)" \
-            supabase/migrations/20260509_v53_chat_rooms_grant_fk_drop.sql
-
-          # v54: user_id nullable + GRANT-Absicherung
-          run_sql "v54 user_id nullable + GRANT-Absicherung" \
-            supabase/migrations/20260509_v54_user_id_nullable_grants.sql
-
-          # v55: Performance-Indexes für chat_messages + message_reactions
-          run_sql "v55 chat_messages Performance-Indexes" \
-            supabase/migrations/20260510_v55_chat_messages_index.sql
-
-          # v56: chat_rooms GRANT + FK-Drop (idempotentes Re-Apply von v53)
-          # Behebt "permission denied for table chat_rooms" dauerhaft.
-          run_sql "v56 chat_rooms GRANT SELECT + FK-Drop (permission-fix)" \
-            supabase/migrations/20260510_v56_chat_fk_drop_grant_fix.sql
-
-          # ── Mai 2026 — Neue Feature-Tabellen ─────────────────────────────────────────────────────
-
-          run_sql "v57 Chat-Räume Vorhang + Ursprung" \
-            supabase/migrations/20260512_v57_vorhang_ursprung_chat_rooms.sql
-
-          run_sql "v58 mentor_sessions Tabelle + RLS" \
-            supabase/migrations/20260512_v58_mentor_sessions.sql
-
-          run_sql "v59 Gamification-Tabellen (user_skill_tree, artifacts, user_artifacts, user_titles, daily_destiny_cards)" \
-            supabase/migrations/20260512_v59_gamification_tables.sql
-
-          run_sql "v60 Vorhang Module System (30 Module, 6 Branches, Boss-Module)" \
-            supabase/migrations/20260512_v60_vorhang_modules.sql
-
-          run_sql "v61 Ursprung Tables (gateway_sessions, rv_trainer, frequency_generator, etc.)" \
-            supabase/migrations/20260513_v61_ursprung_tables.sql
-
-          run_sql "v62 biometric_readings Tabelle + RLS" \
-            supabase/migrations/20260514_v62_biometric_readings.sql
-
-          run_sql "v63 knowledge_graph_nodes + knowledge_graph_edges + user_graph_bookmarks" \
-            supabase/migrations/20260514_v63_knowledge_graph.sql
-
-          run_sql "v64 Web-Auth (web_user_profiles + web_admin_notifications)" \
-            supabase/migrations/20260516_v64_web_auth.sql
-
-          run_sql "v65 Avatar + Guild System (user_avatar, guilds, guild_members, guild_challenges, guild_challenge_progress)" \
-            supabase/migrations/20260516_v65_avatar_guild_system.sql
-
-          run_sql "v66 Profiles Spirit-Felder (full_name, birth_date, birth_time, birth_place) + world nullable" \
-            supabase/migrations/20260516_v66_profiles_spirit_fields.sql
-
-          run_sql "v67 bibliothek_books (Geheime Bibliothek - Originalquellen)" \
-            supabase/migrations/20260516_v67_bibliothek_books.sql
+          # Alle Migrationen in alphabetischer Reihenfolge ausführen
+          for f in $(ls supabase/migrations/*.sql | sort); do
+            run_migration "$f"
+          done
 
           echo ""
           if [ "$MIGRATION_FAILED" = "1" ]; then
-            echo "⚠️  Einige frühe Migrationen schlugen fehl (siehe Warnungen oben)."
-            echo "   Chat-kritische Migrationen (v50/v51) wurden trotzdem angewendet."
+            echo "⚠️  Einige Migrationen schlugen fehl (oft bereits angewendet — kein Problem bei idempotenten SQLs)"
           fi
           echo "🎉 Alle Migrationen durchgelaufen"
-

@@ -95,8 +95,28 @@ class _EnergieWorldWrapperState extends State<EnergieWorldWrapper> {
     }
 
     if (_isAdmin) {
-      if (kDebugMode) debugPrint('👑 ENERGIE → Admin Dashboard');
-      return const WorldAdminDashboard(world: 'energie');
+      if (kDebugMode) debugPrint('👑 ENERGIE → Admin FAB aktiv');
+      return Stack(
+        children: [
+          const EnergieWorldScreen(),
+          Positioned(
+            bottom: 80,
+            right: 16,
+            child: FloatingActionButton.extended(
+              heroTag: 'admin_fab_energie',
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const WorldAdminDashboard(world: 'energie'),
+                ),
+              ),
+              backgroundColor: const Color(0xFFC9A84C),
+              foregroundColor: Colors.black,
+              icon: const Icon(Icons.admin_panel_settings_rounded),
+              label: const Text('Admin', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+          ),
+        ],
+      );
     }
 
     return const EnergieWorldScreen();

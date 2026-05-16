@@ -99,7 +99,7 @@ jobs:
       - name: 📢 UPSERT Supabase app_config
         if: steps.release_check.outputs.exists == 'true'
         env:
-          SUPABASE_URL: https://zctufcfjsixfgmmwvnmv.supabase.co
+          SUPABASE_URL: https://adtviduaftdquvfjpojb.supabase.co
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           VERSION: ${{ steps.read.outputs.version }}
           MIN_VERSION: ${{ steps.read.outputs.min_version }}
