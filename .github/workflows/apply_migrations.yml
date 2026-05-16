@@ -327,6 +327,9 @@ jobs:
           run_sql "v65 Avatar + Guild System (user_avatar, guilds, guild_members, guild_challenges, guild_challenge_progress)" \
             supabase/migrations/20260516_v65_avatar_guild_system.sql
 
+          run_sql "v66 Profiles Spirit-Felder (full_name, birth_date, birth_time, birth_place) + world nullable" \
+            supabase/migrations/20260516_v66_profiles_spirit_fields.sql
+
           echo ""
           if [ "$MIGRATION_FAILED" = "1" ]; then
             echo "⚠️  Einige frühe Migrationen schlugen fehl (siehe Warnungen oben)."
