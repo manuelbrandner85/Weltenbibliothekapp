@@ -489,8 +489,8 @@ class _OverviewTabState extends State<_OverviewTab> {
             ),
           ]),
           const SizedBox(height: 10),
-          // Web-User-Verwaltung (nur für Root-Admins sichtbar)
-          if (widget.admin.isRootAdmin)
+          // Web-User-Verwaltung (für alle Admins sichtbar)
+          if (widget.admin.isAdmin)
             _QuickActionBtn(
               icon: Icons.manage_accounts_rounded,
               label: 'Web-User verwalten',
