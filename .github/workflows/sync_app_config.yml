@@ -99,7 +99,7 @@ jobs:
       - name: 📢 UPSERT Supabase app_config
         if: steps.release_check.outputs.exists == 'true'
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           VERSION: ${{ steps.read.outputs.version }}
           MIN_VERSION: ${{ steps.read.outputs.min_version }}
@@ -111,6 +111,14 @@ jobs:
             echo "   Settings → Secrets and variables → Actions → New repository secret"
             exit 1
           fi
+          if [ -z "${SUPABASE_PROJECT_ID:-}" ]; then
+            echo "❌ SUPABASE_PROJECT_ID Repo-Secret fehlt"
+            exit 1
+          fi
+
+          # SUPABASE_URL aus SUPABASE_PROJECT_ID bauen
+          SUPABASE_URL="https://${SUPABASE_PROJECT_ID}.supabase.co"
+          echo "📌 Supabase URL: $SUPABASE_URL"
 
           APK_URL="https://github.com/manuelbrandner85/Weltenbibliothekapp/releases/download/v${VERSION}/weltenbibliothek-v${VERSION}-universal.apk"
           NOTES_URL="https://github.com/manuelbrandner85/Weltenbibliothekapp/releases/tag/v${VERSION}"
