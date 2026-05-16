@@ -433,9 +433,12 @@ echo "SERVICE_ROLE_KEY" | npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY
 ### Branch-Strategie
 
 ```
-main                   ← Produktions-Branch (stable)
-genspark_ai_developer  ← Dein Arbeits-Branch (IMMER dieser!)
+main  ← Produktions-Branch — IMMER DIREKT AUF MAIN PUSHEN
 ```
+
+> **STANDING RULE (verbindlich):** Alle Änderungen gehen DIREKT auf `main`.
+> Kein Feature-Branch, kein PR-Workflow, kein `genspark_ai_developer`.
+> Shorebird-Patch feuert automatisch nach jedem main-Push.
 
 ### Workflow nach JEDER Änderung
 
@@ -444,17 +447,8 @@ genspark_ai_developer  ← Dein Arbeits-Branch (IMMER dieser!)
 git add -A
 git commit -m "type(scope): beschreibung"
 
-# 2. Mit Remote synchronisieren
-git fetch origin main
-git rebase origin/main
-
-# 3. Pushen
-git push origin genspark_ai_developer
-
-# 4. PR aktualisieren (PR #1 existiert bereits)
-gh pr edit 1 --body "Neue Beschreibung..."
-# oder neuen PR erstellen wenn #1 gemerged:
-gh pr create --base main --head genspark_ai_developer --title "..." --body "..."
+# 2. Direkt auf main pushen
+git push origin main
 ```
 
 ### Commit-Konventionen
@@ -1128,25 +1122,17 @@ const user_id = isUUID ? rawUserId : null;
 cd /home/user/webapp/Weltenbibliothekapp
 
 # 2. Auf AI-Developer-Branch sicherstellen
-git checkout genspark_ai_developer
+git pull origin main
 
-# 3. Letzten Stand holen
-git pull origin genspark_ai_developer
+# 3. Flutter-Analyse (0 Errors = OK)
+export PATH="$PATH:/tmp/flutter/bin"
+flutter analyze --no-pub 2>&1 | grep "error •" | head -20
 
-# 4. Flutter-Analyse (0 Errors = OK)
-export PATH="$PATH:/home/user/flutter/bin"
-flutter analyze 2>&1 | grep "^  error" | head -20
+# 4. Änderungen vornehmen...
 
-# 5. Änderungen vornehmen...
-
-# 6. Committen & pushen
+# 5. Committen & direkt auf main pushen
 git add -A && git commit -m "fix/feat: beschreibung"
-git fetch origin main && git rebase origin/main
-git push origin genspark_ai_developer
-
-# 7. PR aktualisieren
-gh pr list --head genspark_ai_developer
-gh pr edit <NR> --body "Neue Beschreibung"
+git push origin main
 ```
 
 ---

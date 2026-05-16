@@ -324,6 +324,9 @@ jobs:
           run_sql "v63 knowledge_graph_nodes + knowledge_graph_edges + user_graph_bookmarks" \
             supabase/migrations/20260514_v63_knowledge_graph.sql
 
+          run_sql "v64 Web-Auth (web_user_profiles + web_admin_notifications)" \
+            supabase/migrations/20260516_v64_web_auth.sql
+
           run_sql "v65 Avatar + Guild System (user_avatar, guilds, guild_members, guild_challenges, guild_challenge_progress)" \
             supabase/migrations/20260516_v65_avatar_guild_system.sql
 

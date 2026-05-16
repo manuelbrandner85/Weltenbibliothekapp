@@ -46,7 +46,8 @@ const SUPABASE_URL = 'https://zctufcfjsixfgmmwvnmv.supabase.co';
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization, apikey, Prefer',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, apikey, Prefer, X-Supabase-Auth',
+  'Access-Control-Max-Age': '86400',
   'Content-Type': 'application/json',
 };
 
@@ -6373,6 +6374,7 @@ Antworte in exakt diesem JSON-Format:
         }
       }
 
+
     }
 
     // ── AMBIENT SYSTEM: Kontextbewusster Tagespfad (AUFGABE 9A) ─────────────
@@ -6537,6 +6539,7 @@ Wichtig:
       const bookId = path.split('/').pop();
       const supaPath = `/rest/v1/bibliothek_books?select=*&id=eq.${encodeURIComponent(bookId)}&limit=1`;
       return proxyToSupabase(request, env, supaPath, 'GET');
+
     }
 
     // ── 404 ───────────────────────────────────────────────────
