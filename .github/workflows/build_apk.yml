@@ -242,35 +242,14 @@ jobs:
         # Der APK-Build ist trotzdem fertig (Flutter assembleRelease läuft VOR der
         # Server-Registrierung). Wir fangen Code 70 ab und fahren fort — alle
         # folgenden Schritte (GitHub Release, Supabase, History) laufen dann normal.
-        env:
-          SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
           set +e
-
-          # Supabase URL aus SUPABASE_PROJECT_ID bauen
-          SUPABASE_URL="https://${SUPABASE_PROJECT_ID}.supabase.co"
-
-          # Anon Key aus Supabase Management API holen (kein separates Secret nötig)
-          SUPABASE_ANON_KEY=$(curl -sf \
-            -H "Authorization: Bearer ${SUPABASE_ACCESS_TOKEN}" \
-            "https://api.supabase.com/v1/projects/${SUPABASE_PROJECT_ID}/api-keys" \
-            2>/dev/null | python3 -c "import sys,json; keys=json.load(sys.stdin); print(next(k['api_key'] for k in keys if k['name']=='anon'))" 2>/dev/null || echo "")
-
-          if [ -z "${SUPABASE_ANON_KEY}" ]; then
-            echo "⚠️  Anon Key konnte nicht abgerufen werden — versuche Fallback aus Service Role Key Payload"
-            # Letzter Fallback: Anon Key ist nicht im Service Role Key enthalten,
-            # aber wir können zumindest den Build mit leerem Key fortsetzen (App zeigt Login-Fehler)
-            SUPABASE_ANON_KEY=""
-          fi
-
           shorebird release android \
             --artifact=apk \
             --target-platform=android-arm64,android-arm \
             --dart-define=APP_VERSION=${{ steps.version.outputs.version }} \
-            --dart-define=SUPABASE_URL="${SUPABASE_URL}" \
-            --dart-define=SUPABASE_ANON_KEY="${SUPABASE_ANON_KEY}" \
+            --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} \
+            --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }} \
             --dart-define=CLOUDFLARE_WORKER_URL=https://weltenbibliothek-api.brandy13062.workers.dev \
             --dart-define=LIVEKIT_URL=${{ secrets.LIVEKIT_URL || 'wss://livekit-wb.srv1438024.hstgr.cloud' }}
           EXIT_CODE=$?
@@ -326,7 +305,7 @@ jobs:
         # UPSERT (nicht PATCH): POST mit "Prefer: resolution=merge-duplicates".
         # Erstellt die Zeile automatisch falls sie fehlt (frische DB / erster Release).
         env:
-          SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           VERSION: ${{ steps.version.outputs.version }}
           MIN_VERSION: ${{ needs.check.outputs.prev_version }}
@@ -337,9 +316,6 @@ jobs:
             echo "❌ SUPABASE_SERVICE_ROLE_KEY Secret fehlt — app_config wurde NICHT aktualisiert"
             exit 1
           fi
-
-          SUPABASE_URL="https://${SUPABASE_PROJECT_ID}.supabase.co"
-          echo "📌 Supabase URL: $SUPABASE_URL"
 
           APK_URL="https://github.com/manuelbrandner85/Weltenbibliothekapp/releases/download/v${VERSION}/weltenbibliothek-v${VERSION}-universal.apk"
           NOTES_URL="https://github.com/manuelbrandner85/Weltenbibliothekapp/releases/tag/v${VERSION}"
@@ -372,7 +348,7 @@ jobs:
 
       - name: 📜 Update-History Eintrag schreiben
         env:
-          SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           VERSION: ${{ steps.version.outputs.version }}
           CHANGELOG: ${{ steps.version.outputs.changelog }}
@@ -381,7 +357,6 @@ jobs:
             echo "⚠️  SUPABASE_SERVICE_ROLE_KEY fehlt — kein History-Eintrag"
             exit 0
           fi
-          SUPABASE_URL="https://${SUPABASE_PROJECT_ID}.supabase.co"
           RUN_URL="https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
           BODY=$(jq -n \
             --arg v "$VERSION" \

@@ -37,20 +37,10 @@ jobs:
         run: flutter pub get
 
       - name: 🌐 Flutter Web Build
-        env:
-          SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
         run: |
-          # Supabase URL + Anon Key aus vorhandenen Secrets ableiten
-          SUPABASE_URL="https://${SUPABASE_PROJECT_ID}.supabase.co"
-          SUPABASE_ANON_KEY=$(curl -sf \
-            -H "Authorization: Bearer ${SUPABASE_ACCESS_TOKEN}" \
-            "https://api.supabase.com/v1/projects/${SUPABASE_PROJECT_ID}/api-keys" \
-            2>/dev/null | python3 -c "import sys,json; keys=json.load(sys.stdin); print(next(k['api_key'] for k in keys if k['name']=='anon'))" 2>/dev/null || echo "")
-
           flutter build web --release \
-            --dart-define=SUPABASE_URL="${SUPABASE_URL}" \
-            --dart-define=SUPABASE_ANON_KEY="${SUPABASE_ANON_KEY}" \
+            --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} \
+            --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }} \
             --dart-define=CLOUDFLARE_WORKER_URL=https://weltenbibliothek-api.brandy13062.workers.dev \
             --dart-define=APP_VERSION="web-$(date +%Y%m%d%H%M)"
 
