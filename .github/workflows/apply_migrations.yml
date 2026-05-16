@@ -359,6 +359,11 @@ jobs:
           run_sql "v71 Admin-Role-Trigger (auto root_admin für 'Weltenbibliothek')" \
             supabase/migrations/20260517_v71_admin_role_trigger.sql
 
+          # v72: Chat FK Nuclear Drop — droppt ALLE FKs von chat_messages→chat_rooms
+          # via FOR-Loop (erschöpfend) + GRANT-Absicherung + RLS-Policies
+          run_sql_critical "v72 Chat FK nuclear drop + GRANT-Absicherung (permission denied fix)" \
+            supabase/migrations/20260517_v72_chat_fk_nuclear_drop.sql
+
           echo ""
           if [ "$MIGRATION_FAILED" = "1" ]; then
             echo "⚠️  Einige frühe Migrationen schlugen fehl (siehe Warnungen oben)."
