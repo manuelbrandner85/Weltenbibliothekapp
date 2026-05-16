@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:sqflite/sqflite.dart' show ConflictAlgorithm;
+import 'package:sqflite/sqflite.dart'
+    if (dart.library.html) '../stubs/sqflite_stub.dart' show ConflictAlgorithm;
 import '../core/db/app_database.dart';
 
 /// LOCAL CHAT STORAGE SERVICE (SQLite)

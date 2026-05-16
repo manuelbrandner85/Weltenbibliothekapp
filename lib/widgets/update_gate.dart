@@ -40,6 +40,8 @@ class _UpdateGateState extends State<UpdateGate> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
+    // Auf Web: keine Update-Checks (Shorebird/OTA nur auf Mobile)
+    if (kIsWeb) return;
     WidgetsBinding.instance.addObserver(this);
 
     // Stream-Listener: sobald ein Patch heruntergeladen ist, zeigt der
@@ -63,9 +65,11 @@ class _UpdateGateState extends State<UpdateGate> with WidgetsBindingObserver {
 
   @override
   void dispose() {
-    _periodicTimer?.cancel();
-    _patchSub?.cancel();
-    WidgetsBinding.instance.removeObserver(this);
+    if (!kIsWeb) {
+      _periodicTimer?.cancel();
+      _patchSub?.cancel();
+      WidgetsBinding.instance.removeObserver(this);
+    }
     super.dispose();
   }
 
@@ -132,6 +136,9 @@ class _UpdateGateState extends State<UpdateGate> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
+    // Auf Web: direkt das Kind rendern ohne Update-Overlay
+    if (kIsWeb) return widget.child;
+
     return Stack(
       children: [
         widget.child,

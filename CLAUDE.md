@@ -277,8 +277,8 @@ Flutter App (Client)
 ### Aktuelle Werte (öffentlich, da Anon-Key)
 
 ```
-SUPABASE_URL      = https://adtviduaftdquvfjpojb.supabase.co
-SUPABASE_ANON_KEY = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkdHZpZHVhZnRkcXV2Zmpwb2piIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxMzY3OTcsImV4cCI6MjA5MDcxMjc5N30.LPtmnjukb6o2CA16RDjoStqYb_1bipNULD4tgOfuD98
+SUPABASE_URL      = https://zctufcfjsixfgmmwvnmv.supabase.co
+SUPABASE_ANON_KEY = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpjdHVmY2Zqc2l4ZmdtbXd2bm12Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4OTc4NDgsImV4cCI6MjA5NDQ3Mzg0OH0.2ksXwZsZPHVp2Z9l1e52AUXJYH4zahKAP5xDOR4X2rw
 CLOUDFLARE_WORKER_URL = https://weltenbibliothek-api.brandy13062.workers.dev
 CLOUDFLARE_ACCOUNT_ID = 3472f5994537c3a30c5caeaff4de21fb
 ```
@@ -288,8 +288,8 @@ CLOUDFLARE_ACCOUNT_ID = 3472f5994537c3a30c5caeaff4de21fb
 ```bash
 flutter build apk --release \
   --dart-define=CLOUDFLARE_WORKER_URL=https://weltenbibliothek-api.brandy13062.workers.dev \
-  --dart-define=SUPABASE_URL=https://adtviduaftdquvfjpojb.supabase.co \
-  --dart-define=SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkdHZpZHVhZnRkcXV2Zmpwb2piIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxMzY3OTcsImV4cCI6MjA5MDcxMjc5N30.LPtmnjukb6o2CA16RDjoStqYb_1bipNULD4tgOfuD98
+  --dart-define=SUPABASE_URL=https://zctufcfjsixfgmmwvnmv.supabase.co \
+  --dart-define=SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpjdHVmY2Zqc2l4ZmdtbXd2bm12Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4OTc4NDgsImV4cCI6MjA5NDQ3Mzg0OH0.2ksXwZsZPHVp2Z9l1e52AUXJYH4zahKAP5xDOR4X2rw
 ```
 
 ---
@@ -384,7 +384,7 @@ tool_network_connections  ← materie/network
 tool_research_documents   ← materie/research
 ```
 
-**SQL ausführen unter**: https://supabase.com/dashboard/project/adtviduaftdquvfjpojb/sql/new
+**SQL ausführen unter**: https://supabase.com/dashboard/project/zctufcfjsixfgmmwvnmv/sql/new
 
 ---
 
@@ -433,9 +433,12 @@ echo "SERVICE_ROLE_KEY" | npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY
 ### Branch-Strategie
 
 ```
-main                   ← Produktions-Branch (stable)
-genspark_ai_developer  ← Dein Arbeits-Branch (IMMER dieser!)
+main  ← Produktions-Branch — IMMER DIREKT AUF MAIN PUSHEN
 ```
+
+> **STANDING RULE (verbindlich):** Alle Änderungen gehen DIREKT auf `main`.
+> Kein Feature-Branch, kein PR-Workflow, kein `genspark_ai_developer`.
+> Shorebird-Patch feuert automatisch nach jedem main-Push.
 
 ### Workflow nach JEDER Änderung
 
@@ -444,17 +447,8 @@ genspark_ai_developer  ← Dein Arbeits-Branch (IMMER dieser!)
 git add -A
 git commit -m "type(scope): beschreibung"
 
-# 2. Mit Remote synchronisieren
-git fetch origin main
-git rebase origin/main
-
-# 3. Pushen
-git push origin genspark_ai_developer
-
-# 4. PR aktualisieren (PR #1 existiert bereits)
-gh pr edit 1 --body "Neue Beschreibung..."
-# oder neuen PR erstellen wenn #1 gemerged:
-gh pr create --base main --head genspark_ai_developer --title "..." --body "..."
+# 2. Direkt auf main pushen
+git push origin main
 ```
 
 ### Commit-Konventionen
@@ -1128,25 +1122,17 @@ const user_id = isUUID ? rawUserId : null;
 cd /home/user/webapp/Weltenbibliothekapp
 
 # 2. Auf AI-Developer-Branch sicherstellen
-git checkout genspark_ai_developer
+git pull origin main
 
-# 3. Letzten Stand holen
-git pull origin genspark_ai_developer
+# 3. Flutter-Analyse (0 Errors = OK)
+export PATH="$PATH:/tmp/flutter/bin"
+flutter analyze --no-pub 2>&1 | grep "error •" | head -20
 
-# 4. Flutter-Analyse (0 Errors = OK)
-export PATH="$PATH:/home/user/flutter/bin"
-flutter analyze 2>&1 | grep "^  error" | head -20
+# 4. Änderungen vornehmen...
 
-# 5. Änderungen vornehmen...
-
-# 6. Committen & pushen
+# 5. Committen & direkt auf main pushen
 git add -A && git commit -m "fix/feat: beschreibung"
-git fetch origin main && git rebase origin/main
-git push origin genspark_ai_developer
-
-# 7. PR aktualisieren
-gh pr list --head genspark_ai_developer
-gh pr edit <NR> --body "Neue Beschreibung"
+git push origin main
 ```
 
 ---
@@ -1238,7 +1224,7 @@ gh pr edit <NR> --body "Neue Beschreibung"
    ```
 
 7. **`SUPABASE_ANON_KEY` ist ein echter JWT mit Payload
-   `{"iss":"supabase","ref":"adtviduaftdquvfjpojb","role":"anon",...}`.**
+   `{"iss":"supabase","ref":"zctufcfjsixfgmmwvnmv","role":"anon",...}`.**
    Nicht kürzen, nicht "verkürzen", nicht durch Platzhalter ersetzen — sonst bootet die App
    nicht mehr gegen Supabase.
 
@@ -1498,3 +1484,222 @@ Fails einer der drei Schritte, fixe ich **automatisch ohne Rückfrage**:
   SQL-Editor-Update empfehlen).
 - Secret `SUPABASE_SERVICE_ROLE_KEY` fehlt → dem User die Einrichtung ansagen,
   andere Release-Teile laufen weiter.
+
+---
+
+## 🔊 Audio Plugins (audioplayers / just_audio)
+
+**Eingeführt mit v61 (URSPRUNG-Welt) — verbindlich dokumentieren bei jeder Änderung an Audio-Tools.**
+
+### Plugin: `audioplayers: ^6.1.0`
+
+**Zweck:** Lokale Sound-Effects, Loop-Playback (binaural beats, breath cues, frequency
+tones) im **Frequenz-Generator**, in der **Gateway-Kammer** und im **Atemmeister**.
+
+**Bereits in `pubspec.yaml`:**
+```yaml
+dependencies:
+  audioplayers: ^6.1.0
+  just_audio: ^0.9.36
+```
+
+**Wichtige API-Punkte (audioplayers 6.x — Breaking Changes ggü. 5.x!):**
+
+- `final player = AudioPlayer();` — pro Tool eigenen Player, nicht global teilen.
+- `await player.setReleaseMode(ReleaseMode.loop);` — für endlos schleifende Töne
+  (binaural beats). `ReleaseMode.stop` ist Default (Sample wird nach play disposed).
+- `await player.play(AssetSource('audio/binaural_7_83.mp3'));` — Assets müssen in
+  `pubspec.yaml` unter `flutter.assets:` deklariert sein.
+- `await player.stop()` **und** `player.dispose()` im `dispose()` der Stateful-Widgets.
+  Sonst läuft der Ton weiter wenn der User die Seite verlässt.
+- `await player.setVolume(0.5);` — 0.0–1.0.
+- **Achtung Android 14+:** `android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK` muss
+  in `android/app/src/main/AndroidManifest.xml` deklariert sein, wenn Audio im
+  Hintergrund weiterlaufen soll. Für URSPRUNG-Tools NICHT nötig (Foreground only).
+- **iOS:** In `ios/Runner/Info.plist` `UIBackgroundModes` mit `audio` Eintrag falls
+  Background-Playback gewünscht — aktuell NICHT konfiguriert.
+
+### Plugin: `just_audio: ^0.9.36`
+
+**Zweck:** High-Level-Streaming für längere Audios (z.B. CIA Gateway Tape-Streams
+von Supabase Storage), Crossfade, Playlist. Wird in der aktuellen v61-Implementierung
+noch NICHT direkt benutzt — reserviert für künftige Erweiterung der Gateway-Kammer
+(Hemi-Sync-Track-Playlists).
+
+### Build/Test-Hinweise
+
+- Nach jeder Änderung an einem Audio-Tool: `flutter pub get` → `flutter analyze`
+  → manuelles Testen auf Android+iOS (Audio-Permissions unterscheiden sich).
+- **Shorebird-Patches:** Audio-Plugin-Änderungen, die NUR Dart-Code betreffen
+  (z.B. Frequenz-Slider-Logik), können per `shorebird patch` ausgerollt werden.
+  Native-Änderungen (z.B. Permission-Update in AndroidManifest) erfordern Full-Release.
+- Assets unter `assets/audio/` einchecken — Größe pro Datei < 1 MB halten oder
+  von Supabase Storage streamen.
+- Falls `audioplayers` Cocoapods-Probleme auf macOS macht: `cd ios && pod install
+  --repo-update`.
+
+### URSPRUNG-Tool-Mapping
+
+| Tool                       | Plugin       | Modus                                  |
+|----------------------------|--------------|----------------------------------------|
+| Frequenz-Generator         | audioplayers | Looping single-tone (1–40 Hz / 528 Hz) |
+| Gateway-Kammer             | audioplayers | Optional binaural beats (Focus 10/12/15/21) |
+| Atemmeister                | (none)       | Visuelle Atem-Animation, kein Sound v1 |
+| Realitäts-Architekt        | (none)       | Reine Text-UI                          |
+| RV Trainer                 | (none)       | Reine Text-UI                          |
+
+---
+
+## 💓 Health Plugin (`health: ^13.1.4`) — AUFGABE 6: Biometric Feedback
+
+**Zweck:** Apple HealthKit (iOS) + Android Health Connect für HRV- und Herzfrequenz-
+basiertes Biometric Feedback. Wird vom `BiometricService` gekapselt und von
+Gateway-Kammer + Atemmeister verwendet, um den **WIRKUNGS-SCORE** zu berechnen
+(prozentuale HRV-Veränderung vor → nach Session).
+
+### Versions-Hinweis: spec'd `^11.0.0` → installiert `^13.1.4`
+
+Spec verlangte `health: ^11.0.0`, aber `flutter_localizations` aus dem Flutter SDK
+pinnt `intl 0.20.2`. `health` 10.x–11.x verlangt jedoch `intl >=0.18.0 <0.20.0` —
+unauflösbarer Konflikt. Pub solver schlug `health: ^13.1.4` vor (kompatibel mit
+`intl 0.20.2`). **Wichtige API-Änderung seit v12:** `HealthFactory` wurde durch
+das `Health()` Singleton ersetzt; `await health.configure()` muss einmal vor
+jedem API-Aufruf laufen.
+
+```yaml
+dependencies:
+  health: ^13.1.4   # 🆕 Apple HealthKit + Android Health Connect
+```
+
+### Android — `android/app/src/main/AndroidManifest.xml`
+
+```xml
+<!-- Health Connect Permissions -->
+<uses-permission android:name="android.permission.health.READ_HEART_RATE" />
+<uses-permission android:name="android.permission.health.READ_HEART_RATE_VARIABILITY" />
+<uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
+
+<!-- Inside <application> ... <activity android:name=".MainActivity"> -->
+<intent-filter>
+  <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
+</intent-filter>
+
+<!-- Activity-Alias for Health Connect permission rationale (Android 14+) -->
+<activity-alias
+    android:name="ViewPermissionUsageActivity"
+    android:exported="true"
+    android:targetActivity=".MainActivity"
+    android:permission="android.permission.START_VIEW_PERMISSION_USAGE">
+  <intent-filter>
+    <action android:name="android.intent.action.VIEW_PERMISSION_USAGE" />
+    <category android:name="android.intent.category.HEALTH_PERMISSIONS" />
+  </intent-filter>
+</activity-alias>
+
+<!-- Inside <queries> so the app can detect the Health Connect package -->
+<package android:name="com.google.android.apps.healthdata" />
+```
+
+### iOS — `ios/Runner/Info.plist` (📌 für künftiges iOS-Team)
+
+> Aktuell existiert kein `ios/`-Verzeichnis in diesem Repo. Sobald iOS-Build
+> aktiviert wird, müssen folgende Einträge in `ios/Runner/Info.plist` ergänzt
+> werden:
+
+```xml
+<key>NSHealthShareUsageDescription</key>
+<string>WeltenBauer misst HRV und Herzfrequenz, um den Wirkungs-Score deiner Meditationen zu berechnen.</string>
+<key>NSHealthUpdateUsageDescription</key>
+<string>WeltenBauer kann optional Sessions als Achtsamkeits-Einträge in Apple Health speichern.</string>
+```
+
+Außerdem in **Xcode → Signing & Capabilities → + HealthKit** aktivieren.
+
+### `BiometricService` Usage Pattern
+
+```dart
+final bio = BiometricService();
+
+// 1. Permission Flow (idempotent, sicher mehrfach aufrufbar)
+final granted = await bio.requestPermissions();
+if (!granted) return;  // → graceful degradation: Session ohne Biometrie
+
+// 2. Vor der Session: Start-Zeitpunkt merken
+final start = DateTime.now();
+
+// 3. … User macht 15-min Meditation …
+
+// 4. Nach Session: Vergleich messen
+final cmp = await bio.measureSessionEffect(
+  sessionStart: start,
+  sessionEnd: DateTime.now(),
+);
+final score = bio.calculateEffectivenessScore(cmp);  // e.g. +18.4 %
+
+// 5. Persistieren (kann offline scheitern → catch'd intern)
+await bio.saveReading(
+  sessionType: 'gateway',           // 'gateway' | 'breathmaster' | …
+  sessionWorld: 'ursprung',
+  data: cmp,
+  durationMinutes: 15,
+  notes: 'Focus 12',
+);
+
+// 6. UI anzeigen
+await BiometricResultSheet.show(context, comparison: cmp, …);
+```
+
+### Graceful-Degradation Policy
+
+`BiometricService` darf **niemals** den User-Flow blockieren:
+- Wenn `requestPermissions()` → `false`: SnackBar zeigen, Session ohne Biometrie starten.
+- Wenn `getHRV()` / `getRestingHeartRate()` → `null` (keine Daten verfügbar):
+  `BiometricResultSheet` zeigt automatisch "Keine biometrischen Daten" mit Hinweis,
+  Apple Watch / Fitness-Tracker zu verbinden.
+- Wenn `saveReading()` fehlschlägt (offline / RLS-Fehler): Try-catch schluckt den
+  Fehler — die Session-Logs in `ursprung_gateway_sessions` / Tool-Tabellen bleiben
+  davon unberührt.
+
+### URSPRUNG-Tool ↔ Health-Mapping
+
+| Tool                | Biometric-Flow? | `session_type`   | Begründung |
+|---------------------|:---------------:|------------------|------------|
+| Gateway-Kammer      | ✅              | `gateway`        | 15–45 min Meditation → klare HRV-Veränderung erwartet |
+| Atemmeister         | ✅              | `breathmaster`   | Resonant Tuning maximiert HRV-Coherence (HeartMath) |
+| Frequenz-Generator  | ❌              | —                | Reines Ton-Tester-Tool, keine Session-Struktur |
+| Realitäts-Architekt | ❌              | —                | Reine Text-/Vision-UI |
+| RV Trainer          | ❌              | —                | Cognitive Task, HRV-Effekt nicht primär |
+
+### Supabase: `biometric_readings`
+
+Migration: `supabase/migrations/20260514_v62_biometric_readings.sql`
+
+```sql
+CREATE TABLE biometric_readings (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  session_type text NOT NULL,        -- 'gateway' | 'breathmaster' | …
+  session_world text NOT NULL,       -- 'ursprung' (v1)
+  hrv_before double precision,
+  hrv_after double precision,
+  hr_before double precision,
+  hr_after double precision,
+  effectiveness_score double precision,
+  duration_minutes integer,
+  notes text,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+-- + Indexes (user_id, created_at DESC), (user_id, session_world)
+-- + RLS: auth.uid() = user_id für SELECT/INSERT/UPDATE/DELETE
+```
+
+### Build/Test-Hinweise
+
+- Native Plugin → **Full-Release** nötig (Shorebird-Patch reicht NICHT).
+- Erster Permission-Dialog erscheint nur einmal pro App-Install — zum Re-Testen
+  Health-App / Health-Connect öffnen und WeltenBauer aus den Berechtigungen entfernen.
+- Emulator-Test eingeschränkt: Health Connect läuft nur auf Android 14+, HealthKit
+  nicht im iOS-Simulator → echtes Gerät nötig.
+- Wirkungs-Score-Formel ist in `BiometricService.calculateEffectivenessScore`
+  zentralisiert und auf `[-100, 500]` geklemmt, um statistische Outlier (z.B.
+  HRV-Sprung von 5 → 50 ms direkt nach Aufwachen) abzufangen.

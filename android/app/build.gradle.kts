@@ -51,8 +51,8 @@ android {
 
     defaultConfig {
         applicationId = "com.myapp.mobile"
-        // Android 5.0+ (API 21) – deckt >99% aller aktiven Android-Geräte ab
-        minSdk = 21
+        // Android 8.0+ (API 26) – Pflicht für health: ^13.1.4 (Android Health Connect)
+        minSdk = 26
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName

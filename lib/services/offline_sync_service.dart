@@ -5,7 +5,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:sqflite/sqflite.dart' show ConflictAlgorithm;
+import 'package:sqflite/sqflite.dart'
+    if (dart.library.html) '../stubs/sqflite_stub.dart' show ConflictAlgorithm;
 import 'package:supabase_flutter/supabase_flutter.dart' show Supabase;
 import '../core/db/app_database.dart';
 import '../services/error_reporting_service.dart';

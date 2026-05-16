@@ -42,11 +42,12 @@
  *   GET  /go/* | /out               → Short-URL-Redirect
  */
 
-const SUPABASE_URL = 'https://adtviduaftdquvfjpojb.supabase.co';
+const SUPABASE_URL = 'https://zctufcfjsixfgmmwvnmv.supabase.co';
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization, apikey, Prefer',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, apikey, Prefer, X-Supabase-Auth',
+  'Access-Control-Max-Age': '86400',
   'Content-Type': 'application/json',
 };
 
@@ -501,7 +502,7 @@ export default {
       // oder deployen die Funktionen über direkten SQL-Zugang
       
       // Direkte SQL-Ausführung über Supabase Management API
-      const projectRef = 'adtviduaftdquvfjpojb';
+      const projectRef = 'zctufcfjsixfgmmwvnmv';
       
       const sqls = [
         // Funktion zum Editieren von Chat-Nachrichten (SECURITY DEFINER bypasses RLS)
@@ -1098,14 +1099,16 @@ export default {
     if (path.startsWith('/api/profile/')) {
       const parts = path.split('/'); // /api/profile/{world}/{username}
 
-      // POST: Profil speichern
+      // POST: Profil speichern (username-based auth, kein Supabase Auth nötig)
       if (method === 'POST' && (parts[3] === 'materie' || parts[3] === 'energie') && parts.length === 4) {
         try {
           const body = await request.json();
           const anonKey = env.SUPABASE_ANON_KEY || '';
           const authHeader = request.headers.get('Authorization') || `Bearer ${anonKey}`;
-          // Upsert Profil in profiles-Tabelle
-          const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles`, {
+          // World aus URL übernehmen wenn nicht im Body
+          if (!body.world) body.world = parts[3];
+          // Upsert via username (UNIQUE constraint) — Trigger setzt Role auto für 'Weltenbibliothek'
+          const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?on_conflict=username`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -1116,6 +1119,20 @@ export default {
             body: JSON.stringify(body),
           });
           const data = await res.json().catch(() => ({}));
+          // Backend-Antwort mit userId und role für Client anreichern
+          const profile = Array.isArray(data) ? data[0] : data;
+          if (profile && profile.id) {
+            const isRootAdmin = (profile.role || '').toLowerCase().replace('-', '_') === 'root_admin';
+            const isAdmin = ['admin', 'root_admin', 'content_editor'].includes((profile.role || '').toLowerCase().replace('-', '_'));
+            return jsonResponse({
+              success: true,
+              userId: profile.id,
+              role: profile.role || 'user',
+              isAdmin,
+              isRootAdmin,
+              profile,
+            }, 200);
+          }
           return jsonResponse(data, res.status < 300 ? 200 : res.status);
         } catch (e) {
           return errorResponse(`Profil-Speicher-Fehler: ${e.message}`);
@@ -6003,6 +6020,526 @@ Antworte in exakt diesem JSON-Format:
           return errorResponse(`Vorhang-YouTube Fehler: ${e.message}`);
         }
       }
+
+
+      // ════════════════════════════════════════════════════════════
+      // URSPRUNG-WELT — CIA Quanten-Code (25 Module, 5 Tools)
+      // Tables: ursprung_modules, user_ursprung_progress,
+      //         ursprung_gateway_sessions, ursprung_patterns,
+      //         rv_targets, rv_sessions
+      // ════════════════════════════════════════════════════════════
+
+      // ── GET /api/ursprung/modules ───────────────────────────────
+      // Returns all 25 URSPRUNG modules grouped by branch_order.
+      // Optional ?user_id=<uuid> includes user progress per module.
+      if (path === '/api/ursprung/modules' && method === 'GET') {
+        try {
+          const userId = url.searchParams.get('user_id');
+          const modRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/ursprung_modules?select=*&order=branch_order.asc,module_code.asc`,
+            { headers: sbHeaders }
+          );
+          if (!modRes.ok) {
+            const txt = await modRes.text().catch(() => '');
+            return errorResponse(`Ursprung-Module konnten nicht geladen werden: ${txt}`, modRes.status);
+          }
+          const modules = await modRes.json();
+
+          let progressMap = {};
+          if (userId) {
+            const progRes = await fetch(
+              `${SUPABASE_URL}/rest/v1/user_ursprung_progress?user_id=eq.${encodeURIComponent(userId)}&select=*`,
+              { headers: sbHeaders }
+            );
+            if (progRes.ok) {
+              const progArr = await progRes.json();
+              if (Array.isArray(progArr)) {
+                for (const p of progArr) {
+                  if (p.module_code) progressMap[p.module_code] = p;
+                }
+              }
+            }
+          }
+          return jsonResponse({ success: true, count: modules.length, modules, progress: progressMap });
+        } catch (e) {
+          return errorResponse(`Ursprung-Modules Fehler: ${e.message}`);
+        }
+      }
+
+      // ── GET /api/ursprung/module/:code ──────────────────────────
+      if (path.startsWith('/api/ursprung/module/') && method === 'GET') {
+        try {
+          const moduleCode = decodeURIComponent(path.split('/api/ursprung/module/')[1] || '').trim();
+          if (!moduleCode) return errorResponse('module_code fehlt', 400);
+          const userId = url.searchParams.get('user_id');
+          const modRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/ursprung_modules?module_code=eq.${encodeURIComponent(moduleCode)}&select=*&limit=1`,
+            { headers: sbHeaders }
+          );
+          if (!modRes.ok) {
+            const txt = await modRes.text().catch(() => '');
+            return errorResponse(`Modul konnte nicht geladen werden: ${txt}`, modRes.status);
+          }
+          const arr = await modRes.json();
+          if (!Array.isArray(arr) || arr.length === 0) {
+            return errorResponse(`Modul '${moduleCode}' nicht gefunden`, 404);
+          }
+          const module = arr[0];
+          let progress = null;
+          if (userId) {
+            const progRes = await fetch(
+              `${SUPABASE_URL}/rest/v1/user_ursprung_progress?user_id=eq.${encodeURIComponent(userId)}&module_code=eq.${encodeURIComponent(moduleCode)}&select=*&limit=1`,
+              { headers: sbHeaders }
+            );
+            if (progRes.ok) {
+              const pArr = await progRes.json();
+              if (Array.isArray(pArr) && pArr.length > 0) progress = pArr[0];
+            }
+          }
+          return jsonResponse({ success: true, module, progress });
+        } catch (e) {
+          return errorResponse(`Ursprung-Module Fehler: ${e.message}`);
+        }
+      }
+
+      // ── POST /api/ursprung/progress ─────────────────────────────
+      // Upserts user_ursprung_progress and awards XP on first completion.
+      if (path === '/api/ursprung/progress' && method === 'POST') {
+        try {
+          const body = await request.json().catch(() => ({}));
+          const { userId, moduleCode, theoryRead, caseStudyRead, exerciseCompleted, exerciseNotes, testScore, testPassed } = body || {};
+          if (!userId || !moduleCode) return errorResponse('userId und moduleCode erforderlich', 400);
+
+          const modRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/ursprung_modules?module_code=eq.${encodeURIComponent(moduleCode)}&select=id,xp_reward,is_boss_module&limit=1`,
+            { headers: sbHeaders }
+          );
+          if (!modRes.ok) return errorResponse('Modul nicht gefunden', 404);
+          const modArr = await modRes.json();
+          if (!Array.isArray(modArr) || modArr.length === 0) return errorResponse(`Modul '${moduleCode}' nicht gefunden`, 404);
+          const moduleId = modArr[0].id;
+          const xpReward = modArr[0].xp_reward || 50;
+
+          const exRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/user_ursprung_progress?user_id=eq.${encodeURIComponent(userId)}&module_code=eq.${encodeURIComponent(moduleCode)}&select=*&limit=1`,
+            { headers: sbHeaders }
+          );
+          let existing = null;
+          if (exRes.ok) {
+            const arr = await exRes.json();
+            if (Array.isArray(arr) && arr.length > 0) existing = arr[0];
+          }
+          const wasComplete = !!(existing && existing.test_passed);
+
+          const row = {
+            user_id: userId,
+            module_id: moduleId,
+            module_code: moduleCode,
+            theory_read: theoryRead ?? existing?.theory_read ?? false,
+            case_study_read: caseStudyRead ?? existing?.case_study_read ?? false,
+            exercise_completed: exerciseCompleted ?? existing?.exercise_completed ?? false,
+            exercise_notes: exerciseNotes ?? existing?.exercise_notes ?? null,
+            test_score: testScore ?? existing?.test_score ?? null,
+            test_passed: testPassed ?? existing?.test_passed ?? false,
+          };
+          if (row.test_passed && !existing?.completed_at) row.completed_at = new Date().toISOString();
+
+          const upRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/user_ursprung_progress?on_conflict=user_id,module_code`,
+            {
+              method: 'POST',
+              headers: { ...sbHeaders, 'Prefer': 'resolution=merge-duplicates,return=representation' },
+              body: JSON.stringify(row),
+            }
+          );
+          if (!upRes.ok) {
+            const txt = await upRes.text().catch(() => '');
+            return errorResponse(`Progress Upsert fehlgeschlagen: ${txt}`, upRes.status);
+          }
+
+          let xpAwarded = 0;
+          if (row.test_passed && !wasComplete) {
+            xpAwarded = xpReward;
+            try {
+              await fetch(`${SUPABASE_URL}/rest/v1/rpc/add_xp_to_user`, {
+                method: 'POST',
+                headers: sbHeaders,
+                body: JSON.stringify({ p_user_id: userId, p_amount: xpReward, p_reason: `ursprung_module:${moduleCode}` }),
+              });
+            } catch (_) { /* non-fatal */ }
+          }
+          return jsonResponse({ success: true, xpAwarded });
+        } catch (e) {
+          return errorResponse(`Ursprung-Progress Fehler: ${e.message}`);
+        }
+      }
+
+      // ── GET /api/ursprung/youtube/:moduleCode ───────────────────
+      if (path.startsWith('/api/ursprung/youtube/') && method === 'GET') {
+        try {
+          const moduleCode = decodeURIComponent(path.split('/api/ursprung/youtube/')[1] || '').trim();
+          if (!moduleCode) return errorResponse('module_code fehlt', 400);
+          const modRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/ursprung_modules?module_code=eq.${encodeURIComponent(moduleCode)}&select=youtube_search_query,title&limit=1`,
+            { headers: sbHeaders }
+          );
+          if (!modRes.ok) return errorResponse('Modul nicht gefunden', 404);
+          const arr = await modRes.json();
+          if (!Array.isArray(arr) || arr.length === 0) return errorResponse(`Modul '${moduleCode}' nicht gefunden`, 404);
+          const q = arr[0].youtube_search_query || arr[0].title || moduleCode;
+          const ytKey = env.YOUTUBE_API_KEY;
+          if (ytKey) {
+            const ytUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=5&q=${encodeURIComponent(q)}&key=${ytKey}`;
+            const ytRes = await fetch(ytUrl);
+            if (ytRes.ok) {
+              const data = await ytRes.json();
+              const videos = (data.items || []).map((i) => ({
+                videoId: i.id?.videoId,
+                title: i.snippet?.title || '',
+                thumbnail: i.snippet?.thumbnails?.medium?.url || '',
+                channelTitle: i.snippet?.channelTitle || '',
+                description: i.snippet?.description || '',
+              }));
+              return jsonResponse({ success: true, query: q, videos });
+            }
+          }
+          return jsonResponse({ success: true, query: q, videos: [] });
+        } catch (e) {
+          return errorResponse(`Ursprung-YouTube Fehler: ${e.message}`);
+        }
+      }
+
+      // ── POST /api/ursprung/gateway-session ──────────────────────
+      // Logs a Gateway-Kammer meditation session.
+      if (path === '/api/ursprung/gateway-session' && method === 'POST') {
+        try {
+          const body = await request.json().catch(() => ({}));
+          const { userId, focusLevel, durationMinutes, notes, biometricBefore, biometricAfter } = body || {};
+          if (!userId || !focusLevel) return errorResponse('userId und focusLevel erforderlich', 400);
+          const row = {
+            user_id: userId,
+            focus_level_reached: focusLevel,
+            duration_minutes: durationMinutes || 0,
+            notes: notes || null,
+            biometric_before: biometricBefore || null,
+            biometric_after: biometricAfter || null,
+          };
+          const res = await fetch(`${SUPABASE_URL}/rest/v1/ursprung_gateway_sessions`, {
+            method: 'POST',
+            headers: { ...sbHeaders, 'Prefer': 'return=representation' },
+            body: JSON.stringify(row),
+          });
+          if (!res.ok) {
+            const txt = await res.text().catch(() => '');
+            return errorResponse(`Gateway-Session Insert fehlgeschlagen: ${txt}`, res.status);
+          }
+          const data = await res.json();
+          return jsonResponse({ success: true, session: Array.isArray(data) ? data[0] : data });
+        } catch (e) {
+          return errorResponse(`Gateway-Session Fehler: ${e.message}`);
+        }
+      }
+
+      // ── POST /api/ursprung/pattern ──────────────────────────────
+      // Saves a Realitäts-Architekt pattern (Patterning/Manifestation).
+      if (path === '/api/ursprung/pattern' && method === 'POST') {
+        try {
+          const body = await request.json().catch(() => ({}));
+          const { userId, category, goalText, presentTense, senses, emotion, emotionIntensity, targetDate, status, notes } = body || {};
+          if (!userId || !goalText) return errorResponse('userId und goalText erforderlich', 400);
+          const row = {
+            user_id: userId,
+            category: category || 'general',
+            goal_text: goalText,
+            present_tense: presentTense || null,
+            senses: senses || null,
+            emotion: emotion || null,
+            emotion_intensity: emotionIntensity || null,
+            target_date: targetDate || null,
+            status: status || 'active',
+            notes: notes || null,
+          };
+          const res = await fetch(`${SUPABASE_URL}/rest/v1/ursprung_patterns`, {
+            method: 'POST',
+            headers: { ...sbHeaders, 'Prefer': 'return=representation' },
+            body: JSON.stringify(row),
+          });
+          if (!res.ok) {
+            const txt = await res.text().catch(() => '');
+            return errorResponse(`Pattern Insert fehlgeschlagen: ${txt}`, res.status);
+          }
+          const data = await res.json();
+          return jsonResponse({ success: true, pattern: Array.isArray(data) ? data[0] : data });
+        } catch (e) {
+          return errorResponse(`Pattern Fehler: ${e.message}`);
+        }
+      }
+
+      // ── GET /api/ursprung/patterns?userId=<uuid> ────────────────
+      if (path === '/api/ursprung/patterns' && method === 'GET') {
+        try {
+          const userId = url.searchParams.get('userId') || url.searchParams.get('user_id');
+          if (!userId) return errorResponse('userId erforderlich', 400);
+          const res = await fetch(
+            `${SUPABASE_URL}/rest/v1/ursprung_patterns?user_id=eq.${encodeURIComponent(userId)}&select=*&order=created_at.desc`,
+            { headers: sbHeaders }
+          );
+          if (!res.ok) {
+            const txt = await res.text().catch(() => '');
+            return errorResponse(`Patterns Query fehlgeschlagen: ${txt}`, res.status);
+          }
+          const patterns = await res.json();
+          return jsonResponse({ success: true, count: patterns.length, patterns });
+        } catch (e) {
+          return errorResponse(`Patterns Fehler: ${e.message}`);
+        }
+      }
+
+      // ── GET /api/ursprung/rv-target/random ──────────────────────
+      // Returns a random RV-Target WITHOUT revealing image/name.
+      if (path === '/api/ursprung/rv-target/random' && method === 'GET') {
+        try {
+          const res = await fetch(
+            `${SUPABASE_URL}/rest/v1/rv_targets?select=id,target_number,target_category&limit=200`,
+            { headers: sbHeaders }
+          );
+          if (!res.ok) {
+            const txt = await res.text().catch(() => '');
+            return errorResponse(`RV-Target Query fehlgeschlagen: ${txt}`, res.status);
+          }
+          const arr = await res.json();
+          if (!Array.isArray(arr) || arr.length === 0) return errorResponse('Keine RV-Targets vorhanden', 404);
+          const pick = arr[Math.floor(Math.random() * arr.length)];
+          return jsonResponse({
+            success: true,
+            target: { id: pick.id, target_number: pick.target_number, target_category_hint: null }
+          });
+        } catch (e) {
+          return errorResponse(`RV-Target Fehler: ${e.message}`);
+        }
+      }
+
+      // ── GET /api/ursprung/rv-target/:id/reveal ──────────────────
+      // Reveals the full target after the RV session is completed.
+      if (path.startsWith('/api/ursprung/rv-target/') && path.endsWith('/reveal') && method === 'GET') {
+        try {
+          const idPart = path.replace('/api/ursprung/rv-target/', '').replace('/reveal', '').trim();
+          if (!idPart) return errorResponse('target id fehlt', 400);
+          const res = await fetch(
+            `${SUPABASE_URL}/rest/v1/rv_targets?id=eq.${encodeURIComponent(idPart)}&select=*&limit=1`,
+            { headers: sbHeaders }
+          );
+          if (!res.ok) {
+            const txt = await res.text().catch(() => '');
+            return errorResponse(`Target-Reveal fehlgeschlagen: ${txt}`, res.status);
+          }
+          const arr = await res.json();
+          if (!Array.isArray(arr) || arr.length === 0) return errorResponse('Target nicht gefunden', 404);
+          return jsonResponse({ success: true, target: arr[0] });
+        } catch (e) {
+          return errorResponse(`RV-Target-Reveal Fehler: ${e.message}`);
+        }
+      }
+
+      // ── POST /api/ursprung/rv-session ───────────────────────────
+      // Logs an RV session (stage1/2/3 + score).
+      if (path === '/api/ursprung/rv-session' && method === 'POST') {
+        try {
+          const body = await request.json().catch(() => ({}));
+          const { userId, targetId, stage1Response, stage2Response, stage3SketchUrl, scorePercent, sessionMode, durationSeconds } = body || {};
+          if (!userId || !targetId) return errorResponse('userId und targetId erforderlich', 400);
+          const row = {
+            user_id: userId,
+            target_id: targetId,
+            stage1_response: stage1Response || null,
+            stage2_response: stage2Response || null,
+            stage3_sketch_url: stage3SketchUrl || null,
+            score_percent: scorePercent ?? null,
+            session_mode: sessionMode || 'training',
+            duration_seconds: durationSeconds || null,
+          };
+          const res = await fetch(`${SUPABASE_URL}/rest/v1/rv_sessions`, {
+            method: 'POST',
+            headers: { ...sbHeaders, 'Prefer': 'return=representation' },
+            body: JSON.stringify(row),
+          });
+          if (!res.ok) {
+            const txt = await res.text().catch(() => '');
+            return errorResponse(`RV-Session Insert fehlgeschlagen: ${txt}`, res.status);
+          }
+          const data = await res.json();
+          return jsonResponse({ success: true, session: Array.isArray(data) ? data[0] : data });
+        } catch (e) {
+          return errorResponse(`RV-Session Fehler: ${e.message}`);
+        }
+      }
+
+
+    }
+
+    // ── AMBIENT SYSTEM: Kontextbewusster Tagespfad (AUFGABE 9A) ─────────────
+    if (path === '/api/ambient/daily-path' && method === 'POST') {
+      try {
+        const body = await request.json().catch(() => ({}));
+        const {
+          userId = null,
+          timeOfDay = null,
+          lastModules = [],
+          streak = 0,
+          level = 1,
+          dominantWorld = 'materie',
+          hrvBaseline = null,
+          moodCheckIn = null,
+        } = body;
+
+        // 1. Wetter via Open-Meteo (Standort aus Cloudflare-Request)
+        const cf = request.cf || {};
+        const lat = body.lat ?? cf.latitude ?? 48.2082;   // Wien Fallback
+        const lon = body.lon ?? cf.longitude ?? 16.3738;
+        const city = cf.city || 'unbekannt';
+
+        let weather = body.weather || null;
+        if (!weather) {
+          try {
+            const wRes = await fetch(
+              `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&timezone=auto`,
+              { signal: AbortSignal.timeout(8000) }
+            );
+            const wData = await wRes.json().catch(() => ({}));
+            const cur = wData.current || {};
+            const codes = { 0:'klar', 1:'überwiegend klar', 2:'teilweise bewölkt', 3:'bewölkt',
+              45:'neblig', 48:'dichter Nebel', 51:'leichter Nieselregen', 53:'Nieselregen',
+              55:'starker Nieselregen', 61:'leichter Regen', 63:'Regen', 65:'starker Regen',
+              71:'leichter Schnee', 73:'Schnee', 75:'starker Schnee', 80:'Regenschauer',
+              81:'starke Regenschauer', 82:'heftige Regenschauer', 95:'Gewitter', 96:'Gewitter mit Hagel', 99:'starkes Gewitter'};
+            weather = {
+              temp: cur.temperature_2m ?? null,
+              humidity: cur.relative_humidity_2m ?? null,
+              condition: codes[cur.weather_code] || 'unbekannt',
+              wind: cur.wind_speed_10m ?? null,
+              city,
+            };
+          } catch (e) {
+            weather = { temp: null, condition: 'unbekannt', city };
+          }
+        }
+
+        // 2. Tageszeit ableiten falls nicht gegeben
+        const tod = timeOfDay || (() => {
+          const h = new Date().getHours();
+          if (h < 6) return 'night';
+          if (h < 12) return 'morning';
+          if (h < 18) return 'afternoon';
+          if (h < 22) return 'evening';
+          return 'night';
+        })();
+
+        // 3. AI-Tagesplan generieren (Groq → Workers AI Fallback)
+        const ctx = {
+          tageszeit: tod, wetter: weather, level, streak,
+          welt: dominantWorld, hrv: hrvBaseline, stimmung: moodCheckIn,
+          letzteModule: lastModules,
+        };
+
+        const prompt = `Du bist der Weltenbibliothek-Begleiter. Erstelle einen personalisierten Tagespfad für einen User.
+
+Kontext: ${JSON.stringify(ctx)}
+
+Antworte AUSSCHLIESSLICH mit gültigem JSON im Format:
+{
+  "activities": [
+    { "title": "...", "description": "...", "duration_min": 10, "module_code": "U-QC-XX", "world": "ursprung", "icon": "🌀" },
+    { "title": "...", "description": "...", "duration_min": 15, "module_code": "V-XX", "world": "vorhang", "icon": "👁️" },
+    { "title": "...", "description": "...", "duration_min": 5, "module_code": null, "world": "energie", "icon": "💨" }
+  ],
+  "dailyInsight": "Ein persönlicher, motivierender Satz auf Deutsch (max 200 Zeichen)",
+  "ambientFrequency": 7.83
+}
+
+Wichtig:
+- 3 Aktivitäten, abgestimmt auf Tageszeit, Wetter, Welt
+- Bei morgens & gutem Wetter: Energie/Bewegung
+- Bei abends & Regen: Reflektion/Meditation
+- Frequenz: 7.83 Hz (Erde), 432 Hz (Heilung), 528 Hz (Liebe), 8 Hz (Alpha), 4 Hz (Theta)
+- Auf Deutsch, prägnant, mystisch-poetisch im Weltenbibliothek-Stil`;
+
+        let aiResponse = null;
+        const groqKey = env.GROQ_API_KEY;
+        if (groqKey) {
+          try {
+            const gRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+              method: 'POST',
+              headers: { 'Authorization': `Bearer ${groqKey}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                model: 'llama-3.3-70b-versatile',
+                messages: [{ role: 'user', content: prompt }],
+                temperature: 0.7,
+                response_format: { type: 'json_object' },
+              }),
+              signal: AbortSignal.timeout(15000),
+            });
+            const gData = await gRes.json().catch(() => ({}));
+            const content = gData.choices?.[0]?.message?.content;
+            if (content) aiResponse = JSON.parse(content);
+          } catch (_) {}
+        }
+
+        // Workers AI Fallback
+        if (!aiResponse && env.AI) {
+          try {
+            const aiRes = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+              messages: [{ role: 'user', content: prompt }],
+              max_tokens: 800,
+            });
+            const text = aiRes.response || '';
+            const match = text.match(/\{[\s\S]*\}/);
+            if (match) aiResponse = JSON.parse(match[0]);
+          } catch (_) {}
+        }
+
+        // Fallback wenn AI nicht verfügbar
+        if (!aiResponse) {
+          aiResponse = {
+            activities: [
+              { title: 'Atemmeister 4-7-8', description: 'Beruhige dein Nervensystem mit der 4-7-8 Methode',
+                duration_min: 5, module_code: null, world: 'ursprung', icon: '💨' },
+              { title: 'Tagesreflexion', description: 'Was hat dich heute bewegt? Drei Worte.',
+                duration_min: 10, module_code: null, world: dominantWorld, icon: '✍️' },
+              { title: 'Frequenz-Reise 432 Hz', description: 'Lass die Heilungsfrequenz wirken',
+                duration_min: 15, module_code: 'U-FR-432', world: 'ursprung', icon: '🎵' },
+            ],
+            dailyInsight: 'Heute beobachte, was zwischen den Gedanken liegt.',
+            ambientFrequency: 7.83,
+          };
+        }
+
+        return jsonResponse({
+          success: true,
+          context: { timeOfDay: tod, weather, level, streak, dominantWorld },
+          ...aiResponse,
+          generatedAt: new Date().toISOString(),
+        });
+      } catch (e) {
+        return errorResponse(`Ambient Fehler: ${e.message}`, 500);
+      }
+    }
+
+    // ── BIBLIOTHEK (AUFGABE 9B/9C) ──────────────────────────────────────────
+    if (path === '/api/bibliothek/books' && method === 'GET') {
+      const category = url.searchParams.get('category');
+      const moduleCode = url.searchParams.get('module');
+      const anonKey = env.SUPABASE_ANON_KEY || '';
+      let supaPath = `/rest/v1/bibliothek_books?select=*&order=year.asc`;
+      if (category) supaPath += `&category=eq.${encodeURIComponent(category)}`;
+      if (moduleCode) supaPath += `&related_modules=cs.{${encodeURIComponent(moduleCode)}}`;
+      return proxyToSupabase(request, env, supaPath, 'GET');
+    }
+
+    if (path.startsWith('/api/bibliothek/book/') && method === 'GET') {
+      const bookId = path.split('/').pop();
+      const supaPath = `/rest/v1/bibliothek_books?select=*&id=eq.${encodeURIComponent(bookId)}&limit=1`;
+      return proxyToSupabase(request, env, supaPath, 'GET');
+
     }
 
     // ── 404 ───────────────────────────────────────────────────

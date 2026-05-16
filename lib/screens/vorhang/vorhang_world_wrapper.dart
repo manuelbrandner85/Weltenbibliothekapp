@@ -7,7 +7,8 @@ import '../../services/achievement_service.dart';
 import '../shared/world_admin_dashboard.dart';
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_glass_app_bar.dart';
-import '../../widgets/cinematic/wb_vignette.dart';
+
+import '../onboarding/world_onboarding_screen.dart';
 
 /// 🎭 Vorhang-Welt-Wrapper
 /// Admin-Check direkt über Supabase profiles.role (nicht OpenClaw).
@@ -27,6 +28,20 @@ class _VorhangWorldWrapperState extends State<VorhangWorldWrapper> {
     super.initState();
     _checkAdminAndLoad();
     _trackWorldVisit();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeShowOnboarding());
+  }
+
+  Future<void> _maybeShowOnboarding() async {
+    final done = await WorldOnboardingScreen.isCompleted('vorhang');
+    if (done || !mounted) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => WorldOnboardingScreen.vorhang(
+          onComplete: () => Navigator.of(context).pop(),
+        ),
+        fullscreenDialog: true,
+      ),
+    );
   }
 
   Future<void> _checkAdminAndLoad() async {
@@ -95,8 +110,28 @@ class _VorhangWorldWrapperState extends State<VorhangWorldWrapper> {
     }
 
     if (_isAdmin) {
-      if (kDebugMode) debugPrint('👑 VORHANG → Admin Dashboard');
-      return const WorldAdminDashboard(world: 'vorhang');
+      if (kDebugMode) debugPrint('👑 VORHANG → Admin FAB aktiv');
+      return Stack(
+        children: [
+          const VorhangWorldScreen(),
+          Positioned(
+            bottom: 80,
+            right: 16,
+            child: FloatingActionButton.extended(
+              heroTag: 'admin_fab_vorhang',
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const WorldAdminDashboard(world: 'vorhang'),
+                ),
+              ),
+              backgroundColor: const Color(0xFFC9A84C),
+              foregroundColor: Colors.black,
+              icon: const Icon(Icons.admin_panel_settings_rounded),
+              label: const Text('Admin', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+          ),
+        ],
+      );
     }
 
     return const VorhangWorldScreen();

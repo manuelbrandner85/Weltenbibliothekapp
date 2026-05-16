@@ -20,10 +20,12 @@ import 'dart:convert';
 import 'dart:math' show Random;
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter_background/flutter_background.dart';
+import 'package:flutter_background/flutter_background.dart'
+    if (dart.library.html) '../stubs/flutter_background_stub.dart';
 import 'package:http/http.dart' as http;
 import 'package:livekit_client/livekit_client.dart';
-import 'package:flutter_webrtc/flutter_webrtc.dart' as rtc;
+import 'package:flutter_webrtc/flutter_webrtc.dart'
+    if (dart.library.html) '../stubs/flutter_webrtc_stub.dart' as rtc;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';

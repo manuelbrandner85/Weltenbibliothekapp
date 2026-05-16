@@ -1,11 +1,11 @@
 {
-    "name": "weltenbibliothek",
-    "short_name": "weltenbibliothek",
+    "name": "Weltenbibliothek",
+    "short_name": "WeltenBib",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#0a0a0a",
+    "theme_color": "#C9A84C",
+    "description": "Die alternative Wissens- und Bewusstseins-Plattform",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

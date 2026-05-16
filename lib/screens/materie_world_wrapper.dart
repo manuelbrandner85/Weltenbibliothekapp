@@ -95,8 +95,28 @@ class _MaterieWorldWrapperState extends State<MaterieWorldWrapper> {
     }
 
     if (_isAdmin) {
-      if (kDebugMode) debugPrint('👑 MATERIE → Admin Dashboard');
-      return const WorldAdminDashboard(world: 'materie');
+      if (kDebugMode) debugPrint('👑 MATERIE → Admin FAB aktiv');
+      return Stack(
+        children: [
+          const MaterieWorldScreen(),
+          Positioned(
+            bottom: 80,
+            right: 16,
+            child: FloatingActionButton.extended(
+              heroTag: 'admin_fab_materie',
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const WorldAdminDashboard(world: 'materie'),
+                ),
+              ),
+              backgroundColor: const Color(0xFFC9A84C),
+              foregroundColor: Colors.black,
+              icon: const Icon(Icons.admin_panel_settings_rounded),
+              label: const Text('Admin', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+          ),
+        ],
+      );
     }
 
     return const MaterieWorldScreen();

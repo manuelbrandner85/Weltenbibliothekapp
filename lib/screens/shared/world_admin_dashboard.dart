@@ -488,6 +488,15 @@ class _OverviewTabState extends State<_OverviewTab> {
               ),
             ),
           ]),
+          const SizedBox(height: 10),
+          // Web-User-Verwaltung (für alle Admins sichtbar)
+          if (widget.admin.isAdmin)
+            _QuickActionBtn(
+              icon: Icons.manage_accounts_rounded,
+              label: 'Web-User verwalten',
+              color: const Color(0xFFC9A84C),
+              onTap: () => Navigator.of(context).pushNamed('/admin/web-users'),
+            ),
 
           const SizedBox(height: 24),
 

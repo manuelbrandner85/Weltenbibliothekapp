@@ -20,6 +20,7 @@ import 'spirit_tab_modern.dart';
 import '../../services/mentor_service.dart';
 import '../shared/mentor_chat_screen.dart';
 import 'calculators/chakra_calculator_screen.dart';
+import '../../widgets/daily_path_widget.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // ENERGIE HOME DASHBOARD V7 – REDESIGN 2026
@@ -437,6 +438,7 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
                     _buildCosmicEnergySliver(),
                     _buildLiveStatBanner(),
                     _buildMentorBanner(),
+                    const SliverToBoxAdapter(child: DailyPathWidget()),
                     _buildActionGrid(),
                     _buildRecentRooms(),
                     _buildSectionTitle('✨ Spirituelle Themen', subtitle: 'Im Fokus'),

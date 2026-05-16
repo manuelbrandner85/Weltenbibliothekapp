@@ -245,37 +245,25 @@ VALUES
    'legendary', '🔑', 50, '{"skill_boost": "all", "bonus_pct": 35, "title_unlock": "Wächter der Akasha"}'::jsonb)
 ON CONFLICT (key) DO NOTHING;
 
--- ── REALTIME (idempotent) ──────────────────────────────────────────────────
+-- ── REALTIME (idempotent via pg_publication_tables) ────────────────────────
 DO $$
 BEGIN
   IF NOT EXISTS (
-    SELECT 1 FROM realtime.subscription
-    WHERE entity = 'public.user_skill_tree'
-    LIMIT 1
+    SELECT 1 FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime' AND tablename = 'user_skill_tree'
   ) THEN
-    BEGIN
-      ALTER PUBLICATION supabase_realtime ADD TABLE public.user_skill_tree;
-    EXCEPTION WHEN duplicate_object THEN NULL;
-    END;
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.user_skill_tree;
   END IF;
   IF NOT EXISTS (
-    SELECT 1 FROM realtime.subscription
-    WHERE entity = 'public.user_artifacts'
-    LIMIT 1
+    SELECT 1 FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime' AND tablename = 'user_artifacts'
   ) THEN
-    BEGIN
-      ALTER PUBLICATION supabase_realtime ADD TABLE public.user_artifacts;
-    EXCEPTION WHEN duplicate_object THEN NULL;
-    END;
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.user_artifacts;
   END IF;
   IF NOT EXISTS (
-    SELECT 1 FROM realtime.subscription
-    WHERE entity = 'public.daily_destiny_cards'
-    LIMIT 1
+    SELECT 1 FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime' AND tablename = 'daily_destiny_cards'
   ) THEN
-    BEGIN
-      ALTER PUBLICATION supabase_realtime ADD TABLE public.daily_destiny_cards;
-    EXCEPTION WHEN duplicate_object THEN NULL;
-    END;
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.daily_destiny_cards;
   END IF;
 END$$;

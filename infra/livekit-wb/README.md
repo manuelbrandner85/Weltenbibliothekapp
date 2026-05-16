@@ -103,7 +103,7 @@ Wenn Mensaena nach dem Deploy nicht mehr healthy ist, **failt der Workflow rot**
 
 ```
 WB-LiveKit-URL:  wss://livekit-wb.srv1438024.hstgr.cloud   (Standard-Port 443)
-WB-Token-URL:    https://adtviduaftdquvfjpojb.supabase.co/functions/v1/livekit-token
+WB-Token-URL:    https://zctufcfjsixfgmmwvnmv.supabase.co/functions/v1/livekit-token
 ```
 
 App injectet die URL über `--dart-define=LIVEKIT_URL=…` zur Build-Zeit.

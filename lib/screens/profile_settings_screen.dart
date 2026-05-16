@@ -18,6 +18,8 @@ import '../services/haptic_service.dart';
 import '../services/haptic_feedback_service.dart'; // 📳 NEW: Haptic Feedback
 import '../widgets/theme_toggle_widget.dart';
 import 'shared/profile_editor_screen.dart'; // 🆕 NEW EDITOR
+import 'shared/secret_library_screen.dart'; // 📚 Geheime Bibliothek
+import '../services/gamification_service.dart';
 import '../services/update_service.dart';
 import 'shared/knowledge_graph_screen.dart';
 
@@ -121,10 +123,10 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     }
   }
   
-  /// Energie-Profil bearbeiten
+  /// Profil bearbeiten — öffnet unified Energie-Editor (Spirit-Daten + Username)
   Future<void> _editEnergieProfile() async {
     HapticService.selectionClick();
-    
+
     if (!mounted) return;
     final result = await Navigator.push<bool>(
       context,
@@ -134,15 +136,15 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
         ),
       ),
     );
-    
+
     if (result == true) {
       await _loadProfiles();
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('✅ Energie-Profil aktualisiert'),
-            backgroundColor: WbDesign.energiePurple,
+            content: Text('✅ Profil aktualisiert'),
+            backgroundColor: Color(0xFF7C4DFF),
           ),
         );
       }
@@ -262,58 +264,46 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // MATERIE-PROFIL SEKTION
-                  _buildSectionHeader('🔵 MATERIE-PROFIL', WbDesign.materieBlue),
+                  // UNIFIED PROFIL SEKTION (eine Karte für alle 4 Welten)
+                  _buildSectionHeader('👤 MEIN PROFIL', const Color(0xFF7C4DFF)),
                   const SizedBox(height: 12),
 
-                  if (_materieProfile != null && _materieProfile!.isValid)
-                    _buildMaterieProfileCard()
-                  else
-                    _buildEmptyProfileCard(
-                      worldName: 'Materie',
-                      worldColor: WbDesign.materieBlue,
-                      onCreateTap: _editMaterieProfile,
-                    ),
-
-                  const SizedBox(height: 32),
-
-                  // ENERGIE-PROFIL SEKTION
-                  _buildSectionHeader('🟣 ENERGIE-PROFIL', WbDesign.energiePurple),
-                  const SizedBox(height: 12),
-                  
                   if (_energieProfile != null && _energieProfile!.isValid)
-                    _buildEnergieProfileCard()
+                    _buildUnifiedProfileCard()
+                  else if (_materieProfile != null && _materieProfile!.isValid)
+                    _buildUnifiedProfileCard()
                   else
                     _buildEmptyProfileCard(
-                      worldName: 'Energie',
-                      worldColor: WbDesign.energiePurple,
+                      worldName: 'Profil',
+                      worldColor: const Color(0xFF7C4DFF),
                       onCreateTap: _editEnergieProfile,
                     ),
-                  
+
                   const SizedBox(height: 32),
-                  
+
                   // DATENSCHUTZ-HINWEIS
                   _buildPrivacyNotice(),
 
                   const SizedBox(height: 32),
 
-                  // (Cloud-Sync-Sektion entfernt — auf Wunsch des Users.
-                  // Profile-Daten werden weiterhin transparent über
-                  // Supabase synchronisiert, aber kein eigener Sync-Button
-                  // mehr im Profil. ProfileSyncService bleibt aktiv für
-                  // automatische Sync beim Speichern.)
-
                   // DESIGN-EINSTELLUNGEN
                   _buildSectionHeader('🎨 DESIGN', Colors.teal),
                   const SizedBox(height: 12),
                   const ThemeToggleWidget(),
-                  
+
                   const SizedBox(height: 32),
 
                   // 📳 HAPTIC FEEDBACK EINSTELLUNGEN (NEU)
                   _buildSectionHeader('📳 HAPTIC FEEDBACK', Colors.orange),
                   const SizedBox(height: 12),
                   _buildHapticFeedbackCard(),
+
+                  const SizedBox(height: 32),
+
+                  // 📚 GEHEIME BIBLIOTHEK — Ab Level 10
+                  _buildSectionHeader('📚 GEHEIME BIBLIOTHEK', const Color(0xFFC9A84C)),
+                  const SizedBox(height: 12),
+                  _buildSecretLibraryCard(),
 
                   const SizedBox(height: 32),
 
@@ -358,7 +348,270 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     );
   }
   
-  /// Materie-Profil Card
+  /// Unified Profil Card — zeigt EnergieProfile (mit Geburtsdaten) bevorzugt,
+  /// fällt auf MaterieProfile zurück wenn EnergieProfile nicht existiert.
+  Widget _buildUnifiedProfileCard() {
+    final dateFormat = DateFormat('dd.MM.yyyy');
+    // EnergieProfile ist primary; MaterieProfile als Fallback für username
+    final hasEnergie = _energieProfile != null && _energieProfile!.isValid;
+    final displayName = hasEnergie
+        ? _energieProfile!.displayName
+        : (_materieProfile?.displayName ?? '');
+    final username = hasEnergie
+        ? _energieProfile!.username
+        : (_materieProfile?.username ?? '');
+    final avatarEmoji = hasEnergie
+        ? (_energieProfile!.avatarEmoji ?? '👤')
+        : (_materieProfile?.avatarEmoji ?? '👤');
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFF7C4DFF).withValues(alpha: 0.12),
+            const Color(0xFFC9A84C).withValues(alpha: 0.06),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFF7C4DFF).withValues(alpha: 0.3),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Avatar + Name
+          Row(
+            children: [
+              GestureDetector(
+                onTap: _isUploadingAvatar
+                    ? null
+                    : () async {
+                        final source = await AvatarUploadService
+                            .showImageSourceDialog(context);
+                        if (source == null || !mounted) return;
+                        final avatarService = AvatarUploadService();
+                        final file = source == ImageSource.gallery
+                            ? await avatarService.pickImageFromGallery()
+                            : await avatarService.pickImageFromCamera();
+                        if (file == null || !mounted) return;
+                        setState(() => _isUploadingAvatar = true);
+                        try {
+                          final userId = supabase.auth.currentUser?.id ??
+                              _energieProfile?.userId ??
+                              _materieProfile?.userId ??
+                              'anonymous';
+                          final url = await avatarService.uploadAvatar(file, userId);
+                          if (!mounted) return;
+                          if (url != null) setState(() => _avatarUrl = url);
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                            content: Text(url != null
+                                ? '✅ Profilbild gespeichert'
+                                : '⚠️ Upload fehlgeschlagen'),
+                            backgroundColor:
+                                url != null ? Colors.green : Colors.orange,
+                          ));
+                        } catch (e) {
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                            content: Text(_avatarErrorMessage(e)),
+                            backgroundColor: Colors.red,
+                          ));
+                        } finally {
+                          if (mounted) setState(() => _isUploadingAvatar = false);
+                        }
+                      },
+                child: Stack(
+                  children: [
+                    Container(
+                      width: 60,
+                      height: 60,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF7C4DFF), Color(0xFFC9A84C)],
+                        ),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                            color: const Color(0xFF7C4DFF), width: 2),
+                      ),
+                      child: Center(
+                        child: _isUploadingAvatar
+                            ? const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2.5,
+                                    valueColor: AlwaysStoppedAnimation(Colors.white)),
+                              )
+                            : Text(avatarEmoji,
+                                style: const TextStyle(fontSize: 28)),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF7C4DFF),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 2),
+                        ),
+                        child: Icon(
+                          _isUploadingAvatar
+                              ? Icons.hourglass_top
+                              : Icons.camera_alt,
+                          size: 12,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      displayName,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    Text(
+                      '@$username',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.white.withValues(alpha: 0.6),
+                      ),
+                    ),
+                    if (hasEnergie) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        '✨ Spirit-Profil aktiv',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: const Color(0xFF7C4DFF).withValues(alpha: 0.8),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          // Geburtsdaten (nur wenn EnergieProfile vorhanden)
+          if (hasEnergie) ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildInfoRow(
+                    '📅 Geburtsdatum',
+                    dateFormat.format(_energieProfile!.birthDate),
+                  ),
+                  if (_energieProfile!.birthTime != null) ...[
+                    const SizedBox(height: 8),
+                    _buildInfoRow('🕐 Geburtszeit', _energieProfile!.birthTime!),
+                  ],
+                  const SizedBox(height: 8),
+                  _buildInfoRow('📍 Geburtsort', _energieProfile!.birthPlace),
+                ],
+              ),
+            ),
+          ],
+
+          const SizedBox(height: 16),
+
+          // Aktionen
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _editEnergieProfile,
+                  icon: const Icon(Icons.edit, size: 18),
+                  label: const Text('Bearbeiten'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF7C4DFF),
+                    side: const BorderSide(color: Color(0xFF7C4DFF)),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _deleteUnifiedProfile,
+                  icon: const Icon(Icons.delete_outline, size: 18),
+                  label: const Text('Löschen'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.red,
+                    side: const BorderSide(color: Colors.red),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Unified Profil löschen (beide Profile)
+  Future<void> _deleteUnifiedProfile() async {
+    HapticService.selectionClick();
+    if (!mounted) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('⚠️ Profil löschen?'),
+        content: const Text(
+          'Alle Profildaten werden gelöscht.\n\n'
+          'Spirit-Tool-Berechnungen müssen neu erstellt werden.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Abbrechen'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Löschen'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await _storageService.deleteEnergieProfile();
+      await _storageService.deleteMaterieProfile();
+      await _loadProfiles();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('🗑️ Profil gelöscht'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Materie-Profil Card (Legacy — noch intern, aber nicht mehr im Layout)
   Widget _buildMaterieProfileCard() {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -1428,6 +1681,93 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
   }
 
   /// 🤝 Mensaena — Schwester-Plattform für Nachbarschaftshilfe.
+  /// 📚 Geheime Bibliothek — Card mit Lock-State je nach Global-Level.
+  Widget _buildSecretLibraryCard() {
+    const gold = Color(0xFFC9A84C);
+    const goldLight = Color(0xFFE0C872);
+    final level = GamificationService().globalLevel;
+    final unlocked = level >= SecretLibraryScreen.requiredLevel;
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(14),
+      onTap: () {
+        HapticService.lightImpact();
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const SecretLibraryScreen()),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: unlocked
+                ? [gold.withValues(alpha: 0.25), gold.withValues(alpha: 0.08)]
+                : [Colors.white.withValues(alpha: 0.04), Colors.white.withValues(alpha: 0.02)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: unlocked
+                ? gold.withValues(alpha: 0.6)
+                : Colors.white.withValues(alpha: 0.1),
+            width: unlocked ? 1.4 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: unlocked
+                    ? gold.withValues(alpha: 0.2)
+                    : Colors.white.withValues(alpha: 0.06),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                unlocked ? Icons.menu_book : Icons.lock_outline,
+                color: unlocked ? goldLight : Colors.white54,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    unlocked ? 'Die Geheime Bibliothek' : 'Geheime Bibliothek',
+                    style: TextStyle(
+                      color: unlocked ? goldLight : Colors.white70,
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    unlocked
+                        ? 'Originalquellen · 6 Kategorien'
+                        : 'Ab Level ${SecretLibraryScreen.requiredLevel} (aktuell: Level $level)',
+                    style: TextStyle(
+                      color: unlocked
+                          ? goldLight.withValues(alpha: 0.75)
+                          : Colors.white.withValues(alpha: 0.5),
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.chevron_right,
+              color: unlocked ? goldLight : Colors.white38,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   /// Optionaler Banner der den User auf mensaena.de verlinkt. Bewusst
   /// dezent gehalten damit es nicht aufdringlich wirkt.
   Widget _buildMensaenaCard() {
