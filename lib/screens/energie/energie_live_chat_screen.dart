@@ -2622,7 +2622,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                   title: Text('Nachricht löschen $adminBadge', style: const TextStyle(color: Colors.red)),
                   onTap: () {
                     Navigator.pop(context);
-                    _deleteMessage(msg);  // Backend checks admin status
+                    _deleteMessage(msg, isAdmin: true);
                   },
                 ),
               
@@ -3010,7 +3010,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
   }
 
   /// 🆕 DELETE MESSAGE
-  Future<void> _deleteMessage(Map<String, dynamic> msg) async {
+  Future<void> _deleteMessage(Map<String, dynamic> msg, {bool isAdmin = false}) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -3055,6 +3055,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
           userId: _userId,
           username: _username,
           realm: 'energie',
+          isAdmin: isAdmin,
         );
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -3498,7 +3499,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
           // Bubble mit Tail
           Flexible(
             child: InkWell(
-              onLongPress: isOwn ? () => _showMessageActions(msg) : null,
+              onLongPress: () => _showMessageOptions(context, msg),
               borderRadius: BorderRadius.circular(16),
               child: Container(
                 padding: const EdgeInsets.all(12),
