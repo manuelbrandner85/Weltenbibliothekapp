@@ -343,7 +343,8 @@ class _UrsprungMapTabState extends State<UrsprungMapTab> {
           children: [
             TileLayer(
               urlTemplate:
-                  'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png',
+                  'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+              subdomains: const ['a', 'b', 'c', 'd'],
               userAgentPackageName: 'com.myapp.mobile',
             ),
             MarkerLayer(
