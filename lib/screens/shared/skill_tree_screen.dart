@@ -280,7 +280,7 @@ class _SkillTreeScreenState extends State<SkillTreeScreen>
               ? () => _onSkillTap(def, isUnlocked)
               : null,
           child: AnimatedBuilder(
-            animation: _pulseAnim,
+            listenable: _pulseAnim,
             builder: (ctx, child) {
               final glowAlpha = canUnlock && !isUnlocked
                   ? _pulseAnim.value * 0.3

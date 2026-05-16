@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   build-web:
-    name: Flutter Web Build
+    name: Flutter Web Build & Deploy
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -56,15 +56,11 @@ jobs:
           echo "Build size: $(du -sh build/web/ | cut -f1)"
 
       - name: 🚀 Deploy to Cloudflare Pages
-        if: ${{ secrets.CLOUDFLARE_PAGES_TOKEN != '' }}
-        uses: cloudflare/pages-action@v1
+        uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_PAGES_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: weltenbibliothek-web
-          directory: build/web
-          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
-          wranglerVersion: '3'
+          command: pages deploy build/web --project-name=weltenbibliothek-web --branch=main
 
       - name: 📦 Upload build artifact
         uses: actions/upload-artifact@v4

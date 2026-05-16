@@ -102,7 +102,7 @@ class _DestinyCardScreenState extends State<DestinyCardScreen>
   Widget _buildMainCard() {
     return Center(
       child: AnimatedBuilder(
-        animation: _flipAnim,
+        listenable: _flipAnim,
         builder: (ctx, child) {
           final angle = _flipAnim.value * pi;
           final isBack = angle < pi / 2;
