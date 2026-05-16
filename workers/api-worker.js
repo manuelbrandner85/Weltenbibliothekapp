@@ -1098,14 +1098,16 @@ export default {
     if (path.startsWith('/api/profile/')) {
       const parts = path.split('/'); // /api/profile/{world}/{username}
 
-      // POST: Profil speichern
+      // POST: Profil speichern (username-based auth, kein Supabase Auth nötig)
       if (method === 'POST' && (parts[3] === 'materie' || parts[3] === 'energie') && parts.length === 4) {
         try {
           const body = await request.json();
           const anonKey = env.SUPABASE_ANON_KEY || '';
           const authHeader = request.headers.get('Authorization') || `Bearer ${anonKey}`;
-          // Upsert Profil in profiles-Tabelle
-          const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles`, {
+          // World aus URL übernehmen wenn nicht im Body
+          if (!body.world) body.world = parts[3];
+          // Upsert via username (UNIQUE constraint) — Trigger setzt Role auto für 'Weltenbibliothek'
+          const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?on_conflict=username`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -1116,6 +1118,20 @@ export default {
             body: JSON.stringify(body),
           });
           const data = await res.json().catch(() => ({}));
+          // Backend-Antwort mit userId und role für Client anreichern
+          const profile = Array.isArray(data) ? data[0] : data;
+          if (profile && profile.id) {
+            const isRootAdmin = (profile.role || '').toLowerCase().replace('-', '_') === 'root_admin';
+            const isAdmin = ['admin', 'root_admin', 'content_editor'].includes((profile.role || '').toLowerCase().replace('-', '_'));
+            return jsonResponse({
+              success: true,
+              userId: profile.id,
+              role: profile.role || 'user',
+              isAdmin,
+              isRootAdmin,
+              profile,
+            }, 200);
+          }
           return jsonResponse(data, res.status < 300 ? 200 : res.status);
         } catch (e) {
           return errorResponse(`Profil-Speicher-Fehler: ${e.message}`);
