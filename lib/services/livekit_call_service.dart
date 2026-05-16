@@ -456,8 +456,8 @@ class LiveKitCallService extends ChangeNotifier {
                 body: tokenBody,
               )
               .timeout(const Duration(seconds: 8));
-          // 5xx → Server-Fehler retry'baren, 4xx → kein Retry
-          if (tokenRes.statusCode >= 500 && attempt < tokenRetryDelays.length) {
+          // 5xx + 429 (Rate-Limit/Infra) → retry; andere 4xx → sofort abbrechen
+          if ((tokenRes.statusCode >= 500 || tokenRes.statusCode == 429) && attempt < tokenRetryDelays.length) {
             lastTokenErr = 'HTTP ${tokenRes.statusCode}';
             tokenRes = null;
             await Future<void>.delayed(tokenRetryDelays[attempt]);
