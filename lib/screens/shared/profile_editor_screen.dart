@@ -459,6 +459,7 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
           _avatarUrl = profile.avatarUrl;
         }
       } else {
+        // energie, vorhang, ursprung all use the unified EnergieProfile (birth data)
         final profile = storage.getEnergieProfile();
         _energieProfile = profile;
         if (profile != null) {
@@ -613,7 +614,7 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
         }
         
       } else {
-        // Energie: Alle Felder erforderlich
+        // energie, vorhang, ursprung: all use the unified EnergieProfile (birth data)
         if (_selectedBirthDate == null) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -655,6 +656,18 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
         if (updatedProfile != null) {
           // 💾 Vollständiges Profil lokal speichern (mit userId & role)
           await storage.saveEnergieProfile(updatedProfile);
+          // Cross-sync username to MaterieProfile (unified profile)
+          final existingMat = storage.getMaterieProfile();
+          final syncedMat = MaterieProfile(
+            username: updatedProfile.username,
+            name: existingMat?.name ?? updatedProfile.fullName,
+            avatarUrl: updatedProfile.avatarUrl,
+            bio: updatedProfile.bio,
+            avatarEmoji: updatedProfile.avatarEmoji,
+            userId: updatedProfile.userId,
+            role: updatedProfile.role,
+          );
+          await storage.saveMaterieProfile(syncedMat);
           // ✅ Sync in user_data Box (für AdminStateNotifier + Chat)
           await UnifiedStorageService().saveProfile('energie', {
             'username': updatedProfile.username,
@@ -662,13 +675,15 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
             'avatar_emoji': updatedProfile.avatarEmoji,
             'avatar_url': updatedProfile.avatarUrl,
           });
-          
+
           // ✅ Auth-Service aktualisieren für Inline-Tools
           await UserAuthService.setUsername(updatedProfile.username, world: 'energie');
+          await UserAuthService.setUsername(updatedProfile.username, world: 'materie');
           if (updatedProfile.userId != null) {
             await UserAuthService.setUserId(updatedProfile.userId!, world: 'energie');
+            await UserAuthService.setUserId(updatedProfile.userId!, world: 'materie');
           }
-          
+
           // 🔥 Track Admin-Status für Toast
           isAdmin = updatedProfile.isAdmin();
           isRootAdmin = updatedProfile.isRootAdmin();
@@ -685,6 +700,15 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
           // ✅ SECURITY FIX: Keine lokalen Admin-Rechte ohne Backend-Validierung
           // Speichere Profil NUR als normalen User
           await storage.saveEnergieProfile(profile);
+          // Cross-sync username to MaterieProfile (unified profile)
+          final existingMat2 = storage.getMaterieProfile();
+          await storage.saveMaterieProfile(MaterieProfile(
+            username: profile.username,
+            name: existingMat2?.name ?? profile.fullName,
+            avatarUrl: profile.avatarUrl,
+            bio: profile.bio,
+            avatarEmoji: profile.avatarEmoji,
+          ));
           // ✅ Sync in user_data Box auch für Offline-Fallback
           await UnifiedStorageService().saveProfile('energie', {
             'username': profile.username,
@@ -692,9 +716,10 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
             'avatar_emoji': profile.avatarEmoji,
             'avatar_url': profile.avatarUrl,
           });
-          
+
           // ✅ Auth-Service aktualisieren (ohne Backend-User-ID)
           await UserAuthService.setUsername(profile.username, world: 'energie');
+          await UserAuthService.setUsername(profile.username, world: 'materie');
           
           if (kDebugMode) {
             debugPrint('⚠️ Energie-Profil nur lokal gespeichert (Backend nicht erreichbar)');
