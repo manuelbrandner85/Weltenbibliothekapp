@@ -139,7 +139,8 @@ VALUES
  100,
  true,
  ARRAY['V-04']::TEXT[],
- 'ethische Macht Mandela Leadership deutsch');
+ 'ethische Macht Mandela Leadership deutsch')
+ON CONFLICT (module_code) DO NOTHING;
 
 -- ──────────────────────────────────────────────────────────────────────────────
 -- BRANCH 2: MANIPULATIONSERKENNUNG (V-06 bis V-10)
@@ -216,7 +217,8 @@ VALUES
  100,
  true,
  ARRAY['V-09']::TEXT[],
- 'mentale Immunität Manipulation Stoizismus');
+ 'mentale Immunität Manipulation Stoizismus')
+ON CONFLICT (module_code) DO NOTHING;
 
 -- ──────────────────────────────────────────────────────────────────────────────
 -- BRANCH 3: VERHANDLUNG & ÜBERZEUGUNG (V-11 bis V-15)
@@ -293,7 +295,8 @@ VALUES
  100,
  true,
  ARRAY['V-14']::TEXT[],
- 'Verhandlungsmeister Techniken Masterclass');
+ 'Verhandlungsmeister Techniken Masterclass')
+ON CONFLICT (module_code) DO NOTHING;
 
 -- ──────────────────────────────────────────────────────────────────────────────
 -- BRANCH 4: KÖRPERSPRACHE & NONVERBALES (V-16 bis V-20)
@@ -370,7 +373,8 @@ VALUES
  100,
  true,
  ARRAY['V-19']::TEXT[],
- 'Körpersprache Meisterklasse komplett deutsch');
+ 'Körpersprache Meisterklasse komplett deutsch')
+ON CONFLICT (module_code) DO NOTHING;
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- BRANCH 5: STRATEGISCHES DENKEN (V-21 to V-25)
@@ -427,7 +431,8 @@ VALUES
  100,
  true,
  ARRAY['V-24']::TEXT[],
- 'strategisches Denken Meisterklasse komplett');
+ 'strategisches Denken Meisterklasse komplett')
+ON CONFLICT (module_code) DO NOTHING;
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- BRANCH 6: SCHATTENARBEIT (V-26 to V-30)
@@ -484,4 +489,5 @@ VALUES
  100,
  true,
  ARRAY['V-29']::TEXT[],
- 'Schattenarbeit Integration C.G. Jung Individuation Reife');
+ 'Schattenarbeit Integration C.G. Jung Individuation Reife')
+ON CONFLICT (module_code) DO NOTHING;
