@@ -359,7 +359,7 @@ class _ImageForensicsScreenState extends State<ImageForensicsScreen>
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
             child: Image.file(
-              _selectedImage!,
+              _selectedImage! as dynamic,
               width: 64, height: 64,
               fit: BoxFit.cover,
             ),

@@ -400,7 +400,7 @@ class MultiImageGalleryWidget extends StatelessWidget {
                                 fit: BoxFit.cover,
                               )
                             : Image.file(
-                                File(images[index].path),
+                                File(images[index].path) as dynamic,
                                 width: 120,
                                 height: 120,
                                 fit: BoxFit.cover,

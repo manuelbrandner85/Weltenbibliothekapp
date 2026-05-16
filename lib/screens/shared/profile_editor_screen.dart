@@ -871,7 +871,7 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
                               ? ClipOval(
                                   child: _selectedImageFile != null && !kIsWeb
                                     ? Image.file(
-                                        _selectedImageFile!,
+                                        _selectedImageFile! as dynamic,
                                         fit: BoxFit.cover,
                                         width: 120,
                                         height: 120,
