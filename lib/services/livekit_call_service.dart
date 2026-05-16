@@ -773,6 +773,8 @@ class LiveKitCallService extends ChangeNotifier {
     });
     listener.on<RoomReconnectedEvent>((_) {
       _setState(LiveKitConnectionState.connected);
+      // Speakerphone nach Reconnect wiederherstellen — sonst Audio über Hörmuschel
+      Hardware.instance.setPreferSpeakerOutput(true).catchError((_) => false);
     });
     listener.on<RoomDisconnectedEvent>((event) {
       if (kDebugMode) {
@@ -838,6 +840,14 @@ class LiveKitCallService extends ChangeNotifier {
         debugPrint('📤 LiveKit: published ${event.publication.kind} '
             'by ${event.participant.identity}');
       }
+      // Explicit subscribe als Fallback für autoSubscribe race conditions —
+      // Wenn der Server TrackPublished sendet bevor das autoSubscribe-Flag
+      // verarbeitet ist, bleibt der Track unsubscribed. Explicitly subscribe.
+      try {
+        if (!event.publication.subscribed) {
+          event.publication.subscribe();
+        }
+      } catch (_) {}
       notifyListeners();
     });
     listener.on<TrackUnpublishedEvent>((event) {
