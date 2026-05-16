@@ -336,3 +336,4 @@ jobs:
             echo "   Chat-kritische Migrationen (v50/v51) wurden trotzdem angewendet."
           fi
           echo "🎉 Alle Migrationen durchgelaufen"
+
