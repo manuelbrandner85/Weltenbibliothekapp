@@ -11,8 +11,9 @@
 //   - "Später"-TextButton erlaubt Schließen ohne Restart
 //   - barrierDismissible:false + PopScope canPop:false → User muss aktiv entscheiden
 
-import 'dart:io' show Platform, exit;
+import 'dart:io' if (dart.library.html) '../stubs/dart_io_stub.dart';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -263,6 +264,10 @@ class _PatchReadyDialogState extends State<PatchReadyDialog> {
   }
 
   Future<void> _closeApp(BuildContext context) async {
+    if (kIsWeb) {
+      if (context.mounted) Navigator.of(context).pop();
+      return;
+    }
     if (Platform.isAndroid) {
       final handled = await RestartService.restartApp();
       if (!handled) {

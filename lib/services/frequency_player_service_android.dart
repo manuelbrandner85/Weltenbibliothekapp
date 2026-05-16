@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
-import 'package:just_audio/just_audio.dart';
+import 'package:just_audio/just_audio.dart' if (dart.library.html) '../stubs/just_audio_stub.dart';
 
 /// Android Frequency Audio Generator Service
 /// Generates authentic sine wave tones using programmatic audio synthesis

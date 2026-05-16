@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:async';
-import 'dart:io';
+import 'dart:io' if (dart.library.html) '../stubs/dart_io_stub.dart';
 
 /// 🛠️ Gruppen-Tools Service
 /// Verbindung zu Cloudflare Worker API für alle 18 Tools

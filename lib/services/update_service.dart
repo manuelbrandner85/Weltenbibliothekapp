@@ -15,7 +15,7 @@ import 'dart:async';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
-import 'package:shorebird_code_push/shorebird_code_push.dart';
+import 'package:shorebird_code_push/shorebird_code_push.dart' if (dart.library.html) '../stubs/shorebird_stub.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Ergebnis des Release-Update-Checks (Supabase app_config vs. APP_VERSION).

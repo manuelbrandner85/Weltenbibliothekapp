@@ -16,7 +16,7 @@
 //   mit alter Debug-Key-APK in einer Endlosschleife fest.
 
 import 'dart:async';
-import 'dart:io';
+import 'dart:io' if (dart.library.html) '../stubs/dart_io_stub.dart';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';

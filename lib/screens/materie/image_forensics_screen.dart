@@ -1,6 +1,7 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'dart:io';
+import 'dart:io' if (dart.library.html) '../../stubs/dart_io_stub.dart';
 import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
 import '../../services/image_analysis_service.dart';
@@ -61,6 +62,7 @@ class _ImageForensicsScreenState extends State<ImageForensicsScreen>
   // ─────────────────────────────────────────────
 
   Future<void> _pickImage() async {
+    if (kIsWeb) return;
     try {
       final XFile? image = await _picker.pickImage(
         source: ImageSource.gallery,
@@ -84,6 +86,7 @@ class _ImageForensicsScreenState extends State<ImageForensicsScreen>
   }
 
   Future<void> _takePhoto() async {
+    if (kIsWeb) return;
     try {
       final XFile? photo = await _picker.pickImage(
         source: ImageSource.camera,

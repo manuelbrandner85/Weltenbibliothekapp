@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:audioplayers/audioplayers.dart';
+import 'package:audioplayers/audioplayers.dart' if (dart.library.html) '../stubs/audioplayers_stub.dart';
 
 /// v15.13 - Production-Ready Sound Service
 /// Provides tap sounds, unlock sounds, and other audio feedback

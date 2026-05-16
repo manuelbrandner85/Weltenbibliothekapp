@@ -1,7 +1,8 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
-import 'dart:io';
+import 'dart:io' if (dart.library.html) '../stubs/dart_io_stub.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -224,6 +225,14 @@ class ShareResearchWidget extends StatelessWidget {
   }
 
   Future<void> _shareAsPdf(BuildContext context) async {
+    if (kIsWeb) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('PDF-Export auf Web nicht verfügbar')),
+        );
+      }
+      return;
+    }
     try {
       // Show loading
       if (context.mounted) {

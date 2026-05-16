@@ -10,7 +10,7 @@
 
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:shorebird_code_push/shorebird_code_push.dart';
+import 'package:shorebird_code_push/shorebird_code_push.dart' if (dart.library.html) '../stubs/shorebird_stub.dart';
 
 import 'update_service.dart';
 

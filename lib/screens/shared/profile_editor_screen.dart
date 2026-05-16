@@ -8,7 +8,7 @@ import 'package:flutter/services.dart'; // ✅ Für InputFormatters
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint, kIsWeb;
 import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
-import 'dart:io';
+import 'dart:io' if (dart.library.html) '../../stubs/dart_io_stub.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart'; // 🆕 RIVERPOD
 import '../../services/image_upload_service.dart';
 import '../../services/profile_sync_service.dart'; // 🆕 Cloud-Sync
@@ -298,6 +298,7 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
   
   // 🖼️ BILD-UPLOAD FUNKTIONEN
   Future<void> _pickImage(ImageSource source) async {
+    if (kIsWeb) return;
     try {
       final pickedFile = await _picker.pickImage(
         source: source,
