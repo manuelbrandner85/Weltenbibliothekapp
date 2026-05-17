@@ -2665,6 +2665,43 @@ export default {
       }
     }
 
+    // ── Workers AI: Tag-Vorschläge für Research-Texte (C4) ──
+    // POST /api/ai/tags  { text, limit }  →  { tags: [{ tag, confidence }] }
+    if (path === '/api/ai/tags' && method === 'POST') {
+      if (!env.AI) return errorResponse('Workers AI nicht konfiguriert', 503);
+      try {
+        const { text, limit } = await request.json();
+        if (!text) return errorResponse('text fehlt', 400);
+        const max = Math.min(parseInt(limit || 8, 10) || 8, 20);
+        const systemPrompt = 'Du extrahierst die wichtigsten Schlagworte (Substantive, Eigennamen, Themen) aus deutschsprachigen Recherche-Texten. Antworte AUSSCHLIESSLICH als JSON-Array von Strings, sortiert nach Wichtigkeit, lowercase, ohne Erklärungen.';
+        const userMsg = `Extrahiere max ${max} Tags aus diesem Text:\n\n${text.substring(0, 4000)}`;
+        const res = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userMsg },
+          ],
+          max_tokens: 200,
+        });
+        const raw = (res?.response || '').trim();
+        let tags = [];
+        try {
+          // Llama gibt oft ```json\n[...]\n``` zurück — säubern.
+          const jsonMatch = raw.match(/\[[\s\S]*\]/);
+          const arr = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
+          tags = arr
+            .filter((t) => typeof t === 'string' && t.length > 1 && t.length < 40)
+            .slice(0, max)
+            .map((tag, i) => ({
+              tag: tag.toLowerCase().trim(),
+              confidence: parseFloat((1 - i / (max * 2)).toFixed(2)),
+            }));
+        } catch (_) { /* fall through with empty tags */ }
+        return jsonResponse({ tags, model: 'llama-3.1-8b-instruct' });
+      } catch (e) {
+        return errorResponse(`Tag-Extraktion fehlgeschlagen: ${e.message}`);
+      }
+    }
+
     // ── Workers AI: Freie Frage per Llama (kein API-Key nötig) ──
     if (path === '/api/ai/ask' && method === 'POST') {
       if (!env.AI) return errorResponse('Workers AI nicht konfiguriert', 503);
