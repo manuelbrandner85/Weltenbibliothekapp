@@ -28,6 +28,7 @@ import 'calculators/animated_sacred_geometry_screen.dart'; // 🔯 Animierte SVG
 import 'calculators/audio_body_scan_screen.dart'; // 🧘 TTS-Körperscan
 import 'calculators/audio_meditation_screen.dart'; // 🧘 TTS-Meditationen
 import 'calculators/photo_progress_screen.dart'; // 📸 Vor/Nach
+import 'calculators/crystal_photo_id_screen.dart'; // 💎 KI-Foto-ID
 import 'calculators/new_spirit_tool_screens.dart';
 import 'meditation_timer_screen.dart'; // MeditationTimerScreen (canonical, deduplicated)
 import 'calculators/moon_calendar_tool_screen.dart'; // 🌕 v19 Mondkalender
@@ -255,6 +256,16 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'color': const Color(0xFF1976D2),
         'category': 'new',
         'screen': const CrystalDatabaseScreen(),
+      },
+      // 💎 Kristall-Foto-Erkennung — Cloudflare Workers AI Vision
+      {
+        'icon': Icons.camera,
+        'iconEmoji': '🔍',
+        'title': 'Kristall-Foto-KI',
+        'subtitle': 'KI identifiziert deinen Stein',
+        'color': const Color(0xFF1976D2),
+        'category': 'new',
+        'screen': const CrystalPhotoIdScreen(),
       },
       
       // 📿 Meditation-Timer
