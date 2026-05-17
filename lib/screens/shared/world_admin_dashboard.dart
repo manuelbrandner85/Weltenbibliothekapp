@@ -1,12 +1,16 @@
 import 'dart:async';
-import 'package:flutter/material.dart';
+
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../services/world_admin_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show RealtimeChannel, PostgresChangeEvent;
+
+import '../../features/admin/state/admin_state.dart';
 import '../../services/cloudflare_api_service.dart';
 import '../../services/health_check_service.dart';
-import '../../features/admin/state/admin_state.dart';
 import '../../services/supabase_service.dart';
+import '../../services/world_admin_service.dart';
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_glass_app_bar.dart';
 import '../../widgets/cinematic/wb_vignette.dart';
@@ -310,6 +314,56 @@ class _OverviewTabState extends State<_OverviewTab> {
     }
   }
 
+  // CSV-Export — kopiert volles Audit-Log (bis 500 Einträge) in die
+  // Zwischenablage. Web: SnackBar weist auf Clipboard hin. App: gleicher
+  // Weg, weil Share-Plugin nicht installiert ist und Clipboard universell
+  // funktioniert.
+  Future<void> _exportActivityCsv() async {
+    try {
+      final logs = await WorldAdminService.getAuditLog(
+        widget.world,
+        limit: 500,
+        role: widget.admin.isRootAdmin ? 'root_admin' : 'admin',
+      );
+      if (logs.isEmpty) {
+        _toast('Keine Einträge zum Export.');
+        return;
+      }
+      String esc(String? v) {
+        final s = v ?? '';
+        if (s.contains(',') || s.contains('"') || s.contains('\n')) {
+          return '"${s.replaceAll('"', '""')}"';
+        }
+        return s;
+      }
+      final buf = StringBuffer()
+        ..writeln('timestamp,admin,action,target,old_role,new_role');
+      for (final e in logs) {
+        buf.writeln([
+          esc(e.timestamp),
+          esc(e.adminUsername),
+          esc(e.action),
+          esc(e.targetUsername),
+          esc(e.oldRole),
+          esc(e.newRole),
+        ].join(','));
+      }
+      await Clipboard.setData(ClipboardData(text: buf.toString()));
+      _toast('📋 ${logs.length} Einträge als CSV in Zwischenablage kopiert');
+    } catch (e) {
+      _toast('❌ Export fehlgeschlagen: $e');
+    }
+  }
+
+  void _toast(String msg) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(msg),
+      backgroundColor: const Color(0xFF1A1428),
+      behavior: SnackBarBehavior.floating,
+    ));
+  }
+
   void _showStatsDetail(String label, dynamic value) {
     showDialog(
       context: context,
@@ -501,7 +555,27 @@ class _OverviewTabState extends State<_OverviewTab> {
           const SizedBox(height: 24),
 
           // ── Letzte Aktivitäten ─────────────────────────────────────
-          _SectionLabel('Letzte Aktionen', Icons.history_rounded, widget.accent),
+          Row(children: [
+            Expanded(child: _SectionLabel('Letzte Aktionen', Icons.history_rounded, widget.accent)),
+            if (_activity.isNotEmpty)
+              GestureDetector(
+                onTap: _exportActivityCsv,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: widget.accent.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: widget.accent.withValues(alpha: 0.35)),
+                  ),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Icon(Icons.download_rounded, color: widget.accent, size: 14),
+                    const SizedBox(width: 6),
+                    Text('CSV',
+                        style: TextStyle(color: widget.accent, fontSize: 11, fontWeight: FontWeight.w600)),
+                  ]),
+                ),
+              ),
+          ]),
           const SizedBox(height: 10),
 
           if (_activity.isEmpty)
@@ -539,16 +613,45 @@ class _UsersTabState extends State<_UsersTab> {
   String _roleFilter = 'all';
   final _searchCtrl = TextEditingController();
 
+  // Bulk-Selection — UserIDs der angehakten User. Bulk-Action-Bar erscheint
+  // wenn nicht leer (FAB-ähnlich am unteren Rand).
+  final Set<String> _selectedIds = {};
+
+  // Real-time-Subscription auf profiles — Liste aktualisiert sich live wenn
+  // ein User promotet/gebannt/gelöscht/erstellt wird (egal welcher Admin).
+  RealtimeChannel? _profilesChannel;
+
   @override
   void initState() {
     super.initState();
     _load();
+    _subscribeRealtime();
   }
 
   @override
   void dispose() {
     _searchCtrl.dispose();
+    _profilesChannel?.unsubscribe();
     super.dispose();
+  }
+
+  void _subscribeRealtime() {
+    try {
+      _profilesChannel = supabase
+          .channel('admin-profiles-${DateTime.now().millisecondsSinceEpoch}')
+          .onPostgresChanges(
+            event: PostgresChangeEvent.all,
+            schema: 'public',
+            table: 'profiles',
+            callback: (_) {
+              if (kDebugMode) debugPrint('🔄 profiles change → reload');
+              if (mounted) _load();
+            },
+          )
+          .subscribe();
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ Realtime-Subscribe failed: $e');
+    }
   }
 
   Future<void> _load() async {
@@ -824,24 +927,59 @@ class _UsersTabState extends State<_UsersTab> {
                         ? _EmptyHint('Keine Nutzer gefunden.\nProbiere einen anderen Filter.')
                         : ListView.builder(
                             itemCount: _filtered.length,
-                            padding: const EdgeInsets.only(top: 4, bottom: 16),
+                            padding: EdgeInsets.only(top: 4, bottom: _selectedIds.isNotEmpty ? 90 : 16),
                             itemBuilder: (ctx, i) {
                               final u = _filtered[i];
-                              return _UserTile(
-                                user: u,
-                                isRootAdmin: widget.admin.isRootAdmin,
-                                accent: widget.accent,
-                                accentBright: widget.accentBright,
-                                onBan: () => _ban(u),
-                                onUnban: () => _unban(u),
-                                onPromote: () => _promote(u),
-                                onDemote: () => _demote(u),
-                              );
+                              final selected = _selectedIds.contains(u.userId);
+                              return Row(children: [
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 8),
+                                  child: Checkbox(
+                                    value: selected,
+                                    activeColor: widget.accent,
+                                    onChanged: (v) => setState(() {
+                                      if (v == true) {
+                                        _selectedIds.add(u.userId);
+                                      } else {
+                                        _selectedIds.remove(u.userId);
+                                      }
+                                    }),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: _UserTile(
+                                    user: u,
+                                    isRootAdmin: widget.admin.isRootAdmin,
+                                    accent: widget.accent,
+                                    accentBright: widget.accentBright,
+                                    onBan: () => _ban(u),
+                                    onUnban: () => _unban(u),
+                                    onPromote: () => _promote(u),
+                                    onDemote: () => _demote(u),
+                                  ),
+                                ),
+                              ]);
                             },
                           ),
                   ),
           ),
         ]),
+
+        // Bulk-Action-Bar — schwebt unten wenn _selectedIds nicht leer
+        if (_selectedIds.isNotEmpty)
+          Positioned(
+            left: 12, right: 12, bottom: 12,
+            child: _BulkActionBar(
+              count: _selectedIds.length,
+              accent: widget.accent,
+              accentBright: widget.accentBright,
+              onPromote: _bulkPromote,
+              onDemote: _bulkDemote,
+              onBan: _bulkBan,
+              onUnban: _bulkUnban,
+              onClear: () => setState(_selectedIds.clear),
+            ),
+          ),
 
         // Processing overlay
         if (_processing)
@@ -859,6 +997,72 @@ class _UsersTabState extends State<_UsersTab> {
       ],
     );
   }
+
+  // ── Bulk-Actions ────────────────────────────────────────────────────
+  Future<void> _bulkApply({
+    required String label,
+    required Future<bool> Function(WorldUser u) action,
+  }) async {
+    final targets = _all.where((u) => _selectedIds.contains(u.userId)).toList();
+    if (targets.isEmpty) return;
+    final ok = await _confirm(
+      label,
+      'Aktion auf ${targets.length} Nutzer anwenden?',
+    );
+    if (!ok) return;
+    setState(() => _processing = true);
+    int success = 0, failed = 0;
+    for (final u in targets) {
+      try {
+        if (await action(u)) {
+          success++;
+        } else {
+          failed++;
+        }
+      } catch (_) {
+        failed++;
+      }
+    }
+    if (!mounted) return;
+    setState(() {
+      _processing = false;
+      _selectedIds.clear();
+    });
+    _snack('✅ $success erfolgreich${failed > 0 ? ', $failed fehlgeschlagen' : ''}');
+    _load();
+  }
+
+  Future<void> _bulkPromote() => _bulkApply(
+        label: 'Befördern (Bulk)',
+        action: (u) async => WorldAdminService.promoteUser(
+          u.world ?? widget.world,
+          u.userId,
+          role: widget.admin.isRootAdmin ? 'root_admin' : 'admin',
+        ),
+      );
+  Future<void> _bulkDemote() => _bulkApply(
+        label: 'Degradieren (Bulk)',
+        action: (u) async => WorldAdminService.demoteUser(
+          u.world ?? widget.world,
+          u.userId,
+          role: widget.admin.isRootAdmin ? 'root_admin' : 'admin',
+        ),
+      );
+  Future<void> _bulkBan() => _bulkApply(
+        label: 'Bannen (Bulk)',
+        action: (u) async => WorldAdminServiceV162.banUser(
+          userId: u.userId,
+          reason: 'Bulk-Admin-Aktion',
+          adminUserId: widget.admin.username,
+        ),
+      );
+  Future<void> _bulkUnban() => _bulkApply(
+        label: 'Entbannen (Bulk)',
+        action: (u) async => WorldAdminServiceV162.unbanUser(
+          userId: u.userId,
+          adminUserId: widget.admin.username,
+        ),
+      );
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -1763,6 +1967,80 @@ class _ActionBtn extends StatelessWidget {
           ]),
         ),
       );
+}
+
+// ── Bulk-Action-Bar (schwebt am unteren Rand, wenn Nutzer angehakt sind) ──
+class _BulkActionBar extends StatelessWidget {
+  final int count;
+  final Color accent;
+  final Color accentBright;
+  final VoidCallback onPromote;
+  final VoidCallback onDemote;
+  final VoidCallback onBan;
+  final VoidCallback onUnban;
+  final VoidCallback onClear;
+  const _BulkActionBar({
+    required this.count,
+    required this.accent,
+    required this.accentBright,
+    required this.onPromote,
+    required this.onDemote,
+    required this.onBan,
+    required this.onUnban,
+    required this.onClear,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0B0817).withValues(alpha: 0.96),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: accentBright.withValues(alpha: 0.45), width: 1.2),
+          boxShadow: [
+            BoxShadow(
+              color: accent.withValues(alpha: 0.35),
+              blurRadius: 22,
+              spreadRadius: 1,
+            ),
+          ],
+        ),
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: accentBright.withValues(alpha: 0.18),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text('$count ausgewählt',
+                  style: TextStyle(color: accentBright, fontSize: 12, fontWeight: FontWeight.w700)),
+            ),
+            const SizedBox(width: 12),
+            _ActionBtn(Icons.arrow_upward, 'Befördern', Colors.green, onPromote),
+            const SizedBox(width: 6),
+            _ActionBtn(Icons.arrow_downward, 'Degradieren', Colors.orange, onDemote),
+            const SizedBox(width: 6),
+            _ActionBtn(Icons.block, 'Bannen', Colors.red, onBan),
+            const SizedBox(width: 6),
+            _ActionBtn(Icons.lock_open, 'Entbannen', Colors.teal, onUnban),
+            const SizedBox(width: 10),
+            IconButton(
+              tooltip: 'Auswahl aufheben',
+              icon: const Icon(Icons.close, color: Colors.white60, size: 18),
+              onPressed: onClear,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+            ),
+          ]),
+        ),
+      ),
+    );
+  }
 }
 
 // ── Chat-Nachrichten-Kachel ───────────────────────────────────────────────

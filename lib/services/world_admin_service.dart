@@ -234,12 +234,12 @@ class WorldAdminService {
   /// Get ALL users from BOTH worlds (Energie + Materie)
   /// Admin sees all users with world label
   /// Lädt ALLE User aus profiles — keine Welt-Filterung mehr.
-  /// Hintergrund: Ein User hat genau EIN Profile-Datensatz, kein
-  /// per-Welt-Profil mehr. Die `world`-Spalte zeigt höchstens noch die
-  /// primäre Welt (kosmetisch). System-Profile (id startet mit 00000000)
-  /// werden raus gefiltert da sie keine echten User sind.
+  /// Ein User hat genau EIN Profile-Datensatz, angelegt via
+  /// Profile-Onboarding-Screen (App ODER Web). `web_access_requests` ist
+  /// NUR Approval-Flow zum Web-Zugang — kein User-Profil — und wird hier
+  /// nicht gelistet. System-Profile (id 00000000-…) werden ausgefiltert.
   static Future<List<WorldUser>> getAllUsers() async {
-    if (kDebugMode) debugPrint('📋 Loading ALL profiles (kein Welt-Filter)');
+    if (kDebugMode) debugPrint('📋 Loading ALL profiles');
 
     try {
       final result = await supabase
@@ -248,10 +248,8 @@ class WorldAdminService {
           .order('created_at', ascending: false)
           .limit(500);
 
-      final rawList = result as List<dynamic>;
-      final users = rawList
+      final users = (result as List<dynamic>)
           .map((u) => Map<String, dynamic>.from(u as Map))
-          // System-Platzhalter raus (Materie/Energie/Vorhang/Ursprung-System-IDs)
           .where((u) => !(u['id'] as String? ?? '').startsWith('00000000-'))
           .where((u) => (u['role'] as String? ?? 'user') != 'system')
           .map((u) => WorldUser(
@@ -267,7 +265,6 @@ class WorldAdminService {
                 ..world = (u['world'] as String?) ?? (u['world_preference'] as String?))
           .toList();
 
-      // Sort: root_admin → admin → moderator → content_editor → user
       const order = {'root_admin': 0, 'admin': 1, 'moderator': 2, 'content_editor': 3, 'user': 4};
       users.sort((a, b) {
         final aOrder = order[a.role] ?? 5;
@@ -276,7 +273,6 @@ class WorldAdminService {
             ? a.username.toLowerCase().compareTo(b.username.toLowerCase())
             : aOrder.compareTo(bOrder);
       });
-
       if (kDebugMode) debugPrint('✅ Total real users: ${users.length}');
       return users;
     } catch (e) {
