@@ -35,7 +35,7 @@ class _HumanDesignToolScreenState extends State<HumanDesignToolScreen>
   @override
   void initState() {
     super.initState();
-    _tabs = TabController(length: 3, vsync: this);
+    _tabs = TabController(length: 4, vsync: this);
     _bgCtrl = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 8),
@@ -73,10 +73,12 @@ class _HumanDesignToolScreenState extends State<HumanDesignToolScreen>
           indicatorColor: _kPrimary,
           labelColor: _kPrimary,
           unselectedLabelColor: Colors.white54,
+          isScrollable: true,
           tabs: const [
             Tab(icon: Icon(Icons.auto_awesome), text: 'Neu'),
             Tab(icon: Icon(Icons.history), text: 'Verlauf'),
             Tab(icon: Icon(Icons.menu_book), text: 'Lexikon'),
+            Tab(icon: Icon(Icons.fitness_center), text: 'Coaching'),
           ],
         ),
       ),
@@ -121,6 +123,7 @@ class _HumanDesignToolScreenState extends State<HumanDesignToolScreen>
             _NewHdTab(),
             _HdHistoryTab(),
             _HdLexiconTab(),
+            _HdCoachingTab(),
           ],
         ),
       ),
@@ -1201,4 +1204,149 @@ class _CineOrb extends StatelessWidget {
           ]),
         ),
       );
+}
+
+// ═══════════════════════════════════════════════════════════
+// 💪 HD-COACHING · Strategie & Autorität pro Typ üben
+// ═══════════════════════════════════════════════════════════
+class _HdCoachingTab extends StatelessWidget {
+  const _HdCoachingTab();
+
+  static const List<({String typ, String emoji, String strategie, String autoritaet, List<String> uebungen})> _types = [
+    (
+      typ: 'Generator',
+      emoji: '⚡',
+      strategie: 'Reagieren auf das, was auftaucht',
+      autoritaet: 'Sakrale Autorität (Bauchgefühl, "uh-huh" / "uh-uh")',
+      uebungen: [
+        'Heute 3x: vor einer Entscheidung warten, bis Bauch ein "Ja" oder "Nein" signalisiert',
+        'Spüre den Sakralen Klang in Konversationen — antworte mit "mhh" statt schnellem Wort',
+        'Abends: 3 Dinge notieren, die heute Frustration vs. Befriedigung gebracht haben',
+        'Tu eine Sache nur, weil du Lust hast — ohne Begründung',
+      ],
+    ),
+    (
+      typ: 'Manifesting Generator',
+      emoji: '🔥',
+      strategie: 'Reagieren UND Informieren',
+      autoritaet: 'Sakral + Schnelligkeit zwischen Schritten',
+      uebungen: [
+        'Vor einem Sprung in neue Tätigkeit: Bezugspersonen kurz informieren',
+        'Erlaube dir Multi-Tasking ohne schlechtes Gewissen',
+        'Frage dich: "Bin ich noch dran an dem ursprünglichen Thema oder bin ich abgesprungen?"',
+        'Lass eine Sache mitten drin liegen — das ist okay',
+      ],
+    ),
+    (
+      typ: 'Manifestor',
+      emoji: '🚀',
+      strategie: 'Informieren BEVOR du handelst',
+      autoritaet: 'Emotional ODER Splenisch',
+      uebungen: [
+        'Heute 1x klar informieren, was du als nächstes tust (auch wenn niemand fragt)',
+        'Spüre nach: wo erlaubt der Körper, wo zieht er sich zusammen',
+        'Praktiziere "Ich initiiere" — ohne Schuldgefühl wenn andere zucken',
+        'Schaffe heute 30 Min reine Ruhepausen (Manifestoren brauchen mehr Pause als sie denken)',
+      ],
+    ),
+    (
+      typ: 'Projector',
+      emoji: '🎯',
+      strategie: 'Auf Einladung warten',
+      autoritaet: 'Splenisch / Emotional / Ego / Self-Projected',
+      uebungen: [
+        'Heute mindestens 1x: NICHT von dir aus initiieren, sondern eingeladen werden',
+        'Beobachte Energien anderer — du siehst Muster, die sie selbst nicht sehen',
+        '2 Stunden Energie-Sparen pro Tag aktiv einplanen (Projektoren erschöpfen schnell)',
+        'Frage: "Wem wurde ich heute eingeladen, einen Spiegel zu sein?"',
+      ],
+    ),
+    (
+      typ: 'Reflector',
+      emoji: '🌙',
+      strategie: 'Mondzyklus abwarten (28 Tage) bei großen Entscheidungen',
+      autoritaet: 'Lunar (Mondzyklus-Reflexion)',
+      uebungen: [
+        'Notiere heute: welche Umgebung lädt dich auf, welche entzieht?',
+        'Bei wichtiger Entscheidung: warte einen kompletten Mondzyklus, beobachte das Bild',
+        'Lass dich heute von einem unerwarteten Ort/Mensch überraschen',
+        'Du spiegelst die Umgebung — was siehst du gerade in dir, was nicht "deins" ist?',
+      ],
+    ),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: _types.length + 1,
+      itemBuilder: (_, i) {
+        if (i == 0) {
+          return Container(
+            margin: const EdgeInsets.only(bottom: 14),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(colors: [Color(0xFF0288D1), Color(0xFF26C6DA)]),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: const Text(
+              'Pro HD-Typ vier praktische Übungen für deine STRATEGIE + AUTORITÄT. '
+              'Tippe deinen Typ unten an, dann jeden Tag eine Übung. '
+              '7 Tage Praxis = signifikante Erlebbarkeit der eigenen Energie.',
+              style: TextStyle(color: Colors.white, fontSize: 12.5, height: 1.5),
+            ),
+          );
+        }
+        final t = _types[i - 1];
+        return ExpansionTile(
+          tilePadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+          childrenPadding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+          backgroundColor: const Color(0xFF0D1B3E).withValues(alpha: 0.6),
+          collapsedBackgroundColor: const Color(0xFF0D1B3E).withValues(alpha: 0.4),
+          iconColor: const Color(0xFF26C6DA),
+          collapsedIconColor: const Color(0xFF26C6DA),
+          leading: Text(t.emoji, style: const TextStyle(fontSize: 28)),
+          title: Text(t.typ,
+              style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+          subtitle: Text(t.strategie,
+              style: const TextStyle(color: Color(0xFF26C6DA), fontSize: 11)),
+          children: [
+            const SizedBox(height: 4),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text('AUTORITÄT: ${t.autoritaet}',
+                  style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold)),
+            ),
+            const SizedBox(height: 10),
+            for (var j = 0; j < t.uebungen.length; j++)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 22,
+                      height: 22,
+                      alignment: Alignment.center,
+                      margin: const EdgeInsets.only(top: 1, right: 8),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: const Color(0xFF26C6DA).withValues(alpha: 0.2),
+                        border: Border.all(color: const Color(0xFF26C6DA)),
+                      ),
+                      child: Text('${j + 1}',
+                          style: const TextStyle(color: Color(0xFF26C6DA), fontSize: 10, fontWeight: FontWeight.bold)),
+                    ),
+                    Expanded(
+                      child: Text(t.uebungen[j],
+                          style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.5)),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
 }
