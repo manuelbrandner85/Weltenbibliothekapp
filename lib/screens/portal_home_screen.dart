@@ -1091,7 +1091,12 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> with TickerProvider
                   const Spacer(),
 
                   // ── World cards (2×2 Quad-Portal Grid) ──
-                  Padding(
+                  // Auf PC: max 800px breit damit Kacheln nicht riesig werden.
+                  // Mobile (Container.maxWidth ≤ 600) bleibt voll-breit.
+                  Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 800),
+                      child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Column(
                       children: [
@@ -1161,6 +1166,8 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> with TickerProvider
                       ],
                     ),
                   ),
+                    ), // ConstrainedBox close
+                  ), // Center close
 
                   const SizedBox(height: 36),
                 ],

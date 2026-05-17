@@ -6,6 +6,7 @@ import '../models/materie_profile.dart';
 import '../models/energie_profile.dart';
 import '../services/profile_sync_service.dart'; // 🔥 BACKEND SYNC
 import '../services/profile_restore_service.dart'; // 🔄 PROFIL-RESTORE REGISTRIERUNG
+import '../widgets/responsive_web_container.dart';
 
 /// Profil-Onboarding-Screen - Zeigt beim ersten App-Start ODER zum Bearbeiten
 class ProfileOnboardingScreen extends StatefulWidget {
@@ -91,6 +92,17 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
+      // 🔙 Back-Button — vorher fehlte AppBar komplett, User saß fest.
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.white),
+        title: Text(
+          _isMaterie ? 'Materie-Profil' : 'Energie-Profil',
+          style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w400),
+        ),
+      ),
+      extendBodyBehindAppBar: true,
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -108,16 +120,18 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
           ),
         ),
         child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const SizedBox(height: 40),
-                  _buildHeader(),
-                  const SizedBox(height: 40),
+          child: ResponsiveWebContainer(
+            variant: WebContainerVariant.compact,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const SizedBox(height: 40),
+                    _buildHeader(),
+                    const SizedBox(height: 40),
                   _buildInfoCard(),
                   const SizedBox(height: 30),
                   _isMaterie ? _buildMaterieForm() : _buildEnergieForm(),
@@ -129,6 +143,7 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
             ),
           ),
         ),
+      ),
       ),
     );
   }
