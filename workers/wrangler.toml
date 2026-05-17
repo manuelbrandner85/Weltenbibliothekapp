@@ -11,8 +11,8 @@ compatibility_flags = ["nodejs_compat"]
 main            = "api-worker.js"
 
 [vars]
-SUPABASE_URL            = "https://zctufcfjsixfgmmwvnmv.supabase.co"
-SUPABASE_ANON_KEY       = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpjdHVmY2Zqc2l4ZmdtbXd2bm12Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4OTc4NDgsImV4cCI6MjA5NDQ3Mzg0OH0.2ksXwZsZPHVp2Z9l1e52AUXJYH4zahKAP5xDOR4X2rw"
+SUPABASE_URL            = "https://adtviduaftdquvfjpojb.supabase.co"
+SUPABASE_ANON_KEY       = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkdHZpZHVhZnRkcXV2Zmpwb2piIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxMzY3OTcsImV4cCI6MjA5MDcxMjc5N30.LPtmnjukb6o2CA16RDjoStqYb_1bipNULD4tgOfuD98"
 OPENCLAW_GATEWAY_URL    = "http://72.62.154.95:50074"
 CF_ACCOUNT_ID           = "3472f5994537c3a30c5caeaff4de21fb"
 
