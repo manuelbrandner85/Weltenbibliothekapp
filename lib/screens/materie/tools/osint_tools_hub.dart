@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:webview_flutter/webview_flutter.dart';
+
+import '../../../services/osint_history_service.dart'; // 🕰️ D1
 import '../../../theme/wb_cinematic_tokens.dart';
 import '../../../widgets/cinematic/wb_glass_app_bar.dart';
 import '../../../widgets/cinematic/wb_vignette.dart';
@@ -89,6 +92,16 @@ class OsintToolsHub extends StatelessWidget {
           const Text('OSINT Datenbanken',
               style: TextStyle(color: _kText, fontWeight: FontWeight.bold, fontSize: 18)),
         ]),
+        actions: [
+          // 🕰️ D1: pro-Tool-History
+          IconButton(
+            icon: Icon(Icons.history_rounded, color: _kAccent),
+            tooltip: 'Such-Verlauf',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const _OsintHistoryScreen()),
+            ),
+          ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
           child: Container(height: 1, color: _kBorder),
@@ -265,4 +278,173 @@ class _DbDef {
     required this.url,
     required this.description,
   });
+}
+
+// 🕰️ D1: OSINT-Such-Verlauf pro Tool
+class _OsintHistoryScreen extends StatefulWidget {
+  const _OsintHistoryScreen();
+  @override
+  State<_OsintHistoryScreen> createState() => _OsintHistoryScreenState();
+}
+
+class _OsintHistoryScreenState extends State<_OsintHistoryScreen> {
+  static const _tools = [
+    ('domain_osint', '🌐 Domain'),
+    ('phone_osint', '📞 Phone'),
+    ('crypto_tracker', '₿ Crypto'),
+    ('image_analysis', '🖼️ Image'),
+    ('ai_detector', '🤖 AI-Detector'),
+    ('geo_analysis', '🗺️ Geo'),
+    ('data_leak', '⚠️ Leaks'),
+  ];
+
+  String _selectedTool = 'domain_osint';
+  List<OsintHistoryEntry> _entries = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final list = await OsintHistoryService.instance.list(_selectedTool);
+    if (mounted) setState(() => _entries = list);
+  }
+
+  Future<void> _star(OsintHistoryEntry e) async {
+    await OsintHistoryService.instance.toggleStar(_selectedTool, e.query);
+    _load();
+  }
+
+  Future<void> _clear() async {
+    await OsintHistoryService.instance.clear(_selectedTool);
+    _load();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF04080F),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        title: const Text('OSINT-Verlauf',
+            style: TextStyle(color: Colors.white)),
+        iconTheme: const IconThemeData(color: _kAccent),
+        actions: [
+          if (_entries.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.delete_sweep_outlined, color: _kAccent),
+              tooltip: 'Verlauf leeren',
+              onPressed: _clear,
+            ),
+        ],
+      ),
+      body: Column(
+        children: [
+          SizedBox(
+            height: 48,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              children: [
+                for (final t in _tools)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                    child: ChoiceChip(
+                      label: Text(t.$2,
+                          style: const TextStyle(fontSize: 12)),
+                      selected: _selectedTool == t.$1,
+                      selectedColor: _kAccent.withValues(alpha: 0.25),
+                      backgroundColor: Colors.white.withValues(alpha: 0.04),
+                      labelStyle: TextStyle(
+                        color: _selectedTool == t.$1 ? _kAccent : Colors.white70,
+                      ),
+                      onSelected: (_) {
+                        setState(() => _selectedTool = t.$1);
+                        _load();
+                      },
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: _entries.isEmpty
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(32),
+                      child: Text(
+                        'Noch keine Suchen für dieses Tool.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.55)),
+                      ),
+                    ),
+                  )
+                : ListView.separated(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: _entries.length,
+                    separatorBuilder: (_, __) =>
+                        const Divider(color: Colors.white10, height: 1),
+                    itemBuilder: (_, i) {
+                      final e = _entries[i];
+                      return ListTile(
+                        leading: Icon(
+                          e.starred ? Icons.star : Icons.search,
+                          color: e.starred ? Colors.amber : Colors.white60,
+                        ),
+                        title: Text(e.query,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                                color: Colors.white, fontSize: 13)),
+                        subtitle: Text(
+                          _relTime(e.timestamp),
+                          style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.5),
+                              fontSize: 11),
+                        ),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: Icon(
+                                e.starred ? Icons.star_rounded : Icons.star_outline_rounded,
+                                color: e.starred ? Colors.amber : Colors.white38,
+                              ),
+                              onPressed: () => _star(e),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.copy_rounded,
+                                  color: Colors.white38, size: 18),
+                              onPressed: () {
+                                Clipboard.setData(
+                                    ClipboardData(text: e.query));
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('📋 Kopiert'),
+                                    duration: Duration(seconds: 1),
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _relTime(DateTime t) {
+    final d = DateTime.now().difference(t);
+    if (d.inMinutes < 1) return 'jetzt';
+    if (d.inMinutes < 60) return 'vor ${d.inMinutes}m';
+    if (d.inHours < 24) return 'vor ${d.inHours}h';
+    return 'vor ${d.inDays}d';
+  }
 }
