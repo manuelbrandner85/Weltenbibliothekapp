@@ -7,16 +7,21 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../data/affirmations_habit_21.dart';
 import '../../../data/ancestral_lines_7.dart';
 import '../../../data/archetypes_12.dart';
 import '../../../data/chakra_program_7.dart';
 import '../../../data/earthing_program_10.dart';
+import '../../../data/elder_futhark_24.dart';
 import '../../../data/hermetic_laws_7.dart';
 import '../../../data/kabbalah_paths_22.dart';
+import '../../../data/mantra_path_21.dart';
+import '../../../data/meditation_progression_21.dart';
 import '../../../data/numerology_life_path_9.dart';
 import '../../../data/olympian_gods_12.dart';
 import '../../../data/sacred_geometry_12.dart';
 import '../../../data/shamanic_initiation_7.dart';
+import '../../../data/tarot_major_arcana_22.dart';
 import '../../../widgets/lesson_series_screen.dart';
 
 class _Series {
@@ -124,12 +129,52 @@ class _LernreihenIndexScreenState extends State<LernreihenIndexScreen> {
       entries: sacredGeometry12,
     ),
     _Series(
+      title: '21-Tage-Meditation',
+      emoji: '🧘',
+      tradition: '3-Wochen-Aufbau: Atem · Body-Scan · Open Awareness',
+      storageKey: 'lr_meditation_21',
+      accent: Color(0xFF4527A0),
+      entries: meditationProgression21,
+    ),
+    _Series(
+      title: '21-Tage-Mantras',
+      emoji: '🕉️',
+      tradition: '7 Sanskrit-Mantras über 3 Wochen (OM, So Ham, Gayatri, Shiva...)',
+      storageKey: 'lr_mantras_21',
+      accent: Color(0xFFE65100),
+      entries: mantraPath21,
+    ),
+    _Series(
+      title: '21-Tage-Affirmationen',
+      emoji: '💫',
+      tradition: 'Habit-Formation: Selbstwert · Liebe · Fülle · Gesundheit',
+      storageKey: 'lr_affirmations_21',
+      accent: Color(0xFFE91E63),
+      entries: affirmationsHabit21,
+    ),
+    _Series(
       title: '22-Pfade-Kabbala',
       emoji: '🌳',
       tradition: 'Hebräische Mystik — Verbindungen im Lebensbaum',
       storageKey: 'lr_kabbalah_22',
       accent: Color(0xFF00BCD4),
       entries: kabbalahPaths22,
+    ),
+    _Series(
+      title: '22-Tage-Tarot-Major',
+      emoji: '🔮',
+      tradition: 'Rider-Waite-Smith — die 22 Trumpfkarten der Reise',
+      storageKey: 'lr_tarot_22',
+      accent: Color(0xFF4A148C),
+      entries: tarotMajorArcana22,
+    ),
+    _Series(
+      title: '24-Tage-Elder-Futhark',
+      emoji: 'ᚱ',
+      tradition: 'Nordische Mystik — 24 Runen in 3 Aetts',
+      storageKey: 'lr_runes_24',
+      accent: Color(0xFF795548),
+      entries: elderFutharkPath24,
     ),
   ];
 
