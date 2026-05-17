@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/api_config.dart';
+import 'mentor_personas.dart'; // 🎭 L1: welt-spezifische Personas
 import 'sqlite_storage_service.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -296,6 +297,11 @@ class MentorService {
                   .toList(),
               'world': world,
               'userId': _userId ?? '',
+              // 🎭 L1: Welt-spezifische Persona als System-Prompt-Override.
+              // Worker übernimmt diesen wenn vorhanden (statt Generic).
+              'systemPrompt': MentorPersonas.systemPrompt(world),
+              'mentorDisplayName': MentorPersonas.displayName(world),
+              'mentorAvatarEmoji': MentorPersonas.avatarEmoji(world),
             }),
           )
           .timeout(const Duration(seconds: 30));

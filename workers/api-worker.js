@@ -5705,7 +5705,13 @@ Unterscheide klar zwischen bewiesenem Wissen, Theorien und Spekulation.
 Empfehle immer weiterführende Quellen und Bücher.`,
         };
 
-        const systemPrompt = MENTOR_PROMPTS[personality] || MENTOR_PROMPTS.forscher;
+        // 🎭 L1: Welt-spezifische Persona via systemPrompt-Override aus
+        // dem Client (MentorPersonas.systemPrompt(world)). Wenn nicht
+        // mitgeschickt: Fallback auf personality-basierte MENTOR_PROMPTS.
+        const systemPrompt = (typeof body.systemPrompt === 'string'
+              && body.systemPrompt.length > 30)
+          ? body.systemPrompt
+          : (MENTOR_PROMPTS[personality] || MENTOR_PROMPTS.forscher);
 
         // Konversations-History aufbauen (max 50 Nachrichten)
         const history = Array.isArray(conversationHistory)
