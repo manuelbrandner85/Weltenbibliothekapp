@@ -85,6 +85,7 @@ class _EnergieWorldScreenState extends ConsumerState<EnergieWorldScreen>
       backgroundColor: const Color(0xFF000004),
       appBar: WBGlassAppBar(
         world: WBWorld.energie,
+        showWorldSwitcher: true,
         titleWidget: const Text(
           'ENERGIE',
           style: TextStyle(

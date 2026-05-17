@@ -12,6 +12,7 @@ import '../../services/cloudflare_api_service.dart';
 import '../../services/chat_notification_service.dart'; // 🔔 NOTIFICATIONS
 import '../../services/user_service.dart'; // 🆕 User Service für Auth
 import '../../widgets/mention_autocomplete.dart'; // @ MENTIONS
+import '../../widgets/user_quick_profile_sheet.dart'; // 👤 Avatar-Quick-View
 import 'package:image_picker/image_picker.dart'; // 📷 Image Picker
 // 👤 PROFIL
 import '../../services/storage_service.dart'; // StorageService for profile access
@@ -3414,16 +3415,33 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
           // Avatar placeholder keeps alignment; hidden when grouped
           if (!isOwn) ...[
             if (!isGrouped)
-              CircleAvatar(
-                radius: 18,
-                backgroundColor: Colors.red.withValues(alpha: 0.2),
-                child: Text(
-                  // Sowohl camelCase (lokal optimistisch) als auch
-                  // snake_case (Realtime von Supabase) berücksichtigen.
-                  msg['avatarEmoji']?.toString()
-                      ?? msg['avatar_emoji']?.toString()
-                      ?? '👤',
-                  style: const TextStyle(fontSize: 16),
+              GestureDetector(
+                onTap: () => UserQuickProfileSheet.show(
+                  context,
+                  username: msg['username']?.toString() ?? '',
+                  displayName: msg['display_name']?.toString()
+                      ?? msg['displayName']?.toString(),
+                  avatarUrl: msg['avatar_url']?.toString()
+                      ?? msg['avatarUrl']?.toString(),
+                  accent: const Color(0xFF2979FF),
+                  onMention: (u) {
+                    final cur = _messageController.text;
+                    final sep = cur.isEmpty || cur.endsWith(' ') ? '' : ' ';
+                    _messageController.text = '$cur$sep@$u ';
+                    _messageController.selection = TextSelection.fromPosition(
+                      TextPosition(offset: _messageController.text.length),
+                    );
+                  },
+                ),
+                child: CircleAvatar(
+                  radius: 18,
+                  backgroundColor: Colors.red.withValues(alpha: 0.2),
+                  child: Text(
+                    msg['avatarEmoji']?.toString()
+                        ?? msg['avatar_emoji']?.toString()
+                        ?? '👤',
+                    style: const TextStyle(fontSize: 16),
+                  ),
                 ),
               )
             else

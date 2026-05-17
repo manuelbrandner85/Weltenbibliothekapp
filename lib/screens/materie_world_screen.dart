@@ -85,6 +85,7 @@ class _MaterieWorldScreenState extends ConsumerState<MaterieWorldScreen>
       backgroundColor: const Color(0xFF000004),
       appBar: WBGlassAppBar(
         world: WBWorld.materie,
+        showWorldSwitcher: true,
         titleWidget: const Text(
           'MATERIE',
           style: TextStyle(

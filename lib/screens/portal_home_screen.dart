@@ -12,6 +12,8 @@ import '../animations/world_transition_video.dart';
 import '../services/sound_service.dart';
 import '../services/haptic_service.dart';
 import '../utils/responsive_helper.dart';
+import '../widgets/live_world_badge.dart';
+import '../widgets/profile_quest_banner.dart';
 import 'profile_settings_screen.dart';
 import '../utils/portal_enhancements.dart';
 // 🎨 NEW: Animation System
@@ -1090,6 +1092,10 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> with TickerProvider
 
                   const Spacer(),
 
+                  // Profile-Quest-Banner — versteckt sich automatisch wenn
+                  // bereits ein Profil existiert (Materie/Energie).
+                  const ProfileQuestBanner(),
+
                   // ── World cards (2×2 Quad-Portal Grid) ──
                   // Auf PC: max 800px breit damit Kacheln nicht riesig werden.
                   // Mobile (Container.maxWidth ≤ 600) bleibt voll-breit.
@@ -1561,18 +1567,24 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> with TickerProvider
                         ),
                       ),
                       const Spacer(),
-                      // Arrow
-                      Align(
-                        alignment: Alignment.bottomRight,
-                        child: Container(
-                          width: 24, height: 24,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: primaryColor.withValues(alpha: 0.12),
-                            border: Border.all(color: primaryColor.withValues(alpha: 0.30), width: 0.8),
+                      // Live badge + arrow
+                      Row(
+                        children: [
+                          LiveWorldBadge(
+                            world: title.toLowerCase(),
+                            accent: primaryColor,
                           ),
-                          child: Icon(Icons.arrow_forward, color: primaryColor, size: 12),
-                        ),
+                          const Spacer(),
+                          Container(
+                            width: 24, height: 24,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: primaryColor.withValues(alpha: 0.12),
+                              border: Border.all(color: primaryColor.withValues(alpha: 0.30), width: 0.8),
+                            ),
+                            child: Icon(Icons.arrow_forward, color: primaryColor, size: 12),
+                          ),
+                        ],
                       ),
                     ],
                   ),

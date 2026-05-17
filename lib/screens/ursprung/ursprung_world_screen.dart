@@ -85,6 +85,7 @@ class _UrsprungWorldScreenState extends ConsumerState<UrsprungWorldScreen>
       backgroundColor: const Color(0xFF050510),
       appBar: WBGlassAppBar(
         world: WBWorld.ursprung,
+        showWorldSwitcher: true,
         titleWidget: const Text(
           'URSPRUNG',
           style: TextStyle(

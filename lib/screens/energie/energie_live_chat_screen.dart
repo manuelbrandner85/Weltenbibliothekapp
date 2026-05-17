@@ -53,6 +53,7 @@ import '../../widgets/pinned_message_banner.dart'; // 📌 Pinned Message Banner
 // 🎵 Telegram Voice Player
 import '../../widgets/voice_message_player.dart' show ChatVoicePlayer; // 🎤 Chat Voice Player (New)
 import '../../widgets/mention_autocomplete.dart'; // @ Mentions
+import '../../widgets/user_quick_profile_sheet.dart'; // 👤 Avatar-Quick-View
 // import '../../widgets/voice_record_button.dart'; // 🎤 Voice Recording (Android disabled)
 // webrtc_voice_service entfernt — siehe livekit_call_service.dart
 import '../../services/typing_indicator_service.dart'; // ⌨️ Typing Indicator
@@ -3497,18 +3498,34 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
           // Avatar placeholder keeps alignment; hidden when grouped
           if (!isOwn) ...[
             if (!isGrouped)
-              CircleAvatar(
-                radius: 18,
-                backgroundColor: const Color(0xFF9B51E0).withValues(alpha: 0.2),
-                child: Text(
-                  // Realtime-Payload von Supabase nutzt snake_case
-                  // (avatar_emoji); local-optimistic Inserts können auch
-                  // camelCase oder den 'avatar'-Alias enthalten.
-                  msg['avatar']?.toString()
-                      ?? msg['avatar_emoji']?.toString()
-                      ?? msg['avatarEmoji']?.toString()
-                      ?? '👤',
-                  style: const TextStyle(fontSize: 16),
+              GestureDetector(
+                onTap: () => UserQuickProfileSheet.show(
+                  context,
+                  username: msg['username']?.toString() ?? '',
+                  displayName: msg['display_name']?.toString()
+                      ?? msg['displayName']?.toString(),
+                  avatarUrl: msg['avatar_url']?.toString()
+                      ?? msg['avatarUrl']?.toString(),
+                  accent: const Color(0xFF9B51E0),
+                  onMention: (u) {
+                    final cur = _messageController.text;
+                    final sep = cur.isEmpty || cur.endsWith(' ') ? '' : ' ';
+                    _messageController.text = '$cur$sep@$u ';
+                    _messageController.selection = TextSelection.fromPosition(
+                      TextPosition(offset: _messageController.text.length),
+                    );
+                  },
+                ),
+                child: CircleAvatar(
+                  radius: 18,
+                  backgroundColor: const Color(0xFF9B51E0).withValues(alpha: 0.2),
+                  child: Text(
+                    msg['avatar']?.toString()
+                        ?? msg['avatar_emoji']?.toString()
+                        ?? msg['avatarEmoji']?.toString()
+                        ?? '👤',
+                    style: const TextStyle(fontSize: 16),
+                  ),
                 ),
               )
             else

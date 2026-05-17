@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../theme/wb_cinematic_tokens.dart';
+import '../world_switcher_pill.dart';
 
 /// Glassmorphic Welt-AppBar mit subtiler Welt-Akzent-Linie unten.
 ///
@@ -19,6 +20,11 @@ class WBGlassAppBar extends StatelessWidget implements PreferredSizeWidget {
   /// um die Höhe des Widgets — analog zum Material-`AppBar.bottom`.
   final PreferredSizeWidget? bottom;
 
+  /// Wenn true und `world` ist konkret (materie/energie/vorhang/ursprung),
+  /// wird ein 4-Quadrant-Pill in den Actions-Slot eingefügt mit dem
+  /// User direkt zwischen den Welten springen kann.
+  final bool showWorldSwitcher;
+
   const WBGlassAppBar({
     super.key,
     this.title,
@@ -29,7 +35,23 @@ class WBGlassAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.centerTitle = false,
     this.showAccentLine = true,
     this.bottom,
+    this.showWorldSwitcher = false,
   });
+
+  String? get _worldKey {
+    switch (world) {
+      case WBWorld.materie:
+        return 'materie';
+      case WBWorld.energie:
+        return 'energie';
+      case WBWorld.vorhang:
+        return 'vorhang';
+      case WBWorld.ursprung:
+        return 'ursprung';
+      case WBWorld.neutral:
+        return null;
+    }
+  }
 
   @override
   Size get preferredSize {
@@ -91,6 +113,10 @@ class WBGlassAppBar extends StatelessWidget implements PreferredSizeWidget {
                             ),
                           ),
                           ...actions,
+                          if (showWorldSwitcher && _worldKey != null) ...[
+                            const SizedBox(width: WBSpace.sm),
+                            WorldSwitcherPill(currentWorld: _worldKey!),
+                          ],
                           const SizedBox(width: WBSpace.sm),
                         ],
                       ),

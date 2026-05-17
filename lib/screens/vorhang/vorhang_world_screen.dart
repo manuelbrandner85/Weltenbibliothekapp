@@ -85,6 +85,7 @@ class _VorhangWorldScreenState extends ConsumerState<VorhangWorldScreen>
       backgroundColor: const Color(0xFF000000),
       appBar: WBGlassAppBar(
         world: WBWorld.vorhang,
+        showWorldSwitcher: true,
         titleWidget: const Text(
           'VORHANG',
           style: TextStyle(
