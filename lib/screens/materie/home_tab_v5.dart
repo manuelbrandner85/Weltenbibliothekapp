@@ -20,6 +20,7 @@ import '../../config/wb_design.dart';
 import '../../services/mentor_service.dart';
 import '../shared/mentor_chat_screen.dart';
 import '../../widgets/daily_path_widget.dart';
+import '../../widgets/trending_rooms_section.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // MATERIE HOME DASHBOARD V7 – REDESIGN 2026
@@ -394,6 +395,12 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
                     _buildActionGrid(),
                     _buildRecentRooms(),
                     _buildSectionTitle('🔥 Trending', subtitle: 'Heiß diskutiert'),
+                    SliverToBoxAdapter(
+                      child: TrendingRoomsSection(
+                        realm: 'materie',
+                        accent: _red,
+                      ),
+                    ),
                     _buildTrendingChips(),
                     _buildSectionTitle('📰 Neueste Artikel', subtitle: 'Frisch aus der Welt'),
                     _buildArticleCards(),
