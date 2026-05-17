@@ -24,6 +24,7 @@ import 'calculators/god_oracle_chat_screen.dart'; // 🏛️ Götter-KI-Dialog
 import 'calculators/dream_pattern_analysis_screen.dart'; // 💭 Traum-Muster
 import 'calculators/family_tree_screen.dart'; // 🌳 Stammbaum
 import 'calculators/tarot_spreads_screen.dart'; // 🔮 Tarot-Legesysteme
+import 'calculators/animated_sacred_geometry_screen.dart'; // 🔯 Animierte SVG
 import 'calculators/new_spirit_tool_screens.dart';
 import 'meditation_timer_screen.dart'; // MeditationTimerScreen (canonical, deduplicated)
 import 'calculators/moon_calendar_tool_screen.dart'; // 🌕 v19 Mondkalender
@@ -329,6 +330,16 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'color': const Color(0xFF00838F),
         'category': 'new',
         'screen': const SacredGeometryScreen(),
+      },
+      // 🌀 Animierte Geometrie — Live-Stroke-Animation der 8 Hauptformen
+      {
+        'icon': Icons.architecture,
+        'iconEmoji': '🌀',
+        'title': 'Animierte Geometrie',
+        'subtitle': '8 Formen · Live-Stroke-Animation',
+        'color': const Color(0xFF00ACC1),
+        'category': 'new',
+        'screen': const AnimatedSacredGeometryScreen(),
       },
       
       // 🌍 Erdung-Übungen
