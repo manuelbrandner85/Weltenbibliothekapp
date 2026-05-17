@@ -2665,6 +2665,54 @@ export default {
       }
     }
 
+    // ── OSINT-Proxy (D3 Privacy-Mode) ─────────────────────────
+    // GET /api/osint/proxy?url=<encoded>
+    // Leitet eine GET-Anfrage mit anonymisiertem User-Agent weiter und
+    // entfernt Referrer. Cookies werden NICHT durchgereicht. Nur
+    // HTTPS-Targets. Response-Body wird transparent zurückgegeben.
+    if (path === '/api/osint/proxy' && method === 'GET') {
+      try {
+        const target = url.searchParams.get('url');
+        if (!target) return errorResponse('url-Parameter fehlt', 400);
+        let parsed;
+        try { parsed = new URL(target); } catch (_) {
+          return errorResponse('Ungültige URL', 400);
+        }
+        if (parsed.protocol !== 'https:') {
+          return errorResponse('Nur HTTPS erlaubt', 400);
+        }
+        // Block-List für lokale Subnets / Cloud-Metadaten:
+        const host = parsed.hostname;
+        const blocked = [
+          '127.0.0.1', '0.0.0.0', '169.254.169.254', 'localhost',
+        ];
+        if (blocked.includes(host) || host.startsWith('192.168.')
+            || host.startsWith('10.') || host.startsWith('172.16.')) {
+          return errorResponse('Privates Netz nicht erlaubt', 403);
+        }
+        const res = await fetch(parsed.toString(), {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Anonymous; OSINT-Proxy)',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language': 'de-DE,de;q=0.9,en;q=0.8',
+          },
+          cf: { cacheTtl: 30, cacheEverything: false },
+          redirect: 'follow',
+        });
+        const body = await res.text();
+        return new Response(body, {
+          status: res.status,
+          headers: {
+            'Content-Type': res.headers.get('content-type') || 'text/plain',
+            'X-Proxy': 'wb-osint',
+            'Access-Control-Allow-Origin': '*',
+          },
+        });
+      } catch (e) {
+        return errorResponse(`Proxy-Fehler: ${e.message}`, 502);
+      }
+    }
+
     // ── Workers AI: Tag-Vorschläge für Research-Texte (C4) ──
     // POST /api/ai/tags  { text, limit }  →  { tags: [{ tag, confidence }] }
     if (path === '/api/ai/tags' && method === 'POST') {
