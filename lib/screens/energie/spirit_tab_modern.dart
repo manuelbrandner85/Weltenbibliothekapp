@@ -156,7 +156,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'icon': Icons.menu_book,
         'iconEmoji': '📚',
         'title': 'Lernreihen',
-        'subtitle': 'Tagesweise Lernpfade · 15 Reihen aktiv',
+        'subtitle': 'Tagesweise Lernpfade · 17 Reihen aktiv',
         'color': const Color(0xFF4DB6AC),
         'category': 'core',
         'screen': const LernreihenIndexScreen(),

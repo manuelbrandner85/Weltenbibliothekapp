@@ -14,6 +14,7 @@ import '../../../data/chakra_program_7.dart';
 import '../../../data/earthing_program_10.dart';
 import '../../../data/elder_futhark_24.dart';
 import '../../../data/hermetic_laws_7.dart';
+import '../../../data/iching_kingwen_64.dart';
 import '../../../data/kabbalah_paths_22.dart';
 import '../../../data/mantra_path_21.dart';
 import '../../../data/meditation_progression_21.dart';
@@ -22,6 +23,7 @@ import '../../../data/olympian_gods_12.dart';
 import '../../../data/sacred_geometry_12.dart';
 import '../../../data/shamanic_initiation_7.dart';
 import '../../../data/tarot_major_arcana_22.dart';
+import '../../../data/yoga_challenge_30.dart';
 import '../../../widgets/lesson_series_screen.dart';
 
 class _Series {
@@ -175,6 +177,22 @@ class _LernreihenIndexScreenState extends State<LernreihenIndexScreen> {
       storageKey: 'lr_runes_24',
       accent: Color(0xFF795548),
       entries: elderFutharkPath24,
+    ),
+    _Series(
+      title: '30-Tage-Yoga-Challenge',
+      emoji: '🧘‍♀️',
+      tradition: 'Progressiv: Grund · Sonnengruß · Standasanas · Inversion',
+      storageKey: 'lr_yoga_30',
+      accent: Color(0xFF00695C),
+      entries: yogaChallenge30,
+    ),
+    _Series(
+      title: '64-Tage-I-Ging',
+      emoji: '☯',
+      tradition: 'King-Wen-Sequenz · Wilhelm-Übersetzung der 64 Hexagramme',
+      storageKey: 'lr_iching_64',
+      accent: Color(0xFF424242),
+      entries: ichingKingWen64,
     ),
   ];
 
