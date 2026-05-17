@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:timezone/data/latest_all.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
 import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter/material.dart';
 // ✅ FÜR kDebugMode
@@ -65,6 +67,16 @@ final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // 🕐 TIMEZONE — für zonedSchedule (Mondkalender-Push-Notifications)
+  if (!kIsWeb) {
+    try {
+      tz.initializeTimeZones();
+      tz.setLocalLocation(tz.getLocation('Europe/Berlin'));
+    } catch (e) {
+      debugPrint('⚠️ Timezone init skipped: $e');
+    }
+  }
 
   // 🔔 FIREBASE — nur auf Mobile initialisieren (nicht auf Web)
   // Fail-safe: Wenn keine google-services.json vorhanden ist oder Play Services

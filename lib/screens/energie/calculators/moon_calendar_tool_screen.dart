@@ -13,6 +13,8 @@ library;
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../services/moon_push_service.dart';
+
 import '../../../services/moon_calculator.dart';
 import '../../../services/moon_recommendations.dart';
 
@@ -348,6 +350,8 @@ class _TodayTab extends StatelessWidget {
       children: [
         _MoonHeroCard(snapshot: snapshot, headline: headline),
         const SizedBox(height: 16),
+        const _MoonPushToggle(),
+        const SizedBox(height: 12),
         _FactsRow(snapshot: snapshot),
         const SizedBox(height: 20),
         const Padding(
@@ -1750,4 +1754,90 @@ class _CineOrb extends StatelessWidget {
           ]),
         ),
       );
+}
+
+// ═══════════════════════════════════════════════════════════
+// 🌕 PUSH-TOGGLE für Mondkalender-Notifications
+// ═══════════════════════════════════════════════════════════
+class _MoonPushToggle extends StatefulWidget {
+  const _MoonPushToggle();
+
+  @override
+  State<_MoonPushToggle> createState() => _MoonPushToggleState();
+}
+
+class _MoonPushToggleState extends State<_MoonPushToggle> {
+  bool _enabled = false;
+  bool _loading = true;
+  int _scheduled = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final on = await MoonPushService.instance.isEnabled();
+    if (mounted) setState(() {
+      _enabled = on;
+      _loading = false;
+    });
+  }
+
+  Future<void> _toggle(bool v) async {
+    setState(() => _loading = true);
+    await MoonPushService.instance.setEnabled(v);
+    var sched = 0;
+    if (v) sched = await MoonPushService.instance.scheduleUpcoming();
+    if (mounted) setState(() {
+      _enabled = v;
+      _scheduled = sched;
+      _loading = false;
+    });
+    if (v && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('🌕 $sched Mond-Erinnerungen geplant (60 Tage)'),
+        backgroundColor: const Color(0xFF7C4DFF),
+      ));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+      ),
+      child: Row(children: [
+        const Text('🔔', style: TextStyle(fontSize: 24)),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Mondphasen-Erinnerungen',
+                  style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+              Text(
+                _enabled
+                    ? (_scheduled > 0 ? '$_scheduled Termine geplant' : 'Aktiv · Erinnerung 1 Tag vorher · 20:00')
+                    : 'Vollmond/Neumond verpassen? Lass dich erinnern.',
+                style: const TextStyle(color: Colors.white70, fontSize: 11),
+              ),
+            ],
+          ),
+        ),
+        _loading
+            ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))
+            : Switch(
+                value: _enabled,
+                onChanged: _toggle,
+                activeColor: const Color(0xFF7C4DFF),
+              ),
+      ]),
+    );
+  }
 }
