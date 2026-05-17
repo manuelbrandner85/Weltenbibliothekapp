@@ -2665,6 +2665,35 @@ export default {
       }
     }
 
+    // ── Crystal-Identifier via Workers AI Vision (H4) ─────────
+    // POST /api/crystal/identify  { imageBase64 } → { name, confidence, properties }
+    if (path === '/api/crystal/identify' && method === 'POST') {
+      if (!env.AI) return errorResponse('Workers AI nicht konfiguriert', 503);
+      try {
+        const { imageBase64 } = await request.json();
+        if (!imageBase64) return errorResponse('imageBase64 fehlt', 400);
+        // LLava-Vision-Modell: bild + frage → text
+        const bytes = Uint8Array.from(atob(imageBase64), (c) => c.charCodeAt(0));
+        const res = await env.AI.run('@cf/llava-hf/llava-1.5-7b-hf', {
+          image: Array.from(bytes),
+          prompt:
+            'You see a crystal or gemstone. Identify it. Reply ONLY in this JSON format with no extra prose: {"name": "...", "confidence": 0.0-1.0, "properties": ["...", "..."]}. The name should be in German if possible (e.g. "Amethyst", "Rosenquarz").',
+          max_tokens: 200,
+        });
+        const raw = (res?.description || res?.response || '').toString().trim();
+        let parsed = { name: 'Unbekannt', confidence: 0, properties: [] };
+        try {
+          const m = raw.match(/\{[\s\S]*\}/);
+          if (m) parsed = JSON.parse(m[0]);
+        } catch (_) {
+          parsed = { name: raw.substring(0, 60), confidence: 0.3, properties: [] };
+        }
+        return jsonResponse({ ...parsed, model: 'llava-1.5-7b' });
+      } catch (e) {
+        return errorResponse(`Crystal-Vision fehlgeschlagen: ${e.message}`);
+      }
+    }
+
     // ── Spirit: Combo-Synthese aus mehreren Tool-Ergebnissen (G2) ──
     // POST /api/spirit/synthesize  { readings: [{tool, summary}, ...] }
     if (path === '/api/spirit/synthesize' && method === 'POST') {
