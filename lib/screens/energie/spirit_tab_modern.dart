@@ -29,6 +29,7 @@ import 'calculators/audio_body_scan_screen.dart'; // 🧘 TTS-Körperscan
 import 'calculators/audio_meditation_screen.dart'; // 🧘 TTS-Meditationen
 import 'calculators/photo_progress_screen.dart'; // 📸 Vor/Nach
 import 'calculators/crystal_photo_id_screen.dart'; // 💎 KI-Foto-ID
+import 'calculators/voice_affirmation_screen.dart'; // 💫 Voice-Recording
 import 'calculators/new_spirit_tool_screens.dart';
 import 'meditation_timer_screen.dart'; // MeditationTimerScreen (canonical, deduplicated)
 import 'calculators/moon_calendar_tool_screen.dart'; // 🌕 v19 Mondkalender
@@ -574,6 +575,16 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'color': const Color(0xFFE91E63),
         'category': 'new',
         'screen': const AffirmationsScreen(),
+      },
+      // 💫 Voice-Affirmationen — eigene Stimme aufnehmen + loopen
+      {
+        'icon': Icons.mic_external_on,
+        'iconEmoji': '🎤',
+        'title': 'Voice-Affirmation',
+        'subtitle': 'Selbstsuggestion mit eigener Stimme (Coué)',
+        'color': const Color(0xFFE91E63),
+        'category': 'new',
+        'screen': const VoiceAffirmationScreen(),
       },
       
       // 📊 Biorhythmus (V115 Feature #18)
