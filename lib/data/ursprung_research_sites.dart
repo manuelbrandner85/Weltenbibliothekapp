@@ -228,7 +228,7 @@ const allUrsprungSites = <ResearchSite>[
     status: 'Aktiv',
     lat: 30.267,
     lng: -97.743,
-    members: ['Joe McMoneagle', 'Lyn Buchanan', 'Paul H. Smith'],
+    researchers: ['Joe McMoneagle', 'Lyn Buchanan', 'Paul H. Smith'],
     category: 'rv',
   ),
 
@@ -689,7 +689,7 @@ const allUrsprungSites = <ResearchSite>[
     status: 'Aktiv',
     lat: 36.121,
     lng: -121.640,
-    members: ['Abraham Maslow', 'Fritz Perls', 'Stanislav Grof'],
+    researchers: ['Abraham Maslow', 'Fritz Perls', 'Stanislav Grof'],
     imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Esalen_Institute_2007_3.jpg/1024px-Esalen_Institute_2007_3.jpg',
     category: 'consciousness',
   ),
