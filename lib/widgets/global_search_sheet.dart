@@ -106,7 +106,7 @@ class _GlobalSearchViewState extends State<_GlobalSearchView> {
                   data: Map<String, dynamic>.from(r as Map),
                 ))
             .toList())
-        .catchError((_) => <_Hit>[]);
+        .onError((_, __) => <_Hit>[]);
 
     Future<List<_Hit>> messagesFut = supa
         .from('chat_messages')
@@ -123,7 +123,7 @@ class _GlobalSearchViewState extends State<_GlobalSearchView> {
                   data: Map<String, dynamic>.from(r as Map),
                 ))
             .toList())
-        .catchError((_) => <_Hit>[]);
+        .onError((_, __) => <_Hit>[]);
 
     Future<List<_Hit>> modulesFut = supa
         .from('vorhang_modules')
@@ -139,7 +139,7 @@ class _GlobalSearchViewState extends State<_GlobalSearchView> {
                   data: Map<String, dynamic>.from(r as Map),
                 ))
             .toList())
-        .catchError((_) => <_Hit>[]);
+        .onError((_, __) => <_Hit>[]);
 
     try {
       final results = await Future.wait([profilesFut, messagesFut, modulesFut])

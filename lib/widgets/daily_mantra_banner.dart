@@ -87,7 +87,7 @@ class _DailyMantraBannerState extends State<DailyMantraBanner> {
               const SizedBox(height: 8),
               Text(
                 [m.author, m.tradition]
-                    .where((s) => s != null && s.isNotEmpty)
+                    .where((s) => s != null && s!.isNotEmpty)
                     .join(' · '),
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.55),
