@@ -4,6 +4,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:convert';
 import 'dart:math' as math;
@@ -2919,62 +2920,149 @@ class _AkashaChronicleJournalScreenState extends State<AkashaChronicleJournalScr
     showDialog(
       context: context,
       builder: (context) {
-        final titleController = TextEditingController();
-        final contentController = TextEditingController();
-        
-        return AlertDialog(
-          backgroundColor: Color(0xFF1A1A1A),
-          title: Text('Neuer Eintrag', style: TextStyle(color: Colors.white)),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: titleController,
-                style: TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  labelText: 'Titel',
-                  labelStyle: TextStyle(color: Colors.white70),
-                  enabledBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(color: Colors.white24),
-                  ),
-                ),
-              ),
-              SizedBox(height: 16),
-              TextField(
-                controller: contentController,
-                style: TextStyle(color: Colors.white),
-                maxLines: 4,
-                decoration: InputDecoration(
-                  labelText: 'Inhalt',
-                  labelStyle: TextStyle(color: Colors.white70),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.white24),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text('Abbrechen'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                setState(() {
-                  _entries.insert(0, {
-                    'date': DateTime.now().toString().split(' ')[0],
-                    'title': titleController.text,
-                    'content': contentController.text,
-                  });
-                });
-                Navigator.pop(context);
-              },
-              child: Text('Speichern'),
-            ),
-          ],
+        return _AkashaEntryDialog(
+          onSave: (title, content) {
+            setState(() {
+              _entries.insert(0, {
+                'date': DateTime.now().toString().split(' ')[0],
+                'title': title,
+                'content': content,
+              });
+            });
+          },
         );
       },
+    );
+  }
+}
+
+// Dialog mit Speech-to-Text-Diktat im Content-Feld
+class _AkashaEntryDialog extends StatefulWidget {
+  final void Function(String title, String content) onSave;
+  const _AkashaEntryDialog({required this.onSave});
+
+  @override
+  State<_AkashaEntryDialog> createState() => _AkashaEntryDialogState();
+}
+
+class _AkashaEntryDialogState extends State<_AkashaEntryDialog> {
+  final _title = TextEditingController();
+  final _content = TextEditingController();
+  final stt.SpeechToText _speech = stt.SpeechToText();
+  bool _listening = false;
+  bool _ready = false;
+
+  @override
+  void dispose() {
+    _title.dispose();
+    _content.dispose();
+    _speech.stop();
+    super.dispose();
+  }
+
+  Future<void> _toggleMic() async {
+    if (_listening) {
+      await _speech.stop();
+      if (mounted) setState(() => _listening = false);
+      return;
+    }
+    if (!_ready) {
+      _ready = await _speech.initialize(
+        onStatus: (s) {
+          if (s == 'done' || s == 'notListening') {
+            if (mounted) setState(() => _listening = false);
+          }
+        },
+        onError: (_) {
+          if (mounted) setState(() => _listening = false);
+        },
+      );
+      if (!_ready) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Mikrofon nicht verfügbar oder Berechtigung fehlt.'),
+            backgroundColor: Colors.redAccent,
+          ));
+        }
+        return;
+      }
+    }
+    setState(() => _listening = true);
+    await _speech.listen(
+      localeId: 'de_DE',
+      onResult: (result) {
+        if (!mounted) return;
+        final base = _content.text;
+        final transcription = result.recognizedWords;
+        _content.text = base.isEmpty ? transcription : '$base $transcription'.trim();
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: const Color(0xFF1A1A1A),
+      title: const Text('Neuer Eintrag', style: TextStyle(color: Colors.white)),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            TextField(
+              controller: _title,
+              style: const TextStyle(color: Colors.white),
+              decoration: const InputDecoration(
+                labelText: 'Titel',
+                labelStyle: TextStyle(color: Colors.white70),
+                enabledBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: Colors.white24),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _content,
+              style: const TextStyle(color: Colors.white),
+              maxLines: 4,
+              decoration: InputDecoration(
+                labelText: 'Inhalt',
+                labelStyle: const TextStyle(color: Colors.white70),
+                enabledBorder: const OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.white24),
+                ),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _listening ? Icons.mic : Icons.mic_none,
+                    color: _listening ? Colors.redAccent : Colors.white60,
+                  ),
+                  tooltip: _listening ? 'Stop' : 'Diktat starten',
+                  onPressed: _toggleMic,
+                ),
+              ),
+            ),
+            if (_listening)
+              const Padding(
+                padding: EdgeInsets.only(top: 6),
+                child: Text('🎙️ Höre zu… (Deutsch)',
+                    style: TextStyle(color: Colors.redAccent, fontSize: 11)),
+              ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Abbrechen'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            widget.onSave(_title.text, _content.text);
+            Navigator.pop(context);
+          },
+          child: const Text('Speichern'),
+        ),
+      ],
     );
   }
 }
