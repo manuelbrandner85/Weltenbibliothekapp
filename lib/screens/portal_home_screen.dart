@@ -14,6 +14,7 @@ import '../services/haptic_service.dart';
 import '../utils/responsive_helper.dart';
 import '../widgets/live_world_badge.dart';
 import '../widgets/profile_quest_banner.dart';
+import 'mentor_tour_screen.dart';
 import 'profile_settings_screen.dart';
 import '../utils/portal_enhancements.dart';
 // 🎨 NEW: Animation System
@@ -94,10 +95,13 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> with TickerProvider
   @override
   void initState() {
     super.initState();
-    
+
     // ✅ DELAYED INITIALIZATION für smooth display
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializePortal();
+      // First-Launch: Mentor-Tour anbieten. Guard ist intern, kein
+      // wiederholtes Pop-Up nach dem ersten Durchlauf.
+      MentorTour.maybeShow(context);
     });
   }
   

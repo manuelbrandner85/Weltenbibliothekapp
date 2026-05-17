@@ -7,10 +7,12 @@
 
 import 'package:flutter/material.dart';
 
+import '../animations/world_transition_video.dart';
 import '../screens/energie_world_wrapper.dart';
 import '../screens/materie_world_wrapper.dart';
 import '../screens/ursprung/ursprung_world_wrapper.dart';
 import '../screens/vorhang/vorhang_world_wrapper.dart';
+import '../services/haptic_service.dart';
 
 class WorldSwitcherPill extends StatelessWidget {
   final String currentWorld;
@@ -43,13 +45,15 @@ class WorldSwitcherPill extends StatelessWidget {
       default:
         return;
     }
+    HapticService.mediumImpact();
+    // Cinematic transition: WorldTransitionVideo zeigt einen Portal-Effekt
+    // in den Ziel-Welt-Farben bevor der Wrapper geladen wird. PushReplacement
+    // damit der Stack nicht wächst beim mehrfachen Hin- und Her-Springen.
     Navigator.of(context).pushReplacement(
-      PageRouteBuilder(
-        pageBuilder: (_, __, ___) => screen,
-        transitionDuration: const Duration(milliseconds: 320),
-        transitionsBuilder: (_, animation, __, child) => FadeTransition(
-          opacity: animation,
-          child: child,
+      MaterialPageRoute(
+        builder: (_) => WorldTransitionVideo(
+          targetScreen: screen,
+          targetWorld: world,
         ),
       ),
     );
