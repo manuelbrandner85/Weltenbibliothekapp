@@ -14,6 +14,7 @@ import '../services/haptic_service.dart';
 import '../utils/responsive_helper.dart';
 import '../widgets/live_world_badge.dart';
 import '../widgets/profile_quest_banner.dart';
+import '../widgets/pwa_install_hint.dart';
 import 'mentor_tour_screen.dart';
 import 'profile_settings_screen.dart';
 import '../utils/portal_enhancements.dart';
@@ -1096,6 +1097,8 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> with TickerProvider
 
                   const Spacer(),
 
+                  // PWA-Tipp (nur Web, einmal pro User dismissbar).
+                  const PwaInstallHint(),
                   // Profile-Quest-Banner — versteckt sich automatisch wenn
                   // bereits ein Profil existiert (Materie/Energie).
                   const ProfileQuestBanner(),
@@ -1471,13 +1474,17 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> with TickerProvider
     required IconData icon,
     required VoidCallback onTap,
   }) {
-    return GestureDetector(
-      key: cardKey,
-      onTap: () {
-        HapticService.mediumImpact();
-        onTap();
-      },
-      child: ClipRRect(
+    return Semantics(
+      button: true,
+      label: 'Welt $title öffnen',
+      hint: subtitle,
+      child: GestureDetector(
+        key: cardKey,
+        onTap: () {
+          HapticService.mediumImpact();
+          onTap();
+        },
+        child: ClipRRect(
         borderRadius: BorderRadius.circular(18),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
@@ -1597,6 +1604,7 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> with TickerProvider
             ),
           ),
         ),
+      ),
       ),
     );
   }

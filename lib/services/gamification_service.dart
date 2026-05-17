@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/api_config.dart';
+import 'haptic_service.dart';
 import 'sqlite_storage_service.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -502,11 +503,17 @@ class GamificationService {
     // Lokal speichern
     await SqliteStorageService.instance.put(_boxProgress, world, updated.toJson());
 
+    // Haptic-Feedback: jeder XP-Gain ein leichter Click; Level-Up extra
+    // (medium impact). Wenn HapticService noch nicht initialisiert ist
+    // (z.B. Test-Umgebung), fängt der Service intern.
+    if (amount > 0) HapticService.selectionClick();
+
     // Level-Up erkennen
     if (updated.level > oldLevel) {
       if (kDebugMode) {
         debugPrint('🎮 LEVEL UP! $world: $oldLevel → ${updated.level}');
       }
+      HapticService.mediumImpact();
       await _checkLevelRewards(world, updated.level);
     }
 
