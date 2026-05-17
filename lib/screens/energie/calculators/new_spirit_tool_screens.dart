@@ -3,9 +3,12 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
+import 'dart:convert';
 import 'dart:math' as math;
 import 'dart:async';
+import '../../../services/device_location_service.dart';
 import 'package:weltenbibliothek/services/storage_service.dart';
 import 'package:weltenbibliothek/services/achievement_service.dart';
 import 'package:weltenbibliothek/models/app_data.dart';
@@ -3395,6 +3398,59 @@ class GroundingExercisesScreen extends StatefulWidget {
 
 class _GroundingExercisesScreenState extends State<GroundingExercisesScreen> {
   String? _selectedExercise;
+  _WeatherSnapshot? _weather;
+  bool _weatherLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadWeather();
+  }
+
+  Future<void> _loadWeather() async {
+    // open-meteo.com — gratis, kein Key. Position via geolocator (mit Fallback).
+    try {
+      final lat = 52.52; // Berlin Fallback wenn GPS nicht verfügbar
+      final lon = 13.41;
+      // Versuch GPS — wenn permission fehlt, Fallback nutzen
+      double useLat = lat;
+      double useLon = lon;
+      try {
+        final loc = await DeviceLocationService.instance
+            .getCurrent()
+            .timeout(const Duration(seconds: 5));
+        if (loc != null) {
+          useLat = loc.lat;
+          useLon = loc.lng;
+        }
+      } catch (_) {}
+
+      final uri = Uri.parse(
+        'https://api.open-meteo.com/v1/forecast'
+        '?latitude=$useLat&longitude=$useLon'
+        '&current=temperature_2m,weather_code,wind_speed_10m,precipitation'
+        '&timezone=auto',
+      );
+      final res = await http.get(uri).timeout(const Duration(seconds: 8));
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body) as Map<String, dynamic>;
+        final cur = data['current'] as Map<String, dynamic>?;
+        if (cur != null && mounted) {
+          setState(() {
+            _weather = _WeatherSnapshot(
+              tempC: (cur['temperature_2m'] as num?)?.toDouble() ?? 0,
+              code: (cur['weather_code'] as num?)?.toInt() ?? 0,
+              windKmh: (cur['wind_speed_10m'] as num?)?.toDouble() ?? 0,
+              precipMm: (cur['precipitation'] as num?)?.toDouble() ?? 0,
+            );
+            _weatherLoading = false;
+          });
+          return;
+        }
+      }
+    } catch (_) {}
+    if (mounted) setState(() => _weatherLoading = false);
+  }
   
   final List<Map<String, String>> _exercises = [
     {
@@ -3460,6 +3516,9 @@ class _GroundingExercisesScreenState extends State<GroundingExercisesScreen> {
         child: ListView(
           padding: EdgeInsets.all(20),
           children: [
+            // Wetter-Smart-Reminder
+            _buildWeatherCard(),
+            const SizedBox(height: 14),
             // Info Card
             Container(
               padding: EdgeInsets.all(20),
@@ -3625,6 +3684,127 @@ class _GroundingExercisesScreenState extends State<GroundingExercisesScreen> {
       ),
     );
   }
+
+  Widget _buildWeatherCard() {
+    if (_weatherLoading) {
+      return Container(
+        height: 70,
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.06),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: const Center(
+          child: SizedBox(
+            width: 22, height: 22,
+            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white70),
+          ),
+        ),
+      );
+    }
+    if (_weather == null) {
+      return Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.06),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: const Row(children: [
+          Icon(Icons.location_off, color: Colors.white54, size: 22),
+          SizedBox(width: 10),
+          Expanded(child: Text('Standort/Wetter nicht verfügbar — manuelle Übungs-Wahl',
+              style: TextStyle(color: Colors.white70, fontSize: 12))),
+        ]),
+      );
+    }
+    final w = _weather!;
+    final emoji = _weatherEmoji(w.code);
+    final rating = _groundingRating(w);
+    final color = rating.score >= 70
+        ? const Color(0xFF66BB6A)
+        : rating.score >= 40
+            ? const Color(0xFFFFB300)
+            : const Color(0xFFE53935);
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(colors: [color.withValues(alpha: 0.4), color.withValues(alpha: 0.1)]),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: color.withValues(alpha: 0.5)),
+      ),
+      child: Row(children: [
+        Text(emoji, style: const TextStyle(fontSize: 32)),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('${w.tempC.round()}°C · Wind ${w.windKmh.round()} km/h',
+                  style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+              Text(rating.recommendation,
+                  style: const TextStyle(color: Colors.white, fontSize: 12, height: 1.4)),
+            ],
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.black.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Text('${rating.score}%',
+              style: TextStyle(color: color, fontSize: 14, fontWeight: FontWeight.bold)),
+        ),
+      ]),
+    );
+  }
+
+  String _weatherEmoji(int code) {
+    // WMO Weather Codes (open-meteo).
+    if (code == 0) return '☀️';
+    if (code <= 3) return '⛅';
+    if (code <= 48) return '🌫️';
+    if (code <= 67) return '🌧️';
+    if (code <= 77) return '❄️';
+    if (code <= 82) return '🌦️';
+    if (code <= 99) return '⛈️';
+    return '🌍';
+  }
+
+  ({int score, String recommendation}) _groundingRating(_WeatherSnapshot w) {
+    var score = 100;
+    var msg = 'Optimal für Barfuß-Earthing draußen!';
+    if (w.precipMm > 0.5) {
+      score -= 30;
+      msg = 'Regen — perfekt für Wasser-Earthing oder Indoor-Atem-Erdung.';
+    } else if (w.tempC < 5) {
+      score -= 40;
+      msg = 'Sehr kalt — Wim-Hof-Atmung oder kurze Eis-Exposition empfohlen.';
+    } else if (w.tempC < 12) {
+      score -= 20;
+      msg = 'Kühl — kurze Barfuß-Session (5 Min) oder warme Decken-Erdung.';
+    } else if (w.tempC > 30) {
+      score -= 15;
+      msg = 'Heiß — Schatten suchen, Erdung im Wasser/See ideal.';
+    }
+    if (w.windKmh > 40) {
+      score -= 15;
+      msg = 'Stürmisch — drinnen erden, Wind-Praxis (Tag 7) anders nutzen.';
+    }
+    return (score: score.clamp(0, 100), recommendation: msg);
+  }
+}
+
+class _WeatherSnapshot {
+  final double tempC;
+  final int code;
+  final double windKmh;
+  final double precipMm;
+  const _WeatherSnapshot({
+    required this.tempC,
+    required this.code,
+    required this.windKmh,
+    required this.precipMm,
+  });
 }
 
 // ═══════════════════════════════════════════════════════════
