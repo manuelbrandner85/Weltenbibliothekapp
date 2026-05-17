@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' show RealtimeChannel, PostgresChangeEvent;
 
 import '../../features/admin/state/admin_state.dart';
+import '../../services/activity_heatmap_service.dart'; // 🔥 M2
 import '../../services/cloudflare_api_service.dart';
 import '../../services/health_check_service.dart';
 import '../../services/supabase_service.dart';
@@ -551,6 +552,13 @@ class _OverviewTabState extends State<_OverviewTab> {
               color: const Color(0xFFC9A84C),
               onTap: () => Navigator.of(context).pushNamed('/admin/web-users'),
             ),
+
+          const SizedBox(height: 24),
+
+          // ── 🔥 Live-User-Heatmap (M2): Welt × Stunde ────────────
+          _SectionLabel('Live-Aktivität (7 Tage)', Icons.local_fire_department_rounded, widget.accent),
+          const SizedBox(height: 10),
+          _ActivityHeatmapBlock(accent: widget.accent),
 
           const SizedBox(height: 24),
 
@@ -2258,6 +2266,168 @@ class _OnlineDot extends StatelessWidget {
                 ]
               : null,
         ),
+      ),
+    );
+  }
+}
+
+// ── M2: Live-Aktivitäts-Heatmap (Welt × Stunde) ────────────────────
+class _ActivityHeatmapBlock extends StatefulWidget {
+  final Color accent;
+  const _ActivityHeatmapBlock({required this.accent});
+
+  @override
+  State<_ActivityHeatmapBlock> createState() => _ActivityHeatmapBlockState();
+}
+
+class _ActivityHeatmapBlockState extends State<_ActivityHeatmapBlock> {
+  ActivityHeatmap? _data;
+  bool _loading = true;
+
+  static const _worldColors = {
+    'materie': Color(0xFF3B82F6),
+    'energie': Color(0xFFA855F7),
+    'vorhang': Color(0xFFC9A84C),
+    'ursprung': Color(0xFF00D4AA),
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final d = await ActivityHeatmapService.instance.compute(days: 7);
+    if (mounted) {
+      setState(() {
+        _data = d;
+        _loading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) {
+      return Container(
+        height: 200,
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: const Color(0xFF12121E),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Center(
+          child: CircularProgressIndicator(
+            color: widget.accent, strokeWidth: 2),
+        ),
+      );
+    }
+    final data = _data!;
+    final maxVal = data.data.values
+        .expand((row) => row)
+        .fold<int>(0, (m, v) => v > m ? v : m);
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 14, 12, 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF12121E),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: widget.accent.withValues(alpha: 0.18)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.bolt_rounded, color: widget.accent, size: 14),
+              const SizedBox(width: 6),
+              Text(
+                '${data.totalMessages} Nachrichten · ${data.fromTime.day}.${data.fromTime.month}. bis heute',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.6),
+                  fontSize: 11,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // X-Achse: Stunden 0-23 (alle 6h beschriftet)
+          Padding(
+            padding: const EdgeInsets.only(left: 70),
+            child: Row(
+              children: List.generate(24, (h) {
+                return Expanded(
+                  child: Text(
+                    h % 6 == 0 ? '$h' : '',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Colors.white38,
+                      fontSize: 9,
+                    ),
+                  ),
+                );
+              }),
+            ),
+          ),
+          const SizedBox(height: 4),
+          // Heatmap-Zeilen pro Welt
+          for (final w in const ['materie', 'energie', 'vorhang', 'ursprung'])
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 2),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 70,
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: _worldColors[w],
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          w[0].toUpperCase() + w.substring(1, 3),
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: Row(
+                      children: List.generate(24, (h) {
+                        final v = data.data[w]?[h] ?? 0;
+                        final intensity = maxVal == 0 ? 0.0 : v / maxVal;
+                        return Expanded(
+                          child: Tooltip(
+                            message: '$w · ${h}h: $v Msg',
+                            child: Container(
+                              height: 22,
+                              margin: const EdgeInsets.symmetric(horizontal: 0.5),
+                              decoration: BoxDecoration(
+                                color: _worldColors[w]!.withValues(
+                                    alpha: 0.08 + (intensity * 0.85)),
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                          ),
+                        );
+                      }),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
       ),
     );
   }
