@@ -17,6 +17,7 @@ import '../widgets/cinematic/wb_floating_nav.dart';
 import '../widgets/cinematic/wb_vignette.dart';
 import '../widgets/cinematic/wb_ambient_particles.dart';
 import '../widgets/cinematic/wb_cinema_route.dart';
+import '../widgets/global_search_sheet.dart';
 import '../widgets/notification_center_button.dart';
 import 'profile_settings_screen.dart';
 
@@ -148,6 +149,12 @@ class _MaterieWorldScreenState extends ConsumerState<MaterieWorldScreen>
 
   List<Widget> _buildAppBarActions(BuildContext context, AdminState adminState) {
     return [
+      IconButton(
+        tooltip: 'Suchen',
+        icon: const Icon(Icons.search_rounded, color: Color(0xFF7DA7FF)),
+        iconSize: 22,
+        onPressed: () => GlobalSearchSheet.open(context),
+      ),
       const NotificationCenterButton(accent: Color(0xFF2979FF)),
       // Portal-Wechsel
       IconButton(

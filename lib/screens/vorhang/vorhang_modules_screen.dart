@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../services/vorhang_service.dart';
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_glass_app_bar.dart';
+import '../../widgets/vorhang_branch_path.dart';
 import 'vorhang_lesson_screen.dart';
 
 /// 🎭 VORHANG Modules Screen
@@ -344,7 +345,12 @@ class _VorhangModulesScreenState extends State<VorhangModulesScreen> {
             ),
           ),
           children: [
-            for (final module in modules) _buildModuleTile(module),
+            VorhangBranchPath(
+              modules: modules,
+              accent: _gold,
+              accentDim: _goldDim,
+              onTap: _openLesson,
+            ),
           ],
         ),
       ),

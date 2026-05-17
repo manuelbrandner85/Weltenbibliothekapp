@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../services/spirit_profile_service.dart';
 import '../../services/storage_service.dart';
 import '../../services/username_availability_service.dart';
+import '../../widgets/profile_completeness_bar.dart';
 import '../../widgets/responsive_web_container.dart';
 import 'package:flutter/services.dart'; // ✅ Für InputFormatters
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint, kIsWeb;
@@ -814,11 +815,63 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
     }
   }
 
+  // Berechnet die Felder die für den Completeness-Banner zählen.
+  // Materie hat weniger Pflichtfelder als Energie (Geburtsdaten für die
+  // Spirit-Tools).
+  List<ProfileField> _completenessFields() {
+    final hasAvatar = (_avatarUrl != null && _avatarUrl!.isNotEmpty)
+        || (_selectedEmoji != null && _selectedEmoji!.isNotEmpty);
+    final fields = <ProfileField>[
+      ProfileField(
+        key: 'username',
+        label: 'Benutzername',
+        filled: _usernameController.text.trim().isNotEmpty,
+      ),
+      ProfileField(key: 'avatar', label: 'Avatar', filled: hasAvatar),
+      ProfileField(
+        key: 'bio',
+        label: 'Bio',
+        filled: _bioController.text.trim().isNotEmpty,
+      ),
+    ];
+    if (widget.world == 'materie') {
+      fields.add(ProfileField(
+        key: 'name',
+        label: 'Name',
+        filled: _nameController.text.trim().isNotEmpty,
+      ));
+    } else {
+      fields.addAll([
+        ProfileField(
+          key: 'firstName',
+          label: 'Vorname',
+          filled: _firstNameController.text.trim().isNotEmpty,
+        ),
+        ProfileField(
+          key: 'lastName',
+          label: 'Nachname',
+          filled: _lastNameController.text.trim().isNotEmpty,
+        ),
+        ProfileField(
+          key: 'birthDate',
+          label: 'Geburtsdatum',
+          filled: _selectedBirthDate != null,
+        ),
+        ProfileField(
+          key: 'birthPlace',
+          label: 'Geburtsort',
+          filled: _birthPlaceController.text.trim().isNotEmpty,
+        ),
+      ]);
+    }
+    return fields;
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final worldColor = widget.world == 'materie' 
-        ? const Color(0xFF1E88E5) 
+    final worldColor = widget.world == 'materie'
+        ? const Color(0xFF1E88E5)
         : const Color(0xFF7E57C2);
     
     return PopScope(
@@ -854,6 +907,12 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    // Gamification: Fortschritts-Banner motiviert User
+                    // die fehlenden Felder zu füllen.
+                    ProfileCompletenessBar(
+                      accent: worldColor,
+                      fields: _completenessFields(),
+                    ),
                     // Avatar-Bereich
                     Center(
                       child: Column(
