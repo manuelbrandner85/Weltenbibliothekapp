@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io' if (dart.library.html) '../stubs/dart_io_stub.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:http/http.dart' as http;
+import 'package:supabase_flutter/supabase_flutter.dart' show PostgrestException;
 import 'dart:convert';
 import 'invisible_auth_service.dart'; // ✅ Auth-Integration
 import '../core/storage/unified_storage_service.dart'; // ✅ Storage für Username
@@ -241,14 +242,44 @@ class WorldAdminService {
   static Future<List<WorldUser>> getAllUsers() async {
     if (kDebugMode) debugPrint('📋 Loading ALL profiles');
 
+    // Zwei-Phasen-Fetch: erst MIT last_seen_at (Online-Status), bei
+    // 42703 (column doesn't exist) fallback auf Basis-Spalten. Damit
+    // bricht die User-Liste nicht zusammen wenn Migration v88 auf
+    // der produktiven DB noch nicht angekommen ist.
+    Map<String, dynamic>? raw;
+    bool hasLastSeen = true;
     try {
-      final result = await supabase
+      raw = {'rows': await supabase
           .from('profiles')
           .select('id,username,display_name,role,is_banned,avatar_url,created_at,world,world_preference,last_seen_at')
           .order('created_at', ascending: false)
-          .limit(500);
+          .limit(500)};
+    } on PostgrestException catch (e) {
+      if (e.code == '42703' || e.message.contains('last_seen_at')) {
+        if (kDebugMode) debugPrint('⚠️ last_seen_at fehlt — Fallback ohne Online-Status');
+        hasLastSeen = false;
+        try {
+          raw = {'rows': await supabase
+              .from('profiles')
+              .select('id,username,display_name,role,is_banned,avatar_url,created_at,world,world_preference')
+              .order('created_at', ascending: false)
+              .limit(500)};
+        } catch (e2) {
+          if (kDebugMode) debugPrint('❌ getAllUsers Fallback-Fehler: $e2');
+          return const [];
+        }
+      } else {
+        if (kDebugMode) debugPrint('❌ getAllUsers Postgrest: ${e.message}');
+        return const [];
+      }
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ getAllUsers Fehler: $e');
+      return const [];
+    }
 
-      final users = (result as List<dynamic>)
+    try {
+      final result = raw['rows'] as List<dynamic>;
+      final users = result
           .map((u) => Map<String, dynamic>.from(u as Map))
           .where((u) => !(u['id'] as String? ?? '').startsWith('00000000-'))
           .where((u) => (u['role'] as String? ?? 'user') != 'system')
@@ -261,7 +292,7 @@ class WorldAdminService {
                 avatarUrl: u['avatar_url'] as String?,
                 avatarEmoji: null,
                 createdAt: u['created_at'] as String? ?? '',
-                lastSeenAt: u['last_seen_at'] as String?,
+                lastSeenAt: hasLastSeen ? u['last_seen_at'] as String? : null,
               )
                 ..world = (u['world'] as String?) ?? (u['world_preference'] as String?))
           .toList();
@@ -277,7 +308,7 @@ class WorldAdminService {
       if (kDebugMode) debugPrint('✅ Total real users: ${users.length}');
       return users;
     } catch (e) {
-      if (kDebugMode) debugPrint('❌ getAllUsers Fehler: $e');
+      if (kDebugMode) debugPrint('❌ getAllUsers parse error: $e');
       return const [];
     }
   }
