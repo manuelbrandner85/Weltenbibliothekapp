@@ -1,11 +1,17 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
-import '../../../services/spirit_calculations/numerology_engine.dart';
+
 import '../../../models/energie_profile.dart';
+import '../../../services/spirit_calculations/numerology_engine.dart';
 import '../../../services/storage_service.dart';
 import '../../../services/streak_tracking_service.dart';
-import '../../../widgets/profile_required_widget.dart';
-
+import '../../../theme/wb_cinematic_tokens.dart';
+import '../../../widgets/cinematic/wb_ambient_particles.dart';
+import '../../../widgets/cinematic/wb_glass_app_bar.dart';
+import '../../../widgets/cinematic/wb_vignette.dart';
 import '../../../widgets/micro_interactions.dart';
+import '../../../widgets/profile_required_widget.dart';
 
 /// 🔢 NUMEROLOGIE-RECHNER
 /// Vollständige numerologische Analyse basierend auf Nutzerprofil
@@ -144,64 +150,157 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
   Widget build(BuildContext context) {
     const primaryColor = Color(0xFF9C27B0);
     const secondaryColor = Color(0xFFFFD700);
+    const accentCyan = Color(0xFF40C4FF);
 
     return Scaffold(
-      backgroundColor: const Color(0xFF06040F),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [primaryColor.withValues(alpha: 0.8), const Color(0xFF06040F)],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
+      extendBodyBehindAppBar: true,
+      backgroundColor: const Color(0xFF050310),
+      appBar: WBGlassAppBar(
+        world: WBWorld.energie,
+        titleWidget: ShaderMask(
+          shaderCallback: (rect) => const LinearGradient(
+            colors: [secondaryColor, primaryColor, accentCyan],
+            stops: [0.0, 0.55, 1.0],
+          ).createShader(rect),
+          child: const Text(
+            'NUMEROLOGIE',
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 17,
+              fontWeight: FontWeight.w300,
+              letterSpacing: 6.0,
+              color: Colors.white,
             ),
           ),
         ),
-        title: const Text(
-          'NUMEROLOGIE-RECHNER',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.5,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(46),
+          child: ClipRect(
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+              child: Container(
+                color: const Color(0xFF050310).withValues(alpha: 0.55),
+                child: TabBar(
+                  controller: _tabController,
+                  isScrollable: true,
+                  indicatorColor: secondaryColor,
+                  indicatorWeight: 2.5,
+                  labelColor: secondaryColor,
+                  unselectedLabelColor: Colors.white60,
+                  labelStyle: const TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.8,
+                  ),
+                  tabs: const [
+                    Tab(text: 'KERN'),
+                    Tab(text: 'ZEIT'),
+                    Tab(text: 'REISE'),
+                    Tab(text: 'ZYKLEN'),
+                    Tab(text: 'SPEZIAL'),
+                    Tab(text: 'PARTNER'),
+                  ],
+                ),
+              ),
+            ),
           ),
-        ),
-        bottom: TabBar(
-          controller: _tabController,
-          indicatorColor: const Color(0xFFFFD700),
-          labelColor: const Color(0xFFFFD700),
-          unselectedLabelColor: Colors.white60,
-          tabs: const [
-            Tab(text: 'KERN'),
-            Tab(text: 'ZEIT'),
-            Tab(text: 'REISE'), // 🚀 Personal Year Journey
-            Tab(text: 'ZYKLEN'),
-            Tab(text: 'SPEZIAL'),
-            Tab(text: 'PARTNER'), // 🆕 Neuer Tab
-          ],
         ),
       ),
       body: AnimatedBuilder(
         animation: _bgCtrl,
         builder: (context, child) => Stack(
           children: [
-            Positioned.fill(child: Container(color: const Color(0xFF06040F))),
+            // ── 1. Tiefster Layer: Nebula-Gradient ─────────────────
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: RadialGradient(
+                    center: Alignment(
+                      -0.4 + _bgCtrl.value * 0.8,
+                      -0.6 + _bgCtrl.value * 0.4,
+                    ),
+                    radius: 1.4,
+                    colors: [
+                      primaryColor.withValues(alpha: 0.22),
+                      accentCyan.withValues(alpha: 0.10),
+                      const Color(0xFF050310),
+                    ],
+                    stops: const [0.0, 0.45, 1.0],
+                  ),
+                ),
+              ),
+            ),
+
+            // ── 2. Hyperrealistische glühende Orbs ─────────────────
             Positioned(
-              top: -80 + _bgCtrl.value * 50,
-              right: -60,
-              child: _CineOrb(color: primaryColor, size: 300, opacity: 0.10 + _bgCtrl.value * 0.05),
+              top: -120 + _bgCtrl.value * 60,
+              right: -80 + _bgCtrl.value * 20,
+              child: _CineOrb(
+                color: primaryColor,
+                size: 380,
+                opacity: 0.18 + _bgCtrl.value * 0.08,
+              ),
             ),
             Positioned(
-              bottom: -100 + _bgCtrl.value * 40,
-              left: -60,
-              child: _CineOrb(color: secondaryColor, size: 250, opacity: 0.08),
+              bottom: -130 + _bgCtrl.value * 50,
+              left: -70 + _bgCtrl.value * 18,
+              child: _CineOrb(
+                color: secondaryColor,
+                size: 320,
+                opacity: 0.14 + (1 - _bgCtrl.value) * 0.05,
+              ),
             ),
             Positioned(
-              top: MediaQuery.of(context).size.height * 0.5,
-              left: MediaQuery.of(context).size.width * 0.3,
-              child: _CineOrb(color: primaryColor, size: 180, opacity: 0.05 + _bgCtrl.value * 0.04),
+              top: MediaQuery.of(context).size.height * 0.45,
+              left: MediaQuery.of(context).size.width * 0.25,
+              child: _CineOrb(
+                color: accentCyan,
+                size: 240,
+                opacity: 0.10 + _bgCtrl.value * 0.05,
+              ),
             ),
+
+            // ── 3. Ambient-Particles (Phase 6 cinematic) ──────────
+            const Positioned.fill(
+              child: IgnorePointer(
+                child: WBAmbientParticles(
+                  world: WBWorld.energie,
+                  count: 42,
+                ),
+              ),
+            ),
+
+            // ── 4. Subtle horizontaler Light-Beam Sweep ────────────
+            Positioned.fill(
+              child: IgnorePointer(
+                child: Opacity(
+                  opacity: 0.22,
+                  child: Align(
+                    alignment: Alignment(0, -0.6 + _bgCtrl.value * 1.2),
+                    child: Container(
+                      height: 1.2,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.transparent,
+                            secondaryColor.withValues(alpha: 0.5),
+                            Colors.transparent,
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+            // ── 5. Vignette (oberster atmosphärischer Layer) ──────
+            const Positioned.fill(
+              child: IgnorePointer(child: WBVignette()),
+            ),
+
+            // ── 6. Content ────────────────────────────────────────
             child!,
           ],
         ),
@@ -216,10 +315,10 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
                 children: [
                   _buildCoreNumbersTab(),
                   _buildTimeNumbersTab(),
-                  _buildPersonalYearJourneyTab(), // 🚀 NEUER TAB (v44.1.0)
+                  _buildPersonalYearJourneyTab(),
                   _buildCyclesTab(),
                   _buildSpecialNumbersTab(),
-                  _buildPartnerCompatibilityTab(), // 🆕 Neuer Tab
+                  _buildPartnerCompatibilityTab(),
                 ],
               ),
       ),
@@ -437,59 +536,142 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
   Widget _buildNumberCard(String title, int number, String description, Color color, IconData icon) {
     return HoverGlowCard(
       glowColor: color,
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              color.withValues(alpha: 0.2),
-              const Color(0xFF1E1E1E),
-            ],
-          ),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withValues(alpha: 0.4)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.3),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(icon, color: color, size: 28),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(18),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              // 🎨 Hyperrealistic glass card: 3-stop gradient + inner glow
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                stops: const [0.0, 0.55, 1.0],
+                colors: [
+                  color.withValues(alpha: 0.32),
+                  Colors.white.withValues(alpha: 0.04),
+                  const Color(0xFF0A0613).withValues(alpha: 0.85),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: color.withValues(alpha: 0.55),
+                width: 1.2,
+              ),
+              boxShadow: [
+                // Außen-Glow
+                BoxShadow(
+                  color: color.withValues(alpha: 0.35),
+                  blurRadius: 32,
+                  spreadRadius: -4,
+                  offset: const Offset(0, 6),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
+                // Innerer Tiefen-Schatten
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.55),
+                  blurRadius: 18,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    // Glowing-Ring-Icon mit Doppel-Layer
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: RadialGradient(
+                          colors: [
+                            color.withValues(alpha: 0.55),
+                            color.withValues(alpha: 0.10),
+                          ],
+                        ),
+                        border: Border.all(
+                          color: color.withValues(alpha: 0.7),
+                          width: 1.2,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: color.withValues(alpha: 0.55),
+                            blurRadius: 18,
+                            spreadRadius: 1,
+                          ),
+                        ],
+                      ),
+                      child: Icon(icon, color: Colors.white, size: 26),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title.toUpperCase(),
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.white.withValues(alpha: 0.75),
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 3.0,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          // Cinematic Zahl mit Gradient-Shader + Glow
+                          ShaderMask(
+                            shaderCallback: (rect) => LinearGradient(
+                              colors: [
+                                Colors.white,
+                                color.withValues(alpha: 0.9),
+                              ],
+                            ).createShader(rect),
+                            child: Text(
+                              number.toString(),
+                              style: TextStyle(
+                                fontSize: 44,
+                                fontWeight: FontWeight.w200,
+                                color: Colors.white,
+                                height: 1.0,
+                                shadows: [
+                                  Shadow(
+                                    color: color.withValues(alpha: 0.85),
+                                    blurRadius: 22,
+                                  ),
+                                  Shadow(
+                                    color: color.withValues(alpha: 0.4),
+                                    blurRadius: 40,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.45),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: color.withValues(alpha: 0.18),
+                    ),
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        title,
+                        _getPersonalizedNumberText(title, number),
                         style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.white.withValues(alpha: 0.7),
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        number.toString(),
-                        style: TextStyle(
-                          fontSize: 32,
-                          fontWeight: FontWeight.bold,
-                          color: color,
-                          shadows: [
-                            Shadow(
-                              color: color.withValues(alpha: 0.5),
-                              blurRadius: 12,
-                            ),
-                          ],
+                          fontSize: 13,
+                          color: Colors.white.withValues(alpha: 0.92),
+                          height: 1.6,
                         ),
                       ),
                     ],
@@ -497,28 +679,7 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFF0D0D0D).withValues(alpha: 0.5),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _getPersonalizedNumberText(title, number),
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: Colors.white,
-                      height: 1.6,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
