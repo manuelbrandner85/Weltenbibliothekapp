@@ -233,52 +233,56 @@ class WorldAdminService {
 
   /// Get ALL users from BOTH worlds (Energie + Materie)
   /// Admin sees all users with world label
+  /// Lädt ALLE User aus profiles — keine Welt-Filterung mehr.
+  /// Hintergrund: Ein User hat genau EIN Profile-Datensatz, kein
+  /// per-Welt-Profil mehr. Die `world`-Spalte zeigt höchstens noch die
+  /// primäre Welt (kosmetisch). System-Profile (id startet mit 00000000)
+  /// werden raus gefiltert da sie keine echten User sind.
   static Future<List<WorldUser>> getAllUsers() async {
-    if (kDebugMode) {
-      debugPrint('📋 Loading ALL users from both worlds...');
+    if (kDebugMode) debugPrint('📋 Loading ALL profiles (kein Welt-Filter)');
+
+    try {
+      final result = await supabase
+          .from('profiles')
+          .select('id,username,display_name,role,is_banned,avatar_url,created_at,world,world_preference')
+          .order('created_at', ascending: false)
+          .limit(500);
+
+      final rawList = result as List<dynamic>;
+      final users = rawList
+          .map((u) => Map<String, dynamic>.from(u as Map))
+          // System-Platzhalter raus (Materie/Energie/Vorhang/Ursprung-System-IDs)
+          .where((u) => !(u['id'] as String? ?? '').startsWith('00000000-'))
+          .where((u) => (u['role'] as String? ?? 'user') != 'system')
+          .map((u) => WorldUser(
+                profileId: u['id'] as String? ?? '',
+                userId: u['id'] as String? ?? '',
+                username: u['username'] as String? ?? 'Unbekannt',
+                displayName: u['display_name'] as String?,
+                role: u['role'] as String? ?? 'user',
+                avatarUrl: u['avatar_url'] as String?,
+                avatarEmoji: null,
+                createdAt: u['created_at'] as String? ?? '',
+              )
+                ..world = (u['world'] as String?) ?? (u['world_preference'] as String?))
+          .toList();
+
+      // Sort: root_admin → admin → moderator → content_editor → user
+      const order = {'root_admin': 0, 'admin': 1, 'moderator': 2, 'content_editor': 3, 'user': 4};
+      users.sort((a, b) {
+        final aOrder = order[a.role] ?? 5;
+        final bOrder = order[b.role] ?? 5;
+        return aOrder == bOrder
+            ? a.username.toLowerCase().compareTo(b.username.toLowerCase())
+            : aOrder.compareTo(bOrder);
+      });
+
+      if (kDebugMode) debugPrint('✅ Total real users: ${users.length}');
+      return users;
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ getAllUsers Fehler: $e');
+      return const [];
     }
-
-    final results = await Future.wait([
-      getUsersByWorld('materie'),
-      getUsersByWorld('energie'),
-    ]);
-
-    final materieUsers = results[0];
-    final energieUsers = results[1];
-
-    // Tag users with their world
-    for (final u in materieUsers) {
-      u.world = 'materie';
-    }
-    for (final u in energieUsers) {
-      u.world = 'energie';
-    }
-
-    // Merge and deduplicate (same userId might appear in both worlds)
-    final Map<String, WorldUser> merged = {};
-    for (final u in materieUsers) {
-      merged[u.userId] = u;
-    }
-    for (final u in energieUsers) {
-      if (!merged.containsKey(u.userId)) {
-        merged[u.userId] = u;
-      }
-    }
-
-    // Sort: root_admin first, then admin, then user
-    final allUsers = merged.values.toList();
-    allUsers.sort((a, b) {
-      const order = {'root_admin': 0, 'admin': 1, 'user': 2};
-      final aOrder = order[a.role] ?? 2;
-      final bOrder = order[b.role] ?? 2;
-      return aOrder.compareTo(bOrder);
-    });
-
-    if (kDebugMode) {
-      debugPrint('✅ Total users: ${allUsers.length} (Materie: ${materieUsers.length}, Energie: ${energieUsers.length})');
-    }
-
-    return allUsers;
   }
 
   // ════════════════════════════════════════════════════════════

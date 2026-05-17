@@ -8,7 +8,7 @@
 
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kDebugMode, debugPrint, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -203,6 +203,26 @@ class _WebLoginScreenState extends State<WebLoginScreen>
               .update({'last_login_at': DateTime.now().toIso8601String()})
               .eq('display_name', name);
         } catch (_) {}
+
+        // Web-User auch als Profile in DB anlegen (sofern nicht vorhanden).
+        // Vorher: Web-User waren nur in web_access_requests, tauchten nicht
+        // im Admin-Dashboard auf und konnten nicht verwaltet werden.
+        // Jetzt: Profile-Upsert via Worker (nutzt SERVICE_ROLE, umgeht RLS).
+        try {
+          await http
+              .post(
+                Uri.parse('${ApiConfig.workerUrl}/api/profile/materie'),
+                headers: {'Content-Type': 'application/json'},
+                body: jsonEncode({
+                  'username': name,
+                  'world': 'materie',
+                }),
+              )
+              .timeout(const Duration(seconds: 8));
+        } catch (e) {
+          // Non-fatal: Login klappt trotzdem, Profile-Sync hinkt nach.
+          if (kDebugMode) debugPrint('⚠️ Web-Profile-Sync failed: $e');
+        }
 
         if (!mounted) return;
 
