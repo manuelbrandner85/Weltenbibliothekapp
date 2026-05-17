@@ -196,18 +196,24 @@ void main() async {
   // Managed by ServiceManager - NO arbitrary delays!
   // ═══════════════════════════════════════════════════════════
   
-  if (!kIsWeb) {
-    try {
-      await ServiceManager().initializeCriticalServices();
-      debugPrint('✅ Critical services ready (Storage + Theme)');
-    } catch (e) {
-      debugPrint('⚠️ Critical service init error: $e');
-      // App cannot start without critical services on mobile
-      rethrow;
-    }
+  // 🌐 Web + Mobile: Critical Services laufen jetzt auf BEIDEN Plattformen.
+  // Vorher war Web ausgeschlossen → InvisibleAuthService nie initialisiert →
+  // alle Web-User hatten user_id='user_anonymous' → Chat-Presence + Edit/Delete
+  // funktionierten nicht. Alle critical services haben Web-Stubs (sqflite,
+  // audioplayers, etc.) — also web-safe.
+  try {
+    await ServiceManager().initializeCriticalServices();
+    debugPrint('✅ Critical services ready (Storage + Theme + Auth)');
+  } catch (e) {
+    debugPrint('⚠️ Critical service init error: $e');
+    // App-Start auf Mobile NICHT möglich ohne critical services.
+    // Web: critical-services-failure ist non-fatal (Stubs greifen meist).
+    if (!kIsWeb) rethrow;
+  }
 
-    // 🔄 PROFIL-WIEDERHERSTELLUNG - Im Hintergrund (nicht blockierend)
-    // Stellt Profil aus Cloud wieder her falls Hive nach Neuinstallation leer ist
+  // 🔄 PROFIL-WIEDERHERSTELLUNG (Mobile only — Cloud-Sync schreibt in Hive)
+  // Web nutzt SharedPreferences (web_user_name), kein Profile-Restore nötig.
+  if (!kIsWeb) {
     ProfileRestoreService().checkAndRestoreProfiles().then((result) {
       if (result.anyRestored) {
         debugPrint('✅ Profile wiederhergestellt: ${result.toString()}');

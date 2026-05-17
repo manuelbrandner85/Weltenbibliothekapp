@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
+import 'package:flutter/foundation.dart' show kDebugMode, debugPrint, kIsWeb;
 import 'package:cached_network_image/cached_network_image.dart';
 import 'dart:async';
 import '../../config/api_config.dart';
@@ -373,6 +373,27 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
         debugPrint('❌ Fehler beim Laden des Materie-Profils: $e');
       }
       // Fall through – profile stays null → dialog will be shown
+    }
+
+    // 🌐 Web-Fallback: WebAuthGate-Login schreibt nur `web_user_name` in
+    // SharedPrefs, kein Hive-Profile. Damit Chat trotzdem funktioniert
+    // wie auf der App, picken wir den Web-Username als Fallback.
+    if (kIsWeb && (profile == null || profile.username.isEmpty)) {
+      try {
+        final webName = await UserService.getCurrentUsernameAsync();
+        if (webName != 'Gast' && mounted) {
+          setState(() {
+            _username = webName;
+            _userId = UserService.getCurrentUserId();
+            _avatar = '👤';
+            _avatarEmoji = null;
+            _avatarUrl = null;
+          });
+          return;
+        }
+      } catch (e) {
+        if (kDebugMode) debugPrint('⚠️ Web username-fallback Fehler: $e');
+      }
     }
 
     if (profile != null && profile.username.isNotEmpty) {

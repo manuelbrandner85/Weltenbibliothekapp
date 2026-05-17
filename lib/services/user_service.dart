@@ -1,6 +1,8 @@
-import 'storage_service.dart';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import 'invisible_auth_service.dart';
+import 'storage_service.dart';
 
 /// User Service - Holt Benutzerdaten aus Energie/Materie Profilen
 /// ✅ ERWEITERT MIT AUTHENTICATION (Phase 1)
@@ -102,6 +104,23 @@ class UserService {
     if (materieProfile != null && materieProfile.username.isNotEmpty) {
       return materieProfile.username;
     }
+    return 'Gast';
+  }
+
+  /// Web-aware variant of getCurrentUsername (async).
+  /// Auf Web nutzt die App das SharedPref `web_user_name` vom WebAuthGate-
+  /// Login (kein InvisibleAuth, kein Hive-Profile). Diese Methode prüft das
+  /// als zusätzlichen Fallback nach den App-Profilen, damit Web-User im Chat
+  /// als ihr selbst-gewählter Name erscheinen statt als „Gast".
+  static Future<String> getCurrentUsernameAsync() async {
+    final sync = getCurrentUsername();
+    if (sync != 'Gast') return sync;
+    try {
+      // ignore: depend_on_referenced_packages
+      final prefs = await SharedPreferences.getInstance();
+      final web = prefs.getString('web_user_name');
+      if (web != null && web.isNotEmpty) return web;
+    } catch (_) {}
     return 'Gast';
   }
 }

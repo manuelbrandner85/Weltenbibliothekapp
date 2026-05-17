@@ -355,6 +355,26 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
       // Fall through – profile stays null → dialog will be shown
     }
 
+    // 🌐 Web-Fallback: Wenn kein Hive-Profile vorhanden (Web nutzt
+    // WebAuthGate ohne Onboarding-Flow), nutze SharedPref `web_user_name`
+    // damit Chat funktioniert wie auf der App.
+    if (kIsWeb && (energieProfile == null || energieProfile.username.isEmpty)) {
+      try {
+        final webName = await UserService.getCurrentUsernameAsync();
+        if (webName != 'Gast' && mounted) {
+          setState(() {
+            _username = webName;
+            _avatar = '🔮';
+            _avatarUrl = null;
+            _userId = UserService.getCurrentUserId();
+          });
+          return;
+        }
+      } catch (e) {
+        if (kDebugMode) debugPrint('⚠️ Web username-fallback Fehler: $e');
+      }
+    }
+
     if (energieProfile != null && energieProfile.username.isNotEmpty) {
       if (mounted) {
         setState(() {
