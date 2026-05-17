@@ -2665,6 +2665,46 @@ export default {
       }
     }
 
+    // ── Knowledge-Graph Auto-Connect (L4) ─────────────────────
+    // POST /api/knowledge/connect-suggest  { nodes: [{id, label, description?}, ...] }
+    // Schlägt sinnvolle Verbindungen zwischen vorhandenen Knoten vor.
+    if (path === '/api/knowledge/connect-suggest' && method === 'POST') {
+      if (!env.AI) return errorResponse('Workers AI nicht konfiguriert', 503);
+      try {
+        const { nodes } = await request.json();
+        if (!Array.isArray(nodes) || nodes.length < 2) {
+          return errorResponse('Mindestens 2 Knoten erforderlich', 400);
+        }
+        const list = nodes
+          .slice(0, 30)
+          .map((n) => `- ${n.id}: ${n.label || ''}${n.description ? ' — ' + n.description.substring(0, 120) : ''}`)
+          .join('\n');
+        const systemPrompt = 'Du erkennst nicht-triviale Verbindungen zwischen Wissens-Knoten. Antworte AUSSCHLIESSLICH als JSON-Array mit Objekten {"from": "<id>", "to": "<id>", "reason": "<kurzer Grund>"}, maximal 8 Verbindungen, keine Erklärungen drumherum.';
+        const userMsg = `Knoten:\n${list}\n\nWelche Verbindungen siehst du?`;
+        const res = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userMsg },
+          ],
+          max_tokens: 500,
+        });
+        const raw = (res?.response || '').trim();
+        let suggestions = [];
+        try {
+          const m = raw.match(/\[[\s\S]*\]/);
+          if (m) {
+            const arr = JSON.parse(m[0]);
+            suggestions = arr
+              .filter((s) => s && s.from && s.to && s.from !== s.to)
+              .slice(0, 8);
+          }
+        } catch (_) { /* empty fallback */ }
+        return jsonResponse({ suggestions, model: 'llama-3.1-8b-instruct' });
+      } catch (e) {
+        return errorResponse(`Connect-Suggest fehlgeschlagen: ${e.message}`);
+      }
+    }
+
     // ── Crystal-Identifier via Workers AI Vision (H4) ─────────
     // POST /api/crystal/identify  { imageBase64 } → { name, confidence, properties }
     if (path === '/api/crystal/identify' && method === 'POST') {
