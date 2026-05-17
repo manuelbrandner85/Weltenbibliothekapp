@@ -661,29 +661,44 @@ class LiveKitCallService extends ChangeNotifier {
       }
 
       // Foreground-Service starten damit der Anruf weiter läuft wenn der
-      // User die App minimiert (Standard-Verhalten von Android: kill ohne FG).
-      // initialize() MUSS immer aufgerufen werden — nicht nur bei fehlenden Perms.
-      // enableBackgroundExecution() schlägt sonst still fehl.
-      try {
-        await FlutterBackground.initialize(
-          androidConfig: const FlutterBackgroundAndroidConfig(
-            notificationTitle: 'Sprach-Anruf läuft',
-            notificationText:
-                'Weltenbibliothek hält den Anruf im Hintergrund aktiv.',
-            notificationImportance: AndroidNotificationImportance.normal,
-            enableWifiLock: true,
-          ),
-        );
-        final ok = await FlutterBackground.enableBackgroundExecution();
-        if (kDebugMode) {
-          debugPrint(ok
-              ? '🌙 Background-Service aktiviert — Anruf läuft auch minimiert'
-              : '⚠️ Background-Service nicht aktivierbar (vermutl. Permission)');
+      // User die App minimiert.
+      //
+      // ⛔ ANDROID 14+ KILL-SWITCH (samsung galaxy s26 ultra etc):
+      // Der `flutter_background`-IsolateHolderService deklariert im Manifest
+      // foregroundServiceType="mediaProjection|microphone|camera". Android
+      // 14+ verlangt für mediaProjection einen User-Consent-Dialog VOR jedem
+      // Service-Start (MediaProjectionManager.createScreenCaptureIntent).
+      // Das Plugin macht das nicht → System killt den App-Prozess sofort
+      // ohne Dart-Exception → App "schließt einfach".
+      // → Wir überspringen den Background-Service auf Android temporär.
+      // Trade-off: Call dropt wenn User App minimiert. Akzeptabel bis
+      // wir das Manifest nativ entschärfen (mediaProjection raus, eigener
+      // Screen-Share-Flow). Web/iOS unbetroffen.
+      final isAndroid = !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+      if (!isAndroid) {
+        try {
+          await FlutterBackground.initialize(
+            androidConfig: const FlutterBackgroundAndroidConfig(
+              notificationTitle: 'Sprach-Anruf läuft',
+              notificationText:
+                  'Weltenbibliothek hält den Anruf im Hintergrund aktiv.',
+              notificationImportance: AndroidNotificationImportance.normal,
+              enableWifiLock: true,
+            ),
+          );
+          final ok = await FlutterBackground.enableBackgroundExecution();
+          if (kDebugMode) {
+            debugPrint(ok
+                ? '🌙 Background-Service aktiviert — Anruf läuft auch minimiert'
+                : '⚠️ Background-Service nicht aktivierbar (vermutl. Permission)');
+          }
+        } catch (e) {
+          if (kDebugMode) {
+            debugPrint('⚠️ FlutterBackground init/enable failed: $e');
+          }
         }
-      } catch (e) {
-        if (kDebugMode) {
-          debugPrint('⚠️ FlutterBackground init/enable failed: $e');
-        }
+      } else if (kDebugMode) {
+        debugPrint('⏭️ Android: FlutterBackground übersprungen (Android 14+ mediaProjection-Crash-Workaround)');
       }
 
       // Mikrofon beim Beitritt je nach User-Wunsch aktivieren.
