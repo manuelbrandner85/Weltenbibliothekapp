@@ -4,10 +4,8 @@ import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import '../core/auth/admin_resolver.dart';
 import 'energie_world_screen.dart';
 import '../services/achievement_service.dart';
-import 'shared/world_admin_dashboard.dart';
 import '../theme/wb_cinematic_tokens.dart';
 import '../widgets/cinematic/wb_glass_app_bar.dart';
-import '../widgets/cinematic/wb_vignette.dart';
 
 /// Energie-Welt-Wrapper
 /// Admin-Check direkt über Supabase profiles.role (nicht OpenClaw).
@@ -82,31 +80,9 @@ class _EnergieWorldWrapperState extends State<EnergieWorldWrapper> {
       );
     }
 
-    if (_isAdmin) {
-      if (kDebugMode) debugPrint('👑 ENERGIE → Admin FAB aktiv');
-      return Stack(
-        children: [
-          const EnergieWorldScreen(),
-          Positioned(
-            bottom: 80,
-            right: 16,
-            child: FloatingActionButton.extended(
-              heroTag: 'admin_fab_energie',
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => const WorldAdminDashboard(world: 'energie'),
-                ),
-              ),
-              backgroundColor: const Color(0xFFC9A84C),
-              foregroundColor: Colors.black,
-              icon: const Icon(Icons.admin_panel_settings_rounded),
-              label: const Text('Admin', style: TextStyle(fontWeight: FontWeight.bold)),
-            ),
-          ),
-        ],
-      );
-    }
-
+    // Admin-Zugang läuft ausschließlich über das prominente Banner
+    // (AdminDashboardButton) oben im World-Screen — kein FAB-Doppel.
+    if (kDebugMode) debugPrint('👑 ENERGIE → admin=$_isAdmin');
     return const EnergieWorldScreen();
   }
 }

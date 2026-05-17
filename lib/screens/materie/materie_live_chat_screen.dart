@@ -1468,7 +1468,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
                     world: 'materie',
                     displayName: _username.isNotEmpty ? _username : 'Mitglied',
                     avatarUrl: _avatarUrl,
-                    audioOnly: true,
+                    audioOnly: false,
                     initialMicEnabled: true,
                   ),
                 ),
@@ -1541,7 +1541,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
                           displayName:
                               _username.isNotEmpty ? _username : 'Mitglied',
                           avatarUrl: _avatarUrl,
-                          audioOnly: true,
+                          audioOnly: false,
                           initialMicEnabled: true,
                         ),
                       ),

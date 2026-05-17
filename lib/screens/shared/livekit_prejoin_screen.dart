@@ -39,7 +39,10 @@ class LiveKitPreJoinScreen extends StatefulWidget {
 
 class _LiveKitPreJoinScreenState extends State<LiveKitPreJoinScreen>
     with SingleTickerProviderStateMixin {
-  bool _audioOnly = true; // default = sparsam
+  // Default = false. Audio läuft sowieso (Mikrofon-Toggle separat),
+  // aber Kamera bleibt für den User jederzeit zuschaltbar. Wer Bandbreite
+  // sparen will, kann den Toggle hier manuell aktivieren.
+  bool _audioOnly = false;
   bool _micEnabled = true; // default = Mikrofon an (User kann als Zuhörer deaktivieren)
   bool _micGranted = false;
   bool _camGranted = false;

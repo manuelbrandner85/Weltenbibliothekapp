@@ -1502,7 +1502,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                     world: 'energie',
                     displayName: _username.isNotEmpty ? _username : 'Mitglied',
                     avatarUrl: _avatarUrl,
-                    audioOnly: true,
+                    audioOnly: false,
                     initialMicEnabled: true,
                   ),
                 ),
@@ -1574,7 +1574,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                           displayName:
                               _username.isNotEmpty ? _username : 'Mitglied',
                           avatarUrl: _avatarUrl,
-                          audioOnly: true,
+                          audioOnly: false,
                           initialMicEnabled: true,
                         ),
                       ),

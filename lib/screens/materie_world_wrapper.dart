@@ -4,10 +4,8 @@ import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import '../core/auth/admin_resolver.dart';
 import 'materie_world_screen.dart';
 import '../services/achievement_service.dart';
-import 'shared/world_admin_dashboard.dart';
 import '../theme/wb_cinematic_tokens.dart';
 import '../widgets/cinematic/wb_glass_app_bar.dart';
-import '../widgets/cinematic/wb_vignette.dart';
 
 /// Materie-Welt-Wrapper
 /// Admin-Check direkt über Supabase profiles.role (nicht OpenClaw).
@@ -83,31 +81,9 @@ class _MaterieWorldWrapperState extends State<MaterieWorldWrapper> {
       );
     }
 
-    if (_isAdmin) {
-      if (kDebugMode) debugPrint('👑 MATERIE → Admin FAB aktiv');
-      return Stack(
-        children: [
-          const MaterieWorldScreen(),
-          Positioned(
-            bottom: 80,
-            right: 16,
-            child: FloatingActionButton.extended(
-              heroTag: 'admin_fab_materie',
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => const WorldAdminDashboard(world: 'materie'),
-                ),
-              ),
-              backgroundColor: const Color(0xFFC9A84C),
-              foregroundColor: Colors.black,
-              icon: const Icon(Icons.admin_panel_settings_rounded),
-              label: const Text('Admin', style: TextStyle(fontWeight: FontWeight.bold)),
-            ),
-          ),
-        ],
-      );
-    }
-
+    // Admin-Zugang läuft ausschließlich über das prominente Banner
+    // (AdminDashboardButton) oben im World-Screen — kein FAB-Doppel.
+    if (kDebugMode) debugPrint('👑 MATERIE → admin=$_isAdmin');
     return const MaterieWorldScreen();
   }
 }

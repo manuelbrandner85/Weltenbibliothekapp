@@ -79,13 +79,21 @@ class AdminPermissions {
   }
   
   /// Get Admin Level from Backend Role (RECOMMENDED!)
-  /// Backend role values: 'root_admin', 'admin', 'user'
+  /// Backend role values: 'root_admin' | 'root-admin' (legacy) | 'admin'
+  /// | 'moderator' | 'content_editor' | 'user'.
+  /// Moderator wird wie ein regulärer Mod (kein Vollzugriff) behandelt —
+  /// Delete/Ban/Flag stehen ihm trotzdem zur Verfügung, da Chat-Moderation
+  /// genau seine Rolle ist. Content-Editor erscheint hier als "user" weil
+  /// er KEINE Chat-Moderationsrechte hat (siehe canEditContent).
   static AdminLevel getAdminLevelFromBackendRole(String? backendRole) {
-    if (backendRole == 'root_admin') {
+    if (backendRole == 'root_admin' || backendRole == 'root-admin') {
       return AdminLevel.rootAdmin;
     }
     if (backendRole == 'admin') {
       return AdminLevel.admin;
+    }
+    if (backendRole == 'moderator') {
+      return AdminLevel.moderator;
     }
     return AdminLevel.user;
   }
@@ -162,8 +170,9 @@ class AdminPermissions {
   
   /// Get admin badge from Backend Role (RECOMMENDED!)
   static String getAdminBadgeFromBackendRole(String? backendRole) {
-    if (backendRole == 'root_admin') return '👑';
+    if (backendRole == 'root_admin' || backendRole == 'root-admin') return '👑';
     if (backendRole == 'admin') return '🛡️';
+    if (backendRole == 'moderator') return '⚖️';
     return '';
   }
   
@@ -183,8 +192,9 @@ class AdminPermissions {
   
   /// Get admin title from Backend Role (RECOMMENDED!)
   static String getAdminTitleFromBackendRole(String? backendRole) {
-    if (backendRole == 'root_admin') return 'Root Admin';
+    if (backendRole == 'root_admin' || backendRole == 'root-admin') return 'Root Admin';
     if (backendRole == 'admin') return 'Admin';
+    if (backendRole == 'moderator') return 'Moderator';
     return '';
   }
   
