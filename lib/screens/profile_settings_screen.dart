@@ -17,6 +17,7 @@ import '../services/avatar_upload_service.dart'; // 👤 AVATAR UPLOAD
 import '../services/supabase_service.dart'; // 🔥 Supabase Auth
 import '../services/haptic_service.dart';
 import '../services/haptic_feedback_service.dart'; // 📳 NEW: Haptic Feedback
+import '../services/privacy_mode_service.dart'; // 🛡️ D3
 import '../widgets/theme_toggle_widget.dart';
 import 'shared/profile_editor_screen.dart'; // 🆕 NEW EDITOR
 import 'shared/secret_library_screen.dart'; // 📚 Geheime Bibliothek
@@ -307,6 +308,13 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                   _buildSectionHeader('📚 GEHEIME BIBLIOTHEK', const Color(0xFFC9A84C)),
                   const SizedBox(height: 12),
                   _buildSecretLibraryCard(),
+
+                  const SizedBox(height: 32),
+
+                  // 🛡️ D3 Privacy-Mode für OSINT-Tools
+                  _buildSectionHeader('🛡️ PRIVACY', const Color(0xFF00D4AA)),
+                  const SizedBox(height: 12),
+                  const _PrivacyModeCard(),
 
                   const SizedBox(height: 32),
 
@@ -1974,6 +1982,70 @@ class _VersionInfoCardState extends State<_VersionInfoCard> {
                   ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// 🛡️ D3: Privacy-Mode-Toggle für OSINT-Tools-Calls über Worker-Proxy
+class _PrivacyModeCard extends StatefulWidget {
+  const _PrivacyModeCard();
+  @override
+  State<_PrivacyModeCard> createState() => _PrivacyModeCardState();
+}
+
+class _PrivacyModeCardState extends State<_PrivacyModeCard> {
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    PrivacyModeService.instance.load().then((_) {
+      if (mounted) setState(() => _loading = false);
+    });
+    PrivacyModeService.instance.addListener(_onChange);
+  }
+
+  @override
+  void dispose() {
+    PrivacyModeService.instance.removeListener(_onChange);
+    super.dispose();
+  }
+
+  void _onChange() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) {
+      return const SizedBox(height: 70);
+    }
+    final enabled = PrivacyModeService.instance.enabled;
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF12121E),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: const Color(0xFF00D4AA).withValues(alpha: enabled ? 0.4 : 0.12),
+        ),
+      ),
+      child: SwitchListTile(
+        title: const Text('Privacy-Mode für OSINT-Tools',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+        subtitle: Text(
+          enabled
+              ? 'Aktiv — Tool-Calls über Worker-Proxy, anonymer User-Agent.'
+              : 'Aus — Tools rufen Ziel-Server direkt an.',
+          style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 12),
+        ),
+        value: enabled,
+        activeThumbColor: const Color(0xFF00D4AA),
+        onChanged: (v) => PrivacyModeService.instance.setEnabled(v),
+        secondary: Icon(
+          enabled ? Icons.privacy_tip : Icons.privacy_tip_outlined,
+          color: enabled ? const Color(0xFF00D4AA) : Colors.white38,
+        ),
       ),
     );
   }
