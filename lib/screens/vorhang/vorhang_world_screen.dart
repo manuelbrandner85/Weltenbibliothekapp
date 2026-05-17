@@ -8,6 +8,7 @@ import 'vorhang_map_tab.dart';
 import '../shared/unified_knowledge_tab.dart';
 import '../shared/stats_dashboard_screen.dart';
 import '../shared/world_admin_dashboard.dart';
+import '../../widgets/admin_dashboard_button.dart';
 import '../../services/haptic_service.dart';
 import '../../features/admin/state/admin_state.dart';
 import '../../theme/wb_cinematic_tokens.dart';
@@ -106,10 +107,15 @@ class _VorhangWorldScreenState extends ConsumerState<VorhangWorldScreen>
             child: WBAmbientParticles(world: WBWorld.vorhang, count: 35),
           ),
 
-          // Tab-Content (Padding unten für Floating-Nav-Clearance)
+          // Tab-Content + Admin-Button (über Tabs, nur wenn isAdmin)
           Padding(
             padding: const EdgeInsets.only(bottom: 80),
-            child: tabs[_currentIndex],
+            child: Column(
+              children: [
+                AdminDashboardButton(adminState: adminState, world: 'vorhang'),
+                Expanded(child: tabs[_currentIndex]),
+              ],
+            ),
           ),
 
           // Vignette als oberster atmosphärischer Layer
@@ -164,29 +170,7 @@ class _VorhangWorldScreenState extends ConsumerState<VorhangWorldScreen>
       ),
       // Debug-Indikator (nur Debug-Build)
       if (kDebugMode) _DebugAdminBadge(adminState: adminState),
-      // Admin-Dashboard (nur für Admins)
-      if (adminState.isAdmin)
-        IconButton(
-          icon: const Icon(Icons.admin_panel_settings, color: Colors.orange),
-          iconSize: 22,
-          onPressed: () async {
-            HapticService.mediumImpact();
-            final notifier = ref.read(adminStateProvider('vorhang').notifier);
-            await notifier.load();
-            await Future.delayed(const Duration(milliseconds: 200));
-            if (mounted) {
-              Navigator.push(
-                // ignore: use_build_context_synchronously
-                context,
-                MaterialPageRoute(
-                  builder: (context) =>
-                      const WorldAdminDashboard(world: 'vorhang'),
-                ),
-              );
-            }
-          },
-          tooltip: 'Admin-Dashboard',
-        ),
+      // (Admin-Dashboard-Zugang ist jetzt prominenter Banner unter AppBar.)
       // Profil-Einstellungen
       IconButton(
         icon: const Icon(Icons.settings_outlined, color: Colors.white),

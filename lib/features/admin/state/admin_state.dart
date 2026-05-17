@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/storage/unified_storage_service.dart';
 import '../../../services/sqlite_storage_service.dart';
+import '../../../core/auth/admin_resolver.dart';
 import '../../../core/constants/roles.dart';
 import '../../../services/supabase_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' show AuthChangeEvent;
@@ -174,6 +175,27 @@ class AdminStateNotifier extends StateNotifier<AdminState> {
       } catch (e) {
         if (kDebugMode) debugPrint('⚠️ AdminState: Profil-Box Fallback: $e');
       }
+    }
+
+    // ──────────────────────────────────────────────────────────────
+    // SCHRITT 3: AdminResolver — InvisibleAuth + Web SharedPref + Role-by-Username
+    // ──────────────────────────────────────────────────────────────
+    // Fängt Root-Admin und Content-Editor auch wenn Supabase-Session fehlt
+    // (Mobile via InvisibleAuth, Web via WebAuthGate). Ohne diesen Schritt
+    // wurde der Root-Admin als 'user' interpretiert → "Kein Zugriff" im
+    // Dashboard. Resolver checkt 3 Pfade, gibt 'user' wenn nichts greift.
+    try {
+      final resolverRole = await AdminResolver.resolveCurrentRole();
+      if (AppRoles.isAdmin(resolverRole)) {
+        // Username: behalte was wir aus Hive/SQLite haben — sonst leer.
+        state = AdminState.fromCache(world, username ?? '(admin)', resolverRole);
+        if (kDebugMode) {
+          debugPrint('🛡️ AdminState: AdminResolver-Pfad – role=$resolverRole, $state');
+        }
+        return;
+      }
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ AdminState: AdminResolver-Fehler: $e');
     }
 
     if (username == null || username.isEmpty) {

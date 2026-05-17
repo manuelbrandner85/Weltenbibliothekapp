@@ -63,10 +63,10 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
   Widget build(BuildContext context) {
     final admin = ref.watch(adminStateProvider(widget.world));
 
-    // Supabase-Session ist Pflicht für Admin-Zugriff
-    if (supabase.auth.currentUser == null) {
-      return _accessDeniedScaffold(reason: 'Bitte melde dich zuerst an.');
-    }
+    // ⚠️ Supabase-Session NICHT mehr Pflicht — Root-Admin via InvisibleAuth
+    // oder Web-Login (WebAuthGate) hat keine Supabase-Session, ist aber
+    // trotzdem berechtigt (AdminResolver erkennt via Username).
+    // Operationen die echte Auth brauchen, gehen über Worker mit SERVICE_ROLE.
     if (admin.username == null || admin.username!.isEmpty) {
       return _loadingScaffold();
     }
