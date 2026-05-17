@@ -12,6 +12,8 @@ import 'calculators/kabbalah_calculator_screen.dart';
 import 'calculators/hermetic_calculator_screen.dart';
 import 'calculators/gematria_calculator_screen.dart';
 import 'calculators/spirit_profile_screen.dart'; // 🌟 Konsolidiert die 10 Universal-Tools
+import 'calculators/epigenetik_coach_screen.dart'; // 🧬 Echte Epigenetik statt 12-Strang-DNA
+import 'calculators/sacred_symbols_screen.dart'; // 🔱 Heilige Symbole multikulturell
 import 'calculators/new_spirit_tool_screens.dart';
 import 'meditation_timer_screen.dart'; // MeditationTimerScreen (canonical, deduplicated)
 import 'calculators/moon_calendar_tool_screen.dart'; // 🌕 v19 Mondkalender
@@ -226,7 +228,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'subtitle': '12 Praktiken für Gen-Expression',
         'color': const Color(0xFF00695C),
         'category': 'new',
-        'screen': const DnaActivationTrackerScreen(),
+        'screen': const EpigenetikCoachScreen(),
       },
       
       // 🎵 Frequenz-Generator
@@ -305,7 +307,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'subtitle': 'Multikulturelle Sakralsymbole',
         'color': const Color(0xFFFDD835),
         'category': 'new',
-        'screen': const LightLanguageDecoderScreen(),
+        'screen': const SacredSymbolsScreen(),
       },
       
       // 🧘‍♀️ Yoga Asana
