@@ -52,7 +52,9 @@ import '../../widgets/pinned_message_banner.dart'; // 📌 Pinned Message Banner
 // import '../../widgets/telegram_voice_recorder.dart'; // 🎙️ Telegram Voice Recorder (Disabled for Android)
 // 🎵 Telegram Voice Player
 import '../../widgets/voice_message_player.dart' show ChatVoicePlayer; // 🎤 Chat Voice Player (New)
+import '../../services/pinned_message_service.dart'; // 📌 E2 Pin-Service
 import '../../widgets/mention_autocomplete.dart'; // @ Mentions
+import '../../widgets/pinned_banner_v2.dart'; // 📌 E2 Sticky-Banner
 import '../../widgets/user_quick_profile_sheet.dart'; // 👤 Avatar-Quick-View
 // import '../../widgets/voice_record_button.dart'; // 🎤 Voice Recording (Android disabled)
 // webrtc_voice_service entfernt — siehe livekit_call_service.dart
@@ -1581,6 +1583,11 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                       ),
                     ),
                   ),
+                  // 📌 Sticky-Banner für angepinnte Nachrichten (E2)
+                  PinnedBannerV2(
+                    roomId: _fullRoomId,
+                    accent: const Color(0xFF9B51E0),
+                  ),
                   // 🔍 SEARCH MODE
                   if (_showSearch)
                     Expanded(
@@ -2668,6 +2675,31 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                     _showMuteDialog(msg, canBan);
                   },
                 ),
+
+              // ADMIN: Pin/Unpin Message (E2)
+              ListTile(
+                leading: const Icon(Icons.push_pin_rounded, color: Color(0xFF9B51E0)),
+                title: Text('Nachricht anpinnen $adminBadge',
+                    style: const TextStyle(color: Color(0xFF9B51E0))),
+                onTap: () async {
+                  Navigator.pop(context);
+                  final messageId = msg['id']?.toString() ?? '';
+                  if (messageId.isEmpty) return;
+                  final ok = await PinnedMessageService.instance.pin(
+                    roomId: _fullRoomId,
+                    messageId: messageId,
+                    pinnedBy: _username.isNotEmpty ? _username : 'admin',
+                    pinnedByRole: backendRole,
+                    preview: (msg['message'] ?? msg['content'] ?? '').toString(),
+                  );
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    content: Text(ok ? '📌 Angepinnt' : '❌ Pin fehlgeschlagen'),
+                    backgroundColor: ok ? const Color(0xFF7C4DFF) : Colors.red.shade700,
+                    duration: const Duration(seconds: 2),
+                  ));
+                },
+              ),
             ],
           ],
         ),

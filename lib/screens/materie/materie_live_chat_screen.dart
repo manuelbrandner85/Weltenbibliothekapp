@@ -11,7 +11,9 @@ import 'package:supabase_flutter/supabase_flutter.dart' show RealtimeChannel;
 import '../../services/cloudflare_api_service.dart';
 import '../../services/chat_notification_service.dart'; // 🔔 NOTIFICATIONS
 import '../../services/user_service.dart'; // 🆕 User Service für Auth
+import '../../services/pinned_message_service.dart'; // 📌 E2 Pin-Service
 import '../../widgets/mention_autocomplete.dart'; // @ MENTIONS
+import '../../widgets/pinned_banner_v2.dart'; // 📌 E2 Sticky-Banner
 import '../../widgets/user_quick_profile_sheet.dart'; // 👤 Avatar-Quick-View
 import 'package:image_picker/image_picker.dart'; // 📷 Image Picker
 // 👤 PROFIL
@@ -1548,6 +1550,11 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
                       ),
                     ),
                   ),
+                  // 📌 Sticky-Banner für angepinnte Nachrichten (E2)
+                  PinnedBannerV2(
+                    roomId: _fullRoomId,
+                    accent: const Color(0xFF2979FF),
+                  ),
                   // 🔍 SEARCH MODE
                   if (_showSearch)
                     Expanded(
@@ -2724,6 +2731,31 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
                     _showMuteDialog(msg, canBan);
                   },
                 ),
+
+              // ADMIN: Pin/Unpin Message (E2)
+              ListTile(
+                leading: const Icon(Icons.push_pin_rounded, color: Color(0xFF2979FF)),
+                title: Text('Nachricht anpinnen $adminBadge',
+                    style: const TextStyle(color: Color(0xFF2979FF))),
+                onTap: () async {
+                  Navigator.pop(context);
+                  final messageId = msg['id']?.toString() ?? '';
+                  if (messageId.isEmpty) return;
+                  final ok = await PinnedMessageService.instance.pin(
+                    roomId: _fullRoomId,
+                    messageId: messageId,
+                    pinnedBy: _username.isNotEmpty ? _username : 'admin',
+                    pinnedByRole: backendRole,
+                    preview: (msg['message'] ?? msg['content'] ?? '').toString(),
+                  );
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    content: Text(ok ? '📌 Angepinnt' : '❌ Pin fehlgeschlagen'),
+                    backgroundColor: ok ? Colors.blue.shade700 : Colors.red.shade700,
+                    duration: const Duration(seconds: 2),
+                  ));
+                },
+              ),
             ],
           ],
         ),
