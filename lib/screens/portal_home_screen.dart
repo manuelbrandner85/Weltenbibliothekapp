@@ -12,6 +12,7 @@ import '../animations/world_transition_video.dart';
 import '../services/sound_service.dart';
 import '../services/haptic_service.dart';
 import '../utils/responsive_helper.dart';
+import '../widgets/daily_challenges_banner.dart'; // ⚔️ K2
 import '../widgets/daily_streak_indicator.dart';
 import '../widgets/live_world_badge.dart';
 import '../widgets/profile_quest_banner.dart';
@@ -1109,6 +1110,9 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> with TickerProvider
                   // Profile-Quest-Banner — versteckt sich automatisch wenn
                   // bereits ein Profil existiert (Materie/Energie).
                   const ProfileQuestBanner(),
+                  // ⚔️ K2: Tages-Challenges (versteckt sich wenn keine
+                  // Challenges für heute angelegt).
+                  const DailyChallengesBanner(),
 
                   // ── World cards (2×2 Quad-Portal Grid) ──
                   // Auf PC: max 800px breit damit Kacheln nicht riesig werden.
