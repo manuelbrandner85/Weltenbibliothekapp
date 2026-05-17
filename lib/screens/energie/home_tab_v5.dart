@@ -20,6 +20,7 @@ import 'spirit_tab_modern.dart';
 import '../../services/mentor_service.dart';
 import '../shared/mentor_chat_screen.dart';
 import 'calculators/chakra_calculator_screen.dart';
+import '../../widgets/daily_mantra_banner.dart'; // 🌙 F1 Tages-Mantra
 import '../../widgets/daily_path_widget.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -434,6 +435,9 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
                   slivers: [
                     _buildHeroHeader(),
                     _buildMysticBanner(),
+                    // 🌙 F1: Tages-Mantra aus daily_mantras-Tabelle (gewichtetes
+                    // Random pro Tag, deterministisch via Datum-Seed).
+                    const SliverToBoxAdapter(child: DailyMantraBanner()),
                     _buildDailyQuoteSliver(),
                     _buildCosmicEnergySliver(),
                     _buildLiveStatBanner(),
