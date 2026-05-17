@@ -23,8 +23,11 @@ services:
     container_name: livekit-weltenbibliothek
     restart: unless-stopped
     ports:
-      # HTTP/WS-Signal — Mensaena's Caddy terminiert TLS und proxied hier hin
-      - "127.0.0.1:7980:7980/tcp"
+      # HTTP/WS-Signal — Mensaena's Caddy terminiert TLS und proxied hier hin.
+      # Bind auf 0.0.0.0 (statt 127.0.0.1) damit Caddy aus seinem Docker-Netzwerk
+      # via Bridge-Gateway (172.17.0.1) erreichen kann. Externer Zugriff auf 7980
+      # ist durch Hostinger-Firewall geblockt (keine 7980-Regel → kein Risiko).
+      - "7980:7980/tcp"
       # RTC TCP-Fallback (Clients hinter strikter Firewall)
       - "7981:7981/tcp"
       # WebRTC Media UDP-Range (1000 Ports, disjunkt von Mensaena 50000-60000)

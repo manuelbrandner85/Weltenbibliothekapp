@@ -18,8 +18,13 @@
 
 # >>> WB-LIVEKIT-BEGIN
 livekit-wb.srv1438024.hstgr.cloud {
-    # WebSocket / HTTP zu LiveKit-Container (intern auf Port 7980)
-    reverse_proxy 127.0.0.1:7980 {
+    # WebSocket / HTTP zu LiveKit-Container (intern auf Port 7980).
+    # Zwei Upstreams als Failover damit es egal ist ob Caddy im host-network
+    # läuft (127.0.0.1 erreicht host) oder in eigenem Docker-Bridge-Net
+    # (172.17.0.1 = Docker default bridge gateway, erreicht host's 7980).
+    # lb_policy first → erster verfügbarer wird genutzt, sonst Failover.
+    reverse_proxy 127.0.0.1:7980 172.17.0.1:7980 {
+        lb_policy first
         # WebSocket-Support für LiveKit Signal-Channel
         header_up Host {host}
         header_up X-Real-IP {remote_host}
