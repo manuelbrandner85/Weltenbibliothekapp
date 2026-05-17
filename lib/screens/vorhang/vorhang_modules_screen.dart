@@ -285,6 +285,10 @@ class _VorhangModulesScreenState extends State<VorhangModulesScreen> {
           colorScheme: Theme.of(context).colorScheme.copyWith(primary: _gold),
         ),
         child: ExpansionTile(
+          // Alle Branches per Default offen — sonst sieht der User nur 6 Header
+          // mit Zähler "0/5" und glaubt, 25 Module fehlen.
+          initiallyExpanded: true,
+          maintainState: true,
           tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
           childrenPadding: const EdgeInsets.fromLTRB(8, 0, 8, 12),
           iconColor: _gold,
