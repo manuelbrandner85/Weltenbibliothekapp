@@ -2665,6 +2665,73 @@ export default {
       }
     }
 
+    // ── Spirit: Combo-Synthese aus mehreren Tool-Ergebnissen (G2) ──
+    // POST /api/spirit/synthesize  { readings: [{tool, summary}, ...] }
+    if (path === '/api/spirit/synthesize' && method === 'POST') {
+      if (!env.AI) return errorResponse('Workers AI nicht konfiguriert', 503);
+      try {
+        const { readings } = await request.json();
+        if (!Array.isArray(readings) || readings.length === 0) {
+          return errorResponse('readings fehlen', 400);
+        }
+        const text = readings
+          .filter((r) => r && r.tool && r.summary)
+          .map((r) => `[${r.tool}] ${r.summary}`)
+          .join('\n');
+        const systemPrompt = 'Du bist ein erfahrener spiritueller Mentor und Synthesizer. Aus mehreren Tool-Ergebnissen erkennst du das übergreifende Thema, die zentrale Lebensaufgabe und einen konkreten nächsten Schritt für die Person. Antworte auf Deutsch, maximal 4 Absätze, warmherzig aber präzise.';
+        const res = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: `Hier sind meine letzten Readings:\n\n${text}\n\nWas sagen sie zusammen?` },
+          ],
+          max_tokens: 600,
+        });
+        return jsonResponse({
+          synthesis: (res?.response || '').trim(),
+          model: 'llama-3.1-8b-instruct',
+        });
+      } catch (e) {
+        return errorResponse(`Synthese fehlgeschlagen: ${e.message}`);
+      }
+    }
+
+    // ── Spirit TTS via Workers AI (G3) ────────────────────────
+    // POST /api/spirit/tts  { text, voice }
+    // Workers AI MeloTTS: @cf/myshell-ai/melotts
+    if (path === '/api/spirit/tts' && method === 'POST') {
+      if (!env.AI) return errorResponse('Workers AI nicht konfiguriert', 503);
+      try {
+        const { text, voice } = await request.json();
+        if (!text) return errorResponse('text fehlt', 400);
+        const clamped = String(text).substring(0, 1500);
+        const res = await env.AI.run('@cf/myshell-ai/melotts', {
+          prompt: clamped,
+          lang: (voice || 'de-DE').toLowerCase().startsWith('de') ? 'DE' : 'EN',
+        });
+        // Workers AI gibt typischerweise { audio: <bytes/base64> } zurück.
+        // Wir laden direkt in R2 hoch wenn möglich, sonst geben wir
+        // base64-data-URL zurück (Quick-Path).
+        let audioUrl = null;
+        if (env.R2_BUCKET && res && res.audio) {
+          const buf = typeof res.audio === 'string'
+            ? Uint8Array.from(atob(res.audio), (c) => c.charCodeAt(0))
+            : res.audio;
+          const key = `tts/${Date.now()}.mp3`;
+          await env.R2_BUCKET.put(key, buf, {
+            httpMetadata: { contentType: 'audio/mpeg' },
+          });
+          audioUrl = `https://pub-${env.CF_ACCOUNT_ID || 'unknown'}.r2.dev/${key}`;
+        } else if (res && res.audio) {
+          audioUrl = `data:audio/mpeg;base64,${
+            typeof res.audio === 'string' ? res.audio : btoa(String.fromCharCode(...res.audio))
+          }`;
+        }
+        return jsonResponse({ audioUrl, model: 'melotts' });
+      } catch (e) {
+        return errorResponse(`TTS fehlgeschlagen: ${e.message}`);
+      }
+    }
+
     // ── OSINT-Proxy (D3 Privacy-Mode) ─────────────────────────
     // GET /api/osint/proxy?url=<encoded>
     // Leitet eine GET-Anfrage mit anonymisiertem User-Agent weiter und
