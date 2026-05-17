@@ -1719,8 +1719,13 @@ export default {
     // (verhindert dass ein normaler User per curl Teilnehmer rauswirft).
     //
     // - kick:   livekit.RoomService/RemoveParticipant
-    // - mute:   ListParticipants → audio track sid finden → MutePublishedTrack muted=true
-    // - unmute: dito, muted=false (User muss seinerseits noch wieder publishen)
+    // - mute:   ListParticipants → audio-track-sid → MutePublishedTrack(true)
+    //           PLUS UpdateParticipant(permission.can_publish=false), damit
+    //           der User keinen NEUEN Track publishen kann (echtes Publish-
+    //           Verbot, nicht nur das Abklemmen des aktuellen Tracks).
+    // - unmute: MutePublishedTrack(false) + UpdateParticipant(can_publish=true)
+    //
+    // Jede erfolgreiche Aktion wird in admin_audit_log persistiert.
     if (path === '/api/livekit/moderate' && method === 'POST') {
       try {
         const body = await request.json().catch(() => ({}));
@@ -1741,9 +1746,14 @@ export default {
 
         // 1) Admin/Mod-Rolle gegen DB verifizieren (Username case-insensitive).
         const svcKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY || '';
+        const svcAuthHeaders = {
+          'apikey': svcKey,
+          'Authorization': `Bearer ${svcKey}`,
+          'Content-Type': 'application/json',
+        };
         const profRes = await fetch(
           `${SUPABASE_URL}/rest/v1/profiles?username=ilike.${encodeURIComponent(adminUsername)}&select=role&limit=1`,
-          { headers: { 'apikey': svcKey, 'Authorization': `Bearer ${svcKey}` } },
+          { headers: svcAuthHeaders },
         );
         const profArr = await profRes.json().catch(() => []);
         const role = Array.isArray(profArr) && profArr[0] ? (profArr[0].role || '').toLowerCase() : '';
@@ -1779,6 +1789,45 @@ export default {
         };
         const twirp = (rpc) => `${livekitUrl}/twirp/livekit.RoomService/${rpc}`;
 
+        // Welt aus roomName ableiten (z.B. 'wb-materie-politik' → 'materie').
+        // Fallback null, wenn Pattern nicht passt.
+        let derivedWorld = null;
+        const wMatch = String(roomName).match(/(?:^|-)(materie|energie|vorhang|ursprung)(?:-|$)/);
+        if (wMatch) derivedWorld = wMatch[1];
+
+        // Audit-Log-Schreiber: fire-and-forget, blockiert die Antwort nicht.
+        // Schema: admin_audit_log mit jsonb 'details' für Extras (track_sid,
+        // can_publish flag, etc).
+        const writeAudit = async (act, targetUsername, details) => {
+          try {
+            await fetch(`${SUPABASE_URL}/rest/v1/admin_audit_log`, {
+              method: 'POST',
+              headers: { ...svcAuthHeaders, 'Prefer': 'return=minimal' },
+              body: JSON.stringify({
+                admin_username: adminUsername,
+                action: act,
+                target_identity: identity,
+                target_username: targetUsername || null,
+                room_name: roomName,
+                world: derivedWorld,
+                details: details || {},
+              }),
+            });
+          } catch (_) { /* audit darf nie den Haupt-Flow stoppen */ }
+        };
+
+        // Best-effort: User-Name zum Identity finden (für lesbare Audit-Zeilen).
+        const lookupUsername = async () => {
+          try {
+            const r = await fetch(
+              `${SUPABASE_URL}/rest/v1/profiles?id=eq.${encodeURIComponent(identity)}&select=username&limit=1`,
+              { headers: svcAuthHeaders },
+            );
+            const arr = await r.json().catch(() => []);
+            return Array.isArray(arr) && arr[0] ? arr[0].username : null;
+          } catch (_) { return null; }
+        };
+
         // 3a) KICK
         if (action === 'kick') {
           const res = await fetch(twirp('RemoveParticipant'), {
@@ -1790,10 +1839,17 @@ export default {
             const errBody = await res.json().catch(() => ({}));
             return jsonResponse({ error: errBody.message || `Kick fehlgeschlagen (HTTP ${res.status})` }, 502);
           }
+          const targetUsername = await lookupUsername();
+          await writeAudit('livekit_kick', targetUsername, {});
           return jsonResponse({ success: true, action: 'kick', identity });
         }
 
-        // 3b) MUTE / UNMUTE — audio track sid des Teilnehmers ermitteln
+        // 3b) MUTE / UNMUTE
+        // Erst Participant + audio-track-sid ermitteln; dann sowohl
+        // MutePublishedTrack (klemmt aktuellen Track) als auch
+        // UpdateParticipant (verbietet/erlaubt neues Publishen) absetzen.
+        const muting = action === 'mute';
+
         const listRes = await fetch(twirp('ListParticipants'), {
           method: 'POST',
           headers: lkHeaders,
@@ -1809,27 +1865,75 @@ export default {
         if (!target) {
           return jsonResponse({ error: 'Teilnehmer nicht im Raum gefunden' }, 404);
         }
-        // type 0 = AUDIO, 1 = VIDEO (LiveKit TrackType enum)
+
+        // a) Aktuellen Audio-Track muten/unmuten (nice-to-have — fehlt nur
+        //    wenn der User gerade nicht publisht).
         const audioTrack = (target.tracks || []).find((t) => t.type === 'AUDIO' || t.type === 0);
-        if (!audioTrack || !audioTrack.sid) {
-          return jsonResponse({ error: 'Kein Audio-Track gefunden — User ist evtl. schon stumm' }, 404);
+        let trackSid = null;
+        let trackWarn = null;
+        if (audioTrack && audioTrack.sid) {
+          trackSid = audioTrack.sid;
+          const muteRes = await fetch(twirp('MutePublishedTrack'), {
+            method: 'POST',
+            headers: lkHeaders,
+            body: JSON.stringify({
+              room: roomName,
+              identity,
+              track_sid: trackSid,
+              muted: muting,
+            }),
+          });
+          if (!muteRes.ok) {
+            const errBody = await muteRes.json().catch(() => ({}));
+            return jsonResponse({ error: errBody.message || `Mute fehlgeschlagen (HTTP ${muteRes.status})` }, 502);
+          }
+        } else {
+          trackWarn = 'kein aktiver Audio-Track — nur Publish-Permission aktualisiert';
         }
 
-        const muteRes = await fetch(twirp('MutePublishedTrack'), {
+        // b) Publish-Permission auf can_publish=false/true setzen.
+        //    Diese existing-permission-Felder müssen ALLE mitgesendet werden
+        //    weil LiveKit den ganzen Permission-Block ersetzt.
+        const existingPerm = target.permission || {};
+        const newPerm = {
+          ...existingPerm,
+          can_publish: !muting,                              // Kern dieser Änderung
+          can_subscribe: existingPerm.can_subscribe ?? true,
+          can_publish_data: existingPerm.can_publish_data ?? true,
+          hidden: existingPerm.hidden ?? false,
+          recorder: existingPerm.recorder ?? false,
+        };
+        const updRes = await fetch(twirp('UpdateParticipant'), {
           method: 'POST',
           headers: lkHeaders,
           body: JSON.stringify({
             room: roomName,
             identity,
-            track_sid: audioTrack.sid,
-            muted: action === 'mute',
+            permission: newPerm,
           }),
         });
-        if (!muteRes.ok) {
-          const errBody = await muteRes.json().catch(() => ({}));
-          return jsonResponse({ error: errBody.message || `Mute fehlgeschlagen (HTTP ${muteRes.status})` }, 502);
+        if (!updRes.ok) {
+          const errBody = await updRes.json().catch(() => ({}));
+          return jsonResponse({
+            error: errBody.message || `UpdateParticipant fehlgeschlagen (HTTP ${updRes.status})`,
+          }, 502);
         }
-        return jsonResponse({ success: true, action, identity, track_sid: audioTrack.sid });
+
+        const targetUsername = await lookupUsername();
+        await writeAudit(
+          muting ? 'livekit_mute' : 'livekit_unmute',
+          targetUsername,
+          { track_sid: trackSid, can_publish: !muting, warn: trackWarn },
+        );
+
+        return jsonResponse({
+          success: true,
+          action,
+          identity,
+          track_sid: trackSid,
+          can_publish: !muting,
+          warn: trackWarn,
+        });
       } catch (e) {
         return errorResponse(`Moderation fehlgeschlagen: ${e.message}`);
       }
@@ -2165,12 +2269,19 @@ export default {
       }
 
       // ── GET /api/admin/audit/:world ─────────────────────────
+      // Merge-Quelle 1: admin_audit_log (echtes Audit-Log, ab v76).
+      // Merge-Quelle 2: chat_messages (edited/deleted) als historisches
+      // Aktivitäts-Feed. Beide werden zusammengeführt + nach Zeit sortiert.
       if (method === 'GET' && path.match(/\/api\/admin\/audit\/\w+/)) {
         try {
           const world = path.split('/')[4];
           const limit = parseInt(url.searchParams.get('limit') || '100', 10);
-          // Fetch edited and deleted messages as audit entries (real data)
-          const [editedRes, deletedRes] = await Promise.all([
+
+          const [auditRes, editedRes, deletedRes] = await Promise.all([
+            fetch(
+              `${SUPABASE_URL}/rest/v1/admin_audit_log?or=(world.eq.${world},world.is.null)&order=created_at.desc&limit=${limit}`,
+              { headers: svcHeaders }
+            ).catch(() => null),
             fetch(
               `${SUPABASE_URL}/rest/v1/chat_messages?select=id,username,message,edited_at,room_id&edited_at=not.is.null&room_id=like.${world}%25&order=edited_at.desc&limit=${limit}`,
               { headers: svcHeaders }
@@ -2180,8 +2291,22 @@ export default {
               { headers: svcHeaders }
             ),
           ]);
+
+          const auditData = auditRes && auditRes.ok ? await auditRes.json().catch(() => []) : [];
           const editedData = await editedRes.json().catch(() => []);
           const deletedData = await deletedRes.json().catch(() => []);
+
+          const audit = (Array.isArray(auditData) ? auditData : []).map((r) => ({
+            log_id: `audit_${r.id}`,
+            admin_username: r.admin_username || 'unknown',
+            action: r.action || '',
+            target_username: r.target_username || r.target_identity || '',
+            details: typeof r.details === 'object'
+              ? Object.entries(r.details || {}).map(([k, v]) => `${k}=${v}`).join(' · ')
+              : String(r.details || ''),
+            room_id: r.room_name || '',
+            timestamp: r.created_at || new Date().toISOString(),
+          }));
           const edited = (Array.isArray(editedData) ? editedData : []).map((m, i) => ({
             log_id: `edit_${m.id || i}`, admin_username: m.username || 'unknown',
             action: 'edit_message', target_username: m.username || '',
@@ -2196,8 +2321,7 @@ export default {
             room_id: m.room_id || '',
             timestamp: m.deleted_at || new Date().toISOString(),
           }));
-          // Merge and sort by timestamp desc
-          const logs = [...edited, ...deleted].sort((a, b) =>
+          const logs = [...audit, ...edited, ...deleted].sort((a, b) =>
             new Date(b.timestamp) - new Date(a.timestamp)
           ).slice(0, limit);
           return jsonResponse({ success: true, logs });
