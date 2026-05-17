@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt; // 🎤 L2
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../services/mentor_service.dart';
@@ -33,6 +34,60 @@ class _MentorChatScreenState extends State<MentorChatScreen>
   List<MentorChatMessage> _messages = [];
   bool _isLoading = false;
   late AnimationController _typingCtrl;
+
+  // 🎤 L2 Voice-Input
+  final stt.SpeechToText _speech = stt.SpeechToText();
+  bool _isListening = false;
+  bool _speechReady = false;
+
+  Future<void> _toggleVoiceInput() async {
+    if (_isListening) {
+      await _speech.stop();
+      if (mounted) setState(() => _isListening = false);
+      return;
+    }
+    if (!_speechReady) {
+      _speechReady = await _speech.initialize(
+        onStatus: (s) {
+          if (s == 'done' || s == 'notListening') {
+            if (mounted) setState(() => _isListening = false);
+          }
+        },
+        onError: (e) {
+          if (mounted) setState(() => _isListening = false);
+        },
+      );
+      if (!_speechReady) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Mikrofon nicht verfügbar oder Berechtigung fehlt.'),
+          ));
+        }
+        return;
+      }
+    }
+    setState(() => _isListening = true);
+    await _speech.listen(
+      localeId: 'de_DE',
+      onResult: (result) {
+        if (!mounted) return;
+        final base = _textCtrl.text;
+        final transcription = result.recognizedWords;
+        // Während des Diktats Live-Update.
+        _textCtrl.text = base.isEmpty
+            ? transcription
+            : (result.finalResult ? '$base $transcription' : base);
+        _textCtrl.selection = TextSelection.fromPosition(
+          TextPosition(offset: _textCtrl.text.length),
+        );
+        if (result.finalResult) {
+          setState(() => _isListening = false);
+        }
+      },
+      listenFor: const Duration(seconds: 30),
+      pauseFor: const Duration(seconds: 3),
+    );
+  }
 
   // ── Welt-Farben ──
   Color get _primaryColor {
@@ -660,7 +715,27 @@ class _MentorChatScreenState extends State<MentorChatScreen>
                     textInputAction: TextInputAction.send,
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 6),
+                // 🎤 L2: Voice-Input via speech_to_text
+                Material(
+                  color: _isListening
+                      ? Colors.red.withValues(alpha: 0.85)
+                      : Colors.white.withValues(alpha: 0.08),
+                  shape: const CircleBorder(),
+                  child: InkWell(
+                    onTap: _isLoading ? null : _toggleVoiceInput,
+                    customBorder: const CircleBorder(),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Icon(
+                        _isListening ? Icons.mic : Icons.mic_none,
+                        color: _isListening ? Colors.white : Colors.white70,
+                        size: 22,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 6),
                 Material(
                   color: _primaryColor,
                   shape: const CircleBorder(),
