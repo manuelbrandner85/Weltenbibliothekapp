@@ -33,8 +33,16 @@ services:
       # Relay für Mobilfunk-CGNAT / symmetrisches NAT
       - "3479:3479/udp"
       - "3479:3479/tcp"
+      # TURNS (TURN-over-TLS) auf 5349 UDP+TCP für restriktive Corp-/Sat-Firewalls
+      # die nur HTTPS-Ports erlauben. LiveKit terminiert hier TLS selbst (cert s. volume mount).
+      - "5349:5349/udp"
+      - "5349:5349/tcp"
     volumes:
       - ./livekit.yaml:/etc/livekit.yaml:ro
+      # Caddy-managed Let's-Encrypt-Cert für TURNS, vom Deploy-Workflow hierhin
+      # gespiegelt (./cert/turn-cert.pem + turn-key.pem). Read-only.
+      # Renewal: VPS-Cron alle 14 Tage kopiert frisch + restartet Container.
+      - ./cert:/etc/livekit-cert:ro
     command: --config /etc/livekit.yaml
     networks:
       - livekit-wb-net

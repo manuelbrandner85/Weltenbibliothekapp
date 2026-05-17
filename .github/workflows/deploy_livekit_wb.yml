@@ -223,6 +223,9 @@ jobs:
           # LiveKit built-in TURN (Port 3479 — Mensaena belegt 3478, kein Konflikt)
           add_rule "UDP" "3479"          "UDP 3479 (LiveKit built-in TURN)"
           add_rule "TCP" "3479"          "TCP 3479 (LiveKit built-in TURN)"
+          # TURNS (TURN-over-TLS, Port 5349) für restriktive Corp-/Sat-Firewalls
+          add_rule "UDP" "5349"          "UDP 5349 (LiveKit TURNS)"
+          add_rule "TCP" "5349"          "TCP 5349 (LiveKit TURNS)"
 
           echo ""
           echo "→ Ergebnis: $ADDED_OR_OK von $ATTEMPTED Regeln OK"
@@ -251,7 +254,7 @@ jobs:
           VERIFY=$(curl -s --max-time 15 -H "$AUTH" -H "Accept: application/json" \
             "$BASE/vps/firewall/$FW_ID/rules" || echo '{"data":[]}')
           # Single-line python (kein Heredoc wegen YAML-Block-Scalar)
-          echo "$VERIFY" | python3 -c "import sys,json; d=json.load(sys.stdin); rules=d if isinstance(d,list) else d.get('data',d.get('rules',[])); rules=rules if isinstance(rules,list) else []; check=lambda p,prt: any(str(r.get('protocol','')).upper()==p and str(r.get('port',''))==prt for r in rules); checks={'TCP 7981':check('TCP','7981'),'UDP 60001-61000':check('UDP','60001-61000'),'UDP 3479 (TURN)':check('UDP','3479'),'TCP 3479 (TURN)':check('TCP','3479')}; [print('  '+k+': '+('✅ aktiv' if v else '❌ FEHLT')) for k,v in checks.items()]; sys.exit(0 if all(checks.values()) else 2)" \
+          echo "$VERIFY" | python3 -c "import sys,json; d=json.load(sys.stdin); rules=d if isinstance(d,list) else d.get('data',d.get('rules',[])); rules=rules if isinstance(rules,list) else []; check=lambda p,prt: any(str(r.get('protocol','')).upper()==p and str(r.get('port',''))==prt for r in rules); checks={'TCP 7981':check('TCP','7981'),'UDP 60001-61000':check('UDP','60001-61000'),'UDP 3479 (TURN)':check('UDP','3479'),'TCP 3479 (TURN)':check('TCP','3479'),'UDP 5349 (TURNS)':check('UDP','5349'),'TCP 5349 (TURNS)':check('TCP','5349')}; [print('  '+k+': '+('✅ aktiv' if v else '❌ FEHLT')) for k,v in checks.items()]; sys.exit(0 if all(checks.values()) else 2)" \
             && echo "✅ Verifikation OK — alle Regeln aktiv" \
             || { echo "❌ Verifikation: nicht alle Regeln aktiv. Hostinger-UI prüfen!"; exit 1; }
 
@@ -368,6 +371,42 @@ jobs:
             echo '  echo "   Manuell: cat /tmp/caddy-wb-snippet.caddy >> /pfad/zu/Caddyfile && caddy reload"'
             echo 'fi'
             echo ''
+            echo '# ── Caddy Let'\''s-Encrypt-Cert für TURNS spiegeln ─────────────────'
+            echo '# LiveKit terminiert TURNS-TLS selbst, braucht den Cert lokal (siehe livekit.yaml).'
+            echo '# Wir spiegeln Caddy'\''s auto-managed Cert in /docker/livekit-wb/cert/.'
+            echo '# Renewal-Logik unten via Cron (alle 14 Tage).'
+            echo 'mkdir -p "$DEPLOY_DIR/cert"'
+            echo 'CERT_OK=0'
+            echo 'if [ -n "$CADDY_CTR" ]; then'
+            echo '  CADDY_DATA=$(docker inspect "$CADDY_CTR" 2>/dev/null | python3 -c "import sys,json; m=json.load(sys.stdin)[0]; [print(b[\"Source\"]) for b in m.get(\"Mounts\",[]) if b.get(\"Destination\")==\"/data\"]" 2>/dev/null | head -1 || true)'
+            echo '  [ -n "$CADDY_DATA" ] && echo "→ Caddy /data: $CADDY_DATA"'
+            echo '  if [ -n "$CADDY_DATA" ]; then'
+            echo '    CERT_BASE="$CADDY_DATA/caddy/certificates/acme-v02.api.letsencrypt.org-directory/livekit-wb.srv1438024.hstgr.cloud"'
+            echo '    # Caddy issued Cert evtl. erst gerade — bis zu 5x10s warten'
+            echo '    for attempt in 1 2 3 4 5; do'
+            echo '      if [ -f "$CERT_BASE/livekit-wb.srv1438024.hstgr.cloud.crt" ] && [ -f "$CERT_BASE/livekit-wb.srv1438024.hstgr.cloud.key" ]; then'
+            echo '        cp "$CERT_BASE/livekit-wb.srv1438024.hstgr.cloud.crt" "$DEPLOY_DIR/cert/turn-cert.pem"'
+            echo '        cp "$CERT_BASE/livekit-wb.srv1438024.hstgr.cloud.key" "$DEPLOY_DIR/cert/turn-key.pem"'
+            echo '        chmod 644 "$DEPLOY_DIR/cert/"*.pem'
+            echo '        echo "✅ TURNS-Cert nach $DEPLOY_DIR/cert/ gespiegelt (Versuch $attempt)"'
+            echo '        CERT_OK=1'
+            echo '        break'
+            echo '      fi'
+            echo '      echo "  → Cert noch nicht ready (Versuch $attempt/5), warte 10s …"'
+            echo '      sleep 10'
+            echo '    done'
+            echo '  fi'
+            echo 'fi'
+            echo 'if [ "$CERT_OK" = "0" ]; then'
+            echo '  echo "⚠️  TURNS-Cert nicht gefunden — strippe TURNS-Block aus livekit.yaml damit Container startet."'
+            echo '  echo "    Caddy issued Cert beim ersten HTTPS-Hit auf die Domain (sobald Caddy-Snippet aktiv + Container 443-erreichbar)."'
+            echo '  echo "    Lösung: nach erstem erfolgreichem App-Connect Workflow erneut triggern, dann ist Cert da und TURNS aktiviert."'
+            echo '  # TURNS-Zeilen entfernen damit Container nicht crash-looped'
+            echo '  python3 -c "import re; src = open(\"$DEPLOY_DIR/livekit.yaml\").read(); fixed = re.sub(r\"^\\s*tls_port:.*$|^\\s*domain: livekit-wb\\..*$|^\\s*external_tls: true.*$|^\\s*cert_file:.*$|^\\s*key_file:.*$\", \"\", src, flags=re.MULTILINE); open(\"$DEPLOY_DIR/livekit.yaml\", \"w\").write(fixed); print(\"  → TURNS-Zeilen gestrippt\")"'
+            echo '  # Dummy-Files damit Volume-Mount nicht 404 (Docker fail-fast)'
+            echo '  touch "$DEPLOY_DIR/cert/turn-cert.pem" "$DEPLOY_DIR/cert/turn-key.pem"'
+            echo 'fi'
+            echo ''
             echo '# Container deployen: erst down (garantiert sauber), dann pull, dann up'
             echo 'cd "$DEPLOY_DIR"'
             echo '# Schritt 1: Container und Netzwerk sauber entfernen (vor pull, damit restart:always'
@@ -410,7 +449,37 @@ jobs:
             echo '  exit 1'
             echo 'fi'
             echo 'echo "✅ LiveKit-Signaling antwortet (HTTP $HTTP)"'
-            echo 'echo "✅ livekit-weltenbibliothek deployed (built-in TURN aktiv auf Port 3479)"'
+            echo 'echo "✅ livekit-weltenbibliothek deployed (TURN 3479, TURNS 5349 wenn cert vorhanden)"'
+            echo ''
+            echo '# ── Cron für TURNS-Cert-Refresh ────────────────────────────────'
+            echo '# Caddy renewed Let'\''s-Encrypt-Certs alle ~60 Tage automatisch.'
+            echo '# LiveKit lädt Certs nur beim Start → wir kopieren alle 14 Tage neu + restart.'
+            echo '# Idempotent: nur restart wenn Cert sich tatsächlich geändert hat.'
+            echo 'CRON_SCRIPT=/docker/livekit-wb/refresh-cert.sh'
+            echo 'cat > "$CRON_SCRIPT" <<'\''CRONEOF'\'''
+            echo 'set -euo pipefail'
+            echo 'CADDY_CTR=$(docker ps --format "{{.Names}}" | grep -iE "caddy" | head -1)'
+            echo '[ -n "$CADDY_CTR" ] || { echo "no caddy"; exit 0; }'
+            echo 'CADDY_DATA=$(docker inspect "$CADDY_CTR" | python3 -c "import sys,json; m=json.load(sys.stdin)[0]; [print(b[\"Source\"]) for b in m.get(\"Mounts\",[]) if b.get(\"Destination\")==\"/data\"]" | head -1)'
+            echo '[ -n "$CADDY_DATA" ] || exit 0'
+            echo 'CERT_BASE="$CADDY_DATA/caddy/certificates/acme-v02.api.letsencrypt.org-directory/livekit-wb.srv1438024.hstgr.cloud"'
+            echo 'SRC_CRT="$CERT_BASE/livekit-wb.srv1438024.hstgr.cloud.crt"'
+            echo 'DST_CRT=/docker/livekit-wb/cert/turn-cert.pem'
+            echo '[ -f "$SRC_CRT" ] || exit 0'
+            echo '# Nur kopieren+restart wenn sich Cert wirklich geändert hat'
+            echo 'if ! cmp -s "$SRC_CRT" "$DST_CRT" 2>/dev/null; then'
+            echo '  cp "$SRC_CRT" "$DST_CRT"'
+            echo '  cp "$CERT_BASE/livekit-wb.srv1438024.hstgr.cloud.key" /docker/livekit-wb/cert/turn-key.pem'
+            echo '  chmod 644 /docker/livekit-wb/cert/*.pem'
+            echo '  cd /docker/livekit-wb && docker compose restart livekit'
+            echo '  echo "$(date -Iseconds) cert refreshed + livekit restarted" >> /var/log/livekit-wb-cert.log'
+            echo 'fi'
+            echo 'CRONEOF'
+            echo 'chmod 755 "$CRON_SCRIPT"'
+            echo '# Cron-Eintrag idempotent setzen (alle 14 Tage um 03:17 nachts)'
+            echo 'CRON_LINE="17 3 */14 * * /docker/livekit-wb/refresh-cert.sh >/dev/null 2>&1"'
+            echo '(crontab -l 2>/dev/null | grep -vF "/docker/livekit-wb/refresh-cert.sh" ; echo "$CRON_LINE") | crontab -'
+            echo 'echo "✅ Cron-Job für TURNS-Cert-Refresh installiert (alle 14 Tage)"'
           } > /tmp/wb_deploy_remote.sh
 
           sshpass -p "$VPS_PASSWORD" scp \
