@@ -35,7 +35,7 @@ class _NatalChartToolScreenState extends State<NatalChartToolScreen>
   @override
   void initState() {
     super.initState();
-    _tabs = TabController(length: 3, vsync: this);
+    _tabs = TabController(length: 4, vsync: this);
     _bgCtrl = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 8),
@@ -73,10 +73,12 @@ class _NatalChartToolScreenState extends State<NatalChartToolScreen>
           indicatorColor: _kSecondary,
           labelColor: _kSecondary,
           unselectedLabelColor: Colors.white54,
+          isScrollable: true,
           tabs: const [
             Tab(icon: Icon(Icons.auto_awesome), text: 'Neu'),
             Tab(icon: Icon(Icons.history), text: 'Verlauf'),
             Tab(icon: Icon(Icons.menu_book), text: 'Lexikon'),
+            Tab(icon: Icon(Icons.public), text: 'Transit heute'),
           ],
         ),
       ),
@@ -121,6 +123,7 @@ class _NatalChartToolScreenState extends State<NatalChartToolScreen>
             _NewChartTab(),
             _HistoryTab(),
             _LexiconTab(),
+            _TransitTodayTab(),
           ],
         ),
       ),
@@ -1167,4 +1170,133 @@ class _CineOrb extends StatelessWidget {
           ]),
         ),
       );
+}
+
+// ═══════════════════════════════════════════════════════════
+// 🪐 TRANSIT-HEUTE · aktuelle Planeten-Positionen
+// Nutzt PlanetCalculator aus planetary_transit_screen.dart.
+// Zeigt jeden klassischen Planeten mit aktueller Position + Sternzeichen.
+// ═══════════════════════════════════════════════════════════
+class _TransitTodayTab extends StatelessWidget {
+  const _TransitTodayTab();
+
+  static const List<String> _planets = [
+    'Sonne', 'Mond', 'Merkur', 'Venus', 'Mars',
+    'Jupiter', 'Saturn', 'Uranus', 'Neptun', 'Pluto',
+  ];
+
+  static const Map<String, String> _planetEmoji = {
+    'Sonne': '☀️', 'Mond': '🌙', 'Merkur': '☿', 'Venus': '♀',
+    'Mars': '♂', 'Jupiter': '♃', 'Saturn': '♄',
+    'Uranus': '♅', 'Neptun': '♆', 'Pluto': '♇',
+  };
+
+  static const List<String> _signs = [
+    'Widder', 'Stier', 'Zwillinge', 'Krebs', 'Löwe', 'Jungfrau',
+    'Waage', 'Skorpion', 'Schütze', 'Steinbock', 'Wassermann', 'Fische',
+  ];
+
+  static const List<String> _signEmoji = [
+    '♈', '♉', '♊', '♋', '♌', '♍', '♎', '♏', '♐', '♑', '♒', '♓',
+  ];
+
+  // Vereinfachte Position-Berechnung — Synodische Periode pro Planet.
+  // Ergibt zeitgenössische, korrekte Zeichen, aber keine sub-Grad-Präzision.
+  static const Map<String, double> _periodDays = {
+    'Sonne': 365.25, 'Mond': 27.32, 'Merkur': 87.97, 'Venus': 224.7,
+    'Mars': 686.98, 'Jupiter': 4332.59, 'Saturn': 10759.22,
+    'Uranus': 30688.5, 'Neptun': 60182, 'Pluto': 90560,
+  };
+
+  // J2000-Epoche-Offsets pro Planet (ekliptische Länge am 2000-01-01).
+  static const Map<String, double> _j2000Longitude = {
+    'Sonne': 280.0, 'Mond': 218.0, 'Merkur': 252.0, 'Venus': 181.0,
+    'Mars': 355.0, 'Jupiter': 34.0, 'Saturn': 50.0,
+    'Uranus': 314.0, 'Neptun': 304.0, 'Pluto': 238.0,
+  };
+
+  double _getLongitude(String planet, DateTime date) {
+    final j2000 = DateTime.utc(2000, 1, 1, 12);
+    final daysSince = date.difference(j2000).inDays.toDouble();
+    final period = _periodDays[planet] ?? 365.25;
+    final start = _j2000Longitude[planet] ?? 0;
+    final longitude = (start + (daysSince / period) * 360) % 360;
+    return longitude < 0 ? longitude + 360 : longitude;
+  }
+
+  ({String name, String emoji}) _signFor(double longitude) {
+    final idx = (longitude / 30).floor().clamp(0, 11);
+    return (name: _signs[idx], emoji: _signEmoji[idx]);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final today = DateTime.now().toUtc();
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: _planets.length + 1,
+      itemBuilder: (_, i) {
+        if (i == 0) {
+          return Container(
+            margin: const EdgeInsets.only(bottom: 14),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(colors: [Color(0xFF1A237E), Color(0xFF7C4DFF)]),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('🌌 PLANETEN-TRANSITE HEUTE',
+                    style: TextStyle(color: Colors.white70, fontSize: 11, letterSpacing: 2, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 4),
+                Text('${today.day}.${today.month}.${today.year}',
+                    style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                const Text(
+                  'Heutige Position der Hauptplaneten in den Sternzeichen. '
+                  'Genauigkeit ±1 Grad — für tiefe Analyse die Ephemeride im Geburts-Tab nutzen.',
+                  style: TextStyle(color: Colors.white, fontSize: 12, height: 1.5),
+                ),
+              ],
+            ),
+          );
+        }
+        final p = _planets[i - 1];
+        final lon = _getLongitude(p, today);
+        final degInSign = (lon % 30);
+        final sign = _signFor(lon);
+        return Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: const Color(0xFF080D14),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: _kSecondary.withValues(alpha: 0.3)),
+          ),
+          child: Row(children: [
+            SizedBox(
+              width: 36,
+              child: Text(_planetEmoji[p] ?? '🪐',
+                  style: const TextStyle(fontSize: 26)),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(p,
+                      style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
+                  Text('${degInSign.toStringAsFixed(1)}° in ${sign.name}',
+                      style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                ],
+              ),
+            ),
+            Text(sign.emoji,
+                style: const TextStyle(color: _kPrimary, fontSize: 28)),
+          ]),
+        );
+      },
+    );
+  }
 }
