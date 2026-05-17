@@ -25,11 +25,14 @@ binding = "AI"
 binding    = "R2_BUCKET"
 bucket_name = "weltenbibliothek-media"
 
-# ⏰ Cron Trigger — Dispatcher drained notification_queue minütlich an FCM.
+# ⏰ Cron Trigger — Dispatcher drained notification_queue alle 5 Min an FCM.
+# Frequenz: */5 statt jede Minute → 288/Tag statt 1440/Tag, schont Workers
+# Free-Plan-Quota (100k/Tag). Notification-Latenz: Worst Case 5 Min,
+# das App-Polling holt zeitkritische Items schneller ein.
 # Ohne FCM_SERVICE_ACCOUNT fällt das auf "mark as sent" zurück
 # (In-App-Polling übernimmt die Zustellung).
 [triggers]
-crons = ["* * * * *"]
+crons = ["*/5 * * * *"]
 
 # Secrets (via `npx wrangler secret put <NAME>` setzen):
 #   SUPABASE_SERVICE_ROLE_KEY  – für Admin-Operationen + Queue-Dispatch
