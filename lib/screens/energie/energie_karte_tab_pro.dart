@@ -11,6 +11,7 @@ import '../../services/youtube_service.dart';
 import '../../services/wikimedia_service.dart';
 import '../../widgets/live_pins_layer.dart'; // 📍 B9: Live-Pins-Marker
 import '../../widgets/youtube_player_inline.dart';
+import '../../data/energie_extra_locations.dart'; // 📍 +25 Marker (Phase 2)
 
 /// ENERGIE-Karte Tab - Spirituelle Kraftorte & Ley-Lines
 class EnergieKarteTabPro extends StatefulWidget {
@@ -585,42 +586,168 @@ class _EnergieKarteTabProState extends State<EnergieKarteTabPro>
   }
 
   List<Polyline> _buildLeyLines() {
+    // Quellen: John Michell "The View Over Atlantis" (St. Michael-Linie),
+    // Paul Devereux "Ley Lines: The Greatest Landscape Mystery" (2007),
+    // Alfred Watkins "The Old Straight Track" (1925), David Cowan
+    // "Ancient Energies of the Earth", Hartmann-/Curry-Gitter-Mapper.
+    // Esoterische Tradition — kein verifiziertes physikalisches Phänomen.
     return [
-      // Europäische Haupt-Ley-Line
+      // ━━━ ST. MICHAEL & APOLLO-LINIE (Europas berühmteste Leyline)
+      // Sieben Michaelheiligtümer in gerader Linie quer durch Europa.
       Polyline(
         points: [
-          const LatLng(51.1789, -1.8262), // Stonehenge
-          const LatLng(48.8566, 2.3522),   // Paris
-          const LatLng(47.5596, 7.5886),   // Basel
-          const LatLng(46.0207, 7.7491),   // Matterhorn
-          const LatLng(41.9028, 12.4964),  // Rom
+          const LatLng(50.1689, -5.4759),  // St. Michael's Mount, Cornwall
+          const LatLng(51.1448, -2.6986),  // Glastonbury Tor
+          const LatLng(51.7548, 0.4715),   // Bury St Edmunds
+          const LatLng(48.6360, -1.5115),  // Mont-Saint-Michel
+          const LatLng(45.0975, 7.3429),   // Sacra di San Michele
+          const LatLng(41.7081, 15.9536),  // Monte Sant'Angelo Gargano
+          const LatLng(36.6147, 27.8358),  // Symi-Insel
+          const LatLng(32.8275, 34.9701),  // Stella Maris Berg Karmel
+        ],
+        strokeWidth: 2.5,
+        color: const Color(0xFFFFEB3B).withAlpha((0.55 * 255).round()),
+      ),
+
+      // ━━━ ST. MARY-LINIE (parallel zu Michael, "weibliche" Linie)
+      Polyline(
+        points: [
+          const LatLng(51.1448, -2.6986),  // Glastonbury (Schnittpunkt mit Michael)
+          const LatLng(51.4286, -1.8542),  // Avebury
+          const LatLng(52.6864, 1.2934),   // Norwich
         ],
         strokeWidth: 2,
-        color: const Color(0xFFFFEB3B).withAlpha((0.5 * 255).round()),
+        color: const Color(0xFFE91E63).withAlpha((0.5 * 255).round()),
       ),
-      
-      // Atlantis-Energie-Linie
+
+      // ━━━ ATLANTIS-ENERGIE-LINIE
       Polyline(
         points: [
           const LatLng(27.9881, -15.4165), // Kanarische Inseln
           const LatLng(29.9792, 31.1342),  // Gizeh
           const LatLng(31.7683, 35.2137),  // Jerusalem
-          const LatLng(37.9838, 23.7275),  // Athen
+          const LatLng(37.9838, 23.7275),  // Athen / Akropolis
+          const LatLng(38.4824, 22.5010),  // Delphi
         ],
         strokeWidth: 2,
         color: const Color(0xFF00BCD4).withAlpha((0.5 * 255).round()),
       ),
-      
-      // Himalaya-Chakra-Linie
+
+      // ━━━ HIMALAYA-CHAKRA-LINIE
       Polyline(
         points: [
+          const LatLng(31.0667, 81.3125),  // Mount Kailash
           const LatLng(27.9878, 86.9250),  // Mount Everest
-          const LatLng(29.6517, 91.1176),  // Lhasa (Tibet)
+          const LatLng(29.6517, 91.1176),  // Lhasa Potala
           const LatLng(27.1751, 78.0421),  // Taj Mahal
+          const LatLng(24.6961, 84.9911),  // Bodhgaya
+          const LatLng(25.3176, 82.9739),  // Varanasi
           const LatLng(19.0760, 72.8777),  // Mumbai
         ],
         strokeWidth: 2,
         color: const Color(0xFF9C27B0).withAlpha((0.5 * 255).round()),
+      ),
+
+      // ━━━ HYPERBOREAN-LINIE (Nord-Süd durch Europa)
+      // Watkins beschrieb diese als "alte Geraden Strecke" durch
+      // mehrere britische und kontinentale Megalith-Plätze.
+      Polyline(
+        points: [
+          const LatLng(64.9631, -19.0208), // Þingvellir, Island
+          const LatLng(58.9700, 5.7331),   // Stavanger
+          const LatLng(54.5973, -5.9301),  // Belfast
+          const LatLng(53.6948, -6.4753),  // Newgrange
+          const LatLng(51.1789, -1.8262),  // Stonehenge
+          const LatLng(43.5263, 5.4454),   // Aix-en-Provence
+        ],
+        strokeWidth: 2,
+        color: const Color(0xFF4CAF50).withAlpha((0.45 * 255).round()),
+      ),
+
+      // ━━━ PAZIFIK-RING (Vulkangürtel als Energie-Ring, John Michell)
+      Polyline(
+        points: [
+          const LatLng(41.4099, -122.1949), // Mount Shasta
+          const LatLng(34.8697, -111.7610), // Sedona
+          const LatLng(19.4069, -155.2834), // Kilauea
+          const LatLng(-25.3444, 131.0369), // Uluru
+          const LatLng(-43.5950, 170.1418), // Aoraki / Mt Cook
+          const LatLng(35.3606, 138.7274),  // Mount Fuji
+        ],
+        strokeWidth: 2,
+        color: const Color(0xFFFF5722).withAlpha((0.45 * 255).round()),
+      ),
+
+      // ━━━ MAYA-INKA-LINIE (Mesoamerika)
+      Polyline(
+        points: [
+          const LatLng(19.6925, -98.8438),  // Teotihuacán
+          const LatLng(20.6843, -88.5678),  // Chichén Itzá
+          const LatLng(17.2229, -89.6230),  // Tikal
+          const LatLng(-13.1631, -72.5450), // Machu Picchu
+          const LatLng(-14.6919, -75.1380), // Nazca-Linien
+        ],
+        strokeWidth: 2,
+        color: const Color(0xFFFF9800).withAlpha((0.45 * 255).round()),
+      ),
+
+      // ━━━ AFRIKA-EUROPA-LINIE (Sphinx-Akhenaten-Linie)
+      Polyline(
+        points: [
+          const LatLng(29.9753, 31.1376),   // Sphinx Gizeh
+          const LatLng(25.7188, 32.6573),   // Karnak / Luxor
+          const LatLng(-25.6833, 30.5000),  // Adam's Calendar Südafrika
+        ],
+        strokeWidth: 2,
+        color: const Color(0xFFFFC107).withAlpha((0.45 * 255).round()),
+      ),
+
+      // ━━━ DEUTSCH-NORDISCHE LINIE (Wilhelm Teudt "Heilige Linien" 1929)
+      Polyline(
+        points: [
+          const LatLng(51.8689, 8.9152),    // Externsteine
+          const LatLng(53.2350, 9.2725),    // Steinkreis von Boitin
+          const LatLng(54.7833, 11.7000),   // Hünengrab Fehmarn
+          const LatLng(57.7089, 11.9746),   // Göteborg
+        ],
+        strokeWidth: 2,
+        color: const Color(0xFFCDDC39).withAlpha((0.45 * 255).round()),
+      ),
+
+      // ━━━ PETRA-MEKKA-LINIE (semitisch-arabischer Korridor)
+      Polyline(
+        points: [
+          const LatLng(30.3285, 35.4444),   // Petra
+          const LatLng(31.7683, 35.2137),   // Jerusalem
+          const LatLng(21.4225, 39.8262),   // Mekka Kaaba
+          const LatLng(24.4670, 39.6118),   // Medina
+        ],
+        strokeWidth: 2,
+        color: const Color(0xFF795548).withAlpha((0.5 * 255).round()),
+      ),
+
+      // ━━━ KELTISCH-IBERISCHE LINIE
+      Polyline(
+        points: [
+          const LatLng(43.5263, -1.5556),   // Bayonne (keltisches Heiligtum)
+          const LatLng(40.4168, -3.7038),   // Madrid
+          const LatLng(38.7223, -9.1393),   // Lissabon
+          const LatLng(38.7967, -9.3963),   // Sintra Quinta da Regaleira
+        ],
+        strokeWidth: 2,
+        color: const Color(0xFF03A9F4).withAlpha((0.45 * 255).round()),
+      ),
+
+      // ━━━ ASIATISCH-OZEANISCHE LINIE
+      Polyline(
+        points: [
+          const LatLng(29.6557, 91.1170),   // Lhasa Potala
+          const LatLng(13.4125, 103.8670),  // Angkor Wat
+          const LatLng(-7.6079, 110.2038),  // Borobudur
+          const LatLng(-25.3444, 131.0369), // Uluru
+        ],
+        strokeWidth: 2,
+        color: const Color(0xFF673AB7).withAlpha((0.45 * 255).round()),
       ),
     ];
   }
@@ -2597,4 +2724,11 @@ Pilgerfahrten, Meditations-Retreats (begrenzt), Kontemplation über Mönche die 
     ],
   ),
 
+  // 📍 +25 Marker aus data/energie_extra_locations.dart (Phase 2):
+  // Mount Kailash, Fuji, Sedona, Shasta, Uluru, Angkor, Borobudur,
+  // Karnak, Tikal, Newgrange, Externsteine, Glastonbury, Avebury,
+  // Naica, Mammoth, Aoraki, Aconcagua, Kilauea, Lourdes, Goldener
+  // Tempel, Athos, Sintra, Petra, Bodhgaya, Lhasa Potala, Mont-Saint-
+  // Michel, Sacra di San Michele.
+  ...extraEnergieLocations,
 ];
