@@ -12,6 +12,7 @@ import '../animations/world_transition_video.dart';
 import '../services/sound_service.dart';
 import '../services/haptic_service.dart';
 import '../utils/responsive_helper.dart';
+import '../widgets/daily_streak_indicator.dart';
 import '../widgets/live_world_badge.dart';
 import '../widgets/profile_quest_banner.dart';
 import '../widgets/pwa_install_hint.dart';
@@ -937,15 +938,21 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> with TickerProvider
                             Text('Willkommen, Reisender', style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.78), fontWeight: FontWeight.w300, letterSpacing: 0.2)),
                           ],
                         ),
-                        _buildIconBtn(Icons.settings, () {
-                          HapticService.lightImpact();
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const ProfileSettingsScreen(),
-                            ),
-                          );
-                        }),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const DailyStreakIndicator(),
+                            _buildIconBtn(Icons.settings, () {
+                              HapticService.lightImpact();
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const ProfileSettingsScreen(),
+                                ),
+                              );
+                            }),
+                          ],
+                        ),
                       ],
                     ),
                   ),

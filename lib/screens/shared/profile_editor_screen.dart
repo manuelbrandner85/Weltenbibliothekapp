@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../services/spirit_profile_service.dart';
 import '../../services/storage_service.dart';
 import '../../services/username_availability_service.dart';
+import '../../widgets/profile_chat_preview.dart';
 import '../../widgets/profile_completeness_bar.dart';
 import '../../widgets/responsive_web_container.dart';
 import 'package:flutter/services.dart'; // ✅ Für InputFormatters
@@ -912,6 +913,16 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
                     ProfileCompletenessBar(
                       accent: worldColor,
                       fields: _completenessFields(),
+                    ),
+                    // Live-Preview: so sieht das Profil im Chat aus
+                    ProfileChatPreview(
+                      avatarUrl: _avatarUrl,
+                      avatarEmoji: _selectedEmoji,
+                      username: _usernameController.text,
+                      displayName: widget.world == 'materie'
+                          ? _nameController.text
+                          : '${_firstNameController.text} ${_lastNameController.text}'.trim(),
+                      accent: worldColor,
                     ),
                     // Avatar-Bereich
                     Center(
