@@ -270,6 +270,16 @@ class FrequencyPreset {
 
       // BINAURAL BEATS (Brainwave States)
       FrequencyPreset(
+        id: 'binaural_schumann',
+        name: 'Schumann-Resonanz',
+        description: '7.83 Hz – Herzschlag der Erde',
+        frequency: 7.83,
+        category: 'binaural',
+        benefit: 'Synchronisation mit dem Erdmagnetfeld, Erdung, Beruhigung',
+        icon: '🌍',
+        keywords: ['schumann', 'erde', 'resonanz', '7.83', 'erdung', 'magnetfeld'],
+      ),
+      FrequencyPreset(
         id: 'binaural_delta',
         name: 'Delta Wellen',
         description: '0.5-4 Hz - Tiefschlaf',

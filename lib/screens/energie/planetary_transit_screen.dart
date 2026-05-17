@@ -391,18 +391,18 @@ class _PlanetaryTransitScreenState extends State<PlanetaryTransitScreen>
 
   // ── Tab Bar ───────────────────────────────────────────────────────────────
   Widget _buildTabBar() {
-    const tabs = ['🪐 Planeten', '⚡ Transite', '✨ Energie'];
+    const tabs = ['🪐 Planeten', '⚡ Transite', '✨ Energie', '🌒 Finsternisse'];
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
       child: Row(
-        children: List.generate(3, (i) {
+        children: List.generate(4, (i) {
           final selected = _tabIndex == i;
           return Expanded(
             child: GestureDetector(
               onTap: () => setState(() => _tabIndex = i),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 220),
-                margin: EdgeInsets.only(right: i < 2 ? 8 : 0),
+                margin: EdgeInsets.only(right: i < 3 ? 8 : 0),
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
                   gradient: selected
@@ -438,11 +438,126 @@ class _PlanetaryTransitScreenState extends State<PlanetaryTransitScreen>
   Widget _buildBody() {
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 300),
-      child: _tabIndex == 0
-          ? _buildPlanetList()
-          : _tabIndex == 1
-              ? _buildTransitEvents()
-              : _buildEnergyForecast(),
+      child: switch (_tabIndex) {
+        0 => _buildPlanetList(),
+        1 => _buildTransitEvents(),
+        2 => _buildEnergyForecast(),
+        _ => _buildEclipses(),
+      },
+    );
+  }
+
+  // ── TAB 3: Finsternisse-Kalender ─────────────────────────────────────────
+  // Daten aus NASA GSFC Eclipse Catalog (Solar: eclipse.gsfc.nasa.gov/solar.html
+  // Lunar: eclipse.gsfc.nasa.gov/lunar.html). UTC-Maxima, manuell kuratiert.
+  static const List<({DateTime date, String type, String name, String region, String meaning})> _eclipses = [
+    // 2026
+    (date: _d(2026, 2, 17), type: 'Sonne (ringförmig)', name: 'Antarktis-Sonnenfinsternis', region: 'Antarktis, Südspitze Afrikas', meaning: 'Wassermann-Energie · Loslassen kollektiver Strukturen'),
+    (date: _d(2026, 3, 3),  type: 'Mond (Total)', name: 'Totale Mondfinsternis', region: 'Pazifik, Amerika, Asien', meaning: 'Jungfrau · klare Erkenntnis durch Schatten'),
+    (date: _d(2026, 8, 12), type: 'Sonne (Total)', name: 'Spanien-Total-Sonnenfinsternis', region: 'Grönland, Island, Spanien', meaning: 'Löwe · neue Identität sichtbar machen'),
+    (date: _d(2026, 8, 28), type: 'Mond (partiell)', name: 'Partielle Mondfinsternis', region: 'Amerika, Europa, Afrika', meaning: 'Fische · Auflösen alter Träume'),
+    // 2027
+    (date: _d(2027, 2, 6),  type: 'Sonne (ringförmig)', name: 'Süd-Atlantik-Ringförmige', region: 'Chile, Argentinien, Atlantik', meaning: 'Wassermann · Innovation jenseits Konvention'),
+    (date: _d(2027, 8, 2),  type: 'Sonne (Total)', name: 'Sahara-Total-Sonnenfinsternis', region: 'Marokko, Spanien, Ägypten, Saudi', meaning: 'Löwe · seltene 6:23 Min Totalität'),
+    // 2028
+    (date: _d(2028, 1, 12), type: 'Mond (partiell)', name: 'Partielle Mondfinsternis', region: 'Europa, Afrika, Asien', meaning: 'Krebs · familiäre Wurzeln klären'),
+    (date: _d(2028, 1, 26), type: 'Sonne (ringförmig)', name: 'Ringförmige über Spanien', region: 'Ecuador, Brasilien, Spanien', meaning: 'Wassermann · kollektives Erwachen'),
+    (date: _d(2028, 7, 22), type: 'Sonne (Total)', name: 'Australien-Total', region: 'Australien, Neuseeland', meaning: 'Krebs · emotionale Heimkehr'),
+    // 2029
+    (date: _d(2029, 1, 14), type: 'Sonne (partiell)', name: 'Partielle Sonnenfinsternis', region: 'Arktis, Nord-Europa', meaning: 'Steinbock · Strukturbruch'),
+    (date: _d(2029, 6, 12), type: 'Sonne (partiell)', name: 'Partielle Sonnenfinsternis', region: 'Arktis', meaning: 'Zwillinge · Wahrheit aus mehreren Perspektiven'),
+    (date: _d(2029, 6, 26), type: 'Mond (Total)', name: 'Totale Mondfinsternis', region: 'Amerika, Europa, Afrika', meaning: 'Steinbock · Karriere/Lebensaufgabe-Wendepunkt'),
+    (date: _d(2029, 12, 20), type: 'Mond (Total)', name: 'Totale Mondfinsternis', region: 'Pazifik, Asien', meaning: 'Zwillinge · Kommunikations-Klärung'),
+    // 2030
+    (date: _d(2030, 6, 1),  type: 'Sonne (ringförmig)', name: 'Sahara-Ringförmige', region: 'Algerien, Tunesien, Griechenland, Russland', meaning: 'Zwillinge · neue Lernfelder'),
+    (date: _d(2030, 11, 25), type: 'Sonne (Total)', name: 'Süd-Afrika-Total', region: 'Botswana, Südafrika, Australien', meaning: 'Schütze · Sinnsuche und Expansion'),
+  ];
+
+  static DateTime _d(int y, int m, int d) => DateTime.utc(y, m, d);
+
+  Widget _buildEclipses() {
+    final upcoming = _eclipses.where((e) => e.date.isAfter(_today.subtract(const Duration(days: 1)))).toList();
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
+      physics: const BouncingScrollPhysics(),
+      itemCount: upcoming.length + 1,
+      itemBuilder: (_, i) {
+        if (i == 0) {
+          return Container(
+            margin: const EdgeInsets.only(bottom: 16),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(colors: [
+                _purple.withValues(alpha: 0.25),
+                _teal.withValues(alpha: 0.1),
+              ]),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: _purple.withValues(alpha: 0.4)),
+            ),
+            child: const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('🌒 Finsternisse 2026-2030',
+                    style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                SizedBox(height: 6),
+                Text(
+                  'Sonnen- und Mondfinsternisse markieren astrologische Wendepunkte. '
+                  'Daten aus NASA GSFC Eclipse Catalog. Wirkung ±6 Monate.',
+                  style: TextStyle(color: Colors.white70, fontSize: 12, height: 1.5),
+                ),
+              ],
+            ),
+          );
+        }
+        final e = upcoming[i - 1];
+        final isSolar = e.type.startsWith('Sonne');
+        final daysUntil = e.date.difference(_today).inDays;
+        final color = isSolar ? _gold : _purple;
+        return Container(
+          margin: const EdgeInsets.only(bottom: 10),
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.04),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: color.withValues(alpha: 0.3)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(isSolar ? '☀️' : '🌑', style: const TextStyle(fontSize: 28)),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(e.name,
+                            style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+                        Text(e.type,
+                            style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600)),
+                      ],
+                    ),
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text('${e.date.day}.${e.date.month}.${e.date.year}',
+                          style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w600)),
+                      Text(daysUntil == 0 ? 'heute' : 'in $daysUntil Tagen',
+                          style: TextStyle(color: color, fontSize: 10)),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text('📍 ${e.region}', style: const TextStyle(color: Colors.white60, fontSize: 11)),
+              const SizedBox(height: 4),
+              Text(e.meaning, style: TextStyle(color: color.withValues(alpha: 0.9), fontSize: 12, fontStyle: FontStyle.italic)),
+            ],
+          ),
+        );
+      },
     );
   }
 

@@ -138,9 +138,102 @@ class GematriaEngine {
     return _reduceToSingleDigit(latinValue);
   }
 
-  /// Berechne Isopsephie (Griechisch, hier vereinfacht als Lateinisch)
+  /// Griechisches Alphabet (Isopsephie / Isopsephia)
+  /// Alpha=1, Beta=2, ..., Iota=10, Kappa=20, ..., Rho=100, Sigma=200, ..., Omega=800
+  static const Map<String, int> _greekIsopsephy = {
+    'α': 1, 'Α': 1, 'β': 2, 'Β': 2, 'γ': 3, 'Γ': 3, 'δ': 4, 'Δ': 4,
+    'ε': 5, 'Ε': 5, 'ζ': 7, 'Ζ': 7, 'η': 8, 'Η': 8, 'θ': 9, 'Θ': 9,
+    'ι': 10, 'Ι': 10, 'κ': 20, 'Κ': 20, 'λ': 30, 'Λ': 30, 'μ': 40, 'Μ': 40,
+    'ν': 50, 'Ν': 50, 'ξ': 60, 'Ξ': 60, 'ο': 70, 'Ο': 70, 'π': 80, 'Π': 80,
+    'ρ': 100, 'Ρ': 100, 'σ': 200, 'Σ': 200, 'ς': 200, 'τ': 300, 'Τ': 300,
+    'υ': 400, 'Υ': 400, 'φ': 500, 'Φ': 500, 'χ': 600, 'Χ': 600,
+    'ψ': 700, 'Ψ': 700, 'ω': 800, 'Ω': 800,
+    // Archaische Buchstaben für 6, 90, 900
+    'ϛ': 6, 'Ϛ': 6,    // Stigma
+    'ϟ': 90, 'Ϟ': 90,  // Qoppa
+    'ϡ': 900, 'Ϡ': 900, // Sampi
+  };
+
+  /// Arabisches Alphabet (Abjad Hawwaz / Hisaab al-Jummal)
+  /// Klassische östliche Anordnung Alif=1, Ba=2, Jeem=3, Dal=4, ...
+  static const Map<String, int> _arabicAbjad = {
+    'ا': 1, 'أ': 1, 'إ': 1, 'آ': 1, // Alif (alle Formen)
+    'ب': 2,   // Ba
+    'ج': 3,   // Jeem
+    'د': 4,   // Dal
+    'ه': 5, 'ة': 5, // Ha / Ta marbuta
+    'و': 6, 'ؤ': 6, // Waw
+    'ز': 7,   // Zay
+    'ح': 8,   // Ha (hard)
+    'ط': 9,   // Tah
+    'ي': 10, 'ى': 10, 'ئ': 10, // Ya
+    'ك': 20,  // Kaf
+    'ل': 30,  // Lam
+    'م': 40,  // Meem
+    'ن': 50,  // Noon
+    'س': 60,  // Seen
+    'ع': 70,  // Ayn
+    'ف': 80,  // Fa
+    'ص': 90,  // Sad
+    'ق': 100, // Qaf
+    'ر': 200, // Ra
+    'ش': 300, // Sheen
+    'ت': 400, // Ta
+    'ث': 500, // Thaa
+    'خ': 600, // Khaa
+    'ذ': 700, // Dhal
+    'ض': 800, // Dad
+    'ظ': 900, // Dha
+    'غ': 1000, // Ghayn
+  };
+
+  /// Berechne Griechische Isopsephie (Standard)
+  static int calculateGreekIsopsephy(String text) {
+    int sum = 0;
+    for (int i = 0; i < text.length; i++) {
+      final char = text[i];
+      if (_greekIsopsephy.containsKey(char)) {
+        sum += _greekIsopsephy[char]!;
+      }
+    }
+    return sum;
+  }
+
+  /// Berechne Arabische Abjad-Werte
+  static int calculateArabicAbjad(String text) {
+    int sum = 0;
+    for (int i = 0; i < text.length; i++) {
+      final char = text[i];
+      if (_arabicAbjad.containsKey(char)) {
+        sum += _arabicAbjad[char]!;
+      }
+    }
+    return sum;
+  }
+
+  /// Berechne Isopsephie (Griechisch — Alias zur klassischen Standardmethode)
   static int calculateIsopsephy(String text) {
-    return calculateLatinSimple(text);
+    return calculateGreekIsopsephy(text);
+  }
+
+  /// Mispar Siduri — Ordinalwerte des Hebräischen Alphabets (1-22).
+  static const Map<String, int> _hebrewSiduri = {
+    'א': 1, 'ב': 2, 'ג': 3, 'ד': 4, 'ה': 5, 'ו': 6, 'ז': 7, 'ח': 8,
+    'ט': 9, 'י': 10, 'כ': 11, 'ך': 11, 'ל': 12, 'מ': 13, 'ם': 13,
+    'נ': 14, 'ן': 14, 'ס': 15, 'ע': 16, 'פ': 17, 'ף': 17, 'צ': 18,
+    'ץ': 18, 'ק': 19, 'ר': 20, 'ש': 21, 'ת': 22,
+  };
+
+  /// Berechne Mispar Siduri (Ordinalwerte 1-22).
+  static int calculateHebrewSiduri(String text) {
+    int sum = 0;
+    for (int i = 0; i < text.length; i++) {
+      final char = text[i];
+      if (_hebrewSiduri.containsKey(char)) {
+        sum += _hebrewSiduri[char]!;
+      }
+    }
+    return sum;
   }
 
   /// Berechne Wort-Zahl-Resonanz
