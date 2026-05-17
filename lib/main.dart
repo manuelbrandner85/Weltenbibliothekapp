@@ -197,15 +197,16 @@ void main() async {
   // ═══════════════════════════════════════════════════════════
   
   // 🌐 Web + Mobile: Critical Services laufen jetzt auf BEIDEN Plattformen.
-  // Vorher war Web ausgeschlossen → InvisibleAuthService nie initialisiert →
-  // alle Web-User hatten user_id='user_anonymous' → Chat-Presence + Edit/Delete
-  // funktionierten nicht. Alle critical services haben Web-Stubs (sqflite,
-  // audioplayers, etc.) — also web-safe.
+  // Hard-Timeout 10s: wenn auf Web ein Service hängt (z.B. SharedPreferences
+  // bei IndexedDB-Block, Supabase-Lookup ohne Antwort), läuft die App
+  // trotzdem an statt im Ladezustand zu erfrieren.
   try {
-    await ServiceManager().initializeCriticalServices();
+    await ServiceManager()
+        .initializeCriticalServices()
+        .timeout(const Duration(seconds: 10));
     debugPrint('✅ Critical services ready (Storage + Theme + Auth)');
   } catch (e) {
-    debugPrint('⚠️ Critical service init error: $e');
+    debugPrint('⚠️ Critical service init error / timeout: $e');
     // App-Start auf Mobile NICHT möglich ohne critical services.
     // Web: critical-services-failure ist non-fatal (Stubs greifen meist).
     if (!kIsWeb) rethrow;

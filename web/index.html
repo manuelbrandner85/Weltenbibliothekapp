@@ -22,57 +22,196 @@
 
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; }
     body {
-      background-color: #0a0a0a;
+      background: #050310;
       display: flex;
       align-items: center;
       justify-content: center;
-      min-height: 100vh;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     }
-    #loading {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 24px;
+
+    /* Cinematic Cosmic-Background — 4 Welten-Farben pulsieren */
+    .cosmic-bg {
+      position: fixed; inset: 0;
+      background:
+        radial-gradient(ellipse at 20% 30%, rgba(59, 130, 246, 0.18) 0%, transparent 50%),   /* Materie Blau */
+        radial-gradient(ellipse at 80% 25%, rgba(168, 85, 247, 0.18) 0%, transparent 50%),   /* Energie Lila */
+        radial-gradient(ellipse at 20% 75%, rgba(201, 168, 76, 0.16) 0%, transparent 50%),   /* Vorhang Gold */
+        radial-gradient(ellipse at 80% 75%, rgba(0, 212, 170, 0.18) 0%, transparent 50%),    /* Ursprung Cyan */
+        #050310;
+      animation: cosmicShift 12s ease-in-out infinite;
     }
+    @keyframes cosmicShift {
+      0%, 100% { filter: hue-rotate(0deg) brightness(1); }
+      50%      { filter: hue-rotate(15deg) brightness(1.1); }
+    }
+
+    /* Sterne (subtle particle field) */
+    .stars {
+      position: fixed; inset: 0;
+      background-image:
+        radial-gradient(1px 1px at 25% 30%, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1px 1px at 75% 15%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1.5px 1.5px at 50% 70%, rgba(255,255,255,0.6), transparent),
+        radial-gradient(1px 1px at 15% 80%, rgba(255,255,255,0.4), transparent),
+        radial-gradient(1.5px 1.5px at 85% 60%, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 40% 50%, rgba(255,255,255,0.3), transparent);
+      animation: twinkle 4s ease-in-out infinite alternate;
+    }
+    @keyframes twinkle {
+      0% { opacity: 0.4; }
+      100% { opacity: 1; }
+    }
+
+    #loading {
+      position: relative; z-index: 10;
+      display: flex; flex-direction: column;
+      align-items: center; gap: 32px;
+    }
+
+    /* 4-Quadrant Portal-Ring (jede Welt eine Farbe) */
+    .portal {
+      position: relative;
+      width: 96px; height: 96px;
+    }
+    .portal-segment {
+      position: absolute; inset: 0;
+      border-radius: 50%;
+      border: 3px solid transparent;
+      animation: rotate 3s linear infinite;
+    }
+    .portal-segment.materie {
+      border-top-color: #3B82F6;
+      box-shadow: 0 0 24px rgba(59, 130, 246, 0.6);
+    }
+    .portal-segment.energie {
+      border-right-color: #A855F7;
+      box-shadow: 0 0 24px rgba(168, 85, 247, 0.6);
+      animation-delay: -0.75s;
+    }
+    .portal-segment.vorhang {
+      border-bottom-color: #C9A84C;
+      box-shadow: 0 0 24px rgba(201, 168, 76, 0.6);
+      animation-delay: -1.5s;
+    }
+    .portal-segment.ursprung {
+      border-left-color: #00D4AA;
+      box-shadow: 0 0 24px rgba(0, 212, 170, 0.6);
+      animation-delay: -2.25s;
+    }
+    @keyframes rotate {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Inner glow core */
+    .portal::before {
+      content: '';
+      position: absolute;
+      inset: 22px;
+      border-radius: 50%;
+      background: radial-gradient(
+        circle,
+        rgba(255, 255, 255, 0.12) 0%,
+        transparent 70%
+      );
+      animation: corePulse 2.4s ease-in-out infinite;
+    }
+    @keyframes corePulse {
+      0%, 100% { transform: scale(1);   opacity: 0.6; }
+      50%      { transform: scale(1.15); opacity: 1; }
+    }
+
     #loading-title {
       color: #C9A84C;
-      font-size: 24px;
+      font-size: 22px;
       font-weight: 600;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      text-align: center;
+      text-shadow:
+        0 0 20px rgba(201, 168, 76, 0.5),
+        0 0 40px rgba(201, 168, 76, 0.2);
+      animation: titleGlow 3s ease-in-out infinite;
+    }
+    @keyframes titleGlow {
+      0%, 100% { opacity: 0.85; }
+      50%      { opacity: 1;    }
+    }
+
+    #loading-subtitle {
+      color: #888;
+      font-size: 12px;
       letter-spacing: 2px;
       text-transform: uppercase;
+      text-align: center;
+      margin-top: 10px;
+      font-weight: 300;
     }
-    #loading-subtitle {
-      color: #666;
-      font-size: 13px;
-      letter-spacing: 1px;
+
+    /* 4 Welt-Indikator-Punkte */
+    .worlds-dots {
+      display: flex; gap: 10px;
+      margin-top: 4px;
     }
-    .spinner {
-      width: 48px;
-      height: 48px;
-      border: 3px solid #1a1a1a;
-      border-top-color: #C9A84C;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
+    .worlds-dots > div {
+      width: 6px; height: 6px; border-radius: 50%;
+      animation: dotPulse 1.6s ease-in-out infinite;
     }
-    @keyframes spin {
-      to { transform: rotate(360deg); }
+    .worlds-dots > div:nth-child(1) { background: #3B82F6; color: #3B82F6; animation-delay: 0.0s; }
+    .worlds-dots > div:nth-child(2) { background: #A855F7; color: #A855F7; animation-delay: 0.2s; }
+    .worlds-dots > div:nth-child(3) { background: #C9A84C; color: #C9A84C; animation-delay: 0.4s; }
+    .worlds-dots > div:nth-child(4) { background: #00D4AA; color: #00D4AA; animation-delay: 0.6s; }
+    @keyframes dotPulse {
+      0%, 100% { opacity: 0.35; transform: scale(0.85); }
+      50%      { opacity: 1;    transform: scale(1.25); box-shadow: 0 0 12px currentColor; }
     }
   </style>
 </head>
 <body>
+  <div class="cosmic-bg"></div>
+  <div class="stars"></div>
+
   <div id="loading">
-    <div class="spinner"></div>
-    <div id="loading-title">Weltenbibliothek</div>
-    <div id="loading-subtitle">Wird geladen…</div>
+    <div class="portal">
+      <div class="portal-segment materie"></div>
+      <div class="portal-segment energie"></div>
+      <div class="portal-segment vorhang"></div>
+      <div class="portal-segment ursprung"></div>
+    </div>
+    <div>
+      <div id="loading-title">Weltenbibliothek</div>
+      <div id="loading-subtitle">Vier Welten · Ein Ursprung</div>
+    </div>
+    <div class="worlds-dots">
+      <div></div><div></div><div></div><div></div>
+    </div>
   </div>
 
   <script>
-    window.addEventListener('flutter-first-frame', function() {
+    // Sicherheits-Timeout: wenn Flutter nach 15s nicht das first-frame
+    // Event feuert, blende den Loader trotzdem weg damit der User sieht
+    // was passiert (z.B. ein leerer Bildschirm statt ewig-Spinner).
+    var loaderHidden = false;
+    function hideLoader() {
+      if (loaderHidden) return;
+      loaderHidden = true;
       var loading = document.getElementById('loading');
-      if (loading) loading.style.display = 'none';
-    });
+      var cosmic = document.querySelector('.cosmic-bg');
+      var stars = document.querySelector('.stars');
+      [loading, cosmic, stars].forEach(function(el) {
+        if (!el) return;
+        el.style.transition = 'opacity 600ms ease-out';
+        el.style.opacity = '0';
+      });
+      setTimeout(function() {
+        [loading, cosmic, stars].forEach(function(el) {
+          if (el) el.style.display = 'none';
+        });
+      }, 600);
+    }
+    window.addEventListener('flutter-first-frame', hideLoader);
+    setTimeout(hideLoader, 15000);
   </script>
 
   <script src="flutter_bootstrap.js" async></script>
