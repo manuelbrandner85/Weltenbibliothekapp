@@ -25,6 +25,9 @@ import 'calculators/dream_pattern_analysis_screen.dart'; // 💭 Traum-Muster
 import 'calculators/family_tree_screen.dart'; // 🌳 Stammbaum
 import 'calculators/tarot_spreads_screen.dart'; // 🔮 Tarot-Legesysteme
 import 'calculators/animated_sacred_geometry_screen.dart'; // 🔯 Animierte SVG
+import 'calculators/audio_body_scan_screen.dart'; // 🧘 TTS-Körperscan
+import 'calculators/audio_meditation_screen.dart'; // 🧘 TTS-Meditationen
+import 'calculators/photo_progress_screen.dart'; // 📸 Vor/Nach
 import 'calculators/new_spirit_tool_screens.dart';
 import 'meditation_timer_screen.dart'; // MeditationTimerScreen (canonical, deduplicated)
 import 'calculators/moon_calendar_tool_screen.dart'; // 🌕 v19 Mondkalender
@@ -264,6 +267,16 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'category': 'new',
         'screen': const MeditationTimerScreen(),
       },
+      // 🧘 Audio-Meditationen — 5 TTS-geleitete Sessions (5-10 Min)
+      {
+        'icon': Icons.headphones,
+        'iconEmoji': '🎧',
+        'title': 'Audio-Meditation',
+        'subtitle': '5 geführte Sessions (Atem · Metta · Berg · Vergebung · Dank)',
+        'color': const Color(0xFF4527A0),
+        'category': 'new',
+        'screen': const AudioMeditationScreen(),
+      },
       
       // 🌈 Aura-Quiz (12 Fragen → dominante Aura-Farbe via Farbpsychologie)
       {
@@ -363,6 +376,16 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'category': 'new',
         'screen': const TransformationTrackerScreen(),
       },
+      // 📸 Vor/Nach-Foto — Body/Mind/Soul Timeline mit Vergleich
+      {
+        'icon': Icons.photo_camera,
+        'iconEmoji': '📸',
+        'title': 'Vor/Nach-Foto',
+        'subtitle': 'Foto-Timeline · Side-by-Side-Vergleich',
+        'color': const Color(0xFFF57C00),
+        'category': 'new',
+        'screen': const PhotoProgressScreen(),
+      },
       
       // 🔱 Heilige Symbole multikulturell (ersetzt esoterische Lichtsprache,
       // mit echten etymologischen/historischen Bedeutungen via Wikipedia-API)
@@ -442,6 +465,16 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'color': const Color(0xFFE91E63),
         'category': 'new',
         'screen': const BodyScanToolScreen(),
+      },
+      // 🧘 Audio-Körperscan — 10 Min TTS-geführte Vipassana
+      {
+        'icon': Icons.spatial_audio,
+        'iconEmoji': '🎙️',
+        'title': 'Audio-Körperscan',
+        'subtitle': '10 Min · 20 Regionen · deutsche TTS',
+        'color': const Color(0xFFE91E63),
+        'category': 'new',
+        'screen': const AudioBodyScanScreen(),
       },
 
       // 🌳 Stammbaum-Generator — 3 Generationen Ahnenarbeit
