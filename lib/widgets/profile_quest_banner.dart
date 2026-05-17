@@ -52,7 +52,10 @@ class _ProfileQuestBannerState extends State<ProfileQuestBanner> {
           onTap: () async {
             await Navigator.of(context).push(
               MaterialPageRoute(
-                builder: (_) => const ProfileOnboardingScreen(),
+                // Default 'materie' — User kann das Profil danach für jede
+                // Welt mitnutzen, weil es nur ein unified Profile pro User
+                // gibt (siehe Auth-Refactor in CLAUDE.md TODOs).
+                builder: (_) => const ProfileOnboardingScreen(worldType: 'materie'),
                 fullscreenDialog: true,
               ),
             );
