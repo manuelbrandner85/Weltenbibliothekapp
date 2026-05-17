@@ -691,20 +691,20 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
       keyPersons: s.keyPersons
           .map((p) => <String, dynamic>{
                 'name': p.name,
-                'role': p.role ?? '',
+                'role': p.role,
               })
           .toList(),
       rssItems: s.rssItems
           .map((i) => <String, dynamic>{
                 'title': i.title,
-                'url': i.link,
+                'url': i.url,
                 'source': i.source,
               })
           .toList(),
       skandale: s.skandale
           .map((sk) => <String, dynamic>{
                 'title': sk.title,
-                'description': sk.description,
+                'description': sk.domain,
               })
           .toList(),
       aiInsight: s.aiInsight,
