@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../services/branch_boss_test_service.dart'; // 👑 I3 Boss-Test
+import '../../services/gamification_service.dart';
+import '../../services/storage_service.dart';
 import '../../services/vorhang_service.dart';
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_glass_app_bar.dart';
@@ -351,6 +354,16 @@ class _VorhangModulesScreenState extends State<VorhangModulesScreen> {
               accentDim: _goldDim,
               onTap: _openLesson,
             ),
+            // 👑 Boss-Test-Button erscheint wenn alle Module der Branch geschafft.
+            if (allDone)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                child: _BossTestCard(
+                  branch: branchName,
+                  accent: _gold,
+                  onTap: () => _startBossTest(branchName),
+                ),
+              ),
           ],
         ),
       ),
@@ -502,6 +515,340 @@ class _VorhangModulesScreenState extends State<VorhangModulesScreen> {
                 Icon(Icons.chevron_right, color: _gold.withValues(alpha: 0.6), size: 20),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+extension _BossTestActions on _VorhangModulesScreenState {
+  Future<void> _startBossTest(String branch) async {
+    final test = await BranchBossTestService.instance.forBranch(branch);
+    if (!mounted) return;
+    if (test == null || test.questions.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('🔒 Boss-Test für „$branch" noch nicht verfügbar'),
+        backgroundColor: const Color(0xFF8A7531),
+      ));
+      return;
+    }
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => _BossTestScreen(test: test, branch: branch),
+      ),
+    );
+  }
+}
+
+class _BossTestCard extends StatelessWidget {
+  final String branch;
+  final Color accent;
+  final VoidCallback onTap;
+  const _BossTestCard({
+    required this.branch,
+    required this.accent,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            gradient: LinearGradient(
+              colors: [
+                accent.withValues(alpha: 0.28),
+                accent.withValues(alpha: 0.08),
+              ],
+            ),
+            border: Border.all(color: accent, width: 1.5),
+            boxShadow: [
+              BoxShadow(
+                color: accent.withValues(alpha: 0.35),
+                blurRadius: 14,
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              const Text('👑', style: TextStyle(fontSize: 28)),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'BOSS-TEST',
+                      style: TextStyle(
+                        color: accent,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 2,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    const Text(
+                      'Alle 5 Module geschafft — beweise dein Wissen!',
+                      style: TextStyle(color: Colors.white, fontSize: 12.5),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.arrow_forward_rounded, color: accent),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Boss-Test-Screen ────────────────────────────────────────────────
+class _BossTestScreen extends StatefulWidget {
+  final BossTest test;
+  final String branch;
+  const _BossTestScreen({required this.test, required this.branch});
+
+  @override
+  State<_BossTestScreen> createState() => _BossTestScreenState();
+}
+
+class _BossTestScreenState extends State<_BossTestScreen> {
+  static const _gold = Color(0xFFC9A84C);
+  final Map<int, int> _answers = {};
+  bool _submitted = false;
+  BossAttemptResult? _result;
+
+  Future<void> _submit() async {
+    if (_answers.length < widget.test.questions.length) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Bitte alle Fragen beantworten.'),
+        backgroundColor: Color(0xFF8A7531),
+      ));
+      return;
+    }
+    final ordered = List<int>.generate(
+      widget.test.questions.length,
+      (i) => _answers[i] ?? -1,
+    );
+    final result = BranchBossTestService.instance.evaluate(widget.test, ordered);
+    setState(() {
+      _submitted = true;
+      _result = result;
+    });
+    final storage = StorageService();
+    final userId = (storage.getMaterieProfile()?.userId
+        ?? storage.getEnergieProfile()?.userId
+        ?? 'anon');
+    await BranchBossTestService.instance.recordAttempt(
+      userId: userId,
+      branch: widget.branch,
+      result: result,
+    );
+    if (result.passed && mounted) {
+      // XP-Reward via GamificationService.
+      try {
+        await GamificationService().addXp(
+          'vorhang',
+          widget.test.xpReward,
+          reason: 'boss_test_${widget.branch}',
+        );
+      } catch (_) {}
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF000000),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        title: Text(widget.test.title,
+            style: const TextStyle(color: _gold, fontWeight: FontWeight.w700)),
+        iconTheme: const IconThemeData(color: _gold),
+      ),
+      body: _submitted
+          ? _buildResult()
+          : ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                if (widget.test.description != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 14),
+                    child: Text(
+                      widget.test.description!,
+                      style: const TextStyle(color: Colors.white70, fontSize: 13),
+                    ),
+                  ),
+                for (var i = 0; i < widget.test.questions.length; i++)
+                  _buildQuestion(i, widget.test.questions[i]),
+                const SizedBox(height: 12),
+                SizedBox(
+                  height: 52,
+                  child: ElevatedButton(
+                    onPressed: _submit,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _gold,
+                      foregroundColor: Colors.black,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    child: const Text(
+                      'Abgeben',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 15,
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+    );
+  }
+
+  Widget _buildQuestion(int i, BossQuestion q) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0D0B00),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _gold.withValues(alpha: 0.25)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Frage ${i + 1}/${widget.test.questions.length}',
+            style: TextStyle(
+              color: _gold.withValues(alpha: 0.7),
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.5,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(q.question,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 14.5,
+                fontWeight: FontWeight.w600,
+              )),
+          const SizedBox(height: 12),
+          for (var j = 0; j < q.options.length; j++)
+            _buildOption(i, j, q.options[j]),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOption(int qIdx, int optIdx, String label) {
+    final selected = _answers[qIdx] == optIdx;
+    return GestureDetector(
+      onTap: () => setState(() => _answers[qIdx] = optIdx),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: selected
+              ? _gold.withValues(alpha: 0.2)
+              : Colors.white.withValues(alpha: 0.03),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: selected
+                ? _gold
+                : Colors.white.withValues(alpha: 0.08),
+            width: selected ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              selected ? Icons.radio_button_checked : Icons.radio_button_off,
+              color: selected ? _gold : Colors.white38,
+              size: 18,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(label,
+                  style: TextStyle(
+                    color: selected ? Colors.white : Colors.white70,
+                    fontSize: 13,
+                  )),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildResult() {
+    final r = _result!;
+    final passed = r.passed;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(28),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(passed ? '👑' : '🗝️', style: const TextStyle(fontSize: 96)),
+            const SizedBox(height: 18),
+            Text(
+              passed ? 'BOSS BESIEGT' : 'Noch nicht durch',
+              style: TextStyle(
+                color: passed ? _gold : Colors.white70,
+                fontSize: 24,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 3,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              '${r.correctCount} von ${r.totalCount} richtig (${r.scorePct}%)',
+              style: const TextStyle(color: Colors.white, fontSize: 15),
+            ),
+            if (passed) ...[
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: _gold.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: _gold),
+                ),
+                child: Text(
+                  '+${widget.test.xpReward} XP',
+                  style: TextStyle(
+                    color: _gold,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(height: 36),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(passed),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: passed ? _gold : Colors.white12,
+                foregroundColor: passed ? Colors.black : Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: Text(passed ? 'Weiter' : 'Nochmal versuchen'),
+            ),
+          ],
         ),
       ),
     );
