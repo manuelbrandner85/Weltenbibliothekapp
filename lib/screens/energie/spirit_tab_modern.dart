@@ -14,6 +14,7 @@ import 'calculators/gematria_calculator_screen.dart';
 import 'calculators/spirit_profile_screen.dart'; // 🌟 Konsolidiert die 10 Universal-Tools
 import 'calculators/epigenetik_coach_screen.dart'; // 🧬 Echte Epigenetik statt 12-Strang-DNA
 import 'calculators/sacred_symbols_screen.dart'; // 🔱 Heilige Symbole multikulturell
+import 'calculators/lernreihen_index_screen.dart'; // 📚 Tagesweise Lernpfade (17 Reihen)
 import 'calculators/new_spirit_tool_screens.dart';
 import 'meditation_timer_screen.dart'; // MeditationTimerScreen (canonical, deduplicated)
 import 'calculators/moon_calendar_tool_screen.dart'; // 🌕 v19 Mondkalender
@@ -147,6 +148,20 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'screen': const GematriaCalculatorScreen(),
       },
       
+      // 📚 LERNREIHEN — Zentraler Einstieg in 17 tagesweise Lernpfade
+      // (Chakren 7d, Hermetik 7d, Schamanen 7d, Ahnen 7d, Numerologie 9d,
+      //  Earthing 10d, Archetypen 12d, Olymp 12d, Geometrie 12d, Kabbala 22d
+      //  + Phase-2: Meditation/Mantras/Affirmationen/Tarot/Runen/Yoga/I-Ging)
+      {
+        'icon': Icons.menu_book,
+        'iconEmoji': '📚',
+        'title': 'Lernreihen',
+        'subtitle': 'Tagesweise Lernpfade · 10 Reihen aktiv',
+        'color': const Color(0xFF4DB6AC),
+        'category': 'core',
+        'screen': const LernreihenIndexScreen(),
+      },
+
       // === KONSOLIDIERT: 10 frühere Universal-Tools zu 1 Spirit-Profil ===
       // Energiefeld + Polaritäten + Transformation + Unterbewusstsein +
       // Innere Karten + Zyklen + Orientierung + Meta-Spiegel + Wahrnehmung +
