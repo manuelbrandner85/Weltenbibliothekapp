@@ -1,0 +1,100 @@
+/// 🔐 ADMIN-RESOLVER
+///
+/// Ermittelt die effektive User-Rolle für den App-Admin-Check.
+/// Funktioniert mit ALLEN Auth-Pfaden:
+///   1. Supabase Auth Session vorhanden → role aus profiles-Tabelle
+///   2. Mobile-App via InvisibleAuth (auth.currentUser=null) → Username
+///      aus StorageService-Profil → Root-Admin-Check per
+///      AppRoles.isRootAdminByUsername()
+///   3. Web via WebAuthGate (auth.currentUser=null) → Username aus
+///      SharedPreferences `web_user_name` → gleicher Root-Admin-Check
+///
+/// Genutzt von den 4 World-Wrappers (materie/energie/vorhang/ursprung)
+/// damit der Root-Admin in JEDER Welt das Dashboard sieht.
+library;
+
+import 'package:flutter/foundation.dart' show kDebugMode, debugPrint, kIsWeb;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../constants/roles.dart';
+import '../../services/storage_service.dart';
+
+class AdminResolver {
+  AdminResolver._();
+
+  /// Liefert die effektive Rolle des aktuellen Users.
+  /// Returns `AppRoles.user` als Default wenn nichts gefunden.
+  static Future<String> resolveCurrentRole() async {
+    // 1. Supabase Auth Session (für User mit echtem Supabase-Account)
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user != null) {
+        final profile = await Supabase.instance.client
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .maybeSingle()
+            .timeout(const Duration(seconds: 6));
+        final role = profile?['role'] as String?;
+        if (role != null && role.isNotEmpty) {
+          if (kDebugMode) {
+            debugPrint('🔐 [AdminResolver] Supabase-Session: role=$role');
+          }
+          return role;
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ [AdminResolver] Supabase-Lookup-Fehler: $e');
+    }
+
+    // 2. Mobile-App via InvisibleAuth → Username aus lokalem Profil
+    try {
+      final storage = StorageService();
+      final localUsername = storage.getMaterieProfile()?.username ??
+          storage.getEnergieProfile()?.username;
+      if (localUsername != null && localUsername.isNotEmpty) {
+        if (AppRoles.isRootAdminByUsername(localUsername)) {
+          if (kDebugMode) debugPrint('🔐 [AdminResolver] Local profile: ROOT_ADMIN ($localUsername)');
+          return AppRoles.rootAdmin;
+        }
+        if (AppRoles.isContentEditorByUsername(localUsername)) {
+          if (kDebugMode) debugPrint('🔐 [AdminResolver] Local profile: CONTENT_EDITOR');
+          return AppRoles.contentEditor;
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ [AdminResolver] Local-Profile-Fehler: $e');
+    }
+
+    // 3. Web via WebAuthGate → SharedPreferences `web_user_name`
+    if (kIsWeb) {
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final webName = prefs.getString('web_user_name');
+        final webIsAdmin = prefs.getBool('web_is_admin') ?? false;
+        if (webName != null && webName.isNotEmpty) {
+          if (AppRoles.isRootAdminByUsername(webName)) {
+            if (kDebugMode) {
+              debugPrint('🔐 [AdminResolver] Web: ROOT_ADMIN ($webName, web_is_admin=$webIsAdmin)');
+            }
+            return AppRoles.rootAdmin;
+          }
+          if (AppRoles.isContentEditorByUsername(webName)) {
+            return AppRoles.contentEditor;
+          }
+        }
+      } catch (e) {
+        if (kDebugMode) debugPrint('⚠️ [AdminResolver] Web-Fallback-Fehler: $e');
+      }
+    }
+
+    return AppRoles.user;
+  }
+
+  /// Convenience: ist current User Admin (irgendeine Admin-Rolle)?
+  static Future<bool> isCurrentUserAdmin() async {
+    final role = await resolveCurrentRole();
+    return AppRoles.isAdmin(role);
+  }
+}

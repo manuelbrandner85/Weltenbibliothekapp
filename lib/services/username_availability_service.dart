@@ -78,7 +78,12 @@ class UsernameAvailabilityService {
 
   /// Prüft Verfügbarkeit gegen Supabase. Kombiniert lokales Format-Check +
   /// Server-Lookup in `profiles`-Tabelle (case-insensitive).
-  Future<UsernameCheckResult> check(String rawUsername) async {
+  ///
+  /// [currentUsername]: Wenn gesetzt + matched (case-insensitive) den
+  ///   `rawUsername`, wird `available` zurückgegeben ohne Server-Check.
+  ///   So kann ein angemeldeter User seine eigenen Profil-Daten ändern,
+  ///   ohne dass der Server seinen eigenen Namen als "taken" meldet.
+  Future<UsernameCheckResult> check(String rawUsername, {String? currentUsername}) async {
     final username = rawUsername.trim();
 
     // 1. Lokal: Format-Check
@@ -96,7 +101,28 @@ class UsernameAvailabilityService {
       );
     }
 
-    // 2. Cache-Lookup (case-insensitive)
+    // 2. Eigener Username — keine Kollision mit sich selbst.
+    if (currentUsername != null &&
+        currentUsername.trim().toLowerCase() == username.toLowerCase()) {
+      return const UsernameCheckResult(
+        status: UsernameStatus.available,
+        message: 'Dein eigener Username — frei zum Speichern.',
+      );
+    }
+
+    // 3. Root-Admin- oder Content-Editor-Username: NIE als "taken" melden.
+    // Die Eindeutigkeit + Sicherheit wird über das Passwort beim Speichern
+    // server-seitig im Worker erzwungen (kein anderer User kann den Namen
+    // ohne korrektes Root-/Editor-Passwort übernehmen).
+    final lower = username.toLowerCase();
+    if (lower == 'weltenbibliothek' || lower == 'weltenbibliothekedit') {
+      return const UsernameCheckResult(
+        status: UsernameStatus.available,
+        message: 'Root-Admin-Username — Passwort erforderlich beim Speichern.',
+      );
+    }
+
+    // 4. Cache-Lookup (case-insensitive)
     final cacheKey = username.toLowerCase();
     final cached = _cache[cacheKey];
     if (cached != null && DateTime.now().difference(cached.at) < _cacheTtl) {

@@ -2,11 +2,19 @@
 // Name-only Zugang für Web-User. Kein Passwort für reguläre User.
 // Admin-Trigger: Name "Weltenbibliothek" (case-insensitive) → Passwort-Feld.
 // Login-State wird in SharedPreferences (localStorage auf Web) gespeichert.
+//
+// 🔐 SICHERHEIT: Admin-Passwort wird server-seitig im Worker validiert
+// (env.ROOT_ADMIN_PASSWORD). KEIN hardcoded Passwort im Client mehr.
+
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../../config/api_config.dart';
 
 class WebLoginScreen extends StatefulWidget {
   final VoidCallback? onLoginSuccess;
@@ -35,7 +43,9 @@ class _WebLoginScreenState extends State<WebLoginScreen>
   late Animation<double> _passwordOpacity;
 
   static const String _adminName = 'Weltenbibliothek';
-  static const String _adminPassword = 'Jolene2305';
+  // ⚠️ KEIN _adminPassword mehr im Client — Worker validiert server-seitig
+  // via env.ROOT_ADMIN_PASSWORD. Client schickt PW an /api/profile/materie,
+  // Worker antwortet 200 (OK) oder 403 (Falsches PW).
 
   static const Color _gold = Color(0xFFC9A84C);
   static const Color _goldLight = Color(0xFFE0C872);
@@ -106,12 +116,46 @@ class _WebLoginScreenState extends State<WebLoginScreen>
       _successMessage = null;
     });
 
-    // Admin-Login
+    // Admin-Login — Passwort wird SERVER-SEITIG vom Worker validiert.
     if (_isAdminMode) {
       final pw = _passwordController.text;
-      if (pw != _adminPassword) {
+      if (pw.isEmpty) {
         setState(() {
-          _errorMessage = 'Falsches Passwort.';
+          _errorMessage = 'Passwort eingeben.';
+          _loading = false;
+        });
+        return;
+      }
+      try {
+        // Worker /api/profile/materie validiert PW + setzt role=root_admin
+        // (via DB-Trigger auto_set_admin_role bei username=Weltenbibliothek).
+        // Bei falschem PW: HTTP 403 mit {"success":false,"error":"..."}.
+        final res = await http
+            .post(
+              Uri.parse('${ApiConfig.workerUrl}/api/profile/materie'),
+              headers: {'Content-Type': 'application/json'},
+              body: jsonEncode({
+                'username': _adminName,
+                'password': pw,
+                'world': 'materie',
+              }),
+            )
+            .timeout(const Duration(seconds: 10));
+        Map<String, dynamic> data = const {};
+        try {
+          data = jsonDecode(res.body) as Map<String, dynamic>;
+        } catch (_) {}
+        if (res.statusCode != 200 || data['success'] != true) {
+          final msg = (data['error'] as String?) ?? 'Falsches Passwort.';
+          setState(() {
+            _errorMessage = msg;
+            _loading = false;
+          });
+          return;
+        }
+      } catch (e) {
+        setState(() {
+          _errorMessage = 'Login fehlgeschlagen — Netzwerk prüfen.';
           _loading = false;
         });
         return;

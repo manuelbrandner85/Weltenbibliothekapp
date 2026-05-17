@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
-import 'package:supabase_flutter/supabase_flutter.dart';
-import '../core/constants/roles.dart';
+
+import '../core/auth/admin_resolver.dart';
 import 'materie_world_screen.dart';
 import '../services/achievement_service.dart';
 import 'shared/world_admin_dashboard.dart';
@@ -31,22 +31,11 @@ class _MaterieWorldWrapperState extends State<MaterieWorldWrapper> {
 
   Future<void> _checkAdminAndLoad() async {
     try {
-      final user = Supabase.instance.client.auth.currentUser;
-      if (user != null) {
-        final profile = await Supabase.instance.client
-            .from('profiles')
-            .select('role')
-            .eq('id', user.id)
-            .maybeSingle()
-            .timeout(const Duration(seconds: 8));
-        if (profile != null) {
-          final role = profile['role'] as String? ?? AppRoles.user;
-          _isAdmin = AppRoles.isAdmin(role);
-          if (kDebugMode) {
-            debugPrint('👑 MATERIE ADMIN-CHECK: $_isAdmin (role: $role)');
-          }
-        }
-      }
+      // AdminResolver kennt 3 Auth-Pfade: Supabase Session, lokales
+      // InvisibleAuth-Profile, Web-SharedPref. Root-Admin ('Weltenbibliothek')
+      // wird in JEDEM Pfad erkannt → Dashboard erscheint in allen 4 Welten.
+      _isAdmin = await AdminResolver.isCurrentUserAdmin();
+      if (kDebugMode) debugPrint('👑 MATERIE ADMIN-CHECK: $_isAdmin');
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ Materie Admin-Check error: $e');
       _isAdmin = false;

@@ -79,8 +79,11 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
     _usernameDebounce = Timer(const Duration(milliseconds: 450), () async {
       if (!mounted) return;
       setState(() => _usernameChecking = true);
-      final result =
-          await UsernameAvailabilityService.instance.check(trimmed);
+      // currentUsername mitschicken: eigener Name kollidiert nie mit sich selbst.
+      final result = await UsernameAvailabilityService.instance.check(
+        trimmed,
+        currentUsername: _materieProfile?.username ?? _energieProfile?.username,
+      );
       if (!mounted || _usernameController.text.trim() != trimmed) return;
       setState(() {
         _usernameCheck = result;
@@ -497,8 +500,10 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
             desiredUsername != (_energieProfile?.username ?? '');
     if (wasUsernameChanged) {
       setState(() => _isSaving = true);
-      final result =
-          await UsernameAvailabilityService.instance.check(desiredUsername);
+      final result = await UsernameAvailabilityService.instance.check(
+        desiredUsername,
+        currentUsername: _materieProfile?.username ?? _energieProfile?.username,
+      );
       if (!mounted) return;
       if (result.status == UsernameStatus.taken) {
         setState(() {
@@ -830,27 +835,8 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
         world: WBWorld.neutral,
         title: '${widget.world == 'materie' ? 'Materie' : 'Energie'}-Profil bearbeiten',
       ),
-      // Speichern-FAB — immer sichtbar, auch wenn Tastatur offen ist
-      floatingActionButton: _isLoading
-          ? null
-          : FloatingActionButton.extended(
-              heroTag: 'profile_save_fab',
-              onPressed: _isSaving ? null : _saveProfile,
-              backgroundColor: widget.world == 'materie'
-                  ? const Color(0xFF1E88E5)
-                  : const Color(0xFF7E57C2),
-              foregroundColor: Colors.white,
-              icon: _isSaving
-                  ? const SizedBox(
-                      width: 18, height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                    )
-                  : const Icon(Icons.check_rounded),
-              label: Text(
-                _isSaving ? 'Wird gespeichert…' : 'Speichern',
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ),
+      // ⛔ Speichern-FAB entfernt — der ElevatedButton "Profil speichern"
+      // unten im Form reicht (User-Wunsch: nur EIN Save-Button).
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(

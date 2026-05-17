@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
-import 'package:supabase_flutter/supabase_flutter.dart';
-import '../core/constants/roles.dart';
+
+import '../core/auth/admin_resolver.dart';
 import 'energie_world_screen.dart';
 import '../services/achievement_service.dart';
 import 'shared/world_admin_dashboard.dart';
@@ -31,22 +31,10 @@ class _EnergieWorldWrapperState extends State<EnergieWorldWrapper> {
 
   Future<void> _checkAdminAndLoad() async {
     try {
-      final user = Supabase.instance.client.auth.currentUser;
-      if (user != null) {
-        final profile = await Supabase.instance.client
-            .from('profiles')
-            .select('role')
-            .eq('id', user.id)
-            .maybeSingle()
-            .timeout(const Duration(seconds: 8));
-        if (profile != null) {
-          final role = profile['role'] as String? ?? AppRoles.user;
-          _isAdmin = AppRoles.isAdmin(role);
-          if (kDebugMode) {
-            debugPrint('👑 ENERGIE ADMIN-CHECK: $_isAdmin (role: $role)');
-          }
-        }
-      }
+      // AdminResolver: Supabase Session + InvisibleAuth + Web SharedPref —
+      // Root-Admin wird über alle 3 Pfade erkannt.
+      _isAdmin = await AdminResolver.isCurrentUserAdmin();
+      if (kDebugMode) debugPrint('👑 ENERGIE ADMIN-CHECK: $_isAdmin');
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ Energie Admin-Check error: $e');
       _isAdmin = false;

@@ -1106,9 +1106,13 @@ export default {
           const world = parts[3];
           if (!body.world) body.world = world;
 
-          // Admin-Passwort-Prüfung (hardcoded, kein Secret nötig — App-Level-Security)
+          // Admin-Passwort-Prüfung — env.ROOT_ADMIN_PASSWORD via
+          // `wrangler secret put ROOT_ADMIN_PASSWORD`. Fallback auf alten
+          // Hardcoded-Wert für Übergangszeit damit kein User ausgesperrt
+          // wird falls Secret noch nicht gesetzt. TODO: nach Migration
+          // Fallback entfernen.
           const ADMIN_USERNAME = 'weltenbibliothek';
-          const ADMIN_PASSWORD = 'Jolene2305';
+          const ADMIN_PASSWORD = env.ROOT_ADMIN_PASSWORD || 'Jolene2305';
           if (body.username && body.username.toLowerCase() === ADMIN_USERNAME) {
             if (!body.password || body.password !== ADMIN_PASSWORD) {
               return jsonResponse({ success: false, error: 'Falsches Admin-Passwort.' }, 403);
