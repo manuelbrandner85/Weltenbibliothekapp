@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
  // OpenClaw v2.0
 import 'package:flutter/services.dart';
 import '../../models/knowledge_extended_models.dart';
+import '../../services/annotation_service.dart'; // 🖍️ L3 Highlight + Notiz
+import '../../services/storage_service.dart';
 import '../../services/unified_knowledge_service.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -117,12 +119,169 @@ class _KnowledgeReaderModeState extends State<KnowledgeReaderMode> {
   Future<void> _saveNote() async {
     await _knowledgeService.saveNote(widget.entry.id, _noteController.text);
     setState(() => _userNote = _noteController.text);
-    
+
     if (mounted) {
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('📝 Notiz gespeichert')),
       );
+    }
+  }
+
+  // 🖍️ L3: Annotate-Dialog für markierte Textstellen.
+  Future<void> _showAnnotateDialog(
+    String highlight, {
+    required int offsetStart,
+    required int offsetEnd,
+  }) async {
+    final noteCtrl = TextEditingController();
+    String color = 'yellow';
+    await showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF0D0D1A),
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(
+          left: 20,
+          right: 20,
+          top: 14,
+          bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
+        ),
+        child: StatefulBuilder(
+          builder: (ctx, setSheet) => Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 38,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.25),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              const Text('🖍️ Highlight + Notiz',
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700)),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.04),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text('„${highlight.length > 240 ? '${highlight.substring(0, 240)}…' : highlight}"',
+                    style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.8),
+                        fontSize: 13,
+                        fontStyle: FontStyle.italic)),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  for (final c in const ['yellow', 'green', 'blue', 'pink'])
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: GestureDetector(
+                        onTap: () => setSheet(() => color = c),
+                        child: Container(
+                          width: 28,
+                          height: 28,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: _colorFor(c),
+                            border: Border.all(
+                              color: color == c ? Colors.white : Colors.transparent,
+                              width: 2,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: noteCtrl,
+                maxLines: 3,
+                style: const TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: 'Optionale Notiz…',
+                  hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4)),
+                  filled: true,
+                  fillColor: Colors.white.withValues(alpha: 0.05),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              ElevatedButton.icon(
+                onPressed: () async {
+                  final storage = StorageService();
+                  final userId = storage.getMaterieProfile()?.userId
+                      ?? storage.getEnergieProfile()?.userId
+                      ?? 'anon';
+                  final ok = await AnnotationService.instance.add(
+                    userId: userId,
+                    resourceType: 'knowledge',
+                    resourceId: widget.entry.id,
+                    highlight: highlight,
+                    note: noteCtrl.text.trim().isEmpty
+                        ? null
+                        : noteCtrl.text.trim(),
+                    color: color,
+                    position: {
+                      'offset_start': offsetStart,
+                      'offset_end': offsetEnd,
+                    },
+                  );
+                  if (!ctx.mounted) return;
+                  Navigator.pop(ctx);
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    content: Text(ok != null
+                        ? '🖍️ Annotation gespeichert'
+                        : '❌ Konnte nicht speichern'),
+                  ));
+                },
+                icon: const Icon(Icons.bookmark_add),
+                label: const Text('Speichern'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _colorFor(color),
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Color _colorFor(String name) {
+    switch (name) {
+      case 'green':
+        return const Color(0xFF66BB6A);
+      case 'blue':
+        return const Color(0xFF42A5F5);
+      case 'pink':
+        return const Color(0xFFEC407A);
+      case 'yellow':
+      default:
+        return const Color(0xFFFFEB3B);
     }
   }
 
@@ -245,6 +404,32 @@ class _KnowledgeReaderModeState extends State<KnowledgeReaderMode> {
                         fontFamily: _getFontFamily(),
                         color: isDark ? Colors.white.withValues(alpha: 0.9) : Colors.black87,
                       ),
+                      // 🖍️ L3: Highlight + Annotate. Tap "Notiz" im
+                      // Selection-Toolbar speichert die markierte Textstelle
+                      // in user_annotations.
+                      contextMenuBuilder: (context, editable) {
+                        return AdaptiveTextSelectionToolbar.buttonItems(
+                          anchors: editable.contextMenuAnchors,
+                          buttonItems: [
+                            ...editable.contextMenuButtonItems,
+                            ContextMenuButtonItem(
+                              label: '🖍️ Notiz',
+                              onPressed: () {
+                                final sel = editable.textEditingValue.selection;
+                                final text = sel.textInside(
+                                    editable.textEditingValue.text);
+                                editable.hideToolbar();
+                                if (text.trim().isEmpty) return;
+                                _showAnnotateDialog(
+                                  text,
+                                  offsetStart: sel.start,
+                                  offsetEnd: sel.end,
+                                );
+                              },
+                            ),
+                          ],
+                        );
+                      },
                     ),
                   ),
                 ),
