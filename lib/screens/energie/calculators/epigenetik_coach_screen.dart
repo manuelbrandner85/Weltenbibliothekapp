@@ -28,9 +28,13 @@ class _EpigenetikCoachScreenState extends State<EpigenetikCoachScreen> {
   static const _accentLight = Color(0xFF4DB6AC);
 
   // Set von Praktik-IDs, die heute schon "abgehakt" wurden.
-  // Persistiert lokal pro Tag via StorageService.kvSet.
+  // Persistiert lokal pro Tag via SharedPreferences.
   Set<String> _doneToday = {};
   bool _loading = true;
+
+  // 7-Tage-Verlauf für Streak/Score-Berechnung.
+  // Index 0 = heute, 1 = gestern, ..., 6 = vor 6 Tagen.
+  List<int> _last7Days = List<int>.filled(7, 0);
 
   static const _kvKey = 'epigenetik_done';
 
@@ -184,7 +188,40 @@ class _EpigenetikCoachScreenState extends State<EpigenetikCoachScreen> {
     final prefs = await SharedPreferences.getInstance();
     final list = prefs.getStringList('${_kvKey}_${_todayKey()}') ?? const [];
     _doneToday = list.toSet();
+    // 7-Tage-Verlauf laden
+    final now = DateTime.now();
+    final last7 = <int>[];
+    for (var i = 0; i < 7; i++) {
+      final d = now.subtract(Duration(days: i));
+      final key = '${_kvKey}_${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+      last7.add((prefs.getStringList(key) ?? const []).length);
+    }
+    _last7Days = last7;
     if (mounted) setState(() => _loading = false);
+  }
+
+  // Streak: aufeinanderfolgende Tage mit mindestens 1 Praktik.
+  int get _streakDays {
+    var streak = 0;
+    for (final count in _last7Days) {
+      if (count > 0) {
+        streak++;
+      } else {
+        break;
+      }
+    }
+    return streak;
+  }
+
+  // Bio-Alter-Schätzung: vereinfachte Heuristik basierend auf 7d-Erfüllung.
+  // 100% Erfüllung über 7 Tage → -5 Jahre vom chronologischen Alter.
+  // 0% Erfüllung → +0 Jahre Modifier (kein Negativ-Bonus, weil das ohnehin
+  // das Normal-Baseline ist).
+  double get _bioAgeOffset {
+    final total = _last7Days.fold<int>(0, (a, b) => a + b);
+    final maxPossible = _practices.length * 7;
+    final ratio = maxPossible == 0 ? 0.0 : total / maxPossible;
+    return -ratio * 5.0; // Negative Werte = "jünger"
   }
 
   Future<void> _toggle(String id) async {
@@ -194,6 +231,8 @@ class _EpigenetikCoachScreenState extends State<EpigenetikCoachScreen> {
       } else {
         _doneToday.add(id);
       }
+      // Heute-Slot im 7-Tages-Chart live aktualisieren
+      _last7Days = [_doneToday.length, ..._last7Days.skip(1)];
     });
     final prefs = await SharedPreferences.getInstance();
     await prefs.setStringList(
@@ -244,6 +283,8 @@ class _EpigenetikCoachScreenState extends State<EpigenetikCoachScreen> {
   }
 
   Widget _buildHeader(double progress) {
+    final streak = _streakDays;
+    final bioOffset = _bioAgeOffset;
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -258,22 +299,16 @@ class _EpigenetikCoachScreenState extends State<EpigenetikCoachScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            '12 evidenzbasierte Praktiken',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 17,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+          const Text('12 evidenzbasierte Praktiken',
+              style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
           const SizedBox(height: 6),
           const Text(
-            'Lebensstil-Faktoren, die Genexpression nachweislich modulieren '
-            '(Methylierung, Histon-Acetylierung, miRNA). Tippe auf eine Karte '
-            'für die zugrundeliegende Studienlage.',
-            style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.5),
+            'Lebensstil-Faktoren, die Genexpression modulieren. Tippe auf eine Karte '
+            'für die Studienlage.',
+            style: TextStyle(color: Colors.white70, fontSize: 12.5, height: 1.5),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
+          // Heute-Progress
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
             child: LinearProgressIndicator(
@@ -283,14 +318,124 @@ class _EpigenetikCoachScreenState extends State<EpigenetikCoachScreen> {
               valueColor: const AlwaysStoppedAnimation(_accentLight),
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
+          Text('${_doneToday.length} / ${_practices.length} heute',
+              style: const TextStyle(color: _accentLight, fontSize: 12, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 14),
+          // Streak + Bio-Age Stats
+          Row(
+            children: [
+              Expanded(
+                child: _statBox(
+                  '🔥',
+                  '$streak',
+                  streak == 1 ? 'Tag Streak' : 'Tage Streak',
+                  const Color(0xFFFF6F00),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _statBox(
+                  '🧬',
+                  bioOffset == 0 ? '±0' : bioOffset.toStringAsFixed(1),
+                  'Jahre bio-Modifier',
+                  _accentLight,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // 7-Tage-Mini-Chart
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              for (var i = 6; i >= 0; i--) _miniBar(_last7Days[i], i == 0),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: const [
+              Text('vor 6T', style: TextStyle(color: Colors.white38, fontSize: 9)),
+              Text('5', style: TextStyle(color: Colors.white38, fontSize: 9)),
+              Text('4', style: TextStyle(color: Colors.white38, fontSize: 9)),
+              Text('3', style: TextStyle(color: Colors.white38, fontSize: 9)),
+              Text('2', style: TextStyle(color: Colors.white38, fontSize: 9)),
+              Text('gestern', style: TextStyle(color: Colors.white38, fontSize: 9)),
+              Text('heute', style: TextStyle(color: _accentLight, fontSize: 9, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          const SizedBox(height: 12),
           Text(
-            '${_doneToday.length} / ${_practices.length} heute',
-            style: const TextStyle(color: _accentLight, fontSize: 12, fontWeight: FontWeight.bold),
+            _bioAgeNote(bioOffset),
+            style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 11, fontStyle: FontStyle.italic, height: 1.4),
           ),
         ],
       ),
     );
+  }
+
+  Widget _statBox(String emoji, String value, String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        children: [
+          Text(emoji, style: const TextStyle(fontSize: 22)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(value,
+                    style: TextStyle(color: color, fontSize: 18, fontWeight: FontWeight.bold)),
+                Text(label,
+                    style: const TextStyle(color: Colors.white70, fontSize: 9, height: 1.3)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _miniBar(int count, bool isToday) {
+    final fullness = (count / _practices.length).clamp(0.0, 1.0);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 22,
+          height: 32,
+          decoration: BoxDecoration(
+            color: Colors.black.withValues(alpha: 0.4),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          alignment: Alignment.bottomCenter,
+          child: FractionallySizedBox(
+            heightFactor: fullness > 0 ? fullness : 0.05,
+            child: Container(
+              decoration: BoxDecoration(
+                color: fullness > 0 ? (isToday ? _accentLight : _accent) : Colors.white12,
+                borderRadius: BorderRadius.circular(6),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _bioAgeNote(double offset) {
+    if (offset.abs() < 0.5) {
+      return 'Praktiken aktivieren — Bio-Modifier passt sich an.';
+    }
+    return 'Schätzwert: dein Lebensstil entspricht einem ${offset.toStringAsFixed(1)}-Jahres-Modifier '
+        'vs. Baseline (keine Diagnose, vereinfachte Heuristik).';
   }
 
   Widget _buildPracticeCard(_Practice p) {

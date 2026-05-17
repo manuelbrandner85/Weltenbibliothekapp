@@ -34,7 +34,7 @@ class _ShamanicJourneyToolScreenState extends State<ShamanicJourneyToolScreen>
   @override
   void initState() {
     super.initState();
-    _tabs = TabController(length: 3, vsync: this);
+    _tabs = TabController(length: 5, vsync: this);
     _bgCtrl = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 8),
@@ -72,10 +72,13 @@ class _ShamanicJourneyToolScreenState extends State<ShamanicJourneyToolScreen>
           indicatorColor: _kSecondary,
           labelColor: _kSecondary,
           unselectedLabelColor: Colors.white54,
+          isScrollable: true,
           tabs: const [
             Tab(icon: Icon(Icons.play_circle_outline), text: 'Neu'),
             Tab(icon: Icon(Icons.history), text: 'Verlauf'),
             Tab(icon: Icon(Icons.menu_book), text: 'Leitfäden'),
+            Tab(icon: Icon(Icons.music_note), text: 'Drums'),
+            Tab(icon: Icon(Icons.pets), text: 'Krafttiere'),
           ],
         ),
       ),
@@ -120,6 +123,8 @@ class _ShamanicJourneyToolScreenState extends State<ShamanicJourneyToolScreen>
             _NewJourneyTab(),
             _JourneyHistoryTab(),
             _GuidesTab(),
+            const _DrumLibraryTab(),
+            const _PowerAnimalsTab(),
           ],
         ),
       ),
@@ -1851,4 +1856,237 @@ class _CineOrb extends StatelessWidget {
           ]),
         ),
       );
+}
+
+// ═══════════════════════════════════════════════════════════
+// 🥁 DRUM-BIBLIOTHEK · 5 BPM-Beats für Trommel-Reisen
+// ═══════════════════════════════════════════════════════════
+class _DrumLibraryTab extends StatelessWidget {
+  const _DrumLibraryTab();
+
+  static const List<({String name, int bpm, String desc, String use, String emoji})> _drums = [
+    (
+      emoji: '🐢',
+      name: 'Slow Theta',
+      bpm: 180,
+      desc: '3 Schläge/Sek — tiefste Theta-Synchronisation',
+      use: 'Untere Welt, tiefe Trance, Krafttier-Suche',
+    ),
+    (
+      emoji: '🦌',
+      name: 'Klassisch',
+      bpm: 210,
+      desc: '3.5 Schläge/Sek — Standard-Trommel-Reise',
+      use: 'Mittlere Welt, Heilarbeit, Geistführer treffen',
+    ),
+    (
+      emoji: '🦅',
+      name: 'Aktive Reise',
+      bpm: 240,
+      desc: '4 Schläge/Sek — schnellere Reisen',
+      use: 'Obere Welt, Vision-Quest, Klärung',
+    ),
+    (
+      emoji: '🐺',
+      name: 'Hochfrequent',
+      bpm: 270,
+      desc: '4.5 Schläge/Sek — energetisch aktivierend',
+      use: 'Extraktion, Lichtkörper, Schamanen-Tanz',
+    ),
+    (
+      emoji: '🔥',
+      name: 'Trance-Drumming',
+      bpm: 300,
+      desc: '5 Schläge/Sek — Bewusstseins-Schwelle',
+      use: 'Tiefste Trance, Ego-Auflösung, Rückrufung',
+    ),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: _drums.length + 1,
+      itemBuilder: (_, i) {
+        if (i == 0) {
+          return Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(colors: [Color(0xFF3E1F70), Color(0xFF1A0D3A)]),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: const Text(
+              'Schamanische Trommel-Rhythmen synchronisieren das Gehirn in Theta-Wellen '
+              '(4-8 Hz). BPM-Werte zwischen 180-300 zeigen empirisch die stärksten '
+              'Trance-Effekte. Hopf, Hove & Sundberg 2013.',
+              style: TextStyle(color: Colors.white, fontSize: 12, height: 1.5),
+            ),
+          );
+        }
+        final d = _drums[i - 1];
+        return Container(
+          margin: const EdgeInsets.only(bottom: 10),
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1F1A35),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFF8E5AE2).withValues(alpha: 0.3)),
+          ),
+          child: Row(children: [
+            Text(d.emoji, style: const TextStyle(fontSize: 30)),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(children: [
+                    Text(d.name,
+                        style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF8E5AE2).withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text('${d.bpm} BPM',
+                          style: const TextStyle(color: Color(0xFFB39DDB), fontSize: 11, fontWeight: FontWeight.bold)),
+                    ),
+                  ]),
+                  const SizedBox(height: 4),
+                  Text(d.desc, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+                  const SizedBox(height: 4),
+                  Text(d.use,
+                      style: const TextStyle(color: Color(0xFFB39DDB), fontSize: 11, fontStyle: FontStyle.italic)),
+                ],
+              ),
+            ),
+          ]),
+        );
+      },
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// 🐺 KRAFTTIER-LEXIKON · 24 archetypische Krafttiere
+// ═══════════════════════════════════════════════════════════
+class _PowerAnimalsTab extends StatelessWidget {
+  const _PowerAnimalsTab();
+
+  static const List<({String name, String emoji, String quality, String teaching})> _animals = [
+    (emoji: '🐺', name: 'Wolf', quality: 'Lehrer · Loyalität · Instinkt',
+        teaching: 'Folge deinem Bauchgefühl. Gemeinschaft ist Stärke. Bewege dich in Familie.'),
+    (emoji: '🦅', name: 'Adler', quality: 'Vision · Übersicht · Botschaft',
+        teaching: 'Steig auf, schau weit. Klarheit kommt aus der Höhe.'),
+    (emoji: '🦉', name: 'Eule', quality: 'Weisheit · Nachtsicht · Geheimnis',
+        teaching: 'Was im Dunkel ist, wird sichtbar wenn du still wirst.'),
+    (emoji: '🐻', name: 'Bär', quality: 'Kraft · Rückzug · Heilung',
+        teaching: 'Rückzug ist nicht Schwäche. Im Winter regeneriert das Tiefste.'),
+    (emoji: '🦌', name: 'Hirsch', quality: 'Anmut · Sanftmut · Schnelligkeit',
+        teaching: 'Sanft sein und dennoch klar. Sprünge wagen.'),
+    (emoji: '🐍', name: 'Schlange', quality: 'Transformation · Heilung · Häutung',
+        teaching: 'Was abgelegt werden muss, fällt von allein. Kundalini-Energie.'),
+    (emoji: '🦋', name: 'Schmetterling', quality: 'Wandlung · Leichtigkeit',
+        teaching: 'Die Verpuppung ist nötig. Du wirst nicht wer du warst.'),
+    (emoji: '🐎', name: 'Pferd', quality: 'Freiheit · Reise · Power',
+        teaching: 'Lass dich tragen, aber zähme nicht. Vertrauen ins Tempo.'),
+    (emoji: '🦁', name: 'Löwe', quality: 'Mut · Würde · Souveränität',
+        teaching: 'Brülle, wenn nötig. Sonne dich, wenn möglich. Sei König.'),
+    (emoji: '🐯', name: 'Tiger', quality: 'Stärke · Einsamkeit · Spannung',
+        teaching: 'Spannung halten ist Kunst. Allein-sein ist nicht einsam.'),
+    (emoji: '🐘', name: 'Elefant', quality: 'Erinnerung · Familie · Geduld',
+        teaching: 'Was du erinnerst, gibst du weiter. Die Ahnen tragen dich.'),
+    (emoji: '🐢', name: 'Schildkröte', quality: 'Beharrlichkeit · Erde · langes Leben',
+        teaching: 'Langsam siegt. Trage dein Haus immer mit dir.'),
+    (emoji: '🦊', name: 'Fuchs', quality: 'Listigkeit · Anpassung · Stille',
+        teaching: 'Sei klug, nicht groß. Wechsle den Pfad ohne Aufsehen.'),
+    (emoji: '🐦', name: 'Kolibri', quality: 'Freude · Liebe · Süßes',
+        teaching: 'Bleib in Bewegung. Das Süße ist überall, wenn du nippst.'),
+    (emoji: '🐬', name: 'Delfin', quality: 'Spiel · Schwarm · Atem',
+        teaching: 'Atme bewusst. Spielen ist heilig. Höre die Frequenzen.'),
+    (emoji: '🐋', name: 'Wal', quality: 'Tiefe · Ahnenlied · Universum',
+        teaching: 'Tauche in alte Erinnerung. Singe was du nicht in Worte fasst.'),
+    (emoji: '🦂', name: 'Skorpion', quality: 'Transformation · Dunkelheit · Tod-Rebirth',
+        teaching: 'Im Schatten liegt Wahrheit. Stachel ist Schutz, nicht Angriff.'),
+    (emoji: '🕷️', name: 'Spinne', quality: 'Weberin · Schöpferin · Schicksal',
+        teaching: 'Du webst deine Wirklichkeit. Geduldig, Faden um Faden.'),
+    (emoji: '🐝', name: 'Biene', quality: 'Fleiß · Gemeinschaft · Süße',
+        teaching: 'Sammle, was nährt. Gib zurück, was du erhältst.'),
+    (emoji: '🦌', name: 'Reh', quality: 'Sanftheit · Aufmerksamkeit',
+        teaching: 'Lausche zuerst. Verletzlich-sein ist Stärke.'),
+    (emoji: '🦝', name: 'Waschbär', quality: 'Neugier · Geschick · Maske',
+        teaching: 'Hinter jeder Maske ist eine Wahrheit. Spiel mit ihr.'),
+    (emoji: '🦆', name: 'Ente', quality: 'Wasser-Erde-Luft · Anpassung',
+        teaching: 'Drei Elemente meistern. Wasser abprallen lassen.'),
+    (emoji: '🦔', name: 'Igel', quality: 'Schutz · Selbst-Verteidigung',
+        teaching: 'Stachel raus, wenn Grenze gebraucht. Sonst weich bleiben.'),
+    (emoji: '🐇', name: 'Hase', quality: 'Fruchtbarkeit · Schnelligkeit · Furcht',
+        teaching: 'Spüre Angst, lass dich nicht von ihr lähmen. Mehrere Ausgänge.'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return GridView.builder(
+      padding: const EdgeInsets.all(12),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        childAspectRatio: 1.4,
+        crossAxisSpacing: 8,
+        mainAxisSpacing: 8,
+      ),
+      itemCount: _animals.length,
+      itemBuilder: (_, i) {
+        final a = _animals[i];
+        return GestureDetector(
+          onTap: () => showModalBottomSheet(
+            context: context,
+            backgroundColor: const Color(0xFF1F1A35),
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            builder: (_) => Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                Text(a.emoji, style: const TextStyle(fontSize: 72)),
+                const SizedBox(height: 12),
+                Text(a.name,
+                    style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 4),
+                Text(a.quality,
+                    style: const TextStyle(color: Color(0xFFB39DDB), fontSize: 12, fontStyle: FontStyle.italic),
+                    textAlign: TextAlign.center),
+                const SizedBox(height: 20),
+                Text(a.teaching,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.white, fontSize: 15, height: 1.6)),
+                const SizedBox(height: 18),
+              ]),
+            ),
+          ),
+          child: Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFF1F1A35),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFF8E5AE2).withValues(alpha: 0.3)),
+            ),
+            padding: const EdgeInsets.all(8),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(a.emoji, style: const TextStyle(fontSize: 32)),
+                const SizedBox(height: 6),
+                Text(a.name,
+                    style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+                Text(a.quality.split(' · ').first,
+                    style: const TextStyle(color: Color(0xFFB39DDB), fontSize: 9),
+                    textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 }
