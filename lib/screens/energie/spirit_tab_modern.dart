@@ -17,6 +17,9 @@ import 'calculators/sacred_symbols_screen.dart'; // 🔱 Heilige Symbole multiku
 import 'calculators/lernreihen_index_screen.dart'; // 📚 Tagesweise Lernpfade (17 Reihen)
 import 'calculators/hermetic_reality_check_screen.dart'; // ✨ Reality-Check
 import 'calculators/aura_quiz_screen.dart'; // 🌈 12-Fragen-Aura-Quiz
+import 'calculators/archetype_quiz_screen.dart'; // 🧠 Pearson-Archetypen-Quiz
+import 'calculators/relationship_numerology_screen.dart'; // 💕 Synastrie
+import 'calculators/biorhythm_compatibility_screen.dart'; // 📊 Bio-Kompat
 import 'calculators/new_spirit_tool_screens.dart';
 import 'meditation_timer_screen.dart'; // MeditationTimerScreen (canonical, deduplicated)
 import 'calculators/moon_calendar_tool_screen.dart'; // 🌕 v19 Mondkalender
@@ -104,6 +107,16 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'category': 'core',
         'screen': const NumerologyCalculatorScreen(),
       },
+      // 💕 Beziehungs-Numerologie — Synastrie aus zwei Profilen
+      {
+        'icon': Icons.favorite,
+        'iconEmoji': '💕',
+        'title': 'Beziehungs-Numerologie',
+        'subtitle': 'Synastrie zweier Lebenszahlen',
+        'color': const Color(0xFFE91E63),
+        'category': 'core',
+        'screen': const RelationshipNumerologyScreen(),
+      },
       {
         'icon': Icons.psychology,
         'iconEmoji': '🧠',
@@ -112,6 +125,16 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'color': const Color(0xFF673AB7),
         'category': 'core',
         'screen': const ArchetypeCalculatorScreen(),
+      },
+      // 🧠 Archetypen-Quiz — Pearson-12-Test mit Szenario-Fragen
+      {
+        'icon': Icons.quiz,
+        'iconEmoji': '🎭',
+        'title': 'Archetypen-Quiz',
+        'subtitle': '12 Szenario-Fragen → dein Archetyp',
+        'color': const Color(0xFF673AB7),
+        'category': 'core',
+        'screen': const ArchetypeQuizScreen(),
       },
       {
         'icon': Icons.spa,
@@ -461,6 +484,16 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'color': const Color(0xFF00897B),
         'category': 'new',
         'screen': const BiorhythmScreen(),
+      },
+      // 📊 Biorhythmus-Kompatibilität — zwei Geburtsdaten vergleichen
+      {
+        'icon': Icons.compare_arrows,
+        'iconEmoji': '🔗',
+        'title': 'Biorhythmus-Kompat',
+        'subtitle': 'Zwei Personen heute vergleichen',
+        'color': const Color(0xFF00897B),
+        'category': 'new',
+        'screen': const BiorhythmCompatibilityScreen(),
       },
       
       // ☯ I-Ging Orakel (V115 Feature #19)

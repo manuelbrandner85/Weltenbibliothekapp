@@ -20,7 +20,7 @@ class _AuraQuizScreenState extends State<AuraQuizScreen> {
   // 7 Aura-Farben (entsprechen den 7 Hauptchakren).
   // Jede Antwort gibt Punkte auf 1-3 Farben (Indizes 0..6 für Rot..Violett/Weiß).
   static const _colors = [
-    ({String name, String emoji, Color color, String trait, String description}) (
+    (
       name: 'Rot',
       emoji: '❤️',
       color: Color(0xFFE53935),
@@ -29,7 +29,7 @@ class _AuraQuizScreenState extends State<AuraQuizScreen> {
           'Du bist geerdet, körperlich präsent, leidenschaftlich. Pragmatisch, mutig, in Bewegung. '
           'Schatten: Reizbarkeit, Ungeduld, Aggression bei Stress. Stärken: Resilienz, Mut, Handlungsfähigkeit.',
     ),
-    ({String name, String emoji, Color color, String trait, String description}) (
+    (
       name: 'Orange',
       emoji: '🧡',
       color: Color(0xFFFB8C00),
@@ -38,7 +38,7 @@ class _AuraQuizScreenState extends State<AuraQuizScreen> {
           'Du lebst sinnlich, kreativ, in Beziehung. Spaß, Erotik, Freude am Schöpfen. '
           'Schatten: Unverbindlichkeit, Süchte. Stärken: Lebensfreude, künstlerische Ader, Spontanität.',
     ),
-    ({String name, String emoji, Color color, String trait, String description}) (
+    (
       name: 'Gelb',
       emoji: '💛',
       color: Color(0xFFFDD835),
@@ -47,7 +47,7 @@ class _AuraQuizScreenState extends State<AuraQuizScreen> {
           'Strahlende Persönlichkeit, optimistisch, intellektuell scharf. Du strebst nach Wachstum. '
           'Schatten: Ego, Selbst-Wichtigkeit. Stärken: Selbstvertrauen, Sonnigkeit, klarer Verstand.',
     ),
-    ({String name, String emoji, Color color, String trait, String description}) (
+    (
       name: 'Grün',
       emoji: '💚',
       color: Color(0xFF43A047),
@@ -56,7 +56,7 @@ class _AuraQuizScreenState extends State<AuraQuizScreen> {
           'Du heilst Räume, hörst tief zu, sorgst gern. Verbindung zur Natur stark. '
           'Schatten: Aufopferung, Co-Abhängigkeit. Stärken: Empathie, Heilkraft, Harmonie-Stiften.',
     ),
-    ({String name, String emoji, Color color, String trait, String description}) (
+    (
       name: 'Blau',
       emoji: '💙',
       color: Color(0xFF1E88E5),
@@ -65,7 +65,7 @@ class _AuraQuizScreenState extends State<AuraQuizScreen> {
           'Du sprichst klar, schreibst gut, suchst Wahrheit. Lehrer-Energie. '
           'Schatten: Kühle Distanz, Über-Rationalisierung. Stärken: Klare Sprache, Vermittlung, Ehrlichkeit.',
     ),
-    ({String name, String emoji, Color color, String trait, String description}) (
+    (
       name: 'Indigo',
       emoji: '💜',
       color: Color(0xFF5E35B1),
@@ -74,7 +74,7 @@ class _AuraQuizScreenState extends State<AuraQuizScreen> {
           'Tiefer Blick, starke Träume, intuitive Eingebungen. Visionär. '
           'Schatten: Realitätsverlust, Eskapismus. Stärken: Innere Führung, Weisheit, Vorausschau.',
     ),
-    ({String name, String emoji, Color color, String trait, String description}) (
+    (
       name: 'Violett',
       emoji: '🤍',
       color: Color(0xFF8E24AA),
