@@ -11,13 +11,12 @@ import 'calculators/chakra_calculator_screen.dart';
 import 'calculators/kabbalah_calculator_screen.dart';
 import 'calculators/hermetic_calculator_screen.dart';
 import 'calculators/gematria_calculator_screen.dart';
-import 'calculators/spirit_universal_tool_screen.dart';
+import 'calculators/spirit_profile_screen.dart'; // 🌟 Konsolidiert die 10 Universal-Tools
 import 'calculators/new_spirit_tool_screens.dart';
 import 'meditation_timer_screen.dart'; // MeditationTimerScreen (canonical, deduplicated)
 import 'calculators/moon_calendar_tool_screen.dart'; // 🌕 v19 Mondkalender
 import 'calculators/dream_interpretation_tool_screen.dart'; // 💭 v20 Traumdeutung
 import 'calculators/body_scan_tool_screen.dart'; // 🧘 v21 Körperscan
-import 'calculators/soul_contract_tool_screen.dart'; // 📜 v22 Seelenvertrag
 import 'calculators/ancestral_work_tool_screen.dart'; // 🕯️ v23 Ahnenarbeit
 import 'calculators/shamanic_journey_tool_screen.dart'; // 🥁 v24 Schamanische Reise
 import 'calculators/natal_chart_tool_screen.dart'; // ♓ v25 Geburtshoroskop
@@ -146,148 +145,20 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'screen': const GematriaCalculatorScreen(),
       },
       
-      // === ERWEITERTE TOOLS (10 Universal-Tools) ===
+      // === KONSOLIDIERT: 10 frühere Universal-Tools zu 1 Spirit-Profil ===
+      // Energiefeld + Polaritäten + Transformation + Unterbewusstsein +
+      // Innere Karten + Zyklen + Orientierung + Meta-Spiegel + Wahrnehmung +
+      // Selbstbeobachtung — jetzt als 10 Tabs in einem Bericht.
       {
-        'icon': Icons.bolt,
-        'iconEmoji': '⚡',
-        'title': 'Energiefeld',
-        'subtitle': 'Biofield-Analyse',
-        'color': const Color(0xFF00BCD4),
-        'category': 'advanced',
-        'screen': const SpiritUniversalToolScreen(
-          toolName: 'Energiefeld-Analyse',
-          toolIcon: Icons.bolt,
-          toolColor: Color(0xFF00BCD4),
-          toolType: 'energy_field',
-        ),
-      },
-      {
-        'icon': Icons.balance,
-        'iconEmoji': '☯️',
-        'title': 'Polaritäten',
-        'subtitle': 'Yin-Yang Balance',
-        'color': const Color(0xFFE91E63),
-        'category': 'advanced',
-        'screen': const SpiritUniversalToolScreen(
-          toolName: 'Polaritäts-Analyse',
-          toolIcon: Icons.balance,
-          toolColor: Color(0xFFE91E63),
-          toolType: 'polarity',
-        ),
-      },
-      {
-        'icon': Icons.transform,
-        'iconEmoji': '🦋',
-        'title': 'Transformation',
-        'subtitle': 'Spirituelle Stufen',
+        'icon': Icons.auto_graph,
+        'iconEmoji': '🌟',
+        'title': 'Spirit-Profil',
+        'subtitle': '10 Analysen in einem Bericht',
         'color': const Color(0xFF9C27B0),
-        'category': 'advanced',
-        'screen': const SpiritUniversalToolScreen(
-          toolName: 'Transformations-Analyse',
-          toolIcon: Icons.transform,
-          toolColor: Color(0xFF9C27B0),
-          toolType: 'transformation',
-        ),
+        'category': 'core',
+        'screen': const SpiritProfileScreen(),
       },
-      {
-        'icon': Icons.psychology_outlined,
-        'iconEmoji': '🌑',
-        'title': 'Unterbewusstsein',
-        'subtitle': 'Shadow Work',
-        'color': const Color(0xFF4CAF50),
-        'category': 'advanced',
-        'screen': const SpiritUniversalToolScreen(
-          toolName: 'Unterbewusstseins-Analyse',
-          toolIcon: Icons.psychology_outlined,
-          toolColor: Color(0xFF4CAF50),
-          toolType: 'unconscious',
-        ),
-      },
-      {
-        'icon': Icons.explore,
-        'iconEmoji': '🧭',
-        'title': 'Innere Karten',
-        'subtitle': 'Prozessnavigation',
-        'color': const Color(0xFFFF9800),
-        'category': 'advanced',
-        'screen': const SpiritUniversalToolScreen(
-          toolName: 'Innere-Karten-Analyse',
-          toolIcon: Icons.explore,
-          toolColor: Color(0xFFFF9800),
-          toolType: 'inner_maps',
-        ),
-      },
-      {
-        'icon': Icons.refresh,
-        'iconEmoji': '🔄',
-        'title': 'Zyklen',
-        'subtitle': 'Saturn Return',
-        'color': const Color(0xFF673AB7),
-        'category': 'advanced',
-        'screen': const SpiritUniversalToolScreen(
-          toolName: 'Zyklen-Analyse',
-          toolIcon: Icons.refresh,
-          toolColor: Color(0xFF673AB7),
-          toolType: 'cycles',
-        ),
-      },
-      {
-        'icon': Icons.stacked_line_chart,
-        'iconEmoji': '🌀',
-        'title': 'Orientierung',
-        'subtitle': 'Spiral Dynamics',
-        'color': const Color(0xFF2196F3),
-        'category': 'meta',
-        'screen': const SpiritUniversalToolScreen(
-          toolName: 'Orientierungs-Analyse',
-          toolIcon: Icons.stacked_line_chart,
-          toolColor: Color(0xFF2196F3),
-          toolType: 'orientation',
-        ),
-      },
-      {
-        'icon': Icons.sync,
-        'iconEmoji': '🔗',
-        'title': 'Meta-Spiegel',
-        'subtitle': 'Synchronizität',
-        'color': const Color(0xFFFFD700),
-        'category': 'meta',
-        'screen': const SpiritUniversalToolScreen(
-          toolName: 'Meta-Spiegel-Analyse',
-          toolIcon: Icons.sync,
-          toolColor: Color(0xFFFFD700),
-          toolType: 'meta_mirror',
-        ),
-      },
-      {
-        'icon': Icons.visibility,
-        'iconEmoji': '👁️',
-        'title': 'Wahrnehmung',
-        'subtitle': 'Bewusstseins-Filter',
-        'color': const Color(0xFF00BCD4),
-        'category': 'meta',
-        'screen': const SpiritUniversalToolScreen(
-          toolName: 'Wahrnehmungs-Analyse',
-          toolIcon: Icons.visibility,
-          toolColor: Color(0xFF00BCD4),
-          toolType: 'perception',
-        ),
-      },
-      {
-        'icon': Icons.self_improvement,
-        'iconEmoji': '🪞',
-        'title': 'Selbstbeobachtung',
-        'subtitle': 'Meta-Kognition',
-        'color': const Color(0xFF9C27B0),
-        'category': 'meta',
-        'screen': const SpiritUniversalToolScreen(
-          toolName: 'Selbstbeobachtungs-Analyse',
-          toolIcon: Icons.self_improvement,
-          toolColor: Color(0xFF9C27B0),
-          toolType: 'self_observation',
-        ),
-      },
-      
+
       // ═══════════════════════════════════════════════════════════
       // 🆕 15 NEUE SPIRIT-TOOLS (v44) - IM GRID WIE ORIGINAL-TOOLS
       // ═══════════════════════════════════════════════════════════
@@ -347,12 +218,12 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'screen': const AuraColorReaderScreen(),
       },
       
-      // 🧬 DNA-Aktivierung
+      // 🧬 Epigenetik & Gen-Expression (ersetzt 12-Strang-DNA, evidenzbasiert)
       {
         'icon': Icons.biotech,
         'iconEmoji': '🧬',
-        'title': 'DNA-Aktivierung',
-        'subtitle': '12-Strang Tracker',
+        'title': 'Epigenetik',
+        'subtitle': '12 Praktiken für Gen-Expression',
         'color': const Color(0xFF00695C),
         'category': 'new',
         'screen': const DnaActivationTrackerScreen(),
@@ -425,12 +296,13 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'screen': const TransformationTrackerScreen(),
       },
       
-      // 🌟 Lichtsprache
+      // 🔱 Heilige Symbole multikulturell (ersetzt esoterische Lichtsprache,
+      // mit echten etymologischen/historischen Bedeutungen via Wikipedia-API)
       {
-        'icon': Icons.language,
-        'iconEmoji': '🌟',
-        'title': 'Lichtsprache',
-        'subtitle': '30+ Lichtcodes',
+        'icon': Icons.brightness_high,
+        'iconEmoji': '🔱',
+        'title': 'Heilige Symbole',
+        'subtitle': 'Multikulturelle Sakralsymbole',
         'color': const Color(0xFFFDD835),
         'category': 'new',
         'screen': const LightLanguageDecoderScreen(),
@@ -482,17 +354,6 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'color': const Color(0xFFE91E63),
         'category': 'new',
         'screen': const BodyScanToolScreen(),
-      },
-
-      // 📜 Seelenvertrag (v22 – Numerologie aus Name + Geburtsdatum)
-      {
-        'icon': Icons.auto_stories,
-        'iconEmoji': '📜',
-        'title': 'Seelenvertrag',
-        'subtitle': 'Numerologie deiner Lebensaufgabe',
-        'color': const Color(0xFFFFB300),
-        'category': 'new',
-        'screen': const SoulContractToolScreen(),
       },
 
       // 🕯️ Ahnenarbeit (v23 – Ahnen, Muster, Rituale)
@@ -891,17 +752,18 @@ class _SpiritTabModernState extends State<SpiritTabModern>
               scrollDirection: Axis.horizontal,
               physics: const BouncingScrollPhysics(),
               child: Row(children: [
-                _buildCategoryChip('all',      '✨ Alle',      _purple, _getCategoryCount('all')),
-                const SizedBox(width: 10),
-                _buildCategoryChip('core',     '⭐ Kern',      _teal,   _getCategoryCount('core')),
-                const SizedBox(width: 10),
-                _buildCategoryChip('advanced', '🚀 Erweitert', _pink,   _getCategoryCount('advanced')),
-                const SizedBox(width: 10),
-                _buildCategoryChip('meta',     '🌌 Meta',      _gold,   _getCategoryCount('meta')),
-                const SizedBox(width: 10),
-                _buildCategoryChip('new',      '🆕 Neu',       _green,  _getCategoryCount('new')),
-                const SizedBox(width: 10),
-                _buildCategoryChip('cosmos',   '🌌 Kosmos',    const Color(0xFF1A237E), _getCategoryCount('cosmos')),
+                for (final cat in const [
+                  ['all',      '✨ Alle'],
+                  ['core',     '⭐ Kern'],
+                  ['advanced', '🚀 Erweitert'],
+                  ['meta',     '🌌 Meta'],
+                  ['new',      '🆕 Neu'],
+                  ['cosmos',   '🌌 Kosmos'],
+                ])
+                  if (_getCategoryCount(cat[0]) > 0) ...[
+                    _buildCategoryChip(cat[0], cat[1], _chipColor(cat[0]), _getCategoryCount(cat[0])),
+                    const SizedBox(width: 10),
+                  ],
               ]),
             ),
           ),
@@ -909,6 +771,16 @@ class _SpiritTabModernState extends State<SpiritTabModern>
       ),
     );
   }
+
+  Color _chipColor(String cat) => switch (cat) {
+        'all'      => _purple,
+        'core'     => _teal,
+        'advanced' => _pink,
+        'meta'     => _gold,
+        'new'      => _green,
+        'cosmos'   => const Color(0xFF1A237E),
+        _          => _purple,
+      };
 
   Widget _buildCategoryChip(String category, String label, Color color, int count) {
     final isSelected = _selectedCategory == category;
