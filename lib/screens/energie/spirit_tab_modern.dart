@@ -15,6 +15,8 @@ import 'calculators/spirit_profile_screen.dart'; // 🌟 Konsolidiert die 10 Uni
 import 'calculators/epigenetik_coach_screen.dart'; // 🧬 Echte Epigenetik statt 12-Strang-DNA
 import 'calculators/sacred_symbols_screen.dart'; // 🔱 Heilige Symbole multikulturell
 import 'calculators/lernreihen_index_screen.dart'; // 📚 Tagesweise Lernpfade (17 Reihen)
+import 'calculators/hermetic_reality_check_screen.dart'; // ✨ Reality-Check
+import 'calculators/aura_quiz_screen.dart'; // 🌈 12-Fragen-Aura-Quiz
 import 'calculators/new_spirit_tool_screens.dart';
 import 'meditation_timer_screen.dart'; // MeditationTimerScreen (canonical, deduplicated)
 import 'calculators/moon_calendar_tool_screen.dart'; // 🌕 v19 Mondkalender
@@ -138,6 +140,17 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'category': 'core',
         'screen': const HermeticCalculatorScreen(),
       },
+      // ✨ Reality-Check — Erweiterung zu Hermetik: aktuelle Lebenssituation
+      // gegen die 7 Prinzipien prüfen, top-2-Hinweise + Praxis-Vorschlag.
+      {
+        'icon': Icons.psychology_outlined,
+        'iconEmoji': '🔍',
+        'title': 'Reality-Check',
+        'subtitle': '7 hermetische Prinzipien auf deine Situation',
+        'color': const Color(0xFFFF9800),
+        'category': 'core',
+        'screen': const HermeticRealityCheckScreen(),
+      },
       {
         'icon': Icons.translate,
         'iconEmoji': '📖',
@@ -224,15 +237,15 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'screen': const MeditationTimerScreen(),
       },
       
-      // 🌈 Aura-Farben Reader
+      // 🌈 Aura-Quiz (12 Fragen → dominante Aura-Farbe via Farbpsychologie)
       {
         'icon': Icons.color_lens,
         'iconEmoji': '🌈',
-        'title': 'Aura-Reader',
-        'subtitle': 'Aura-Farb-Analyse',
+        'title': 'Aura-Quiz',
+        'subtitle': '12 Fragen → deine Aura-Farbe',
         'color': const Color(0xFFAD1457),
         'category': 'new',
-        'screen': const AuraColorReaderScreen(),
+        'screen': const AuraQuizScreen(),
       },
       
       // 🧬 Epigenetik & Gen-Expression (ersetzt 12-Strang-DNA, evidenzbasiert)

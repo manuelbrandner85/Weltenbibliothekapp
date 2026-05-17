@@ -37,7 +37,7 @@ class _MoonCalendarToolScreenState extends State<MoonCalendarToolScreen>
   @override
   void initState() {
     super.initState();
-    _tabs = TabController(length: 4, vsync: this);
+    _tabs = TabController(length: 5, vsync: this);
     _bgCtrl = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 8),
@@ -86,6 +86,7 @@ class _MoonCalendarToolScreenState extends State<MoonCalendarToolScreen>
             Tab(icon: Icon(Icons.calendar_month), text: 'Monat'),
             Tab(icon: Icon(Icons.self_improvement), text: 'Rituale'),
             Tab(icon: Icon(Icons.book), text: 'Tagebuch'),
+            Tab(icon: Icon(Icons.grass), text: 'Gartenbau'),
           ],
         ),
         actions: [
@@ -138,12 +139,195 @@ class _MoonCalendarToolScreenState extends State<MoonCalendarToolScreen>
             const _MonthTab(),
             _RitualsTab(currentPhaseKey: _snapshot.phaseKey),
             _JournalTab(snapshot: _snapshot),
+            _GardeningTab(snapshot: _snapshot),
           ],
         ),
       ),
     );
   }
 }
+
+// 🌱 Gartenbau-Tab — Maria-Thun-Biodynamik
+// 4 Phasen × 4 Sternzeichen-Trigone = 16 Empfehlungen, plus Tagestyp.
+class _GardeningTab extends StatelessWidget {
+  final MoonSnapshot snapshot;
+  const _GardeningTab({required this.snapshot});
+
+  static const Map<String, String> _phaseRecommend = {
+    'new_moon':
+        'Säen: tiefe Wurzeln. Bauen, schneiden, pflügen. Mondzeit für Nullpunkt-Rituale.',
+    'waxing_crescent':
+        'Pflanzzeit für Blätter und Stängel-Gewächse. Aufrechte Pflanzen bevorzugt.',
+    'first_quarter':
+        'Optimal für Wurzelschnitte. Düngen, gießen, Stecklinge schneiden.',
+    'waxing_gibbous':
+        'Beste Wachstumsphase. Säen für oberirdische Ernte. Hochsaison.',
+    'full_moon':
+        'Heilkräuter ernten (max. Wirkstoffe). Nicht säen. Energetisch aufgeladen.',
+    'waning_gibbous':
+        'Wurzel-Gemüse ernten (Kartoffeln, Möhren). Lagern, einkochen, konservieren.',
+    'last_quarter':
+        'Boden bearbeiten, jäten, Unkraut entfernen. Pflanzen umsetzen.',
+    'waning_crescent':
+        'Rückzug. Beete vorbereiten. Pflege statt Säen. Kompost wenden.',
+  };
+
+  // Sternzeichen-Trigone (Maria Thun)
+  static const Map<String, ({String trigon, String typ, String practice})> _signTrigon = {
+    'Widder':     (trigon: 'Feuer-Trigon',  typ: 'Frucht-Tag',  practice: 'Tomaten, Paprika, Zucchini, Mais — alles was Frucht trägt.'),
+    'Stier':      (trigon: 'Erde-Trigon',   typ: 'Wurzel-Tag', practice: 'Möhren, Kartoffeln, Sellerie, Rote Bete säen/ernten.'),
+    'Zwillinge':  (trigon: 'Luft-Trigon',   typ: 'Blüten-Tag', practice: 'Blumen säen, schneiden. Lavendel, Rosen, Kamille.'),
+    'Krebs':      (trigon: 'Wasser-Trigon', typ: 'Blatt-Tag',  practice: 'Salate, Spinat, Kohl, Kräuter. Gießen ideal.'),
+    'Löwe':       (trigon: 'Feuer-Trigon',  typ: 'Frucht-Tag', practice: 'Frucht-Pflanzen. Beeren, Tomaten, Trauben.'),
+    'Jungfrau':   (trigon: 'Erde-Trigon',   typ: 'Wurzel-Tag', practice: 'Wurzelernte. Lagerung. Boden bearbeiten.'),
+    'Waage':      (trigon: 'Luft-Trigon',   typ: 'Blüten-Tag', practice: 'Blühpflanzen säen. Brokkoli, Blumenkohl.'),
+    'Skorpion':   (trigon: 'Wasser-Trigon', typ: 'Blatt-Tag',  practice: 'Blattgewächse, Heilkräuter. Wassergaben gut aufgenommen.'),
+    'Schütze':    (trigon: 'Feuer-Trigon',  typ: 'Frucht-Tag', practice: 'Frucht-Pflanzen, Getreide. Ernte für Vorrat.'),
+    'Steinbock':  (trigon: 'Erde-Trigon',   typ: 'Wurzel-Tag', practice: 'Wurzelarbeit, Umsetzen. Boden tief lockern.'),
+    'Wassermann': (trigon: 'Luft-Trigon',   typ: 'Blüten-Tag', practice: 'Blumen, Zierpflanzen. Wenig gießen.'),
+    'Fische':     (trigon: 'Wasser-Trigon', typ: 'Blatt-Tag',  practice: 'Salate, Kohl, Spinat. Optimal für Blattfrüchte.'),
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final phaseRec = _phaseRecommend[snapshot.phaseKey] ?? 'Beobachte das Mondlicht.';
+    final sign = snapshot.moonSignName;
+    final trigon = _signTrigon[sign];
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(colors: [Color(0xFF1B5E20), Color(0xFF2E7D32)]),
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('🌱 BIODYNAMISCHER GARTENBAU',
+                    style: TextStyle(color: Colors.white70, fontSize: 11, letterSpacing: 2, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 6),
+                const Text('Maria-Thun-Aussaattage',
+                    style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                Text(
+                  'Empfehlungen basierend auf aktueller Mondphase und Tierkreiszeichen-Trigon. '
+                  'Folgt der biodynamischen Tradition nach Maria Thun (1922–2012).',
+                  style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 12, height: 1.5),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 18),
+          // Phase-Empfehlung
+          _sectionCard(
+            label: 'AKTUELLE MONDPHASE',
+            value: snapshot.phaseLabel,
+            body: phaseRec,
+            accent: const Color(0xFF66BB6A),
+          ),
+          const SizedBox(height: 12),
+          // Sternzeichen-Trigon
+          if (trigon != null)
+            _sectionCard(
+              label: 'STERNZEICHEN-TRIGON',
+              value: '$sign · ${trigon.trigon}',
+              body: '${trigon.typ}: ${trigon.practice}',
+              accent: const Color(0xFFFFB300),
+            ),
+          const SizedBox(height: 24),
+          const Text('📅 4 Tagestypen im Überblick',
+              style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          _typeRow('🍅 Frucht-Tag', 'Feuer-Trigon', 'Widder · Löwe · Schütze',
+              'Tomaten, Bohnen, Mais, Beeren — alles was Frucht trägt'),
+          _typeRow('🥕 Wurzel-Tag', 'Erde-Trigon', 'Stier · Jungfrau · Steinbock',
+              'Möhren, Kartoffeln, Sellerie, Rote Bete'),
+          _typeRow('🌸 Blüten-Tag', 'Luft-Trigon', 'Zwillinge · Waage · Wassermann',
+              'Brokkoli, Blumenkohl, Rosen, Blumen'),
+          _typeRow('🥬 Blatt-Tag', 'Wasser-Trigon', 'Krebs · Skorpion · Fische',
+              'Salate, Kohl, Spinat, Kräuter'),
+          const SizedBox(height: 24),
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+            ),
+            child: const Text(
+              '⚠️ Hinweis: Biodynamik ist eine anthroposophische Tradition, kein wissenschaftlich '
+              'bewiesenes System. Viele Bauern und Gärtner berichten jedoch von empirisch besseren '
+              'Ergebnissen. Empfehlung: ausprobieren und eigene Erfahrung machen.',
+              style: TextStyle(color: Colors.white70, fontSize: 11, height: 1.5),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _sectionCard({
+    required String label,
+    required String value,
+    required String body,
+    required Color accent,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF100B1E),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: accent.withValues(alpha: 0.4)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label,
+              style: TextStyle(color: accent, fontSize: 10, letterSpacing: 2, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 4),
+          Text(value,
+              style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          Text(body,
+              style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.5)),
+        ],
+      ),
+    );
+  }
+
+  Widget _typeRow(String emoji, String trigon, String signs, String practice) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            Text(emoji, style: const TextStyle(fontSize: 16)),
+            const SizedBox(width: 8),
+            Text(trigon,
+                style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+            const Spacer(),
+            Text(signs,
+                style: const TextStyle(color: Colors.white54, fontSize: 11)),
+          ]),
+          const SizedBox(height: 4),
+          Text(practice,
+              style: const TextStyle(color: Colors.white70, fontSize: 12, height: 1.4)),
+        ],
+      ),
+    );
+  }
+}
+
 
 // ═══════════════════════════════════════════════════════════
 // Tab 1: Heute

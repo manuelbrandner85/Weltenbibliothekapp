@@ -6,6 +6,7 @@
 // etymologischer / historischer Bedeutung via Wikipedia-API.
 
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../services/free_research_tools_service.dart';
@@ -23,9 +24,14 @@ class _SacredSymbolsScreenState extends State<SacredSymbolsScreen> {
   static const _accent = Color(0xFFFDD835);
 
   String _filterTradition = 'Alle';
+  String _searchQuery = '';
+  Set<String> _bookmarks = {};
+
+  static const _bookmarkKey = 'sacred_symbols_bookmarks';
 
   static const List<String> _traditions = [
     'Alle',
+    'Favoriten',
     'Ägyptisch',
     'Hindu',
     'Buddhistisch',
@@ -35,6 +41,33 @@ class _SacredSymbolsScreenState extends State<SacredSymbolsScreen> {
     'Keltisch',
     'Maya/Azteken',
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBookmarks();
+  }
+
+  Future<void> _loadBookmarks() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() {
+      _bookmarks =
+          (prefs.getStringList(_bookmarkKey) ?? const []).toSet();
+    });
+  }
+
+  Future<void> _toggleBookmark(String name) async {
+    setState(() {
+      if (_bookmarks.contains(name)) {
+        _bookmarks.remove(name);
+      } else {
+        _bookmarks.add(name);
+      }
+    });
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_bookmarkKey, _bookmarks.toList());
+  }
 
   static final List<_Symbol> _symbols = [
     // Ägyptisch
@@ -113,10 +146,22 @@ class _SacredSymbolsScreenState extends State<SacredSymbolsScreen> {
         'Aztekischer Sonnenkalender / Stein der Sonne', 'Stein_der_Sonne'),
   ];
 
-  List<_Symbol> get _filtered =>
-      _filterTradition == 'Alle'
-          ? _symbols
-          : _symbols.where((s) => s.tradition == _filterTradition).toList();
+  List<_Symbol> get _filtered {
+    Iterable<_Symbol> list = _symbols;
+    if (_filterTradition == 'Favoriten') {
+      list = list.where((s) => _bookmarks.contains(s.name));
+    } else if (_filterTradition != 'Alle') {
+      list = list.where((s) => s.tradition == _filterTradition);
+    }
+    if (_searchQuery.isNotEmpty) {
+      final q = _searchQuery.toLowerCase();
+      list = list.where((s) =>
+          s.name.toLowerCase().contains(q) ||
+          s.shortDesc.toLowerCase().contains(q) ||
+          s.tradition.toLowerCase().contains(q));
+    }
+    return list.toList();
+  }
 
   void _openDetails(_Symbol s) {
     showModalBottomSheet(
@@ -148,6 +193,30 @@ class _SacredSymbolsScreenState extends State<SacredSymbolsScreen> {
       ),
       body: Column(
         children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 4),
+            child: TextField(
+              onChanged: (v) => setState(() => _searchQuery = v),
+              style: const TextStyle(color: Colors.white, fontSize: 13),
+              decoration: InputDecoration(
+                hintText: 'Symbol/Tradition suchen…',
+                hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 13),
+                prefixIcon: Icon(Icons.search, color: _accent.withValues(alpha: 0.8), size: 20),
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                filled: true,
+                fillColor: _surface,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: _accent.withValues(alpha: 0.2)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: _accent.withValues(alpha: 0.5)),
+                ),
+              ),
+            ),
+          ),
           SizedBox(
             height: 50,
             child: ListView(
@@ -206,45 +275,69 @@ class _SacredSymbolsScreenState extends State<SacredSymbolsScreen> {
   }
 
   Widget _buildSymbolCard(_Symbol s) {
+    final bookmarked = _bookmarks.contains(s.name);
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: () => _openDetails(s),
         borderRadius: BorderRadius.circular(14),
-        child: Container(
-          decoration: BoxDecoration(
-            color: _surface,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: _accent.withValues(alpha: 0.25)),
-          ),
-          padding: const EdgeInsets.all(8),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(s.glyph, style: const TextStyle(fontSize: 36)),
-              const SizedBox(height: 6),
-              Text(
-                s.name,
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
+        child: Stack(
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                color: _surface,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: _accent.withValues(alpha: 0.25)),
+              ),
+              padding: const EdgeInsets.all(8),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(s.glyph, style: const TextStyle(fontSize: 36)),
+                  const SizedBox(height: 6),
+                  Text(
+                    s.name,
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    s.tradition,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: _accent.withValues(alpha: 0.8),
+                      fontSize: 9,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Positioned(
+              top: 2,
+              right: 2,
+              child: GestureDetector(
+                onTap: () => _toggleBookmark(s.name),
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.black.withValues(alpha: 0.45),
+                  ),
+                  child: Icon(
+                    bookmarked ? Icons.favorite : Icons.favorite_border,
+                    size: 14,
+                    color: bookmarked ? _accent : Colors.white60,
+                  ),
                 ),
               ),
-              const SizedBox(height: 2),
-              Text(
-                s.tradition,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: _accent.withValues(alpha: 0.8),
-                  fontSize: 9,
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
