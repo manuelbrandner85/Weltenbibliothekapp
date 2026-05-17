@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../services/group_tools_service.dart';
+import '../../services/journal_search_service.dart'; // 🔍 H3
 import '../../services/user_service.dart';
 
 /// 🌙 Traum-Tagebuch — Mit Jungianischer Symbolanalyse
@@ -130,6 +131,16 @@ class _DreamJournalScreenState extends State<DreamJournalScreen>
               ),
             ),
             actions: [
+              // 🔍 H3: Cross-Journal-Suche
+              IconButton(
+                icon: const Icon(Icons.search_rounded),
+                tooltip: 'Suchen in allen Journals',
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const _JournalSearchScreen(),
+                  ),
+                ),
+              ),
               IconButton(
                 icon: const Icon(Icons.refresh_rounded),
                 onPressed: _loadDreams,
@@ -489,6 +500,205 @@ class _DreamCard extends StatelessWidget {
             ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+// 🔍 H3: Cross-Journal-Suche (Dream + Astral + Moon)
+class _JournalSearchScreen extends StatefulWidget {
+  const _JournalSearchScreen();
+  @override
+  State<_JournalSearchScreen> createState() => _JournalSearchScreenState();
+}
+
+class _JournalSearchScreenState extends State<_JournalSearchScreen> {
+  static const _accent = Color(0xFF7C4DFF);
+  final _ctrl = TextEditingController();
+  List<JournalEntry> _results = const [];
+  Map<String, int> _tags = const {};
+  List<JournalEntry> _onThisDay = const [];
+  bool _searching = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTags();
+  }
+
+  Future<void> _loadTags() async {
+    final t = await JournalSearchService.instance.tagCloud();
+    final today = await JournalSearchService.instance.onThisDay();
+    if (mounted) setState(() { _tags = t; _onThisDay = today; });
+  }
+
+  Future<void> _search(String q) async {
+    if (q.trim().length < 2) {
+      setState(() => _results = const []);
+      return;
+    }
+    setState(() => _searching = true);
+    final r = await JournalSearchService.instance.search(q);
+    if (mounted) {
+      setState(() {
+        _results = r;
+        _searching = false;
+      });
+    }
+  }
+
+  String _kindLabel(JournalKind k) {
+    switch (k) {
+      case JournalKind.dream: return 'Traum';
+      case JournalKind.astral: return 'Astral';
+      case JournalKind.moon: return 'Mond';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF06040F),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        title: const Text('Journal-Suche',
+            style: TextStyle(color: Colors.white)),
+        iconTheme: const IconThemeData(color: _accent),
+      ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: TextField(
+              controller: _ctrl,
+              autofocus: true,
+              style: const TextStyle(color: Colors.white),
+              onChanged: _search,
+              decoration: InputDecoration(
+                prefixIcon: const Icon(Icons.search, color: _accent),
+                hintText: 'Suchbegriff (min. 2 Zeichen)…',
+                hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4)),
+                filled: true,
+                fillColor: Colors.white.withValues(alpha: 0.05),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: _searching
+                ? const Center(child: CircularProgressIndicator(color: _accent))
+                : _results.isNotEmpty
+                    ? ListView.separated(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        itemCount: _results.length,
+                        separatorBuilder: (_, __) =>
+                            const Divider(color: Colors.white10, height: 1),
+                        itemBuilder: (_, i) {
+                          final e = _results[i];
+                          return ListTile(
+                            leading: const Icon(Icons.book_outlined, color: _accent),
+                            title: Text(e.title,
+                                style: const TextStyle(color: Colors.white)),
+                            subtitle: Text(
+                              '${_kindLabel(e.kind)} · ${e.date.day}.${e.date.month}.${e.date.year}\n${e.body}',
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.65),
+                                  fontSize: 11),
+                            ),
+                            isThreeLine: true,
+                          );
+                        },
+                      )
+                    : ListView(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        children: [
+                          if (_onThisDay.isNotEmpty) ...[
+                            const Padding(
+                              padding: EdgeInsets.fromLTRB(4, 8, 4, 8),
+                              child: Text(
+                                '📅 HEUTE VOR …',
+                                style: TextStyle(
+                                  color: _accent,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 1.5,
+                                ),
+                              ),
+                            ),
+                            for (final e in _onThisDay)
+                              Card(
+                                color: const Color(0xFF12121E),
+                                child: ListTile(
+                                  leading: const Icon(Icons.history,
+                                      color: _accent),
+                                  title: Text(e.title,
+                                      style: const TextStyle(color: Colors.white)),
+                                  subtitle: Text(
+                                    '${DateTime.now().year - e.date.year} Jahr(e) — ${_kindLabel(e.kind)}',
+                                    style: TextStyle(
+                                        color: Colors.white.withValues(alpha: 0.55),
+                                        fontSize: 11),
+                                  ),
+                                ),
+                              ),
+                            const SizedBox(height: 18),
+                          ],
+                          if (_tags.isNotEmpty) ...[
+                            const Padding(
+                              padding: EdgeInsets.fromLTRB(4, 8, 4, 8),
+                              child: Text(
+                                '🏷️ TOP TAGS',
+                                style: TextStyle(
+                                  color: _accent,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 1.5,
+                                ),
+                              ),
+                            ),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: _tags.entries.take(40).map((e) {
+                                final weight = (e.value / (_tags.values.first))
+                                    .clamp(0.0, 1.0);
+                                return GestureDetector(
+                                  onTap: () {
+                                    _ctrl.text = e.key;
+                                    _search(e.key);
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 10, vertical: 5),
+                                    decoration: BoxDecoration(
+                                      color: _accent.withValues(
+                                          alpha: 0.1 + weight * 0.4),
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(
+                                        color: _accent.withValues(alpha: 0.3),
+                                      ),
+                                    ),
+                                    child: Text(
+                                      '${e.key} · ${e.value}',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 11 + (weight * 3),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                          ],
+                        ],
+                      ),
+          ),
+        ],
       ),
     );
   }
