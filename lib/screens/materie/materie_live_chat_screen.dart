@@ -3007,6 +3007,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
 
     if (confirm == true) {
       final msgId = msg['message_id'] ?? msg['id'] ?? '';
+      final isPending = msg['is_pending'] == true;
 
       // Backup für Rollback
       final backupMsg = Map<String, dynamic>.from(msg);
@@ -3017,6 +3018,24 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
         setState(() {
           _messages.removeWhere((m) => (m['message_id'] ?? m['id']) == msgId);
         });
+      }
+
+      // Pending-Nachrichten (noch nicht synced) aus Offline-Queue entfernen
+      // statt Worker-Delete aufzurufen — der Worker hat sie noch nicht.
+      if (isPending) {
+        try {
+          await OfflineSyncService().removePendingMessage(msgId.toString());
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('✅ Ausstehende Nachricht verworfen'),
+                backgroundColor: Colors.green,
+                duration: Duration(seconds: 2),
+              ),
+            );
+          }
+        } catch (_) {}
+        return;
       }
 
       try {

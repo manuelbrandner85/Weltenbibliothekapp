@@ -1,6 +1,10 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+
 import '../services/youtube_service.dart';
+import '_youtube_web_iframe_stub.dart'
+    if (dart.library.html) '_youtube_web_iframe_web.dart';
 
 /// Inline YouTube-Player via WebView. Fängt Error 153 (Embedding-Sperre)
 /// per YT-IFrame-API ab und zeigt Fallback-Thumbnail + Button der intern in m.youtube.com öffnet.
@@ -15,13 +19,19 @@ class YoutubePlayerInline extends StatefulWidget {
 }
 
 class _YoutubePlayerInlineState extends State<YoutubePlayerInline> {
-  late final WebViewController _controller;
+  WebViewController? _controller;
   bool _loading = true;
   bool _hasError = false;
 
   @override
   void initState() {
     super.initState();
+    // Auf Web nutzen wir ein natives <iframe> via HtmlElementView.
+    // webview_flutter hat keine Web-Implementierung → würde nur grau bleiben.
+    if (kIsWeb) {
+      _loading = false;
+      return;
+    }
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..addJavaScriptChannel(
@@ -137,15 +147,19 @@ function onYouTubeIframeAPIReady() {
           ),
           SizedBox(
             height: 210,
-            child: Stack(
-              children: [
-                WebViewWidget(controller: _controller),
-                if (_loading && !_hasError)
-                  const Center(
-                    child: CircularProgressIndicator(color: Colors.red, strokeWidth: 2),
+            child: kIsWeb
+                ? buildYoutubeIframe(widget.video.videoId)
+                : Stack(
+                    children: [
+                      if (_controller != null)
+                        WebViewWidget(controller: _controller!),
+                      if (_loading && !_hasError)
+                        const Center(
+                          child: CircularProgressIndicator(
+                              color: Colors.red, strokeWidth: 2),
+                        ),
+                    ],
                   ),
-              ],
-            ),
           ),
           Container(
             color: const Color(0xFF0D0000),

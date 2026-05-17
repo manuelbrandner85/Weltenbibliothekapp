@@ -454,6 +454,37 @@ class OfflineSyncService extends ChangeNotifier {
     });
   }
 
+  /// Entfernt eine pending Chat-Nachricht aus der Offline-Queue.
+  /// Wird vom Chat-Screen aufgerufen, wenn der User eine noch-nicht-synchronisierte
+  /// Nachricht löschen will (Worker hat sie noch nicht — sonst silent-fail).
+  Future<void> removePendingMessage(String messageId) async {
+    try {
+      final db = await AppDatabase.instance.db;
+      // offline_actions speichert Aktionen mit `data: jsonEncode(...)`.
+      // Wir suchen nach Einträgen, deren data den messageId enthält.
+      final rows = await db.query('offline_actions');
+      var removed = 0;
+      for (final row in rows) {
+        final dataStr = row['data'] as String?;
+        if (dataStr == null) continue;
+        if (dataStr.contains(messageId)) {
+          await db.delete('offline_actions',
+              where: 'id = ?', whereArgs: [row['id']]);
+          removed++;
+        }
+      }
+      if (removed > 0) {
+        _pendingActions = (_pendingActions - removed).clamp(0, 1 << 30);
+        _pendingActionsController.add(_pendingActions);
+        notifyListeners();
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('⚠️ removePendingMessage failed: $e');
+      }
+    }
+  }
+
   Future<void> clearAll() async {
     try {
       final db = await AppDatabase.instance.db;

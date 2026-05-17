@@ -3089,6 +3089,7 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
 
     if (confirm == true) {
       final msgId = msg['message_id'] ?? msg['id'] ?? '';
+      final isPending = msg['is_pending'] == true;
 
       // Backup für Rollback
       final backupMsg = Map<String, dynamic>.from(msg);
@@ -3099,6 +3100,26 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
         setState(() {
           _messages.removeWhere((m) => (m['message_id'] ?? m['id']) == msgId);
         });
+      }
+
+      // Pending-Nachrichten haben noch keine Server-ID — direkt aus
+      // Offline-Queue entfernen statt Worker-Delete aufzurufen.
+      if (isPending) {
+        try {
+          await OfflineSyncService().removePendingMessage(msgId.toString());
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('✅ Ausstehende Nachricht verworfen'),
+                backgroundColor: Colors.green,
+                duration: Duration(seconds: 2),
+              ),
+            );
+          }
+        } catch (_) {
+          // Silent — wenn Queue-Delete fehlt, ist lokal entfernen genug
+        }
+        return;
       }
 
       try {
