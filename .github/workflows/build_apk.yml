@@ -148,8 +148,12 @@ jobs:
 
       - name: 🐦 Shorebird (Setup)
         uses: shorebirdtech/setup-shorebird@v1
+        # cache: false zwingt einen frischen Clone in jedem Run.
+        # Mit cache: true blieb der Pin-Checkout (v1.6.92) in einem
+        # detached-HEAD-Zustand stehen — danach scheiterte das interne
+        # `shorebird upgrade` mit "HEAD does not point to a branch".
         with:
-          cache: true
+          cache: false
 
       - name: 🔧 Shorebird CLI auf v1.6.92 downpinnen
         # setup-shorebird@v1 unterstützt den `shorebird-version` Input nicht mehr

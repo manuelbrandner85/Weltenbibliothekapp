@@ -59,6 +59,11 @@ jobs:
       # zum registrierten Release passen. Deshalb fest pinnen.
       - name: 🐦 Shorebird (Setup)
         uses: shorebirdtech/setup-shorebird@v1
+        # cache: false weil sonst der gepinnte detached-HEAD-Stand aus dem
+        # vorigen Run wieder restored wird und `shorebird upgrade` mit
+        # "HEAD does not point to a branch" abbricht.
+        with:
+          cache: false
 
       - name: 🔧 Shorebird CLI auf v1.6.92 downpinnen (gegen Engine-Drift)
         # setup-shorebird@v1 akzeptiert keine `shorebird-version` Input mehr —

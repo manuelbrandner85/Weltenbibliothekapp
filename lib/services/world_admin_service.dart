@@ -244,7 +244,7 @@ class WorldAdminService {
     try {
       final result = await supabase
           .from('profiles')
-          .select('id,username,display_name,role,is_banned,avatar_url,created_at,world,world_preference')
+          .select('id,username,display_name,role,is_banned,avatar_url,created_at,world,world_preference,last_seen_at')
           .order('created_at', ascending: false)
           .limit(500);
 
@@ -261,6 +261,7 @@ class WorldAdminService {
                 avatarUrl: u['avatar_url'] as String?,
                 avatarEmoji: null,
                 createdAt: u['created_at'] as String? ?? '',
+                lastSeenAt: u['last_seen_at'] as String?,
               )
                 ..world = (u['world'] as String?) ?? (u['world_preference'] as String?))
           .toList();
@@ -493,6 +494,8 @@ class WorldUser {
   String? world; // Welche Welt (materie/energie) - mutable for tagging
   final bool isSuspended;
   final String? suspensionReason;
+  // 🟢 Online-Status: ISO-Timestamp des letzten Heartbeats.
+  final String? lastSeenAt;
 
   WorldUser({
     required this.profileId,
@@ -506,6 +509,7 @@ class WorldUser {
     this.world,
     this.isSuspended = false,
     this.suspensionReason,
+    this.lastSeenAt,
   });
 
   factory WorldUser.fromJson(Map<String, dynamic> json) {

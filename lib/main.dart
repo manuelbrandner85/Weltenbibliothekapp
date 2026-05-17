@@ -40,6 +40,7 @@ import 'screens/shared/world_admin_dashboard.dart';
 // import 'screens/notification_settings_screen.dart' as new_notif; // FIREBASE - deaktiviert
 import 'services/service_manager.dart'; // ✅ NEW: Centralized service initialization
 import 'services/theme_service.dart';
+import 'services/user_presence_service.dart'; // 🟢 Online-Status
 import 'services/privacy_analytics_service.dart'; // 📊 PRIVACY ANALYTICS
 import 'services/analytics_service.dart'; // 📊 CLOUDFLARE ANALYTICS (NEW)
 import 'services/error_reporting_service.dart'; // 🚨 ERROR REPORTING (NEW)
@@ -270,13 +271,36 @@ class WeltenbibliothekApp extends StatefulWidget {
   State<WeltenbibliothekApp> createState() => _WeltenbibliothekAppState();
 }
 
-class _WeltenbibliothekAppState extends State<WeltenbibliothekApp> {
+class _WeltenbibliothekAppState extends State<WeltenbibliothekApp>
+    with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
-    
+    WidgetsBinding.instance.addObserver(this);
+
     // 🏆 Achievement Unlock Listener
     _setupAchievementListeners();
+
+    // 🟢 Online-Status: Heartbeat alle 90s während App im Foreground.
+    UserPresenceService.instance.start();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    UserPresenceService.instance.stop();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.resumed) {
+      UserPresenceService.instance.start();
+    } else if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
+      UserPresenceService.instance.stop();
+    }
   }
   
   /// 🏆 Setup Achievement Listeners

@@ -1822,15 +1822,26 @@ class _UserTile extends StatelessWidget {
         ),
         child: ExpansionTile(
           tilePadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-          leading: CircleAvatar(
-            radius: 20,
-            backgroundColor: _roleColor.withValues(alpha: 0.15),
-            child: Text(
-              user.avatarEmoji?.isNotEmpty == true
-                  ? user.avatarEmoji!
-                  : user.username[0].toUpperCase(),
-              style: const TextStyle(fontSize: 18),
-            ),
+          leading: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              CircleAvatar(
+                radius: 20,
+                backgroundColor: _roleColor.withValues(alpha: 0.15),
+                child: Text(
+                  user.avatarEmoji?.isNotEmpty == true
+                      ? user.avatarEmoji!
+                      : user.username[0].toUpperCase(),
+                  style: const TextStyle(fontSize: 18),
+                ),
+              ),
+              // 🟢 Online-Status-Dot rechts unten am Avatar
+              Positioned(
+                right: -2,
+                bottom: -2,
+                child: _OnlineDot(lastSeenAtIso: user.lastSeenAt),
+              ),
+            ],
           ),
           title: Text(user.displayName ?? user.username,
               style: const TextStyle(
@@ -2196,4 +2207,58 @@ class _ClickableMetricCard extends StatelessWidget {
           ]),
         ),
       );
+}
+
+// ── Online-Status-Dot am Avatar ────────────────────────────────────
+class _OnlineDot extends StatelessWidget {
+  final String? lastSeenAtIso;
+  const _OnlineDot({required this.lastSeenAtIso});
+
+  ({Color color, String tooltip}) _state() {
+    if (lastSeenAtIso == null) {
+      return (color: Colors.grey.shade700, tooltip: 'Nie online');
+    }
+    final t = DateTime.tryParse(lastSeenAtIso!);
+    if (t == null) {
+      return (color: Colors.grey.shade700, tooltip: 'Offline');
+    }
+    final delta = DateTime.now().toUtc().difference(t.toUtc());
+    if (delta.inMinutes < 2) {
+      return (color: const Color(0xFF4CAF50), tooltip: 'Online');
+    }
+    if (delta.inMinutes < 15) {
+      return (color: const Color(0xFFFFC107), tooltip: 'Vor ${delta.inMinutes} Min');
+    }
+    final h = delta.inHours;
+    if (h < 24) {
+      return (color: Colors.grey.shade500, tooltip: 'Vor ${h}h');
+    }
+    return (color: Colors.grey.shade700, tooltip: 'Vor ${delta.inDays} Tagen');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = _state();
+    return Tooltip(
+      message: s.tooltip,
+      child: Container(
+        width: 13,
+        height: 13,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: s.color,
+          border: Border.all(color: const Color(0xFF12121E), width: 2),
+          boxShadow: s.color == const Color(0xFF4CAF50)
+              ? [
+                  BoxShadow(
+                    color: s.color.withValues(alpha: 0.6),
+                    blurRadius: 6,
+                    spreadRadius: 1,
+                  ),
+                ]
+              : null,
+        ),
+      ),
+    );
+  }
 }
