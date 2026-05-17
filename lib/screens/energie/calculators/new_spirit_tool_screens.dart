@@ -3,6 +3,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'dart:math' as math;
 import 'dart:async';
 import 'package:weltenbibliothek/services/storage_service.dart';
@@ -4417,6 +4418,19 @@ class _YogaAsanaGuideScreenState extends State<YogaAsanaGuideScreen> {
           ),
         ),
         actions: [
+          TextButton.icon(
+            onPressed: () async {
+              // YouTube-Suche nach 'asana name Tutorial deutsch'
+              final query = Uri.encodeComponent('${asana['name']} ${asana['german']} Yoga Tutorial');
+              final uri = Uri.parse('https://www.youtube.com/results?search_query=$query');
+              if (await canLaunchUrl(uri)) {
+                await launchUrl(uri, mode: LaunchMode.externalApplication);
+              }
+            },
+            icon: const Icon(Icons.play_circle_fill, color: Colors.red, size: 20),
+            label: const Text('YouTube-Tutorial',
+                style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text('Schließen', style: TextStyle(color: Colors.purple.shade300)),
