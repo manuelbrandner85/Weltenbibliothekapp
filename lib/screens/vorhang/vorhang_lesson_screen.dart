@@ -7,6 +7,8 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../config/api_config.dart';
 import '../../services/gamification_service.dart';
+import '../../services/storage_service.dart'; // 📝 I1
+import '../../services/vorhang_lesson_notes_service.dart'; // 📝 I1
 import '../../services/vorhang_service.dart';
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_glass_app_bar.dart';
@@ -215,7 +217,7 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 5,
+      length: 6,
       child: Scaffold(
         extendBodyBehindAppBar: true,
         backgroundColor: _bgBlack,
@@ -249,6 +251,7 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
                   Tab(icon: Icon(Icons.edit_note, size: 18), text: 'Übung'),
                   Tab(icon: Icon(Icons.quiz_outlined, size: 18), text: 'Test'),
                   Tab(icon: Icon(Icons.play_circle_outline, size: 18), text: 'Videos'),
+                  Tab(icon: Icon(Icons.note_add_outlined, size: 18), text: 'Notizen'),
                 ],
               ),
             ),
@@ -270,6 +273,7 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
                             _buildExerciseTab(),
                             _buildTestTab(),
                             _buildVideosTab(),
+                            _LessonNotesTab(moduleCode: widget.moduleCode),
                           ],
                         ),
         ),
@@ -1086,6 +1090,188 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
           fontStyle: italic ? FontStyle.italic : FontStyle.normal,
         ),
         children: parts.isEmpty ? [TextSpan(text: text)] : parts,
+      ),
+    );
+  }
+}
+
+// 📝 I1: Notizen-Tab pro Lektion (sync via VorhangLessonNotesService)
+class _LessonNotesTab extends StatefulWidget {
+  final String moduleCode;
+  const _LessonNotesTab({required this.moduleCode});
+
+  @override
+  State<_LessonNotesTab> createState() => _LessonNotesTabState();
+}
+
+class _LessonNotesTabState extends State<_LessonNotesTab> {
+  static const _gold = Color(0xFFC9A84C);
+  final _ctrl = TextEditingController();
+  bool _loading = true;
+  bool _saving = false;
+  DateTime? _lastSavedAt;
+
+  String _userId() {
+    final s = StorageService();
+    return s.getMaterieProfile()?.userId
+        ?? s.getEnergieProfile()?.userId
+        ?? 'anon';
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final n = await VorhangLessonNotesService.instance
+        .getFor(_userId(), widget.moduleCode);
+    if (mounted) {
+      setState(() {
+        _ctrl.text = n?.body ?? '';
+        _lastSavedAt = n?.updatedAt;
+        _loading = false;
+      });
+    }
+  }
+
+  Future<void> _save() async {
+    setState(() => _saving = true);
+    final saved = await VorhangLessonNotesService.instance.save(
+      userId: _userId(),
+      moduleCode: widget.moduleCode,
+      body: _ctrl.text,
+    );
+    if (!mounted) return;
+    setState(() {
+      _saving = false;
+      _lastSavedAt = saved?.updatedAt ?? DateTime.now();
+    });
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(saved != null ? '📝 Gespeichert' : '❌ Fehler'),
+      duration: const Duration(seconds: 2),
+    ));
+  }
+
+  Future<void> _exportAll() async {
+    final md = await VorhangLessonNotesService.instance
+        .exportMarkdown(_userId());
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: const Color(0xFF0D0B00),
+        title: const Text('Alle Notizen exportiert',
+            style: TextStyle(color: _gold)),
+        content: SizedBox(
+          width: 500,
+          height: 400,
+          child: SingleChildScrollView(
+            child: SelectableText(md,
+                style: const TextStyle(color: Colors.white70, fontSize: 12)),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Schließen', style: TextStyle(color: _gold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) {
+      return const Center(
+        child: CircularProgressIndicator(color: _gold, strokeWidth: 2),
+      );
+    }
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 110, 16, 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.note_alt_outlined, color: _gold, size: 18),
+              const SizedBox(width: 8),
+              const Text('Deine Notizen zu dieser Lektion',
+                  style: TextStyle(color: _gold, fontWeight: FontWeight.w700)),
+              const Spacer(),
+              if (_lastSavedAt != null)
+                Text(
+                  'Zuletzt: ${_lastSavedAt!.hour.toString().padLeft(2,'0')}:${_lastSavedAt!.minute.toString().padLeft(2,'0')}',
+                  style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.5), fontSize: 10),
+                ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Expanded(
+            child: TextField(
+              controller: _ctrl,
+              maxLines: null,
+              expands: true,
+              textAlignVertical: TextAlignVertical.top,
+              style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.5),
+              decoration: InputDecoration(
+                hintText: 'Was nimmst du aus dieser Lektion mit? '
+                    'Schreibe deine Gedanken, Fragen, Erkenntnisse …',
+                hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.35)),
+                filled: true,
+                fillColor: Colors.white.withValues(alpha: 0.04),
+                contentPadding: const EdgeInsets.all(14),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                      color: _gold.withValues(alpha: 0.2), width: 1),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: _gold, width: 1.5),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: _saving ? null : _save,
+                  icon: _saving
+                      ? const SizedBox(
+                          width: 14, height: 14,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 1.8,
+                              valueColor: AlwaysStoppedAnimation(Colors.black)),
+                        )
+                      : const Icon(Icons.save_outlined),
+                  label: const Text('Speichern'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _gold,
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              OutlinedButton.icon(
+                onPressed: _exportAll,
+                icon: const Icon(Icons.share_outlined, color: _gold, size: 16),
+                label: const Text('Export',
+                    style: TextStyle(color: _gold)),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  side: BorderSide(color: _gold.withValues(alpha: 0.4)),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
