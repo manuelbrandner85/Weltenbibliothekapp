@@ -17,6 +17,7 @@ import '../../widgets/cinematic/wb_floating_nav.dart';
 import '../../widgets/cinematic/wb_vignette.dart';
 import '../../widgets/cinematic/wb_ambient_particles.dart';
 import '../profile_settings_screen.dart';
+import '../../widgets/notification_center_button.dart';
 
 /// 🎭 VORHANG-WELT DASHBOARD — Cinematic Chrome
 ///
@@ -147,6 +148,7 @@ class _VorhangWorldScreenState extends ConsumerState<VorhangWorldScreen>
 
   List<Widget> _buildAppBarActions(BuildContext context, AdminState adminState) {
     return [
+      const NotificationCenterButton(accent: Color(0xFFC9A84C)),
       // Portal-Wechsel
       IconButton(
         icon: const Icon(Icons.swap_horiz, color: Color(0xFFC9A84C)),

@@ -16,6 +16,7 @@ import '../widgets/cinematic/wb_glass_app_bar.dart';
 import '../widgets/cinematic/wb_floating_nav.dart';
 import '../widgets/cinematic/wb_vignette.dart';
 import '../widgets/cinematic/wb_ambient_particles.dart';
+import '../widgets/notification_center_button.dart';
 import 'profile_settings_screen.dart';
 
 /// 🌍 ENERGIE-WELT DASHBOARD — Cinematic Chrome
@@ -147,6 +148,7 @@ class _EnergieWorldScreenState extends ConsumerState<EnergieWorldScreen>
 
   List<Widget> _buildAppBarActions(BuildContext context, AdminState adminState) {
     return [
+      const NotificationCenterButton(accent: Color(0xFFA855F7)),
       IconButton(
         icon: const Icon(Icons.swap_horiz, color: Color(0xFFC79AFF)),
         iconSize: 22,
