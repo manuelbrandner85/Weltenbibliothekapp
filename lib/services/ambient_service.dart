@@ -10,6 +10,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../config/api_config.dart';
+import 'device_location_service.dart';
 import 'gamification_service.dart';
 
 /// Eine einzelne Aktivität im Tagespfad.
@@ -127,6 +128,17 @@ class AmbientService {
     return '$_kCachePrefix$y-$m-$d';
   }
 
+  /// Cache-Key inkludiert gerundete GPS-Position (0.5° Granularität),
+  /// damit ein Standortwechsel den Tages-Cache invalidiert und neues
+  /// Wetter geladen wird.
+  String _todayKeyForLocation(DeviceLocation? loc) {
+    final base = _todayKey();
+    if (loc == null) return base;
+    final latBucket = (loc.lat * 2).round();
+    final lngBucket = (loc.lng * 2).round();
+    return '$base-$latBucket,$lngBucket';
+  }
+
   /// Liest die letzte Stimmung des Users (oder 'neutral').
   Future<String> getMood() async {
     try {
@@ -175,7 +187,11 @@ class AmbientService {
   /// Lädt den Tagespfad (mit Cache pro Datum).
   Future<DailyPath?> loadDailyPath({bool forceRefresh = false}) async {
     final prefs = await SharedPreferences.getInstance();
-    final cacheKey = _todayKey();
+
+    // Standort vorab holen — Cache-Key enthält gerundete Position
+    // (0.5° ≈ 55 km), damit ein Stadtwechsel den Cache invalidiert.
+    final loc = await DeviceLocationService.instance.getCurrent();
+    final cacheKey = _todayKeyForLocation(loc);
 
     if (!forceRefresh) {
       final cached = prefs.getString(cacheKey);
@@ -206,6 +222,8 @@ class AmbientService {
         'dominantWorld': dominant,
         'hrvBaseline': null,
         'moodCheckIn': mood,
+        if (loc != null) 'lat': loc.lat,
+        if (loc != null) 'lon': loc.lng,
       };
 
       final res = await http

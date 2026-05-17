@@ -6877,19 +6877,38 @@ Antworte in exakt diesem JSON-Format:
           moodCheckIn = null,
         } = body;
 
-        // 1. Wetter via Open-Meteo (Standort aus Cloudflare-Request)
+        // 1. Wetter via Open-Meteo
+        //    Priorität für die Koordinaten:
+        //    a) Client-übergebene lat/lon (echtes GPS)  → genauester Wert
+        //    b) Cloudflare-IP-Geolokation              → ungenau (Carrier)
+        //    c) Hardcoded Wien-Fallback
         const cf = request.cf || {};
-        const lat = body.lat ?? cf.latitude ?? 48.2082;   // Wien Fallback
-        const lon = body.lon ?? cf.longitude ?? 16.3738;
-        const city = cf.city || 'unbekannt';
+        const clientCoords = (typeof body.lat === 'number' && typeof body.lon === 'number');
+        const lat = clientCoords ? body.lat : (cf.latitude ?? 48.2082);
+        const lon = clientCoords ? body.lon : (cf.longitude ?? 16.3738);
+        // Wenn Client-GPS gegeben: cf.city ist FALSCH (Carrier-Gateway).
+        // Dann lieber reverse-geocoden — sonst cf.city nutzen.
+        let city = clientCoords ? null : (cf.city || 'unbekannt');
 
         let weather = body.weather || null;
         if (!weather) {
           try {
-            const wRes = await fetch(
-              `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&timezone=auto`,
-              { signal: AbortSignal.timeout(8000) }
-            );
+            const tasks = [
+              fetch(
+                `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&timezone=auto`,
+                { signal: AbortSignal.timeout(8000) }
+              ),
+            ];
+            // Reverse-Geocode nur wenn Client-GPS gegeben und city fehlt.
+            // Open-Meteo Geocoding hat keinen reverse-endpoint; daher BigDataCloud
+            // free tier — limit 50k/Monat ohne Key.
+            if (clientCoords) {
+              tasks.push(fetch(
+                `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=de`,
+                { signal: AbortSignal.timeout(5000) }
+              ));
+            }
+            const [wRes, geoRes] = await Promise.all(tasks);
             const wData = await wRes.json().catch(() => ({}));
             const cur = wData.current || {};
             const codes = { 0:'klar', 1:'überwiegend klar', 2:'teilweise bewölkt', 3:'bewölkt',
@@ -6897,15 +6916,20 @@ Antworte in exakt diesem JSON-Format:
               55:'starker Nieselregen', 61:'leichter Regen', 63:'Regen', 65:'starker Regen',
               71:'leichter Schnee', 73:'Schnee', 75:'starker Schnee', 80:'Regenschauer',
               81:'starke Regenschauer', 82:'heftige Regenschauer', 95:'Gewitter', 96:'Gewitter mit Hagel', 99:'starkes Gewitter'};
+            if (clientCoords && geoRes && geoRes.ok) {
+              const g = await geoRes.json().catch(() => ({}));
+              city = g.city || g.locality || g.principalSubdivision || 'Position';
+            }
             weather = {
               temp: cur.temperature_2m ?? null,
               humidity: cur.relative_humidity_2m ?? null,
               condition: codes[cur.weather_code] || 'unbekannt',
               wind: cur.wind_speed_10m ?? null,
-              city,
+              city: city || 'unbekannt',
+              source: clientCoords ? 'gps' : 'ip',
             };
           } catch (e) {
-            weather = { temp: null, condition: 'unbekannt', city };
+            weather = { temp: null, condition: 'unbekannt', city: city || 'unbekannt', source: clientCoords ? 'gps' : 'ip' };
           }
         }
 
