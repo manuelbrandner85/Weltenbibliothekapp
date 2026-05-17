@@ -13,6 +13,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../../utils/kaninchenbau_markdown_export.dart'; // 📄 C1
 import 'cards/abgeordnete_card.dart';
 import 'cards/academic_card.dart';
 import 'cards/ai_insight_card.dart';
@@ -659,15 +660,50 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
           children: [
             Icon(Icons.check_circle_outline, color: Colors.white, size: 16),
             SizedBox(width: 8),
-            Text('In Zwischenablage kopiert'),
+            Text('Summary in Zwischenablage'),
           ],
         ),
+        action: SnackBarAction(
+          label: 'Voller Export',
+          textColor: Colors.white,
+          onPressed: () => _exportMarkdown(s),
+        ),
         backgroundColor: KbDesign.neonRed.withValues(alpha: 0.9),
-        duration: const Duration(seconds: 2),
+        duration: const Duration(seconds: 4),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
+  }
+
+  // 📄 C1: Voller Markdown-Export einer Investigation
+  Future<void> _exportMarkdown(_ThreadState s) async {
+    final md = KaninchenbauMarkdownExport.toMarkdown(
+      topic: s.topic,
+      identity: s.identityData,
+      networkNodes: s.networkNodes
+          .map((n) => {
+                'label': n.label,
+                'id': n.id,
+                'type': n.label.contains('Person') ? 'Person' : 'Entity',
+              })
+          .toList(),
+      keyPersons: s.keyPersons
+          .map((p) => {'name': p.name, 'role': p.role ?? ''})
+          .toList(),
+      rssItems: s.rssItems
+          .map((i) => {'title': i.title, 'url': i.link, 'source': i.source})
+          .toList(),
+      skandale: s.skandale
+          .map((sk) => {'title': sk.title, 'description': sk.description})
+          .toList(),
+      aiInsight: s.aiInsight,
+      documents: const [],
+      sanctions: const [],
+      moneyFlow: const [],
+    );
+    if (!mounted) return;
+    await KaninchenbauMarkdownExport.copyToClipboard(context, md);
   }
 
   @override
