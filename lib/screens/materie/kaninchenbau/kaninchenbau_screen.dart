@@ -682,25 +682,35 @@ class _KaninchenbauScreenState extends State<KaninchenbauScreen> {
       topic: s.topic,
       identity: s.identityData,
       networkNodes: s.networkNodes
-          .map((n) => {
+          .map((n) => <String, dynamic>{
                 'label': n.label,
                 'id': n.id,
                 'type': n.label.contains('Person') ? 'Person' : 'Entity',
               })
           .toList(),
       keyPersons: s.keyPersons
-          .map((p) => {'name': p.name, 'role': p.role ?? ''})
+          .map((p) => <String, dynamic>{
+                'name': p.name,
+                'role': p.role ?? '',
+              })
           .toList(),
       rssItems: s.rssItems
-          .map((i) => {'title': i.title, 'url': i.link, 'source': i.source})
+          .map((i) => <String, dynamic>{
+                'title': i.title,
+                'url': i.link,
+                'source': i.source,
+              })
           .toList(),
       skandale: s.skandale
-          .map((sk) => {'title': sk.title, 'description': sk.description})
+          .map((sk) => <String, dynamic>{
+                'title': sk.title,
+                'description': sk.description,
+              })
           .toList(),
       aiInsight: s.aiInsight,
-      documents: const [],
-      sanctions: const [],
-      moneyFlow: const [],
+      documents: const <Map<String, dynamic>>[],
+      sanctions: const <Map<String, dynamic>>[],
+      moneyFlow: const <Map<String, dynamic>>[],
     );
     if (!mounted) return;
     await KaninchenbauMarkdownExport.copyToClipboard(context, md);
