@@ -450,7 +450,8 @@ class _PlanetaryTransitScreenState extends State<PlanetaryTransitScreen>
   // ── TAB 3: Finsternisse-Kalender ─────────────────────────────────────────
   // Daten aus NASA GSFC Eclipse Catalog (Solar: eclipse.gsfc.nasa.gov/solar.html
   // Lunar: eclipse.gsfc.nasa.gov/lunar.html). UTC-Maxima, manuell kuratiert.
-  static const List<({DateTime date, String type, String name, String region, String meaning})> _eclipses = [
+  // Hinweis: kein `const` möglich — DateTime.utc() hat keinen const-Konstruktor.
+  static final List<({DateTime date, String type, String name, String region, String meaning})> _eclipses = [
     // 2026
     (date: _d(2026, 2, 17), type: 'Sonne (ringförmig)', name: 'Antarktis-Sonnenfinsternis', region: 'Antarktis, Südspitze Afrikas', meaning: 'Wassermann-Energie · Loslassen kollektiver Strukturen'),
     (date: _d(2026, 3, 3),  type: 'Mond (Total)', name: 'Totale Mondfinsternis', region: 'Pazifik, Amerika, Asien', meaning: 'Jungfrau · klare Erkenntnis durch Schatten'),
