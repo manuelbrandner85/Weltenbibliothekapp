@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../../data/ursprung_research_sites.dart';
+
 class UrsprungMapTab extends StatefulWidget {
   const UrsprungMapTab({super.key});
 
@@ -9,178 +11,13 @@ class UrsprungMapTab extends StatefulWidget {
   State<UrsprungMapTab> createState() => _UrsprungMapTabState();
 }
 
-class _ResearchSite {
-  final String name, badge, founded, description, status;
-  final List<String> findings, researchers;
-  final double lat, lng;
+typedef _ResearchSite = ResearchSite;
 
-  const _ResearchSite({
-    required this.name,
-    required this.badge,
-    required this.founded,
-    required this.description,
-    required this.status,
-    required this.lat,
-    required this.lng,
-    this.findings = const [],
-    this.researchers = const [],
-  });
-}
+// 56 Sites in lib/data/ursprung_research_sites.dart definiert.
+// Hier die ehemals inline-Liste ersetzt durch:
+const _sites = allUrsprungSites;
 
-const _sites = [
-  _ResearchSite(
-    name: 'Monroe Institute',
-    badge: 'Hemi-Sync',
-    founded: 'Gegründet 1974, Faber, Virginia',
-    description:
-        'Forschungszentrum für Bewusstseinserweiterung durch Hemi-Sync-Audiotechnik. '
-        'Entwickelt von Robert Monroe nach eigenen außerkörperlichen Erfahrungen. '
-        'CIA-Bericht 1983 bestätigte die Wirksamkeit des Gateway-Programms. '
-        'Heute aktiv mit öffentlichen Retreats und Forschungsprogrammen.',
-    status: 'Aktiv',
-    lat: 37.83,
-    lng: -78.77,
-    findings: [
-      'Focus 10–21 reproduzierbar durch Binaural Beats',
-      'CIA-Validierung des Gateway Experience (1983)',
-      'Über 10.000 dokumentierte Teilnehmer-Erfahrungen',
-    ],
-    researchers: ['Robert Monroe', 'Darlene Miller', 'Skip Atwater (ex-CIA)'],
-  ),
-  _ResearchSite(
-    name: 'SRI International (Stanford)',
-    badge: 'STAR GATE',
-    founded: 'Remote Viewing Programm 1972–1985',
-    description:
-        'Das Stanford Research Institute führte im Auftrag der CIA und NSA '
-        'jahrelange Experimente zu Remote Viewing durch. Forscher Hal Puthoff und Russell Targ '
-        'erzielten statistisch signifikante Ergebnisse. Ingo Swann und Pat Price '
-        'identifizierten sowjetische Militäranlagen durch Fernwahrnehmung.',
-    status: 'Abgeschlossen 1995',
-    lat: 37.45,
-    lng: -122.18,
-    findings: [
-      'Statistische Signifikanz p < 0.001 in kontrollierten Tests',
-      'Ingo Swann beschrieb Jupiter-Ringe vor Voyager-Bestätigung',
-      'Pat Price identifizierte sowjetisches Uranprogramm in Semipalatinsk',
-    ],
-    researchers: ['Hal Puthoff', 'Russell Targ', 'Ingo Swann', 'Pat Price'],
-  ),
-  _ResearchSite(
-    name: 'Esalen Institute',
-    badge: 'Human Potential',
-    founded: 'Gegründet 1962, Big Sur, Kalifornien',
-    description:
-        'Pioniierzentrum der Human Potential Movement. Verbindet westliche Psychologie '
-        'mit östlicher Philosophie und indigenem Wissen. Gastgeber für Aldous Huxley, '
-        'Alan Watts, Carlos Castaneda, Timothy Leary und andere Schlüsselfiguren '
-        'des Bewusstseins-Diskurses des 20. Jahrhunderts.',
-    status: 'Aktiv',
-    lat: 36.138,
-    lng: -121.628,
-    findings: [
-      'Grundlagen der transpersonalen Psychologie',
-      'Integration von Meditation in westliche Therapie',
-      'Erforschung von LSD-Therapie (prä-Verbot)',
-    ],
-    researchers: ['Abraham Maslow', 'Fritz Perls', 'Stanislav Grof', 'Alan Watts'],
-  ),
-  _ResearchSite(
-    name: 'Fort Meade – STAR GATE HQ',
-    badge: 'Militär-RV',
-    founded: 'Programm 1978–1995',
-    description:
-        'Hauptquartier des US-Militär Remote Viewing Programms. '
-        'Speziell ausgebildete Soldaten (Military Remote Viewers) wurden eingesetzt '
-        'für Aufklärungsoperationen. General Stubblebine forderte den flächendeckenden '
-        'Einsatz im Militär. 1995 öffentlich gemacht und offiziell aufgelöst.',
-    status: 'Aufgelöst 1995',
-    lat: 39.108,
-    lng: -76.772,
-    findings: [
-      'Geiseln in Iran 1979 lokalisiert',
-      'Nordkoreanische Tunnels kartiert',
-      'Mindestens 23 ausgebildete Military Remote Viewers',
-    ],
-    researchers: ['Ingo Swann (Trainer)', 'Joseph McMoneagle', 'David Morehouse'],
-  ),
-  _ResearchSite(
-    name: 'Princeton PEAR Lab',
-    badge: 'PEAR',
-    founded: 'Princeton Engineering Anomalies Research, 1979–2007',
-    description:
-        'Ingenieur Robert Jahn und Psychologin Brenda Dunne untersuchten 28 Jahre lang '
-        'die Wechselwirkung zwischen menschlicher Intention und Zufallsgeneratoren. '
-        'Über 2,5 Millionen Versuche zeigten konsistent kleine aber statistisch signifikante '
-        'Abweichungen wenn Probanden mentale Intention einsetzten.',
-    status: 'Abgeschlossen 2007',
-    lat: 40.344,
-    lng: -74.651,
-    findings: [
-      '2,5 Mio. Versuche: p < 10⁻¹² Gesamteffekt',
-      'Intention beeinflusst Zufallsgeneratoren minimal aber konsistent',
-      'Effektstärke unabhängig von Distanz (bis 10.000 km getestet)',
-    ],
-    researchers: ['Robert Jahn', 'Brenda Dunne'],
-  ),
-  _ResearchSite(
-    name: 'Findhorn Foundation',
-    badge: 'Spirituell',
-    founded: 'Gegründet 1962, Schottland',
-    description:
-        'Internationale Gemeinschaft und Bildungszentrum in Nordschottland. '
-        'Bekannt für das Konzept des "Co-creation with Nature" — Kommunikation mit '
-        'Pflanzengeistern als Gartenbaugrundlage. Heute UN-akkreditierte NGO mit '
-        'Programmen für nachhaltige Entwicklung und Bewusstseinswandel.',
-    status: 'Aktiv',
-    lat: 57.658,
-    lng: -3.603,
-    findings: [
-      'Ungewöhnlich große Gemüsepflanzen in karger Erde dokumentiert (1960er)',
-      'UN-akkreditierte NGO für nachhaltige Entwicklung',
-      'Über 40.000 Menschen jährlich in Bildungsprogrammen',
-    ],
-    researchers: ['Peter Caddy', 'Eileen Caddy', 'Dorothy Maclean'],
-  ),
-  _ResearchSite(
-    name: 'Skinwalker Ranch',
-    badge: 'UAP & Anomalien',
-    founded: 'Seit den 1990ern erforscht, Utah',
-    description:
-        'Privates Gelände in Utah das seit Jahrzehnten anomale Phänomene aufweist: '
-        'UAPs, Poltergeist-Aktivitäten, Viehverstümmelungen, Portale. '
-        'Bigelow Aerospace kaufte das Gelände 1996. Seit 2017 staatlich erforscht '
-        'durch das AAWSAP-Programm. Heute TV-Dokumentation "The Secret of Skinwalker Ranch".',
-    status: 'Aktiv — laufende Forschung',
-    lat: 40.258,
-    lng: -109.892,
-    findings: [
-      'Magnetische Anomalien und ungewöhnliche Strahlung dokumentiert',
-      'Über 100 Mitarbeiter-Berichte zu anomalen Erfahrungen',
-      'US-Regierung finanzierte AAWSAP-Programm (2008–2012)',
-    ],
-    researchers: ['Robert Bigelow', 'Colm Kelleher', 'George Knapp'],
-  ),
-  _ResearchSite(
-    name: 'Institute of Noetic Sciences',
-    badge: 'IONS',
-    founded: 'Gegründet 1973, Edgar Mitchell (Apollo 14)',
-    description:
-        'Gegründet von Astronaut Edgar Mitchell nach seiner Erleuchtungserfahrung auf dem '
-        'Weg von Mond zur Erde. Erforscht das Verhältnis zwischen Bewusstsein und Physik, '
-        'Heilung, Intuition und außergewöhnliche menschliche Fähigkeiten. '
-        'Verbindet strenge Wissenschaft mit spirituellen Erfahrungen.',
-    status: 'Aktiv',
-    lat: 38.3,
-    lng: -122.7,
-    findings: [
-      'Fernheilung zeigt statistisch signifikante Effekte in 30+ Studien',
-      'Präkognition reproduzierbar in kontrollierten Experimenten (Dean Radin)',
-      'Globales Bewusstseins-Projekt: Zufallsgeneratoren reagieren auf Weltevents',
-    ],
-    researchers: ['Edgar Mitchell', 'Dean Radin', 'Marilyn Schlitz'],
-  ),
-];
+// (alte _ResearchSite-Klasse + Liste folgte hier — entfernt.)
 
 class _UrsprungMapTabState extends State<UrsprungMapTab> {
   static const _cyan = Color(0xFF00D4AA);
@@ -219,6 +56,35 @@ class _UrsprungMapTabState extends State<UrsprungMapTab> {
                   ),
                 ),
               ),
+              if (s.imageUrl != null) ...[
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.network(
+                    s.imageUrl!,
+                    height: 180,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    loadingBuilder: (_, child, p) => p == null
+                        ? child
+                        : Container(
+                            height: 180,
+                            color: Colors.white.withValues(alpha: 0.04),
+                            child: const Center(
+                              child: CircularProgressIndicator(
+                                color: _cyan, strokeWidth: 2),
+                            ),
+                          ),
+                    errorBuilder: (_, __, ___) => Container(
+                      height: 180,
+                      color: Colors.white.withValues(alpha: 0.04),
+                      alignment: Alignment.center,
+                      child: Icon(s.icon,
+                          color: _cyan.withValues(alpha: 0.6), size: 48),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+              ],
               Row(
                 children: [
                   Container(

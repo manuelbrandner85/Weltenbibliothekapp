@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../../data/vorhang_power_centers.dart';
+
 class VorhangMapTab extends StatefulWidget {
   const VorhangMapTab({super.key});
 
@@ -9,146 +11,10 @@ class VorhangMapTab extends StatefulWidget {
   State<VorhangMapTab> createState() => _VorhangMapTabState();
 }
 
-class _PowerCenter {
-  final String name, description, badge, founded, influence;
-  final List<String> members, connections;
-  final double lat, lng;
+// 56 Machtzentren mit Foto-URLs in lib/data/vorhang_power_centers.dart.
+typedef _PowerCenter = PowerCenter;
 
-  const _PowerCenter({
-    required this.name,
-    required this.description,
-    required this.badge,
-    required this.founded,
-    required this.influence,
-    required this.lat,
-    required this.lng,
-    this.members = const [],
-    this.connections = const [],
-  });
-}
-
-const _centers = [
-  _PowerCenter(
-    name: 'World Economic Forum',
-    badge: 'WEF',
-    founded: 'Gegründet 1971, Klaus Schwab',
-    description:
-        'Jährliches Treffen in Davos, Schweiz. Bringt ~3.000 Führungspersönlichkeiten aus Wirtschaft, Politik und Zivilgesellschaft zusammen. Bekannt für Agenda-Setting in Bereichen wie "Great Reset" und "Fourth Industrial Revolution".',
-    influence: 'Wirtschaft · Politik · Medien',
-    lat: 46.80,
-    lng: 9.84,
-    members: ['Klaus Schwab', 'Bill Gates', 'Christine Lagarde', 'Xi Jinping (2017)'],
-    connections: ['Trilaterale Kommission', 'CFR', 'BIS'],
-  ),
-  _PowerCenter(
-    name: 'Bilderberg-Gruppe',
-    badge: 'Bilderberg',
-    founded: 'Gegründet 1954, Prince Bernhard',
-    description:
-        'Jährliches Geheimtreffen ca. 120–150 Eingeladener aus Westeuropa und Nordamerika. Keine offizielle Agenda, keine Pressemitteilungen. Kritiker sehen es als informelle Steuerungsinstanz transatlantischer Politik.',
-    influence: 'Politik · Finanzen · Medien',
-    lat: 51.98,
-    lng: 5.83,
-    members: ['Henry Kissinger', 'David Rockefeller', 'George Soros', 'Various PMs & CEOs'],
-    connections: ['CFR', 'Trilaterale Kommission', 'Chatham House'],
-  ),
-  _PowerCenter(
-    name: 'City of London',
-    badge: 'Square Mile',
-    founded: 'Eigenständig seit 1067 (Wilhelm I.)',
-    description:
-        'Eigenständiger Stadtstaat innerhalb Londons mit eigener Polizei, eigenem Lord Mayor und über 500 Jahre alter Selbstverwaltung. Beherbergt ~500 Banken und Finanzinstitute. Kein normaler Wahlbezirk – Unternehmen haben Stimmrecht.',
-    influence: 'Globales Finanzzentrum',
-    lat: 51.5155,
-    lng: -0.092,
-    members: ['Bank of England', 'Lloyd\'s of London', 'London Stock Exchange'],
-    connections: ['BIS', 'Federal Reserve', 'Rothschild-Gruppe'],
-  ),
-  _PowerCenter(
-    name: 'Vatikan',
-    badge: 'Heiliger Stuhl',
-    founded: 'Lateranvertrag 1929 (Staatsgründung)',
-    description:
-        'Kleinster Souveränstaat der Welt (0,44 km²) mit globalem Einfluss auf ~1,3 Milliarden Katholiken. Vatikanbank (IOR) steht seit Jahrzehnten im Zentrum von Skandalen. Diplomatische Beziehungen zu 183 Staaten.',
-    influence: 'Religion · Diplomatie · Finanzen',
-    lat: 41.902,
-    lng: 12.453,
-    members: ['Papst Franziskus', 'Opus Dei', 'Jesuiten-Orden', 'Vatikanbank (IOR)'],
-    connections: ['Malteserorden', 'Freimaurerlogen', 'CIA (historisch)'],
-  ),
-  _PowerCenter(
-    name: 'Council on Foreign Relations',
-    badge: 'CFR',
-    founded: 'Gegründet 1921, New York',
-    description:
-        'Einflussreichste außenpolitische Denkfabrik der USA. Mitglieder waren fast alle US-Außenminister seit 1945. Gibt das Magazin "Foreign Affairs" heraus. Gilt als intellektuelle Heimat des US-amerikanischen Establishments.',
-    influence: 'US-Außenpolitik · Medien',
-    lat: 40.769,
-    lng: -73.966,
-    members: ['Henry Kissinger', 'Zbigniew Brzezinski', 'George H.W. Bush', 'Bill Clinton'],
-    connections: ['Bilderberg', 'Trilaterale Kommission', 'Brookings Institution'],
-  ),
-  _PowerCenter(
-    name: 'Bank für Internationalen Zahlungsausgleich',
-    badge: 'BIS',
-    founded: 'Gegründet 1930, Basel',
-    description:
-        'Die "Zentralbank der Zentralbanken". Koordiniert globale Geldpolitik und setzt Standards (Basel I/II/III). Besitzt diplomatische Immunität – kein Staat darf ihre Räumlichkeiten durchsuchen. Gegründet nach dem Ersten Weltkrieg.',
-    influence: 'Globale Geldpolitik',
-    lat: 47.544,
-    lng: 7.601,
-    members: ['Federal Reserve', 'EZB', 'Bank of England', '60+ Zentralbanken'],
-    connections: ['IMF', 'Weltbank', 'City of London'],
-  ),
-  _PowerCenter(
-    name: 'Trilaterale Kommission',
-    badge: 'Trilateral',
-    founded: 'Gegründet 1973, David Rockefeller',
-    description:
-        'Nichtstaatliche Organisation zur Koordination zwischen Nordamerika, Westeuropa und Japan. Von David Rockefeller und Zbigniew Brzezinski gegründet als Reaktion auf das Ende von Bretton Woods. Kritiker: Supranationale Regierung im Verborgenen.',
-    influence: 'Transatlantische Koordination',
-    lat: 50.85,
-    lng: 4.35,
-    members: ['David Rockefeller', 'Jimmy Carter', 'George H.W. Bush', 'Bill Clinton'],
-    connections: ['CFR', 'Bilderberg', 'WEF'],
-  ),
-  _PowerCenter(
-    name: 'Skull & Bones',
-    badge: 'Order 322',
-    founded: 'Gegründet 1832, Yale University',
-    description:
-        'Geheimer Studentenbund der Yale University. Jährlich nur 15 neue Mitglieder ("Tapped"). Alumni dominieren CIA, Supreme Court und Wall Street. Beide Kandidaten der US-Wahl 2004 (Bush & Kerry) waren Mitglieder.',
-    influence: 'US-Elite · Geheimdienste',
-    lat: 41.311,
-    lng: -72.928,
-    members: ['George H.W. Bush', 'George W. Bush', 'John Kerry', 'William Taft'],
-    connections: ['CIA (historisch)', 'CFR', 'Russische Oligarchen (Gegenstück)'],
-  ),
-  _PowerCenter(
-    name: 'Bohemian Grove',
-    badge: 'Bohemian Club',
-    founded: 'Seit 1878, Monte Rio, Kalifornien',
-    description:
-        'Jährliches Treffen (~2.500 Personen) im Redwood-Wald Nordkaliforniens. Zwei Wochen im Juli, strikt männlich, keine Presse. Richard Nixon: "Frömmste Verdammtheit auf der Erde." Hauptaktivität lt. Mitgliedern: Networking und Entspannung.',
-    influence: 'US-Politik · Technologie · Finanzen',
-    lat: 38.527,
-    lng: -123.003,
-    members: ['Nixon', 'Reagan', 'Kissinger', 'Clint Eastwood', 'CEOs großer Konzerne'],
-    connections: ['CFR', 'Skull & Bones', 'Bilderberg'],
-  ),
-  _PowerCenter(
-    name: 'Chatham House',
-    badge: 'RIIA',
-    founded: 'Royal Institute of International Affairs, 1920',
-    description:
-        'Britisches Pendant zum CFR. Bekannt für die "Chatham House Rule": Informationen aus Meetings dürfen genutzt, aber nicht der Quelle zugeordnet werden. Beeinflusst britische Außenpolitik seit dem Ersten Weltkrieg.',
-    influence: 'Britische Außenpolitik',
-    lat: 51.507,
-    lng: -0.135,
-    members: ['Boris Johnson', 'Tony Blair', 'MI6-Direktoren', 'Top-Journalisten'],
-    connections: ['Bilderberg', 'CFR', 'Five Eyes'],
-  ),
-];
+const _centers = allVorhangCenters;
 
 class _VorhangMapTabState extends State<VorhangMapTab> {
   static const _gold = Color(0xFFC9A84C);
@@ -187,6 +53,37 @@ class _VorhangMapTabState extends State<VorhangMapTab> {
                   ),
                 ),
               ),
+              if (c.imageUrl != null) ...[
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.network(
+                    c.imageUrl!,
+                    height: 180,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    loadingBuilder: (_, child, p) => p == null
+                        ? child
+                        : Container(
+                            height: 180,
+                            color: Colors.white.withValues(alpha: 0.04),
+                            child: const Center(
+                              child: CircularProgressIndicator(
+                                color: _gold,
+                                strokeWidth: 2,
+                              ),
+                            ),
+                          ),
+                    errorBuilder: (_, __, ___) => Container(
+                      height: 180,
+                      color: Colors.white.withValues(alpha: 0.04),
+                      alignment: Alignment.center,
+                      child: Icon(c.icon,
+                          color: _gold.withValues(alpha: 0.6), size: 48),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+              ],
               Row(
                 children: [
                   Container(
