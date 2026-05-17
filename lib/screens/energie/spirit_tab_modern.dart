@@ -20,6 +20,8 @@ import 'calculators/aura_quiz_screen.dart'; // 🌈 12-Fragen-Aura-Quiz
 import 'calculators/archetype_quiz_screen.dart'; // 🧠 Pearson-Archetypen-Quiz
 import 'calculators/relationship_numerology_screen.dart'; // 💕 Synastrie
 import 'calculators/biorhythm_compatibility_screen.dart'; // 📊 Bio-Kompat
+import 'calculators/god_oracle_chat_screen.dart'; // 🏛️ Götter-KI-Dialog
+import 'calculators/dream_pattern_analysis_screen.dart'; // 💭 Traum-Muster
 import 'calculators/new_spirit_tool_screens.dart';
 import 'meditation_timer_screen.dart'; // MeditationTimerScreen (canonical, deduplicated)
 import 'calculators/moon_calendar_tool_screen.dart'; // 🌕 v19 Mondkalender
@@ -382,6 +384,16 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'category': 'new',
         'screen': const GoddessOracleScreen(),
       },
+      // 🏛️ Götter-KI-Dialog — chatte mit der Persona eines gewählten Gottes
+      {
+        'icon': Icons.forum,
+        'iconEmoji': '🏛️',
+        'title': 'Götter-Dialog',
+        'subtitle': 'KI-Chat mit 17 Pantheons',
+        'color': const Color(0xFF6A1B9A),
+        'category': 'new',
+        'screen': const GodOracleChatScreen(),
+      },
       
       // ═══════════════════════════════════════════════════════════
       // 🆕 V115 MEGA UPDATE - NEUE SPIRIT-TOOLS
@@ -396,6 +408,16 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'color': const Color(0xFF1A237E),
         'category': 'new',
         'screen': const DreamInterpretationToolScreen(),
+      },
+      // 💭 Traum-Muster — KI-Jungianische Analyse über die letzten 60 Träume
+      {
+        'icon': Icons.analytics,
+        'iconEmoji': '🔮',
+        'title': 'Traum-Muster KI',
+        'subtitle': 'Jung-Analyse aller Träume',
+        'color': const Color(0xFF1A237E),
+        'category': 'new',
+        'screen': const DreamPatternAnalysisScreen(),
       },
 
       // 🧘 Körperscan (v21 – Chakra-Symptom-Scanner)
