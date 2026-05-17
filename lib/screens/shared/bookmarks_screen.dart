@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import '../../services/bookmark_service.dart';
 import '../../theme/wb_cinematic_tokens.dart';
+import '../bookmark_collections_screen.dart'; // 📁 L5
 import '../../widgets/cinematic/wb_glass_app_bar.dart';
 import '../../widgets/cinematic/wb_vignette.dart';
 import 'package:intl/intl.dart';
@@ -147,6 +148,16 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
         title: 'Bookmarks',
         world: WBWorld.neutral,
         actions: [
+          // 📁 L5: Collections/Ordner-Manager
+          IconButton(
+            icon: const Icon(Icons.folder_special_outlined, color: Colors.white),
+            tooltip: 'Sammlungen',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const BookmarkCollectionsScreen(),
+              ),
+            ),
+          ),
           IconButton(
             icon: const Icon(Icons.analytics_outlined, color: Colors.white),
             onPressed: () => _showStatistics(),
