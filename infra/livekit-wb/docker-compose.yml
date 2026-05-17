@@ -1,19 +1,19 @@
 name: livekit-weltenbibliothek
 
-# Weltenbibliothek LiveKit-Server mit eingebautem TURN-Relay.
-# Ansatz identisch zu Mensaena (livekit-final-fix.sh): built-in TURN,
-# domain: '', external_tls: false — kein separater coturn nötig.
+# Weltenbibliothek LiveKit-Server.
+# TLS-Termination + Routing macht der bestehende Traefik-Container
+# (traefik-jfee-traefik-1) auf dem VPS via Docker-Provider-Labels.
+# Traefik auf host-network → erreicht den Container über die bridge-IP.
 #
-# MENSAENA-SAFETY-LISTE (vor jedem manuellen Eingriff lesen!):
+# MENSAENA-SAFETY-LISTE:
 #   ✓ Eigener Container-Name `livekit-weltenbibliothek` (Mensaena: livekit-livekit-1)
 #   ✓ Eigenes Docker-Network `livekit-wb-net` (kein Cross-Talk)
-#   ✓ Signal-Port 7980 (Mensaena: 7880), TCP 7981 (Mensaena: 7881)
+#   ✓ Signal-Port 7980 (Mensaena: 7884), TCP 7981 (Mensaena: 7885)
 #   ✓ Media-UDP 60001-61000 (Mensaena: 50000-60000) — KEIN Overlap
 #   ✓ TURN-Port 3479 UDP/TCP (Mensaena: 3478) — KEIN Overlap
-#   ✓ Verzeichnis /docker/livekit-wb/ (Mensaena: andere Lokation)
+#   ✓ Eigener Traefik-Router-Name `livekit-wb` (Mensaena: `livekit`)
 #
 # Starten:  docker compose -f /docker/livekit-wb/docker-compose.yml up -d
-# Stoppen:  docker compose -f /docker/livekit-wb/docker-compose.yml down
 # Logs:     docker compose -f /docker/livekit-wb/docker-compose.yml logs -f
 
 services:
@@ -23,10 +23,8 @@ services:
     container_name: livekit-weltenbibliothek
     restart: unless-stopped
     ports:
-      # HTTP/WS-Signal — Caddy adressiert den Container via Container-Name
-      # (`livekit-weltenbibliothek:7980`) im gemeinsamen Docker-Netzwerk
-      # (s. deploy_livekit_wb.yml: docker network connect). Kein Host-Bind
-      # nötig, daher 127.0.0.1 — keine externe Angriffsfläche.
+      # HTTP/WS-Signal — Traefik (host network) erreicht via Container-IP auf
+      # livekit-wb-net. Bind auf 127.0.0.1 hier nur als Diagnose-Loopback.
       - "127.0.0.1:7980:7980/tcp"
       # RTC TCP-Fallback (Clients hinter strikter Firewall)
       - "7981:7981/tcp"
@@ -36,19 +34,22 @@ services:
       # Relay für Mobilfunk-CGNAT / symmetrisches NAT
       - "3479:3479/udp"
       - "3479:3479/tcp"
-      # TURNS (TURN-over-TLS) auf 5349 UDP+TCP für restriktive Corp-/Sat-Firewalls
-      # die nur HTTPS-Ports erlauben. LiveKit terminiert hier TLS selbst (cert s. volume mount).
-      - "5349:5349/udp"
-      - "5349:5349/tcp"
     volumes:
       - ./livekit.yaml:/etc/livekit.yaml:ro
-      # Caddy-managed Let's-Encrypt-Cert für TURNS, vom Deploy-Workflow hierhin
-      # gespiegelt (./cert/turn-cert.pem + turn-key.pem). Read-only.
-      # Renewal: VPS-Cron alle 14 Tage kopiert frisch + restartet Container.
-      - ./cert:/etc/livekit-cert:ro
     command: --config /etc/livekit.yaml
     networks:
       - livekit-wb-net
+    labels:
+      # ─── Traefik-Routing (Pattern von Mensaena's livekit-livekit-1) ───
+      # Subdomain → diesem Container's Port 7980. TLS via Let's-Encrypt-Resolver
+      # `letsencrypt` (von Mensaena's Traefik-Static-Config bereitgestellt).
+      - "traefik.enable=true"
+      - "traefik.http.routers.livekit-wb.entrypoints=websecure"
+      - "traefik.http.routers.livekit-wb.rule=Host(`livekit-wb.srv1438024.hstgr.cloud`)"
+      - "traefik.http.routers.livekit-wb.tls.certresolver=letsencrypt"
+      - "traefik.http.services.livekit-wb.loadbalancer.server.port=7980"
+      # Traefik soll WSS/Long-Polling nicht abbrechen — lange Timeouts
+      - "traefik.http.services.livekit-wb.loadbalancer.responseforwarding.flushinterval=100ms"
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:7980"]
       interval: 30s

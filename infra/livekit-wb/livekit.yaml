@@ -1,7 +1,9 @@
 # LiveKit-Server-Konfiguration — Weltenbibliothek
 #
 # Eigene Instanz, getrennt von Mensaena (kein gemeinsamer Container/Key/Port).
-# Container hört intern auf Port 7980 (HTTP). Mensaena's Caddy terminiert TLS.
+# Container hört intern auf Port 7980 (HTTP). Mensaena's Traefik terminiert TLS
+# und routet livekit-wb.srv1438024.hstgr.cloud:443 → diesen Container:7980
+# (Docker-Provider via Labels in docker-compose.yml).
 #
 # 🔐 SECRET-HANDLING:
 #   - Dieser File enthält KEIN Secret mehr. Der API-Schlüssel-Wert wird
@@ -27,21 +29,15 @@ rtc:
   use_external_ip: true
   node_ip: 72.62.154.95  # Explizite externe IP → verhindert dass LiveKit interne Docker-IPs als ICE-Kandidaten bewirbt
 
-# LiveKit-interner TURN-Relay (identisch zu Mensaena-Ansatz der zuverlässig funktioniert).
-# UDP 3479: Standard TURN für symmetrisches NAT (Mobilfunk-CGNAT, Firmen-VPN, Hotel-WLAN).
-# TCP/UDP 5349: TURNS (TURN-over-TLS) für restriktive Corp-/Sat-Firewalls die nur 443/5349 erlauben.
-# Cert wird vom Deploy-Workflow aus Caddy's data-dir gespiegelt (./cert Mount).
-# Renewal alle ~60 Tage durch Caddy → VPS-Cron stupst LiveKit-Container an
-# (Cron-Setup ebenfalls im Deploy-Workflow).
-# Mensaena-Schutz: Ports 3479+5349 statt 3478+5348 (Mensaena-Defaults).
+# LiveKit-interner TURN-Relay (UDP/TCP, ohne TLS).
+# UDP 3479 deckt symmetrisches NAT ab: Mobilfunk-CGNAT, Firmen-VPN, Hotel-WLAN.
+# TURNS (5349 mit TLS) ist temporär aus — bräuchte Cert aus Traefik's acme.json,
+# was wir später separat lösen (TODO).
 turn:
   enabled: true
   udp_port: 3479
-  tls_port: 5349
-  domain: livekit-wb.srv1438024.hstgr.cloud
-  external_tls: true
-  cert_file: /etc/livekit-cert/turn-cert.pem
-  key_file: /etc/livekit-cert/turn-key.pem
+  domain: ""
+  external_tls: false
 
 room:
   auto_create: true
