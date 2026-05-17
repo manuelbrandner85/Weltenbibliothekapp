@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../services/spirit_profile_service.dart';
 import '../../services/storage_service.dart';
 import '../../services/username_availability_service.dart';
+import '../../widgets/responsive_web_container.dart';
 import 'package:flutter/services.dart'; // ✅ Für InputFormatters
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint, kIsWeb;
 import 'package:intl/intl.dart';
@@ -839,7 +840,9 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
       // unten im Form reicht (User-Wunsch: nur EIN Save-Button).
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
+          : ResponsiveWebContainer(
+              variant: WebContainerVariant.compact,
+              child: SingleChildScrollView(
               padding: const EdgeInsets.all(20),
               child: Form(
                 key: _formKey,
@@ -1317,6 +1320,7 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
                   ],
                 ),
               ),
+            ),
             ),
     ),
     );

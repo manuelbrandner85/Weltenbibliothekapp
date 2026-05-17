@@ -6,6 +6,7 @@ import '../config/wb_design.dart'; // 🎨 Design-Tokens
 import '../theme/wb_cinematic_tokens.dart';
 import '../widgets/cinematic/wb_glass_app_bar.dart';
 import '../widgets/cinematic/wb_vignette.dart';
+import '../widgets/responsive_web_container.dart';
 import '../services/storage_service.dart';
 import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart'; // 📸 Image Picker
@@ -259,7 +260,9 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
           const Positioned.fill(child: IgnorePointer(child: WBVignette())),
           _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
+          : ResponsiveWebContainer(
+              variant: WebContainerVariant.compact,
+              child: SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -314,11 +317,12 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                 ],
               ),
             ),
+            ),
         ],
       ),
     );
   }
-  
+
   /// Section-Header mit Gradient-Bar
   Widget _buildSectionHeader(String title, Color color) {
     return Row(
