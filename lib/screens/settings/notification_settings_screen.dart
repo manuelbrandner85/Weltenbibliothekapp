@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
  // OpenClaw v2.0
 import 'package:flutter/foundation.dart';
 import '../../services/cloudflare_push_service.dart';
+import '../../services/quiet_hours_service.dart'; // 🌙 M1
+import '../../services/storage_service.dart';
 import '../../core/storage/unified_storage_service.dart';
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_glass_app_bar.dart';
@@ -280,6 +282,10 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                 ),
               );
             }),
+
+          const SizedBox(height: 16),
+          // 🌙 M1: Quiet-Hours für stille Stunden
+          const _QuietHoursCard(),
         ],
       ),
         ],
@@ -334,5 +340,121 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
     } catch (e) {
       return 'Unbekannt';
     }
+  }
+}
+
+// 🌙 M1: Quiet-Hours-Karte für Notifications
+class _QuietHoursCard extends StatefulWidget {
+  const _QuietHoursCard();
+  @override
+  State<_QuietHoursCard> createState() => _QuietHoursCardState();
+}
+
+class _QuietHoursCardState extends State<_QuietHoursCard> {
+  QuietHoursPrefs _prefs =
+      const QuietHoursPrefs(enabled: false, startHour: 22, endHour: 7);
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final p = await QuietHoursService.instance.load();
+    if (mounted) setState(() { _prefs = p; _loading = false; });
+  }
+
+  Future<void> _save(QuietHoursPrefs p) async {
+    setState(() => _prefs = p);
+    final storage = StorageService();
+    final userId = storage.getMaterieProfile()?.userId
+        ?? storage.getEnergieProfile()?.userId;
+    await QuietHoursService.instance.save(p, userId: userId);
+  }
+
+  Future<void> _pickHour({required bool isStart}) async {
+    final current = TimeOfDay(
+      hour: isStart ? _prefs.startHour : _prefs.endHour,
+      minute: 0,
+    );
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: current,
+      builder: (ctx, child) => MediaQuery(
+        data: MediaQuery.of(ctx).copyWith(alwaysUse24HourFormat: true),
+        child: child!,
+      ),
+    );
+    if (picked == null) return;
+    await _save(QuietHoursPrefs(
+      enabled: _prefs.enabled,
+      startHour: isStart ? picked.hour : _prefs.startHour,
+      endHour: isStart ? _prefs.endHour : picked.hour,
+    ));
+  }
+
+  String _fmt(int h) => '${h.toString().padLeft(2, '0')}:00';
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) {
+      return const Card(
+        child: SizedBox(
+          height: 80,
+          child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+        ),
+      );
+    }
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(4),
+        child: Column(
+          children: [
+            SwitchListTile(
+              title: const Text('Stille Stunden',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              subtitle: Text(
+                _prefs.enabled
+                    ? 'Aktiv von ${_fmt(_prefs.startHour)} bis ${_fmt(_prefs.endHour)} — keine Push/In-App-Notifs'
+                    : 'Deaktiviert — Notifications kommen jederzeit',
+              ),
+              value: _prefs.enabled,
+              onChanged: (v) => _save(QuietHoursPrefs(
+                enabled: v,
+                startHour: _prefs.startHour,
+                endHour: _prefs.endHour,
+              )),
+              secondary: Icon(
+                _prefs.enabled ? Icons.bedtime : Icons.bedtime_outlined,
+                color: _prefs.enabled ? const Color(0xFF7C4DFF) : Colors.grey,
+              ),
+            ),
+            if (_prefs.enabled) ...[
+              const Divider(height: 1),
+              Row(
+                children: [
+                  Expanded(
+                    child: ListTile(
+                      title: const Text('Beginn'),
+                      subtitle: Text(_fmt(_prefs.startHour)),
+                      onTap: () => _pickHour(isStart: true),
+                    ),
+                  ),
+                  Expanded(
+                    child: ListTile(
+                      title: const Text('Ende'),
+                      subtitle: Text(_fmt(_prefs.endHour)),
+                      onTap: () => _pickHour(isStart: false),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 }
