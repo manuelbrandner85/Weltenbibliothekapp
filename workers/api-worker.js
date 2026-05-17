@@ -1711,6 +1711,130 @@ export default {
       }
     }
 
+    // ── LiveKit Moderation (Kick / Mute) ──────────────────────
+    // POST /api/livekit/moderate
+    //   Body: { roomName, identity, action: 'kick'|'mute'|'unmute', adminUsername }
+    //
+    // Admin/Moderator-only. Re-prüft die Rolle serverseitig gegen profiles.role
+    // (verhindert dass ein normaler User per curl Teilnehmer rauswirft).
+    //
+    // - kick:   livekit.RoomService/RemoveParticipant
+    // - mute:   ListParticipants → audio track sid finden → MutePublishedTrack muted=true
+    // - unmute: dito, muted=false (User muss seinerseits noch wieder publishen)
+    if (path === '/api/livekit/moderate' && method === 'POST') {
+      try {
+        const body = await request.json().catch(() => ({}));
+        const { roomName, identity, action, adminUsername } = body;
+        if (!roomName || !identity || !action || !adminUsername) {
+          return jsonResponse({ error: 'roomName, identity, action, adminUsername erforderlich' }, 400);
+        }
+        if (!['kick', 'mute', 'unmute'].includes(action)) {
+          return jsonResponse({ error: 'action muss kick|mute|unmute sein' }, 400);
+        }
+
+        const apiKey = env.LIVEKIT_API_KEY;
+        const apiSecret = env.LIVEKIT_API_SECRET;
+        const livekitUrl = (env.LIVEKIT_URL || '').replace(/^wss?:\/\//, 'https://');
+        if (!apiKey || !apiSecret || !livekitUrl) {
+          return jsonResponse({ error: 'LiveKit serverseitig nicht konfiguriert' }, 503);
+        }
+
+        // 1) Admin/Mod-Rolle gegen DB verifizieren (Username case-insensitive).
+        const svcKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY || '';
+        const profRes = await fetch(
+          `${SUPABASE_URL}/rest/v1/profiles?username=ilike.${encodeURIComponent(adminUsername)}&select=role&limit=1`,
+          { headers: { 'apikey': svcKey, 'Authorization': `Bearer ${svcKey}` } },
+        );
+        const profArr = await profRes.json().catch(() => []);
+        const role = Array.isArray(profArr) && profArr[0] ? (profArr[0].role || '').toLowerCase() : '';
+        const allowedRoles = ['root_admin', 'root-admin', 'admin', 'moderator'];
+        if (!allowedRoles.includes(role)) {
+          return jsonResponse({ error: 'Keine Berechtigung (Rolle: ' + (role || 'unbekannt') + ')' }, 403);
+        }
+
+        // 2) Admin-JWT für RoomService (roomAdmin-Grant auf dem konkreten Raum).
+        const enc = new TextEncoder();
+        const b64urlBytes = (bytes) => btoa(String.fromCharCode(...bytes))
+          .replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+        const b64url = (str) => b64urlBytes(enc.encode(str));
+        const now = Math.floor(Date.now() / 1000);
+        const header = b64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+        const payload = b64url(JSON.stringify({
+          iss: apiKey,
+          sub: 'moderation-' + adminUsername.toLowerCase(),
+          nbf: now,
+          exp: now + 300,
+          video: { roomAdmin: true, room: roomName },
+        }));
+        const key = await crypto.subtle.importKey(
+          'raw', enc.encode(apiSecret),
+          { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'],
+        );
+        const sigBytes = await crypto.subtle.sign('HMAC', key, enc.encode(`${header}.${payload}`));
+        const adminJwt = `${header}.${payload}.${b64urlBytes(new Uint8Array(sigBytes))}`;
+
+        const lkHeaders = {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${adminJwt}`,
+        };
+        const twirp = (rpc) => `${livekitUrl}/twirp/livekit.RoomService/${rpc}`;
+
+        // 3a) KICK
+        if (action === 'kick') {
+          const res = await fetch(twirp('RemoveParticipant'), {
+            method: 'POST',
+            headers: lkHeaders,
+            body: JSON.stringify({ room: roomName, identity }),
+          });
+          if (!res.ok) {
+            const errBody = await res.json().catch(() => ({}));
+            return jsonResponse({ error: errBody.message || `Kick fehlgeschlagen (HTTP ${res.status})` }, 502);
+          }
+          return jsonResponse({ success: true, action: 'kick', identity });
+        }
+
+        // 3b) MUTE / UNMUTE — audio track sid des Teilnehmers ermitteln
+        const listRes = await fetch(twirp('ListParticipants'), {
+          method: 'POST',
+          headers: lkHeaders,
+          body: JSON.stringify({ room: roomName }),
+        });
+        if (!listRes.ok) {
+          const errBody = await listRes.json().catch(() => ({}));
+          return jsonResponse({ error: errBody.message || `ListParticipants fehlgeschlagen (HTTP ${listRes.status})` }, 502);
+        }
+        const listBody = await listRes.json().catch(() => ({}));
+        const participants = listBody.participants || [];
+        const target = participants.find((p) => p.identity === identity);
+        if (!target) {
+          return jsonResponse({ error: 'Teilnehmer nicht im Raum gefunden' }, 404);
+        }
+        // type 0 = AUDIO, 1 = VIDEO (LiveKit TrackType enum)
+        const audioTrack = (target.tracks || []).find((t) => t.type === 'AUDIO' || t.type === 0);
+        if (!audioTrack || !audioTrack.sid) {
+          return jsonResponse({ error: 'Kein Audio-Track gefunden — User ist evtl. schon stumm' }, 404);
+        }
+
+        const muteRes = await fetch(twirp('MutePublishedTrack'), {
+          method: 'POST',
+          headers: lkHeaders,
+          body: JSON.stringify({
+            room: roomName,
+            identity,
+            track_sid: audioTrack.sid,
+            muted: action === 'mute',
+          }),
+        });
+        if (!muteRes.ok) {
+          const errBody = await muteRes.json().catch(() => ({}));
+          return jsonResponse({ error: errBody.message || `Mute fehlgeschlagen (HTTP ${muteRes.status})` }, 502);
+        }
+        return jsonResponse({ success: true, action, identity, track_sid: audioTrack.sid });
+      } catch (e) {
+        return errorResponse(`Moderation fehlgeschlagen: ${e.message}`);
+      }
+    }
+
     // ── Voice-Session Tracking ────────────────────────────────
     // POST /api/voice/session/join   { roomName, world, userId, username, displayName }
     // POST /api/voice/session/leave  { sessionId }

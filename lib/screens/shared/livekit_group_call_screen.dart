@@ -26,9 +26,11 @@ import '../../services/cowatch_service.dart';
 import '../../services/incall_chat_service.dart';
 import '../../services/livekit_call_service.dart';
 import '../../services/live_caption_service.dart';
+import '../../services/livekit_moderation_service.dart';
 import '../../services/pip_service.dart';
 import '../../services/recording_service.dart';
 import '../../services/soundscape_service.dart';
+import '../../services/storage_service.dart';
 import '../../widgets/cowatch_panel.dart';
 import '../../widgets/incall_chat_panel.dart';
 import '../../widgets/live_caption_overlay.dart';
@@ -90,10 +92,26 @@ class _LiveKitGroupCallScreenState
   late final AnimationController _bgController;
   late final Animation<double> _bgAnimation;
 
+  // 🛡️ Moderation: lokale Rolle aus dem persistierten Profil; wir trauen ihr
+  // hier nur für die UI (Buttons ein-/ausblenden) — der Worker re-validiert
+  // serverseitig gegen profiles.role bevor er irgendwas an LiveKit absetzt.
+  bool _isModerator = false;
+  String _moderatorUsername = '';
+
+  void _resolveModeratorRole() {
+    final storage = StorageService();
+    final m = storage.getMaterieProfile();
+    final e = storage.getEnergieProfile();
+    final role = (m?.role ?? e?.role ?? '').toLowerCase().replaceAll('-', '_');
+    _isModerator = role == 'root_admin' || role == 'admin' || role == 'moderator';
+    _moderatorUsername = (m?.username ?? e?.username ?? '').trim();
+  }
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _resolveModeratorRole();
     _bgController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 6),
@@ -513,6 +531,9 @@ class _LiveKitGroupCallScreenState
                 qualityFor: svc.connectionQualityFor,
                 pinnedIdentity: svc.pinnedIdentity,
                 onSpotlight: (id) => svc.sendSpotlight(id),
+                roomName: widget.roomName,
+                isModerator: _isModerator,
+                moderatorUsername: _moderatorUsername,
               );
             }
             return _ParticipantGrid(
@@ -533,6 +554,9 @@ class _LiveKitGroupCallScreenState
               activeSpeakers: speakers,
               qualityFor: svc.connectionQualityFor,
               onSpotlight: (id) => svc.sendSpotlight(id),
+              roomName: widget.roomName,
+              isModerator: _isModerator,
+              moderatorUsername: _moderatorUsername,
             );
           },
         );
@@ -2092,6 +2116,10 @@ class _ParticipantGrid extends StatelessWidget {
   final Set<String> activeSpeakers;
   // 🔦 B11: Spotlight-Callback (identity → für alle pinnen)
   final void Function(String identity)? onSpotlight;
+  // 🛡️ Moderation
+  final String? roomName;
+  final bool isModerator;
+  final String moderatorUsername;
 
   const _ParticipantGrid({
     required this.world,
@@ -2111,6 +2139,9 @@ class _ParticipantGrid extends StatelessWidget {
     required this.qualityFor,
     this.activeSpeakers = const <String>{},
     this.onSpotlight,
+    this.roomName,
+    this.isModerator = false,
+    this.moderatorUsername = '',
   });
 
   /// Map: index → (videoTrack, micActive, handRaised, avatarUrl)
@@ -2178,8 +2209,18 @@ class _ParticipantGrid extends StatelessWidget {
           : (i - 1 < identitiesSorted.length ? identitiesSorted[i - 1] : '');
       final name = allNames[i];
       // 🔦 B11: Long-Press nur für Remote-Teilnehmer (lokaler pinnt sich nicht selbst)
-      final spotlight = (!isLocal && id.isNotEmpty && onSpotlight != null)
-          ? () => _showSpotlightSheet(context, name, id, accent, onSpotlight!)
+      final spotlight = (!isLocal && id.isNotEmpty &&
+              (onSpotlight != null || (isModerator && roomName != null)))
+          ? () => _showParticipantSheet(
+                context,
+                name: name,
+                identity: id,
+                accent: accent,
+                onSpotlight: onSpotlight,
+                roomName: roomName,
+                isModerator: isModerator,
+                moderatorUsername: moderatorUsername,
+              )
           : null;
       // B3: Identity-Key sorgt für stable Element-Tracking im Grid;
       // TweenAnimationBuilder fadet Tile beim ersten Auftreten sanft ein.
@@ -3800,13 +3841,36 @@ class _QualityDot extends StatelessWidget {
 // ═══════════════════════════════════════════════════════════════════════════
 
 // 🔦 B11: Spotlight-Bottom-Sheet — zeigt "Für alle pinnen" Option
-void _showSpotlightSheet(
-  BuildContext context,
-  String name,
-  String identity,
-  Color accent,
-  void Function(String) onSpotlight,
-) {
+void _showParticipantSheet(
+  BuildContext context, {
+  required String name,
+  required String identity,
+  required Color accent,
+  void Function(String identity)? onSpotlight,
+  String? roomName,
+  bool isModerator = false,
+  String moderatorUsername = '',
+}) {
+  Future<void> runModeration(LiveKitModerationAction action, String label) async {
+    final messenger = ScaffoldMessenger.of(context);
+    Navigator.pop(context);
+    messenger.showSnackBar(SnackBar(
+      content: Text('⏳ $label …'),
+      duration: const Duration(seconds: 2),
+      backgroundColor: const Color(0xFF1A1428),
+    ));
+    final res = await LiveKitModerationService.moderate(
+      roomName: roomName ?? '',
+      identity: identity,
+      action: action,
+      adminUsername: moderatorUsername,
+    );
+    messenger.showSnackBar(SnackBar(
+      content: Text(res.ok ? '✅ $label erfolgreich' : '❌ ${res.error ?? 'Fehler'}'),
+      backgroundColor: res.ok ? Colors.green.shade800 : Colors.red.shade800,
+    ));
+  }
+
   showModalBottomSheet(
     context: context,
     backgroundColor: const Color(0xFF0D0D1A),
@@ -3826,28 +3890,84 @@ void _showSpotlightSheet(
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-          const SizedBox(height: 16),
-          ListTile(
-            leading: CircleAvatar(
-              backgroundColor: accent.withValues(alpha: 0.15),
-              child: Icon(Icons.push_pin_rounded, color: accent),
-            ),
-            title: Text(
-              'Für alle pinnen',
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            subtitle: Text(
-              '$name wird für alle Teilnehmer hervorgehoben',
-              style: TextStyle(color: Colors.white.withValues(alpha: 0.55)),
-            ),
-            onTap: () {
-              Navigator.pop(context);
-              onSpotlight(identity);
-            },
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.only(top: 8, bottom: 4),
+            child: Text(name,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                )),
           ),
+          const SizedBox(height: 8),
+          if (onSpotlight != null)
+            ListTile(
+              leading: CircleAvatar(
+                backgroundColor: accent.withValues(alpha: 0.15),
+                child: Icon(Icons.push_pin_rounded, color: accent),
+              ),
+              title: const Text(
+                'Für alle pinnen',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
+              subtitle: Text(
+                'Wird für alle Teilnehmer hervorgehoben',
+                style: TextStyle(color: Colors.white.withValues(alpha: 0.55)),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                onSpotlight(identity);
+              },
+            ),
+          if (isModerator && roomName != null && roomName.isNotEmpty) ...[
+            const Divider(color: Colors.white12, height: 1),
+            ListTile(
+              leading: const CircleAvatar(
+                backgroundColor: Color(0x33FF8A00),
+                child: Icon(Icons.mic_off_rounded, color: Color(0xFFFF8A00)),
+              ),
+              title: const Text(
+                'Mikrofon stummschalten',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
+              subtitle: Text(
+                'Audio-Track wird serverseitig gemutet',
+                style: TextStyle(color: Colors.white.withValues(alpha: 0.55)),
+              ),
+              onTap: () => runModeration(LiveKitModerationAction.mute, 'Stummgeschaltet'),
+            ),
+            ListTile(
+              leading: const CircleAvatar(
+                backgroundColor: Color(0x3300C896),
+                child: Icon(Icons.mic_rounded, color: Color(0xFF00C896)),
+              ),
+              title: const Text(
+                'Stummschaltung aufheben',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
+              subtitle: Text(
+                'User muss ggf. selbst wieder publishen',
+                style: TextStyle(color: Colors.white.withValues(alpha: 0.55)),
+              ),
+              onTap: () => runModeration(LiveKitModerationAction.unmute, 'Aufgehoben'),
+            ),
+            ListTile(
+              leading: const CircleAvatar(
+                backgroundColor: Color(0x33E53935),
+                child: Icon(Icons.person_remove_rounded, color: Color(0xFFE53935)),
+              ),
+              title: const Text(
+                'Aus Raum entfernen',
+                style: TextStyle(color: Color(0xFFE53935), fontWeight: FontWeight.bold),
+              ),
+              subtitle: Text(
+                'Teilnehmer wird disconnected',
+                style: TextStyle(color: Colors.white.withValues(alpha: 0.55)),
+              ),
+              onTap: () => runModeration(LiveKitModerationAction.kick, 'Entfernt'),
+            ),
+          ],
         ],
       ),
     ),
@@ -3873,6 +3993,10 @@ class _SpeakerView extends StatelessWidget {
   final String? pinnedIdentity;
   // 🔦 B11: Spotlight-Callback
   final void Function(String identity)? onSpotlight;
+  // 🛡️ Moderation
+  final String? roomName;
+  final bool isModerator;
+  final String moderatorUsername;
 
   const _SpeakerView({
     required this.world,
@@ -3892,6 +4016,9 @@ class _SpeakerView extends StatelessWidget {
     required this.qualityFor,
     required this.pinnedIdentity,
     this.onSpotlight,
+    this.roomName,
+    this.isModerator = false,
+    this.moderatorUsername = '',
   });
 
   @override
@@ -3993,8 +4120,18 @@ class _SpeakerView extends StatelessWidget {
                     avatar = remoteAvatarUrl(id);
                     video = remoteVideoTracks[id];
                   }
-                  final spotlight = (!isLocal && id.isNotEmpty && onSpotlight != null)
-                      ? () => _showSpotlightSheet(context, name, id, accent, onSpotlight!)
+                  final spotlight = (!isLocal && id.isNotEmpty &&
+                          (onSpotlight != null || (isModerator && roomName != null)))
+                      ? () => _showParticipantSheet(
+                            context,
+                            name: name,
+                            identity: id,
+                            accent: accent,
+                            onSpotlight: onSpotlight,
+                            roomName: roomName,
+                            isModerator: isModerator,
+                            moderatorUsername: moderatorUsername,
+                          )
                       : null;
                   return SizedBox(
                     width: 95,
