@@ -10,9 +10,11 @@
 import 'package:flutter/material.dart';
 
 import '../../../models/energie_profile.dart';
+import '../../../services/mentor_service.dart';
 import '../../../services/spirit_calculations/all_spirit_tools_engine.dart';
 import '../../../services/storage_service.dart';
 import '../../../widgets/profile_required_widget.dart';
+import '../../shared/mentor_chat_screen.dart';
 
 class SpiritProfileScreen extends StatefulWidget {
   const SpiritProfileScreen({super.key});
@@ -74,6 +76,22 @@ class _SpiritProfileScreenState extends State<SpiritProfileScreen> {
       length: _tabs.length,
       child: Scaffold(
         backgroundColor: _bg,
+        floatingActionButton: FloatingActionButton.extended(
+          backgroundColor: _purple,
+          foregroundColor: Colors.white,
+          icon: const Text('🧙', style: TextStyle(fontSize: 20)),
+          label: const Text('Mit Mentor sprechen',
+              style: TextStyle(fontWeight: FontWeight.bold)),
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const MentorChatScreen(
+                personality: MentorPersonality.alchemist,
+                world: 'energie',
+              ),
+            ),
+          ),
+        ),
         appBar: AppBar(
           backgroundColor: const Color(0xFF0D0D1A),
           elevation: 0,

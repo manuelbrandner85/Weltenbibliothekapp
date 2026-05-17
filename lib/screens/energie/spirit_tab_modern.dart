@@ -22,6 +22,8 @@ import 'calculators/relationship_numerology_screen.dart'; // 💕 Synastrie
 import 'calculators/biorhythm_compatibility_screen.dart'; // 📊 Bio-Kompat
 import 'calculators/god_oracle_chat_screen.dart'; // 🏛️ Götter-KI-Dialog
 import 'calculators/dream_pattern_analysis_screen.dart'; // 💭 Traum-Muster
+import 'calculators/family_tree_screen.dart'; // 🌳 Stammbaum
+import 'calculators/tarot_spreads_screen.dart'; // 🔮 Tarot-Legesysteme
 import 'calculators/new_spirit_tool_screens.dart';
 import 'meditation_timer_screen.dart'; // MeditationTimerScreen (canonical, deduplicated)
 import 'calculators/moon_calendar_tool_screen.dart'; // 🌕 v19 Mondkalender
@@ -429,6 +431,28 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'color': const Color(0xFFE91E63),
         'category': 'new',
         'screen': const BodyScanToolScreen(),
+      },
+
+      // 🌳 Stammbaum-Generator — 3 Generationen Ahnenarbeit
+      {
+        'icon': Icons.account_tree,
+        'iconEmoji': '🌳',
+        'title': 'Stammbaum',
+        'subtitle': '3 Generationen · lokal',
+        'color': const Color(0xFFD4A24C),
+        'category': 'new',
+        'screen': const FamilyTreeScreen(),
+      },
+
+      // 🔮 Tarot-Legesysteme — 1/3/5/10-Karten-Spreads
+      {
+        'icon': Icons.style,
+        'iconEmoji': '🃏',
+        'title': 'Tarot-Spreads',
+        'subtitle': 'Tageskarte · 3-Karten · Beziehung · Kelt. Kreuz',
+        'color': const Color(0xFF8E5AE2),
+        'category': 'new',
+        'screen': const TarotSpreadsScreen(),
       },
 
       // 🕯️ Ahnenarbeit (v23 – Ahnen, Muster, Rituale)
