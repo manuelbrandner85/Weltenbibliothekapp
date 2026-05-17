@@ -57,8 +57,8 @@
 ```bash
 flutter build apk --release \
   --dart-define=CLOUDFLARE_WORKER_URL=https://weltenbibliothek-api.brandy13062.workers.dev \
-  --dart-define=SUPABASE_URL=https://zctufcfjsixfgmmwvnmv.supabase.co \
-  --dart-define=SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpjdHVmY2Zqc2l4ZmdtbXd2bm12Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4OTc4NDgsImV4cCI6MjA5NDQ3Mzg0OH0.2ksXwZsZPHVp2Z9l1e52AUXJYH4zahKAP5xDOR4X2rw
+  --dart-define=SUPABASE_URL=https://adtviduaftdquvfjpojb.supabase.co \
+  --dart-define=SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkdHZpZHVhZnRkcXV2Zmpwb2piIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxMzY3OTcsImV4cCI6MjA5MDcxMjc5N30.LPtmnjukb6o2CA16RDjoStqYb_1bipNULD4tgOfuD98
 ```
 
 > ⚠️ **Niemals Service-Role-Key oder API-Tokens im Client-Code!**
@@ -75,7 +75,7 @@ echo "dein_key" | npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY
 ### Supabase Migrations (ausstehend)
 
 ```
-https://supabase.com/dashboard/project/zctufcfjsixfgmmwvnmv/sql/new
+https://supabase.com/dashboard/project/adtviduaftdquvfjpojb/sql/new
 → Inhalt von supabase/migrations/20260402_v12_missing_tool_tables.sql einfügen & ausführen
 ```
 

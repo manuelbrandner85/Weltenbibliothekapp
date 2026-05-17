@@ -42,7 +42,7 @@
  *   GET  /go/* | /out               → Short-URL-Redirect
  */
 
-const SUPABASE_URL = 'https://zctufcfjsixfgmmwvnmv.supabase.co';
+const SUPABASE_URL = 'https://adtviduaftdquvfjpojb.supabase.co';
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
@@ -502,7 +502,7 @@ export default {
       // oder deployen die Funktionen über direkten SQL-Zugang
       
       // Direkte SQL-Ausführung über Supabase Management API
-      const projectRef = 'zctufcfjsixfgmmwvnmv';
+      const projectRef = 'adtviduaftdquvfjpojb';
       
       const sqls = [
         // Funktion zum Editieren von Chat-Nachrichten (SECURITY DEFINER bypasses RLS)

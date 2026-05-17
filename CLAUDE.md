@@ -277,8 +277,8 @@ Flutter App (Client)
 ### Aktuelle Werte (öffentlich, da Anon-Key)
 
 ```
-SUPABASE_URL      = https://zctufcfjsixfgmmwvnmv.supabase.co
-SUPABASE_ANON_KEY = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpjdHVmY2Zqc2l4ZmdtbXd2bm12Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4OTc4NDgsImV4cCI6MjA5NDQ3Mzg0OH0.2ksXwZsZPHVp2Z9l1e52AUXJYH4zahKAP5xDOR4X2rw
+SUPABASE_URL      = https://adtviduaftdquvfjpojb.supabase.co
+SUPABASE_ANON_KEY = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkdHZpZHVhZnRkcXV2Zmpwb2piIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxMzY3OTcsImV4cCI6MjA5MDcxMjc5N30.LPtmnjukb6o2CA16RDjoStqYb_1bipNULD4tgOfuD98
 CLOUDFLARE_WORKER_URL = https://weltenbibliothek-api.brandy13062.workers.dev
 CLOUDFLARE_ACCOUNT_ID = 3472f5994537c3a30c5caeaff4de21fb
 ```
@@ -288,8 +288,8 @@ CLOUDFLARE_ACCOUNT_ID = 3472f5994537c3a30c5caeaff4de21fb
 ```bash
 flutter build apk --release \
   --dart-define=CLOUDFLARE_WORKER_URL=https://weltenbibliothek-api.brandy13062.workers.dev \
-  --dart-define=SUPABASE_URL=https://zctufcfjsixfgmmwvnmv.supabase.co \
-  --dart-define=SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpjdHVmY2Zqc2l4ZmdtbXd2bm12Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4OTc4NDgsImV4cCI6MjA5NDQ3Mzg0OH0.2ksXwZsZPHVp2Z9l1e52AUXJYH4zahKAP5xDOR4X2rw
+  --dart-define=SUPABASE_URL=https://adtviduaftdquvfjpojb.supabase.co \
+  --dart-define=SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFkdHZpZHVhZnRkcXV2Zmpwb2piIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxMzY3OTcsImV4cCI6MjA5MDcxMjc5N30.LPtmnjukb6o2CA16RDjoStqYb_1bipNULD4tgOfuD98
 ```
 
 ---
@@ -384,7 +384,7 @@ tool_network_connections  ← materie/network
 tool_research_documents   ← materie/research
 ```
 
-**SQL ausführen unter**: https://supabase.com/dashboard/project/zctufcfjsixfgmmwvnmv/sql/new
+**SQL ausführen unter**: https://supabase.com/dashboard/project/adtviduaftdquvfjpojb/sql/new
 
 ---
 
@@ -1224,7 +1224,7 @@ git push origin main
    ```
 
 7. **`SUPABASE_ANON_KEY` ist ein echter JWT mit Payload
-   `{"iss":"supabase","ref":"zctufcfjsixfgmmwvnmv","role":"anon",...}`.**
+   `{"iss":"supabase","ref":"adtviduaftdquvfjpojb","role":"anon",...}`.**
    Nicht kürzen, nicht "verkürzen", nicht durch Platzhalter ersetzen — sonst bootet die App
    nicht mehr gegen Supabase.
 
