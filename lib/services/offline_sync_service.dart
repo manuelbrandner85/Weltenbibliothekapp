@@ -159,10 +159,10 @@ class OfflineSyncService extends ChangeNotifier {
   }
 
   void _updateNetworkState(List<ConnectivityResult> results) {
-    final hasConn = results.any((r) =>
-        r == ConnectivityResult.wifi ||
-        r == ConnectivityResult.mobile ||
-        r == ConnectivityResult.ethernet);
+    // Web meldet meist ConnectivityResult.other oder .wifi.
+    // Wir akzeptieren alles außer .none als 'online' — sonst werden Web-Nutzer
+    // permanent in den Offline-Queue gedrängt und Messages stehen 'ausstehend'.
+    final hasConn = results.any((r) => r != ConnectivityResult.none);
     final newState = hasConn ? NetworkState.online : NetworkState.offline;
     if (_networkState != newState) {
       _networkState = newState;
