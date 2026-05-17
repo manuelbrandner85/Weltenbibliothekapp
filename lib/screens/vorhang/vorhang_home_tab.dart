@@ -1,11 +1,8 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../config/api_config.dart';
 import '../../services/mentor_service.dart';
+import '../../services/vorhang_service.dart';
 import '../shared/mentor_chat_screen.dart';
 import '../../widgets/daily_path_widget.dart';
 import 'vorhang_lesson_screen.dart';
@@ -71,15 +68,9 @@ class _VorhangHomeTabState extends State<VorhangHomeTab> {
     });
     try {
       final user = Supabase.instance.client.auth.currentUser;
-      final userIdQuery = user != null ? '?user_id=${Uri.encodeComponent(user.id)}' : '';
-      final uri = Uri.parse('${ApiConfig.workerUrl}/api/vorhang/modules$userIdQuery');
-      final res = await http
-          .get(uri, headers: {'Accept': 'application/json'})
-          .timeout(const Duration(seconds: 12));
-      if (res.statusCode != 200) {
-        throw Exception('HTTP ${res.statusCode}');
-      }
-      final data = jsonDecode(res.body) as Map<String, dynamic>;
+      // Direct-Supabase Pfad (Worker-Bypass) — funktioniert auch bei
+      // Cloudflare-Worker-Quota-Outage.
+      final data = await VorhangService.fetchModules(userId: user?.id);
       final rawBranches = (data['branches'] as Map?) ?? {};
       final mapped = <String, List<Map<String, dynamic>>>{};
       for (final b in _branchOrder) {

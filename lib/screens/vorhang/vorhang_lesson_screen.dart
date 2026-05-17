@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../config/api_config.dart';
 import '../../services/gamification_service.dart';
+import '../../services/vorhang_service.dart';
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_glass_app_bar.dart';
 
@@ -61,17 +62,12 @@ class _VorhangLessonScreenState extends State<VorhangLessonScreen> {
     });
     try {
       final user = Supabase.instance.client.auth.currentUser;
-      final userIdQuery = user != null ? '?user_id=${Uri.encodeComponent(user.id)}' : '';
-      final uri = Uri.parse(
-        '${ApiConfig.workerUrl}/api/vorhang/module/${Uri.encodeComponent(widget.moduleCode)}$userIdQuery',
+      // Direct-Supabase Pfad (Worker-Bypass) — funktioniert auch bei
+      // Cloudflare-Worker-Quota-Outage.
+      final data = await VorhangService.fetchModule(
+        widget.moduleCode,
+        userId: user?.id,
       );
-      final res = await http
-          .get(uri, headers: {'Accept': 'application/json'})
-          .timeout(const Duration(seconds: 12));
-      if (res.statusCode != 200) {
-        throw Exception('HTTP ${res.statusCode}: ${res.body}');
-      }
-      final data = jsonDecode(res.body) as Map<String, dynamic>;
       setState(() {
         _module = (data['module'] as Map?)?.cast<String, dynamic>();
         _progress = (data['progress'] as Map?)?.cast<String, dynamic>();
