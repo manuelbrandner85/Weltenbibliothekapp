@@ -6,6 +6,7 @@ import '../../../services/osint_history_service.dart'; // 🕰️ D1
 import '../../../theme/wb_cinematic_tokens.dart';
 import '../../../widgets/cinematic/wb_glass_app_bar.dart';
 import '../../../widgets/cinematic/wb_vignette.dart';
+import 'eu_parliament_tracker_screen.dart';
 import 'power_network_explorer_screen.dart';
 import 'study_analyst_screen.dart';
 import 'version_watcher_screen.dart';
@@ -55,10 +56,11 @@ class OsintToolsHub extends StatelessWidget {
     _DbDef(
       icon: Icons.how_to_vote_rounded,
       label: 'EU-Parlament',
-      sub: 'Abstimmungen & Abgeordnete',
-      color: Color(0xFF2196F3),
-      url: 'https://www.europarl.europa.eu/meps/de/full-list/all',
-      description: 'Alle EU-Abgeordneten, Abstimmungsverhalten, Ausschüsse, Lobbyist-Kontakte und Ausgaben.',
+      sub: 'Live-Votes + Werte-Match',
+      color: const Color(0xFF2196F3),
+      url: '',
+      description: 'Letzte Plenar-Abstimmungen mit Result + Stimmen-Verteilung. 👍/👎-Markierung pro Vote baut deine Werte-Karte. MEP-Browser mit Country-Filter.',
+      customScreenBuilder: () => const EuParliamentTrackerScreen(),
     ),
   ];
 
