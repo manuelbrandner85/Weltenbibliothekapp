@@ -2794,7 +2794,7 @@ class _PushBroadcastTabState extends State<_PushBroadcastTab> {
                 const Text('🔔 PUSH BROADCAST',
                     style: TextStyle(color: Colors.white70, fontSize: 11, letterSpacing: 2, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 12),
-                _field('Empfänger-Zielgruppe', _target,
+                _field('Empfänger-Zielgruppe',
                     children: [
                       for (final t in ['all', 'materie', 'energie', 'vorhang', 'ursprung'])
                         Padding(
@@ -2926,7 +2926,7 @@ class _PushBroadcastTabState extends State<_PushBroadcastTab> {
         counterStyle: const TextStyle(color: Colors.white38, fontSize: 10),
       );
 
-  Widget _field(String label, String _, {required List<Widget> children}) {
+  Widget _field(String label, {required List<Widget> children}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
