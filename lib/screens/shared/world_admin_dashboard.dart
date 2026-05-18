@@ -190,7 +190,7 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
             Tab(icon: Icon(Icons.dashboard_rounded, size: 18), text: 'Übersicht'),
             Tab(icon: Icon(Icons.people_rounded, size: 18), text: 'Nutzer'),
             Tab(icon: Icon(Icons.chat_bubble_rounded, size: 18), text: 'Chat'),
-            Tab(icon: Icon(Icons.school_rounded, size: 18), text: 'Module'),
+            Tab(icon: Icon(Icons.analytics_rounded, size: 18), text: 'Content'),
             Tab(icon: Icon(Icons.notifications_active_rounded, size: 18), text: 'Push'),
             Tab(icon: Icon(Icons.history_rounded, size: 18), text: 'Audit'),
             Tab(icon: Icon(Icons.monitor_heart_rounded, size: 18), text: 'System'),
@@ -203,7 +203,7 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
           _OverviewTab(world: widget.world, admin: admin, accent: _accent, accentBright: _accentBright),
           _UsersTab(world: widget.world, admin: admin, accent: _accent, accentBright: _accentBright),
           _ChatModerationTab(world: widget.world, admin: admin, accent: _accent, accentBright: _accentBright),
-          _ModuleProgressTab(accent: _accent, accentBright: _accentBright),
+          _ContentInsightsTab(accent: _accent, accentBright: _accentBright),
           _PushBroadcastTab(accent: _accent, accentBright: _accentBright),
           _AuditLogTab(world: widget.world, accent: _accent, accentBright: _accentBright),
           _SystemTab(accent: _accent, accentBright: _accentBright),
@@ -3204,6 +3204,390 @@ class _ModerationQueueScreenState extends State<_ModerationQueueScreen> {
 // ═══════════════════════════════════════════════════════════
 // 🔔 PUSH-BROADCAST TAB
 // ═══════════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════════════════════════════
+// TAB – CONTENT INSIGHTS (Wrapper · Module + Spirit-Tools)
+// ═════════════════════════════════════════════════════════════════════════════
+class _ContentInsightsTab extends StatefulWidget {
+  final Color accent;
+  final Color accentBright;
+  const _ContentInsightsTab({required this.accent, required this.accentBright});
+
+  @override
+  State<_ContentInsightsTab> createState() => _ContentInsightsTabState();
+}
+
+class _ContentInsightsTabState extends State<_ContentInsightsTab>
+    with SingleTickerProviderStateMixin {
+  late TabController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(children: [
+      Container(
+        color: const Color(0xFF0D0D1A),
+        child: TabBar(
+          controller: _ctrl,
+          indicatorColor: widget.accent,
+          labelColor: widget.accentBright,
+          unselectedLabelColor: Colors.white38,
+          labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+          tabs: const [
+            Tab(icon: Icon(Icons.school_rounded, size: 16), text: 'Module'),
+            Tab(icon: Icon(Icons.auto_awesome_rounded, size: 16), text: 'Spirit-Tools'),
+          ],
+        ),
+      ),
+      Expanded(
+        child: TabBarView(
+          controller: _ctrl,
+          children: [
+            _ModuleProgressTab(accent: widget.accent, accentBright: widget.accentBright),
+            _SpiritStatsTab(accent: widget.accent, accentBright: widget.accentBright),
+          ],
+        ),
+      ),
+    ]);
+  }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// TAB – SPIRIT-TOOLS-STATS (aus spirit_readings)
+// ═════════════════════════════════════════════════════════════════════════════
+class _SpiritStatsTab extends StatefulWidget {
+  final Color accent;
+  final Color accentBright;
+  const _SpiritStatsTab({required this.accent, required this.accentBright});
+
+  @override
+  State<_SpiritStatsTab> createState() => _SpiritStatsTabState();
+}
+
+class _SpiritStatsTabState extends State<_SpiritStatsTab> {
+  Map<String, dynamic>? _data;
+  bool _loading = true;
+  String? _error;
+  int _days = 7;
+
+  static const _toolLabels = {
+    'numerology': '🔢 Numerologie',
+    'chakra': '🔮 Chakra',
+    'aura': '✨ Aura',
+    'godoracle': '🏛️ Götter-Orakel',
+    'mantra': '🕉️ Mantra',
+    'iching': '☯️ I-Ging',
+    'tarot': '🃏 Tarot',
+    'runes': '🪨 Runen',
+    'birth_chart': '🌌 Geburtshoroskop',
+    'biorhythm': '🌊 Biorhythmus',
+    'moon': '🌙 Mondkalender',
+    'crystal': '💎 Kristall',
+    'akasha': '📖 Akasha',
+    'shamanic': '🪶 Schamanen-Reise',
+  };
+
+  String _labelFor(String tool) => _toolLabels[tool] ?? tool;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() { _loading = true; _error = null; });
+    try {
+      final res = await http
+          .get(Uri.parse('${ApiConfig.workerUrl}/api/admin/spirit-stats?days=$_days'))
+          .timeout(const Duration(seconds: 15));
+      if (res.statusCode == 200) {
+        if (mounted) setState(() {
+          _data = jsonDecode(res.body) as Map<String, dynamic>;
+          _loading = false;
+        });
+      } else {
+        if (mounted) setState(() {
+          _error = 'HTTP ${res.statusCode}: ${res.body.substring(0, 120)}';
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() {
+        _error = 'Netzwerk: $e';
+        _loading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) {
+      return Center(child: CircularProgressIndicator(color: widget.accent));
+    }
+    if (_error != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            const Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 40),
+            const SizedBox(height: 12),
+            Text(_error!,
+                style: const TextStyle(color: Colors.white70, fontSize: 13),
+                textAlign: TextAlign.center),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: _load,
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Neu laden'),
+              style: ElevatedButton.styleFrom(backgroundColor: widget.accent),
+            ),
+          ]),
+        ),
+      );
+    }
+
+    final totalReadings = (_data?['total_readings'] ?? 0) as int;
+    final totalUsers = (_data?['total_users'] ?? 0) as int;
+    final recentReadings = (_data?['recent_readings'] ?? 0) as int;
+    final toolsAll = ((_data?['tools_all'] as List?) ?? const []).cast<Map<String, dynamic>>();
+    final toolsRecent = ((_data?['tools_recent'] as List?) ?? const []).cast<Map<String, dynamic>>();
+    final daily = ((_data?['daily'] as List?) ?? const []).cast<Map<String, dynamic>>();
+
+    final maxAllTotal = toolsAll.isEmpty ? 1 : toolsAll.first['total'] as int;
+    final maxRecentTotal = toolsRecent.isEmpty ? 1 : (toolsRecent.first['total'] as int);
+    final maxDaily = daily.fold<int>(0, (m, d) => (d['count'] as int) > m ? (d['count'] as int) : m);
+
+    return RefreshIndicator(
+      color: widget.accent,
+      onRefresh: () async => _load(),
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          // Top stats
+          Row(children: [
+            Expanded(child: _MiniMetric('Readings gesamt', '$totalReadings', Icons.auto_awesome_rounded, widget.accent)),
+            const SizedBox(width: 10),
+            Expanded(child: _MiniMetric('Unique User', '$totalUsers', Icons.people_rounded, const Color(0xFF1E88E5))),
+          ]),
+          const SizedBox(height: 10),
+          Row(children: [
+            Expanded(child: _MiniMetric('Letzte $_days Tage', '$recentReadings', Icons.bolt_rounded, const Color(0xFF43A047))),
+            const SizedBox(width: 10),
+            Expanded(child: _MiniMetric('Aktive Tools', '${toolsRecent.length}', Icons.category_rounded, const Color(0xFFFFC107))),
+          ]),
+          const SizedBox(height: 18),
+
+          // Window-Switch
+          Row(children: [
+            const Text('Zeitraum:', style: TextStyle(color: Colors.white54, fontSize: 11)),
+            const SizedBox(width: 10),
+            ...[7, 30, 90].map((d) {
+              final sel = d == _days;
+              return Padding(
+                padding: const EdgeInsets.only(right: 6),
+                child: GestureDetector(
+                  onTap: () { setState(() => _days = d); _load(); },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: sel ? widget.accent.withValues(alpha: 0.25) : Colors.white.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: sel ? widget.accent : Colors.transparent),
+                    ),
+                    child: Text('${d}d',
+                        style: TextStyle(
+                          color: sel ? widget.accentBright : Colors.white60,
+                          fontSize: 11, fontWeight: FontWeight.w600,
+                        )),
+                  ),
+                ),
+              );
+            }),
+          ]),
+          const SizedBox(height: 16),
+
+          // Sparkline
+          _SectionLabel('Readings pro Tag', Icons.show_chart_rounded, widget.accent),
+          const SizedBox(height: 8),
+          Container(
+            height: 80,
+            padding: const EdgeInsets.fromLTRB(8, 8, 8, 4),
+            decoration: BoxDecoration(
+              color: const Color(0xFF12121E),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.white12),
+            ),
+            child: daily.isEmpty
+                ? const Center(child: Text('Keine Daten', style: TextStyle(color: Colors.white38)))
+                : Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: daily.map((d) {
+                      final c = d['count'] as int;
+                      final h = maxDaily > 0 ? (c / maxDaily) * 60 : 0.0;
+                      return Expanded(
+                        child: Tooltip(
+                          message: '${d['date']}: $c',
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 1),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                Container(
+                                  height: h.clamp(2, 60),
+                                  decoration: BoxDecoration(
+                                    color: widget.accent.withValues(alpha: 0.7),
+                                    borderRadius: const BorderRadius.vertical(top: Radius.circular(2)),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+          ),
+
+          const SizedBox(height: 22),
+          _SectionLabel('Top-Tools · Letzte $_days Tage', Icons.local_fire_department_rounded, widget.accent),
+          const SizedBox(height: 8),
+          if (toolsRecent.isEmpty)
+            _EmptyHint('In den letzten $_days Tagen wurden keine Readings gespeichert.')
+          else
+            ...toolsRecent.take(10).map((t) => _SpiritToolBar(
+                  label: _labelFor(t['tool'] as String),
+                  total: t['total'] as int,
+                  users: t['unique_users'] as int,
+                  max: maxRecentTotal,
+                  accent: widget.accent,
+                )),
+
+          const SizedBox(height: 22),
+          _SectionLabel('Top-Tools · All-Time', Icons.emoji_events_rounded, widget.accent),
+          const SizedBox(height: 8),
+          if (toolsAll.isEmpty)
+            _EmptyHint('Noch keine Readings gespeichert.')
+          else
+            ...toolsAll.take(15).map((t) => _SpiritToolBar(
+                  label: _labelFor(t['tool'] as String),
+                  total: t['total'] as int,
+                  users: t['unique_users'] as int,
+                  max: maxAllTotal,
+                  accent: widget.accent,
+                )),
+          const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
+}
+
+class _MiniMetric extends StatelessWidget {
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color color;
+  const _MiniMetric(this.label, this.value, this.icon, this.color);
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.10),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              Icon(icon, color: color, size: 14),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(label,
+                    style: const TextStyle(color: Colors.white60, fontSize: 10),
+                    overflow: TextOverflow.ellipsis),
+              ),
+            ]),
+            const SizedBox(height: 6),
+            Text(value,
+                style: TextStyle(color: color, fontSize: 22, fontWeight: FontWeight.bold)),
+          ],
+        ),
+      );
+}
+
+class _SpiritToolBar extends StatelessWidget {
+  final String label;
+  final int total;
+  final int users;
+  final int max;
+  final Color accent;
+  const _SpiritToolBar({
+    required this.label,
+    required this.total,
+    required this.users,
+    required this.max,
+    required this.accent,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final fraction = max > 0 ? total / max : 0.0;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFF12121E),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white12),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Expanded(
+            child: Text(label,
+                style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+                overflow: TextOverflow.ellipsis),
+          ),
+          Text('$total',
+              style: TextStyle(color: accent, fontSize: 14, fontWeight: FontWeight.bold)),
+          const SizedBox(width: 6),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.06),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text('$users user',
+                style: const TextStyle(color: Colors.white54, fontSize: 9)),
+          ),
+        ]),
+        const SizedBox(height: 6),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: LinearProgressIndicator(
+            value: fraction.clamp(0.02, 1.0),
+            minHeight: 4,
+            backgroundColor: Colors.white.withValues(alpha: 0.05),
+            color: accent,
+          ),
+        ),
+      ]),
+    );
+  }
+}
+
 // ═════════════════════════════════════════════════════════════════════════════
 // TAB – MODULE-PROGRESS (Vorhang + Ursprung Completion-Stats)
 // ═════════════════════════════════════════════════════════════════════════════

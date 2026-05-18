@@ -2495,6 +2495,72 @@ export default {
         } catch (e) { return jsonResponse({ success: true, views: 0, interactions: 0, newUsers: 0 }); }
       }
 
+      // ── GET /api/admin/spirit-stats ─────────────────────────
+      // Aggregiert spirit_readings nach Tool: Total, unique-User, last-7d.
+      // Optional ?days=30 für anderes Zeitfenster.
+      if (method === 'GET' && path === '/api/admin/spirit-stats') {
+        try {
+          const days = Math.max(1, Math.min(365, parseInt(url.searchParams.get('days') || '7')));
+          const since = new Date(Date.now() - days * 86400000).toISOString();
+
+          const fetchReadings = async (extra = '') => {
+            const r = await fetch(
+              `${SUPABASE_URL}/rest/v1/spirit_readings?select=user_id,tool,created_at${extra}&limit=20000`,
+              { headers: svcHeaders }
+            );
+            if (!r.ok) return [];
+            return (await r.json().catch(() => [])) || [];
+          };
+
+          const [allReadings, recentReadings] = await Promise.all([
+            fetchReadings(),
+            fetchReadings(`&created_at=gte.${since}`),
+          ]);
+
+          const aggregate = (rows) => {
+            const byTool = {};
+            for (const r of rows) {
+              const t = r.tool || 'unknown';
+              const e = byTool[t] || { tool: t, total: 0, users: new Set() };
+              e.total++;
+              if (r.user_id) e.users.add(r.user_id);
+              byTool[t] = e;
+            }
+            return Object.values(byTool)
+              .map(e => ({ tool: e.tool, total: e.total, unique_users: e.users.size }))
+              .sort((a, b) => b.total - a.total);
+          };
+
+          // Pro Tag (für Sparkline der letzten N Tage)
+          const perDay = {};
+          for (const r of recentReadings) {
+            const d = (r.created_at || '').substring(0, 10);
+            if (!d) continue;
+            perDay[d] = (perDay[d] || 0) + 1;
+          }
+          const dailyOut = [];
+          for (let i = days - 1; i >= 0; i--) {
+            const d = new Date(Date.now() - i * 86400000).toISOString().substring(0, 10);
+            dailyOut.push({ date: d, count: perDay[d] || 0 });
+          }
+
+          const all = aggregate(allReadings);
+          const recent = aggregate(recentReadings);
+          const totalUsers = new Set(allReadings.map(r => r.user_id).filter(Boolean)).size;
+
+          return jsonResponse({
+            success: true,
+            window_days: days,
+            total_readings: allReadings.length,
+            total_users: totalUsers,
+            recent_readings: recentReadings.length,
+            tools_all: all,
+            tools_recent: recent,
+            daily: dailyOut,
+          });
+        } catch (e) { return errorResponse(`Spirit-Stats-Fehler: ${e.message}`); }
+      }
+
       // ── GET /api/admin/progress ─────────────────────────────
       // Aggregierte Modul-Fortschritte für Vorhang + Ursprung.
       // Pro Branch: total_modules, users_started, users_completed_all,
