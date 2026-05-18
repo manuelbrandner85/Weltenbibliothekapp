@@ -85,9 +85,11 @@ import '../../services/chat/user_block_service.dart';
 import '../../services/chat/unread_tracker_service.dart';
 import '../../widgets/chat_animated_background.dart';
 import '../../widgets/live_room_banner.dart';
+import '../../services/feature_flags.dart';
 import '../../widgets/live/live_chat_hero.dart';
 import '../../widgets/live/chat_intelligence_widgets.dart'
     show CatchupCard, TopicCloud, SmartReplyComputer;
+import '../../widgets/live/pins_polls_header.dart';
 import '../live/live_replay_library_screen.dart';
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_glass_app_bar.dart';
@@ -140,6 +142,31 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
   
   List<Map<String, dynamic>> _messages = [];
   List<Map<String, dynamic>> _polls = []; // 🆕 Polls list
+
+  // 🚩 v5.44.2 Phase 2: Adapter fuer neuen PinsPollsHeader (nur aktiv wenn
+  // FeatureFlag.newPinsHeader=true). Default leere Listen damit der
+  // Header SizedBox.shrink() rendert bis Daten-Pipeline angeschlossen wird.
+  List<PinnedMessageEntry> get _pinsForNewHeaderEnergie =>
+      const <PinnedMessageEntry>[];
+  List<ActivePollEntry> get _pollsForNewHeaderEnergie {
+    if (_polls.isEmpty) return const <ActivePollEntry>[];
+    return _polls.map((p) {
+      final opts = (p['options'] as List?) ?? const [];
+      return ActivePollEntry(
+        id: (p['id'] ?? '').toString(),
+        question: (p['question'] ?? '').toString(),
+        options: opts.map((o) {
+          final m = (o is Map) ? Map<String, dynamic>.from(o) : <String, dynamic>{};
+          return PollOption(
+            label: (m['label'] ?? m['text'] ?? '').toString(),
+            votes: (m['votes'] as num?)?.toInt() ?? 0,
+          );
+        }).toList(growable: false),
+        totalVotes: (p['total_votes'] as num?)?.toInt() ?? 0,
+        userVoteIndex: (p['user_vote_index'] as num?)?.toInt(),
+      );
+    }).toList(growable: false);
+  }
   bool _isLoading = false;
   String? _errorMessage; // 🎨 NEW: Error state
   bool _isSending = false;
@@ -1622,11 +1649,21 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                       ),
                     ),
                   ),
-                  // 📌 Sticky-Banner für angepinnte Nachrichten (E2)
-                  PinnedBannerV2(
-                    roomId: _fullRoomId,
-                    accent: const Color(0xFF9B51E0),
-                  ),
+                  // 🚩 v5.44.2 Phase 2 (Beta): neuer PinsPollsHeader hinter Flag.
+                  // Default OFF -> kein Effekt. Toggle via SharedPreferences-Key
+                  // feature_flag_newPinsHeader_v1=true wenn beta-fertig.
+                  if (FeatureFlags.instance.getSync(FeatureFlag.newPinsHeader))
+                    PinsPollsHeader(
+                      world: 'energie',
+                      pins: _pinsForNewHeaderEnergie,
+                      polls: _pollsForNewHeaderEnergie,
+                    )
+                  else
+                    // 📌 Legacy Sticky-Banner für angepinnte Nachrichten (E2)
+                    PinnedBannerV2(
+                      roomId: _fullRoomId,
+                      accent: const Color(0xFF9B51E0),
+                    ),
                   // 🔍 SEARCH MODE
                   if (_showSearch)
                     Expanded(

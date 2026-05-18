@@ -14,9 +14,11 @@ import '../../services/user_service.dart'; // 🆕 User Service für Auth
 import '../../services/pinned_message_service.dart'; // 📌 E2 Pin-Service
 import '../../widgets/mention_autocomplete.dart'; // @ MENTIONS
 import '../../widgets/pinned_banner_v2.dart'; // 📌 E2 Sticky-Banner
+import '../../services/feature_flags.dart';
 import '../../widgets/live/live_chat_hero.dart';
 import '../../widgets/live/chat_intelligence_widgets.dart'
     show CatchupCard, TopicCloud, SmartReplyComputer;
+import '../../widgets/live/pins_polls_header.dart';
 import '../live/live_replay_library_screen.dart';
 import '../../widgets/user_quick_profile_sheet.dart'; // 👤 Avatar-Quick-View
 import 'package:image_picker/image_picker.dart'; // 📷 Image Picker
@@ -137,6 +139,29 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
   
   List<Map<String, dynamic>> _messages = [];
   List<Map<String, dynamic>> _polls = []; // 🗳️ POLLS
+
+  // 🚩 v5.44.2 Phase 2: Adapter fuer neuen PinsPollsHeader (siehe Energie).
+  List<PinnedMessageEntry> get _pinsForNewHeaderMaterie =>
+      const <PinnedMessageEntry>[];
+  List<ActivePollEntry> get _pollsForNewHeaderMaterie {
+    if (_polls.isEmpty) return const <ActivePollEntry>[];
+    return _polls.map((p) {
+      final opts = (p['options'] as List?) ?? const [];
+      return ActivePollEntry(
+        id: (p['id'] ?? '').toString(),
+        question: (p['question'] ?? '').toString(),
+        options: opts.map((o) {
+          final m = (o is Map) ? Map<String, dynamic>.from(o) : <String, dynamic>{};
+          return PollOption(
+            label: (m['label'] ?? m['text'] ?? '').toString(),
+            votes: (m['votes'] as num?)?.toInt() ?? 0,
+          );
+        }).toList(growable: false),
+        totalVotes: (p['total_votes'] as num?)?.toInt() ?? 0,
+        userVoteIndex: (p['user_vote_index'] as num?)?.toInt(),
+      );
+    }).toList(growable: false);
+  }
   bool _isLoading = false;
   String? _errorMessage; // 🎨 NEW: Error state
   bool _profileDialogShown = false; // 🚨 Flag: Verhindert mehrfaches Popup
@@ -1589,11 +1614,19 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
                       ),
                     ),
                   ),
-                  // 📌 Sticky-Banner für angepinnte Nachrichten (E2)
-                  PinnedBannerV2(
-                    roomId: _fullRoomId,
-                    accent: const Color(0xFF2979FF),
-                  ),
+                  // 🚩 v5.44.2 Phase 2 (Beta): neuer PinsPollsHeader hinter Flag.
+                  if (FeatureFlags.instance.getSync(FeatureFlag.newPinsHeader))
+                    PinsPollsHeader(
+                      world: 'materie',
+                      pins: _pinsForNewHeaderMaterie,
+                      polls: _pollsForNewHeaderMaterie,
+                    )
+                  else
+                    // 📌 Legacy Sticky-Banner für angepinnte Nachrichten (E2)
+                    PinnedBannerV2(
+                      roomId: _fullRoomId,
+                      accent: const Color(0xFF2979FF),
+                    ),
                   // 🔍 SEARCH MODE
                   if (_showSearch)
                     Expanded(

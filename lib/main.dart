@@ -58,6 +58,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'widgets/update_gate.dart'; // 🔔 In-App Update-Meldungen (Release + OTA-Patch)
 import 'services/pip_service.dart'; // 📺 B10.3 PiP
+import 'services/feature_flags.dart'; // 🚩 v5.44.2 Phase-2-Toggle-System
 
 /// Global navigator key — needed by PushNotificationManager to deep-link into
 /// routes from outside the widget tree (notification tap).
@@ -65,6 +66,10 @@ final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // 🚩 v5.44.2: Feature-Flags fruehzeitig laden (vor allem UI-Code)
+  // damit getSync() ueberall funktioniert.
+  await FeatureFlags.instance.init();
 
   // 🔔 FIREBASE — nur auf Mobile initialisieren (nicht auf Web)
   // Fail-safe: Wenn keine google-services.json vorhanden ist oder Play Services
