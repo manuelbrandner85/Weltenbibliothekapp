@@ -33,6 +33,15 @@ flutter build apk --release \
 
 Format: `type(scope): beschreibung` — `type` ∈ {`feat`, `fix`, `refactor`, `style`, `chore`}.
 
+**WICHTIG · Cloudflare-Pages-Deploy:** Commit-Titel und -Body NUR mit
+ASCII-Zeichen. UTF-8-Sonderzeichen wie `·` `—` `→` `…` werden durch die
+wrangler-action-Pipeline korrumpiert und die CF-Pages-API rejected den
+Deploy mit "Invalid commit message, it must be a valid UTF-8 string"
+(Code 8000111) — obwohl der Flutter-Build und Upload erfolgreich waren.
+Stattdessen ASCII-Pendants: `-`, `--`, `->`, `...`. Emoji `✓` `⚠️`
+funktionieren komischerweise, aber sicherheitshalber durch `[OK]` /
+`[!]` ersetzen.
+
 ## 🧰 Skills
 
 Detaillierte Instruktionen in `.claude/skills/` (142 installiert, via `npx skills add` + SessionStart-Hook auto-verlinkt):

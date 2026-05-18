@@ -15,9 +15,28 @@ library;
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../tools/eu_parliament_tracker_screen.dart';
+import '../../tools/power_network_explorer_screen.dart';
+import '../../tools/study_analyst_screen.dart';
+import '../../tools/version_watcher_screen.dart';
 import '../screens/my_investigations_screen.dart';
 import '../services/kb_history_service.dart';
 import 'kb_design.dart';
+
+class _OsintToolDef {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Color color;
+  final Widget Function() screenBuilder;
+  const _OsintToolDef({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.color,
+    required this.screenBuilder,
+  });
+}
 
 class CinematicIntro extends StatefulWidget {
   final void Function(String topic) onSubmit;
@@ -541,14 +560,38 @@ class _CinematicIntroState extends State<CinematicIntro>
     );
   }
 
-  static const _osintTools = [
-    (Icons.account_balance_wallet, 'Panama Papers', 'ICIJ Offshore Leaks', Color(0xFFFFB300)),
-    (Icons.gavel, 'OpenSanctions', 'EU/UN/OFAC Sanktionen', Color(0xFFE53935)),
-    (Icons.folder_zip, 'Aleph OCCRP', 'FinCEN, LuxLeaks, Suisse Secrets', Color(0xFF7C4DFF)),
-    (Icons.science, 'PubMed', '35 Mio. Studien & Papers', Color(0xFF00BCD4)),
-    (Icons.auto_stories, 'Semantic Scholar', '200 Mio. wissenschaftliche Paper', Color(0xFF4CAF50)),
-    (Icons.archive, 'Internet Archive', '50 Mio. Dokumente & Wayback', Color(0xFFFF7043)),
-    (Icons.how_to_vote, 'EU-Parlament', 'Abstimmungen & Abgeordnete', Color(0xFF2196F3)),
+  // Die 4 konsolidierten OSINT-Tools mit eigenen Cinematic-Screens
+  // (statt 7 WebView-Wrapper). Tap navigiert direkt in den jeweiligen
+  // Screen. screenBuilder = Widget-Factory, sonst Suchen-Dialog fallback.
+  static final _osintTools = [
+    _OsintToolDef(
+      icon: Icons.hub,
+      title: 'Power-Network',
+      subtitle: 'OpenSanctions + 6 Leaks parallel',
+      color: const Color(0xFFE53935),
+      screenBuilder: () => const PowerNetworkExplorerScreen(),
+    ),
+    _OsintToolDef(
+      icon: Icons.biotech,
+      title: 'Studien-Analyst',
+      subtitle: 'PubMed + Semantic + AI-TLDR',
+      color: const Color(0xFF26C6DA),
+      screenBuilder: () => const StudyAnalystScreen(),
+    ),
+    _OsintToolDef(
+      icon: Icons.history,
+      title: 'Versions-Wachter',
+      subtitle: 'Wayback-Diff + Watchlist',
+      color: const Color(0xFFFF7043),
+      screenBuilder: () => const VersionWatcherScreen(),
+    ),
+    _OsintToolDef(
+      icon: Icons.how_to_vote,
+      title: 'EU-Parlament',
+      subtitle: 'Live-Votes + Werte-Match',
+      color: const Color(0xFF2196F3),
+      screenBuilder: () => const EuParliamentTrackerScreen(),
+    ),
   ];
 
   Widget _buildOsintGrid() {
@@ -564,7 +607,7 @@ class _CinematicIntroState extends State<CinematicIntro>
                   size: 14, color: KbDesign.neonRedSoft.withValues(alpha: 0.8)),
               const SizedBox(width: 6),
               Text(
-                'OSINT DATENBANKEN',
+                'RECHERCHE-TOOLS',
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.4),
                   fontSize: 10,
@@ -583,11 +626,15 @@ class _CinematicIntroState extends State<CinematicIntro>
           crossAxisSpacing: 10,
           childAspectRatio: 2.8,
           children: _osintTools.map((t) => _OsintToolTile(
-            icon: t.$1,
-            title: t.$2,
-            subtitle: t.$3,
-            accentColor: t.$4,
-            onTap: () => _showOsintSearch(t.$2),
+            icon: t.icon,
+            title: t.title,
+            subtitle: t.subtitle,
+            accentColor: t.color,
+            onTap: () {
+              HapticFeedback.selectionClick();
+              Navigator.push(context,
+                  MaterialPageRoute(builder: (_) => t.screenBuilder()));
+            },
           )).toList(),
         ),
       ],
