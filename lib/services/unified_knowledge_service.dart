@@ -10,8 +10,7 @@ import '../data/energie_knowledge_complete.dart';
 import '../data/materie_books_curated.dart';
 import '../data/energie_books_curated.dart';
 import '../data/vorhang_books_curated.dart';
-// Ursprung kommt sobald Agent-File da ist:
-// import '../data/ursprung_books_curated.dart';
+import '../data/ursprung_books_curated.dart';
 
 /// ============================================
 /// UNIFIED KNOWLEDGE SERVICE
@@ -87,8 +86,7 @@ class UnifiedKnowledgeService {
     await _ensureBooks('mat_book_001', materieBooksCurated, db);
     await _ensureBooks('ene_book_001', energieBooksCurated, db);
     await _ensureBooks('vor_book_001', vorhangBooksCurated, db);
-    // Ursprung kommt sobald Agent-File da ist
-    // await _ensureBooks('urs_book_001', ursprungBooksCurated, db);
+    await _ensureBooks('urs_book_001', ursprungBooksCurated, db);
   }
 
   /// Idempotent insert: nur wenn der probe-id NICHT existiert wird die

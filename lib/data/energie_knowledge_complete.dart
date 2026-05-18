@@ -21,7 +21,7 @@ final List<KnowledgeEntry> energieKnowledgeComplete = [
     fullContent: '''# Zazen - Die Kunst des Sitzens
 
 ## Was ist Zazen?
-**Zazen** (坐禅) bedeutet "Sitz-Meditation" im Zen-Buddhismus. Kern-Praxis aller Zen-Schulen.
+**Zazen** (Sitz-Meditation auf Japanisch) ist die Kern-Praxis aller Zen-Schulen.
 
 ## Geschichte
 - **Ursprung:** China (Chan-Buddhismus, 500 AD)

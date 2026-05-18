@@ -123,6 +123,65 @@ class WBCinematic extends ThemeExtension<WBCinematic> {
     blurHeavy: 40,
   );
 
+  /// v5.44.6 - Cinematic Light Theme.
+  ///
+  /// Helle Variante mit warmen, klaren Tönen statt schwarz-blauer
+  /// Nacht-Atmosphäre. Welt-Identität bleibt durch Akzent-Farben
+  /// erhalten, aber Hintergründe + Glas sind hell/cremeweiß.
+  ///
+  /// Übergänge zwischen dark/light werden via ThemeExtension.lerp()
+  /// in Flutter automatisch animiert.
+  static const light = WBCinematic(
+    // Warmer Cream-Hintergrund - wie altes Buchpapier
+    bgVoid: Color(0xFFFBF8F3),
+    bgDeep: Color(0xFFF2EBE0),
+    bgSurface: Color(0xFFFFFFFF),
+    // Helle frosted Glas-Oberflächen (weiß-tönt statt schwarz)
+    glassBase: Color(0xCCFFFFFF), // 0.80 alpha weiß
+    glassElevated: Color(0xE6FFFFFF), // 0.90 alpha weiß
+    glassStroke: Color(0x22000000), // 0.13 schwarz - dezent
+    glassStrokeHi: Color(0x33000000), // 0.20 schwarz - prominent
+    // Welt-Paletten in Light-Variante (gedämpfte Akzente)
+    materie: WBWorldPalette(
+      primary: Color(0xFFD32F2F), // Korallrot
+      deep: Color(0xFFFFEBEE), // Sehr helles Rosé
+      highlight: Color(0xFF8B1A1A), // Dunkles Bordeaux für Kontrast
+      label: Color(0xFFB23030),
+      glow: Color(0x33D32F2F),
+    ),
+    energie: WBWorldPalette(
+      primary: Color(0xFF7B1FA2), // Dunkles Lila
+      deep: Color(0xFFF3E5F5), // Lavendelweiß
+      highlight: Color(0xFF4A148C),
+      label: Color(0xFF9C27B0),
+      glow: Color(0x337B1FA2),
+    ),
+    vorhang: WBWorldPalette(
+      primary: Color(0xFFB89344), // Dunkleres Gold
+      deep: Color(0xFFFFF8DC), // Champagner-Creme
+      highlight: Color(0xFF7A5F1C),
+      label: Color(0xFFA0832F),
+      glow: Color(0x33B89344),
+    ),
+    ursprung: WBWorldPalette(
+      primary: Color(0xFF00897B), // Gedämpftes Türkis
+      deep: Color(0xFFE0F2F1), // Sehr helles Türkis
+      highlight: Color(0xFF004D40),
+      label: Color(0xFF00796B),
+      glow: Color(0x3300897B),
+    ),
+    neutral: WBWorldPalette(
+      primary: Color(0xFF5C6BC0), // Indigoblau
+      deep: Color(0xFFE8EAF6),
+      highlight: Color(0xFF1A237E),
+      label: Color(0xFF3F51B5),
+      glow: Color(0x335C6BC0),
+    ),
+    blurLight: 16,
+    blurMedium: 28,
+    blurHeavy: 40,
+  );
+
   /// Liefert die Welt-Palette für das gegebene Welt-Token.
   WBWorldPalette palette(WBWorld world) {
     switch (world) {

@@ -27,6 +27,12 @@ class _VignetteImpl extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // v5.44.6 - theme-aware: dark mode = black vignette,
+    // light mode = soft white vignette (helle Ausblendung)
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    final edgeColor = isLight
+        ? const Color(0xFFFFFFFF)
+        : const Color(0xFF000000);
     return IgnorePointer(
       child: DecoratedBox(
         decoration: BoxDecoration(
@@ -35,8 +41,8 @@ class _VignetteImpl extends StatelessWidget {
             radius: 1.05,
             colors: [
               Colors.transparent,
-              const Color(0xFF000000).withValues(alpha: 0.55),
-              const Color(0xFF000000).withValues(alpha: 0.92),
+              edgeColor.withValues(alpha: isLight ? 0.30 : 0.55),
+              edgeColor.withValues(alpha: isLight ? 0.65 : 0.92),
             ],
             stops: const [0.55, 0.85, 1.0],
           ),

@@ -677,7 +677,7 @@ Entwickelt von Stephen LaBerge
 # Reiki - Die Kraft der Hände
 
 ## Was ist Reiki?
-**Reiki** (霊気, "universelle Lebensenergie") ist eine japanische Heilmethode, entwickelt von **Mikao Usui** (1865-1926), bei der durch Handauflegen Lebensenergie übertragen wird.
+**Reiki** (japanisch fuer "universelle Lebensenergie") ist eine japanische Heilmethode, entwickelt von **Mikao Usui** (1865-1926), bei der durch Handauflegen Lebensenergie uebertragen wird.
 
 ## Die Geschichte
 
@@ -715,15 +715,15 @@ Usui's **Lebensregeln (Gokai):**
 - **Inhalt:** 3 Reiki-Symbole
 - **Fähigkeit:** Fernheilung, Mental-/Emotionalheilung
 - **Symbole:**
-  1. **Cho Ku Rei (力)** - Kraftsymbol
-  2. **Sei He Ki (静)** - Mental/Emotional
-  3. **Hon Sha Ze Sho Nen (遠)** - Fernheilung
+  1. **Cho Ku Rei** - Kraftsymbol (Aktiviert die Energie)
+  2. **Sei He Ki** - Symbol fuer Mental- und Emotionalheilung
+  3. **Hon Sha Ze Sho Nen** - Symbol fuer Fernheilung
 
 ### 3. Grad (Meister-Grad)
 - **Voraussetzung:** Jahrelange Praxis
 - **Inhalt:** Meistersymbol
-- **Fähigkeit:** Andere einweihen (Lehrer werden)
-- **Symbol:** **Dai Ko Myo (光)** - Großes Licht
+- **Faehigkeit:** Andere einweihen (Lehrer werden)
+- **Symbol:** **Dai Ko Myo** - Symbol des Grossen Lichts
 
 ## Handpositionen
 

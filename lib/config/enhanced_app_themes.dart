@@ -261,9 +261,10 @@ class EnhancedAppThemes {
         foregroundColor: lightOnPrimary,
       ),
 
-      // Cinematic Token-System (auch im Light-Theme verfügbar)
+      // v5.44.6 - im Light-Theme nutzen wir die LIGHT cinematic tokens
+      // (warm cream bg, soft glass, gedaempfte Welt-Akzente)
       extensions: const <ThemeExtension<dynamic>>[
-        WBCinematic.dark,
+        WBCinematic.light,
       ],
     );
   }
