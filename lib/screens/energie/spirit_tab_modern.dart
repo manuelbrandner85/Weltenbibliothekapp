@@ -47,7 +47,8 @@ import 'calculators/moon_calendar_tool_screen.dart'; // 🌕 v19 Mondkalender
 import 'calculators/dream_interpretation_tool_screen.dart'; // 💭 v20 Traumdeutung
 import 'calculators/body_scan_tool_screen.dart'; // 🧘 v21 Körperscan
 import 'calculators/ancestral_work_tool_screen.dart'; // 🕯️ v23 Ahnenarbeit
-import 'calculators/shamanic_journey_tool_screen.dart'; // 🥁 v24 Schamanische Reise
+import 'calculators/shamanic_journey_tool_screen.dart'; // 🥁 v24 Schamanische Reise (Timer)
+import 'calculators/shamanic_guided_journey_screen.dart'; // 🥁 AI-Guided cinematic
 import 'calculators/natal_chart_tool_screen.dart'; // ♓ v25 Geburtshoroskop
 import 'calculators/human_design_tool_screen.dart'; // 🌀 v26 Human Design
 import 'frequency_generator_screen.dart';  // 🎵 FREQUENCY GENERATOR
@@ -543,12 +544,22 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'screen': const AncestralWorkToolScreen(),
       },
 
-      // 🥁 Schamanische Reise (v24 – Timer + Journal + Krafttiere + Guides)
+      // 🥁 Schamanische Reise · AI-Guided 5-Phasen cinematic
       {
         'icon': Icons.nightlight_round,
         'iconEmoji': '🥁',
-        'title': 'Schamanische Reise',
-        'subtitle': 'Trommel-Reise mit Journal',
+        'title': 'Schamanen-Reise',
+        'subtitle': '3 Welten · AI-Narration · Theta-Pulse · Safety',
+        'color': const Color(0xFF6D4C41),
+        'category': 'new',
+        'screen': const ShamanicGuidedJourneyScreen(),
+      },
+      // 🥁 Klassische Trommel-Reise (Timer + Manuelles Journal)
+      {
+        'icon': Icons.timer_rounded,
+        'iconEmoji': '🥁',
+        'title': 'Trommel-Timer',
+        'subtitle': 'Trommel-BPM-Library · Manuelles Journal',
         'color': const Color(0xFF8E5AE2),
         'category': 'new',
         'screen': const ShamanicJourneyToolScreen(),
