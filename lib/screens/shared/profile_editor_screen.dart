@@ -21,6 +21,9 @@ import '../../models/energie_profile.dart';
 import '../../features/admin/state/admin_state.dart'; // 🆕 Admin State Provider
 import '../../core/persistence/auto_save_manager.dart'; // 🔄 Auto-Save System
 import '../../core/storage/unified_storage_service.dart'; // ✅ user_data Box Sync
+import 'dart:convert'; // v92 username change request JSON
+import 'package:http/http.dart' as http; // v92 worker calls
+import '../../config/api_config.dart'; // v92 ApiConfig.workerUrl
 import '../../services/timezone_helper.dart'; // ✨ v93 TZ inference
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_glass_app_bar.dart';
