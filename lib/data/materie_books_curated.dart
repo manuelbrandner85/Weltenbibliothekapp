@@ -1164,8 +1164,8 @@ verifiziert es nicht, sie behauptet nicht es sei Wahrheit. Sie publiziert
 es, weil es konsistent mit anderen Indizien ist.
 
 Wichtiger als diese eine Behauptung ist das gesamte Buch: Es zeigt, wie
-der amerikanische "Black Budget" funktioniert (jaehrlich ueber $80
-Milliarden geheime Militaerausgaben, 75 Jahre lang), wie Konzerne
+der amerikanische "Black Budget" funktioniert (jaehrlich ueber 80
+Milliarden Dollar geheime Militaerausgaben, 75 Jahre lang), wie Konzerne
 (Lockheed, EG&G, Northrop) und Geheimdienste verzahnt sind, und wie
 gesellschaftliche Mythen (UFOs) auch von Geheimdiensten genaehrt werden,
 um echte Programme zu tarnen.
