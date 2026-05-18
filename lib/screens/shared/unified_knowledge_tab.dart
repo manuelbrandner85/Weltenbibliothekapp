@@ -6,6 +6,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../models/knowledge_extended_models.dart';
 import '../../services/unified_knowledge_service.dart';
 import 'knowledge_reader_mode.dart';
+import '../wissen/cinematic_book_reader_screen.dart'; // v5.44.6 Buecher
 import 'advanced_search_delegate.dart';
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_glass_app_bar.dart';
@@ -109,9 +110,17 @@ class _UnifiedKnowledgeTabState extends State<UnifiedKnowledgeTab>
   void _openEntry(KnowledgeEntry entry) async {
     await _svc.incrementViewCount(entry.id);
     if (!mounted) return;
+    // v5.44.6: Buecher (type='book') bekommen den neuen Cinematic-Reader
+    // mit 3D-Cover + Quote-Karten. Artikel/Practices/Research bleiben im
+    // alten Markdown-Reader.
+    final isBook = entry.type == 'book';
     await Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => KnowledgeReaderMode(entry: entry, world: widget.world)),
+      MaterialPageRoute(
+        builder: (_) => isBook
+            ? CinematicBookReaderScreen(book: entry)
+            : KnowledgeReaderMode(entry: entry, world: widget.world),
+      ),
     );
     _load();
   }
