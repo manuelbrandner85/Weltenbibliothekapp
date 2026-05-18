@@ -28,6 +28,7 @@ import 'calculators/tarot_oracle_screen.dart'; // 🔮 Cinematic mit AI-Lesung
 import 'calculators/runes_oracle_screen.dart'; // ᚱ Elder Futhark Cinematic
 import 'calculators/akasha_chronicle_screen.dart'; // 🌌 Cinematic Journal + AI
 import 'calculators/birth_chart_360_screen.dart'; // ♓ 360° Visual Geburts-Chart
+import 'calculators/biorhythm_chart_screen.dart'; // 📊 90-Tage Bio + Critical Days
 import 'calculators/animated_sacred_geometry_screen.dart'; // 🔯 Animierte SVG
 import 'calculators/sacred_geometry_constructor_screen.dart'; // 🔯 Interaktiver Konstruktor
 import 'calculators/affirmations_studio_screen.dart'; // 🌟 Cinematic AI-Studio
@@ -615,15 +616,15 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'screen': const VoiceAffirmationScreen(),
       },
       
-      // 📊 Biorhythmus (V115 Feature #18)
+      // 📊 Biorhythmus cinematic — 6 Zyklen, 90-Tage-Chart, Critical Days
       {
         'icon': Icons.show_chart,
         'iconEmoji': '📊',
         'title': 'Biorhythmus',
-        'subtitle': 'Körper-Geist-Seele',
-        'color': const Color(0xFF00897B),
+        'subtitle': '6 Zyklen · 90-Tage-Chart · Critical Days · Mondphase',
+        'color': const Color(0xFF26C6DA),
         'category': 'new',
-        'screen': const BiorhythmScreen(),
+        'screen': const BiorhythmChartScreen(),
       },
       // 📊 Biorhythmus-Kompatibilität — zwei Geburtsdaten vergleichen
       {
