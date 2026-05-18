@@ -176,6 +176,15 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
   double? _birthLongitude;
   double? _timezoneOffsetHours;
   bool _birthTimeUnknown = false;
+  String? _gender; // 'male'|'female'|'diverse'|'prefer_not_say'|null
+
+  // ✨ v92: Username-Immutability. Sobald Profil geladen mit existierendem
+  // username -> Feld disabled. Aenderung nur via Change-Request (Antrag).
+  // Ausnahme: Root-Admin (effectiveRole == 'root_admin').
+  String? _originalUsername;
+  bool _userIsRootAdmin = false;
+  bool _pendingUsernameRequest = false; // bereits offener Antrag?
+  String? _pendingRequestedUsername;
 
   // Neue Features
   String? _selectedEmoji;
@@ -495,6 +504,14 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
           _birthLongitude = profile.birthLongitude;
           _timezoneOffsetHours = profile.timezoneOffsetHours;
           _birthTimeUnknown = profile.birthTimeUnknown;
+          _gender = profile.gender;
+          // ✨ v92: Username-Immutability-Tracking
+          _originalUsername = profile.username.isEmpty ? null : profile.username;
+          _userIsRootAdmin = profile.isRootAdmin();
+          // Check for pending change request (async, fire-and-forget)
+          if (_originalUsername != null && profile.userId != null) {
+            _loadPendingUsernameRequest(profile.userId!);
+          }
         }
       }
     } catch (e) {
@@ -503,6 +520,160 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
       }
     } finally {
       setState(() => _isLoading = false);
+    }
+  }
+
+  /// v92: Check ob ein pending Username-Change-Request fuer diesen User
+  /// existiert. Wird beim Profile-Load gerufen damit UI das Feld als
+  /// "Antrag laeuft" markieren kann.
+  Future<void> _loadPendingUsernameRequest(String userId) async {
+    try {
+      final res = await http.get(
+        Uri.parse('${ApiConfig.workerUrl}/api/profile/my-username-request?userId=$userId'),
+      ).timeout(const Duration(seconds: 6));
+      if (res.statusCode != 200 || !mounted) return;
+      final data = jsonDecode(res.body) as Map<String, dynamic>? ?? {};
+      final req = data['request'];
+      if (req is Map) {
+        setState(() {
+          _pendingUsernameRequest = true;
+          _pendingRequestedUsername = req['requested_username'] as String?;
+        });
+      }
+    } catch (_) {/* non-fatal */}
+  }
+
+  /// v92: Bottom-Sheet Dialog wo der User einen Username-Wechsel beantragt.
+  Future<void> _openUsernameChangeRequestDialog() async {
+    if (_originalUsername == null) return;
+    final userId = _energieProfile?.userId ?? _materieProfile?.userId;
+    if (userId == null || userId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Erst Profil speichern, dann Antrag stellen.'),
+      ));
+      return;
+    }
+
+    final newNameCtrl = TextEditingController();
+    final reasonCtrl = TextEditingController();
+    final result = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF0A0A1A),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.fromLTRB(
+          20, 20, 20, MediaQuery.of(ctx).viewInsets.bottom + 20,
+        ),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          const Text('📝 Username-Antrag stellen',
+              style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 8),
+          Text(
+            'Aktuell: @$_originalUsername\n\n'
+            'Username ist nach erstmaliger Anlage gesperrt. '
+            'Ein Admin entscheidet ueber deinen Wunschnamen.',
+            style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 13, height: 1.4),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: newNameCtrl,
+            style: const TextStyle(color: Colors.white),
+            decoration: InputDecoration(
+              labelText: 'Wunsch-Username',
+              labelStyle: const TextStyle(color: Colors.white70),
+              filled: true,
+              fillColor: Colors.white.withValues(alpha: 0.05),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              helperText: '3-32 Zeichen, nur a-z A-Z 0-9 . _ -',
+              helperStyle: const TextStyle(color: Colors.white38, fontSize: 11),
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: reasonCtrl,
+            maxLines: 3,
+            maxLength: 500,
+            style: const TextStyle(color: Colors.white),
+            decoration: InputDecoration(
+              labelText: 'Begruendung (optional)',
+              labelStyle: const TextStyle(color: Colors.white70),
+              filled: true,
+              fillColor: Colors.white.withValues(alpha: 0.05),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              counterStyle: const TextStyle(color: Colors.white24, fontSize: 9),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Abbrechen', style: TextStyle(color: Colors.white70)),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: () => Navigator.pop(ctx, true),
+                icon: const Icon(Icons.send, size: 16),
+                label: const Text('ANTRAG SENDEN'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF7C4DFF),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+              ),
+            ),
+          ]),
+        ]),
+      ),
+    );
+
+    if (result != true) return;
+    final requested = newNameCtrl.text.trim();
+    if (requested.isEmpty || requested == _originalUsername) return;
+    try {
+      final res = await http.post(
+        Uri.parse('${ApiConfig.workerUrl}/api/profile/username-change-request'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'userId': userId,
+          'requested_username': requested,
+          'reason': reasonCtrl.text.trim(),
+        }),
+      ).timeout(const Duration(seconds: 10));
+      if (!mounted) return;
+      final data = jsonDecode(res.body) as Map<String, dynamic>? ?? {};
+      if (res.statusCode == 200 && data['success'] == true) {
+        setState(() {
+          _pendingUsernameRequest = data['direct'] != true;
+          _pendingRequestedUsername = requested;
+          if (data['direct'] == true) {
+            // Root-Admin: sofort uebernommen
+            _originalUsername = requested;
+            _usernameController.text = requested;
+          }
+        });
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(data['message']?.toString() ?? 'Antrag eingereicht'),
+          backgroundColor: const Color(0xFF26A69A),
+        ));
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(data['error']?.toString() ?? 'Antrag fehlgeschlagen'),
+          backgroundColor: Colors.redAccent,
+        ));
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Netzwerk-Fehler: $e'),
+        backgroundColor: Colors.redAccent,
+      ));
     }
   }
 

@@ -4647,12 +4647,14 @@ class _AuditReportsWrapperState extends State<_AuditReportsWrapper>
     with SingleTickerProviderStateMixin {
   late TabController _ctrl;
   int _openReports = 0;
+  int _openUsernameRequests = 0;
 
   @override
   void initState() {
     super.initState();
-    _ctrl = TabController(length: 2, vsync: this);
+    _ctrl = TabController(length: 3, vsync: this);
     _loadReportsCount();
+    _loadUsernameRequestsCount();
   }
 
   Future<void> _loadReportsCount() async {
@@ -4664,6 +4666,20 @@ class _AuditReportsWrapperState extends State<_AuditReportsWrapper>
         final data = jsonDecode(res.body) as Map<String, dynamic>;
         final counts = (data['counts'] as Map?)?.cast<String, dynamic>() ?? const {};
         setState(() => _openReports = (counts['open'] as int?) ?? 0);
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _loadUsernameRequestsCount() async {
+    try {
+      final res = await http
+          .get(Uri.parse('${ApiConfig.workerUrl}/api/admin/username-change-requests'))
+          .timeout(const Duration(seconds: 8));
+      if (res.statusCode == 200 && mounted) {
+        final data = jsonDecode(res.body) as Map<String, dynamic>;
+        final total = (data['total'] as int?) ??
+            (data['requests'] as List?)?.length ?? 0;
+        setState(() => _openUsernameRequests = total);
       }
     } catch (_) {}
   }
@@ -4706,6 +4722,25 @@ class _AuditReportsWrapperState extends State<_AuditReportsWrapper>
               ]),
               text: 'Reports',
             ),
+            Tab(
+              icon: Stack(clipBehavior: Clip.none, children: [
+                const Icon(Icons.edit_note_rounded, size: 16),
+                if (_openUsernameRequests > 0)
+                  Positioned(
+                    right: -8, top: -4,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: Colors.amberAccent,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text('$_openUsernameRequests',
+                          style: const TextStyle(color: Colors.black87, fontSize: 8, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+              ]),
+              text: 'Usernamen',
+            ),
           ],
         ),
       ),
@@ -4718,6 +4753,12 @@ class _AuditReportsWrapperState extends State<_AuditReportsWrapper>
               accent: widget.accent,
               accentBright: widget.accentBright,
               onChanged: _loadReportsCount,
+            ),
+            _UsernameRequestsTab(
+              world: widget.world,
+              accent: widget.accent,
+              accentBright: widget.accentBright,
+              onChanged: _loadUsernameRequestsCount,
             ),
           ],
         ),
