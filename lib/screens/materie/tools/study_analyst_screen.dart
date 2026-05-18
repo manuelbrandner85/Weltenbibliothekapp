@@ -32,7 +32,14 @@ class StudyAnalystScreen extends StatefulWidget {
 
 class _StudyAnalystScreenState extends State<StudyAnalystScreen>
     with TickerProviderStateMixin {
-  static const Color _bg = Color(0xFF030A14);
+  static const Color _bgDark = Color(0xFF030A14);
+
+  /// Theme-aware background. Light-Mode liefert helle `context.wb.bgVoid`,
+  /// Dark-Mode behält den Original-Ton.
+  Color _bg(BuildContext context) {
+    final wb = Theme.of(context).extension<WBCinematic>();
+    return wb?.bgVoid ?? _bgDark;
+  }
   static const Color _primary = Color(0xFF26C6DA);
   static const Color _accent = Color(0xFF66BB6A);
   static const Color _gold = Color(0xFFFFD54F);
@@ -394,7 +401,7 @@ class _StudyAnalystScreenState extends State<StudyAnalystScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: _bg(context),
       extendBodyBehindAppBar: true,
       appBar: WBGlassAppBar(
         world: WBWorld.materie,
@@ -432,7 +439,7 @@ class _StudyAnalystScreenState extends State<StudyAnalystScreen>
             gradient: RadialGradient(
               center: Alignment(0, -0.3),
               radius: 1.5,
-              colors: [Color(0x55006064), Color(0x331A4D4D), _bg],
+              colors: [Color(0x55006064), Color(0x331A4D4D), _bgDark],
             ),
           ),
         ),

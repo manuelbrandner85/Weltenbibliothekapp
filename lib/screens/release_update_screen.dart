@@ -26,6 +26,7 @@ import '../services/apk_download_service.dart';
 import '../services/update_service.dart';
 import '../utils/changelog_translator.dart';
 
+import '../theme/wb_cinematic_tokens.dart';
 enum _UpdateStage { idle, downloading, downloaded, installing, error }
 
 class ReleaseUpdateScreen extends StatefulWidget {
@@ -38,7 +39,14 @@ class ReleaseUpdateScreen extends StatefulWidget {
 
 class _ReleaseUpdateScreenState extends State<ReleaseUpdateScreen> {
   // Home-Dashboard-Farben
-  static const Color _bg = Color(0xFF04080F);
+  static const Color _bgDark = Color(0xFF04080F);
+
+  /// Theme-aware background. Light-Mode liefert helle `context.wb.bgVoid`,
+  /// Dark-Mode behält den Original-Ton.
+  Color _bg(BuildContext context) {
+    final wb = Theme.of(context).extension<WBCinematic>();
+    return wb?.bgVoid ?? _bgDark;
+  }
   static const Color _card = Color(0xFF0A1020);
   static const Color _blue = Color(0xFF2979FF);
   static const Color _cyan = Color(0xFF00E5FF);
@@ -217,7 +225,7 @@ class _ReleaseUpdateScreenState extends State<ReleaseUpdateScreen> {
     return PopScope(
       canPop: canPop,
       child: Scaffold(
-        backgroundColor: _bg,
+        backgroundColor: _bg(context),
         body: SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(24),

@@ -42,7 +42,14 @@ class ShamanicGuidedJourneyScreen extends StatefulWidget {
 
 class _ShamanicGuidedJourneyScreenState extends State<ShamanicGuidedJourneyScreen>
     with TickerProviderStateMixin {
-  static const Color _bg = Color(0xFF080308);
+  static const Color _bgDark = Color(0xFF080308);
+
+  /// Theme-aware background. Light-Mode liefert helle `context.wb.bgVoid`,
+  /// Dark-Mode behält den Original-Ton.
+  Color _bg(BuildContext context) {
+    final wb = Theme.of(context).extension<WBCinematic>();
+    return wb?.bgVoid ?? _bgDark;
+  }
   static const Color _gold = Color(0xFFFFB74D);
   static const String _kvKey = 'shamanic_journeys_v1';
 
@@ -262,7 +269,7 @@ class _ShamanicGuidedJourneyScreenState extends State<ShamanicGuidedJourneyScree
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: _bg(context),
       extendBodyBehindAppBar: true,
       appBar: WBGlassAppBar(
         world: WBWorld.energie,
@@ -304,7 +311,7 @@ class _ShamanicGuidedJourneyScreenState extends State<ShamanicGuidedJourneyScree
               colors: [
                 _world.color.withValues(alpha: 0.3),
                 _world.color.withValues(alpha: 0.08),
-                _bg,
+                _bg(context),
               ],
               stops: const [0.0, 0.5, 1.0],
             ),

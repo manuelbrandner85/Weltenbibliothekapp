@@ -6,6 +6,7 @@ import 'package:sqflite/sqflite.dart'
     if (dart.library.html) '../../stubs/sqflite_stub.dart';
 import 'package:path/path.dart' as p;
 
+import '../theme/wb_cinematic_tokens.dart';
 // ──────────────────────────────────────────────────────────────
 // Mondtagebuch – Weltenbibliothek Energie-Welt
 // Cinema-Stil: Sternenhimmel + astronomisch korrekte Mondphasen
@@ -50,7 +51,14 @@ class _MoonJournalScreenState extends State<MoonJournalScreen>
   ];
 
   // ── Farben ─────────────────────────────────────────────────
-  static const Color _bg = Color(0xFF06040F);
+  static const Color _bgDark = Color(0xFF06040F);
+
+  /// Theme-aware background. Light-Mode liefert helle `context.wb.bgVoid`,
+  /// Dark-Mode behält den Original-Ton.
+  Color _bg(BuildContext context) {
+    final wb = Theme.of(context).extension<WBCinematic>();
+    return wb?.bgVoid ?? _bgDark;
+  }
   static const Color _accent = Color(0xFF9C6FFF);
   static const Color _accentLight = Color(0xFFB99FFF);
   static const Color _teal = Color(0xFF4ECDC4);
@@ -237,7 +245,7 @@ class _MoonJournalScreenState extends State<MoonJournalScreen>
     final daysToNew = nextNew.difference(DateTime.now()).inDays;
 
     return Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: _bg(context),
       body: Stack(
         children: [
           // ── Sternenhimmel ──
@@ -257,7 +265,7 @@ class _MoonJournalScreenState extends State<MoonJournalScreen>
                   radius: 0.8,
                   colors: [
                     const Color(0xFF3D1D6E).withValues(alpha: 0.3),
-                    _bg.withValues(alpha: 0.0),
+                    _bg(context).withValues(alpha: 0.0),
                   ],
                 ),
               ),

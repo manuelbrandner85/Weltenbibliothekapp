@@ -31,7 +31,14 @@ class BirthChart360Screen extends StatefulWidget {
 
 class _BirthChart360ScreenState extends State<BirthChart360Screen>
     with TickerProviderStateMixin {
-  static const Color _bg = Color(0xFF030212);
+  static const Color _bgDark = Color(0xFF030212);
+
+  /// Theme-aware background. Light-Mode liefert helle `context.wb.bgVoid`,
+  /// Dark-Mode behält den Original-Ton.
+  Color _bg(BuildContext context) {
+    final wb = Theme.of(context).extension<WBCinematic>();
+    return wb?.bgVoid ?? _bgDark;
+  }
   static const Color _primary = Color(0xFF1A237E);
   static const Color _accent = Color(0xFF7E57C2);
   static const Color _gold = Color(0xFFFFD54F);
@@ -175,7 +182,7 @@ class _BirthChart360ScreenState extends State<BirthChart360Screen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: _bg(context),
       extendBodyBehindAppBar: true,
       appBar: WBGlassAppBar(
         world: WBWorld.energie,
@@ -211,7 +218,7 @@ class _BirthChart360ScreenState extends State<BirthChart360Screen>
               gradient: RadialGradient(
                 center: Alignment(0, -0.3),
                 radius: 1.5,
-                colors: [Color(0x551A237E), Color(0x3306040F), _bg],
+                colors: [Color(0x551A237E), Color(0x3306040F), _bgDark],
               ),
             ),
           ),

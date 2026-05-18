@@ -27,7 +27,14 @@ class GlitchMatrixDetektorScreen extends StatefulWidget {
 class _GlitchMatrixDetektorScreenState extends State<GlitchMatrixDetektorScreen>
     with TickerProviderStateMixin {
   static const _kKey = 'glitch_journal_v1';
-  static const Color _bg = Color(0xFF050010);
+  static const Color _bgDark = Color(0xFF050010);
+
+  /// Theme-aware background. Light-Mode liefert helle `context.wb.bgVoid`,
+  /// Dark-Mode behält den Original-Ton.
+  Color _bg(BuildContext context) {
+    final wb = Theme.of(context).extension<WBCinematic>();
+    return wb?.bgVoid ?? _bgDark;
+  }
   static const Color _primary = Color(0xFFFF7043);
   static const Color _gold = Color(0xFFFFD700);
 
@@ -102,12 +109,12 @@ class _GlitchMatrixDetektorScreenState extends State<GlitchMatrixDetektorScreen>
   Widget build(BuildContext context) {
     if (_loading) {
       return Scaffold(
-        backgroundColor: _bg,
+        backgroundColor: _bg(context),
         body: Center(child: CircularProgressIndicator(color: _primary)),
       );
     }
     return Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: _bg(context),
       extendBodyBehindAppBar: true,
       appBar: WBGlassAppBar(
         world: WBWorld.neutral,
@@ -122,7 +129,7 @@ class _GlitchMatrixDetektorScreenState extends State<GlitchMatrixDetektorScreen>
           decoration: const BoxDecoration(
             gradient: RadialGradient(
               center: Alignment.center, radius: 1.5,
-              colors: [Color(0x55BF360C), Color(0x33260C08), _bg],
+              colors: [Color(0x55BF360C), Color(0x33260C08), _bgDark],
             ),
           ),
         ),

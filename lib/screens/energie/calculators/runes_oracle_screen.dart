@@ -34,7 +34,14 @@ class RunesOracleScreen extends StatefulWidget {
 
 class _RunesOracleScreenState extends State<RunesOracleScreen>
     with TickerProviderStateMixin {
-  static const Color _bg = Color(0xFF050908);
+  static const Color _bgDark = Color(0xFF050908);
+
+  /// Theme-aware background. Light-Mode liefert helle `context.wb.bgVoid`,
+  /// Dark-Mode behält den Original-Ton.
+  Color _bg(BuildContext context) {
+    final wb = Theme.of(context).extension<WBCinematic>();
+    return wb?.bgVoid ?? _bgDark;
+  }
   static const Color _primary = Color(0xFF1B5E20); // dark green
   static const Color _accent = Color(0xFF4DD0E1); // ice blue
   static const Color _gold = Color(0xFFFFB74D);
@@ -258,7 +265,7 @@ class _RunesOracleScreenState extends State<RunesOracleScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: _bg(context),
       extendBodyBehindAppBar: true,
       appBar: WBGlassAppBar(
         world: WBWorld.energie,
@@ -306,7 +313,7 @@ class _RunesOracleScreenState extends State<RunesOracleScreen>
               gradient: RadialGradient(
                 center: Alignment(0, -0.3),
                 radius: 1.4,
-                colors: [Color(0x661B5E20), Color(0x440D2F11), _bg],
+                colors: [Color(0x661B5E20), Color(0x440D2F11), _bgDark],
               ),
             ),
           ),

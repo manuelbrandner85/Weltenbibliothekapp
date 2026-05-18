@@ -24,7 +24,14 @@ class NumerologieRealtimeScreen extends StatefulWidget {
 
 class _NumerologieRealtimeScreenState extends State<NumerologieRealtimeScreen>
     with TickerProviderStateMixin {
-  static const Color _bg = Color(0xFF080313);
+  static const Color _bgDark = Color(0xFF080313);
+
+  /// Theme-aware background. Light-Mode liefert helle `context.wb.bgVoid`,
+  /// Dark-Mode behält den Original-Ton.
+  Color _bg(BuildContext context) {
+    final wb = Theme.of(context).extension<WBCinematic>();
+    return wb?.bgVoid ?? _bgDark;
+  }
   static const Color _primary = Color(0xFFAB47BC);
   static const Color _gold = Color(0xFFFFD54F);
 
@@ -84,7 +91,7 @@ class _NumerologieRealtimeScreenState extends State<NumerologieRealtimeScreen>
     final masterNum = _digitSum(dateNum + hourNum + minuteNum);
 
     return Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: _bg(context),
       extendBodyBehindAppBar: true,
       appBar: WBGlassAppBar(
         world: WBWorld.neutral,
@@ -99,7 +106,7 @@ class _NumerologieRealtimeScreenState extends State<NumerologieRealtimeScreen>
           decoration: const BoxDecoration(
             gradient: RadialGradient(
               center: Alignment.center, radius: 1.5,
-              colors: [Color(0x554A148C), Color(0x331A0B33), _bg],
+              colors: [Color(0x554A148C), Color(0x331A0B33), _bgDark],
             ),
           ),
         ),

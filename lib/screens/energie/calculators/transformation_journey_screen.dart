@@ -35,7 +35,14 @@ class TransformationJourneyScreen extends StatefulWidget {
 
 class _TransformationJourneyScreenState extends State<TransformationJourneyScreen>
     with TickerProviderStateMixin {
-  static const Color _bg = Color(0xFF080414);
+  static const Color _bgDark = Color(0xFF080414);
+
+  /// Theme-aware background. Light-Mode liefert helle `context.wb.bgVoid`,
+  /// Dark-Mode behält den Original-Ton.
+  Color _bg(BuildContext context) {
+    final wb = Theme.of(context).extension<WBCinematic>();
+    return wb?.bgVoid ?? _bgDark;
+  }
   static const Color _primary = Color(0xFFFF7043);
   static const Color _accent = Color(0xFFAB47BC);
   static const Color _gold = Color(0xFFFFD54F);
@@ -195,7 +202,7 @@ class _TransformationJourneyScreenState extends State<TransformationJourneyScree
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: _bg(context),
       extendBodyBehindAppBar: true,
       appBar: WBGlassAppBar(
         world: WBWorld.energie,
@@ -214,7 +221,7 @@ class _TransformationJourneyScreenState extends State<TransformationJourneyScree
             gradient: RadialGradient(
               center: Alignment(0, -0.3),
               radius: 1.5,
-              colors: [Color(0x55BF360C), Color(0x33260C08), _bg],
+              colors: [Color(0x55BF360C), Color(0x33260C08), _bgDark],
             ),
           ),
         ),

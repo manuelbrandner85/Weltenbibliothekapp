@@ -45,7 +45,14 @@ class SacredGeometryConstructorScreen extends StatefulWidget {
 class _SacredGeometryConstructorScreenState
     extends State<SacredGeometryConstructorScreen>
     with TickerProviderStateMixin {
-  static const Color _bg = Color(0xFF050216);
+  static const Color _bgDark = Color(0xFF050216);
+
+  /// Theme-aware background. Light-Mode liefert helle `context.wb.bgVoid`,
+  /// Dark-Mode behält den Original-Ton.
+  Color _bg(BuildContext context) {
+    final wb = Theme.of(context).extension<WBCinematic>();
+    return wb?.bgVoid ?? _bgDark;
+  }
   static const Color _primary = Color(0xFF00BCD4); // cyan
   static const Color _accent = Color(0xFFAB47BC); // magenta-violet
   static const Color _gold = Color(0xFFFFD54F);
@@ -346,7 +353,7 @@ class _SacredGeometryConstructorScreenState
     final info = _stages[_stage];
 
     return Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: _bg(context),
       extendBodyBehindAppBar: true,
       appBar: WBGlassAppBar(
         world: WBWorld.energie,
@@ -390,7 +397,7 @@ class _SacredGeometryConstructorScreenState
                 colors: [
                   _accent.withValues(alpha: 0.25),
                   const Color(0xFF1A0833).withValues(alpha: 0.5),
-                  _bg,
+                  _bg(context),
                 ],
                 stops: const [0.0, 0.5, 1.0],
               ),

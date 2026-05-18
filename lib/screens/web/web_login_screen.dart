@@ -16,6 +16,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../config/api_config.dart';
 
+import '../theme/wb_cinematic_tokens.dart';
 class WebLoginScreen extends StatefulWidget {
   final VoidCallback? onLoginSuccess;
   const WebLoginScreen({super.key, this.onLoginSuccess});
@@ -49,7 +50,14 @@ class _WebLoginScreenState extends State<WebLoginScreen>
 
   static const Color _gold = Color(0xFFC9A84C);
   static const Color _goldLight = Color(0xFFE0C872);
-  static const Color _bg = Color(0xFF0A0A0A);
+  static const Color _bgDark = Color(0xFF0A0A0A);
+
+  /// Theme-aware background. Light-Mode liefert helle `context.wb.bgVoid`,
+  /// Dark-Mode behält den Original-Ton.
+  Color _bg(BuildContext context) {
+    final wb = Theme.of(context).extension<WBCinematic>();
+    return wb?.bgVoid ?? _bgDark;
+  }
   static const Color _surface = Color(0xFF141414);
   static const Color _border = Color(0xFF2A2A2A);
 
@@ -329,7 +337,7 @@ class _WebLoginScreenState extends State<WebLoginScreen>
     assert(kIsWeb, 'WebLoginScreen ist nur für Web.');
 
     return Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: _bg(context),
       body: Center(
         child: SingleChildScrollView(
           child: Container(

@@ -32,7 +32,14 @@ class TarotOracleScreen extends StatefulWidget {
 
 class _TarotOracleScreenState extends State<TarotOracleScreen>
     with TickerProviderStateMixin {
-  static const Color _bg = Color(0xFF06040F);
+  static const Color _bgDark = Color(0xFF06040F);
+
+  /// Theme-aware background. Light-Mode liefert helle `context.wb.bgVoid`,
+  /// Dark-Mode behält den Original-Ton.
+  Color _bg(BuildContext context) {
+    final wb = Theme.of(context).extension<WBCinematic>();
+    return wb?.bgVoid ?? _bgDark;
+  }
   static const Color _primary = Color(0xFF8E5AE2);
   static const Color _accent = Color(0xFFEC407A);
   static const Color _gold = Color(0xFFFFD54F);
@@ -238,7 +245,7 @@ class _TarotOracleScreenState extends State<TarotOracleScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: _bg(context),
       extendBodyBehindAppBar: true,
       appBar: WBGlassAppBar(
         world: WBWorld.energie,
@@ -285,7 +292,7 @@ class _TarotOracleScreenState extends State<TarotOracleScreen>
                 colors: [
                   Color(0x554A148C),
                   Color(0x331A0A2E),
-                  _bg,
+                  _bgDark,
                 ],
               ),
             ),

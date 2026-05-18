@@ -41,7 +41,14 @@ class AffirmationsStudioScreen extends StatefulWidget {
 
 class _AffirmationsStudioScreenState extends State<AffirmationsStudioScreen>
     with TickerProviderStateMixin {
-  static const Color _bg = Color(0xFF06030F);
+  static const Color _bgDark = Color(0xFF06030F);
+
+  /// Theme-aware background. Light-Mode liefert helle `context.wb.bgVoid`,
+  /// Dark-Mode behält den Original-Ton.
+  Color _bg(BuildContext context) {
+    final wb = Theme.of(context).extension<WBCinematic>();
+    return wb?.bgVoid ?? _bgDark;
+  }
   static const Color _gold = Color(0xFFFFD54F);
 
   late final FlutterTts _tts;
@@ -228,7 +235,7 @@ class _AffirmationsStudioScreenState extends State<AffirmationsStudioScreen>
     final hasResults = _affirmations.isNotEmpty;
 
     return Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: _bg(context),
       extendBodyBehindAppBar: true,
       appBar: WBGlassAppBar(
         world: WBWorld.energie,
@@ -266,7 +273,7 @@ class _AffirmationsStudioScreenState extends State<AffirmationsStudioScreen>
                 colors: [
                   _selected.primary.withValues(alpha: 0.25),
                   _selected.accent.withValues(alpha: 0.12),
-                  _bg,
+                  _bg(context),
                 ],
                 stops: const [0.0, 0.4, 1.0],
               ),

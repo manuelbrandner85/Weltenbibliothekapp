@@ -29,7 +29,14 @@ class PowerNetworkExplorerScreen extends StatefulWidget {
 
 class _PowerNetworkExplorerScreenState extends State<PowerNetworkExplorerScreen>
     with TickerProviderStateMixin {
-  static const Color _bg = Color(0xFF0A0512);
+  static const Color _bgDark = Color(0xFF0A0512);
+
+  /// Theme-aware background. Light-Mode liefert helle `context.wb.bgVoid`,
+  /// Dark-Mode behält den Original-Ton.
+  Color _bg(BuildContext context) {
+    final wb = Theme.of(context).extension<WBCinematic>();
+    return wb?.bgVoid ?? _bgDark;
+  }
   static const Color _primary = Color(0xFFE53935);
   static const Color _accent = Color(0xFF7C4DFF);
   static const Color _gold = Color(0xFFFFD54F);
@@ -270,7 +277,7 @@ class _PowerNetworkExplorerScreenState extends State<PowerNetworkExplorerScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: _bg(context),
       extendBodyBehindAppBar: true,
       appBar: WBGlassAppBar(
         world: WBWorld.materie,
@@ -311,7 +318,7 @@ class _PowerNetworkExplorerScreenState extends State<PowerNetworkExplorerScreen>
             gradient: RadialGradient(
               center: Alignment(0, -0.3),
               radius: 1.5,
-              colors: [Color(0x55B71C1C), Color(0x33420C0C), _bg],
+              colors: [Color(0x55B71C1C), Color(0x33420C0C), _bgDark],
             ),
           ),
         ),

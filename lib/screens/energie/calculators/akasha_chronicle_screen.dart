@@ -34,7 +34,14 @@ class AkashaChronicleScreen extends StatefulWidget {
 
 class _AkashaChronicleScreenState extends State<AkashaChronicleScreen>
     with TickerProviderStateMixin {
-  static const Color _bg = Color(0xFF0A0420);
+  static const Color _bgDark = Color(0xFF0A0420);
+
+  /// Theme-aware background. Light-Mode liefert helle `context.wb.bgVoid`,
+  /// Dark-Mode behält den Original-Ton.
+  Color _bg(BuildContext context) {
+    final wb = Theme.of(context).extension<WBCinematic>();
+    return wb?.bgVoid ?? _bgDark;
+  }
   static const Color _primary = Color(0xFF7C4DFF);
   static const Color _accent = Color(0xFFFFC400);
   static const Color _gold = Color(0xFFFFD54F);
@@ -241,7 +248,7 @@ class _AkashaChronicleScreenState extends State<AkashaChronicleScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: _bg(context),
       extendBodyBehindAppBar: true,
       appBar: WBGlassAppBar(
         world: WBWorld.energie,
@@ -264,7 +271,7 @@ class _AkashaChronicleScreenState extends State<AkashaChronicleScreen>
               gradient: RadialGradient(
                 center: Alignment(0, -0.4),
                 radius: 1.5,
-                colors: [Color(0x553D1F8C), Color(0x331A0833), _bg],
+                colors: [Color(0x553D1F8C), Color(0x331A0833), _bgDark],
               ),
             ),
           ),

@@ -32,7 +32,14 @@ class MantraPracticeScreen extends StatefulWidget {
 
 class _MantraPracticeScreenState extends State<MantraPracticeScreen>
     with TickerProviderStateMixin {
-  static const Color _bg = Color(0xFF0A0512);
+  static const Color _bgDark = Color(0xFF0A0512);
+
+  /// Theme-aware background. Light-Mode liefert helle `context.wb.bgVoid`,
+  /// Dark-Mode behält den Original-Ton.
+  Color _bg(BuildContext context) {
+    final wb = Theme.of(context).extension<WBCinematic>();
+    return wb?.bgVoid ?? _bgDark;
+  }
   static const Color _primary = Color(0xFFFFB300); // amber
   static const Color _secondary = Color(0xFFFF6F00); // deep orange
   static const Color _accent = Color(0xFFD500F9); // magenta
@@ -208,7 +215,7 @@ class _MantraPracticeScreenState extends State<MantraPracticeScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: _bg(context),
       extendBodyBehindAppBar: true,
       appBar: WBGlassAppBar(
         world: WBWorld.energie,

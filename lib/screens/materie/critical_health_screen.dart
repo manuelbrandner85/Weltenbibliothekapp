@@ -24,7 +24,14 @@ class _CriticalHealthScreenState extends State<CriticalHealthScreen>
     with SingleTickerProviderStateMixin {
   // ─── Theme ───────────────────────────────────────────────────────────────
   static const Color _accent = Color(0xFFE53935);
-  static const Color _bg = Color(0xFF0D0505);
+  static const Color _bgDark = Color(0xFF0D0505);
+
+  /// Theme-aware background. Light-Mode liefert helle `context.wb.bgVoid`,
+  /// Dark-Mode behält den Original-Ton.
+  Color _bg(BuildContext context) {
+    final wb = Theme.of(context).extension<WBCinematic>();
+    return wb?.bgVoid ?? _bgDark;
+  }
   static const Color _surface = Color(0xFF1A0000);
   static const Color _surfaceLight = Color(0xFF2A0808);
   static const Color _textPrimary = Colors.white;
@@ -335,7 +342,7 @@ class _CriticalHealthScreenState extends State<CriticalHealthScreen>
         children: [
           _FdaTab(
             accent: _accent,
-            bg: _bg,
+            bg: _bg(context),
             surface: _surface,
             surfaceLight: _surfaceLight,
             textPrimary: _textPrimary,
@@ -353,7 +360,7 @@ class _CriticalHealthScreenState extends State<CriticalHealthScreen>
           ),
           _RetractTab(
             accent: _accent,
-            bg: _bg,
+            bg: _bg(context),
             surface: _surface,
             surfaceLight: _surfaceLight,
             textPrimary: _textPrimary,
@@ -371,7 +378,7 @@ class _CriticalHealthScreenState extends State<CriticalHealthScreen>
           ),
           _CmsTab(
             accent: _accent,
-            bg: _bg,
+            bg: _bg(context),
             surface: _surface,
             surfaceLight: _surfaceLight,
             textPrimary: _textPrimary,

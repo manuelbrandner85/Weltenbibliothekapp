@@ -49,7 +49,14 @@ class EasterEggSheet extends StatefulWidget {
 
 class _EasterEggSheetState extends State<EasterEggSheet>
     with TickerProviderStateMixin {
-  static const Color _bg = Color(0xFF03020A);
+  static const Color _bgDark = Color(0xFF03020A);
+
+  /// Theme-aware background. Light-Mode liefert helle `context.wb.bgVoid`,
+  /// Dark-Mode behält den Original-Ton.
+  Color _bg(BuildContext context) {
+    final wb = Theme.of(context).extension<WBCinematic>();
+    return wb?.bgVoid ?? _bgDark;
+  }
   static const Color _primary = Color(0xFF7C4DFF);
   static const Color _accent = Color(0xFF00BCD4);
   static const Color _gold = Color(0xFFFFD700);
@@ -79,7 +86,7 @@ class _EasterEggSheetState extends State<EasterEggSheet>
   Widget build(BuildContext context) {
     final items = _items();
     return Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: _bg(context),
       extendBodyBehindAppBar: true,
       appBar: WBGlassAppBar(
         world: WBWorld.neutral,
@@ -110,7 +117,7 @@ class _EasterEggSheetState extends State<EasterEggSheet>
                 colors: [
                   _primary.withValues(alpha: 0.35 * _enterCtrl.value),
                   _accent.withValues(alpha: 0.18 * _enterCtrl.value),
-                  _bg,
+                  _bg(context),
                 ],
                 stops: const [0.0, 0.5, 1.0],
               ),

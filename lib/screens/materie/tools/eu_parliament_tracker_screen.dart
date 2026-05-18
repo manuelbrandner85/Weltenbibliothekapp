@@ -29,7 +29,14 @@ class EuParliamentTrackerScreen extends StatefulWidget {
 
 class _EuParliamentTrackerScreenState extends State<EuParliamentTrackerScreen>
     with TickerProviderStateMixin {
-  static const Color _bg = Color(0xFF040A1A);
+  static const Color _bgDark = Color(0xFF040A1A);
+
+  /// Theme-aware background. Light-Mode liefert helle `context.wb.bgVoid`,
+  /// Dark-Mode behält den Original-Ton.
+  Color _bg(BuildContext context) {
+    final wb = Theme.of(context).extension<WBCinematic>();
+    return wb?.bgVoid ?? _bgDark;
+  }
   static const Color _primary = Color(0xFF2196F3);
   static const Color _accent = Color(0xFFFFD54F);
   static const String _kAlignKey = 'eu_alignments_v1';
@@ -171,7 +178,7 @@ class _EuParliamentTrackerScreenState extends State<EuParliamentTrackerScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: _bg(context),
       extendBodyBehindAppBar: true,
       appBar: WBGlassAppBar(
         world: WBWorld.materie,
@@ -209,7 +216,7 @@ class _EuParliamentTrackerScreenState extends State<EuParliamentTrackerScreen>
             gradient: RadialGradient(
               center: Alignment(0, -0.3),
               radius: 1.5,
-              colors: [Color(0x550D47A1), Color(0x33082E5C), _bg],
+              colors: [Color(0x550D47A1), Color(0x33082E5C), _bgDark],
             ),
           ),
         ),

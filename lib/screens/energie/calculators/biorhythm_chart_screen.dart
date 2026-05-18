@@ -32,7 +32,14 @@ class BiorhythmChartScreen extends StatefulWidget {
 
 class _BiorhythmChartScreenState extends State<BiorhythmChartScreen>
     with TickerProviderStateMixin {
-  static const Color _bg = Color(0xFF030814);
+  static const Color _bgDark = Color(0xFF030814);
+
+  /// Theme-aware background. Light-Mode liefert helle `context.wb.bgVoid`,
+  /// Dark-Mode behält den Original-Ton.
+  Color _bg(BuildContext context) {
+    final wb = Theme.of(context).extension<WBCinematic>();
+    return wb?.bgVoid ?? _bgDark;
+  }
   static const Color _primary = Color(0xFF26C6DA);
   static const Color _accent = Color(0xFFFF6F00);
   static const Color _gold = Color(0xFFFFD54F);
@@ -175,7 +182,7 @@ class _BiorhythmChartScreenState extends State<BiorhythmChartScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: _bg(context),
       extendBodyBehindAppBar: true,
       appBar: WBGlassAppBar(
         world: WBWorld.energie,
@@ -201,7 +208,7 @@ class _BiorhythmChartScreenState extends State<BiorhythmChartScreen>
             gradient: RadialGradient(
               center: Alignment(0, -0.3),
               radius: 1.5,
-              colors: [Color(0x550D2F4E), Color(0x33060F1A), _bg],
+              colors: [Color(0x550D2F4E), Color(0x33060F1A), _bgDark],
             ),
           ),
         ),

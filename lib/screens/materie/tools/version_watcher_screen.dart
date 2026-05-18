@@ -29,7 +29,14 @@ class VersionWatcherScreen extends StatefulWidget {
 
 class _VersionWatcherScreenState extends State<VersionWatcherScreen>
     with TickerProviderStateMixin {
-  static const Color _bg = Color(0xFF0F0608);
+  static const Color _bgDark = Color(0xFF0F0608);
+
+  /// Theme-aware background. Light-Mode liefert helle `context.wb.bgVoid`,
+  /// Dark-Mode behält den Original-Ton.
+  Color _bg(BuildContext context) {
+    final wb = Theme.of(context).extension<WBCinematic>();
+    return wb?.bgVoid ?? _bgDark;
+  }
   static const Color _primary = Color(0xFFFF7043);
   static const Color _accent = Color(0xFFFFD54F);
   static const Color _removed = Color(0xFFE53935);
@@ -208,7 +215,7 @@ class _VersionWatcherScreenState extends State<VersionWatcherScreen>
   Widget build(BuildContext context) {
     final isWatched = _currentUrl.isNotEmpty && _watchlist.containsKey(_currentUrl);
     return Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: _bg(context),
       extendBodyBehindAppBar: true,
       appBar: WBGlassAppBar(
         world: WBWorld.materie,
@@ -253,7 +260,7 @@ class _VersionWatcherScreenState extends State<VersionWatcherScreen>
             gradient: RadialGradient(
               center: Alignment(0, -0.3),
               radius: 1.5,
-              colors: [Color(0x55BF360C), Color(0x33260C08), _bg],
+              colors: [Color(0x55BF360C), Color(0x33260C08), _bgDark],
             ),
           ),
         ),

@@ -140,7 +140,14 @@ class LichtspracheDecoderScreen extends StatefulWidget {
 
 class _LichtspracheDecoderScreenState extends State<LichtspracheDecoderScreen>
     with TickerProviderStateMixin {
-  static const Color _bg = Color(0xFF0A0414);
+  static const Color _bgDark = Color(0xFF0A0414);
+
+  /// Theme-aware background. Light-Mode liefert helle `context.wb.bgVoid`,
+  /// Dark-Mode behält den Original-Ton.
+  Color _bg(BuildContext context) {
+    final wb = Theme.of(context).extension<WBCinematic>();
+    return wb?.bgVoid ?? _bgDark;
+  }
   static const Color _gold = Color(0xFFFFD700);
   static const Color _primary = Color(0xFF7C4DFF);
   static const String _prefsKey = 'daily_symbol_history_v1';
@@ -293,7 +300,7 @@ class _LichtspracheDecoderScreenState extends State<LichtspracheDecoderScreen>
     final symbol = _kSymbols[_todayIndex];
 
     return Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: _bg(context),
       extendBodyBehindAppBar: true,
       appBar: WBGlassAppBar(
         world: WBWorld.neutral,
@@ -324,7 +331,7 @@ class _LichtspracheDecoderScreenState extends State<LichtspracheDecoderScreen>
                 colors: <Color>[
                   Color(0x553F1E8C),
                   Color(0x331A0833),
-                  _bg,
+                  _bgDark,
                 ],
               ),
             ),

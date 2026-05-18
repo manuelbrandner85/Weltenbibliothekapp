@@ -27,7 +27,14 @@ class HumanDesignBodyGraphScreen extends StatefulWidget {
 
 class _HumanDesignBodyGraphScreenState extends State<HumanDesignBodyGraphScreen>
     with TickerProviderStateMixin {
-  static const Color _bg = Color(0xFF050414);
+  static const Color _bgDark = Color(0xFF050414);
+
+  /// Theme-aware background. Light-Mode liefert helle `context.wb.bgVoid`,
+  /// Dark-Mode behält den Original-Ton.
+  Color _bg(BuildContext context) {
+    final wb = Theme.of(context).extension<WBCinematic>();
+    return wb?.bgVoid ?? _bgDark;
+  }
   static const Color _primary = Color(0xFF00ACC1);
   static const Color _accent = Color(0xFFFFB300);
   static const Color _gold = Color(0xFFFFD54F);
@@ -149,7 +156,7 @@ class _HumanDesignBodyGraphScreenState extends State<HumanDesignBodyGraphScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: _bg(context),
       extendBodyBehindAppBar: true,
       appBar: WBGlassAppBar(
         world: WBWorld.energie,
@@ -176,7 +183,7 @@ class _HumanDesignBodyGraphScreenState extends State<HumanDesignBodyGraphScreen>
             gradient: RadialGradient(
               center: Alignment(0, -0.3),
               radius: 1.5,
-              colors: [Color(0x4400796B), Color(0x33041A1F), _bg],
+              colors: [Color(0x4400796B), Color(0x33041A1F), _bgDark],
             ),
           ),
         ),

@@ -26,7 +26,14 @@ class CosmicResetRitualScreen extends StatefulWidget {
 
 class _CosmicResetRitualScreenState extends State<CosmicResetRitualScreen>
     with TickerProviderStateMixin {
-  static const Color _bg = Color(0xFF0A0205);
+  static const Color _bgDark = Color(0xFF0A0205);
+
+  /// Theme-aware background. Light-Mode liefert helle `context.wb.bgVoid`,
+  /// Dark-Mode behält den Original-Ton.
+  Color _bg(BuildContext context) {
+    final wb = Theme.of(context).extension<WBCinematic>();
+    return wb?.bgVoid ?? _bgDark;
+  }
   static const Color _primary = Color(0xFFE53935);
   static const Color _accent = Color(0xFFFFB300);
 
@@ -92,7 +99,7 @@ class _CosmicResetRitualScreenState extends State<CosmicResetRitualScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: _bg(context),
       extendBodyBehindAppBar: true,
       appBar: WBGlassAppBar(
         world: WBWorld.neutral,
@@ -107,7 +114,7 @@ class _CosmicResetRitualScreenState extends State<CosmicResetRitualScreen>
           decoration: const BoxDecoration(
             gradient: RadialGradient(
               center: Alignment.center, radius: 1.6,
-              colors: [Color(0x66B71C1C), Color(0x33420C0C), _bg],
+              colors: [Color(0x66B71C1C), Color(0x33420C0C), _bgDark],
             ),
           ),
         ),

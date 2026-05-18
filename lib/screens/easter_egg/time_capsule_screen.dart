@@ -26,7 +26,14 @@ class TimeCapsuleScreen extends StatefulWidget {
 class _TimeCapsuleScreenState extends State<TimeCapsuleScreen>
     with TickerProviderStateMixin {
   static const _kKey = 'time_capsules_v1';
-  static const Color _bg = Color(0xFF03081C);
+  static const Color _bgDark = Color(0xFF03081C);
+
+  /// Theme-aware background. Light-Mode liefert helle `context.wb.bgVoid`,
+  /// Dark-Mode behält den Original-Ton.
+  Color _bg(BuildContext context) {
+    final wb = Theme.of(context).extension<WBCinematic>();
+    return wb?.bgVoid ?? _bgDark;
+  }
   static const Color _primary = Color(0xFF42A5F5);
   static const Color _gold = Color(0xFFFFD700);
 
@@ -111,12 +118,12 @@ class _TimeCapsuleScreenState extends State<TimeCapsuleScreen>
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) return Scaffold(backgroundColor: _bg, body: Center(child: CircularProgressIndicator(color: _primary)));
+    if (_loading) return Scaffold(backgroundColor: _bg(context), body: Center(child: CircularProgressIndicator(color: _primary)));
     final ripe = _capsules.where((c) => !c.opened && DateTime.now().isAfter(c.openAt)).toList();
     final pending = _capsules.where((c) => !c.opened && DateTime.now().isBefore(c.openAt)).toList();
     final opened = _capsules.where((c) => c.opened).toList();
     return Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: _bg(context),
       extendBodyBehindAppBar: true,
       appBar: WBGlassAppBar(
         world: WBWorld.neutral,
@@ -129,7 +136,7 @@ class _TimeCapsuleScreenState extends State<TimeCapsuleScreen>
       body: Stack(fit: StackFit.expand, children: [
         Container(decoration: const BoxDecoration(gradient: RadialGradient(
           center: Alignment.center, radius: 1.5,
-          colors: [Color(0x550D47A1), Color(0x33082E5C), _bg]))),
+          colors: [Color(0x550D47A1), Color(0x33082E5C), _bgDark]))),
         IgnorePointer(child: AnimatedBuilder(animation: _ambientCtrl, builder: (_, __) =>
             CustomPaint(painter: _TcOrbsPainter(_ambientCtrl.value), size: Size.infinite))),
         const IgnorePointer(child: WBAmbientParticles(world: WBWorld.neutral, count: 40)),

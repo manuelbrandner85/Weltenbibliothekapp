@@ -28,7 +28,14 @@ class SynchronizitaetenLoggerScreen extends StatefulWidget {
 class _SynchronizitaetenLoggerScreenState extends State<SynchronizitaetenLoggerScreen>
     with TickerProviderStateMixin {
   static const _kKey = 'synchronizitaeten_v1';
-  static const Color _bg = Color(0xFF0A0512);
+  static const Color _bgDark = Color(0xFF0A0512);
+
+  /// Theme-aware background. Light-Mode liefert helle `context.wb.bgVoid`,
+  /// Dark-Mode behält den Original-Ton.
+  Color _bg(BuildContext context) {
+    final wb = Theme.of(context).extension<WBCinematic>();
+    return wb?.bgVoid ?? _bgDark;
+  }
   static const Color _primary = Color(0xFFEC407A);
   static const Color _gold = Color(0xFFFFD700);
 
@@ -118,9 +125,9 @@ class _SynchronizitaetenLoggerScreenState extends State<SynchronizitaetenLoggerS
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) return Scaffold(backgroundColor: _bg, body: Center(child: CircularProgressIndicator(color: _primary)));
+    if (_loading) return Scaffold(backgroundColor: _bg(context), body: Center(child: CircularProgressIndicator(color: _primary)));
     return Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: _bg(context),
       extendBodyBehindAppBar: true,
       appBar: WBGlassAppBar(
         world: WBWorld.neutral,
@@ -133,7 +140,7 @@ class _SynchronizitaetenLoggerScreenState extends State<SynchronizitaetenLoggerS
       body: Stack(fit: StackFit.expand, children: [
         Container(decoration: const BoxDecoration(gradient: RadialGradient(
           center: Alignment.center, radius: 1.5,
-          colors: [Color(0x55880E4F), Color(0x33360A2E), _bg]))),
+          colors: [Color(0x55880E4F), Color(0x33360A2E), _bgDark]))),
         IgnorePointer(child: AnimatedBuilder(animation: _ambientCtrl, builder: (_, __) =>
             CustomPaint(painter: _SyncOrbsPainter(_ambientCtrl.value), size: Size.infinite))),
         const IgnorePointer(child: WBAmbientParticles(world: WBWorld.neutral, count: 40)),

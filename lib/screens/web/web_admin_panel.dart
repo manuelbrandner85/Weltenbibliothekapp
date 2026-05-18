@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../theme/wb_cinematic_tokens.dart';
 class WebAdminPanel extends StatefulWidget {
   const WebAdminPanel({super.key});
 
@@ -24,7 +25,14 @@ class _WebAdminPanelState extends State<WebAdminPanel>
   String? _error;
 
   static const Color _gold = Color(0xFFC9A84C);
-  static const Color _bg = Color(0xFF0A0A0A);
+  static const Color _bgDark = Color(0xFF0A0A0A);
+
+  /// Theme-aware background. Light-Mode liefert helle `context.wb.bgVoid`,
+  /// Dark-Mode behält den Original-Ton.
+  Color _bg(BuildContext context) {
+    final wb = Theme.of(context).extension<WBCinematic>();
+    return wb?.bgVoid ?? _bgDark;
+  }
   static const Color _surface = Color(0xFF141414);
   static const Color _border = Color(0xFF2A2A2A);
 
@@ -175,7 +183,7 @@ class _WebAdminPanelState extends State<WebAdminPanel>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: _bg(context),
       appBar: AppBar(
         backgroundColor: _surface,
         title: const Row(
