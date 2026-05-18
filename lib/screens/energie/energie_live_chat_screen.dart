@@ -86,7 +86,8 @@ import '../../services/chat/unread_tracker_service.dart';
 import '../../widgets/chat_animated_background.dart';
 import '../../widgets/live_room_banner.dart';
 import '../../widgets/live/live_chat_hero.dart';
-import '../../widgets/live/chat_intelligence_widgets.dart';
+import '../../widgets/live/chat_intelligence_widgets.dart'
+    show CatchupCard, TopicCloud, SmartReplyComputer;
 import '../live/live_replay_library_screen.dart';
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_glass_app_bar.dart';
@@ -1666,6 +1667,20 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                   _buildRoomSelector(),
                   // ✨ ROOM VIBE BANNER — Stimmungs-Emojis der aktiven User
                   _buildRoomVibeBanner(),
+                  // ✨ v5.44 Phase 2: AI-Catchup wenn User > 24h weg war
+                  if (_unreadSeparatorTime != null)
+                    CatchupCard(
+                      world: 'energie',
+                      lastVisit: _unreadSeparatorTime!,
+                      recentMessages: _messages.take(50).toList(),
+                      onDismiss: () => setState(() => _unreadSeparatorTime = null),
+                    ),
+                  // ✨ v5.44 Phase 2: Topic-Cloud aus letzten Nachrichten
+                  if (_messages.length >= 10)
+                    TopicCloud(
+                      world: 'energie',
+                      recentMessages: _messages.take(100).toList(),
+                    ),
                 ], // End of keyboard-hidden headers
           
           // Messages List — Feature #21: swipe left/right between rooms

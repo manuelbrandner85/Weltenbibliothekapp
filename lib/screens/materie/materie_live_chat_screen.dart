@@ -15,6 +15,8 @@ import '../../services/pinned_message_service.dart'; // 📌 E2 Pin-Service
 import '../../widgets/mention_autocomplete.dart'; // @ MENTIONS
 import '../../widgets/pinned_banner_v2.dart'; // 📌 E2 Sticky-Banner
 import '../../widgets/live/live_chat_hero.dart';
+import '../../widgets/live/chat_intelligence_widgets.dart'
+    show CatchupCard, TopicCloud, SmartReplyComputer;
 import '../live/live_replay_library_screen.dart';
 import '../../widgets/user_quick_profile_sheet.dart'; // 👤 Avatar-Quick-View
 import 'package:image_picker/image_picker.dart'; // 📷 Image Picker
@@ -1628,6 +1630,20 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
                   _buildRoomSelector(),
                   // ✨ ROOM VIBE BANNER
                   _buildRoomVibeBanner(),
+                  // ✨ v5.44 Phase 2: AI-Catchup wenn User > 24h weg war
+                  if (_unreadSeparatorTime != null)
+                    CatchupCard(
+                      world: 'materie',
+                      lastVisit: _unreadSeparatorTime!,
+                      recentMessages: _messages.take(50).toList(),
+                      onDismiss: () => setState(() => _unreadSeparatorTime = null),
+                    ),
+                  // ✨ v5.44 Phase 2: Topic-Cloud aus letzten Nachrichten
+                  if (_messages.length >= 10)
+                    TopicCloud(
+                      world: 'materie',
+                      recentMessages: _messages.take(100).toList(),
+                    ),
                 ], // End keyboard-hidden headers
           // Feature #21: swipe left/right between rooms
           Expanded(
