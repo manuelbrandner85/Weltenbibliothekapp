@@ -747,6 +747,551 @@ class _HealthSettingsScreenState extends State<HealthSettingsScreen>
     );
   }
 
+  // -------------------- BLE Direct-Verbindung Section --------------------
+
+  Widget _buildBleDirectSection() {
+    const accent = Color(0xFF26A69A);
+    final status = _bleStatus;
+    final supported = status?.supported ?? true;
+    final isConnected = _ble.isConnected;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Text(
+              '⚡',
+              style: TextStyle(fontSize: 14),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              'DIREKT-VERBINDUNG (BLUETOOTH)',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.55),
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 2.4,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: WBSpace.xs),
+        const Text(
+          'Schneller als Health Connect - aber nur fuer Geraete mit '
+          'Standard-BLE Heart Rate Service (Polar, Wahoo, Garmin, '
+          'manche Galaxy Watches).',
+          style: TextStyle(
+            color: Color(0xFFB0BEC5),
+            fontSize: 12.5,
+            height: 1.35,
+          ),
+        ),
+        const SizedBox(height: WBSpace.md),
+
+        // Status-Indikator
+        _bleStatusIndicator(status, supported),
+        const SizedBox(height: WBSpace.md),
+
+        // Glass-Card mit dynamischem Inhalt
+        ClipRRect(
+          borderRadius: BorderRadius.circular(WBRadius.lg),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+            child: Container(
+              padding: const EdgeInsets.all(WBSpace.lg),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.04),
+                borderRadius: BorderRadius.circular(WBRadius.lg),
+                border: Border.all(
+                  color: isConnected
+                      ? accent.withValues(alpha: 0.65)
+                      : accent.withValues(alpha: 0.30),
+                  width: isConnected ? 1.4 : 1,
+                ),
+                boxShadow: isConnected
+                    ? [
+                        BoxShadow(
+                          color: accent.withValues(alpha: 0.25),
+                          blurRadius: 24,
+                          spreadRadius: 1,
+                        ),
+                      ]
+                    : null,
+              ),
+              child: _bleCardBody(accent),
+            ),
+          ),
+        ),
+
+        // Plattform-Hinweise
+        const SizedBox(height: WBSpace.sm),
+        Text(
+          'Hinweis iOS: Apple Watch funktioniert hier nicht (siehe '
+          'iOS-Hinweis unten). Polar / Wahoo / Garmin OK.',
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.45),
+            fontSize: 11,
+            fontStyle: FontStyle.italic,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          'Tipp Galaxy Watch: funktioniert nur wenn sie NICHT ueber die '
+          'Samsung-Wearable-App gepaart ist.',
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.45),
+            fontSize: 11,
+            fontStyle: FontStyle.italic,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _bleStatusIndicator(BleStatus? status, bool supported) {
+    if (!supported) {
+      return _bleStatusPill(
+        icon: Icons.bluetooth_disabled,
+        label: 'BLE auf dieser Plattform nicht unterstuetzt',
+        color: const Color(0xFF78909C),
+      );
+    }
+    if (status == null) {
+      return _bleStatusPill(
+        icon: Icons.bluetooth_searching,
+        label: 'BLE-Status wird geprueft...',
+        color: const Color(0xFF78909C),
+      );
+    }
+    if (!status.bluetoothOn) {
+      return _bleStatusPill(
+        icon: Icons.bluetooth_disabled,
+        label: 'Bluetooth ist aus',
+        color: const Color(0xFFE53935),
+        onTap: _refreshBleStatus,
+      );
+    }
+    if (!status.permissionsGranted) {
+      return _bleStatusPill(
+        icon: Icons.lock_outline,
+        label: status.errorReason ?? 'Bluetooth-Berechtigung fehlt',
+        color: const Color(0xFFFFA726),
+        onTap: _refreshBleStatus,
+      );
+    }
+    return _bleStatusPill(
+      icon: Icons.bluetooth_connected,
+      label: 'Bluetooth AN, Berechtigungen OK',
+      color: const Color(0xFF26A69A),
+    );
+  }
+
+  Widget _bleStatusPill({
+    required IconData icon,
+    required String label,
+    required Color color,
+    VoidCallback? onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(WBRadius.pill),
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: WBSpace.md,
+            vertical: 6,
+          ),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.10),
+            borderRadius: BorderRadius.circular(WBRadius.pill),
+            border: Border.all(
+              color: color.withValues(alpha: 0.4),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: color, size: 14),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _bleCardBody(Color accent) {
+    final isConnected = _ble.isConnected;
+    if (isConnected) return _bleConnectedView(accent);
+    if (_bleScanning) return _bleScanningView(accent);
+    return _bleIdleView();
+  }
+
+  Widget _bleIdleView() {
+    final ready = _bleStatus?.isReady ?? false;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: ready ? _startBleScan : _refreshBleStatus,
+            borderRadius: BorderRadius.circular(WBRadius.md),
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                vertical: WBSpace.md,
+                horizontal: WBSpace.lg,
+              ),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(WBRadius.md),
+                border: Border.all(
+                  color: ready
+                      ? Colors.white.withValues(alpha: 0.55)
+                      : Colors.white.withValues(alpha: 0.2),
+                  width: 1.2,
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.bluetooth_searching,
+                    color: ready
+                        ? Colors.white
+                        : Colors.white.withValues(alpha: 0.4),
+                    size: 18,
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    ready ? 'GERAETE-SCAN STARTEN' : 'NICHT BEREIT',
+                    style: TextStyle(
+                      color: ready
+                          ? Colors.white
+                          : Colors.white.withValues(alpha: 0.4),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        if (!ready) ...[
+          const SizedBox(height: WBSpace.sm),
+          Text(
+            _bleStatus?.errorReason ??
+                'Bitte Bluetooth aktivieren und Berechtigungen erteilen.',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.55),
+              fontSize: 11.5,
+              fontStyle: FontStyle.italic,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _bleScanningView(Color accent) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            const SizedBox(
+              width: 14,
+              height: 14,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation(Color(0xFF26A69A)),
+              ),
+            ),
+            const SizedBox(width: WBSpace.sm),
+            Text(
+              'Suche... ${_bleScanRemainingSec}s verbleibend',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.85),
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: WBSpace.md),
+        if (_bleDiscovered.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: WBSpace.md),
+            child: Text(
+              'Noch keine Geraete gefunden. Stelle sicher, dass deine '
+              'Watch / dein Brustgurt aktiv ist.',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.55),
+                fontSize: 12,
+              ),
+            ),
+          )
+        else
+          for (final d in _bleDiscovered) _bleDeviceRow(d, accent),
+      ],
+    );
+  }
+
+  Widget _bleDeviceRow(BleHrDevice dev, Color accent) {
+    final isConnecting = _bleConnectingId == dev.device.remoteId.str;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: WBSpace.sm),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: WBSpace.md,
+          vertical: WBSpace.sm,
+        ),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.03),
+          borderRadius: BorderRadius.circular(WBRadius.md),
+          border: Border.all(
+            color: accent.withValues(alpha: 0.25),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            _signalBars(dev.signalBars, accent),
+            const SizedBox(width: WBSpace.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    dev.name,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Text(
+                    'Signal: ${_signalLabel(dev.signalBars)} (${dev.rssi} dBm)',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.55),
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: WBSpace.sm),
+            TextButton(
+              onPressed: isConnecting ? null : () => _connectBleDevice(dev),
+              style: TextButton.styleFrom(
+                foregroundColor: accent,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: WBSpace.md,
+                  vertical: WBSpace.xs,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(WBRadius.pill),
+                  side: BorderSide(
+                    color: accent.withValues(alpha: 0.55),
+                    width: 1,
+                  ),
+                ),
+              ),
+              child: isConnecting
+                  ? const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation(Color(0xFF26A69A)),
+                      ),
+                    )
+                  : const Text(
+                      'Verbinden',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 12,
+                        letterSpacing: 0.6,
+                      ),
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _signalBars(int bars, Color color) {
+    return SizedBox(
+      width: 22,
+      height: 22,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: List.generate(3, (i) {
+          final active = i < bars;
+          return Container(
+            width: 4,
+            height: 6.0 + (i * 5.0),
+            margin: const EdgeInsets.symmetric(horizontal: 1),
+            decoration: BoxDecoration(
+              color: active
+                  ? color
+                  : Colors.white.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(1.5),
+            ),
+          );
+        }),
+      ),
+    );
+  }
+
+  String _signalLabel(int bars) {
+    switch (bars) {
+      case 3:
+        return 'stark';
+      case 2:
+        return 'mittel';
+      case 1:
+        return 'schwach';
+      default:
+        return 'sehr schwach';
+    }
+  }
+
+  Widget _bleConnectedView(Color accent) {
+    final bpm = _bleLiveBpm ?? _ble.lastBpm;
+    final name = _ble.connectedDeviceName ?? 'BLE-Geraet';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.check_circle, color: accent, size: 18),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                'Verbunden mit "$name"',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: WBSpace.md),
+        Row(
+          children: [
+            AnimatedBuilder(
+              animation: _pulseController,
+              builder: (context, _) {
+                final t = _pulseController.value;
+                final scale = 0.92 + 0.10 * t;
+                return Transform.scale(
+                  scale: bpm != null ? scale : 1.0,
+                  child: Icon(
+                    Icons.favorite,
+                    color: const Color(0xFFE53935)
+                        .withValues(alpha: 0.65 + 0.30 * t),
+                    size: 28,
+                  ),
+                );
+              },
+            ),
+            const SizedBox(width: WBSpace.sm),
+            Text(
+              bpm != null ? '$bpm' : '--',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 28,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.5,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              'BPM (live)',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.55),
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: WBSpace.md),
+        // Mini-Sparkline der letzten 10 Werte
+        SizedBox(
+          height: 36,
+          child: _bleHrHistory.isEmpty
+              ? Center(
+                  child: Text(
+                    'Warte auf erste Messung...',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.45),
+                      fontSize: 11,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                )
+              : CustomPaint(
+                  painter: _SparklinePainter(
+                    values: List<int>.unmodifiable(_bleHrHistory),
+                    color: accent,
+                  ),
+                  size: Size.infinite,
+                ),
+        ),
+        const SizedBox(height: WBSpace.md),
+        // Trennen-Button
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: _disconnectBle,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: const Color(0xFFE53935),
+              side: BorderSide(
+                color: const Color(0xFFE53935).withValues(alpha: 0.6),
+                width: 1.2,
+              ),
+              padding: const EdgeInsets.symmetric(vertical: WBSpace.sm),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(WBRadius.md),
+              ),
+            ),
+            icon: const Icon(Icons.bluetooth_disabled, size: 16),
+            label: const Text(
+              'Trennen',
+              style: TextStyle(
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.8,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildWatchWizard() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1223,5 +1768,75 @@ class _DeviceBottomSheet extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Sparkline painter for the BLE live HR mini-graph (last N readings).
+// ---------------------------------------------------------------------------
+
+class _SparklinePainter extends CustomPainter {
+  final List<int> values;
+  final Color color;
+  _SparklinePainter({required this.values, required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (values.isEmpty || size.width <= 0 || size.height <= 0) return;
+
+    int minV = values.first;
+    int maxV = values.first;
+    for (final v in values) {
+      if (v < minV) minV = v;
+      if (v > maxV) maxV = v;
+    }
+    // Avoid divide-by-zero for flat lines.
+    final range = (maxV - minV).abs() < 1 ? 1 : (maxV - minV);
+
+    final dx = values.length > 1
+        ? size.width / (values.length - 1)
+        : size.width;
+    final points = <Offset>[];
+    for (int i = 0; i < values.length; i++) {
+      final ratio = (values[i] - minV) / range;
+      final y = size.height - (ratio * size.height * 0.85) - (size.height * 0.075);
+      points.add(Offset(i * dx, y));
+    }
+
+    // Glow under-line.
+    final glow = Paint()
+      ..color = color.withValues(alpha: 0.18)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 5
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
+
+    final line = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+
+    final path = Path()..moveTo(points.first.dx, points.first.dy);
+    for (int i = 1; i < points.length; i++) {
+      path.lineTo(points[i].dx, points[i].dy);
+    }
+    canvas.drawPath(path, glow);
+    canvas.drawPath(path, line);
+
+    // Last point dot.
+    final dot = Paint()..color = color;
+    canvas.drawCircle(points.last, 3, dot);
+  }
+
+  @override
+  bool shouldRepaint(covariant _SparklinePainter old) {
+    if (old.values.length != values.length) return true;
+    for (int i = 0; i < values.length; i++) {
+      if (old.values[i] != values[i]) return true;
+    }
+    return old.color != color;
   }
 }
