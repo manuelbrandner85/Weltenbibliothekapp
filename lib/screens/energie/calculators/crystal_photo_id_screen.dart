@@ -54,39 +54,42 @@ class _CrystalPhotoIdScreenState extends State<CrystalPhotoIdScreen> {
       final bytes = await _picked!.readAsBytes();
       final base64 = base64Encode(bytes);
       final token = Supabase.instance.client.auth.currentSession?.accessToken ?? '';
+      // Worker-Endpoint (existiert seit H4): /api/crystal/identify mit
+      // {imageBase64} → {name, confidence, properties, model}
       final res = await http
           .post(
-            Uri.parse('${ApiConfig.workerUrl}/api/vision/identify-crystal'),
+            Uri.parse('${ApiConfig.workerUrl}/api/crystal/identify'),
             headers: {
               'Content-Type': 'application/json',
               if (token.isNotEmpty) 'Authorization': 'Bearer $token',
             },
-            body: jsonEncode({
-              'image_base64': base64,
-              'prompt':
-                  'Welcher Heilstein oder Mineral ist auf diesem Foto zu sehen? '
-                  'Antworte präzise mit Name (deutsch), kurzer Begründung (Farbe, Glanz, Form, Bruch). '
-                  'Falls unklar: nenne die 2-3 wahrscheinlichsten Kandidaten.',
-            }),
+            body: jsonEncode({'imageBase64': base64}),
           )
-          .timeout(const Duration(seconds: 45));
+          .timeout(const Duration(seconds: 60));
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body) as Map<String, dynamic>;
-        final reply = (data['response'] as String?) ??
-            (data['identification'] as String?) ??
-            (data['result'] as String?);
-        if (reply != null && reply.isNotEmpty) {
-          setState(() => _result = reply);
-        } else {
-          setState(() => _error = 'KI hat kein Ergebnis geliefert.');
+        final name = (data['name'] as String?) ?? 'Unbekannt';
+        final conf = (data['confidence'] as num?)?.toDouble() ?? 0.0;
+        final props = (data['properties'] as List?)?.cast<String>() ?? const [];
+        final confPct = (conf * 100).round();
+
+        final buf = StringBuffer()
+          ..writeln('🔮 $name')
+          ..writeln('')
+          ..writeln('Vertrauen: $confPct%');
+        if (props.isNotEmpty) {
+          buf
+            ..writeln('')
+            ..writeln('Eigenschaften:')
+            ..writeln(props.map((p) => '• $p').join('\n'));
         }
-      } else if (res.statusCode == 404) {
+        setState(() => _result = buf.toString().trim());
+      } else if (res.statusCode == 503) {
         setState(() => _error =
-            'Vision-Endpoint noch nicht aktiviert auf dem Worker. '
-            'Bitte das CF-Worker-Update abwarten oder Stein manuell in der '
-            'Kristall-Datenbank nachschlagen.');
+            'Workers AI aktuell nicht verfügbar (CF Worker Free-Tier-Limit). '
+            'Bitte später nochmal versuchen.');
       } else {
-        setState(() => _error = 'Worker-Fehler ${res.statusCode}');
+        setState(() => _error = 'Worker-Fehler ${res.statusCode}: ${res.body}');
       }
     } catch (e) {
       setState(() => _error = 'Netzwerk-Fehler: $e');
