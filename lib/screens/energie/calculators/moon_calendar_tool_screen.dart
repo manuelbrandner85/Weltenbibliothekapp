@@ -173,7 +173,9 @@ class _GardeningTab extends StatelessWidget {
   };
 
   // Sternzeichen-Trigone (Maria Thun)
-  static const Map<String, ({String trigon, String typ, String practice})> _signTrigon = {
+  // 'static final' statt 'static const' — dart2js (Flutter Web) hat
+  // einen Bug mit const Maps die Records als Werte halten.
+  static final Map<String, ({String trigon, String typ, String practice})> _signTrigon = {
     'Widder':     (trigon: 'Feuer-Trigon',  typ: 'Frucht-Tag',  practice: 'Tomaten, Paprika, Zucchini, Mais — alles was Frucht trägt.'),
     'Stier':      (trigon: 'Erde-Trigon',   typ: 'Wurzel-Tag', practice: 'Möhren, Kartoffeln, Sellerie, Rote Bete säen/ernten.'),
     'Zwillinge':  (trigon: 'Luft-Trigon',   typ: 'Blüten-Tag', practice: 'Blumen säen, schneiden. Lavendel, Rosen, Kamille.'),

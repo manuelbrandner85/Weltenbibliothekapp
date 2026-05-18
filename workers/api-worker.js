@@ -2235,6 +2235,95 @@ export default {
         } catch (e) { return errorResponse(`Delete-Content-Fehler: ${e.message}`); }
       }
 
+      // ── POST /api/admin/push/broadcast  (Admin sendet Push an Zielgruppe) ──
+      // Body: { target: 'all'|'materie'|'energie'|'user', userId?, title, body, deeplink? }
+      // Enqueued Notifications in notification_queue für alle Empfänger,
+      // Cron-Dispatcher drained sie via FCM innerhalb von max. 5 Min.
+      if (method === 'POST' && path === '/api/admin/push/broadcast') {
+        try {
+          const anonKey = env.SUPABASE_ANON_KEY || '';
+          const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || anonKey;
+          const svcH = { 'Content-Type': 'application/json', 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}` };
+          const body = await request.json();
+          const target = (body.target || 'all').toString();
+          const title = (body.title || '').toString().trim();
+          const msgBody = (body.body || '').toString().trim();
+          const deeplink = (body.deeplink || '').toString();
+          if (!title || !msgBody) return errorResponse('title und body sind pflicht', 400);
+
+          // Empfänger-Liste aus profiles holen
+          let filter = '';
+          if (target === 'materie' || target === 'energie' || target === 'vorhang' || target === 'ursprung') {
+            filter = `&or=(world.eq.${target},world_preference.eq.${target})`;
+          } else if (target === 'user' && body.userId) {
+            filter = `&id=eq.${body.userId}`;
+          }
+          const recRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/profiles?select=id${filter}&limit=2000`,
+            { headers: svcH }
+          );
+          if (!recRes.ok) {
+            return errorResponse(`Empfänger-Fetch ${recRes.status}`);
+          }
+          const recipients = await recRes.json().catch(() => []);
+          const userIds = (Array.isArray(recipients) ? recipients : [])
+            .map(r => r.id).filter(id => id && !id.startsWith('00000000-'));
+          if (userIds.length === 0) {
+            return jsonResponse({ success: true, enqueued: 0, target, note: 'keine Empfänger' });
+          }
+
+          // Bulk-Insert in notification_queue
+          const now = new Date().toISOString();
+          const rows = userIds.map(uid => ({
+            user_id: uid,
+            title,
+            body: msgBody,
+            data: deeplink ? { deeplink, source: 'admin_broadcast' } : { source: 'admin_broadcast' },
+            status: 'pending',
+            created_at: now,
+          }));
+          const insRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/notification_queue`,
+            { method: 'POST', headers: { ...svcH, 'Prefer': 'return=minimal' }, body: JSON.stringify(rows) }
+          );
+          if (!insRes.ok) {
+            const txt = await insRes.text().catch(() => '');
+            return errorResponse(`Enqueue ${insRes.status}: ${txt.substring(0, 200)}`);
+          }
+          return jsonResponse({ success: true, enqueued: userIds.length, target });
+        } catch (e) { return errorResponse(`Broadcast-Fehler: ${e.message}`); }
+      }
+
+      // ── GET /api/admin/push/history  (letzte 50 broadcast-Aktionen) ──
+      if (method === 'GET' && path === '/api/admin/push/history') {
+        try {
+          const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY || '';
+          const svcH = { 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}` };
+          // Group by title+body+created_at-minute → broadcast-aggregierter View
+          const res = await fetch(
+            `${SUPABASE_URL}/rest/v1/notification_queue?select=title,body,created_at,status&data->>source=eq.admin_broadcast&order=created_at.desc&limit=500`,
+            { headers: svcH }
+          );
+          if (!res.ok) return errorResponse(`History ${res.status}`);
+          const all = await res.json().catch(() => []);
+          // Aggregate by (title, body, created_at[:16]) → 1 broadcast pro Minute
+          const groups = new Map();
+          for (const r of (Array.isArray(all) ? all : [])) {
+            const key = `${r.title}|${r.body}|${(r.created_at || '').substring(0, 16)}`;
+            if (!groups.has(key)) {
+              groups.set(key, { title: r.title, body: r.body, created_at: r.created_at, sent: 0, failed: 0, pending: 0 });
+            }
+            const g = groups.get(key);
+            const s = (r.status || 'pending');
+            if (s === 'sent') g.sent++;
+            else if (s === 'failed') g.failed++;
+            else g.pending++;
+          }
+          const list = Array.from(groups.values()).slice(0, 50);
+          return jsonResponse({ success: true, broadcasts: list });
+        } catch (e) { return errorResponse(`History-Fehler: ${e.message}`); }
+      }
+
       // ── GET /api/admin/users  (ALLE Welten · für Admin-Dashboard) ──
       // SERVICE_ROLE_KEY umgeht RLS — Client kann sonst keine fremden
       // Profile sehen. Inkl. last_seen_at + world/world_preference, gefiltert
