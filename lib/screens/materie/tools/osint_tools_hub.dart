@@ -6,6 +6,7 @@ import '../../../services/osint_history_service.dart'; // 🕰️ D1
 import '../../../theme/wb_cinematic_tokens.dart';
 import '../../../widgets/cinematic/wb_glass_app_bar.dart';
 import '../../../widgets/cinematic/wb_vignette.dart';
+import 'power_network_explorer_screen.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // OSINT Datenbanken Hub — 7 direkte Datenbank-Zugänge via WebView
@@ -21,30 +22,15 @@ const _kBorder  = Color(0x33E53935);
 class OsintToolsHub extends StatelessWidget {
   const OsintToolsHub({super.key});
 
-  static const _tools = [
+  static final _tools = [
     _DbDef(
-      icon: Icons.account_balance_wallet_rounded,
-      label: 'Panama Papers',
-      sub: 'ICIJ Offshore Leaks',
-      color: Color(0xFFFFB300),
-      url: 'https://offshoreleaks.icij.org/',
-      description: 'Durchsuche Panama Papers, Pandora Papers und Paradise Papers — Offshore-Netzwerke, Shell-Firmen, versteckte Vermögen.',
-    ),
-    _DbDef(
-      icon: Icons.gavel_rounded,
-      label: 'OpenSanctions',
-      sub: 'EU/UN/OFAC Sanktionslisten',
-      color: Color(0xFFE53935),
-      url: 'https://www.opensanctions.org/',
-      description: 'Internationale Sanktionslisten: EU, UN, OFAC, Interpol, politisch exponierte Personen (PEP).',
-    ),
-    _DbDef(
-      icon: Icons.folder_zip_rounded,
-      label: 'Aleph OCCRP',
-      sub: 'FinCEN, LuxLeaks, Suisse Secrets',
-      color: Color(0xFF7C4DFF),
-      url: 'https://aleph.occrp.org/',
-      description: 'OCCRP Aleph: Größte Datenbank für investigativen Journalismus — FinCEN Files, LuxLeaks, Suisse Secrets, Pandora.',
+      icon: Icons.hub_rounded,
+      label: 'Power-Network',
+      sub: 'OpenSanctions + 6 Leaks parallel',
+      color: const Color(0xFFE53935),
+      url: '',
+      description: 'Eine Suche → 2 Datenbanken parallel: OpenSanctions (EU/UN/OFAC, PEP) + Aleph OCCRP (Panama/Pandora/FinCEN/LuxLeaks/Suisse Secrets/Offshore Leaks). Mit Risk-Score, Watchlist, Detail-Drill-down.',
+      customScreenBuilder: () => const PowerNetworkExplorerScreen(),
     ),
     _DbDef(
       icon: Icons.science_rounded,
@@ -111,7 +97,7 @@ class OsintToolsHub extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
           child: Text(
-            '7 direkte Datenbank-Zugänge für OSINT-Recherche.',
+            '${_tools.length} Recherche-Tools · Power-Network kombiniert 8 Datenbanken in einer Suche.',
             style: const TextStyle(color: _kMuted, fontSize: 13),
           ),
         ),
@@ -140,10 +126,19 @@ class _DbCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => _OsintWebViewScreen(db: db)),
-      ),
+      onTap: () {
+        if (db.customScreenBuilder != null) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => db.customScreenBuilder!()),
+          );
+        } else {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => _OsintWebViewScreen(db: db)),
+          );
+        }
+      },
       child: Container(
         decoration: BoxDecoration(
           color: _kSurface,
@@ -270,6 +265,7 @@ class _DbDef {
   final Color color;
   final String url;
   final String description;
+  final Widget Function()? customScreenBuilder;
   const _DbDef({
     required this.icon,
     required this.label,
@@ -277,6 +273,7 @@ class _DbDef {
     required this.color,
     required this.url,
     required this.description,
+    this.customScreenBuilder,
   });
 }
 
