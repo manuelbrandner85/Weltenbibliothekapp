@@ -159,6 +159,19 @@ class _HealthSettingsScreenState extends State<HealthSettingsScreen>
   double? _liveBpm;
   List<Map<String, dynamic>> _recentReadings = const [];
 
+  // BLE Direct-Connection state
+  final BleHeartRateService _ble = BleHeartRateService.instance;
+  BleStatus? _bleStatus;
+  bool _bleScanning = false;
+  int _bleScanRemainingSec = 0;
+  Timer? _bleScanTimer;
+  final List<BleHrDevice> _bleDiscovered = <BleHrDevice>[];
+  StreamSubscription<BleHrDevice>? _bleScanSub;
+  StreamSubscription<int>? _bleHrSub;
+  int? _bleLiveBpm;
+  final List<int> _bleHrHistory = <int>[]; // last 10 readings (sparkline)
+  String? _bleConnectingId;
+
   @override
   void initState() {
     super.initState();
@@ -171,13 +184,144 @@ class _HealthSettingsScreenState extends State<HealthSettingsScreen>
       duration: WBMotion.reveal,
     )..forward();
     _refresh();
+    _initBle();
   }
 
   @override
   void dispose() {
+    _bleScanTimer?.cancel();
+    _bleScanSub?.cancel();
+    _bleHrSub?.cancel();
     _pulseController.dispose();
     _entryController.dispose();
     super.dispose();
+  }
+
+  // -------------------- BLE Direct --------------------
+
+  Future<void> _initBle() async {
+    final status = await _ble.getStatus();
+    if (!mounted) return;
+    setState(() => _bleStatus = status);
+    // Subscribe to live HR if already connected (e.g. auto-reconnect happened
+    // earlier in app lifecycle).
+    if (_ble.isConnected) {
+      _subscribeBleHr();
+    }
+  }
+
+  void _subscribeBleHr() {
+    _bleHrSub?.cancel();
+    _bleHrSub = _ble.heartRateStream.listen((bpm) {
+      if (!mounted) return;
+      setState(() {
+        _bleLiveBpm = bpm;
+        _bleHrHistory.add(bpm);
+        if (_bleHrHistory.length > 10) {
+          _bleHrHistory.removeAt(0);
+        }
+      });
+    });
+    _bleLiveBpm = _ble.lastBpm;
+  }
+
+  Future<void> _refreshBleStatus() async {
+    final status = await _ble.getStatus();
+    if (!mounted) return;
+    setState(() => _bleStatus = status);
+  }
+
+  Future<void> _startBleScan() async {
+    if (_bleScanning) return;
+    HapticFeedback.selectionClick();
+    setState(() {
+      _bleScanning = true;
+      _bleDiscovered.clear();
+      _bleScanRemainingSec = 10;
+    });
+
+    _bleScanTimer?.cancel();
+    _bleScanTimer = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (!mounted) {
+        t.cancel();
+        return;
+      }
+      setState(() {
+        _bleScanRemainingSec =
+            _bleScanRemainingSec > 0 ? _bleScanRemainingSec - 1 : 0;
+      });
+      if (_bleScanRemainingSec <= 0) t.cancel();
+    });
+
+    try {
+      await _bleScanSub?.cancel();
+      _bleScanSub = _ble.scan(timeout: const Duration(seconds: 10)).listen(
+        (dev) {
+          if (!mounted) return;
+          setState(() {
+            // Replace if same id already in list (RSSI update).
+            final idx = _bleDiscovered
+                .indexWhere((e) => e.device.remoteId == dev.device.remoteId);
+            if (idx >= 0) {
+              _bleDiscovered[idx] = dev;
+            } else {
+              _bleDiscovered.add(dev);
+            }
+          });
+        },
+        onDone: () {
+          if (!mounted) return;
+          setState(() => _bleScanning = false);
+          _bleScanTimer?.cancel();
+        },
+        onError: (Object e) {
+          if (!mounted) return;
+          setState(() => _bleScanning = false);
+          _bleScanTimer?.cancel();
+          _showSnack('BLE-Scan fehlgeschlagen: $e', isError: true);
+        },
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _bleScanning = false);
+      _bleScanTimer?.cancel();
+      _showSnack('BLE-Scan fehlgeschlagen: $e', isError: true);
+    }
+  }
+
+  Future<void> _connectBleDevice(BleHrDevice dev) async {
+    if (_bleConnectingId != null) return;
+    HapticFeedback.selectionClick();
+    setState(() => _bleConnectingId = dev.device.remoteId.str);
+    final ok = await _ble.connect(dev.device);
+    if (!mounted) return;
+    setState(() {
+      _bleConnectingId = null;
+      if (ok) {
+        _bleDiscovered.clear();
+        _bleScanning = false;
+        _bleHrHistory.clear();
+      }
+    });
+    if (ok) {
+      _subscribeBleHr();
+      HapticFeedback.mediumImpact();
+      _showSnack('Verbunden mit ${_ble.connectedDeviceName ?? dev.name}');
+    } else {
+      _showSnack('Verbindung fehlgeschlagen', isError: true);
+    }
+  }
+
+  Future<void> _disconnectBle() async {
+    HapticFeedback.selectionClick();
+    await _ble.disconnect();
+    await _bleHrSub?.cancel();
+    if (!mounted) return;
+    setState(() {
+      _bleLiveBpm = null;
+      _bleHrHistory.clear();
+    });
+    _showSnack('Geraet getrennt');
   }
 
   // -------------------- Diagnostik / Refresh --------------------
@@ -362,6 +506,8 @@ class _HealthSettingsScreenState extends State<HealthSettingsScreen>
                   _buildStatusHero(),
                   const SizedBox(height: WBSpace.xxl),
                   _buildStatusCards(),
+                  const SizedBox(height: WBSpace.xxl),
+                  _buildBleDirectSection(),
                   const SizedBox(height: WBSpace.xxl),
                   _buildWatchWizard(),
                   const SizedBox(height: WBSpace.xxl),
