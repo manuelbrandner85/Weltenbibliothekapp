@@ -19,7 +19,7 @@ class _AuraQuizScreenState extends State<AuraQuizScreen> {
 
   // 7 Aura-Farben (entsprechen den 7 Hauptchakren).
   // Jede Antwort gibt Punkte auf 1-3 Farben (Indizes 0..6 für Rot..Violett/Weiß).
-  static const _colors = [
+  static final _colors = [
     (
       name: 'Rot',
       emoji: '❤️',
@@ -87,7 +87,7 @@ class _AuraQuizScreenState extends State<AuraQuizScreen> {
 
   // 12 Fragen mit jeweils 4 Antwort-Optionen.
   // Jede Antwort gibt Punkte auf eine Farbe (Index 0..6).
-  static const _questions = [
+  static final _questions = [
     (q: 'Bei einer Party bist du eher...', a: ['Tanzfläche-First', 'Im tiefen Gespräch', 'Mit Kreativen am Buffet', 'Außen am Rand mit dem Hund'], p: [0, 4, 1, 5]),
     (q: 'Dein Lieblings-Wochenende?', a: ['Sport, Abenteuer, Action', 'Buch, Tee, Schreiben', 'Konzert, Galerie, Performance', 'Meditation, Retreat, Stille'], p: [0, 4, 1, 6]),
     (q: 'Wie reagierst du auf Stress?', a: ['Mehr Sport, ausagieren', 'Analyse, Plan machen', 'Schöpferisch verarbeiten', 'Rückzug, beten/meditieren'], p: [0, 2, 1, 6]),

@@ -27,7 +27,7 @@ class _AudioBodyScanScreenState extends State<AudioBodyScanScreen> {
   int _remainingSec = 0;
 
   // 20 Schritte × 30 Sek = 10 Min. Jede Region einmal 30s.
-  static const List<({String body, String emoji, String script})> _steps = [
+  static final List<({String body, String emoji, String script})> _steps = [
     (emoji: '🦶', body: 'Linker Fuß',
         script: 'Lenke deine Aufmerksamkeit zum linken Fuß. Spüre die Sohle, die Zehen, die Ferse. Beobachte einfach, was da ist — Wärme, Druck, Kribbeln oder Stille.'),
     (emoji: '🦶', body: 'Rechter Fuß',

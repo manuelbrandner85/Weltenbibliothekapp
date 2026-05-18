@@ -25,7 +25,7 @@ class _HermeticRealityCheckScreenState
   final Map<int, int> _answers = {};
   bool _submitted = false;
 
-  static const List<({String prinzip, String emoji, String frage, List<String> antworten, String hinweis})> _checks = [
+  static final List<({String prinzip, String emoji, String frage, List<String> antworten, String hinweis})> _checks = [
     (
       prinzip: 'Mentalismus',
       emoji: '🧠',

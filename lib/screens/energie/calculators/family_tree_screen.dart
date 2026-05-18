@@ -27,7 +27,7 @@ class _FamilyTreeScreenState extends State<FamilyTreeScreen> {
   bool _loading = true;
 
   // Slots (Position im Baum)
-  static const _slots = [
+  static final _slots = [
     ('self',       'Ich',           '🧍', 2),
     ('mother',     'Mutter',        '👩', 1),
     ('father',     'Vater',         '👨', 1),

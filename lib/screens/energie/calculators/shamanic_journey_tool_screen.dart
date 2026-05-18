@@ -1864,7 +1864,7 @@ class _CineOrb extends StatelessWidget {
 class _DrumLibraryTab extends StatelessWidget {
   const _DrumLibraryTab();
 
-  static const List<({String name, int bpm, String desc, String use, String emoji})> _drums = [
+  static final List<({String name, int bpm, String desc, String use, String emoji})> _drums = [
     (
       emoji: '🐢',
       name: 'Slow Theta',
@@ -1975,7 +1975,7 @@ class _DrumLibraryTab extends StatelessWidget {
 class _PowerAnimalsTab extends StatelessWidget {
   const _PowerAnimalsTab();
 
-  static const List<({String name, String emoji, String quality, String teaching})> _animals = [
+  static final List<({String name, String emoji, String quality, String teaching})> _animals = [
     (emoji: '🐺', name: 'Wolf', quality: 'Lehrer · Loyalität · Instinkt',
         teaching: 'Folge deinem Bauchgefühl. Gemeinschaft ist Stärke. Bewege dich in Familie.'),
     (emoji: '🦅', name: 'Adler', quality: 'Vision · Übersicht · Botschaft',

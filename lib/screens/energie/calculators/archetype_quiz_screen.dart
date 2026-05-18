@@ -20,7 +20,7 @@ class _ArchetypeQuizScreenState extends State<ArchetypeQuizScreen> {
   // 12 Archetypen-Indizes (0..11) korrespondierend zu archetypes_12.dart-Reihenfolge:
   // 0=Unschuldiger 1=Gewöhnlicher 2=Held 3=Fürsorger 4=Suchender 5=Liebender
   // 6=Rebell 7=Schöpfer 8=Herrscher 9=Magier 10=Weise 11=Narr
-  static const _archetypes = [
+  static final _archetypes = [
     (
       name: 'Unschuldiger', emoji: '🤍', trait: 'Vertrauen · Sehnsucht nach Paradies',
       shadow: 'Naivität, Realitätsverleugnung', color: Color(0xFFE0F2F1),
@@ -71,7 +71,7 @@ class _ArchetypeQuizScreenState extends State<ArchetypeQuizScreen> {
     ),
   ];
 
-  static const _questions = [
+  static final _questions = [
     (q: 'Sonntagabend mit unverplanter Zeit — was tust du?', a: [
       ('Spazierengehen, einfach sein', 0),
       ('Mit Freunden treffen', 1),

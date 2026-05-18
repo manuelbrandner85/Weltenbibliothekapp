@@ -22,7 +22,7 @@ class _AudioMeditationScreenState extends State<AudioMeditationScreen> {
   static const _bg = Color(0xFF06040F);
   static const _accent = Color(0xFF4527A0);
 
-  static const List<({String emoji, String title, String duration, int stepDurationSec, List<String> script})> _meditations = [
+  static final List<({String emoji, String title, String duration, int stepDurationSec, List<String> script})> _meditations = [
     (
       emoji: '🌬️', title: 'Atem-Bewusstheit', duration: '7 Min',
       stepDurationSec: 60,

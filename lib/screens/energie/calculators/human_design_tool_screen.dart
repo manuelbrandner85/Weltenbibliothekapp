@@ -1212,7 +1212,7 @@ class _CineOrb extends StatelessWidget {
 class _HdCoachingTab extends StatelessWidget {
   const _HdCoachingTab();
 
-  static const List<({String typ, String emoji, String strategie, String autoritaet, List<String> uebungen})> _types = [
+  static final List<({String typ, String emoji, String strategie, String autoritaet, List<String> uebungen})> _types = [
     (
       typ: 'Generator',
       emoji: '⚡',
