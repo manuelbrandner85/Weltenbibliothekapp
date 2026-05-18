@@ -25,6 +25,7 @@ import 'calculators/dream_pattern_analysis_screen.dart'; // 💭 Traum-Muster
 import 'calculators/family_tree_screen.dart'; // 🌳 Stammbaum
 import 'calculators/tarot_spreads_screen.dart'; // 🔮 Tarot-Legesysteme (alt)
 import 'calculators/tarot_oracle_screen.dart'; // 🔮 Cinematic mit AI-Lesung
+import 'calculators/runes_oracle_screen.dart'; // ᚱ Elder Futhark Cinematic
 import 'calculators/animated_sacred_geometry_screen.dart'; // 🔯 Animierte SVG
 import 'calculators/sacred_geometry_constructor_screen.dart'; // 🔯 Interaktiver Konstruktor
 import 'calculators/affirmations_studio_screen.dart'; // 🌟 Cinematic AI-Studio
@@ -570,15 +571,15 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'screen': const HumanDesignToolScreen(),
       },
 
-      // ᚱ Runen-Orakel (V115 Feature #20)
+      // ᚱ Runen-Orakel cinematic — Cast-Animation, 3 Spreads, AI, Bind-Rune
       {
         'icon': Icons.auto_stories,
         'iconEmoji': 'ᚱ',
         'title': 'Runen-Orakel',
-        'subtitle': 'Elder Futhark 24',
-        'color': const Color(0xFF795548),
+        'subtitle': '24 Elder Futhark · Cast · AI · Bind-Rune',
+        'color': const Color(0xFF1B5E20),
         'category': 'new',
-        'screen': const RuneOracleScreen(),
+        'screen': const RunesOracleScreen(),
       },
       
       // 💫 Affirmationen · Cinematic AI-Studio
