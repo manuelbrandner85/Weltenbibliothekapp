@@ -812,6 +812,48 @@ export default {
       return proxyToSupabase(request, env, supaPath, 'GET');
     }
 
+    // ── POST /api/reports  (User-Reports einreichen — public) ──
+    // Body: { user_id?, username?, type, severity?, title, body?, target_id?, screenshot_url?, context? }
+    if (path === '/api/reports' && method === 'POST') {
+      try {
+        const svcKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY || '';
+        const body = await request.json().catch(() => ({}));
+        const type = String(body.type || '').toLowerCase();
+        if (!['bug','content','feedback','voice'].includes(type)) {
+          return errorResponse('type muss bug|content|feedback|voice sein', 400);
+        }
+        const title = String(body.title || '').trim().slice(0, 200);
+        if (!title) return errorResponse('title pflicht', 400);
+        const payload = {
+          user_id: body.user_id ? String(body.user_id).slice(0, 200) : null,
+          username: body.username ? String(body.username).slice(0, 80) : null,
+          type,
+          severity: ['low','medium','high','critical'].includes(body.severity) ? body.severity : 'medium',
+          title,
+          body: body.body ? String(body.body).slice(0, 4000) : null,
+          target_id: body.target_id ? String(body.target_id).slice(0, 200) : null,
+          screenshot_url: body.screenshot_url ? String(body.screenshot_url).slice(0, 500) : null,
+          context: body.context && typeof body.context === 'object' ? body.context : {},
+        };
+        const r = await fetch(`${SUPABASE_URL}/rest/v1/user_reports`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': svcKey,
+            'Authorization': `Bearer ${svcKey}`,
+            'Prefer': 'return=representation',
+          },
+          body: JSON.stringify(payload),
+        });
+        if (!r.ok) {
+          const txt = await r.text().catch(() => '');
+          return errorResponse(`Supabase ${r.status}: ${txt.substring(0, 200)}`);
+        }
+        const created = await r.json().catch(() => []);
+        return jsonResponse({ success: true, report: Array.isArray(created) ? created[0] : created });
+      } catch (e) { return errorResponse(`Report-Insert-Fehler: ${e.message}`); }
+    }
+
     // ── Chat Nachrichten ──────────────────────────────────────
     if (path === '/api/chat/messages') {
       const roomId = url.searchParams.get('room') || url.searchParams.get('room_id');
@@ -2493,6 +2535,156 @@ export default {
           const totalUsers = parseInt(userRes.headers.get('content-range')?.split('/')[1] || '0');
           return jsonResponse({ success: true, views: totalMessages, interactions: totalMessages, newUsers: totalUsers, totalUsers, totalMessages });
         } catch (e) { return jsonResponse({ success: true, views: 0, interactions: 0, newUsers: 0 }); }
+      }
+
+      // ── GET /api/admin/reports ──────────────────────────────
+      // Liste user_reports (filterbar via ?status=open|reviewing|resolved|dismissed
+      // und ?type=bug|content|feedback|voice).
+      if (method === 'GET' && path === '/api/admin/reports') {
+        try {
+          const status = url.searchParams.get('status');
+          const type = url.searchParams.get('type');
+          const limit = Math.max(1, Math.min(200, parseInt(url.searchParams.get('limit') || '50')));
+          let q = `${SUPABASE_URL}/rest/v1/user_reports?select=*&order=created_at.desc&limit=${limit}`;
+          if (status && status !== 'all') q += `&status=eq.${encodeURIComponent(status)}`;
+          if (type && type !== 'all') q += `&type=eq.${encodeURIComponent(type)}`;
+          const r = await fetch(q, { headers: svcHeaders });
+          if (!r.ok) {
+            const txt = await r.text().catch(() => '');
+            return errorResponse(`Supabase ${r.status}: ${txt.substring(0, 200)}`);
+          }
+          const rows = await r.json().catch(() => []);
+
+          // Counts pro Status für Filter-Badges
+          const countsRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/user_reports?select=status,type&limit=2000`,
+            { headers: svcHeaders }
+          );
+          const allRows = countsRes.ok ? (await countsRes.json().catch(() => [])) : [];
+          const counts = { open: 0, reviewing: 0, resolved: 0, dismissed: 0 };
+          const byType = { bug: 0, content: 0, feedback: 0, voice: 0 };
+          for (const x of allRows) {
+            if (counts[x.status] != null) counts[x.status]++;
+            if (byType[x.type] != null) byType[x.type]++;
+          }
+          return jsonResponse({ success: true, reports: rows, counts, by_type: byType });
+        } catch (e) { return errorResponse(`Reports-Fehler: ${e.message}`); }
+      }
+
+      // ── PATCH /api/admin/reports/:id  (Status setzen + reviewer) ──
+      if (method === 'PATCH' && path.startsWith('/api/admin/reports/')) {
+        try {
+          const reportId = path.split('/')[4];
+          if (!reportId) return errorResponse('reportId fehlt', 400);
+          const body = await request.json().catch(() => ({}));
+          const newStatus = String(body.status || '').trim();
+          const note = body.resolution_note ? String(body.resolution_note).slice(0, 500) : null;
+          const reviewer = String(body.admin || 'admin').slice(0, 80);
+          if (!['open','reviewing','resolved','dismissed'].includes(newStatus)) {
+            return errorResponse('status invalid', 400);
+          }
+          const patch = {
+            status: newStatus,
+            reviewed_by: reviewer,
+            reviewed_at: new Date().toISOString(),
+          };
+          if (note) patch.resolution_note = note;
+          const r = await fetch(
+            `${SUPABASE_URL}/rest/v1/user_reports?id=eq.${encodeURIComponent(reportId)}`,
+            {
+              method: 'PATCH',
+              headers: { ...svcHeaders, 'Prefer': 'return=representation' },
+              body: JSON.stringify(patch),
+            }
+          );
+          if (!r.ok) {
+            const txt = await r.text().catch(() => '');
+            return errorResponse(`Supabase ${r.status}: ${txt.substring(0, 200)}`);
+          }
+          // Audit-Log
+          fetch(`${SUPABASE_URL}/rest/v1/admin_audit_log`, {
+            method: 'POST',
+            headers: { ...svcHeaders, 'Prefer': 'return=minimal' },
+            body: JSON.stringify({
+              admin_username: reviewer,
+              action: `report_${newStatus}`,
+              target_identity: reportId,
+              details: { resolution_note: note },
+            }),
+          }).catch(() => {});
+          return jsonResponse({ success: true });
+        } catch (e) { return errorResponse(`Reports-PATCH-Fehler: ${e.message}`); }
+      }
+
+      // ── PATCH /api/admin/module/:type/:code  (Modul-Felder editieren) ──
+      // type ∈ {vorhang, ursprung}; nur sichere Felder erlaubt.
+      if (method === 'PATCH' && path.startsWith('/api/admin/module/')) {
+        try {
+          const parts = path.split('/');
+          const moduleType = parts[4]; // vorhang|ursprung
+          const moduleCode = parts[5];
+          if (!['vorhang', 'ursprung'].includes(moduleType) || !moduleCode) {
+            return errorResponse('Invalid module path', 400);
+          }
+          const tableName = `${moduleType}_modules`;
+          const body = await request.json().catch(() => ({}));
+          // Whitelist editierbare Felder
+          const allowed = ['title', 'subtitle', 'theory_content', 'case_study',
+            'exercise_description', 'exercise_duration_minutes', 'xp_reward',
+            'youtube_search_query', 'audio_frequency_hz'];
+          const patch = {};
+          for (const k of allowed) {
+            if (k in body) patch[k] = body[k];
+          }
+          if (Object.keys(patch).length === 0) {
+            return errorResponse('Keine editierbaren Felder gefunden', 400);
+          }
+          const reviewer = String(body.admin || 'admin').slice(0, 80);
+          const r = await fetch(
+            `${SUPABASE_URL}/rest/v1/${tableName}?module_code=eq.${encodeURIComponent(moduleCode)}`,
+            {
+              method: 'PATCH',
+              headers: { ...svcHeaders, 'Prefer': 'return=representation' },
+              body: JSON.stringify(patch),
+            }
+          );
+          if (!r.ok) {
+            const txt = await r.text().catch(() => '');
+            return errorResponse(`Supabase ${r.status}: ${txt.substring(0, 200)}`);
+          }
+          const updated = await r.json().catch(() => []);
+          fetch(`${SUPABASE_URL}/rest/v1/admin_audit_log`, {
+            method: 'POST',
+            headers: { ...svcHeaders, 'Prefer': 'return=minimal' },
+            body: JSON.stringify({
+              admin_username: reviewer,
+              action: 'module_edit',
+              target_identity: `${moduleType}:${moduleCode}`,
+              details: { fields: Object.keys(patch) },
+            }),
+          }).catch(() => {});
+          return jsonResponse({ success: true, module: Array.isArray(updated) ? updated[0] : updated });
+        } catch (e) { return errorResponse(`Module-PATCH-Fehler: ${e.message}`); }
+      }
+
+      // ── GET /api/admin/module/:type/:code  (volles Modul-Detail) ──
+      if (method === 'GET' && path.startsWith('/api/admin/module/')) {
+        try {
+          const parts = path.split('/');
+          const moduleType = parts[4];
+          const moduleCode = parts[5];
+          if (!['vorhang', 'ursprung'].includes(moduleType) || !moduleCode) {
+            return errorResponse('Invalid module path', 400);
+          }
+          const r = await fetch(
+            `${SUPABASE_URL}/rest/v1/${moduleType}_modules?module_code=eq.${encodeURIComponent(moduleCode)}&limit=1`,
+            { headers: svcHeaders }
+          );
+          if (!r.ok) return errorResponse(`Supabase ${r.status}`);
+          const rows = await r.json().catch(() => []);
+          if (rows.length === 0) return errorResponse('Modul nicht gefunden', 404);
+          return jsonResponse({ success: true, module: rows[0] });
+        } catch (e) { return errorResponse(`Module-GET-Fehler: ${e.message}`); }
       }
 
       // ── GET /api/admin/spirit-stats ─────────────────────────
