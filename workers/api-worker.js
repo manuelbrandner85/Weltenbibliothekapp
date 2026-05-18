@@ -1173,6 +1173,23 @@ export default {
           // Passwort nicht in die DB schreiben
           delete body.password;
 
+          // v5.44.3: InvisibleAuth-User schicken ihre client-generierte ID
+          // im Feld 'userId' oder 'legacy_user_id'. Mappe auf profiles-Spalte.
+          // Wenn body.userId wie 'user_<ts>_<rand>' aussieht (TEXT statt UUID),
+          // schreibe sie in profiles.legacy_user_id, NICHT in id.
+          const incomingUserId = body.userId || body.user_id || body.id;
+          if (incomingUserId && typeof incomingUserId === 'string') {
+            const looksLikeUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(incomingUserId);
+            if (!looksLikeUuid) {
+              body.legacy_user_id = incomingUserId;
+            }
+          }
+          // ID-Felder vom Client immer entfernen damit profiles.id auto-generiert
+          // wird (gen_random_uuid()) - vermeidet UUID-Validierungsfehler.
+          delete body.userId;
+          delete body.user_id;
+          delete body.id;
+
           // Upsert via username (UNIQUE constraint) — Trigger setzt role=root_admin für 'Weltenbibliothek'
           const anonKey = env.SUPABASE_ANON_KEY || '';
           const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || anonKey;
@@ -3062,6 +3079,147 @@ export default {
           });
         } catch (e) {
           return errorResponse(`XP-Fehler: ${e.message}`);
+        }
+      }
+
+      // ── PUT /api/admin/users/:userId/role  (v5.44.3 Admin Rolle aendern) ──
+      // Body: { role: 'user'|'moderator'|'admin'|'content_editor'|'root_admin',
+      //         admin?: string (Username des Admin der die Aenderung macht) }
+      // Service-Role-Key umgeht RLS damit das Worker-Endpoint die einzige
+      // Server-Seitige Schreib-Stelle fuer role bleibt (siehe v91 RLS-Policy
+      // profiles_role_update_admin_only). Schreibt automatisch in
+      // admin_audit_log via v91 trigger profiles_role_change_audit.
+      if ((method === 'PUT' || method === 'POST') && path.includes('/role')) {
+        try {
+          const userId = path.split('/')[5];
+          if (!userId) return errorResponse('userId fehlt', 400);
+          const body = await request.json().catch(() => ({}));
+          const newRole = String(body.role || '').toLowerCase().replace('-', '_');
+          const allowedRoles = ['user', 'moderator', 'admin', 'content_editor', 'root_admin'];
+          if (!allowedRoles.includes(newRole)) {
+            return errorResponse(
+              `role muss einer von ${allowedRoles.join(', ')} sein`, 400
+            );
+          }
+          const adminUsername = String(body.admin || 'unknown').slice(0, 80);
+
+          // PATCH profiles via Service-Role
+          const patchRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}`,
+            {
+              method: 'PATCH',
+              headers: {
+                'Content-Type': 'application/json',
+                'apikey': env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY,
+                'Authorization': `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY}`,
+                'Prefer': 'return=representation',
+              },
+              body: JSON.stringify({ role: newRole }),
+            }
+          );
+          if (!patchRes.ok) {
+            const t = await patchRes.text().catch(() => '');
+            return errorResponse(
+              `Rolle-Update fehlgeschlagen: ${patchRes.status} ${t.slice(0, 200)}`
+            );
+          }
+          const data = await patchRes.json().catch(() => []);
+          const updated = Array.isArray(data) ? data[0] : data;
+          if (!updated) {
+            return errorResponse('User nicht gefunden', 404);
+          }
+
+          // Audit-Log: zusaetzlich noch admin-username eintragen (v91 trigger
+          // log automatisch, aber kennt actor_username nicht).
+          try {
+            await fetch(`${SUPABASE_URL}/rest/v1/admin_audit_log`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'apikey': env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY,
+                'Authorization': `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY}`,
+              },
+              body: JSON.stringify({
+                actor_id: '00000000-0000-0000-0000-000000000000',
+                action: 'role_change_explicit',
+                target_type: 'profile',
+                target_id: userId,
+                payload: {
+                  new_role: newRole,
+                  changed_by_admin: adminUsername,
+                  source: 'api/admin/users/role',
+                },
+              }),
+            });
+          } catch (_) { /* audit ist non-fatal */ }
+
+          return jsonResponse({
+            success: true,
+            user_id: userId,
+            new_role: newRole,
+            username: updated.username || null,
+          });
+        } catch (e) {
+          return errorResponse(`Rolle-Update-Fehler: ${e.message}`);
+        }
+      }
+
+      // ── POST /api/devices/register  (v5.44.3 FCM-Token Persistenz) ──
+      // Body: { fcm_token, platform: 'android'|'ios'|'web', profile_id?,
+      //         legacy_user_id?, app_version?, device_model? }
+      // Mindestens eines von profile_id ODER legacy_user_id muss gesetzt sein.
+      // Upsert auf fcm_token - 1 Token = 1 Device (egal welcher User).
+      if (method === 'POST' && path === '/api/devices/register') {
+        try {
+          const body = await request.json().catch(() => ({}));
+          const fcmToken = String(body.fcm_token || '').trim();
+          const platform = String(body.platform || '').toLowerCase();
+          const profileId = body.profile_id || null;
+          const legacyUserId = body.legacy_user_id || null;
+          if (!fcmToken) return errorResponse('fcm_token fehlt', 400);
+          if (!['android', 'ios', 'web'].includes(platform)) {
+            return errorResponse('platform muss android|ios|web sein', 400);
+          }
+          if (!profileId && !legacyUserId) {
+            return errorResponse(
+              'profile_id ODER legacy_user_id muss gesetzt sein', 400
+            );
+          }
+
+          const upsertRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/user_devices?on_conflict=fcm_token`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'apikey': env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY,
+                'Authorization': `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY}`,
+                'Prefer': 'resolution=merge-duplicates,return=representation',
+              },
+              body: JSON.stringify({
+                fcm_token: fcmToken,
+                profile_id: profileId,
+                legacy_user_id: legacyUserId,
+                platform,
+                app_version: body.app_version || null,
+                device_model: body.device_model || null,
+                last_seen_at: new Date().toISOString(),
+              }),
+            }
+          );
+          if (!upsertRes.ok) {
+            const t = await upsertRes.text().catch(() => '');
+            return errorResponse(
+              `Device-Register fehlgeschlagen: ${upsertRes.status} ${t.slice(0, 200)}`
+            );
+          }
+          const data = await upsertRes.json().catch(() => []);
+          return jsonResponse({
+            success: true,
+            device: Array.isArray(data) ? data[0] : data,
+          });
+        } catch (e) {
+          return errorResponse(`Device-Register-Fehler: ${e.message}`);
         }
       }
 

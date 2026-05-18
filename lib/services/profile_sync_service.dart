@@ -4,6 +4,7 @@ import 'dart:convert';
 import '../models/materie_profile.dart';
 import '../models/energie_profile.dart';
 import '../core/network/http_helper.dart';
+import '../core/storage/unified_storage_service.dart';
 
 /// Cloudflare Profile Service
 /// Synchronisiert Profile-Daten mit Cloudflare D1 Backend
@@ -43,7 +44,11 @@ class ProfileSyncService {
   ) async {
     try {
       final url = Uri.parse('$_baseUrl/api/profile/materie');
-      
+
+      // v5.44.3: legacy_user_id mitschicken damit Worker InvisibleAuth-IDs
+      // in profiles.legacy_user_id schreiben kann (siehe Migration v91).
+      final invisibleId = await UnifiedStorageService().getCurrentUserId();
+
       // ✅ Build request body (additiv)
       final body = <String, dynamic>{
         'username': profile.username,
@@ -51,6 +56,7 @@ class ProfileSyncService {
         'avatar_url': profile.avatarUrl,
         'avatar_emoji': profile.avatarEmoji,
         'bio': profile.bio,
+        if (invisibleId != null && invisibleId.isNotEmpty) 'userId': invisibleId,
       };
       
       // ✅ NEU: Passwort nur hinzufügen wenn vorhanden
@@ -196,7 +202,10 @@ class ProfileSyncService {
   ) async {
     try {
       final url = Uri.parse('$_baseUrl/api/profile/energie');
-      
+
+      // v5.44.3: legacy_user_id mitschicken (siehe Materie)
+      final invisibleId = await UnifiedStorageService().getCurrentUserId();
+
       // ✅ Build request body (additiv)
       final body = <String, dynamic>{
         'username': profile.username,
@@ -208,6 +217,7 @@ class ProfileSyncService {
         'avatar_url': profile.avatarUrl,
         'avatar_emoji': profile.avatarEmoji,
         'bio': profile.bio,
+        if (invisibleId != null && invisibleId.isNotEmpty) 'userId': invisibleId,
       };
       
       // ✅ NEU: Passwort nur hinzufügen wenn vorhanden

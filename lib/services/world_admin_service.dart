@@ -683,6 +683,43 @@ extension WorldAdminServiceV162 on WorldAdminService {
     }
   }
 
+  /// v5.44.3: Aendert die Rolle eines Users.
+  /// Schreibt via Service-Role direkt in profiles.role und triggert
+  /// admin_audit_log via v91-Trigger profiles_role_change_audit.
+  ///
+  /// [newRole] muss einer sein von:
+  ///   'user', 'moderator', 'admin', 'content_editor', 'root_admin'
+  ///
+  /// Returns true on HTTP 200, false bei Fehler.
+  static Future<bool> changeUserRole({
+    required String userId,
+    required String newRole,
+    String? adminUsername,
+  }) async {
+    try {
+      final url = Uri.parse('${WorldAdminService._baseUrl}/api/admin/users/$userId/role');
+      final response = await http.put(
+        url,
+        headers: {..._h, 'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'role': newRole,
+          if (adminUsername != null) 'admin': adminUsername,
+        }),
+      ).timeout(WorldAdminService._timeout);
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>? ?? {};
+        return data['success'] as bool? ?? true;
+      }
+      if (kDebugMode) {
+        debugPrint('❌ changeUserRole failed: HTTP ${response.statusCode} ${response.body}');
+      }
+      return false;
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ changeUserRole exception: $e');
+      return false;
+    }
+  }
+
   static Future<bool> muteUser({
     required String userId,
     required String reason,

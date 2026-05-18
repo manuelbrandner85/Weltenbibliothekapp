@@ -410,6 +410,13 @@ jobs:
           run_sql "v90 add_user_xp RPC (SECURITY DEFINER, bounded)" \
             supabase/migrations/20260518_v90_add_user_xp_rpc.sql
 
+          # v91: Profile-InvisibleAuth-Kompat (id DEFAULT + FK drop)
+          #      + user_devices Tabelle fuer FCM-Token-Persistenz
+          #      + admin_audit_log Trigger fuer role-Aenderungen
+          #      + RLS-Verschaerfung fuer profiles.role
+          run_sql "v91 Profile InvisibleAuth Compat + user_devices + role audit" \
+            supabase/migrations/20260518_v91_profile_invisible_auth_compat.sql
+
           echo ""
           if [ "$MIGRATION_FAILED" = "1" ]; then
             echo "⚠️  Einige frühe Migrationen schlugen fehl (siehe Warnungen oben)."
