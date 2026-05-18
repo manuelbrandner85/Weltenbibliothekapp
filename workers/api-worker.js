@@ -2495,6 +2495,111 @@ export default {
         } catch (e) { return jsonResponse({ success: true, views: 0, interactions: 0, newUsers: 0 }); }
       }
 
+      // ── GET /api/admin/progress ─────────────────────────────
+      // Aggregierte Modul-Fortschritte für Vorhang + Ursprung.
+      // Pro Branch: total_modules, users_started, users_completed_all,
+      // avg_completion_rate. Pro Modul: started/completed counts.
+      // Komplett SERVICE_ROLE, umgeht RLS.
+      if (method === 'GET' && path === '/api/admin/progress') {
+        try {
+          const fetchAll = async (table, cols = 'module_code,exercise_completed,test_passed,completed_at,user_id') => {
+            const r = await fetch(
+              `${SUPABASE_URL}/rest/v1/${table}?select=${cols}&limit=10000`,
+              { headers: svcHeaders }
+            );
+            if (!r.ok) return [];
+            return (await r.json().catch(() => [])) || [];
+          };
+          const fetchModules = async (table) => {
+            const r = await fetch(
+              `${SUPABASE_URL}/rest/v1/${table}?select=module_code,branch,title,subtitle,xp_reward&order=branch_order.asc&limit=200`,
+              { headers: svcHeaders }
+            );
+            if (!r.ok) return [];
+            return (await r.json().catch(() => [])) || [];
+          };
+
+          const [vorhangMods, ursprungMods, vorhangProg, ursprungProg] = await Promise.all([
+            fetchModules('vorhang_modules'),
+            fetchModules('ursprung_modules'),
+            fetchAll('user_vorhang_progress'),
+            fetchAll('user_ursprung_progress'),
+          ]);
+
+          const aggregate = (modules, progress) => {
+            const byCode = {};
+            for (const m of modules) {
+              byCode[m.module_code] = {
+                code: m.module_code,
+                title: m.title || '',
+                subtitle: m.subtitle || '',
+                branch: m.branch || 'unknown',
+                xp_reward: m.xp_reward || 0,
+                started: 0,
+                completed: 0,
+                users_started: new Set(),
+                users_completed: new Set(),
+              };
+            }
+            for (const p of progress) {
+              const e = byCode[p.module_code];
+              if (!e) continue;
+              if (p.user_id) e.users_started.add(p.user_id);
+              e.started++;
+              const done = (p.exercise_completed === true) || (p.test_passed === true) || !!p.completed_at;
+              if (done) {
+                e.completed++;
+                if (p.user_id) e.users_completed.add(p.user_id);
+              }
+            }
+            const modulesOut = Object.values(byCode).map(m => ({
+              code: m.code, title: m.title, subtitle: m.subtitle, branch: m.branch,
+              xp_reward: m.xp_reward,
+              users_started: m.users_started.size,
+              users_completed: m.users_completed.size,
+              completion_rate: m.users_started.size > 0
+                ? Math.round((m.users_completed.size / m.users_started.size) * 100)
+                : 0,
+            }));
+            // Pro Branch aggregieren
+            const byBranch = {};
+            for (const m of modulesOut) {
+              const b = byBranch[m.branch] || { branch: m.branch, modules: 0, users_started: new Set(), users_completed: new Set() };
+              b.modules++;
+              byBranch[m.branch] = b;
+            }
+            for (const p of progress) {
+              if (!p.user_id) continue;
+              const code = p.module_code;
+              const mod = byCode[code];
+              if (!mod) continue;
+              const b = byBranch[mod.branch];
+              if (!b) continue;
+              b.users_started.add(p.user_id);
+              const done = (p.exercise_completed === true) || (p.test_passed === true) || !!p.completed_at;
+              if (done) b.users_completed.add(p.user_id);
+            }
+            const branchesOut = Object.values(byBranch).map(b => ({
+              branch: b.branch,
+              modules: b.modules,
+              users_started: b.users_started.size,
+              users_completed: b.users_completed.size,
+            }));
+            // Top + Stuck (Module mit mindestens 3 Startern, sortiert nach Rate)
+            const withUsers = modulesOut.filter(m => m.users_started >= 3);
+            const top = [...withUsers].sort((a, b) => b.completion_rate - a.completion_rate).slice(0, 8);
+            const stuck = [...withUsers].sort((a, b) => a.completion_rate - b.completion_rate).slice(0, 8);
+            return { total: modules.length, modules: modulesOut, branches: branchesOut, top, stuck };
+          };
+
+          return jsonResponse({
+            success: true,
+            vorhang: aggregate(vorhangMods, vorhangProg),
+            ursprung: aggregate(ursprungMods, ursprungProg),
+          });
+        } catch (e) { return errorResponse(`Progress-Fehler: ${e.message}`); }
+      }
+
       // ── GET /api/admin/users/:userId/status ─────────────────
       if (method === 'GET' && path.includes('/status')) {
         try {

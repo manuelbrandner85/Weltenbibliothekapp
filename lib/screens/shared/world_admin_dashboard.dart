@@ -48,7 +48,7 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 6, vsync: this);
+    _tabController = TabController(length: 7, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _waitForState();
     });
@@ -190,6 +190,7 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
             Tab(icon: Icon(Icons.dashboard_rounded, size: 18), text: 'Übersicht'),
             Tab(icon: Icon(Icons.people_rounded, size: 18), text: 'Nutzer'),
             Tab(icon: Icon(Icons.chat_bubble_rounded, size: 18), text: 'Chat'),
+            Tab(icon: Icon(Icons.school_rounded, size: 18), text: 'Module'),
             Tab(icon: Icon(Icons.notifications_active_rounded, size: 18), text: 'Push'),
             Tab(icon: Icon(Icons.history_rounded, size: 18), text: 'Audit'),
             Tab(icon: Icon(Icons.monitor_heart_rounded, size: 18), text: 'System'),
@@ -202,6 +203,7 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
           _OverviewTab(world: widget.world, admin: admin, accent: _accent, accentBright: _accentBright),
           _UsersTab(world: widget.world, admin: admin, accent: _accent, accentBright: _accentBright),
           _ChatModerationTab(world: widget.world, admin: admin, accent: _accent, accentBright: _accentBright),
+          _ModuleProgressTab(accent: _accent, accentBright: _accentBright),
           _PushBroadcastTab(accent: _accent, accentBright: _accentBright),
           _AuditLogTab(world: widget.world, accent: _accent, accentBright: _accentBright),
           _SystemTab(accent: _accent, accentBright: _accentBright),
@@ -3202,6 +3204,327 @@ class _ModerationQueueScreenState extends State<_ModerationQueueScreen> {
 // ═══════════════════════════════════════════════════════════
 // 🔔 PUSH-BROADCAST TAB
 // ═══════════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════════════════════════════
+// TAB – MODULE-PROGRESS (Vorhang + Ursprung Completion-Stats)
+// ═════════════════════════════════════════════════════════════════════════════
+class _ModuleProgressTab extends StatefulWidget {
+  final Color accent;
+  final Color accentBright;
+  const _ModuleProgressTab({required this.accent, required this.accentBright});
+
+  @override
+  State<_ModuleProgressTab> createState() => _ModuleProgressTabState();
+}
+
+class _ModuleProgressTabState extends State<_ModuleProgressTab>
+    with SingleTickerProviderStateMixin {
+  Map<String, dynamic>? _data;
+  bool _loading = true;
+  String? _error;
+  late TabController _inner;
+
+  @override
+  void initState() {
+    super.initState();
+    _inner = TabController(length: 2, vsync: this);
+    _load();
+  }
+
+  @override
+  void dispose() {
+    _inner.dispose();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    setState(() { _loading = true; _error = null; });
+    try {
+      final res = await http
+          .get(Uri.parse('${ApiConfig.workerUrl}/api/admin/progress'))
+          .timeout(const Duration(seconds: 15));
+      if (res.statusCode == 200) {
+        if (mounted) setState(() {
+          _data = jsonDecode(res.body) as Map<String, dynamic>;
+          _loading = false;
+        });
+      } else {
+        if (mounted) setState(() {
+          _error = 'HTTP ${res.statusCode}: ${res.body.substring(0, 120)}';
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() {
+        _error = 'Netzwerk: $e';
+        _loading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) {
+      return Center(child: CircularProgressIndicator(color: widget.accent));
+    }
+    if (_error != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 40),
+            const SizedBox(height: 12),
+            Text(_error!,
+                style: const TextStyle(color: Colors.white70, fontSize: 13),
+                textAlign: TextAlign.center),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: _load,
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Neu laden'),
+              style: ElevatedButton.styleFrom(backgroundColor: widget.accent),
+            ),
+          ]),
+        ),
+      );
+    }
+    final vorhang = (_data?['vorhang'] as Map<String, dynamic>?) ?? const {};
+    final ursprung = (_data?['ursprung'] as Map<String, dynamic>?) ?? const {};
+
+    return Column(children: [
+      Container(
+        color: const Color(0xFF0D0D1A),
+        child: TabBar(
+          controller: _inner,
+          indicatorColor: widget.accent,
+          labelColor: widget.accentBright,
+          unselectedLabelColor: Colors.white38,
+          labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+          tabs: [
+            Tab(text: 'Vorhang (${vorhang['total'] ?? 0})'),
+            Tab(text: 'Ursprung (${ursprung['total'] ?? 0})'),
+          ],
+        ),
+      ),
+      Expanded(
+        child: TabBarView(
+          controller: _inner,
+          children: [
+            _ProgressBranch(data: vorhang, accent: widget.accent, accentBright: widget.accentBright, onReload: _load),
+            _ProgressBranch(data: ursprung, accent: widget.accent, accentBright: widget.accentBright, onReload: _load),
+          ],
+        ),
+      ),
+    ]);
+  }
+}
+
+class _ProgressBranch extends StatelessWidget {
+  final Map<String, dynamic> data;
+  final Color accent;
+  final Color accentBright;
+  final VoidCallback onReload;
+  const _ProgressBranch({
+    required this.data,
+    required this.accent,
+    required this.accentBright,
+    required this.onReload,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final total = data['total'] ?? 0;
+    final branches = (data['branches'] as List?) ?? const [];
+    final top = (data['top'] as List?) ?? const [];
+    final stuck = (data['stuck'] as List?) ?? const [];
+
+    return RefreshIndicator(
+      color: accent,
+      onRefresh: () async => onReload(),
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [accent.withValues(alpha: 0.15), accent.withValues(alpha: 0.05)],
+              ),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: accent.withValues(alpha: 0.3)),
+            ),
+            child: Row(children: [
+              Icon(Icons.school_rounded, color: accent),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('$total Module verfügbar',
+                      style: TextStyle(color: accentBright, fontWeight: FontWeight.bold, fontSize: 15)),
+                  Text(branches.isEmpty
+                      ? 'Keine Branches'
+                      : branches.map((b) => '${b['branch']} (${b['modules']})').join(' · '),
+                      style: const TextStyle(color: Colors.white54, fontSize: 11)),
+                ]),
+              ),
+            ]),
+          ),
+          const SizedBox(height: 20),
+
+          // Branch-Stats
+          _SectionLabel('Branches', Icons.account_tree_rounded, accent),
+          const SizedBox(height: 10),
+          if (branches.isEmpty)
+            _EmptyHint('Keine Branch-Daten.')
+          else
+            ...branches.map((b) {
+              final m = b as Map<String, dynamic>;
+              final modules = (m['modules'] ?? 0) as int;
+              final started = (m['users_started'] ?? 0) as int;
+              final completed = (m['users_completed'] ?? 0) as int;
+              final rate = started > 0 ? (completed * 100 / started).round() : 0;
+              return Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF12121E),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.white12),
+                ),
+                child: Row(children: [
+                  Expanded(
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text(m['branch']?.toString().toUpperCase() ?? '?',
+                          style: TextStyle(color: accentBright, fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 1)),
+                      const SizedBox(height: 4),
+                      Text('$modules Module · $started gestartet · $completed komplett durch',
+                          style: const TextStyle(color: Colors.white54, fontSize: 11)),
+                    ]),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: rate >= 50 ? Colors.green.withValues(alpha: 0.2) : Colors.orange.withValues(alpha: 0.18),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: (rate >= 50 ? Colors.green : Colors.orange).withValues(alpha: 0.5)),
+                    ),
+                    child: Text('$rate%',
+                        style: TextStyle(
+                          color: rate >= 50 ? Colors.green.shade300 : Colors.orange.shade300,
+                          fontWeight: FontWeight.bold, fontSize: 14,
+                        )),
+                  ),
+                ]),
+              );
+            }),
+
+          const SizedBox(height: 22),
+          _SectionLabel('Top-Module · höchste Completion-Rate', Icons.trending_up_rounded, accent),
+          const SizedBox(height: 10),
+          if (top.isEmpty)
+            _EmptyHint('Noch nicht genug Daten (≥3 Starter pro Modul nötig).')
+          else
+            ...top.map<Widget>((m) => _ModuleStatTile(
+                  m: m as Map<String, dynamic>,
+                  accent: accent,
+                  goodColor: Colors.green,
+                )),
+
+          const SizedBox(height: 22),
+          _SectionLabel('Hängen-bleiben · niedrigste Completion-Rate', Icons.trending_down_rounded, accent),
+          const SizedBox(height: 10),
+          if (stuck.isEmpty)
+            _EmptyHint('Keine kritischen Module gefunden.')
+          else
+            ...stuck.map<Widget>((m) => _ModuleStatTile(
+                  m: m as Map<String, dynamic>,
+                  accent: accent,
+                  goodColor: Colors.orange,
+                )),
+          const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
+}
+
+class _ModuleStatTile extends StatelessWidget {
+  final Map<String, dynamic> m;
+  final Color accent;
+  final MaterialColor goodColor;
+  const _ModuleStatTile({required this.m, required this.accent, required this.goodColor});
+
+  @override
+  Widget build(BuildContext context) {
+    final code = m['code']?.toString() ?? '';
+    final title = m['title']?.toString() ?? code;
+    final branch = m['branch']?.toString() ?? '';
+    final started = (m['users_started'] ?? 0) as int;
+    final completed = (m['users_completed'] ?? 0) as int;
+    final rate = (m['completion_rate'] ?? 0) as int;
+    final xpReward = (m['xp_reward'] ?? 0) as int;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF12121E),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white12),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: 0.18),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(code,
+                style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+          ),
+          const SizedBox(width: 6),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.06),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(branch,
+                style: const TextStyle(color: Colors.white60, fontSize: 9, letterSpacing: 1)),
+          ),
+          const Spacer(),
+          if (xpReward > 0)
+            Text('+$xpReward XP',
+                style: const TextStyle(color: Color(0xFFFFC107), fontSize: 11, fontWeight: FontWeight.bold)),
+        ]),
+        const SizedBox(height: 6),
+        Text(title,
+            style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+            maxLines: 2, overflow: TextOverflow.ellipsis),
+        const SizedBox(height: 8),
+        Row(children: [
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('$completed/$started',
+                  style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.bold)),
+              const Text('komplett/gestartet', style: TextStyle(color: Colors.white38, fontSize: 9)),
+            ]),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: goodColor.withValues(alpha: 0.18),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: goodColor.withValues(alpha: 0.5)),
+            ),
+            child: Text('$rate%',
+                style: TextStyle(color: goodColor.shade300, fontWeight: FontWeight.bold, fontSize: 13)),
+          ),
+        ]),
+      ]),
+    );
+  }
+}
+
 class _PushBroadcastTab extends StatefulWidget {
   final Color accent;
   final Color accentBright;
