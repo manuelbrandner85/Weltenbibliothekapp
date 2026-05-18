@@ -9,8 +9,9 @@ import '../data/energie_knowledge_complete.dart';
 // v5.44.5 - kuratierte Buecher-Bibliothek (15 pro Welt, hyper-professionell)
 import '../data/materie_books_curated.dart';
 import '../data/energie_books_curated.dart';
-import '../data/vorhang_books_curated.dart';
-import '../data/ursprung_books_curated.dart';
+// Folgende kommen sobald die parallelen Agents fertig sind:
+// import '../data/vorhang_books_curated.dart';
+// import '../data/ursprung_books_curated.dart';
 
 /// ============================================
 /// UNIFIED KNOWLEDGE SERVICE
@@ -85,8 +86,9 @@ class UnifiedKnowledgeService {
     // Laeuft auch bei Bestandsusern, damit die neuen Welten endlich Inhalte bekommen.
     await _ensureBooks('mat_book_001', materieBooksCurated, db);
     await _ensureBooks('ene_book_001', energieBooksCurated, db);
-    await _ensureBooks('vor_book_001', vorhangBooksCurated, db);
-    await _ensureBooks('urs_book_001', ursprungBooksCurated, db);
+    // Vorhang + Ursprung kommen sobald Agent-Files da sind
+    // await _ensureBooks('vor_book_001', vorhangBooksCurated, db);
+    // await _ensureBooks('urs_book_001', ursprungBooksCurated, db);
   }
 
   /// Idempotent insert: nur wenn der probe-id NICHT existiert wird die
