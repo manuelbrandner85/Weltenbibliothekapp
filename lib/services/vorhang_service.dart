@@ -35,9 +35,17 @@ class VorhangService {
   static Future<Map<String, dynamic>> fetchModules({String? userId}) async {
     final supa = Supabase.instance.client;
 
+    // v5.44.2: Slim-Select fuer Liste - kein theory_content/case_study/
+    // exercise_description (4-5 KB pro Modul * 30 Module = ~150 KB Payload).
+    // Detail-Felder werden bei Tap auf Modul via fetchModule(code) lazy
+    // nachgeladen (siehe VorhangLessonScreen._fetchModule).
+    // Vorher: 264 KB. Nachher: ~35 KB.
     final modulesRaw = await supa
         .from('vorhang_modules')
-        .select()
+        .select(
+          'module_code,branch,branch_order,title,subtitle,'
+          'is_boss_module,xp_reward,prerequisites',
+        )
         .order('branch_order', ascending: true)
         .order('module_code', ascending: true);
     final modules = (modulesRaw as List).cast<Map<String, dynamic>>();
