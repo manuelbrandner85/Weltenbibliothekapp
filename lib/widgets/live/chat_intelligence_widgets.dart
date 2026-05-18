@@ -49,7 +49,7 @@ const Set<String> _stopwords = <String>{
   'soll', 'will', 'mehr', 'viel', 'viele', 'einfach', 'wirklich',
   'ganz', 'eben', 'eigentlich', 'doch', 'mal', 'nur', 'auf', 'für',
   'fuer', 'zum', 'zur', 'zu', 'im', 'in', 'an', 'als', 'so',
-  'ist', 'war', 'wenn', 'man',
+  'ist', 'war', 'man',
 };
 
 /// Extrahiert die top-N Themen aus einer Message-Liste.
