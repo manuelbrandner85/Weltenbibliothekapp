@@ -2343,27 +2343,29 @@ export default {
         try {
           const anonKey = env.SUPABASE_ANON_KEY || '';
           const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || anonKey;
-          const fetchProfiles = async (withWorldPref) => {
-            const cols = withWorldPref
-              ? 'id,username,display_name,role,is_banned,avatar_url,avatar_emoji,created_at,world,world_preference,last_seen_at'
-              : 'id,username,display_name,role,is_banned,avatar_url,avatar_emoji,created_at,world,last_seen_at';
-            return fetch(
-              `${SUPABASE_URL}/rest/v1/profiles?select=${cols}&order=created_at.desc&limit=500`,
+          const baseCols = ['id','username','display_name','role','is_banned','avatar_url','avatar_emoji','created_at','world'];
+          const optionalCols = ['world_preference','last_seen_at']; // schema-drift safe
+          // Versuche zuerst mit allen Spalten, droppe optional bei 42703.
+          let cols = [...baseCols, ...optionalCols];
+          let res;
+          for (let attempt = 0; attempt < 4; attempt++) {
+            res = await fetch(
+              `${SUPABASE_URL}/rest/v1/profiles?select=${cols.join(',')}&order=created_at.desc&limit=500`,
               { headers: { 'Content-Type': 'application/json', 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}` } }
             );
-          };
-          let res = await fetchProfiles(true);
-          if (!res.ok) {
+            if (res.ok) break;
             const txt = await res.text().catch(() => '');
-            // 42703 = undefined_column → retry ohne world_preference
-            if (txt.includes('42703') || txt.includes('world_preference')) {
-              res = await fetchProfiles(false);
+            // 42703 = undefined_column → droppe die im Fehler genannte Optional-Spalte
+            if (txt.includes('42703')) {
+              const dropped = optionalCols.find(c => txt.includes(c) && cols.includes(c));
+              if (dropped) {
+                cols = cols.filter(c => c !== dropped);
+                continue;
+              }
             }
-            if (!res.ok) {
-              const txt2 = await res.text().catch(() => '');
-              return errorResponse(`Supabase ${res.status}: ${txt2.substring(0, 200)}`);
-            }
+            return errorResponse(`Supabase ${res.status}: ${txt.substring(0, 200)}`);
           }
+          if (!res || !res.ok) return errorResponse('Supabase: alle Fallbacks gescheitert');
           const all = await res.json().catch(() => []);
           const list = Array.isArray(all) ? all : [];
           const filtered = list

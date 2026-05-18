@@ -368,6 +368,40 @@ jobs:
           run_sql "v73 Vorhang Module Reseed + Schema-Fix (UNIQUE, module_code, 30 Module)" \
             supabase/migrations/20260517_v73_vorhang_reseed_schema_fix.sql
 
+          # v76: Admin Audit Log (Action-Tracking für alle Admin-Operationen)
+          run_sql "v76 Admin Audit Log (Action-Tracking)" \
+            supabase/migrations/20260517_v76_admin_audit_log.sql
+
+          # v77: Research Pins + Edge Confidence
+          run_sql "v77 Research Pins + Edge Confidence" \
+            supabase/migrations/20260517_v77_research_pins_and_edge_confidence.sql
+
+          # v78–v87: Cluster-Migrationen (Research, Chat, Energie, Spirit, Wellness, Vorhang, Ursprung, Gamification, Knowledge, Admin)
+          run_sql "v78 Cluster C: Research Tools" \
+            supabase/migrations/20260517_v78_cluster_c_research_tools.sql
+          run_sql "v79 Cluster E: Chat + Voice" \
+            supabase/migrations/20260517_v79_cluster_e_chat_voice.sql
+          run_sql "v80 Cluster F: Energie" \
+            supabase/migrations/20260517_v80_cluster_f_energie.sql
+          run_sql "v81 Cluster G: Spirit Readings" \
+            supabase/migrations/20260517_v81_cluster_g_spirit_readings.sql
+          run_sql "v82 Cluster H: Wellness" \
+            supabase/migrations/20260517_v82_cluster_h_wellness.sql
+          run_sql "v83 Cluster I: Vorhang" \
+            supabase/migrations/20260517_v83_cluster_i_vorhang.sql
+          run_sql "v84 Cluster J: Ursprung" \
+            supabase/migrations/20260517_v84_cluster_j_ursprung.sql
+          run_sql "v85 Cluster K: Gamification (XP, Achievements)" \
+            supabase/migrations/20260517_v85_cluster_k_gamification.sql
+          run_sql "v86 Cluster L: Knowledge" \
+            supabase/migrations/20260517_v86_cluster_l_knowledge.sql
+          run_sql "v87 Cluster M: Admin" \
+            supabase/migrations/20260517_v87_cluster_m_admin.sql
+
+          # v88: User Presence Tracking (last_seen_at für Admin-Dashboard Online-Roster)
+          run_sql "v88 User Presence (last_seen_at + Index)" \
+            supabase/migrations/20260517_v88_user_presence.sql
+
           echo ""
           if [ "$MIGRATION_FAILED" = "1" ]; then
             echo "⚠️  Einige frühe Migrationen schlugen fehl (siehe Warnungen oben)."
