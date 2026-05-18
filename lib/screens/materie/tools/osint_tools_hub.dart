@@ -7,6 +7,7 @@ import '../../../theme/wb_cinematic_tokens.dart';
 import '../../../widgets/cinematic/wb_glass_app_bar.dart';
 import '../../../widgets/cinematic/wb_vignette.dart';
 import 'power_network_explorer_screen.dart';
+import 'study_analyst_screen.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // OSINT Datenbanken Hub — 7 direkte Datenbank-Zugänge via WebView
@@ -33,20 +34,13 @@ class OsintToolsHub extends StatelessWidget {
       customScreenBuilder: () => const PowerNetworkExplorerScreen(),
     ),
     _DbDef(
-      icon: Icons.science_rounded,
-      label: 'PubMed',
-      sub: '35 Mio. Studien & Papers',
-      color: Color(0xFF00BCD4),
-      url: 'https://pubmed.ncbi.nlm.nih.gov/',
-      description: 'National Library of Medicine: 35 Millionen biomedizinische Studien, peer-reviewed Forschung, klinische Daten.',
-    ),
-    _DbDef(
-      icon: Icons.auto_stories_rounded,
-      label: 'Semantic Scholar',
-      sub: '200 Mio. wissenschaftliche Paper',
-      color: Color(0xFF4CAF50),
-      url: 'https://www.semanticscholar.org/',
-      description: 'AI-gestützte Suche in 200 Millionen wissenschaftlichen Veröffentlichungen aller Fachbereiche.',
+      icon: Icons.biotech_rounded,
+      label: 'Studien-Analyst',
+      sub: 'PubMed + Semantic Scholar + AI',
+      color: const Color(0xFF26C6DA),
+      url: '',
+      description: 'Eine Suche → PubMed (35M) + Semantic Scholar (200M) parallel. Auto-Erkennung von Studien-Typ (RCT/Meta/Review), Quality-Score, AI-3-Satz-Zusammenfassung, persönliche Bibliothek.',
+      customScreenBuilder: () => const StudyAnalystScreen(),
     ),
     _DbDef(
       icon: Icons.archive_rounded,
