@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../services/biometric_service.dart';
+import '../../../widgets/health/health_diagnosis_dialog.dart';
 import '../../../widgets/health/live_hr_indicator.dart';
-import '../../health/health_settings_screen.dart';
 import '../../shared/biometric_result_sheet.dart';
 
 /// 🌬️ Atemmeister — HeartMath / CIA Resonant Tuning Breathing
@@ -133,70 +133,16 @@ class _BreathmasterScreenState extends State<BreathmasterScreen>
     final granted = await _bio.requestPermissions();
     if (!mounted) return;
     if (!granted) {
-      // v5.44: statt silent SnackBar - actionable Sheet mit Health-Settings-Link
-      final shouldFix = await showModalBottomSheet<bool>(
-        context: context,
-        backgroundColor: const Color(0xFF0A0A1A),
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        builder: (ctx) => Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Text('🫀', style: TextStyle(fontSize: 48), textAlign: TextAlign.center),
-              const SizedBox(height: 12),
-              const Text('Health-Berechtigung fehlt',
-                  style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800),
-                  textAlign: TextAlign.center),
-              const SizedBox(height: 8),
-              Text(
-                'Damit du Wirkungs-Scores deiner Atem-Sessions bekommst, brauchst du:\n\n'
-                '1) Health Connect (Android-App)\n'
-                '2) Berechtigung erteilen\n'
-                '3) Eine Watch oder Fitness-App als Datenquelle',
-                style: TextStyle(color: Colors.white.withValues(alpha: 0.75), fontSize: 13, height: 1.5),
-                textAlign: TextAlign.left,
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton.icon(
-                onPressed: () => Navigator.pop(ctx, true),
-                icon: const Icon(Icons.settings),
-                label: const Text('HEALTH-SETUP ÖFFNEN'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF26A69A),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                ),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(ctx, false),
-                child: const Text('Trotzdem starten (ohne Biometrie)',
-                    style: TextStyle(color: Colors.white54)),
-              ),
-            ],
-          ),
-        ),
-      );
+      // v5.44: HealthDiagnosisDialog mit auto-Diagnose + kontextueller Fix-Action
+      final resolved = await HealthDiagnosisDialog.showAndResolve(context, _bio);
       if (!mounted) return;
-      if (shouldFix == true) {
-        await Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const HealthSettingsScreen()),
-        );
+      if (resolved) {
+        setState(() => _measuringBaseline = true);
+        await Future<void>.delayed(const Duration(seconds: 1));
         if (!mounted) return;
-        final retry = await _bio.requestPermissions();
-        if (!mounted) return;
-        if (retry) {
-          setState(() => _measuringBaseline = true);
-          await Future<void>.delayed(const Duration(seconds: 1));
-          if (!mounted) return;
-          setState(() => _measuringBaseline = false);
-          _start(biometric: true);
-          return;
-        }
+        setState(() => _measuringBaseline = false);
+        _start(biometric: true);
+        return;
       }
       _start(biometric: false);
       return;
