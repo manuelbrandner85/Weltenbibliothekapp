@@ -30,6 +30,7 @@ import 'calculators/audio_meditation_screen.dart'; // 🧘 TTS-Meditationen
 import 'calculators/photo_progress_screen.dart'; // 📸 Vor/Nach
 import 'calculators/crystal_photo_id_screen.dart'; // 💎 KI-Foto-ID
 import 'calculators/voice_affirmation_screen.dart'; // 💫 Voice-Recording
+import 'calculators/mantra_practice_screen.dart'; // 🕉️ Mantra-Praxis cinematic
 import 'calculators/new_spirit_tool_screens.dart';
 import 'meditation_timer_screen.dart'; // MeditationTimerScreen (canonical, deduplicated)
 import 'calculators/moon_calendar_tool_screen.dart'; // 🌕 v19 Mondkalender
@@ -335,7 +336,7 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'screen': const AkashaChronicleJournalScreen(),
       },
       
-      // 🕉️ Mantra-Bibliothek
+      // 🕉️ Mantra-Bibliothek (Original)
       {
         'icon': Icons.record_voice_over,
         'iconEmoji': '🕉️',
@@ -344,6 +345,16 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'color': const Color(0xFFE65100),
         'category': 'new',
         'screen': const MantraLibraryScreen(),
+      },
+      // 🕉️ Mantra-Praxis (cinematic) — Audio + 108-Mala + Tagesmantra
+      {
+        'icon': Icons.spa,
+        'iconEmoji': '📿',
+        'title': 'Mantra-Praxis',
+        'subtitle': 'Aussprache · 108-Mala · Tagesmantra',
+        'color': const Color(0xFFFFB300),
+        'category': 'new',
+        'screen': const MantraPracticeScreen(),
       },
       
       // 🔯 Heilige Geometrie
