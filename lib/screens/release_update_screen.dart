@@ -209,11 +209,10 @@ class _ReleaseUpdateScreenState extends State<ReleaseUpdateScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Notausgang erlauben sobald 2+ Installationsversuche fehlgeschlagen sind
-    // (typisch für Signatur-Mismatch bei alten Debug-Key-APKs).
-    final allowEscape =
-        _stage == _UpdateStage.error && _installAttempts >= 2;
-    final canPop = !widget.info.isForced || allowEscape;
+    // FIX (v5.44.1): Notausgang NIE bei Force-Update - vorher konnte User
+    // nach 2 Fehlversuchen Pflicht-Update umgehen. Nur optionale Updates
+    // duerfen weggeklickt werden.
+    final canPop = !widget.info.isForced;
 
     return PopScope(
       canPop: canPop,
@@ -552,7 +551,10 @@ class _ReleaseUpdateScreenState extends State<ReleaseUpdateScreen> {
   }
 
   Widget _buildErrorState() {
-    final showEscape = _installAttempts >= 2;
+    // FIX (v5.44.1): Escape-Button bei Force-Update NIE anzeigen, auch nicht
+    // nach mehrfachen Fehlversuchen. Sonst kann User Pflicht-Update umgehen.
+    // Nur bei optionalen Updates (isForced=false) oder Debug-Builds geht's.
+    final showEscape = _installAttempts >= 2 && !widget.info.isForced;
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
