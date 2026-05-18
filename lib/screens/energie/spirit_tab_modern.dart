@@ -26,6 +26,7 @@ import 'calculators/family_tree_screen.dart'; // 🌳 Stammbaum
 import 'calculators/tarot_spreads_screen.dart'; // 🔮 Tarot-Legesysteme (alt)
 import 'calculators/tarot_oracle_screen.dart'; // 🔮 Cinematic mit AI-Lesung
 import 'calculators/runes_oracle_screen.dart'; // ᚱ Elder Futhark Cinematic
+import 'calculators/akasha_chronicle_screen.dart'; // 🌌 Cinematic Journal + AI
 import 'calculators/animated_sacred_geometry_screen.dart'; // 🔯 Animierte SVG
 import 'calculators/sacred_geometry_constructor_screen.dart'; // 🔯 Interaktiver Konstruktor
 import 'calculators/affirmations_studio_screen.dart'; // 🌟 Cinematic AI-Studio
@@ -330,15 +331,15 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'screenBuilder': () => const FrequencyGeneratorScreen(),
       },
       
-      // 🌌 Akasha-Chronik
+      // 🌌 Akasha-Chronik cinematic — Journal + AI-Reflexion + Mood-Tracker
       {
         'icon': Icons.menu_book,
         'iconEmoji': '🌌',
         'title': 'Akasha-Chronik',
-        'subtitle': 'Seelen-Journal',
-        'color': const Color(0xFF311B92),
+        'subtitle': 'Journal · AI-Reflexion · 30-Tage-Mood · Streak',
+        'color': const Color(0xFF7C4DFF),
         'category': 'new',
-        'screen': const AkashaChronicleJournalScreen(),
+        'screen': const AkashaChronicleScreen(),
       },
       
       // 🕉️ Mantra-Bibliothek (Original)
