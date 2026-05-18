@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../models/energie_profile.dart';
 import '../../../services/storage_service.dart';
 import '../../../services/spirit_calculations/chakra_engine.dart';
@@ -832,20 +833,21 @@ class _ChakraCalculatorScreenState extends State<ChakraCalculatorScreen> with Ti
     );
   }
 
-  int _tempRatings = 0; // Temporary storage for ratings
+  // Pro Chakra ein eigener Wert (0..5). Vorbelegt aus _chakraScores beim
+  // Tab-Open, überschreibt diese beim Speichern.
+  Map<int, int> _tempRatings = {};
 
   Widget _buildChakraQuickRating(int chakraIndex, Map<String, dynamic> chakra) {
+    final chakraColor = chakra['color'] as Color;
+    // Aktueller Wert: erst gewählter Wert, sonst Quiz-Score, sonst 0
+    final current = _tempRatings[chakraIndex] ?? _chakraScores[chakraIndex] ?? 0;
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         children: [
           Container(
-            width: 12,
-            height: 12,
-            decoration: BoxDecoration(
-              color: chakra['color'] as Color,
-              shape: BoxShape.circle,
-            ),
+            width: 12, height: 12,
+            decoration: BoxDecoration(color: chakraColor, shape: BoxShape.circle),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -854,18 +856,30 @@ class _ChakraCalculatorScreenState extends State<ChakraCalculatorScreen> with Ti
               style: const TextStyle(color: Colors.white, fontSize: 13),
             ),
           ),
-          // Einfache Rating-Stars
+          // Rating-Stars: Tap = setze auf X. Tap auf bereits aktiven X = X−1
+          // (Toggle für Korrektur ohne langes Drücken).
           ...List.generate(5, (index) {
+            final filled = index < current;
+            final isLastFilled = index == current - 1;
             return GestureDetector(
+              behavior: HitTestBehavior.opaque,
               onTap: () {
+                HapticFeedback.selectionClick();
                 setState(() {
-                  _tempRatings = index + 1;
+                  final next = isLastFilled ? index : index + 1;
+                  _tempRatings[chakraIndex] = next;
                 });
               },
-              child: Icon(
-                index < (_tempRatings) ? Icons.star : Icons.star_border,
-                color: Colors.amber,
-                size: 20,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 2),
+                child: Icon(
+                  filled ? Icons.star : Icons.star_border,
+                  color: filled ? chakraColor : chakraColor.withValues(alpha: 0.35),
+                  size: 22,
+                  shadows: filled
+                      ? [Shadow(color: chakraColor.withValues(alpha: 0.6), blurRadius: 6)]
+                      : null,
+                ),
               ),
             );
           }),
@@ -1078,17 +1092,27 @@ class _ChakraCalculatorScreenState extends State<ChakraCalculatorScreen> with Ti
   void _saveJournalEntry() {
     if (_profile == null) return;
 
+    // Stern-Ratings überschreiben Quiz-Scores für diesen Eintrag (User-Input
+    // ist aktueller). Fehlende Ratings → Quiz-Wert behalten.
+    final mergedScores = <int, int>{};
+    for (final entry in _chakraScores.entries) {
+      mergedScores[entry.key] = _tempRatings[entry.key] ?? entry.value;
+    }
+    for (final entry in _tempRatings.entries) {
+      mergedScores.putIfAbsent(entry.key, () => entry.value);
+    }
+
     final newEntry = {
       'date': DateTime.now(),
       'balance': _overallBalance,
       'note': _noteController.text,
-      'chakraScores': Map<String, int>.from(_chakraScores),
+      'chakraScores': mergedScores.map((k, v) => MapEntry(k.toString(), v)),
     };
 
     setState(() {
       _journalEntries.insert(0, newEntry);
       _noteController.clear();
-      _tempRatings = 0;
+      _tempRatings = {};
     });
 
     // Speichere in SharedPreferences
