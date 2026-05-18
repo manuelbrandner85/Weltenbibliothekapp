@@ -6,6 +6,11 @@ import '../data/materie_knowledge_data.dart';
 import '../data/energie_knowledge_data.dart';
 import '../data/materie_knowledge_complete.dart';
 import '../data/energie_knowledge_complete.dart';
+// v5.44.5 - kuratierte Buecher-Bibliothek (15 pro Welt, hyper-professionell)
+import '../data/materie_books_curated.dart';
+import '../data/energie_books_curated.dart';
+import '../data/vorhang_books_curated.dart';
+import '../data/ursprung_books_curated.dart';
 
 /// ============================================
 /// UNIFIED KNOWLEDGE SERVICE
@@ -52,8 +57,12 @@ class UnifiedKnowledgeService {
   Future<void> _loadInitialData() async {
     final db = SqliteStorageService.instance;
 
-    // Only load if box is empty
-    if (await db.count(_knowledgeBox) == 0) {
+    // v5.44.5: getrennte Migrationen damit Bestandsuser die neuen
+    // kuratierten Buecher bekommen ohne die DB komplett zu loeschen.
+    final hasAny = await db.count(_knowledgeBox) > 0;
+
+    // Nur einmal: alte Database + Komplett-Liste laden (Box leer)
+    if (!hasAny) {
       debugPrint('📚 Loading initial knowledge data (100 entries)...');
 
       for (var entry in materieKnowledgeDatabase) {
@@ -70,6 +79,29 @@ class UnifiedKnowledgeService {
       }
 
       debugPrint('✅ Loaded ${await db.count(_knowledgeBox)} knowledge entries');
+    }
+
+    // v5.44.5 - kuratierte Buecher (idempotent: pruefe ob ID schon da)
+    // Laeuft auch bei Bestandsusern, damit die neuen Welten endlich Inhalte bekommen.
+    await _ensureBooks('mat_book_001', materieBooksCurated, db);
+    await _ensureBooks('ene_book_001', energieBooksCurated, db);
+    await _ensureBooks('vor_book_001', vorhangBooksCurated, db);
+    await _ensureBooks('urs_book_001', ursprungBooksCurated, db);
+  }
+
+  /// Idempotent insert: nur wenn der probe-id NICHT existiert wird die
+  /// gesamte Liste eingefuegt. So muessen Bestandsuser nicht ihre Box
+  /// loeschen um die neuen Inhalte zu sehen.
+  Future<void> _ensureBooks(
+    String probeId,
+    List<KnowledgeEntry> books,
+    SqliteStorageService db,
+  ) async {
+    final existing = await db.get(_knowledgeBox, probeId);
+    if (existing != null) return;
+    debugPrint('📚 Migrating curated books: $probeId+ (${books.length} entries)');
+    for (final entry in books) {
+      await db.put(_knowledgeBox, entry.id, entry.toJson());
     }
   }
 
