@@ -90,6 +90,7 @@ import '../../widgets/live/live_chat_hero.dart';
 import '../../widgets/live/chat_intelligence_widgets.dart'
     show CatchupCard, TopicCloud, SmartReplyComputer;
 import '../../widgets/live/pins_polls_header.dart';
+import '../../widgets/live/message_bar_v2.dart';
 import '../live/live_replay_library_screen.dart';
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_glass_app_bar.dart';
@@ -1958,6 +1959,21 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                     accentColor: const Color(0xFF9B51E0),
                   ),
                 
+                // 🚩 v5.44.4 Phase 2: MessageBarV2 hinter FeatureFlag (default OFF)
+                // Wenn FeatureFlag.newMessageBar=true (per SharedPrefs gesetzt),
+                // ersetzt die schlanke 3-Element-Bar die alte Telegram-Style-Row.
+                // Default OFF -> nichts aendert sich fuer normale User.
+                if (FeatureFlags.instance.getSync(FeatureFlag.newMessageBar))
+                  MessageBarV2(
+                    world: 'energie',
+                    controller: _messageController,
+                    focusNode: _inputFocusNode,
+                    onSendText: _sendMessage,
+                    onAttachImage: _showAttachmentSheet,
+                    onAttachVoice: _openVoiceRecorder,
+                    isRecordingVoice: false,
+                  )
+                else
                 // ─── MESSAGE INPUT ROW (Telegram-Style: kompakt, "+" öffnet Anhänge) ───
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.end,

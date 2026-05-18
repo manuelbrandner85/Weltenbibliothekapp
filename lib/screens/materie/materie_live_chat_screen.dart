@@ -19,6 +19,7 @@ import '../../widgets/live/live_chat_hero.dart';
 import '../../widgets/live/chat_intelligence_widgets.dart'
     show CatchupCard, TopicCloud, SmartReplyComputer;
 import '../../widgets/live/pins_polls_header.dart';
+import '../../widgets/live/message_bar_v2.dart';
 import '../live/live_replay_library_screen.dart';
 import '../../widgets/user_quick_profile_sheet.dart'; // 👤 Avatar-Quick-View
 import 'package:image_picker/image_picker.dart'; // 📷 Image Picker
@@ -2091,6 +2092,18 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
               accentColor: const Color(0xFF2196F3),
             ),
           
+          // 🚩 v5.44.4 Phase 2: MessageBarV2 hinter FeatureFlag (default OFF)
+          if (FeatureFlags.instance.getSync(FeatureFlag.newMessageBar))
+            MessageBarV2(
+              world: 'materie',
+              controller: _messageController,
+              focusNode: _inputFocusNode,
+              onSendText: _sendMessage,
+              onAttachImage: _showAttachmentSheet,
+              onAttachVoice: _openVoiceRecorder,
+              isRecordingVoice: false,
+            )
+          else
           // ─── MESSAGE INPUT ROW (Telegram-Style: kompakt, "+" öffnet Anhänge) ───
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
