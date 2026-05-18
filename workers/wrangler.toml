@@ -20,6 +20,25 @@ CF_ACCOUNT_ID           = "3472f5994537c3a30c5caeaff4de21fb"
 [ai]
 binding = "AI"
 
+# ============================================================
+# OPTIONAL: KV-Namespace fuer Mentor-Antwort-Cache (7d TTL).
+# Schont Worker-Quota dramatisch — identische /api/mentor/chat-Anfragen
+# (gleiche personality + message + world, ohne conversationHistory)
+# kommen aus dem Cache statt AI-Backend.
+#
+# Aktivieren:
+#   1. npx wrangler kv:namespace create MENTOR_CACHE
+#      → liefert "id = abc123..."
+#   2. Hier eintragen, dann re-deployen:
+#
+# [[kv_namespaces]]
+# binding = "MENTOR_CACHE"
+# id      = "DEINE_NAMESPACE_ID_HIER"
+#
+# Code fragt env.MENTOR_CACHE defensiv ab — wenn nicht gebunden,
+# laeuft alles ohne Cache weiter (kein Crash).
+# ============================================================
+
 # R2 Bucket binding (für Media-Uploads)
 [[r2_buckets]]
 binding    = "R2_BUCKET"

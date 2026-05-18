@@ -6263,6 +6263,41 @@ Falls keine konkreten Behauptungen bekannt sind, gib 1 allgemeinen Eintrag zum T
           return errorResponse('personality und message sind Pflichtfelder', 400, 'MISSING_PARAM');
         }
 
+        // ── KV-Cache fuer wiederholte Anfragen ────────────────
+        // Nur cachen wenn keine Konversations-History (deterministisches
+        // System-Prompt + User-Message → identische Antwort erwartet).
+        // Schont Worker-Quota + Groq-Tokens dramatisch.
+        const cacheable = !conversationHistory ||
+            (Array.isArray(conversationHistory) && conversationHistory.length === 0);
+        let cacheKey = null;
+        if (cacheable && env.MENTOR_CACHE) {
+          try {
+            const keyMaterial = `${personality}|${world || ''}|${message}`;
+            const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(keyMaterial));
+            const hash = [...new Uint8Array(buf)]
+              .map(b => b.toString(16).padStart(2, '0'))
+              .join('')
+              .substring(0, 32);
+            cacheKey = `mentor:${hash}`;
+            const cached = await env.MENTOR_CACHE.get(cacheKey, { type: 'json' });
+            if (cached && cached.reply) {
+              return new Response(JSON.stringify({
+                reply: cached.reply,
+                model_used: `${cached.model_used || 'cached'}+cache`,
+                timestamp: new Date().toISOString(),
+                cached: true,
+              }), {
+                status: 200,
+                headers: {
+                  'Content-Type': 'application/json',
+                  'X-Cache': 'HIT',
+                  'Access-Control-Allow-Origin': '*',
+                },
+              });
+            }
+          } catch (_) { /* Cache-Lookup darf nie Anfrage blockieren */ }
+        }
+
         // System-Prompts pro Persönlichkeit
         const MENTOR_PROMPTS = {
           stratege: `Du bist DER STRATEGE – ein eiskalt-analytischer Mentor der Weltenbibliothek.
@@ -6374,10 +6409,27 @@ Empfehle immer weiterführende Quellen und Bücher.`,
           return errorResponse('Kein AI-Backend verfügbar. Bitte versuche es später.', 503);
         }
 
-        return jsonResponse({
+        // Schreibe Cache (fire-and-forget, 7 Tage TTL).
+        if (cacheable && cacheKey && env.MENTOR_CACHE) {
+          try {
+            env.MENTOR_CACHE.put(cacheKey,
+              JSON.stringify({ reply, model_used: modelUsed }),
+              { expirationTtl: 604800 } // 7d
+            ).catch(() => {});
+          } catch (_) {}
+        }
+
+        return new Response(JSON.stringify({
           reply,
           model_used: modelUsed,
           timestamp: new Date().toISOString(),
+        }), {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Cache': cacheable ? 'MISS' : 'BYPASS',
+            'Access-Control-Allow-Origin': '*',
+          },
         });
       } catch (e) {
         return errorResponse(`Mentor-Chat-Fehler: ${e.message}`);

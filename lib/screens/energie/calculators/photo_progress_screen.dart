@@ -263,7 +263,7 @@ class _PhotoProgressScreenState extends State<PhotoProgressScreen>
           .timeout(const Duration(seconds: 35));
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body) as Map<String, dynamic>;
-        final answer = ((data['answer'] ?? data['response'] ?? data['message'] ?? '') as String).trim();
+        final answer = ((data['reply'] ?? data['answer'] ?? data['response'] ?? data['message'] ?? '') as String).trim();
         if (mounted) {
           setState(() {
             _compareReflection = answer;

@@ -155,7 +155,7 @@ class _TarotOracleScreenState extends State<TarotOracleScreen>
           .timeout(const Duration(seconds: 40));
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body) as Map<String, dynamic>;
-        final answer = (data['answer'] ?? data['response'] ?? data['message'] ?? '') as String;
+        final answer = (data['reply'] ?? data['answer'] ?? data['response'] ?? data['message'] ?? '') as String;
         if (mounted) {
           setState(() {
             _aiReading = answer.trim();

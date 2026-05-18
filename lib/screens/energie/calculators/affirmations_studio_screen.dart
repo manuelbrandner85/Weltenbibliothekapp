@@ -144,7 +144,7 @@ class _AffirmationsStudioScreenState extends State<AffirmationsStudioScreen>
           .timeout(const Duration(seconds: 25));
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body) as Map<String, dynamic>;
-        final answer = (data['answer'] ?? data['response'] ?? data['message'] ?? '') as String;
+        final answer = (data['reply'] ?? data['answer'] ?? data['response'] ?? data['message'] ?? '') as String;
         final parsed = _parseAffirmations(answer);
         if (parsed.length >= 3) {
           if (mounted) {

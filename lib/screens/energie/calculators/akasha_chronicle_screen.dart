@@ -182,7 +182,7 @@ class _AkashaChronicleScreenState extends State<AkashaChronicleScreen>
       String? reflection;
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body) as Map<String, dynamic>;
-        reflection = ((data['answer'] ?? data['response'] ?? data['message'] ?? '') as String).trim();
+        reflection = ((data['reply'] ?? data['answer'] ?? data['response'] ?? data['message'] ?? '') as String).trim();
       } else {
         reflection = '⚠️ AI nicht verfügbar (HTTP ${res.statusCode})';
       }
