@@ -51,10 +51,18 @@ const CORS_HEADERS = {
   'Content-Type': 'application/json',
 };
 
-function jsonResponse(data, status = 200) {
+function jsonResponse(data, status = 200, cacheSeconds = 0) {
+  // v5.44.2: optionaler Edge-Cache via Cache-Control: s-maxage.
+  // s-maxage = nur CF-Edge cached (Browser cached nicht), perfekt fuer
+  // semi-statische Endpunkte wie Artikel-Listen, Room-Listen, Statistiken.
+  // Reduziert Worker-Quota-Verbrauch massiv da CF die Antwort 1x serviert
+  // statt jedes Mal den Worker auszufuehren.
+  const headers = cacheSeconds > 0
+    ? { ...CORS_HEADERS, 'Cache-Control': `public, s-maxage=${cacheSeconds}` }
+    : CORS_HEADERS;
   return new Response(JSON.stringify(data), {
     status,
-    headers: CORS_HEADERS,
+    headers,
   });
 }
 
@@ -104,7 +112,7 @@ async function translateItems(items, fields) {
 }
 
 // Supabase-Proxy mit optionalem Auth-Token
-async function proxyToSupabase(request, env, path, method, body, userToken) {
+async function proxyToSupabase(request, env, path, method, body, userToken, cacheSeconds = 0) {
   const anonKey = env.SUPABASE_ANON_KEY || '';
   const authHeader = userToken
     ? `Bearer ${userToken}`
@@ -123,7 +131,7 @@ async function proxyToSupabase(request, env, path, method, body, userToken) {
   });
 
   const data = await res.json().catch(() => ({}));
-  return jsonResponse(data, res.status);
+  return jsonResponse(data, res.status, cacheSeconds);
 }
 
 // Supabase-Zählabfrage
@@ -801,15 +809,16 @@ export default {
       const limit = params.get('limit') || '50';
       const offset = params.get('offset') || '0';
       supaPath += `&limit=${limit}&offset=${offset}`;
-      return proxyToSupabase(request, env, supaPath, 'GET');
+      // v5.44.2: 120s Edge-Cache - Artikel-Liste ist semi-statisch.
+      return proxyToSupabase(request, env, supaPath, 'GET', null, null, 120);
     }
 
     // ── Tages-Featured ────────────────────────────────────────
     if (path === '/api/daily-featured') {
-      const anonKey = env.SUPABASE_ANON_KEY || '';
       const world = url.searchParams.get('world') || 'materie';
       const supaPath = `/rest/v1/articles?select=*&is_published=eq.true&world=eq.${world}&order=created_at.desc&limit=1`;
-      return proxyToSupabase(request, env, supaPath, 'GET');
+      // v5.44.2: 600s Edge-Cache - Tages-Featured aendert sich nur taeglich.
+      return proxyToSupabase(request, env, supaPath, 'GET', null, null, 600);
     }
 
     // ── POST /api/reports  (User-Reports einreichen — public) ──
@@ -1115,7 +1124,8 @@ export default {
       const world = url.searchParams.get('realm') || url.searchParams.get('world');
       let supaPath = '/rest/v1/chat_rooms?select=*&is_active=eq.true&order=name.asc';
       if (world) supaPath += `&world=eq.${world}`;
-      return proxyToSupabase(request, env, supaPath, 'GET');
+      // v5.44.2: 60s Edge-Cache - Raum-Liste aendert sich selten.
+      return proxyToSupabase(request, env, supaPath, 'GET', null, null, 60);
     }
 
     // ── UFO-Sichtungen ────────────────────────────────────────
