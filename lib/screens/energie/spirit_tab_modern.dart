@@ -23,7 +23,8 @@ import 'calculators/biorhythm_compatibility_screen.dart'; // 📊 Bio-Kompat
 import 'calculators/god_oracle_chat_screen.dart'; // 🏛️ Götter-KI-Dialog
 import 'calculators/dream_pattern_analysis_screen.dart'; // 💭 Traum-Muster
 import 'calculators/family_tree_screen.dart'; // 🌳 Stammbaum
-import 'calculators/tarot_spreads_screen.dart'; // 🔮 Tarot-Legesysteme
+import 'calculators/tarot_spreads_screen.dart'; // 🔮 Tarot-Legesysteme (alt)
+import 'calculators/tarot_oracle_screen.dart'; // 🔮 Cinematic mit AI-Lesung
 import 'calculators/animated_sacred_geometry_screen.dart'; // 🔯 Animierte SVG
 import 'calculators/sacred_geometry_constructor_screen.dart'; // 🔯 Interaktiver Konstruktor
 import 'calculators/affirmations_studio_screen.dart'; // 🌟 Cinematic AI-Studio
@@ -518,11 +519,11 @@ class _SpiritTabModernState extends State<SpiritTabModern>
       {
         'icon': Icons.style,
         'iconEmoji': '🃏',
-        'title': 'Tarot-Spreads',
-        'subtitle': 'Tageskarte · 3-Karten · Beziehung · Kelt. Kreuz',
+        'title': 'Tarot-Orakel',
+        'subtitle': 'Shuffle-Animation · 3 Spreads · AI-Lesung · Verlauf',
         'color': const Color(0xFF8E5AE2),
         'category': 'new',
-        'screen': const TarotSpreadsScreen(),
+        'screen': const TarotOracleScreen(),
       },
 
       // 🕯️ Ahnenarbeit (v23 – Ahnen, Muster, Rituale)
