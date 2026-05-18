@@ -288,7 +288,7 @@ class _AffirmationsStudioScreenState extends State<AffirmationsStudioScreen>
           ),
           // Layer 3: Particles
           const IgnorePointer(
-              child: WBAmbientParticles(world: WBWorld.energie, particleCount: 40)),
+              child: WBAmbientParticles(world: WBWorld.energie, count: 40)),
 
           // Layer 4: Content
           SafeArea(

@@ -409,7 +409,7 @@ class _SacredGeometryConstructorScreenState
           ),
 
           // Layer 3: Ambient particles
-          const IgnorePointer(child: WBAmbientParticles(world: WBWorld.energie, particleCount: 36)),
+          const IgnorePointer(child: WBAmbientParticles(world: WBWorld.energie, count: 36)),
 
           // Layer 4: Interaktiver Canvas
           SafeArea(
