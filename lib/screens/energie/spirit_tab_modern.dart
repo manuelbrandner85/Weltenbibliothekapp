@@ -29,6 +29,7 @@ import 'calculators/runes_oracle_screen.dart'; // ᚱ Elder Futhark Cinematic
 import 'calculators/akasha_chronicle_screen.dart'; // 🌌 Cinematic Journal + AI
 import 'calculators/birth_chart_360_screen.dart'; // ♓ 360° Visual Geburts-Chart
 import 'calculators/biorhythm_chart_screen.dart'; // 📊 90-Tage Bio + Critical Days
+import 'calculators/transformation_journey_screen.dart'; // 🦋 5-Dim Tracker
 import 'calculators/animated_sacred_geometry_screen.dart'; // 🔯 Animierte SVG
 import 'calculators/sacred_geometry_constructor_screen.dart'; // 🔯 Interaktiver Konstruktor
 import 'calculators/affirmations_studio_screen.dart'; // 🌟 Cinematic AI-Studio
@@ -397,15 +398,15 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'screen': const GroundingExercisesScreen(),
       },
       
-      // 🦋 Transformation-Tracker
+      // 🦋 Transformation-Journey cinematic — 5-Dim + Streak + Korrelationen
       {
         'icon': Icons.trending_up,
         'iconEmoji': '🦋',
         'title': 'Transformation',
-        'subtitle': 'Wachstums-Tracking',
-        'color': const Color(0xFFF57C00),
+        'subtitle': '5 Dimensionen · Chart · Streak · Korrelationen',
+        'color': const Color(0xFFFF7043),
         'category': 'new',
-        'screen': const TransformationTrackerScreen(),
+        'screen': const TransformationJourneyScreen(),
       },
       // 📸 Vor/Nach-Foto — Body/Mind/Soul Timeline mit Vergleich
       {
