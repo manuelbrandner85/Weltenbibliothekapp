@@ -22,6 +22,8 @@ import '../shared/mentor_chat_screen.dart';
 import 'calculators/chakra_calculator_screen.dart';
 import '../../widgets/daily_mantra_banner.dart'; // 🌙 F1 Tages-Mantra
 import '../../widgets/daily_path_widget.dart';
+import '../../services/spirit_reading_service.dart';
+import '../../core/storage/unified_storage_service.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // ENERGIE HOME DASHBOARD V7 – REDESIGN 2026
@@ -444,6 +446,7 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
                     _buildMentorBanner(),
                     const SliverToBoxAdapter(child: DailyPathWidget()),
                     _buildActionGrid(),
+                    const SliverToBoxAdapter(child: _RecentSpiritReadingsSection()),
                     _buildRecentRooms(),
                     _buildSectionTitle('✨ Spirituelle Themen', subtitle: 'Im Fokus'),
                     _buildTrendingChips(),
@@ -1991,3 +1994,198 @@ class _ArticleCard extends StatelessWidget {
     } catch (_) { return ''; }
   }
 }
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// LETZTE SPIRIT-READINGS · Surface der gespeicherten Tool-Ergebnisse + Streak
+// ═══════════════════════════════════════════════════════════════════════════
+
+class _RecentSpiritReadingsSection extends StatefulWidget {
+  const _RecentSpiritReadingsSection();
+
+  @override
+  State<_RecentSpiritReadingsSection> createState() => _RecentSpiritReadingsSectionState();
+}
+
+class _RecentSpiritReadingsSectionState extends State<_RecentSpiritReadingsSection> {
+  static const Color _gold = Color(0xFFFFD54F);
+  static const Color _accent = Color(0xFF7C4DFF);
+  List<SpiritReading> _readings = [];
+  int _streak = 0;
+  bool _loading = true;
+
+  // dart2js stolpert ueber const Map<String, Record> -> echte Klasse.
+  static final Map<String, _ToolMeta> _toolMeta = {
+    'tarot': const _ToolMeta('🃏', 'Tarot', Color(0xFF8E5AE2)),
+    'runes': const _ToolMeta('ᚱ', 'Runen', Color(0xFF1B5E20)),
+    'akasha': const _ToolMeta('🌌', 'Akasha', Color(0xFF7C4DFF)),
+    'iching': const _ToolMeta('☯️', 'I-Ging', Color(0xFFD32F2F)),
+    'geometry': const _ToolMeta('🔯', 'Geometrie', Color(0xFF00BCD4)),
+    'birth_chart': const _ToolMeta('♓', 'Horoskop', Color(0xFF7E57C2)),
+    'biorhythm': const _ToolMeta('📊', 'Biorhythmus', Color(0xFF26C6DA)),
+    'transformation': const _ToolMeta('🦋', 'Transformation', Color(0xFFFF7043)),
+    'human_design': const _ToolMeta('🌀', 'Human Design', Color(0xFF00ACC1)),
+    'shamanic_journey': const _ToolMeta('🥁', 'Schamanen', Color(0xFF6D4C41)),
+    'affirmation': const _ToolMeta('💫', 'Affirmation', Color(0xFFE91E63)),
+    'mantra': const _ToolMeta('🕉️', 'Mantra', Color(0xFFFFB300)),
+    'godoracle': const _ToolMeta('🏛️', 'Götter', Color(0xFF6A1B9A)),
+    'numerology': const _ToolMeta('🔢', 'Numerologie', Color(0xFF42A5F5)),
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final userId = await UnifiedStorageService().getCurrentUserId();
+      if (userId == null || userId.isEmpty) {
+        if (mounted) setState(() => _loading = false);
+        return;
+      }
+      final list = await SpiritReadingService.instance.recentAllTools(userId, limit: 8);
+      // Streak = aufeinanderfolgende Tage mit mind. 1 Reading
+      final days = <String>{};
+      for (final r in list) {
+        days.add(r.createdAt.toIso8601String().substring(0, 10));
+      }
+      int streak = 0;
+      var check = DateTime.now();
+      // Toleranz: Tag 0 (heute) ODER Tag 1 (gestern) als Start
+      for (int i = 0; i < 60; i++) {
+        final key = check.toIso8601String().substring(0, 10);
+        if (days.contains(key)) {
+          streak++;
+        } else if (i == 0) {
+          // Heute fehlt, akzeptiere wenn gestern existiert
+          check = check.subtract(const Duration(days: 1));
+          continue;
+        } else {
+          break;
+        }
+        check = check.subtract(const Duration(days: 1));
+      }
+      if (mounted) setState(() { _readings = list; _streak = streak; _loading = false; });
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) {
+      return const SizedBox(height: 130, child: Center(child: CircularProgressIndicator(strokeWidth: 2, color: _accent)));
+    }
+    if (_readings.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: _accent.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: _accent.withValues(alpha: 0.2)),
+          ),
+          child: Row(children: [
+            Text("✨", style: TextStyle(fontSize: 28)),
+            const SizedBox(width: 12),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: const [
+              Text("Noch keine Readings",
+                  style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700)),
+              SizedBox(height: 2),
+              Text("Probiere ein Spirit-Tool — Tarot, Runen, I-Ging…",
+                  style: TextStyle(color: Colors.white60, fontSize: 11)),
+            ])),
+          ]),
+        ),
+      );
+    }
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Padding(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
+        child: Row(children: [
+          const Text("✨ Deine Readings",
+              style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
+          const Spacer(),
+          if (_streak > 0)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: _gold.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: _gold.withValues(alpha: 0.5)),
+              ),
+              child: Text("🔥 ${_streak}",
+                  style: const TextStyle(color: _gold, fontSize: 11, fontWeight: FontWeight.bold)),
+            ),
+        ]),
+      ),
+      SizedBox(
+        height: 110,
+        child: ListView.builder(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          itemCount: _readings.length,
+          itemBuilder: (_, i) {
+            final r = _readings[i];
+            final meta = _toolMeta[r.tool] ?? _ToolMeta('📿', r.tool, _accent);
+            final emoji = meta.emoji;
+            final label = meta.label;
+            final color = meta.color;
+            return Container(
+              width: 160,
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [color.withValues(alpha: 0.18), color.withValues(alpha: 0.04)],
+                ),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: color.withValues(alpha: 0.3)),
+              ),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Row(children: [
+                  Text(emoji, style: const TextStyle(fontSize: 18)),
+                  const SizedBox(width: 6),
+                  Expanded(child: Text(label,
+                      style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                      maxLines: 1, overflow: TextOverflow.ellipsis)),
+                ]),
+                const SizedBox(height: 6),
+                Expanded(
+                  child: Text(r.summary ?? "—",
+                      style: const TextStyle(color: Colors.white, fontSize: 11, height: 1.3),
+                      maxLines: 3, overflow: TextOverflow.ellipsis),
+                ),
+                Text(_relTime(r.createdAt),
+                    style: const TextStyle(color: Colors.white38, fontSize: 9)),
+              ]),
+            );
+          },
+        ),
+      ),
+    ]);
+  }
+
+  String _relTime(DateTime dt) {
+    final diff = DateTime.now().difference(dt);
+    if (diff.inMinutes < 2) return "jetzt";
+    if (diff.inHours < 1) return "vor ${diff.inMinutes}m";
+    if (diff.inHours < 24) return "vor ${diff.inHours}h";
+    if (diff.inDays < 7) return "vor ${diff.inDays}d";
+    return "${dt.day}.${dt.month}.";
+  }
+}
+
+
+class _ToolMeta {
+  final String emoji;
+  final String label;
+  final Color color;
+  const _ToolMeta(this.emoji, this.label, this.color);
+}
+
