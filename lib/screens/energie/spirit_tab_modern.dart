@@ -25,6 +25,7 @@ import 'calculators/dream_pattern_analysis_screen.dart'; // 💭 Traum-Muster
 import 'calculators/family_tree_screen.dart'; // 🌳 Stammbaum
 import 'calculators/tarot_spreads_screen.dart'; // 🔮 Tarot-Legesysteme
 import 'calculators/animated_sacred_geometry_screen.dart'; // 🔯 Animierte SVG
+import 'calculators/sacred_geometry_constructor_screen.dart'; // 🔯 Interaktiver Konstruktor
 import 'calculators/audio_body_scan_screen.dart'; // 🧘 TTS-Körperscan
 import 'calculators/audio_meditation_screen.dart'; // 🧘 TTS-Meditationen
 import 'calculators/photo_progress_screen.dart'; // 📸 Vor/Nach
@@ -358,15 +359,15 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'screen': const MantraPracticeScreen(),
       },
       
-      // 🔯 Heilige Geometrie
+      // 🔯 Heilige Geometrie · Interaktiver Konstruktor (cinematic)
       {
         'icon': Icons.hexagon_outlined,
         'iconEmoji': '🔯',
         'title': 'Heilige Geometrie',
-        'subtitle': '12 Muster',
+        'subtitle': '6 Stufen · Touch-Konstruktor',
         'color': const Color(0xFF00838F),
         'category': 'new',
-        'screen': const SacredGeometryScreen(),
+        'screen': const SacredGeometryConstructorScreen(),
       },
       // 🌀 Animierte Geometrie — Live-Stroke-Animation der 8 Hauptformen
       {
