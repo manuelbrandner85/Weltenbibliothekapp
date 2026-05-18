@@ -30,6 +30,7 @@ import 'calculators/akasha_chronicle_screen.dart'; // 🌌 Cinematic Journal + A
 import 'calculators/birth_chart_360_screen.dart'; // ♓ 360° Visual Geburts-Chart
 import 'calculators/biorhythm_chart_screen.dart'; // 📊 90-Tage Bio + Critical Days
 import 'calculators/transformation_journey_screen.dart'; // 🦋 5-Dim Tracker
+import 'calculators/human_design_bodygraph_screen.dart'; // 🌀 HD Body-Graph cinematic
 import 'calculators/animated_sacred_geometry_screen.dart'; // 🔯 Animierte SVG
 import 'calculators/sacred_geometry_constructor_screen.dart'; // 🔯 Interaktiver Konstruktor
 import 'calculators/affirmations_studio_screen.dart'; // 🌟 Cinematic AI-Studio
@@ -574,12 +575,22 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'screen': const NatalChartToolScreen(),
       },
 
-      // 🌀 Human Design (v26 – Type/Profile/Authority/64 Gates)
+      // 🌀 Human Design — cinematic Body-Graph mit Visual-Zentren
+      {
+        'icon': Icons.bubble_chart_rounded,
+        'iconEmoji': '🌀',
+        'title': 'Human Design',
+        'subtitle': '9 Zentren · Visual · 5 Typen · Strategie',
+        'color': const Color(0xFF00ACC1),
+        'category': 'new',
+        'screen': const HumanDesignBodyGraphScreen(),
+      },
+      // 🌀 Human Design klassisch (Tabs mit Tor-Liste + Lexikon)
       {
         'icon': Icons.hub,
         'iconEmoji': '🌀',
-        'title': 'Human Design',
-        'subtitle': 'Typ, Strategie, Autorität & Tore',
+        'title': 'HD-Lexikon',
+        'subtitle': 'Tor-Listen · Profil-Lexikon · Channels',
         'color': const Color(0xFF26C6DA),
         'category': 'new',
         'screen': const HumanDesignToolScreen(),
