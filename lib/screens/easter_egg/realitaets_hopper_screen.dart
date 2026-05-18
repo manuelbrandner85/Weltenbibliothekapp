@@ -53,8 +53,9 @@ class QuizOption {
 
 /// A single quiz question with exactly four [options].
 class QuizQuestion {
-  const QuizQuestion({required this.prompt, required this.options})
-      : assert(options.length == 4, 'Every question needs exactly 4 options');
+  // NOTE: dart2js kann List.length im const-Kontext nicht evaluieren - daher
+  // KEIN assert hier. Alle Fragen oben haben per Convention 4 Optionen.
+  const QuizQuestion({required this.prompt, required this.options});
 
   final String prompt;
   final List<QuizOption> options;
