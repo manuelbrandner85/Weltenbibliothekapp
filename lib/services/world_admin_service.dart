@@ -242,39 +242,62 @@ class WorldAdminService {
   static Future<List<WorldUser>> getAllUsers() async {
     if (kDebugMode) debugPrint('📋 Loading ALL profiles');
 
-    // Zwei-Phasen-Fetch: erst MIT last_seen_at (Online-Status), bei
-    // 42703 (column doesn't exist) fallback auf Basis-Spalten. Damit
-    // bricht die User-Liste nicht zusammen wenn Migration v88 auf
-    // der produktiven DB noch nicht angekommen ist.
+    // 🔑 PRIMÄR: Cloudflare Worker mit SERVICE_ROLE_KEY → umgeht RLS.
+    // Client-seitige Direkt-Queries auf profiles sehen wegen RLS nur die
+    // eigene Zeile — auch Admins. Worker nutzt service_role + filtert
+    // System-Profile + liefert last_seen_at/world.
     Map<String, dynamic>? raw;
     bool hasLastSeen = true;
     try {
-      raw = {'rows': await supabase
-          .from('profiles')
-          .select('id,username,display_name,role,is_banned,avatar_url,created_at,world,world_preference,last_seen_at')
-          .order('created_at', ascending: false)
-          .limit(500)};
-    } on PostgrestException catch (e) {
-      if (e.code == '42703' || e.message.contains('last_seen_at')) {
-        if (kDebugMode) debugPrint('⚠️ last_seen_at fehlt — Fallback ohne Online-Status');
-        hasLastSeen = false;
-        try {
-          raw = {'rows': await supabase
-              .from('profiles')
-              .select('id,username,display_name,role,is_banned,avatar_url,created_at,world,world_preference')
-              .order('created_at', ascending: false)
-              .limit(500)};
-        } catch (e2) {
-          if (kDebugMode) debugPrint('❌ getAllUsers Fallback-Fehler: $e2');
-          return const [];
-        }
+      final res = await http.get(
+        Uri.parse('${ApiConfig.workerUrl}/api/admin/users'),
+        headers: const {'Accept': 'application/json'},
+      ).timeout(const Duration(seconds: 12));
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body) as Map<String, dynamic>;
+        final users = (data['users'] as List?) ?? const [];
+        raw = {'rows': users};
+        if (kDebugMode) debugPrint('✅ Loaded ${users.length} users via Worker');
       } else {
-        if (kDebugMode) debugPrint('❌ getAllUsers Postgrest: ${e.message}');
-        return const [];
+        if (kDebugMode) debugPrint('⚠️ Worker /api/admin/users ${res.statusCode} — Fallback Supabase');
+        raw = null;
       }
     } catch (e) {
-      if (kDebugMode) debugPrint('❌ getAllUsers Fehler: $e');
-      return const [];
+      if (kDebugMode) debugPrint('⚠️ Worker /api/admin/users failed: $e — Fallback Supabase');
+      raw = null;
+    }
+
+    // FALLBACK: direkt Supabase (funktioniert nur wenn RLS auf profiles
+    // breit genug ist oder der eingeloggte User SELECT-Recht auf alle Rows hat).
+    if (raw == null) {
+      try {
+        raw = {'rows': await supabase
+            .from('profiles')
+            .select('id,username,display_name,role,is_banned,avatar_url,created_at,world,world_preference,last_seen_at')
+            .order('created_at', ascending: false)
+            .limit(500)};
+      } on PostgrestException catch (e) {
+        if (e.code == '42703' || e.message.contains('last_seen_at')) {
+          if (kDebugMode) debugPrint('⚠️ last_seen_at fehlt — Fallback ohne Online-Status');
+          hasLastSeen = false;
+          try {
+            raw = {'rows': await supabase
+                .from('profiles')
+                .select('id,username,display_name,role,is_banned,avatar_url,created_at,world,world_preference')
+                .order('created_at', ascending: false)
+                .limit(500)};
+          } catch (e2) {
+            if (kDebugMode) debugPrint('❌ getAllUsers Fallback-Fehler: $e2');
+            return const [];
+          }
+        } else {
+          if (kDebugMode) debugPrint('❌ getAllUsers Postgrest: ${e.message}');
+          return const [];
+        }
+      } catch (e) {
+        if (kDebugMode) debugPrint('❌ getAllUsers Fehler: $e');
+        return const [];
+      }
     }
 
     try {

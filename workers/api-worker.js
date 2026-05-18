@@ -2235,6 +2235,40 @@ export default {
         } catch (e) { return errorResponse(`Delete-Content-Fehler: ${e.message}`); }
       }
 
+      // ── GET /api/admin/users  (ALLE Welten · für Admin-Dashboard) ──
+      // SERVICE_ROLE_KEY umgeht RLS — Client kann sonst keine fremden
+      // Profile sehen. Inkl. last_seen_at + world/world_preference, gefiltert
+      // System-Profile (id 00000000-...) raus.
+      if (method === 'GET' && path === '/api/admin/users') {
+        try {
+          const anonKey = env.SUPABASE_ANON_KEY || '';
+          const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || anonKey;
+          const res = await fetch(
+            `${SUPABASE_URL}/rest/v1/profiles?select=id,username,display_name,role,is_banned,avatar_url,avatar_emoji,created_at,world,world_preference,last_seen_at&order=created_at.desc&limit=500`,
+            { headers: { 'Content-Type': 'application/json', 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}` } }
+          );
+          if (!res.ok) {
+            const txt = await res.text().catch(() => '');
+            return errorResponse(`Supabase ${res.status}: ${txt.substring(0, 200)}`);
+          }
+          const all = await res.json().catch(() => []);
+          const list = Array.isArray(all) ? all : [];
+          const filtered = list
+            .filter(u => !(u.id || '').startsWith('00000000-'))
+            .filter(u => (u.role || 'user') !== 'system')
+            .map(u => ({
+              profile_id: u.id, user_id: u.id,
+              username: u.username || '', display_name: u.display_name || '',
+              role: u.role || 'user', is_banned: u.is_banned || false,
+              avatar_url: u.avatar_url, avatar_emoji: u.avatar_emoji || null,
+              created_at: u.created_at || '',
+              world: u.world || u.world_preference || null,
+              last_seen_at: u.last_seen_at || null,
+            }));
+          return jsonResponse({ success: true, users: filtered, total: filtered.length });
+        } catch (e) { return errorResponse(`Users-Fehler: ${e.message}`); }
+      }
+
       // ── GET /api/admin/users/:world ─────────────────────────
       if (method === 'GET' && path.match(/\/api\/admin\/users\/\w+/) && !path.includes('/status')) {
         try {
