@@ -72,5 +72,8 @@ Detaillierte Instruktionen in `.claude/skills/` (142 installiert, via `npx skill
 4. Admin-Endpoints `/admin/migrate-v*` nutzen hardcoded String-Tokens — auf JWT migrieren.
 
 ### 🟢 Nice-to-have
-1. iOS-Build: `ios/`-Verzeichnis fehlt; HealthKit + Audio Background-Modes.
+1. **iOS-Build:** `ios/`-Verzeichnis fehlt. Setup auf Mac mit Xcode: `flutter create --platforms=ios .` im Projekt-Root. Danach in `ios/Runner/Info.plist`:
+   - `NSHealthShareUsageDescription` + `NSHealthUpdateUsageDescription` (Apple Watch HR/HRV-Sync)
+   - `NSMicrophoneUsageDescription`, `NSCameraUsageDescription`, `NSLocationWhenInUseUsageDescription`
+   - Xcode-Capabilities: HealthKit + Background-Modes `audio`/`voip` (LiveKit). Apple Watch syncen dann automatisch via HealthKit.
 2. APK-Build lokal (Sandbox-Container hat kein Android SDK).

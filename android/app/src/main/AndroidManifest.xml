@@ -44,10 +44,20 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <!-- 💓 HEALTH CONNECT (Android Health Connect, API 26+) - Biometric Feedback
-         Required for HRV + Heart Rate readings before/after meditation sessions. -->
+         Required for HRV + Heart Rate readings before/after meditation sessions
+         AND continuous live HR display during Gateway/Breathmaster sessions. -->
     <uses-permission android:name="android.permission.health.READ_HEART_RATE" />
     <uses-permission android:name="android.permission.health.READ_HEART_RATE_VARIABILITY" />
+    <uses-permission android:name="android.permission.health.READ_RESTING_HEART_RATE" />
+    <uses-permission android:name="android.permission.health.READ_STEPS" />
+    <uses-permission android:name="android.permission.health.READ_SLEEP" />
     <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
+    <!-- Direct sensor access (Wear OS paired devices write into BODY_SENSORS).
+         BODY_SENSORS_BACKGROUND ist Android 13+ Pflicht fuer Foreground-Service. -->
+    <uses-permission android:name="android.permission.BODY_SENSORS" />
+    <uses-permission android:name="android.permission.BODY_SENSORS_BACKGROUND" />
+    <!-- Android 14+: Foreground-Service-Typ fuer Health (Live-HR-Indicator). -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_HEALTH" />
 
     <application
         android:label="Weltenbibliothek"
@@ -136,6 +146,14 @@
         </intent>
         <!-- 💓 Health Connect: Package-Visibility-Query (Android 11+) -->
         <package android:name="com.google.android.apps.healthdata" />
+        <!-- Fitness-/Watch-Apps: erlauben canLaunchUrl() Checks im Health-Settings-Wizard. -->
+        <package android:name="com.sec.android.app.shealth" />        <!-- Samsung Health -->
+        <package android:name="com.google.android.apps.fitness" />     <!-- Google Fit -->
+        <package android:name="com.fitbit.FitbitMobile" />             <!-- Fitbit -->
+        <package android:name="com.garmin.android.apps.connectmobile" /> <!-- Garmin Connect -->
+        <package android:name="fi.polar.polarflow" />                  <!-- Polar Flow -->
+        <package android:name="com.google.android.wearable.app" />     <!-- Wear OS -->
+        <package android:name="com.samsung.android.app.watchmanager" /> <!-- Samsung Galaxy Wearable -->
     </queries>
 </manifest>
 

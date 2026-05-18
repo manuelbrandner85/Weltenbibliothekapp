@@ -24,13 +24,25 @@ class HealthDataPoint {
   final HealthDataType type;
   final DateTime dateFrom;
   final DateTime dateTo;
+  final String sourceName;
+  final String sourceId;
   HealthDataPoint({
     required this.value,
     required this.type,
     DateTime? dateFrom,
     DateTime? dateTo,
+    this.sourceName = '',
+    this.sourceId = '',
   })  : dateFrom = dateFrom ?? DateTime.now(),
         dateTo = dateTo ?? DateTime.now();
+}
+
+/// Mirror of health 13.x enum — kept as numeric values so the
+/// stub side stays trivially comparable.
+enum HealthConnectSdkStatus {
+  sdkUnavailable,
+  sdkUnavailableProviderUpdateRequired,
+  sdkAvailable,
 }
 
 class Health {
@@ -54,4 +66,9 @@ class Health {
     required DateTime endTime,
   }) async =>
       [];
+
+  Future<HealthConnectSdkStatus> getHealthConnectSdkStatus() async =>
+      HealthConnectSdkStatus.sdkUnavailable;
+
+  Future<void> installHealthConnect() async {}
 }
