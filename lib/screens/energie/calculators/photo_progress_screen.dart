@@ -1,18 +1,28 @@
-// 📸 VOR/NACH-FOTO TRANSFORMATION
+// 📸 VOR/NACH-FOTO TRANSFORMATION · Cinematic + AI-Reflexion
 //
 // Datierte Foto-Einträge mit Body/Mind/Soul-Tags. Side-by-Side-Vergleich
-// auf Zeitachse. image_picker für Aufnahme. Pfade in SharedPreferences,
-// Bilder im App-Document-Directory.
+// auf Zeitachse mit AI-Reflexion über die Transformation zwischen den
+// beiden gewählten Snapshots. image_picker für Aufnahme.
 
 import 'dart:convert';
 import 'dart:io' if (dart.library.html) '../../../stubs/dart_io_stub.dart';
+import 'dart:math' as math;
+import 'dart:ui';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../config/api_config.dart';
+import '../../../theme/wb_cinematic_tokens.dart';
+import '../../../widgets/cinematic/wb_ambient_particles.dart';
+import '../../../widgets/cinematic/wb_glass_app_bar.dart';
+import '../../../widgets/cinematic/wb_vignette.dart';
 import '../../../widgets/local_file_image.dart';
 
 // Result-Klasse statt Named-Record (dart2js stolpert über Named Records).
@@ -30,21 +40,37 @@ class PhotoProgressScreen extends StatefulWidget {
   State<PhotoProgressScreen> createState() => _PhotoProgressScreenState();
 }
 
-class _PhotoProgressScreenState extends State<PhotoProgressScreen> {
+class _PhotoProgressScreenState extends State<PhotoProgressScreen>
+    with TickerProviderStateMixin {
   static const _bg = Color(0xFF06040F);
   static const _surface = Color(0xFF1A0F0A);
   static const _accent = Color(0xFFF57C00);
+  static const _gold = Color(0xFFFFD54F);
   static const _kvKey = 'photo_progress_v1';
 
   List<_Snap> _snaps = [];
   bool _loading = true;
   int _compareIdxA = -1;
   int _compareIdxB = -1;
+  String? _compareReflection;
+  bool _loadingReflection = false;
+
+  late final AnimationController _ambientCtrl;
+  late final AnimationController _glowCtrl;
 
   @override
   void initState() {
     super.initState();
+    _ambientCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 10))..repeat();
+    _glowCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 5))..repeat(reverse: true);
     _load();
+  }
+
+  @override
+  void dispose() {
+    _ambientCtrl.dispose();
+    _glowCtrl.dispose();
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -174,7 +200,9 @@ class _PhotoProgressScreenState extends State<PhotoProgressScreen> {
   }
 
   void _toggleCompare(int idx) {
+    HapticFeedback.selectionClick();
     setState(() {
+      _compareReflection = null;
       if (_compareIdxA == idx) {
         _compareIdxA = -1;
       } else if (_compareIdxB == idx) {
@@ -190,32 +218,133 @@ class _PhotoProgressScreenState extends State<PhotoProgressScreen> {
     });
   }
 
+  Future<void> _requestAiReflection() async {
+    if (_compareIdxA < 0 || _compareIdxB < 0) return;
+    HapticFeedback.mediumImpact();
+    setState(() => _loadingReflection = true);
+    final a = _snaps[_compareIdxA];
+    final b = _snaps[_compareIdxB];
+    final earlier = a.date.isBefore(b.date) ? a : b;
+    final later = a.date.isBefore(b.date) ? b : a;
+    final days = later.date.difference(earlier.date).inDays.abs();
+    try {
+      final prompt = StringBuffer()
+        ..writeln('Reflektiere die Transformation einer Person über $days Tage')
+        ..writeln('zwischen zwei Selbstbeobachtungs-Einträgen.')
+        ..writeln('')
+        ..writeln('VORHER (${_fmtDate(earlier.date)}):')
+        ..writeln('  💪 Körper: ${earlier.bodyNote.isEmpty ? "—" : earlier.bodyNote}')
+        ..writeln('  🧠 Geist: ${earlier.mindNote.isEmpty ? "—" : earlier.mindNote}')
+        ..writeln('  ✨ Seele: ${earlier.soulNote.isEmpty ? "—" : earlier.soulNote}')
+        ..writeln('')
+        ..writeln('NACHHER (${_fmtDate(later.date)}):')
+        ..writeln('  💪 Körper: ${later.bodyNote.isEmpty ? "—" : later.bodyNote}')
+        ..writeln('  🧠 Geist: ${later.mindNote.isEmpty ? "—" : later.mindNote}')
+        ..writeln('  ✨ Seele: ${later.soulNote.isEmpty ? "—" : later.soulNote}')
+        ..writeln('')
+        ..writeln('Gib eine 3-Absatz-Reflexion: 1) Welche Veränderung zeigt sich? '
+            '2) Was darf gewürdigt werden? 3) Was ist als nächster Schritt sichtbar? '
+            'Du-Form, warm aber direkt, ohne Esoterik-Klischees.');
+      final token = Supabase.instance.client.auth.currentSession?.accessToken ?? '';
+      final res = await http
+          .post(
+            Uri.parse('${ApiConfig.workerUrl}/api/mentor/chat'),
+            headers: {
+              'Content-Type': 'application/json',
+              if (token.isNotEmpty) 'Authorization': 'Bearer $token',
+            },
+            body: jsonEncode({
+              'personality': 'alchemist',
+              'message': prompt.toString(),
+              'world': 'energie',
+              'conversationHistory': [],
+            }),
+          )
+          .timeout(const Duration(seconds: 35));
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body) as Map<String, dynamic>;
+        final answer = ((data['answer'] ?? data['response'] ?? data['message'] ?? '') as String).trim();
+        if (mounted) {
+          setState(() {
+            _compareReflection = answer;
+            _loadingReflection = false;
+          });
+        }
+        return;
+      }
+      if (mounted) {
+        setState(() {
+          _compareReflection = '⚠️ AI-Reflexion gerade nicht verfügbar (HTTP ${res.statusCode}).';
+          _loadingReflection = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _compareReflection = '⚠️ Netzwerk-Fehler: $e';
+          _loadingReflection = false;
+        });
+      }
+    }
+  }
+
+  String _fmtDate(DateTime d) =>
+      '${d.day.toString().padLeft(2,'0')}.${d.month.toString().padLeft(2,'0')}.${d.year}';
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: _bg,
-      appBar: AppBar(
-        backgroundColor: _accent,
-        title: const Row(children: [
-          Text('📸', style: TextStyle(fontSize: 22)),
-          SizedBox(width: 10),
-          Text('Vor/Nach-Foto',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-        ]),
+      extendBodyBehindAppBar: true,
+      appBar: WBGlassAppBar(
+        world: WBWorld.energie,
+        titleWidget: ShaderMask(
+          shaderCallback: (r) => const LinearGradient(
+            colors: [_gold, _accent],
+          ).createShader(r),
+          child: const Text('TRANSFORMATIONS-CHRONIK',
+              style: TextStyle(
+                  color: Colors.white, fontSize: 13,
+                  fontWeight: FontWeight.w900, letterSpacing: 2)),
+        ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: _accent,
-        icon: const Icon(Icons.add_a_photo),
-        label: const Text('Neues Foto'),
+        icon: const Icon(Icons.add_a_photo_rounded),
+        label: const Text('Neues Foto', style: TextStyle(fontWeight: FontWeight.bold)),
         onPressed: _addPhoto,
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator(color: _accent))
-          : _snaps.isEmpty
-              ? _buildEmpty()
-              : _compareIdxA >= 0 && _compareIdxB >= 0
-                  ? _buildCompare()
-                  : _buildList(),
+      body: Stack(fit: StackFit.expand, children: [
+        Container(
+          decoration: const BoxDecoration(
+            gradient: RadialGradient(
+              center: Alignment(0, -0.3),
+              radius: 1.5,
+              colors: [Color(0x55BF360C), Color(0x33260C08), _bg],
+            ),
+          ),
+        ),
+        IgnorePointer(
+          child: AnimatedBuilder(
+            animation: _ambientCtrl,
+            builder: (_, __) => CustomPaint(
+              painter: _PhotoOrbsPainter(_ambientCtrl.value),
+              size: Size.infinite,
+            ),
+          ),
+        ),
+        const IgnorePointer(child: WBAmbientParticles(world: WBWorld.energie, count: 30)),
+        SafeArea(
+          child: _loading
+              ? const Center(child: CircularProgressIndicator(color: _accent))
+              : _snaps.isEmpty
+                  ? _buildEmpty()
+                  : _compareIdxA >= 0 && _compareIdxB >= 0
+                      ? _buildCompare()
+                      : _buildList(),
+        ),
+        const IgnorePointer(child: WBVignette()),
+      ]),
     );
   }
 
@@ -319,40 +448,116 @@ class _PhotoProgressScreenState extends State<PhotoProgressScreen> {
   Widget _buildCompare() {
     final a = _snaps[_compareIdxA];
     final b = _snaps[_compareIdxB];
-    final daysDiff = a.date.difference(b.date).inDays.abs();
-    return Padding(
-      padding: const EdgeInsets.all(12),
+    final earlier = a.date.isBefore(b.date) ? a : b;
+    final later = a.date.isBefore(b.date) ? b : a;
+    final daysDiff = later.date.difference(earlier.date).inDays.abs();
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 100),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(colors: [_accent, _accent.withValues(alpha: 0.4)]),
-              borderRadius: BorderRadius.circular(12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(14),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                      colors: [_accent.withValues(alpha: 0.3), _gold.withValues(alpha: 0.15)]),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: _accent.withValues(alpha: 0.4)),
+                ),
+                child: Column(children: [
+                  Text('VERGLEICH · $daysDiff TAGE',
+                      style: const TextStyle(
+                          color: _gold, fontSize: 11, letterSpacing: 3, fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 4),
+                  Text('${_fmtDate(earlier.date)} → ${_fmtDate(later.date)}',
+                      style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+                ]),
+              ),
             ),
-            child: Text('Vergleich · $daysDiff Tage Abstand',
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
           ),
-          const SizedBox(height: 12),
-          Expanded(
+          const SizedBox(height: 10),
+          SizedBox(
+            height: 320,
             child: Row(
               children: [
-                Expanded(child: _compareSide(a, 'VORHER')),
+                Expanded(child: _compareSide(earlier, 'VORHER')),
                 const SizedBox(width: 8),
-                Expanded(child: _compareSide(b, 'NACHHER')),
+                Expanded(child: _compareSide(later, 'NACHHER')),
               ],
             ),
           ),
+          const SizedBox(height: 14),
+          if (_compareReflection == null && !_loadingReflection)
+            ElevatedButton.icon(
+              onPressed: _requestAiReflection,
+              icon: const Icon(Icons.auto_awesome_rounded),
+              label: const Text('AI-TRANSFORMATIONS-REFLEXION',
+                  style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _accent,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+            )
+          else if (_loadingReflection)
+            Column(children: [
+              AnimatedBuilder(
+                animation: _glowCtrl,
+                builder: (_, __) => Container(
+                  width: 80, height: 80,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(colors: [
+                      _accent.withValues(alpha: 0.5 + 0.3 * _glowCtrl.value),
+                      Colors.transparent,
+                    ]),
+                  ),
+                  child: const Center(child: Icon(Icons.auto_awesome, color: _gold, size: 36)),
+                ),
+              ),
+              const SizedBox(height: 10),
+              const Text('Der Alchemist liest deine Reise…',
+                  style: TextStyle(color: Colors.white70, fontSize: 12)),
+            ])
+          else if (_compareReflection != null)
+            ClipRRect(
+              borderRadius: BorderRadius.circular(14),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: _accent.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: _accent.withValues(alpha: 0.4)),
+                  ),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Row(children: [
+                      Icon(Icons.auto_awesome_rounded, color: _gold, size: 16),
+                      const SizedBox(width: 6),
+                      const Text('ALCHEMIST · TRANSFORMATION',
+                          style: TextStyle(color: _gold, fontSize: 10, letterSpacing: 2, fontWeight: FontWeight.w700)),
+                    ]),
+                    const SizedBox(height: 10),
+                    SelectableText(_compareReflection!,
+                        style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.6)),
+                  ]),
+                ),
+              ),
+            ),
           const SizedBox(height: 12),
           OutlinedButton.icon(
             onPressed: () => setState(() {
               _compareIdxA = -1;
               _compareIdxB = -1;
+              _compareReflection = null;
             }),
-            icon: const Icon(Icons.arrow_back, color: Colors.white),
-            label: const Text('Zurück zur Galerie', style: TextStyle(color: Colors.white)),
+            icon: const Icon(Icons.arrow_back_rounded, color: Colors.white70),
+            label: const Text('Zurück zur Galerie', style: TextStyle(color: Colors.white70)),
             style: OutlinedButton.styleFrom(side: BorderSide(color: Colors.white24)),
           ),
         ],
@@ -398,6 +603,32 @@ class _PhotoProgressScreenState extends State<PhotoProgressScreen> {
       ),
     );
   }
+}
+
+// ── PAINTER: Photo CineOrbs (warmes Orange-Gold) ─────────────────────────────
+class _PhotoOrbsPainter extends CustomPainter {
+  final double t;
+  _PhotoOrbsPainter(this.t);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    _draw(canvas, Offset(size.width * 0.2, size.height * (0.3 + math.sin(t * 2 * math.pi) * 0.05)),
+        100, const Color(0xFFF57C00));
+    _draw(canvas, Offset(size.width * 0.85, size.height * (0.55 + math.cos(t * 2 * math.pi) * 0.04)),
+        90, const Color(0xFFFFD54F));
+    _draw(canvas, Offset(size.width * 0.5, size.height * (0.9 + math.sin(t * math.pi) * 0.03)),
+        70, const Color(0xFFFF7043));
+  }
+
+  void _draw(Canvas canvas, Offset c, double r, Color color) {
+    final p = Paint()
+      ..color = color.withValues(alpha: 0.10)
+      ..maskFilter = MaskFilter.blur(BlurStyle.normal, r * 0.5);
+    canvas.drawCircle(c, r, p);
+  }
+
+  @override
+  bool shouldRepaint(_PhotoOrbsPainter old) => old.t != t;
 }
 
 class _Snap {
