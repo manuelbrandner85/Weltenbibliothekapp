@@ -1,11 +1,14 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart' show RealtimeChannel, PostgresChangeEvent;
 
+import '../../config/api_config.dart';
 import '../../features/admin/state/admin_state.dart';
 import '../../services/activity_heatmap_service.dart'; // 🔥 M2
 import '../../services/cloudflare_api_service.dart';
@@ -45,7 +48,7 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 6, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _waitForState();
     });
@@ -175,6 +178,7 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
         ),
         bottom: TabBar(
           controller: _tabController,
+          isScrollable: true,
           indicatorColor: _accent,
           indicatorWeight: 3,
           indicatorSize: TabBarIndicatorSize.tab,
@@ -186,6 +190,8 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
             Tab(icon: Icon(Icons.dashboard_rounded, size: 18), text: 'Übersicht'),
             Tab(icon: Icon(Icons.people_rounded, size: 18), text: 'Nutzer'),
             Tab(icon: Icon(Icons.chat_bubble_rounded, size: 18), text: 'Chat'),
+            Tab(icon: Icon(Icons.notifications_active_rounded, size: 18), text: 'Push'),
+            Tab(icon: Icon(Icons.history_rounded, size: 18), text: 'Audit'),
             Tab(icon: Icon(Icons.monitor_heart_rounded, size: 18), text: 'System'),
           ],
         ),
@@ -196,6 +202,8 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
           _OverviewTab(world: widget.world, admin: admin, accent: _accent, accentBright: _accentBright),
           _UsersTab(world: widget.world, admin: admin, accent: _accent, accentBright: _accentBright),
           _ChatModerationTab(world: widget.world, admin: admin, accent: _accent, accentBright: _accentBright),
+          _PushBroadcastTab(accent: _accent, accentBright: _accentBright),
+          _AuditLogTab(world: widget.world, accent: _accent, accentBright: _accentBright),
           _SystemTab(accent: _accent, accentBright: _accentBright),
         ],
       ),
@@ -2654,5 +2662,444 @@ class _ModerationQueueScreenState extends State<_ModerationQueueScreen> {
     if (diff.inMinutes < 60) return 'vor ${diff.inMinutes}m';
     if (diff.inHours < 24) return 'vor ${diff.inHours}h';
     return 'vor ${diff.inDays}d';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// 🔔 PUSH-BROADCAST TAB
+// ═══════════════════════════════════════════════════════════
+class _PushBroadcastTab extends StatefulWidget {
+  final Color accent;
+  final Color accentBright;
+  const _PushBroadcastTab({required this.accent, required this.accentBright});
+
+  @override
+  State<_PushBroadcastTab> createState() => _PushBroadcastTabState();
+}
+
+class _PushBroadcastTabState extends State<_PushBroadcastTab> {
+  final _title = TextEditingController();
+  final _body = TextEditingController();
+  final _deeplink = TextEditingController();
+  String _target = 'all';
+  bool _sending = false;
+  List<Map<String, dynamic>> _history = [];
+  bool _loadingHistory = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadHistory();
+  }
+
+  @override
+  void dispose() {
+    _title.dispose();
+    _body.dispose();
+    _deeplink.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadHistory() async {
+    setState(() => _loadingHistory = true);
+    try {
+      final res = await http.get(
+        Uri.parse('${ApiConfig.workerUrl}/api/admin/push/history'),
+      ).timeout(const Duration(seconds: 10));
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body) as Map<String, dynamic>;
+        final list = (data['broadcasts'] as List?) ?? const [];
+        if (mounted) {
+          setState(() {
+            _history = list.cast<Map<String, dynamic>>();
+            _loadingHistory = false;
+          });
+        }
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loadingHistory = false);
+    }
+  }
+
+  Future<void> _send() async {
+    if (_title.text.trim().isEmpty || _body.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Titel und Body sind pflicht'),
+        backgroundColor: Colors.redAccent,
+      ));
+      return;
+    }
+    setState(() => _sending = true);
+    try {
+      final res = await http.post(
+        Uri.parse('${ApiConfig.workerUrl}/api/admin/push/broadcast'),
+        headers: const {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'target': _target,
+          'title': _title.text.trim(),
+          'body': _body.text.trim(),
+          if (_deeplink.text.trim().isNotEmpty) 'deeplink': _deeplink.text.trim(),
+        }),
+      ).timeout(const Duration(seconds: 30));
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body) as Map<String, dynamic>;
+        final enq = data['enqueued'] ?? 0;
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('✅ $enq Empfänger in Queue · Cron sendet via FCM (max 5min)'),
+            backgroundColor: widget.accent,
+          ));
+          _title.clear();
+          _body.clear();
+          _deeplink.clear();
+          await _loadHistory();
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('❌ Fehler ${res.statusCode}: ${res.body}'),
+            backgroundColor: Colors.redAccent,
+          ));
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Netzwerk: $e'),
+          backgroundColor: Colors.redAccent,
+        ));
+      }
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(colors: [widget.accent.withValues(alpha: 0.35), widget.accent.withValues(alpha: 0.1)]),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: widget.accent.withValues(alpha: 0.4)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('🔔 PUSH BROADCAST',
+                    style: TextStyle(color: Colors.white70, fontSize: 11, letterSpacing: 2, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 12),
+                _field('Empfänger-Zielgruppe', _target,
+                    children: [
+                      for (final t in ['all', 'materie', 'energie', 'vorhang', 'ursprung'])
+                        Padding(
+                          padding: const EdgeInsets.only(right: 6),
+                          child: ChoiceChip(
+                            label: Text(t.toUpperCase(), style: const TextStyle(fontSize: 10)),
+                            selected: _target == t,
+                            onSelected: (_) => setState(() => _target = t),
+                            selectedColor: widget.accent,
+                          ),
+                        ),
+                    ]),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: _title,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: _inputDeco('Titel (max 60 Zeichen)'),
+                  maxLength: 60,
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: _body,
+                  style: const TextStyle(color: Colors.white),
+                  maxLines: 3,
+                  maxLength: 200,
+                  decoration: _inputDeco('Body (max 200 Zeichen)'),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: _deeplink,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: _inputDeco('Deeplink (optional, z.B. /vorhang/module)'),
+                ),
+                const SizedBox(height: 14),
+                SizedBox(
+                  height: 48,
+                  child: ElevatedButton.icon(
+                    onPressed: _sending ? null : _send,
+                    icon: _sending
+                        ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        : const Icon(Icons.send),
+                    label: Text(_sending ? 'Sende…' : 'BROADCAST SENDEN',
+                        style: const TextStyle(fontWeight: FontWeight.w800, letterSpacing: 1.5)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: widget.accent,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 18),
+          Row(children: [
+            Text('VERLAUF · letzte ${_history.length}',
+                style: TextStyle(color: widget.accentBright, fontSize: 11, letterSpacing: 2, fontWeight: FontWeight.bold)),
+            const Spacer(),
+            IconButton(
+              icon: Icon(Icons.refresh, color: widget.accent),
+              onPressed: _loadHistory,
+            ),
+          ]),
+          const SizedBox(height: 8),
+          if (_loadingHistory)
+            const Center(child: CircularProgressIndicator())
+          else if (_history.isEmpty)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(24),
+                child: Text('Noch keine Broadcasts', style: TextStyle(color: Colors.white60)),
+              ),
+            )
+          else
+            for (final b in _history) _buildHistoryCard(b),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHistoryCard(Map<String, dynamic> b) {
+    final sent = (b['sent'] as num?)?.toInt() ?? 0;
+    final failed = (b['failed'] as num?)?.toInt() ?? 0;
+    final pending = (b['pending'] as num?)?.toInt() ?? 0;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: widget.accent.withValues(alpha: 0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text((b['title'] as String?) ?? '',
+              style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+          Text((b['body'] as String?) ?? '',
+              style: const TextStyle(color: Colors.white70, fontSize: 11),
+              maxLines: 2, overflow: TextOverflow.ellipsis),
+          const SizedBox(height: 6),
+          Row(children: [
+            Text((b['created_at'] as String?)?.substring(0, 16) ?? '',
+                style: const TextStyle(color: Colors.white54, fontSize: 10)),
+            const Spacer(),
+            _stat('✓', sent, Colors.green),
+            const SizedBox(width: 6),
+            _stat('⏳', pending, Colors.amber),
+            const SizedBox(width: 6),
+            _stat('✗', failed, Colors.redAccent),
+          ]),
+        ],
+      ),
+    );
+  }
+
+  Widget _stat(String icon, int n, Color c) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        decoration: BoxDecoration(color: c.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(8)),
+        child: Text('$icon $n', style: TextStyle(color: c, fontSize: 10, fontWeight: FontWeight.bold)),
+      );
+
+  InputDecoration _inputDeco(String hint) => InputDecoration(
+        hintText: hint,
+        hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.35)),
+        isDense: true,
+        filled: true,
+        fillColor: Colors.black.withValues(alpha: 0.4),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+        counterStyle: const TextStyle(color: Colors.white38, fontSize: 10),
+      );
+
+  Widget _field(String label, String _, {required List<Widget> children}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label,
+            style: TextStyle(color: widget.accentBright, fontSize: 10, letterSpacing: 1.5, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 6),
+        SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(children: children)),
+      ],
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// 📜 AUDIT-LOG TAB
+// ═══════════════════════════════════════════════════════════
+class _AuditLogTab extends StatefulWidget {
+  final String world;
+  final Color accent;
+  final Color accentBright;
+  const _AuditLogTab({required this.world, required this.accent, required this.accentBright});
+
+  @override
+  State<_AuditLogTab> createState() => _AuditLogTabState();
+}
+
+class _AuditLogTabState extends State<_AuditLogTab> {
+  List<Map<String, dynamic>> _logs = [];
+  bool _loading = true;
+  String _filterAction = 'all';
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() => _loading = true);
+    try {
+      final res = await http.get(
+        Uri.parse('${ApiConfig.workerUrl}/api/admin/audit/${widget.world}?limit=200'),
+      ).timeout(const Duration(seconds: 12));
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body) as Map<String, dynamic>;
+        final list = (data['logs'] as List?) ?? const [];
+        if (mounted) {
+          setState(() {
+            _logs = list.cast<Map<String, dynamic>>();
+            _loading = false;
+          });
+        }
+      } else {
+        if (mounted) setState(() => _loading = false);
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  List<Map<String, dynamic>> get _filtered {
+    if (_filterAction == 'all') return _logs;
+    return _logs.where((l) => (l['action'] as String? ?? '').contains(_filterAction)).toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final actions = {'all', ..._logs.map((l) => (l['action'] as String? ?? 'unknown')).toSet()};
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+          child: Row(children: [
+            Text('${_filtered.length}/${_logs.length} EINTRÄGE',
+                style: TextStyle(color: widget.accentBright, fontSize: 11, letterSpacing: 2, fontWeight: FontWeight.bold)),
+            const Spacer(),
+            IconButton(icon: Icon(Icons.refresh, color: widget.accent), onPressed: _load),
+          ]),
+        ),
+        SizedBox(
+          height: 36,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            children: [
+              for (final a in actions)
+                Padding(
+                  padding: const EdgeInsets.only(right: 6),
+                  child: ChoiceChip(
+                    label: Text(a, style: const TextStyle(fontSize: 10)),
+                    selected: _filterAction == a,
+                    onSelected: (_) => setState(() => _filterAction = a),
+                    selectedColor: widget.accent,
+                  ),
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 6),
+        Expanded(
+          child: _loading
+              ? const Center(child: CircularProgressIndicator())
+              : _filtered.isEmpty
+                  ? const Center(child: Text('Keine Einträge', style: TextStyle(color: Colors.white60)))
+                  : ListView.builder(
+                      padding: const EdgeInsets.fromLTRB(12, 4, 12, 24),
+                      itemCount: _filtered.length,
+                      itemBuilder: (_, i) {
+                        final l = _filtered[i];
+                        return _buildLogRow(l);
+                      },
+                    ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLogRow(Map<String, dynamic> l) {
+    final action = (l['action'] as String?) ?? '';
+    final admin = (l['admin_username'] as String?) ?? 'unknown';
+    final target = (l['target_username'] as String?) ?? '';
+    final details = (l['details'] as String?) ?? '';
+    final ts = (l['timestamp'] as String?) ?? '';
+    final icon = _iconFor(action);
+    final color = _colorFor(action);
+    return Container(
+      margin: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Row(children: [
+        Icon(icon, color: color, size: 20),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(children: [
+                Text(action,
+                    style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.bold)),
+                const Spacer(),
+                Text(ts.substring(0, ts.length >= 16 ? 16 : ts.length).replaceAll('T', ' '),
+                    style: const TextStyle(color: Colors.white54, fontSize: 10)),
+              ]),
+              Text('$admin → $target',
+                  style: const TextStyle(color: Colors.white, fontSize: 12)),
+              if (details.isNotEmpty)
+                Text(details,
+                    style: const TextStyle(color: Colors.white70, fontSize: 11),
+                    maxLines: 3, overflow: TextOverflow.ellipsis),
+            ],
+          ),
+        ),
+      ]),
+    );
+  }
+
+  IconData _iconFor(String a) {
+    if (a.contains('ban')) return Icons.block;
+    if (a.contains('delete')) return Icons.delete;
+    if (a.contains('edit')) return Icons.edit;
+    if (a.contains('role')) return Icons.shield;
+    if (a.contains('mute')) return Icons.volume_off;
+    return Icons.history;
+  }
+
+  Color _colorFor(String a) {
+    if (a.contains('ban') || a.contains('delete')) return Colors.redAccent;
+    if (a.contains('role') || a.contains('admin')) return Colors.amber;
+    if (a.contains('edit')) return Colors.lightBlueAccent;
+    if (a.contains('mute')) return Colors.orangeAccent;
+    return Colors.white60;
   }
 }
