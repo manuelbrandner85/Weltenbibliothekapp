@@ -21,9 +21,11 @@ import '../../models/energie_profile.dart';
 import '../../features/admin/state/admin_state.dart'; // 🆕 Admin State Provider
 import '../../core/persistence/auto_save_manager.dart'; // 🔄 Auto-Save System
 import '../../core/storage/unified_storage_service.dart'; // ✅ user_data Box Sync
+import '../../services/timezone_helper.dart'; // ✨ v93 TZ inference
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_glass_app_bar.dart';
 import '../../widgets/cinematic/wb_vignette.dart';
+import '../../widgets/profile/birth_place_autocomplete.dart'; // ✨ v93 Geocoding
 
 /// Vollständiger Profil-Editor für Materie & Energie Welten
 /// Alle Felder bearbeitbar + neue Features (Avatar, Bio)
@@ -167,7 +169,14 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
   final _birthTimeController = TextEditingController();
   final _birthDateController = TextEditingController(); // ✅ NEU: Für manuelle Datumseingabe
   DateTime? _selectedBirthDate;
-  
+
+  // ✨ v93 Spirit-Tools-Extras (alle nullable, werden via Geocoding aus
+  // Geburtsort automatisch befuellt - User tippt sie nie manuell)
+  double? _birthLatitude;
+  double? _birthLongitude;
+  double? _timezoneOffsetHours;
+  bool _birthTimeUnknown = false;
+
   // Neue Features
   String? _selectedEmoji;
   String? _avatarUrl;
@@ -481,6 +490,11 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
                   _bioController.text = profile.bio ?? '';
           _selectedEmoji = profile.avatarEmoji;
           _avatarUrl = profile.avatarUrl;
+          // ✨ v93: Spirit-Tools-Extras laden
+          _birthLatitude = profile.birthLatitude;
+          _birthLongitude = profile.birthLongitude;
+          _timezoneOffsetHours = profile.timezoneOffsetHours;
+          _birthTimeUnknown = profile.birthTimeUnknown;
         }
       }
     } catch (e) {
@@ -646,14 +660,19 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
           lastName: _lastNameController.text.trim(),
           birthDate: _selectedBirthDate!,
           birthPlace: _birthPlaceController.text.trim(),
-          birthTime: _birthTimeController.text.trim().isEmpty 
-              ? null 
+          birthTime: _birthTimeController.text.trim().isEmpty
+              ? null
               : _birthTimeController.text.trim(),
-          bio: _bioController.text.trim().isEmpty 
-              ? null 
+          bio: _bioController.text.trim().isEmpty
+              ? null
               : _bioController.text.trim(),
           avatarEmoji: _selectedEmoji,
           avatarUrl: _avatarUrl,
+          // ✨ v93: Spirit-Tools-Extras (Auto-Geocoding)
+          birthLatitude: _birthLatitude,
+          birthLongitude: _birthLongitude,
+          timezoneOffsetHours: _timezoneOffsetHours,
+          birthTimeUnknown: _birthTimeUnknown,
         );
         
         // 🔥 FIX: Backend-Sync + Get Updated Profile (mit userId & role)
@@ -1296,28 +1315,52 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
                       ),
                       const SizedBox(height: 16),
                       
-                      // Geburtsort
-                      TextFormField(
-                        controller: _birthPlaceController,
-                        decoration: InputDecoration(
-                          labelText: 'Geburtsort',
-                          hintText: 'Stadt, Land',
-                          prefixIcon: const Icon(Icons.location_on),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          filled: true,
-                          fillColor: isDark 
-                              ? Colors.white.withValues(alpha: 0.05) 
-                              : Colors.white,
-                        ),
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Geburtsort ist erforderlich';
-                          }
-                          return null;
+                      // ✨ v93: Geburtsort mit Auto-Geocoding (Stadt -> lat/lng/tz)
+                      // User tippt nur Stadt-Name, wir holen Koordinaten + Timezone
+                      // automatisch via OpenStreetMap Nominatim. Keine manuelle
+                      // Eingabe von lat/lng/tz noetig.
+                      BirthPlaceAutocomplete(
+                        initialPlace: _birthPlaceController.text,
+                        initialLatitude: _birthLatitude,
+                        initialLongitude: _birthLongitude,
+                        accentColor: const Color(0xFF7C4DFF), // Energie Lila
+                        label: 'Geburtsort',
+                        hintText: 'Stadt, Land tippen...',
+                        onSelected: (place, lat, lng) {
+                          setState(() {
+                            _birthPlaceController.text = place;
+                            _birthLatitude = lat;
+                            _birthLongitude = lng;
+                            // Timezone auto-inferieren aus lat/lng + Geburtsdatum
+                            if (lat != null && lng != null) {
+                              _timezoneOffsetHours = TimezoneHelper.inferOffsetHours(
+                                latitude: lat,
+                                longitude: lng,
+                                birthDate: _selectedBirthDate,
+                              );
+                            } else {
+                              // User hat frei getippt - Koordinaten zuruecksetzen
+                              _timezoneOffsetHours = null;
+                            }
+                            _hasUnsavedChanges = true;
+                          });
                         },
                       ),
+                      if (_birthLatitude != null && _birthLongitude != null) ...[
+                        const SizedBox(height: 6),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          child: Text(
+                            '✓ Koordinaten: ${_birthLatitude!.toStringAsFixed(4)}°, ${_birthLongitude!.toStringAsFixed(4)}°'
+                            '${_timezoneOffsetHours != null ? "  ·  TZ ${TimezoneHelper.formatOffset(_timezoneOffsetHours!)}" : ""}',
+                            style: TextStyle(
+                              color: const Color(0xFF7C4DFF).withValues(alpha: 0.75),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 16),
                       
                       // Geburtszeit (optional)

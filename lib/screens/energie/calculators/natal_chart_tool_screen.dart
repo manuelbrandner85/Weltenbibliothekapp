@@ -168,13 +168,23 @@ class _NewChartTabState extends State<_NewChartTab> {
     setState(() {
       _placeCtrl.text = p.birthPlace;
       _birthDate = p.birthDate;
-      if (p.birthTime != null && p.birthTime!.contains(':')) {
+      // ✨ v93: lat/lng/tz aus Profil (Auto-Geocoding) - User muss nicht mehr tippen
+      if (p.birthLatitude != null) {
+        _latCtrl.text = p.birthLatitude!.toStringAsFixed(4);
+      }
+      if (p.birthLongitude != null) {
+        _lngCtrl.text = p.birthLongitude!.toStringAsFixed(4);
+      }
+      if (p.timezoneOffsetHours != null) {
+        _tzCtrl.text = p.timezoneOffsetHours!.toString();
+      }
+      if (p.birthTime != null && p.birthTime!.contains(':') && !p.birthTimeUnknown) {
         final parts = p.birthTime!.split(':');
         final h = int.tryParse(parts[0]) ?? 12;
         final m = int.tryParse(parts[1]) ?? 0;
         _birthTime = TimeOfDay(hour: h, minute: m);
       } else {
-        _timeUnknown = true;
+        _timeUnknown = p.birthTimeUnknown || p.birthTime == null;
       }
       _labelCtrl.text = p.firstName.isNotEmpty ? p.firstName : 'Ich';
       _prefilled = true;

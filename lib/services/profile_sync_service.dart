@@ -206,17 +206,31 @@ class ProfileSyncService {
       // v5.44.3: legacy_user_id mitschicken (siehe Materie)
       final invisibleId = await UnifiedStorageService().getCurrentUserId();
 
-      // ✅ Build request body (additiv)
+      // ✅ Build request body - SNAKE_CASE matching profiles-Spalten
+      // (vorher camelCase: firstName/birthDate/birthPlace wurden silent
+      // gedropt von Supabase REST weil Spalten anders heissen!)
+      final birthDateOnly = '${profile.birthDate.year}-'
+          '${profile.birthDate.month.toString().padLeft(2, '0')}-'
+          '${profile.birthDate.day.toString().padLeft(2, '0')}';
+      final fullName = '${profile.firstName} ${profile.lastName}'.trim();
       final body = <String, dynamic>{
         'username': profile.username,
-        'firstName': profile.firstName,
-        'lastName': profile.lastName,
-        'birthDate': profile.birthDate.toIso8601String(),
-        'birthPlace': profile.birthPlace,
-        'birthTime': profile.birthTime,
+        'full_name': fullName.isEmpty ? null : fullName,
+        'birth_date': birthDateOnly,
+        'birth_place': profile.birthPlace.isEmpty ? null : profile.birthPlace,
+        if (profile.birthTime != null && profile.birthTime!.isNotEmpty)
+          'birth_time': profile.birthTime!.length == 5
+              ? '${profile.birthTime}:00' // HH:mm -> HH:mm:ss
+              : profile.birthTime,
         'avatar_url': profile.avatarUrl,
         'avatar_emoji': profile.avatarEmoji,
         'bio': profile.bio,
+        // ✨ v93 Spirit-Tools-Extras
+        if (profile.birthLatitude != null) 'birth_latitude': profile.birthLatitude,
+        if (profile.birthLongitude != null) 'birth_longitude': profile.birthLongitude,
+        if (profile.timezoneOffsetHours != null)
+          'timezone_offset_hours': profile.timezoneOffsetHours,
+        'birth_time_unknown': profile.birthTimeUnknown,
         if (invisibleId != null && invisibleId.isNotEmpty) 'userId': invisibleId,
       };
       
@@ -295,18 +309,33 @@ class ProfileSyncService {
           if (data['success'] == true && data['profile'] != null) {
             final p = data['profile'];
             
+            // v93: full_name aufsplitten in first/last (Convention: erstes Wort = first)
+            final fullName = (p['full_name'] as String?) ?? '';
+            final nameParts = fullName.split(' ');
+            final firstName = (p['first_name'] as String?) ??
+                (nameParts.isNotEmpty ? nameParts.first : '');
+            final lastName = (p['last_name'] as String?) ??
+                (nameParts.length > 1 ? nameParts.skip(1).join(' ') : '');
             return EnergieProfile(
               username: p['username'] as String,
-              userId: p['user_id'] as String?,        // ✅ Backend userId
-              role: p['role'] as String?,             // ✅ Backend role
-              firstName: p['first_name'] as String,
-              lastName: p['last_name'] as String,
-              birthDate: DateTime.parse(p['birth_date'] as String),
-              birthPlace: p['birth_place'] as String,
+              userId: (p['user_id'] ?? p['id']) as String?,
+              role: p['role'] as String?,
+              firstName: firstName,
+              lastName: lastName,
+              birthDate: p['birth_date'] != null
+                  ? DateTime.parse(p['birth_date'] as String)
+                  : DateTime.now(),
+              birthPlace: (p['birth_place'] as String?) ?? '',
               birthTime: p['birth_time'] as String?,
               avatarUrl: p['avatar_url'] as String?,
               avatarEmoji: p['avatar_emoji'] as String?,
               bio: p['bio'] as String?,
+              // ✨ v93 Spirit-Tools-Extras
+              birthLatitude: (p['birth_latitude'] as num?)?.toDouble(),
+              birthLongitude: (p['birth_longitude'] as num?)?.toDouble(),
+              timezoneOffsetHours: (p['timezone_offset_hours'] as num?)?.toDouble(),
+              birthTimeUnknown: p['birth_time_unknown'] == true,
+              gender: p['gender'] as String?,
             );
           }
           return null;
@@ -333,17 +362,25 @@ class ProfileSyncService {
           if (data['success'] == true && data['profiles'] != null) {
             final profilesList = data['profiles'] as List<dynamic>;
             
-            return profilesList.map((p) => EnergieProfile(
-              username: p['username'] as String,
-              firstName: p['first_name'] as String,
-              lastName: p['last_name'] as String,
-              birthDate: DateTime.parse(p['birth_date'] as String),
-              birthPlace: p['birth_place'] as String,
-              birthTime: p['birth_time'] as String?,
-              avatarUrl: p['avatar_url'] as String?,
-              avatarEmoji: p['avatar_emoji'] as String?,
-              bio: p['bio'] as String?,
-            )).toList();
+            return profilesList.map((p) {
+              final fullName = (p['full_name'] as String?) ?? '';
+              final nameParts = fullName.split(' ');
+              return EnergieProfile(
+                username: p['username'] as String,
+                firstName: (p['first_name'] as String?) ??
+                    (nameParts.isNotEmpty ? nameParts.first : ''),
+                lastName: (p['last_name'] as String?) ??
+                    (nameParts.length > 1 ? nameParts.skip(1).join(' ') : ''),
+                birthDate: p['birth_date'] != null
+                    ? DateTime.parse(p['birth_date'] as String)
+                    : DateTime.now(),
+                birthPlace: (p['birth_place'] as String?) ?? '',
+                birthTime: p['birth_time'] as String?,
+                avatarUrl: p['avatar_url'] as String?,
+                avatarEmoji: p['avatar_emoji'] as String?,
+                bio: p['bio'] as String?,
+              );
+            }).toList();
           }
           return [];
         },

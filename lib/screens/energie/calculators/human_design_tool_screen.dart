@@ -162,13 +162,17 @@ class _NewHdTabState extends State<_NewHdTab> {
     setState(() {
       _placeCtrl.text = p.birthPlace;
       _birthDate = p.birthDate;
-      if (p.birthTime != null && p.birthTime!.contains(':')) {
+      // ✨ v93: tz aus Profil (via Auto-Geocoding gesetzt)
+      if (p.timezoneOffsetHours != null) {
+        _tzCtrl.text = p.timezoneOffsetHours!.toString();
+      }
+      if (p.birthTime != null && p.birthTime!.contains(':') && !p.birthTimeUnknown) {
         final parts = p.birthTime!.split(':');
         final h = int.tryParse(parts[0]) ?? 12;
         final m = int.tryParse(parts[1]) ?? 0;
         _birthTime = TimeOfDay(hour: h, minute: m);
       } else {
-        _timeUnknown = true;
+        _timeUnknown = p.birthTimeUnknown || p.birthTime == null;
       }
       _labelCtrl.text = p.firstName.isNotEmpty ? p.firstName : 'Ich';
       _prefilled = true;
