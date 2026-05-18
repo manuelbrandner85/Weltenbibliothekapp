@@ -66,10 +66,43 @@ class SpiritReadingService {
         'summary': summary,
         'result': result,
       }).select().single();
+      // Fire-and-forget XP-Award (10 XP pro Reading). Schoent das Konto
+      // gegenueber Spam (1 Reading/Tool/Tag waere ideal, aber Idempotenz
+      // braucht Datenbank-Logik. Hier nur einfacher Award.)
+      _awardXp(userId, tool);
       return SpiritReading.fromJson(Map<String, dynamic>.from(res as Map));
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ Reading save: $e');
       return null;
+    }
+  }
+
+  /// Vergibt 10 XP pro gespeichertem Reading. Nutzt die add_user_xp RPC
+  /// wenn verfuegbar, sonst direkter profiles.xp-Increment (nur wenn RLS
+  /// das zulaesst - sonst no-op). Niemals throw - Reading-Save bleibt
+  /// auch ohne XP-Award erfolgreich.
+  Future<void> _awardXp(String userId, String tool) async {
+    try {
+      await _s.rpc('add_user_xp', params: {
+        'p_user_id': userId,
+        'p_amount': 10,
+        'p_reason': 'spirit:$tool',
+      });
+    } catch (e) {
+      if (kDebugMode) debugPrint('XP-Award via RPC fehlgeschlagen ($e), versuche Direct-Update');
+      try {
+        // Fallback: SELECT current XP, dann UPDATE +10
+        final profile = await _s
+            .from('profiles')
+            .select('xp')
+            .eq('id', userId)
+            .maybeSingle();
+        if (profile == null) return;
+        final current = (profile['xp'] as num?)?.toInt() ?? 0;
+        await _s.from('profiles').update({'xp': current + 10}).eq('id', userId);
+      } catch (e2) {
+        if (kDebugMode) debugPrint('XP-Award Fallback auch fehlgeschlagen: $e2');
+      }
     }
   }
 
