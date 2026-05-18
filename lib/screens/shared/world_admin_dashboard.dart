@@ -4864,7 +4864,7 @@ class _ReportsInboxTabState extends State<_ReportsInboxTab> {
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: SelectableText(r['body'].toString(),
-                    style: const TextStyle(color: Colors.white80, fontSize: 13, height: 1.5)),
+                    style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.5)),
               ),
             ],
             if ((r['target_id'] as String?)?.isNotEmpty == true) ...[
