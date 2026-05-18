@@ -16,6 +16,7 @@ import 'package:flutter/services.dart';
 import '../../../core/storage/unified_storage_service.dart';
 import '../../../services/natal_astrology_service.dart';
 import '../../../services/spirit_reading_service.dart';
+import '../../../services/storage_service.dart';
 import '../../../theme/wb_cinematic_tokens.dart';
 import '../../../widgets/cinematic/wb_ambient_particles.dart';
 import '../../../widgets/cinematic/wb_glass_app_bar.dart';
@@ -49,6 +50,27 @@ class _BirthChart360ScreenState extends State<BirthChart360Screen>
     super.initState();
     _wheelCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 2000));
     _ambientCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 11))..repeat();
+    _prefillFromProfile();
+  }
+
+  Future<void> _prefillFromProfile() async {
+    final p = await StorageService().loadEnergieProfile();
+    if (p == null || !mounted) return;
+    final bd = p.birthDate;
+    int h = 12, m = 0;
+    if (p.birthTime != null && p.birthTime!.contains(':')) {
+      final parts = p.birthTime!.split(':');
+      h = int.tryParse(parts[0]) ?? 12;
+      m = int.tryParse(parts[1]) ?? 0;
+      _hasTime = true;
+    } else {
+      _hasTime = false;
+    }
+    setState(() {
+      _birthDate = DateTime(bd.year, bd.month, bd.day, h, m);
+    });
+    // Auto-compute sobald Profil-Daten da sind
+    _compute();
   }
 
   @override

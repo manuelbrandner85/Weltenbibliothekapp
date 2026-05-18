@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../services/natal_astrology_service.dart';
+import '../../../services/storage_service.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // NatalChartToolScreen – Geburtshoroskop (Tool 1)
@@ -152,7 +153,33 @@ class _NewChartTabState extends State<_NewChartTab> {
   TimeOfDay? _birthTime;
   bool _timeUnknown = false;
   bool _saving = false;
+  bool _prefilled = false;
   NatalChartResult? _result;
+
+  @override
+  void initState() {
+    super.initState();
+    _prefillFromProfile();
+  }
+
+  Future<void> _prefillFromProfile() async {
+    final p = await StorageService().loadEnergieProfile();
+    if (p == null || !mounted) return;
+    setState(() {
+      _placeCtrl.text = p.birthPlace;
+      _birthDate = p.birthDate;
+      if (p.birthTime != null && p.birthTime!.contains(':')) {
+        final parts = p.birthTime!.split(':');
+        final h = int.tryParse(parts[0]) ?? 12;
+        final m = int.tryParse(parts[1]) ?? 0;
+        _birthTime = TimeOfDay(hour: h, minute: m);
+      } else {
+        _timeUnknown = true;
+      }
+      _labelCtrl.text = p.firstName.isNotEmpty ? p.firstName : 'Ich';
+      _prefilled = true;
+    });
+  }
 
   @override
   void dispose() {
@@ -320,7 +347,9 @@ class _NewChartTabState extends State<_NewChartTab> {
           controlAffinity: ListTileControlAffinity.leading,
         ),
         const SizedBox(height: 8),
-        _section('Geburtsort (optional, für Aszendent)'),
+        _section(_prefilled
+            ? 'Geburtsort (aus deinem Profil - bearbeitbar)'
+            : 'Geburtsort (optional, für Aszendent)'),
         _textField(_placeCtrl, 'Stadt, Land'),
         const SizedBox(height: 8),
         Row(

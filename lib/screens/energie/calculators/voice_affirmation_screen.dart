@@ -56,14 +56,26 @@ class _VoiceAffirmationScreenState extends State<VoiceAffirmationScreen> {
   }
 
   Future<void> _init() async {
-    if (!kIsWeb) {
-      try {
-        await _recorder.openRecorder();
-        _recorderReady = true;
-      } catch (_) {}
-    }
+    // FIX (v5.43.1): Affirmationen ZUERST laden + UI freigeben.
+    // openRecorder() blockierte den Loading-Spinner permanent wenn
+    // Mikrofon-Permission nicht erteilt war (flutter_sound hängt silent).
     await _loadAffirmations();
     if (mounted) setState(() => _loading = false);
+    // Recorder lazy initialisieren - erst wenn User auf Aufnahme tippt.
+  }
+
+  Future<bool> _ensureRecorder() async {
+    if (kIsWeb) return false;
+    if (_recorderReady) return true;
+    try {
+      final mic = await Permission.microphone.request();
+      if (!mic.isGranted) return false;
+      await _recorder.openRecorder();
+      _recorderReady = true;
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
   Future<void> _loadAffirmations() async {
@@ -87,16 +99,16 @@ class _VoiceAffirmationScreenState extends State<VoiceAffirmationScreen> {
   }
 
   Future<void> _startRecording() async {
-    if (kIsWeb || !_recorderReady) {
+    if (kIsWeb) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text('Aufnahme auf Web nicht verfügbar — bitte Mobile-App nutzen.'),
         backgroundColor: Colors.orange,
       ));
       return;
     }
-    // Mikrofon-Berechtigung
-    final mic = await Permission.microphone.request();
-    if (!mic.isGranted) {
+    final ok = await _ensureRecorder();
+    if (!ok) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
         content: Text('Mikrofon-Berechtigung nötig.'),
         backgroundColor: Colors.redAccent,

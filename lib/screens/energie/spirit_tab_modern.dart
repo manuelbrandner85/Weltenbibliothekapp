@@ -660,17 +660,8 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'screen': const BiorhythmCompatibilityScreen(),
       },
       
-      // ☯ I-Ging Orakel (V115 Feature #19)
-      {
-        'icon': Icons.circle_outlined,
-        'iconEmoji': '☯',
-        'title': 'I-Ging',
-        'subtitle': '64 Hexagramme',
-        'color': const Color(0xFF424242),
-        'category': 'new',
-        'screen': const IChingScreen(),
-      },
       // ☯ I-Ging Münzwurf-Orakel (cinematic) · Wandlung + AI + Verlauf
+      // (Simple I-Ging entfernt v5.43.1 - Muenzwurf ist die bessere Variante)
       {
         'icon': Icons.casino,
         'iconEmoji': '🪙',

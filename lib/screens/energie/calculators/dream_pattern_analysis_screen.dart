@@ -103,21 +103,49 @@ class _DreamPatternAnalysisScreenState
       _analysis = null;
     });
 
-    // Kompakte Zusammenfassung erstellen (kein voller Inhalt — DSGVO + Token-Sparsamkeit).
+    // Zusammenfassung MIT echten Traumtexten (User wollte konkrete statt
+    // generische Deutung). Letzte 20 Traum-Beschreibungen werden gekuerzt
+    // mitgeschickt — die KI hat dann Substanz statt nur Zaehl-Statistik.
     final topSymbols = _symbolFreq.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
     final topCats = _categoryFreq.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
+
     final summary = StringBuffer()
-      ..writeln('Anzahl Träume: ${_entries.length}')
+      ..writeln('Anzahl Träume gesamt: ${_entries.length}')
       ..writeln('Davon Klarträume: $_lucidCount')
       ..writeln('Häufigste Symbole: ${topSymbols.take(15).map((e) => '${e.key} (${e.value}x)').join(', ')}')
-      ..writeln('Kategorien: ${topCats.map((e) => '${e.key} (${e.value}x)').join(', ')}');
+      ..writeln('Kategorien: ${topCats.map((e) => '${e.key} (${e.value}x)').join(', ')}')
+      ..writeln('')
+      ..writeln('=== Letzte Traum-Einträge (chronologisch, neueste zuerst) ===');
 
-    final message = 'Bitte analysiere folgende Traum-Statistik der letzten Wochen und erkenne '
-        'wiederkehrende Themen, Symbol-Cluster, emotionale Muster und mögliche '
-        'Botschaften des Unbewussten. Strukturiere die Antwort: 1) Dominante Themen, '
-        '2) Symbol-Cluster mit Deutung, 3) Empfehlung für die nächste Woche.\n\n'
+    final maxEntries = _entries.length > 20 ? 20 : _entries.length;
+    for (var i = 0; i < maxEntries; i++) {
+      final e = _entries[i];
+      final date = (e['dream_date'] ?? e['created_at'] ?? '').toString().split('T').first;
+      final title = (e['title'] ?? '').toString().trim();
+      var desc = (e['description'] ?? '').toString().trim();
+      if (desc.length > 400) desc = '${desc.substring(0, 400)}...';
+      final mood = (e['mood'] ?? '').toString();
+      final lucid = e['lucid'] == true ? ' [Klartraum]' : '';
+      final recur = e['recurring'] == true ? ' [wiederkehrend]' : '';
+      final tags = (e['symbol_tags'] as List?)?.cast<String>() ?? const [];
+      summary
+        ..writeln('')
+        ..writeln('[$date]${title.isNotEmpty ? " $title" : ""} (Stimmung: $mood)$lucid$recur')
+        ..writeln(desc)
+        ..writeln(tags.isEmpty ? '' : 'Tags: ${tags.join(", ")}');
+    }
+
+    final message = 'Analysiere diese konkreten Träume eines Users und erkenne '
+        'individuelle Muster, wiederkehrende Motive, emotionale Themen und '
+        'persönliche Botschaften des Unbewussten. Gehe auf die EINZELNEN '
+        'Traum-Inhalte ein (zitiere kurz), nicht nur auf die Statistik.\n\n'
+        'Struktur deiner Antwort:\n'
+        '1) Dominante persönliche Themen (mit Bezug auf konkrete Träume)\n'
+        '2) Symbol-Cluster und ihre individuelle Bedeutung für diesen User\n'
+        '3) Was das Unbewusste vermutlich verarbeitet\n'
+        '4) Konkrete Empfehlung für die nächste Woche\n\n'
         '${summary.toString()}';
 
     try {
@@ -138,10 +166,14 @@ class _DreamPatternAnalysisScreenState
               'userId': userId,
               'systemPrompt':
                   'Du bist ein erfahrener Traum-Deuter im Stil von C.G. Jung. '
-                      'Analysiere die gegebene Traum-Statistik systematisch: erkenne '
-                      'wiederkehrende Archetypen, Schatten-Muster, kompensatorische '
-                      'Themen. Sei konkret, aber vorsichtig — Traumdeutung ist '
-                      'Selbstforschung, nicht Diagnose.',
+                      'Du bekommst KONKRETE Traum-Inhalte eines einzelnen Users mit '
+                      'Datum, Beschreibung, Stimmung und Symbol-Tags. Lies sie '
+                      'sorgfältig und deute persönlich - nicht allgemein. '
+                      'Zitiere kurz aus den Träumen wenn passend (in Anführungszeichen). '
+                      'Erkenne wiederkehrende Archetypen, Schatten-Aspekte, Wandlungs-Motive '
+                      'die SICH AUS DIESEN konkreten Träumen ergeben. Vermeide generische '
+                      'Floskeln wie "Wasser symbolisiert Emotionen" - werde spezifisch '
+                      'für diesen User. Du-Form, warm, ohne Disclaimer.',
               'mentorDisplayName': 'Traum-Deuter',
               'mentorAvatarEmoji': '💭',
             }),

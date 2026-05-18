@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../services/human_design_service.dart';
+import '../../../services/storage_service.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // HumanDesignToolScreen – Tool 3
@@ -146,7 +147,33 @@ class _NewHdTabState extends State<_NewHdTab> {
   TimeOfDay? _birthTime;
   bool _timeUnknown = false;
   bool _saving = false;
+  bool _prefilled = false;
   HumanDesignResult? _result;
+
+  @override
+  void initState() {
+    super.initState();
+    _prefillFromProfile();
+  }
+
+  Future<void> _prefillFromProfile() async {
+    final p = await StorageService().loadEnergieProfile();
+    if (p == null || !mounted) return;
+    setState(() {
+      _placeCtrl.text = p.birthPlace;
+      _birthDate = p.birthDate;
+      if (p.birthTime != null && p.birthTime!.contains(':')) {
+        final parts = p.birthTime!.split(':');
+        final h = int.tryParse(parts[0]) ?? 12;
+        final m = int.tryParse(parts[1]) ?? 0;
+        _birthTime = TimeOfDay(hour: h, minute: m);
+      } else {
+        _timeUnknown = true;
+      }
+      _labelCtrl.text = p.firstName.isNotEmpty ? p.firstName : 'Ich';
+      _prefilled = true;
+    });
+  }
 
   @override
   void dispose() {
@@ -284,10 +311,10 @@ class _NewHdTabState extends State<_NewHdTab> {
           contentPadding: EdgeInsets.zero,
           controlAffinity: ListTileControlAffinity.leading,
         ),
-        _section('Ort + Zeitzone'),
-        _textField(_placeCtrl, 'Stadt, Land (optional)'),
+        _section(_prefilled ? 'Ort + Zeitzone (aus deinem Profil)' : 'Ort + Zeitzone'),
+        _textField(_placeCtrl, 'Stadt, Land'),
         const SizedBox(height: 8),
-        _textField(_tzCtrl, 'Zeitzone Offset Stunden (z. B. 1 = MEZ)'),
+        _textField(_tzCtrl, 'Zeitzone: 1 = MEZ (Winter) · 2 = MESZ (Sommer)'),
         const SizedBox(height: 24),
         Row(
           children: [
