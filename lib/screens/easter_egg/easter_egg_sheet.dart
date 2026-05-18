@@ -17,6 +17,7 @@ import '../../widgets/cinematic/wb_vignette.dart';
 import 'cosmic_reset_ritual_screen.dart';
 import 'geheime_karte_screen.dart';
 import 'glitch_matrix_detektor_screen.dart';
+import 'hidden_facts_screen.dart';
 import 'lichtsprache_decoder_screen.dart';
 import 'numerologie_realtime_screen.dart';
 import 'portal_defense_game_screen.dart';
@@ -249,7 +250,7 @@ class _EasterEggSheetState extends State<EasterEggSheet>
           title: 'Wussten Sie schon?',
           subtitle: 'Faszinierende\nFakten-Karten',
           color: const Color(0xFFFFA726),
-          onTap: () { Navigator.pop(context); widget.onHiddenFacts(); },
+          onTap: () => _navigate(const HiddenFactsScreen()),
         ),
 
         // ─── Fun & Spiel ───
