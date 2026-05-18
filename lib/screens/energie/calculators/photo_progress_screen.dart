@@ -13,6 +13,14 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+// Result-Klasse statt Named-Record (dart2js stolpert über Named Records).
+class _BodyMindSoulTags {
+  final String body;
+  final String mind;
+  final String soul;
+  const _BodyMindSoulTags(this.body, this.mind, this.soul);
+}
+
 class PhotoProgressScreen extends StatefulWidget {
   const PhotoProgressScreen({super.key});
 
@@ -88,7 +96,7 @@ class _PhotoProgressScreenState extends State<PhotoProgressScreen> {
     await _save();
   }
 
-  Future<({String body, String mind, String soul})?> _askTags() async {
+  Future<_BodyMindSoulTags?> _askTags() async {
     final body = TextEditingController();
     final mind = TextEditingController();
     final soul = TextEditingController();
@@ -124,7 +132,7 @@ class _PhotoProgressScreenState extends State<PhotoProgressScreen> {
       ),
     );
     if (result == true) {
-      return (body: body.text, mind: mind.text, soul: soul.text);
+      return _BodyMindSoulTags(body.text, mind.text, soul.text);
     }
     return null;
   }

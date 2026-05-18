@@ -38,6 +38,13 @@ class SpiritReading {
       );
 }
 
+// Result-Klasse statt Named-Record (dart2js-Bug mit nullable named records).
+class SpiritReadingComparison {
+  final SpiritReading? current;
+  final SpiritReading? past;
+  const SpiritReadingComparison(this.current, this.past);
+}
+
 class SpiritReadingService {
   SpiritReadingService._();
   static final instance = SpiritReadingService._();
@@ -89,13 +96,13 @@ class SpiritReadingService {
   }
 
   /// G1 Tool-Vergleich: gibt aktuelles + ca-30-Tage-altes Reading zurück.
-  Future<({SpiritReading? current, SpiritReading? past})> compareVsPast(
+  Future<SpiritReadingComparison> compareVsPast(
     String userId,
     String tool, {
     int daysAgo = 30,
   }) async {
     final history = await getHistory(userId, tool, limit: 100);
-    if (history.isEmpty) return (current: null, past: null);
+    if (history.isEmpty) return const SpiritReadingComparison(null, null);
     final current = history.first;
     final target = DateTime.now().subtract(Duration(days: daysAgo));
     SpiritReading? past;
@@ -107,7 +114,7 @@ class SpiritReadingService {
         past = r;
       }
     }
-    return (current: current, past: past);
+    return SpiritReadingComparison(current, past);
   }
 
   Future<bool> attachAudio(String readingId, String url) async {

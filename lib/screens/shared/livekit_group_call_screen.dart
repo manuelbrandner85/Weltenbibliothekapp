@@ -38,6 +38,20 @@ import '../../widgets/livekit_mini_bar.dart';
 import '../../widgets/livekit_reactions_overlay.dart';
 import '../../widgets/pip_overlay.dart';
 
+// Per-Track-Info als Klasse statt Named-Record (dart2js-Bug-Workaround).
+class _TrackInfo {
+  final lk.VideoTrack? video;
+  final bool mic;
+  final bool hand;
+  final String? avatar;
+  const _TrackInfo({
+    required this.video,
+    required this.mic,
+    required this.hand,
+    required this.avatar,
+  });
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // PUBLIC SCREEN WIDGET
 // ═══════════════════════════════════════════════════════════════════════════
@@ -2147,10 +2161,10 @@ class _ParticipantGrid extends StatelessWidget {
 
   /// Map: index → (videoTrack, micActive, handRaised, avatarUrl)
   /// index 0 = local, 1+ = remote
-  ({lk.VideoTrack? video, bool mic, bool hand, String? avatar})
-      _trackInfoFor(int index) {
+  /// dart2js-Bug-Workaround: Klasse statt Named-Record.
+  _TrackInfo _trackInfoFor(int index) {
     if (index == 0) {
-      return (
+      return _TrackInfo(
         video: localVideoTrack,
         mic: micEnabled,
         hand: localHandRaised,
@@ -2160,10 +2174,10 @@ class _ParticipantGrid extends StatelessWidget {
     final identities = remoteVideoTracks.keys.toList();
     final i = index - 1;
     if (i >= identities.length) {
-      return (video: null, mic: false, hand: false, avatar: null);
+      return const _TrackInfo(video: null, mic: false, hand: false, avatar: null);
     }
     final id = identities[i];
-    return (
+    return _TrackInfo(
       video: remoteVideoTracks[id],
       mic: remoteMicActive(id),
       hand: remoteHandRaised(id),

@@ -15,10 +15,17 @@ import '../config/api_config.dart';
 
 enum LiveKitModerationAction { mute, unmute, kick }
 
+// Result-Klasse statt Named-Record (dart2js-Bug mit nullable named records).
+class LiveKitModerationResult {
+  final bool ok;
+  final String? error;
+  const LiveKitModerationResult(this.ok, this.error);
+}
+
 class LiveKitModerationService {
   static const _timeout = Duration(seconds: 10);
 
-  static Future<({bool ok, String? error})> moderate({
+  static Future<LiveKitModerationResult> moderate({
     required String roomName,
     required String identity,
     required LiveKitModerationAction action,
@@ -40,14 +47,14 @@ class LiveKitModerationService {
 
       final body = jsonDecode(res.body) as Map<String, dynamic>? ?? const {};
       if (res.statusCode == 200 && body['success'] == true) {
-        return (ok: true, error: null);
+        return const LiveKitModerationResult(true, null);
       }
       final msg = (body['error'] as String?) ?? 'HTTP ${res.statusCode}';
       if (kDebugMode) debugPrint('⚠️ LiveKit moderate failed: $msg');
-      return (ok: false, error: msg);
+      return LiveKitModerationResult(false, msg);
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ LiveKit moderate exception: $e');
-      return (ok: false, error: e.toString());
+      return LiveKitModerationResult(false, e.toString());
     }
   }
 }

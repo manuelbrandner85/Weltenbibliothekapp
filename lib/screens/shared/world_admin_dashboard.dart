@@ -2451,30 +2451,36 @@ class _ClickableMetricCard extends StatelessWidget {
 }
 
 // ── Online-Status-Dot am Avatar ────────────────────────────────────
+class _OnlineDotState {
+  final Color color;
+  final String tooltip;
+  const _OnlineDotState(this.color, this.tooltip);
+}
+
 class _OnlineDot extends StatelessWidget {
   final String? lastSeenAtIso;
   const _OnlineDot({required this.lastSeenAtIso});
 
-  ({Color color, String tooltip}) _state() {
+  _OnlineDotState _state() {
     if (lastSeenAtIso == null) {
-      return (color: Colors.grey.shade700, tooltip: 'Nie online');
+      return _OnlineDotState(Colors.grey.shade700, 'Nie online');
     }
     final t = DateTime.tryParse(lastSeenAtIso!);
     if (t == null) {
-      return (color: Colors.grey.shade700, tooltip: 'Offline');
+      return _OnlineDotState(Colors.grey.shade700, 'Offline');
     }
     final delta = DateTime.now().toUtc().difference(t.toUtc());
     if (delta.inMinutes < 2) {
-      return (color: const Color(0xFF4CAF50), tooltip: 'Online');
+      return const _OnlineDotState(Color(0xFF4CAF50), 'Online');
     }
     if (delta.inMinutes < 15) {
-      return (color: const Color(0xFFFFC107), tooltip: 'Vor ${delta.inMinutes} Min');
+      return _OnlineDotState(const Color(0xFFFFC107), 'Vor ${delta.inMinutes} Min');
     }
     final h = delta.inHours;
     if (h < 24) {
-      return (color: Colors.grey.shade500, tooltip: 'Vor ${h}h');
+      return _OnlineDotState(Colors.grey.shade500, 'Vor ${h}h');
     }
-    return (color: Colors.grey.shade700, tooltip: 'Vor ${delta.inDays} Tagen');
+    return _OnlineDotState(Colors.grey.shade700, 'Vor ${delta.inDays} Tagen');
   }
 
   @override
