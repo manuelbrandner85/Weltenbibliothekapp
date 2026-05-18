@@ -13,6 +13,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../widgets/local_file_image.dart';
+
 // Result-Klasse statt Named-Record (dart2js stolpert über Named Records).
 class _BodyMindSoulTags {
   final String body;
@@ -262,10 +264,15 @@ class _PhotoProgressScreenState extends State<PhotoProgressScreen> {
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
                 child: AspectRatio(
                   aspectRatio: 4 / 3,
-                  child: kIsWeb
-                      ? Container(color: Colors.grey.shade800, child: const Center(child: Icon(Icons.image, size: 64, color: Colors.white24)))
-                      : Image.file(File(s.path), fit: BoxFit.cover, errorBuilder: (_, __, ___) =>
-                          Container(color: Colors.grey.shade800, child: const Center(child: Icon(Icons.broken_image, size: 64, color: Colors.white24)))),
+                  child: localFileImage(
+                    s.path,
+                    errorWidget: Container(
+                      color: Colors.grey.shade800,
+                      child: const Center(
+                        child: Icon(Icons.broken_image, size: 64, color: Colors.white24),
+                      ),
+                    ),
+                  ),
                 ),
               ),
               Padding(
@@ -372,10 +379,13 @@ class _PhotoProgressScreenState extends State<PhotoProgressScreen> {
           ),
           Expanded(
             child: ClipRRect(
-              child: kIsWeb
-                  ? Container(color: Colors.grey.shade800, child: const Icon(Icons.image, color: Colors.white24, size: 64))
-                  : Image.file(File(s.path), fit: BoxFit.cover, errorBuilder: (_, __, ___) =>
-                      Container(color: Colors.grey.shade800, child: const Icon(Icons.broken_image, size: 64, color: Colors.white24))),
+              child: localFileImage(
+                s.path,
+                errorWidget: Container(
+                  color: Colors.grey.shade800,
+                  child: const Icon(Icons.broken_image, size: 64, color: Colors.white24),
+                ),
+              ),
             ),
           ),
           Padding(

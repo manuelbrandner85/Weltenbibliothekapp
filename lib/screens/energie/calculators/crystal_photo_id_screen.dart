@@ -5,7 +5,6 @@
 // Fallback bei 404/Fehler: zeigt manuelle Stein-Datenbank zur Suche.
 
 import 'dart:convert';
-import 'dart:io' if (dart.library.html) '../../../stubs/dart_io_stub.dart';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
@@ -14,6 +13,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../config/api_config.dart';
+import '../../../widgets/local_file_image.dart';
 
 class CrystalPhotoIdScreen extends StatefulWidget {
   const CrystalPhotoIdScreen({super.key});
@@ -154,7 +154,7 @@ class _CrystalPhotoIdScreenState extends State<CrystalPhotoIdScreen> {
                         )
                       : kIsWeb
                           ? Image.network(_picked!.path, fit: BoxFit.cover)
-                          : Image.file(File(_picked!.path), fit: BoxFit.cover),
+                          : localFileImage(_picked!.path),
                 ),
               ),
               const SizedBox(height: 14),
