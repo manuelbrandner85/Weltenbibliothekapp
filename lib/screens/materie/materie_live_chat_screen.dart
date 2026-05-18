@@ -14,6 +14,8 @@ import '../../services/user_service.dart'; // 🆕 User Service für Auth
 import '../../services/pinned_message_service.dart'; // 📌 E2 Pin-Service
 import '../../widgets/mention_autocomplete.dart'; // @ MENTIONS
 import '../../widgets/pinned_banner_v2.dart'; // 📌 E2 Sticky-Banner
+import '../../widgets/live/live_chat_hero.dart';
+import '../live/live_replay_library_screen.dart';
 import '../../widgets/user_quick_profile_sheet.dart'; // 👤 Avatar-Quick-View
 import 'package:image_picker/image_picker.dart'; // 📷 Image Picker
 // 👤 PROFIL
@@ -1531,6 +1533,41 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
                     reconnecting: _reconnecting,
                     worldColor: Colors.red,
                   ),
+                  // ✨ v5.43.1: Cinematic Live-Hero (oberhalb der Legacy-Banner)
+                  if (!hideHeaders)
+                    LiveChatHero(
+                      world: 'materie',
+                      totalRoomMembers: _messages.length > 50 ? 50 : _messages.length,
+                      activeCall: null,
+                      onJoinCall: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => LiveKitGroupCallScreen(
+                              roomName: 'wb-materie-$_selectedRoom',
+                              world: 'materie',
+                              displayName: _username.isNotEmpty ? _username : 'Mitglied',
+                              avatarUrl: _avatarUrl,
+                              audioOnly: false,
+                              initialMicEnabled: true,
+                            ),
+                          ),
+                        );
+                      },
+                      onSeeReplays: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const LiveReplayLibraryScreen(world: 'materie'),
+                          ),
+                        );
+                      },
+                      onSchedule: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Live-Schedule kommt bald.')),
+                        );
+                      },
+                    ),
                   // 📺 Live-Anruf-Banner (wie Telegram) — zeigt aktive Räume
                   LiveRoomBanner(
                     world: 'materie',

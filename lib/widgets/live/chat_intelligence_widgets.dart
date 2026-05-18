@@ -652,7 +652,8 @@ class SmartReplyComputer {
       'hallo', 'hi ', 'hey', 'servus', 'moin', 'guten morgen', 'guten abend',
       'guten tag', 'gruess', 'grüß',
     ];
-    if (greetings.any(lower.startsWith) || greetings.any(lower.contains)) {
+    if (greetings.any((String g) => lower.startsWith(g)) ||
+        greetings.any((String g) => lower.contains(g))) {
       return const <String>[
         'Hallo zurueck! ✨',
         'Hi 🌟',

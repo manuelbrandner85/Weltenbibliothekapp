@@ -85,6 +85,9 @@ import '../../services/chat/user_block_service.dart';
 import '../../services/chat/unread_tracker_service.dart';
 import '../../widgets/chat_animated_background.dart';
 import '../../widgets/live_room_banner.dart';
+import '../../widgets/live/live_chat_hero.dart';
+import '../../widgets/live/chat_intelligence_widgets.dart';
+import '../live/live_replay_library_screen.dart';
 import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_glass_app_bar.dart';
 import '../../widgets/cinematic/wb_vignette.dart';
@@ -1564,6 +1567,41 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                     reconnecting: _reconnecting,
                     worldColor: const Color(0xFF9B51E0),
                   ),
+                  // ✨ v5.43.1: Cinematic Live-Hero (oberhalb der Legacy-Banner)
+                  if (!hideHeaders)
+                    LiveChatHero(
+                      world: 'energie',
+                      totalRoomMembers: _messages.length > 50 ? 50 : _messages.length,
+                      activeCall: null, // wird in Phase 2 mit echtem Call-State verbunden
+                      onJoinCall: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => LiveKitGroupCallScreen(
+                              roomName: 'wb-energie-$_selectedRoom',
+                              world: 'energie',
+                              displayName: _username.isNotEmpty ? _username : 'Mitglied',
+                              avatarUrl: _avatarUrl,
+                              audioOnly: false,
+                              initialMicEnabled: true,
+                            ),
+                          ),
+                        );
+                      },
+                      onSeeReplays: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const LiveReplayLibraryScreen(world: 'energie'),
+                          ),
+                        );
+                      },
+                      onSchedule: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Live-Schedule kommt bald.')),
+                        );
+                      },
+                    ),
                   // 📺 Live-Anruf-Banner (wie Telegram) — zeigt aktive Räume
                   LiveRoomBanner(
                     world: 'energie',
