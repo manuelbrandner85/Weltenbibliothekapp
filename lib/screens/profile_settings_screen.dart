@@ -24,6 +24,7 @@ import 'shared/secret_library_screen.dart'; // 📚 Geheime Bibliothek
 import '../services/gamification_service.dart';
 import '../services/update_service.dart';
 import 'shared/knowledge_graph_screen.dart';
+import 'health/health_settings_screen.dart';
 
 /// **PROFIL-EINSTELLUNGEN**
 /// 
@@ -1353,6 +1354,34 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
               icon: const Icon(Icons.hub_rounded),
               label: const Text(
                 'Wissensgraph',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          // 💓 v5.44: Health-Setup (Watch verbinden, Permissions, Test-Messung)
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () {
+                Navigator.push(context, MaterialPageRoute(
+                  builder: (_) => const HealthSettingsScreen(),
+                ));
+              },
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFF26A69A),
+                side: const BorderSide(color: Color(0xFF26A69A), width: 1),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              icon: const Icon(Icons.favorite_rounded),
+              label: const Text(
+                'Health · Watch verbinden',
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.bold,
