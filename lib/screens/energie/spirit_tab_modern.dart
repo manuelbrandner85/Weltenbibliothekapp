@@ -26,6 +26,7 @@ import 'calculators/family_tree_screen.dart'; // 🌳 Stammbaum
 import 'calculators/tarot_spreads_screen.dart'; // 🔮 Tarot-Legesysteme
 import 'calculators/animated_sacred_geometry_screen.dart'; // 🔯 Animierte SVG
 import 'calculators/sacred_geometry_constructor_screen.dart'; // 🔯 Interaktiver Konstruktor
+import 'calculators/affirmations_studio_screen.dart'; // 🌟 Cinematic AI-Studio
 import 'calculators/audio_body_scan_screen.dart'; // 🧘 TTS-Körperscan
 import 'calculators/audio_meditation_screen.dart'; // 🧘 TTS-Meditationen
 import 'calculators/photo_progress_screen.dart'; // 📸 Vor/Nach
@@ -579,15 +580,15 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'screen': const RuneOracleScreen(),
       },
       
-      // 💫 Affirmationen (V115 Feature #17)
+      // 💫 Affirmationen · Cinematic AI-Studio
       {
         'icon': Icons.format_quote,
         'iconEmoji': '💫',
         'title': 'Affirmationen',
-        'subtitle': 'Tägliche Kraft',
+        'subtitle': 'AI · 9 Kategorien · TTS · Sets',
         'color': const Color(0xFFE91E63),
         'category': 'new',
-        'screen': const AffirmationsScreen(),
+        'screen': const AffirmationsStudioScreen(),
       },
       // 💫 Voice-Affirmationen — eigene Stimme aufnehmen + loopen
       {
