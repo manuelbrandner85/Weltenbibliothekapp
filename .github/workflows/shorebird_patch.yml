@@ -36,7 +36,7 @@ jobs:
   patch:
     name: 📡 Shorebird Patch android
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 60
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v4
@@ -190,7 +190,7 @@ jobs:
         # anders tree-geshaked wird sobald neue Icons im Dart-Code stehen.
         env:
           SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
-          PATCH_LOOKBACK: 8
+          PATCH_LOOKBACK: 3
         run: |
           set -uo pipefail
 
