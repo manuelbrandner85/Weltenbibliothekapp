@@ -847,7 +847,7 @@ class _UsersTabState extends State<_UsersTab> {
     int? selectedPreset;
     final presets = [10, 50, 100, 250, 500, -50];
 
-    final result = await showDialog<({int amount, String reason})?>(
+    final result = await showDialog<Map<String, Object>>(
       context: context,
       builder: (dialogCtx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
@@ -992,7 +992,8 @@ class _UsersTabState extends State<_UsersTab> {
                 final r = reasonCtrl.text.trim().isEmpty
                     ? 'Admin-Anpassung'
                     : reasonCtrl.text.trim();
-                Navigator.pop(dialogCtx, (amount: a, reason: r));
+                Navigator.pop<Map<String, Object>>(
+                    dialogCtx, {'amount': a, 'reason': r});
               },
               icon: const Icon(Icons.send_rounded, color: Colors.white, size: 16),
               label: const Text('Vergeben', style: TextStyle(color: Colors.white)),
@@ -1007,22 +1008,24 @@ class _UsersTabState extends State<_UsersTab> {
     );
 
     if (result == null) return;
+    final amount = result['amount'] as int;
+    final reason = result['reason'] as String;
 
     setState(() => _processing = true);
     final res = await WorldAdminServiceV162.grantXp(
       userId: u.userId,
-      amount: result.amount,
-      reason: result.reason,
+      amount: amount,
+      reason: reason,
       adminUsername: widget.admin.username,
     );
     setState(() => _processing = false);
     if (res != null && (res['success'] == true)) {
       final newXp = res['new_xp'];
       _snack(
-        result.amount > 0
-            ? '✨ +${result.amount} XP an @${u.username} (neu: $newXp)'
-            : '⚠️ ${result.amount} XP für @${u.username} (neu: $newXp)',
-        color: result.amount > 0 ? Colors.green.shade700 : Colors.orange,
+        amount > 0
+            ? '✨ +$amount XP an @${u.username} (neu: $newXp)'
+            : '⚠️ $amount XP für @${u.username} (neu: $newXp)',
+        color: amount > 0 ? Colors.green.shade700 : Colors.orange,
       );
     } else {
       _snack('❌ XP-Vergabe fehlgeschlagen', color: Colors.red);
@@ -2619,11 +2622,15 @@ class _OnlineNowBlockState extends State<_OnlineNowBlock> {
 
   Widget _rosterTile(WorldUser u, {required bool isOnline}) {
     final age = _ageMin(u);
-    final worldChip = u.world == 'materie'
-        ? ('M', Colors.orange)
-        : u.world == 'energie'
-            ? ('E', Colors.teal)
-            : ('?', Colors.white24);
+    final String worldLabel;
+    final Color worldColor;
+    if (u.world == 'materie') {
+      worldLabel = 'M'; worldColor = Colors.orange;
+    } else if (u.world == 'energie') {
+      worldLabel = 'E'; worldColor = Colors.teal;
+    } else {
+      worldLabel = '?'; worldColor = Colors.white24;
+    }
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 3),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -2672,13 +2679,13 @@ class _OnlineNowBlockState extends State<_OnlineNowBlock> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
           decoration: BoxDecoration(
-            color: worldChip.$2.withValues(alpha: 0.15),
+            color: worldColor.withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(6),
-            border: Border.all(color: worldChip.$2.withValues(alpha: 0.4)),
+            border: Border.all(color: worldColor.withValues(alpha: 0.4)),
           ),
-          child: Text(worldChip.$1,
+          child: Text(worldLabel,
               style: TextStyle(
-                  color: worldChip.$2, fontSize: 9, fontWeight: FontWeight.bold)),
+                  color: worldColor, fontSize: 9, fontWeight: FontWeight.bold)),
         ),
         const SizedBox(width: 8),
         if (age != null)
