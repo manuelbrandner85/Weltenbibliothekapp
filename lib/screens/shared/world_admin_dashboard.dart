@@ -3223,7 +3223,7 @@ class _ContentInsightsTabState extends State<_ContentInsightsTab>
   @override
   void initState() {
     super.initState();
-    _ctrl = TabController(length: 2, vsync: this);
+    _ctrl = TabController(length: 3, vsync: this);
   }
 
   @override
@@ -3242,10 +3242,11 @@ class _ContentInsightsTabState extends State<_ContentInsightsTab>
           indicatorColor: widget.accent,
           labelColor: widget.accentBright,
           unselectedLabelColor: Colors.white38,
-          labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+          labelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
           tabs: const [
-            Tab(icon: Icon(Icons.school_rounded, size: 16), text: 'Module'),
-            Tab(icon: Icon(Icons.auto_awesome_rounded, size: 16), text: 'Spirit-Tools'),
+            Tab(icon: Icon(Icons.school_rounded, size: 16), text: 'Progress'),
+            Tab(icon: Icon(Icons.auto_awesome_rounded, size: 16), text: 'Spirit'),
+            Tab(icon: Icon(Icons.edit_note_rounded, size: 16), text: 'Editor'),
           ],
         ),
       ),
@@ -3255,7 +3256,449 @@ class _ContentInsightsTabState extends State<_ContentInsightsTab>
           children: [
             _ModuleProgressTab(accent: widget.accent, accentBright: widget.accentBright),
             _SpiritStatsTab(accent: widget.accent, accentBright: widget.accentBright),
+            _ModuleEditorTab(accent: widget.accent, accentBright: widget.accentBright),
           ],
+        ),
+      ),
+    ]);
+  }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// SUB-TAB – MODULE-EDITOR (Vorhang + Ursprung Felder bearbeiten)
+// ═════════════════════════════════════════════════════════════════════════════
+class _ModuleEditorTab extends StatefulWidget {
+  final Color accent;
+  final Color accentBright;
+  const _ModuleEditorTab({required this.accent, required this.accentBright});
+
+  @override
+  State<_ModuleEditorTab> createState() => _ModuleEditorTabState();
+}
+
+class _ModuleEditorTabState extends State<_ModuleEditorTab> {
+  Map<String, dynamic>? _data;
+  bool _loading = true;
+  String? _error;
+  String _typeFilter = 'all';
+  String _search = '';
+  final _searchCtrl = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    setState(() { _loading = true; _error = null; });
+    try {
+      final res = await http
+          .get(Uri.parse('${ApiConfig.workerUrl}/api/admin/progress'))
+          .timeout(const Duration(seconds: 12));
+      if (res.statusCode == 200 && mounted) {
+        setState(() {
+          _data = jsonDecode(res.body) as Map<String, dynamic>;
+          _loading = false;
+        });
+      } else if (mounted) {
+        setState(() {
+          _error = 'HTTP ${res.statusCode}: ${res.body.substring(0, 120)}';
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() { _error = 'Netzwerk: $e'; _loading = false; });
+    }
+  }
+
+  Future<void> _openEditor(String moduleType, String moduleCode) async {
+    // Volles Modul vom Worker laden
+    try {
+      final res = await http
+          .get(Uri.parse('${ApiConfig.workerUrl}/api/admin/module/$moduleType/$moduleCode'))
+          .timeout(const Duration(seconds: 10));
+      if (res.statusCode != 200) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('❌ Modul laden: HTTP ${res.statusCode}'),
+          backgroundColor: Colors.redAccent,
+        ));
+        return;
+      }
+      final data = jsonDecode(res.body) as Map<String, dynamic>;
+      final module = data['module'] as Map<String, dynamic>?;
+      if (module == null) return;
+      if (!mounted) return;
+      await _showEditorSheet(moduleType, moduleCode, module);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Netzwerk: $e'),
+        backgroundColor: Colors.redAccent,
+      ));
+    }
+  }
+
+  Future<void> _showEditorSheet(String moduleType, String moduleCode, Map<String, dynamic> module) async {
+    final title = TextEditingController(text: module['title']?.toString() ?? '');
+    final subtitle = TextEditingController(text: module['subtitle']?.toString() ?? '');
+    final theory = TextEditingController(text: module['theory_content']?.toString() ?? '');
+    final caseStudy = TextEditingController(text: module['case_study']?.toString() ?? '');
+    final exercise = TextEditingController(text: module['exercise_description']?.toString() ?? '');
+    final duration = TextEditingController(text: '${module['exercise_duration_minutes'] ?? 15}');
+    final xp = TextEditingController(text: '${module['xp_reward'] ?? 50}');
+    final youtube = TextEditingController(text: module['youtube_search_query']?.toString() ?? '');
+    final freq = TextEditingController(text: module['audio_frequency_hz']?.toString() ?? '');
+
+    bool saving = false;
+
+    await showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF0A0A18),
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheet) => DraggableScrollableSheet(
+          initialChildSize: 0.9,
+          maxChildSize: 0.95,
+          minChildSize: 0.5,
+          expand: false,
+          builder: (_, scroll) => ListView(
+            controller: scroll,
+            padding: const EdgeInsets.fromLTRB(20, 14, 20, 32),
+            children: [
+              Center(child: Container(
+                width: 42, height: 4,
+                decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
+              )),
+              const SizedBox(height: 14),
+              Row(children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: widget.accent.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(moduleCode,
+                      style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(moduleType.toUpperCase(),
+                      style: const TextStyle(color: Colors.white70, fontSize: 10, letterSpacing: 1)),
+                ),
+              ]),
+              const SizedBox(height: 14),
+              _editorField('Title', title),
+              _editorField('Subtitle', subtitle),
+              _editorField('Theory Content (Markdown OK)', theory, maxLines: 8),
+              _editorField('Case Study', caseStudy, maxLines: 4),
+              _editorField('Exercise Description', exercise, maxLines: 5),
+              Row(children: [
+                Expanded(child: _editorField('Dauer (Min.)', duration, keyboardType: TextInputType.number)),
+                const SizedBox(width: 10),
+                Expanded(child: _editorField('XP-Reward', xp, keyboardType: TextInputType.number)),
+              ]),
+              _editorField('YouTube-Suchquery', youtube),
+              _editorField('Audio-Frequenz Hz (z.B. 432)', freq, keyboardType: TextInputType.number),
+              const SizedBox(height: 22),
+              Row(children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: saving ? null : () => Navigator.pop(ctx),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.white70,
+                      side: const BorderSide(color: Colors.white24),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    child: const Text('Abbrechen'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  flex: 2,
+                  child: ElevatedButton.icon(
+                    onPressed: saving ? null : () async {
+                      setSheet(() => saving = true);
+                      final payload = <String, dynamic>{
+                        'title': title.text.trim(),
+                        'subtitle': subtitle.text.trim(),
+                        'theory_content': theory.text.trim(),
+                        'case_study': caseStudy.text.trim(),
+                        'exercise_description': exercise.text.trim(),
+                        'youtube_search_query': youtube.text.trim(),
+                        'admin': 'admin',
+                      };
+                      final d = int.tryParse(duration.text.trim());
+                      if (d != null) payload['exercise_duration_minutes'] = d;
+                      final x = int.tryParse(xp.text.trim());
+                      if (x != null) payload['xp_reward'] = x;
+                      final f = double.tryParse(freq.text.trim());
+                      if (f != null) payload['audio_frequency_hz'] = f;
+
+                      try {
+                        final res = await http.patch(
+                          Uri.parse('${ApiConfig.workerUrl}/api/admin/module/$moduleType/$moduleCode'),
+                          headers: const {'Content-Type': 'application/json'},
+                          body: jsonEncode(payload),
+                        ).timeout(const Duration(seconds: 12));
+                        if (!mounted) return;
+                        if (res.statusCode == 200) {
+                          Navigator.pop(ctx);
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                            content: Text('✅ $moduleCode gespeichert'),
+                            backgroundColor: widget.accent,
+                          ));
+                          _load();
+                        } else {
+                          setSheet(() => saving = false);
+                          ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
+                            content: Text('❌ HTTP ${res.statusCode}: ${res.body.substring(0, 100)}'),
+                            backgroundColor: Colors.redAccent,
+                          ));
+                        }
+                      } catch (e) {
+                        setSheet(() => saving = false);
+                        ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
+                          content: Text('Netzwerk: $e'),
+                          backgroundColor: Colors.redAccent,
+                        ));
+                      }
+                    },
+                    icon: saving
+                        ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        : const Icon(Icons.save_rounded),
+                    label: Text(saving ? 'Speichere…' : 'Speichern'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: widget.accent,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                  ),
+                ),
+              ]),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _editorField(String label, TextEditingController ctrl,
+      {int maxLines = 1, TextInputType? keyboardType}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: TextField(
+        controller: ctrl,
+        maxLines: maxLines,
+        keyboardType: keyboardType,
+        style: const TextStyle(color: Colors.white, fontSize: 13),
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: const TextStyle(color: Colors.white60, fontSize: 12),
+          isDense: true,
+          filled: true,
+          fillColor: Colors.white.withValues(alpha: 0.04),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: Colors.white12),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: Colors.white12),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(color: widget.accent),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) {
+      return Center(child: CircularProgressIndicator(color: widget.accent));
+    }
+    if (_error != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            const Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 40),
+            const SizedBox(height: 12),
+            Text(_error!,
+                style: const TextStyle(color: Colors.white70, fontSize: 13),
+                textAlign: TextAlign.center),
+            const SizedBox(height: 12),
+            ElevatedButton(onPressed: _load, child: const Text('Neu laden')),
+          ]),
+        ),
+      );
+    }
+    final vorhangModules = (((_data?['vorhang'] as Map?)?['modules'] as List?) ?? const [])
+        .cast<Map<String, dynamic>>();
+    final ursprungModules = (((_data?['ursprung'] as Map?)?['modules'] as List?) ?? const [])
+        .cast<Map<String, dynamic>>();
+
+    final all = <Map<String, dynamic>>[
+      ...vorhangModules.map((m) => {...m, '__type': 'vorhang'}),
+      ...ursprungModules.map((m) => {...m, '__type': 'ursprung'}),
+    ];
+
+    final filtered = all.where((m) {
+      if (_typeFilter != 'all' && m['__type'] != _typeFilter) return false;
+      if (_search.isNotEmpty) {
+        final q = _search.toLowerCase();
+        final blob = '${m['code'] ?? ''} ${m['title'] ?? ''} ${m['branch'] ?? ''}'.toLowerCase();
+        if (!blob.contains(q)) return false;
+      }
+      return true;
+    }).toList();
+
+    return Column(children: [
+      // Filter-Leiste
+      Container(
+        color: const Color(0xFF0D0D1A),
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+        child: Column(children: [
+          TextField(
+            controller: _searchCtrl,
+            style: const TextStyle(color: Colors.white, fontSize: 13),
+            decoration: InputDecoration(
+              hintText: 'Suche Code / Title / Branch',
+              hintStyle: const TextStyle(color: Colors.white38, fontSize: 13),
+              prefixIcon: const Icon(Icons.search_rounded, color: Colors.white38, size: 18),
+              isDense: true,
+              filled: true,
+              fillColor: Colors.white.withValues(alpha: 0.05),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+              suffixIcon: _search.isEmpty ? null : IconButton(
+                icon: const Icon(Icons.clear_rounded, color: Colors.white38, size: 16),
+                onPressed: () { _searchCtrl.clear(); setState(() => _search = ''); },
+              ),
+            ),
+            onChanged: (v) => setState(() => _search = v),
+          ),
+          const SizedBox(height: 8),
+          Row(children: [
+            ...['all', 'vorhang', 'ursprung'].map((t) {
+              final sel = _typeFilter == t;
+              return Padding(
+                padding: const EdgeInsets.only(right: 6),
+                child: GestureDetector(
+                  onTap: () => setState(() => _typeFilter = t),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: sel ? widget.accent.withValues(alpha: 0.25) : Colors.white.withValues(alpha: 0.04),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: sel ? widget.accent : Colors.transparent),
+                    ),
+                    child: Text(t == 'all' ? 'Alle' : t[0].toUpperCase() + t.substring(1),
+                        style: TextStyle(
+                          color: sel ? widget.accentBright : Colors.white60,
+                          fontSize: 11, fontWeight: FontWeight.w600,
+                        )),
+                  ),
+                ),
+              );
+            }),
+            const Spacer(),
+            Text('${filtered.length}/${all.length}',
+                style: const TextStyle(color: Colors.white38, fontSize: 11)),
+          ]),
+        ]),
+      ),
+      Expanded(
+        child: RefreshIndicator(
+          color: widget.accent,
+          onRefresh: () async => _load(),
+          child: filtered.isEmpty
+              ? ListView(children: const [
+                  SizedBox(height: 60),
+                  Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(24),
+                      child: Text('Keine Module für diesen Filter.',
+                          style: TextStyle(color: Colors.white54, fontSize: 13)),
+                    ),
+                  ),
+                ])
+              : ListView.builder(
+                  padding: const EdgeInsets.all(12),
+                  itemCount: filtered.length,
+                  itemBuilder: (_, i) {
+                    final m = filtered[i];
+                    final type = m['__type'] as String;
+                    final code = m['code']?.toString() ?? '';
+                    final title = m['title']?.toString() ?? code;
+                    final branch = m['branch']?.toString() ?? '';
+                    final xpReward = (m['xp_reward'] ?? 0) as int;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(10),
+                          onTap: () => _openEditor(type, code),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF12121E),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: Colors.white12),
+                            ),
+                            child: Row(children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: type == 'vorhang'
+                                      ? Colors.purple.withValues(alpha: 0.2)
+                                      : Colors.teal.withValues(alpha: 0.2),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(code,
+                                    style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold)),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                  Text(title,
+                                      style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+                                      maxLines: 1, overflow: TextOverflow.ellipsis),
+                                  const SizedBox(height: 1),
+                                  Text(branch,
+                                      style: const TextStyle(color: Colors.white38, fontSize: 9, letterSpacing: 0.6),
+                                      maxLines: 1, overflow: TextOverflow.ellipsis),
+                                ]),
+                              ),
+                              if (xpReward > 0)
+                                Text('+$xpReward',
+                                    style: const TextStyle(color: Color(0xFFFFC107), fontSize: 11, fontWeight: FontWeight.bold)),
+                              const SizedBox(width: 6),
+                              const Icon(Icons.edit_rounded, color: Colors.white38, size: 16),
+                            ]),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
         ),
       ),
     ]);
