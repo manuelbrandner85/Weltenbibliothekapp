@@ -23,6 +23,8 @@ class _AudioBodyScanScreenState extends State<AudioBodyScanScreen> {
   bool _running = false;
   int _stepIdx = 0;
   Timer? _timer;
+  Timer? _countdown;
+  int _remainingSec = 0;
 
   // 20 Schritte × 30 Sek = 10 Min. Jede Region einmal 30s.
   static const List<({String body, String emoji, String script})> _steps = [
@@ -107,24 +109,42 @@ class _AudioBodyScanScreenState extends State<AudioBodyScanScreen> {
 
   void _scheduleNext() {
     _timer?.cancel();
-    _timer = Timer(const Duration(seconds: 30), () async {
-      if (!_running) return;
-      if (_stepIdx >= _steps.length - 1) {
-        await _stop(completed: true);
+    _countdown?.cancel();
+    const total = 30;
+    setState(() => _remainingSec = total);
+    _countdown = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (!mounted || !_running) {
+        t.cancel();
         return;
       }
-      setState(() => _stepIdx++);
-      await _speakStep();
-      _scheduleNext();
+      setState(() => _remainingSec = (_remainingSec - 1).clamp(0, total));
     });
+    _timer = Timer(const Duration(seconds: total), () async {
+      if (!_running) return;
+      await _advance();
+    });
+  }
+
+  Future<void> _advance() async {
+    _timer?.cancel();
+    _countdown?.cancel();
+    if (_stepIdx >= _steps.length - 1) {
+      await _stop(completed: true);
+      return;
+    }
+    setState(() => _stepIdx++);
+    await _speakStep();
+    _scheduleNext();
   }
 
   Future<void> _stop({bool completed = false}) async {
     _timer?.cancel();
+    _countdown?.cancel();
     await _tts.stop();
     if (!mounted) return;
     setState(() {
       _running = false;
+      _remainingSec = 0;
       if (completed) _stepIdx = _steps.length - 1;
     });
   }
@@ -183,6 +203,18 @@ class _AudioBodyScanScreenState extends State<AudioBodyScanScreen> {
                   ),
                 ),
               ),
+              if (_running && _remainingSec > 0 && _stepIdx < _steps.length - 1)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Text(
+                    'Nächste Region in ${_remainingSec}s',
+                    style: TextStyle(
+                      color: _accent.withValues(alpha: 0.8),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: LinearProgressIndicator(
@@ -192,23 +224,62 @@ class _AudioBodyScanScreenState extends State<AudioBodyScanScreen> {
                   valueColor: const AlwaysStoppedAnimation(_accent),
                 ),
               ),
-              const SizedBox(height: 16),
-              SizedBox(
-                height: 56,
-                child: ElevatedButton.icon(
-                  onPressed: _running
-                      ? () => _stop()
-                      : _start,
-                  icon: Icon(_running ? Icons.stop : Icons.play_arrow),
-                  label: Text(_running ? 'Stoppen' : 'Körperscan starten',
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _accent,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              const SizedBox(height: 14),
+              if (_running)
+                Row(
+                  children: [
+                    Expanded(
+                      flex: 1,
+                      child: OutlinedButton.icon(
+                        onPressed: () => _stop(),
+                        icon: const Icon(Icons.stop, color: Colors.white),
+                        label: const Text('Stoppen', style: TextStyle(color: Colors.white)),
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      flex: 2,
+                      child: ElevatedButton.icon(
+                        onPressed: _stepIdx < _steps.length - 1
+                            ? _advance
+                            : () => _stop(completed: true),
+                        icon: Icon(_stepIdx < _steps.length - 1
+                            ? Icons.arrow_forward
+                            : Icons.check),
+                        label: Text(
+                          _stepIdx < _steps.length - 1
+                              ? 'Weiter →'
+                              : 'Abschließen',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _accent,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                      ),
+                    ),
+                  ],
+                )
+              else
+                SizedBox(
+                  height: 56,
+                  child: ElevatedButton.icon(
+                    onPressed: _start,
+                    icon: const Icon(Icons.play_arrow),
+                    label: const Text('Körperscan starten',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _accent,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    ),
                   ),
                 ),
-              ),
               const SizedBox(height: 8),
               const Text(
                 'Sprache: Deutsch (TTS) · 10 Min · 20 Körperregionen · Vipassana-Stil',

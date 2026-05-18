@@ -90,6 +90,8 @@ class _AudioMeditationScreenState extends State<AudioMeditationScreen> {
   int _meditationIdx = 0;
   int _stepIdx = 0;
   Timer? _timer;
+  Timer? _countdown;
+  int _remainingSec = 0;
 
   @override
   void initState() {
@@ -108,6 +110,7 @@ class _AudioMeditationScreenState extends State<AudioMeditationScreen> {
   @override
   void dispose() {
     _timer?.cancel();
+    _countdown?.cancel();
     _tts.stop();
     super.dispose();
   }
@@ -132,24 +135,46 @@ class _AudioMeditationScreenState extends State<AudioMeditationScreen> {
 
   void _scheduleNext() {
     _timer?.cancel();
+    _countdown?.cancel();
     final med = _meditations[_meditationIdx];
-    _timer = Timer(Duration(seconds: med.stepDurationSec), () async {
-      if (!_running) return;
-      if (_stepIdx >= med.script.length - 1) {
-        await _stop();
+    final total = med.stepDurationSec;
+    setState(() => _remainingSec = total);
+    // Sichtbarer Countdown, damit User weiß dass es weitergeht.
+    _countdown = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (!mounted || !_running) {
+        t.cancel();
         return;
       }
-      setState(() => _stepIdx++);
-      await _speakStep();
-      _scheduleNext();
+      setState(() => _remainingSec = (_remainingSec - 1).clamp(0, total));
     });
+    _timer = Timer(Duration(seconds: total), () async {
+      if (!_running) return;
+      await _advance();
+    });
+  }
+
+  Future<void> _advance() async {
+    _timer?.cancel();
+    _countdown?.cancel();
+    final med = _meditations[_meditationIdx];
+    if (_stepIdx >= med.script.length - 1) {
+      await _stop();
+      return;
+    }
+    setState(() => _stepIdx++);
+    await _speakStep();
+    _scheduleNext();
   }
 
   Future<void> _stop() async {
     _timer?.cancel();
+    _countdown?.cancel();
     await _tts.stop();
     if (!mounted) return;
-    setState(() => _running = false);
+    setState(() {
+      _running = false;
+      _remainingSec = 0;
+    });
   }
 
   @override
@@ -249,11 +274,11 @@ class _AudioMeditationScreenState extends State<AudioMeditationScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(m.emoji, style: const TextStyle(fontSize: 96)),
-                      const SizedBox(height: 24),
+                      Text(m.emoji, style: const TextStyle(fontSize: 80)),
+                      const SizedBox(height: 18),
                       Text('Schritt ${_stepIdx + 1} / ${m.script.length}',
                           style: TextStyle(color: _accent, fontSize: 12, fontWeight: FontWeight.w600)),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 14),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Text(m.script[_stepIdx],
@@ -264,6 +289,19 @@ class _AudioMeditationScreenState extends State<AudioMeditationScreen> {
                   ),
                 ),
               ),
+              // Sichtbarer Schritt-Countdown
+              if (_remainingSec > 0 && _stepIdx < m.script.length - 1)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Text(
+                    'Nächster Schritt in ${_remainingSec}s',
+                    style: TextStyle(
+                      color: _accent.withValues(alpha: 0.8),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: LinearProgressIndicator(
@@ -273,17 +311,43 @@ class _AudioMeditationScreenState extends State<AudioMeditationScreen> {
                   valueColor: AlwaysStoppedAnimation(_accent),
                 ),
               ),
-              const SizedBox(height: 16),
-              SizedBox(
-                height: 50,
-                child: OutlinedButton.icon(
-                  onPressed: _stop,
-                  icon: const Icon(Icons.stop, color: Colors.white),
-                  label: const Text('Beenden', style: TextStyle(color: Colors.white)),
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    flex: 1,
+                    child: OutlinedButton.icon(
+                      onPressed: _stop,
+                      icon: const Icon(Icons.stop, color: Colors.white),
+                      label: const Text('Beenden', style: TextStyle(color: Colors.white)),
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
                   ),
-                ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    flex: 2,
+                    child: ElevatedButton.icon(
+                      onPressed: _stepIdx < m.script.length - 1 ? _advance : _stop,
+                      icon: Icon(_stepIdx < m.script.length - 1
+                          ? Icons.arrow_forward
+                          : Icons.check),
+                      label: Text(
+                        _stepIdx < m.script.length - 1
+                            ? 'Weiter →'
+                            : 'Abschließen',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _accent,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
