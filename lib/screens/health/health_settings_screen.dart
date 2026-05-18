@@ -17,38 +17,10 @@ import '../../widgets/cinematic/wb_glass_app_bar.dart';
 import '../../widgets/cinematic/wb_vignette.dart';
 
 // ---------------------------------------------------------------------------
-// Lokale Fallback-Typen.
-// TODO: durch BiometricService.diagnose() / HealthDiagnosis / HealthFixAction
-// ersetzen sobald vom parallelen Agent in biometric_service.dart geliefert.
+// v5.44.1: lokale Fallback-Typen entfernt - nutzen jetzt die echten
+// HealthDiagnosis / HealthFixAction / HealthPermissionStatus aus
+// BiometricService.
 // ---------------------------------------------------------------------------
-
-enum _LocalHealthFixAction {
-  none,
-  installHealthConnect,
-  grantPermissions,
-  connectDataSource,
-}
-
-class _LocalHealthDiagnosis {
-  final bool healthConnectInstalled;
-  final bool permissionsGranted;
-  final bool hasDataSource;
-  final List<String> detectedSources;
-  final String? lastError;
-  final _LocalHealthFixAction recommendedFix;
-
-  const _LocalHealthDiagnosis({
-    required this.healthConnectInstalled,
-    required this.permissionsGranted,
-    required this.hasDataSource,
-    required this.detectedSources,
-    required this.recommendedFix,
-    this.lastError,
-  });
-
-  bool get allOk =>
-      healthConnectInstalled && permissionsGranted && hasDataSource;
-}
 
 // ---------------------------------------------------------------------------
 // Watch-Geraete-Konfiguration
@@ -179,7 +151,7 @@ class _HealthSettingsScreenState extends State<HealthSettingsScreen>
   late final AnimationController _pulseController;
   late final AnimationController _entryController;
 
-  _LocalHealthDiagnosis? _diagnosis;
+  HealthDiagnosis? _diagnosis;
   bool _loading = true;
   bool _measuring = false;
   double? _liveBpm;
@@ -221,60 +193,7 @@ class _HealthSettingsScreenState extends State<HealthSettingsScreen>
     });
   }
 
-  Future<_LocalHealthDiagnosis> _runDiagnosis() async {
-    // Defensiver Fallback: BiometricService.diagnose() existiert (noch) nicht.
-    // Wir nutzen die public API requestPermissions() + getRestingHeartRate()
-    // um Heuristiken abzuleiten.
-    bool permissionsGranted = false;
-    bool hasDataSource = false;
-    String? lastError;
-    final detected = <String>[];
-
-    try {
-      permissionsGranted = await _service.requestPermissions();
-    } catch (e) {
-      lastError = e.toString();
-    }
-
-    if (permissionsGranted) {
-      try {
-        final v = await _service.getRestingHeartRate(
-          since: const Duration(hours: 24),
-        );
-        if (v != null) {
-          hasDataSource = true;
-          detected.add('Health Connect (aktive Quelle)');
-        }
-      } catch (e) {
-        lastError = e.toString();
-      }
-    }
-
-    // Health Connect Installation: kein direkter Check moeglich ohne diagnose().
-    // Heuristik: wenn requestPermissions() ohne Exception lief, gehen wir davon
-    // aus dass Health Connect erreichbar ist.
-    final hcInstalled = lastError == null;
-
-    _LocalHealthFixAction fix;
-    if (!hcInstalled) {
-      fix = _LocalHealthFixAction.installHealthConnect;
-    } else if (!permissionsGranted) {
-      fix = _LocalHealthFixAction.grantPermissions;
-    } else if (!hasDataSource) {
-      fix = _LocalHealthFixAction.connectDataSource;
-    } else {
-      fix = _LocalHealthFixAction.none;
-    }
-
-    return _LocalHealthDiagnosis(
-      healthConnectInstalled: hcInstalled,
-      permissionsGranted: permissionsGranted,
-      hasDataSource: hasDataSource,
-      detectedSources: detected,
-      recommendedFix: fix,
-      lastError: lastError,
-    );
-  }
+  Future<HealthDiagnosis> _runDiagnosis() => _service.diagnose();
 
   Future<List<Map<String, dynamic>>> _loadRecentReadings() async {
     try {
@@ -462,8 +381,9 @@ class _HealthSettingsScreenState extends State<HealthSettingsScreen>
 
   Widget _buildStatusHero() {
     final diag = _diagnosis;
-    final allOk = diag?.allOk ?? false;
-    final hcMissing = diag != null && !diag.healthConnectInstalled;
+    final allOk = diag?.isReady ?? false;
+    final hcMissing = diag != null && !diag.isHealthConnectInstalled;
+    final granted = diag?.permissionStatus == HealthPermissionStatus.granted;
 
     IconData icon;
     Color glow;
@@ -479,12 +399,12 @@ class _HealthSettingsScreenState extends State<HealthSettingsScreen>
       glow = const Color(0xFFE53935);
       title = 'Health Connect fehlt';
       subtitle = 'Tippe auf "Health Connect installieren"';
-    } else if (!diag.permissionsGranted) {
+    } else if (!granted) {
       icon = Icons.lock_outline;
       glow = const Color(0xFFFFA726);
       title = 'Berechtigung fehlt';
       subtitle = 'Bitte Heart Rate & HRV freigeben';
-    } else if (!diag.hasDataSource) {
+    } else if (!diag.hasAnyDataSource) {
       icon = Icons.watch_outlined;
       glow = const Color(0xFFFFA726);
       title = 'Keine Datenquelle';
@@ -492,9 +412,9 @@ class _HealthSettingsScreenState extends State<HealthSettingsScreen>
     } else if (allOk) {
       icon = Icons.favorite;
       glow = const Color(0xFF26A69A);
-      final src = diag.detectedSources.isEmpty
+      final src = diag.detectedDataSources.isEmpty
           ? 'Health Connect aktiv'
-          : 'Quelle: ${diag.detectedSources.first}';
+          : 'Quelle: ${diag.detectedDataSources.first}';
       title = 'Bereit fuer Biometrie';
       subtitle = src;
     } else {
@@ -553,10 +473,10 @@ class _HealthSettingsScreenState extends State<HealthSettingsScreen>
             fontWeight: FontWeight.w500,
           ),
         ),
-        if (diag?.lastError != null) ...[
+        if (diag != null && !diag.isPluginAvailable) ...[
           const SizedBox(height: WBSpace.sm),
           Text(
-            diag!.lastError!,
+            diag.summary,
             textAlign: TextAlign.center,
             style: TextStyle(
               color: const Color(0xFFE53935).withValues(alpha: 0.8),
@@ -571,10 +491,10 @@ class _HealthSettingsScreenState extends State<HealthSettingsScreen>
 
   Widget _buildStatusCards() {
     final diag = _diagnosis;
-    final installed = diag?.healthConnectInstalled ?? false;
-    final granted = diag?.permissionsGranted ?? false;
-    final source = diag?.hasDataSource ?? false;
-    final sources = diag?.detectedSources ?? const <String>[];
+    final installed = diag?.isHealthConnectInstalled ?? false;
+    final granted = diag?.permissionStatus == HealthPermissionStatus.granted;
+    final source = diag?.hasAnyDataSource ?? false;
+    final sources = diag?.detectedDataSources ?? const <String>[];
 
     return Column(
       children: [
