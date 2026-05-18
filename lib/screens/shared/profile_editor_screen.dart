@@ -847,6 +847,7 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
           birthLongitude: _birthLongitude,
           timezoneOffsetHours: _timezoneOffsetHours,
           birthTimeUnknown: _birthTimeUnknown,
+          gender: _gender,
         );
         
         // 🔥 FIX: Backend-Sync + Get Updated Profile (mit userId & role)
@@ -1211,12 +1212,77 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
                     ),
                     
                     const SizedBox(height: 32),
-                    
-                    // Username (für beide Welten) — mit Live-Verfügbarkeits-Check
+
+                    // ✨ v92: Username-Lock. Sobald _originalUsername gesetzt und
+                    // User NICHT root_admin -> Feld readOnly + Antrag-Button.
+                    // Root-Admin kann immer direkt aendern.
+                    if (_originalUsername != null && !_userIsRootAdmin) ...[
+                      // Read-only Anzeige
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.04)
+                              : Colors.grey.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                        ),
+                        child: Row(children: [
+                          const Icon(Icons.lock_outline, color: Colors.white54, size: 18),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('Benutzername (gesperrt)',
+                                    style: TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.w500)),
+                                const SizedBox(height: 2),
+                                Text('@$_originalUsername',
+                                    style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700)),
+                              ],
+                            ),
+                          ),
+                        ]),
+                      ),
+                      const SizedBox(height: 8),
+                      if (_pendingUsernameRequest) ...[
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFA726).withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: const Color(0xFFFFA726).withValues(alpha: 0.4)),
+                          ),
+                          child: Row(children: [
+                            const Icon(Icons.hourglass_top, color: Color(0xFFFFA726), size: 18),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Antrag offen: @${_pendingRequestedUsername ?? ""} (wartet auf Admin)',
+                                style: const TextStyle(color: Colors.white, fontSize: 12),
+                              ),
+                            ),
+                          ]),
+                        ),
+                      ] else ...[
+                        TextButton.icon(
+                          onPressed: _openUsernameChangeRequestDialog,
+                          icon: const Icon(Icons.edit_note, size: 18),
+                          label: const Text('Anderen Benutzernamen beantragen'),
+                          style: TextButton.styleFrom(
+                            foregroundColor: const Color(0xFF7C4DFF),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          ),
+                        ),
+                      ],
+                    ] else
+                    // Normal-Fall: erstes Anlegen ODER Root-Admin -> editable
                     TextFormField(
                       controller: _usernameController,
                       decoration: InputDecoration(
-                        labelText: 'Benutzername (Chat-Name)',
+                        labelText: _userIsRootAdmin
+                            ? 'Benutzername (Root-Admin: direkt aenderbar)'
+                            : 'Benutzername (Chat-Name)',
                         hintText: 'Dein Chat-Name',
                         prefixIcon: const Icon(Icons.person),
                         suffixIcon: _buildUsernameStatusIcon(),
@@ -1537,21 +1603,72 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
                       ],
                       const SizedBox(height: 16),
                       
-                      // Geburtszeit (optional)
+                      // Geburtszeit (optional, oder explizit "unbekannt")
                       TextFormField(
                         controller: _birthTimeController,
+                        enabled: !_birthTimeUnknown,
                         decoration: InputDecoration(
-                          labelText: 'Geburtszeit (optional)',
+                          labelText: _birthTimeUnknown
+                              ? 'Geburtszeit (als unbekannt markiert)'
+                              : 'Geburtszeit (optional)',
                           hintText: 'HH:MM (z.B. 14:30)',
                           prefixIcon: const Icon(Icons.access_time),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
                           filled: true,
-                          fillColor: isDark 
-                              ? Colors.white.withValues(alpha: 0.05) 
+                          fillColor: isDark
+                              ? Colors.white.withValues(alpha: 0.05)
                               : Colors.white,
                         ),
+                      ),
+                      // ✨ v93: birth_time_unknown Checkbox
+                      CheckboxListTile(
+                        value: _birthTimeUnknown,
+                        onChanged: (v) => setState(() {
+                          _birthTimeUnknown = v ?? false;
+                          if (_birthTimeUnknown) _birthTimeController.clear();
+                          _hasUnsavedChanges = true;
+                        }),
+                        title: const Text(
+                          'Geburtszeit ist unbekannt',
+                          style: TextStyle(color: Colors.white70, fontSize: 13),
+                        ),
+                        subtitle: Text(
+                          'Spirit-Tools nehmen 12:00 lokal als Annahme - keine Aszendent-Berechnung',
+                          style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 11),
+                        ),
+                        controlAffinity: ListTileControlAffinity.leading,
+                        contentPadding: EdgeInsets.zero,
+                        activeColor: const Color(0xFF7C4DFF),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // ✨ v93: Geschlecht (optional, fuer gender-tuned Content)
+                      DropdownButtonFormField<String?>(
+                        initialValue: _gender,
+                        decoration: InputDecoration(
+                          labelText: 'Geschlecht (optional)',
+                          prefixIcon: const Icon(Icons.wc),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          filled: true,
+                          fillColor: isDark
+                              ? Colors.white.withValues(alpha: 0.05)
+                              : Colors.white,
+                        ),
+                        items: const [
+                          DropdownMenuItem(value: null, child: Text('Keine Angabe')),
+                          DropdownMenuItem(value: 'female', child: Text('Weiblich')),
+                          DropdownMenuItem(value: 'male', child: Text('Maennlich')),
+                          DropdownMenuItem(value: 'diverse', child: Text('Divers')),
+                          DropdownMenuItem(value: 'prefer_not_say', child: Text('Moechte ich nicht angeben')),
+                        ],
+                        onChanged: (v) => setState(() {
+                          _gender = v;
+                          _hasUnsavedChanges = true;
+                        }),
                       ),
                       const SizedBox(height: 16),
                     ],

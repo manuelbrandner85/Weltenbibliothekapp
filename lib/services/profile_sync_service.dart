@@ -231,6 +231,7 @@ class ProfileSyncService {
         if (profile.timezoneOffsetHours != null)
           'timezone_offset_hours': profile.timezoneOffsetHours,
         'birth_time_unknown': profile.birthTimeUnknown,
+        if (profile.gender != null) 'gender': profile.gender,
         if (invisibleId != null && invisibleId.isNotEmpty) 'userId': invisibleId,
       };
       
