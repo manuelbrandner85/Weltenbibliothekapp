@@ -425,6 +425,14 @@ jobs:
           run_sql "v92 Username Immutability + Change-Request Flow" \
             supabase/migrations/20260518_v92_username_immutability.sql
 
+          # v93: Profile extra fields fuer Spirit-Tools
+          #      birth_latitude, birth_longitude, timezone_offset_hours,
+          #      birth_time_unknown, gender. Damit Tools wie Horoskop /
+          #      Human Design / Birthchart 360 alle Daten aus dem Profil
+          #      ziehen koennen statt jedes Mal vom User abzufragen.
+          run_sql "v93 Profile spirit extra fields (lat/lng/tz/time_unknown)" \
+            supabase/migrations/20260518_v93_profile_spirit_extra_fields.sql
+
           echo ""
           if [ "$MIGRATION_FAILED" = "1" ]; then
             echo "⚠️  Einige frühe Migrationen schlugen fehl (siehe Warnungen oben)."
