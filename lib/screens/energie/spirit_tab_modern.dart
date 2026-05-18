@@ -31,6 +31,7 @@ import 'calculators/photo_progress_screen.dart'; // 📸 Vor/Nach
 import 'calculators/crystal_photo_id_screen.dart'; // 💎 KI-Foto-ID
 import 'calculators/voice_affirmation_screen.dart'; // 💫 Voice-Recording
 import 'calculators/mantra_practice_screen.dart'; // 🕉️ Mantra-Praxis cinematic
+import 'calculators/iching_oracle_screen.dart'; // ☯ I-Ging cinematic
 import 'calculators/new_spirit_tool_screens.dart';
 import 'meditation_timer_screen.dart'; // MeditationTimerScreen (canonical, deduplicated)
 import 'calculators/moon_calendar_tool_screen.dart'; // 🌕 v19 Mondkalender
@@ -628,6 +629,16 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'color': const Color(0xFF424242),
         'category': 'new',
         'screen': const IChingScreen(),
+      },
+      // ☯ I-Ging Münzwurf-Orakel (cinematic) · Wandlung + AI + Verlauf
+      {
+        'icon': Icons.casino,
+        'iconEmoji': '🪙',
+        'title': 'I-Ging Münzwurf',
+        'subtitle': 'Wandlungs-Lesung mit AI · Verlauf',
+        'color': const Color(0xFF7C4DFF),
+        'category': 'new',
+        'screen': const IChingOracleScreen(),
       },
 
       // ═══════════════════════════════════════════════════════════
