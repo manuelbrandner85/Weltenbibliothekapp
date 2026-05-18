@@ -1,8 +1,8 @@
 // 🌀 EASTER-EGG-SHEET - Cinematic Full-Screen statt klassischer Dialog
 //
 // Wird vom Portal nach 10 Taps oder Long-Press geoeffnet. Zeigt 12 Optionen
-// (8 alte + 4 neue Tools) in cinematic Glassmorphism-Karten mit
-// Radial-Nebula + 3 CineOrbs + 60 Ambient-Particles + Vignette.
+// in cinematic Glassmorphism-Karten mit Radial-Nebula + 3 CineOrbs +
+// 60 Ambient-Particles + Vignette.
 
 import 'dart:math' as math;
 import 'dart:ui';
@@ -14,23 +14,22 @@ import '../../theme/wb_cinematic_tokens.dart';
 import '../../widgets/cinematic/wb_ambient_particles.dart';
 import '../../widgets/cinematic/wb_glass_app_bar.dart';
 import '../../widgets/cinematic/wb_vignette.dart';
-import 'lichtsprache_decoder_screen.dart';
-import 'time_capsule_screen.dart';
-import 'synchronizitaeten_logger_screen.dart';
-import 'glitch_matrix_detektor_screen.dart';
-import 'geheime_karte_screen.dart';
-import 'realitaets_hopper_screen.dart';
 import 'cosmic_reset_ritual_screen.dart';
+import 'geheime_karte_screen.dart';
+import 'glitch_matrix_detektor_screen.dart';
+import 'lichtsprache_decoder_screen.dart';
 import 'numerologie_realtime_screen.dart';
+import 'portal_defense_game_screen.dart';
+import 'realitaets_hopper_screen.dart';
+import 'synchronizitaeten_logger_screen.dart';
+import 'time_capsule_screen.dart';
 
 class EasterEggSheet extends StatefulWidget {
-  // Callbacks zu bestehenden Funktionen im PortalHomeScreen
+  // Callbacks zu bestehenden Funktionen im PortalHomeScreen.
+  // (Cheat Codes + Dev-Stats wurden v5.43.1 entfernt - UX-Cleanup.)
   final VoidCallback onColorPicker;
   final VoidCallback onHiddenFacts;
-  final VoidCallback onMiniGame;
-  final VoidCallback onCheatCodes;
   final VoidCallback onAchievements;
-  final VoidCallback onDeveloperStats;
   final VoidCallback onSharePortalStats;
   final VoidCallback onAbout;
 
@@ -38,10 +37,7 @@ class EasterEggSheet extends StatefulWidget {
     super.key,
     required this.onColorPicker,
     required this.onHiddenFacts,
-    required this.onMiniGame,
-    required this.onCheatCodes,
     required this.onAchievements,
-    required this.onDeveloperStats,
     required this.onSharePortalStats,
     required this.onAbout,
   });
@@ -196,125 +192,108 @@ class _EasterEggSheetState extends State<EasterEggSheet>
   }
 
   List<_EgItem> _items() => [
-        // 4 NEUE Features (priorisiert, oben)
+        // ─── Spirit & Selbstreflexion ───
         _EgItem(
-          emoji: '🔤',
-          title: 'Lichtsprache',
-          subtitle: 'Heilige-Geometrie\nDecoder',
+          emoji: '🌟',
+          title: 'Symbol des Tages',
+          subtitle: '1 Tap · 1 Symbol\nfür heute',
           color: const Color(0xFFFFD54F),
           onTap: () => _navigate(const LichtspracheDecoderScreen()),
-          isNew: true,
+        ),
+        _EgItem(
+          emoji: '✨',
+          title: 'Magische Zufälle',
+          subtitle: 'Sammle bedeutsame\nZufalls-Momente',
+          color: const Color(0xFFEC407A),
+          onTap: () => _navigate(const SynchronizitaetenLoggerScreen()),
+        ),
+        _EgItem(
+          emoji: '🌀',
+          title: 'Déjà-vu Sammlung',
+          subtitle: 'Aha-Momente\nfesthalten',
+          color: const Color(0xFFFF7043),
+          onTap: () => _navigate(const GlitchMatrixDetektorScreen()),
         ),
         _EgItem(
           emoji: '⏳',
           title: 'Time-Capsule',
-          subtitle: 'Nachricht an dich\nin 1-12 Monaten',
+          subtitle: 'Brief an dich\nin 1-12 Monaten',
           color: const Color(0xFF42A5F5),
           onTap: () => _navigate(const TimeCapsuleScreen()),
-          isNew: true,
         ),
+
+        // ─── Entdecken & Quizzen ───
         _EgItem(
-          emoji: '🔮',
-          title: 'Synchronizitäten',
-          subtitle: 'Logger + AI-Muster',
-          color: const Color(0xFFEC407A),
-          onTap: () => _navigate(const SynchronizitaetenLoggerScreen()),
-          isNew: true,
-        ),
-        _EgItem(
-          emoji: '⚡',
-          title: 'Glitch-Matrix',
-          subtitle: 'Realitäts-Anomalien',
-          color: const Color(0xFFFF7043),
-          onTap: () => _navigate(const GlitchMatrixDetektorScreen()),
-          isNew: true,
+          emoji: '🪞',
+          title: 'Welt-Quiz',
+          subtitle: 'Welche Welt\ngehört zu dir?',
+          color: const Color(0xFF7C4DFF),
+          onTap: () => _navigate(const RealitaetsHopperScreen()),
         ),
         _EgItem(
           emoji: '🗺️',
-          title: 'Geheime Karte',
-          subtitle: 'Verborgene Locations',
+          title: 'Mystische Orte',
+          subtitle: '24 echte\nGeheimnisse der Welt',
           color: const Color(0xFF66BB6A),
           onTap: () => _navigate(const GeheimeKarteScreen()),
-          isNew: true,
-        ),
-        _EgItem(
-          emoji: '🪞',
-          title: 'Realitäts-Hopper',
-          subtitle: 'Parallel-Welt für 60s',
-          color: const Color(0xFF7C4DFF),
-          onTap: () => _navigate(const RealitaetsHopperScreen()),
-          isNew: true,
-        ),
-        _EgItem(
-          emoji: '♾️',
-          title: 'Cosmic Reset',
-          subtitle: 'Ritueller App-Reset',
-          color: const Color(0xFFE53935),
-          onTap: () => _navigate(const CosmicResetRitualScreen()),
-          isNew: true,
         ),
         _EgItem(
           emoji: '🔢',
-          title: 'Numerologie LIVE',
-          subtitle: 'Tag/Stunde/Minute',
+          title: 'Heute in Zahlen',
+          subtitle: 'Tag · Stunde · Minute\nin Numerologie',
           color: const Color(0xFFAB47BC),
           onTap: () => _navigate(const NumerologieRealtimeScreen()),
-          isNew: true,
-        ),
-        // 8 BESTEHENDE Features
-        _EgItem(
-          emoji: '🎨',
-          title: 'Portal-Farben',
-          subtitle: 'Farbschema wechseln',
-          color: const Color(0xFF26C6DA),
-          onTap: () { Navigator.pop(context); widget.onColorPicker(); },
         ),
         _EgItem(
-          emoji: '📚',
-          title: 'Hidden Facts',
-          subtitle: 'Wissen aus dem Off',
+          emoji: '💡',
+          title: 'Wussten Sie schon?',
+          subtitle: 'Faszinierende\nFakten-Karten',
           color: const Color(0xFFFFA726),
           onTap: () { Navigator.pop(context); widget.onHiddenFacts(); },
         ),
+
+        // ─── Fun & Spiel ───
         _EgItem(
           emoji: '🎮',
           title: 'Portal Defense',
-          subtitle: 'Mini-Game',
+          subtitle: 'Mini-Game · Wellen\nPower-Ups · Score',
           color: const Color(0xFF26A69A),
-          onTap: () { Navigator.pop(context); widget.onMiniGame(); },
-        ),
-        _EgItem(
-          emoji: '🔐',
-          title: 'Cheat Codes',
-          subtitle: 'Geheime Codes',
-          color: const Color(0xFF8D6E63),
-          onTap: () { Navigator.pop(context); widget.onCheatCodes(); },
+          onTap: () => _navigate(const PortalDefenseGameScreen()),
         ),
         _EgItem(
           emoji: '🏆',
           title: 'Achievements',
-          subtitle: 'Deine Erfolge',
+          subtitle: 'Deine Erfolge\nund Trophäen',
           color: const Color(0xFFFFC107),
           onTap: () { Navigator.pop(context); widget.onAchievements(); },
         ),
+
+        // ─── App & Meta ───
         _EgItem(
-          emoji: '📊',
-          title: 'Dev-Stats',
-          subtitle: 'Performance',
-          color: const Color(0xFF455A64),
-          onTap: () { Navigator.pop(context); widget.onDeveloperStats(); },
+          emoji: '♾️',
+          title: 'Cosmic Reset',
+          subtitle: 'Ritueller\nApp-Reset',
+          color: const Color(0xFFE53935),
+          onTap: () => _navigate(const CosmicResetRitualScreen()),
+        ),
+        _EgItem(
+          emoji: '🎨',
+          title: 'Portal-Farben',
+          subtitle: 'Farbschema\nwechseln',
+          color: const Color(0xFF26C6DA),
+          onTap: () { Navigator.pop(context); widget.onColorPicker(); },
         ),
         _EgItem(
           emoji: '📤',
           title: 'Stats teilen',
-          subtitle: 'Social Media',
+          subtitle: 'Auf Social Media\nteilen',
           color: const Color(0xFF5C6BC0),
           onTap: () { Navigator.pop(context); widget.onSharePortalStats(); },
         ),
         _EgItem(
           emoji: '✨',
           title: 'Über',
-          subtitle: 'Weltenbibliothek',
+          subtitle: 'Weltenbibliothek\nInfo & Credits',
           color: const Color(0xFF9C27B0),
           onTap: () { Navigator.pop(context); widget.onAbout(); },
         ),
@@ -334,14 +313,12 @@ class _EgItem {
   final String subtitle;
   final Color color;
   final VoidCallback onTap;
-  final bool isNew;
   const _EgItem({
     required this.emoji,
     required this.title,
     required this.subtitle,
     required this.color,
     required this.onTap,
-    this.isNew = false,
   });
 }
 
@@ -389,59 +366,37 @@ class _EgTileState extends State<_EgTile> {
                     ? [BoxShadow(color: c.withValues(alpha: 0.55), blurRadius: 18, spreadRadius: 1)]
                     : [BoxShadow(color: c.withValues(alpha: 0.18), blurRadius: 10)],
               ),
-              child: Stack(children: [
-                Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(widget.item.emoji,
-                          style: const TextStyle(fontSize: 32)),
-                      const Spacer(),
-                      Text(
-                        widget.item.title,
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.5),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        widget.item.subtitle,
-                        style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.65),
-                            fontSize: 10,
-                            height: 1.2),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-                if (widget.item.isNew)
-                  Positioned(
-                    right: 6,
-                    top: 6,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFD700),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: const Text(
-                        'NEU',
-                        style: TextStyle(
-                            color: Colors.black,
-                            fontSize: 7,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 0.5),
-                      ),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(widget.item.emoji,
+                        style: const TextStyle(fontSize: 32)),
+                    const Spacer(),
+                    Text(
+                      widget.item.title,
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.5),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-              ]),
+                    const SizedBox(height: 2),
+                    Text(
+                      widget.item.subtitle,
+                      style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.65),
+                          fontSize: 10,
+                          height: 1.2),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
         ),

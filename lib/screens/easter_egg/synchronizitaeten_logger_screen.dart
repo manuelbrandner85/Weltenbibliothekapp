@@ -126,7 +126,7 @@ class _SynchronizitaetenLoggerScreenState extends State<SynchronizitaetenLoggerS
         world: WBWorld.neutral,
         titleWidget: ShaderMask(
           shaderCallback: (r) => const LinearGradient(colors: [_gold, _primary]).createShader(r),
-          child: const Text('SYNCHRONIZITÄTEN',
+          child: const Text('MAGISCHE ZUFÄLLE',
               style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w900, letterSpacing: 2.5)),
         ),
       ),
@@ -149,8 +149,13 @@ class _SynchronizitaetenLoggerScreenState extends State<SynchronizitaetenLoggerS
                 border: Border.all(color: _primary.withValues(alpha: 0.3)),
               ),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const Text('NEUE SYNCHRONIZITÄT',
+                const Text('NEUER MAGISCHER MOMENT',
                     style: TextStyle(color: _gold, fontSize: 10, letterSpacing: 2, fontWeight: FontWeight.w700)),
+                const SizedBox(height: 4),
+                Text(
+                  'Sammle bedeutsame Zufälle. Bei 5+ Einträgen erkennt die KI dein Muster.',
+                  style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 11, height: 1.3),
+                ),
                 const SizedBox(height: 8),
                 Wrap(spacing: 5, runSpacing: 5, children: _cats.map((c) {
                   final sel = c.code == _selectedCat.code;
@@ -173,7 +178,7 @@ class _SynchronizitaetenLoggerScreenState extends State<SynchronizitaetenLoggerS
                   maxLines: 3, maxLength: 400,
                   style: const TextStyle(color: Colors.white, fontSize: 13),
                   decoration: InputDecoration(
-                    hintText: 'Was war die Synchronizität?',
+                    hintText: 'z. B. "An Mutter gedacht — sie hat angerufen"',
                     hintStyle: const TextStyle(color: Colors.white38),
                     filled: true,
                     fillColor: Colors.white.withValues(alpha: 0.04),

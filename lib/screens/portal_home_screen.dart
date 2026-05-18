@@ -284,10 +284,7 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> with TickerProvider
         pageBuilder: (_, __, ___) => EasterEggSheet(
           onColorPicker: _showPortalColorPicker,
           onHiddenFacts: _showHiddenFacts,
-          onMiniGame: _startMiniGame,
-          onCheatCodes: _showCheatCodes,
           onAchievements: _showAchievements,
-          onDeveloperStats: _showDeveloperStats,
           onSharePortalStats: _sharePortalStats,
           onAbout: _showAboutPortal,
         ),

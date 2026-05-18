@@ -38,13 +38,12 @@ class _GlitchMatrixDetektorScreenState extends State<GlitchMatrixDetektorScreen>
   int _intensity = 3;
   late final AnimationController _ambientCtrl;
 
+  // 4 verständliche Déjà-vu-Typen statt 6 esoterischer Begriffe
   static final _types = [
-    _GlitchType('mandela', 'Mandela-Effekt', '🧠', 'Etwas in der Vergangenheit ist anders als du erinnerst', const Color(0xFFE91E63)),
-    _GlitchType('dejavu', 'Déjà-vu', '🌀', 'Moment fühlte sich exakt schon mal erlebt an', const Color(0xFF7C4DFF)),
-    _GlitchType('synchro', 'Synchronizität', '✨', 'Sinnvoller Zufall - alles passt magisch zusammen', const Color(0xFFFFD700)),
-    _GlitchType('hick', 'Realitäts-Hick', '⚡', 'Etwas änderte sich beim Hinsehen - Ort, Person, Detail', const Color(0xFFFF7043)),
-    _GlitchType('numbers', '11:11 / Zahlen', '🔢', 'Wiederholende Zahlen-Muster (11:11, 333, 444)', const Color(0xFF26C6DA)),
-    _GlitchType('missing', 'Verschwunden', '👻', 'Objekt/Erinnerung war da, jetzt nicht mehr - oder umgekehrt', const Color(0xFF66BB6A)),
+    _GlitchType('ort', 'Déjà-vu am Ort', '📍', 'Ein Ort fühlte sich an als wärst du schon mal hier gewesen', const Color(0xFF26C6DA)),
+    _GlitchType('gespraech', 'Déjà-vu im Gespräch', '💬', 'Du wusstest was als nächstes gesagt wird — bevor es kam', const Color(0xFF7C4DFF)),
+    _GlitchType('situation', 'Déjà-vu in der Situation', '🌀', 'Die ganze Szene fühlte sich exakt schon mal erlebt an', const Color(0xFFFF7043)),
+    _GlitchType('gedanke', 'Gedanken-Treffer', '🧠', 'An jemanden gedacht — und plötzlich passierte etwas zu der Person', const Color(0xFFE91E63)),
   ];
 
   @override
@@ -89,7 +88,7 @@ class _GlitchMatrixDetektorScreenState extends State<GlitchMatrixDetektorScreen>
     setState(() => _intensity = 3);
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text('⚡ Glitch geloggt (${_glitches.length} total)'),
+      content: Text('🌀 Déjà-vu gespeichert (${_glitches.length} gesamt)'),
       backgroundColor: _primary,
     ));
   }
@@ -114,7 +113,7 @@ class _GlitchMatrixDetektorScreenState extends State<GlitchMatrixDetektorScreen>
         world: WBWorld.neutral,
         titleWidget: ShaderMask(
           shaderCallback: (r) => const LinearGradient(colors: [_gold, _primary]).createShader(r),
-          child: const Text('GLITCH-MATRIX',
+          child: const Text('DÉJÀ-VU SAMMLUNG',
               style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w900, letterSpacing: 3)),
         ),
       ),
@@ -171,8 +170,13 @@ class _GlitchMatrixDetektorScreenState extends State<GlitchMatrixDetektorScreen>
                       border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
                     ),
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      const Text('NEUER GLITCH',
+                      const Text('NEUES DÉJÀ-VU',
                           style: TextStyle(color: _gold, fontSize: 10, letterSpacing: 2, fontWeight: FontWeight.w700)),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Halte deine Aha-Momente fest. Was hat dich überrascht?',
+                        style: TextStyle(color: Colors.white.withValues(alpha: 0.55), fontSize: 11, height: 1.3),
+                      ),
                       const SizedBox(height: 8),
                       Wrap(spacing: 6, runSpacing: 6, children: _types.map((t) {
                         final sel = t.code == _selectedType?.code;
@@ -234,7 +238,7 @@ class _GlitchMatrixDetektorScreenState extends State<GlitchMatrixDetektorScreen>
                         child: ElevatedButton.icon(
                           onPressed: _save,
                           icon: const Icon(Icons.add_rounded, size: 16),
-                          label: const Text('GLITCH LOGGEN',
+                          label: const Text('DÉJÀ-VU LOGGEN',
                               style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.5)),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: _primary,

@@ -90,7 +90,7 @@ class _NumerologieRealtimeScreenState extends State<NumerologieRealtimeScreen>
         world: WBWorld.neutral,
         titleWidget: ShaderMask(
           shaderCallback: (r) => const LinearGradient(colors: [_gold, _primary]).createShader(r),
-          child: const Text('NUMEROLOGIE LIVE',
+          child: const Text('HEUTE IN ZAHLEN',
               style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w900, letterSpacing: 3)),
         ),
       ),
