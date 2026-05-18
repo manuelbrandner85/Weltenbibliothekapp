@@ -587,6 +587,13 @@ class _OverviewTabState extends State<_OverviewTab> {
 
           const SizedBox(height: 24),
 
+          // ── 🟢 Live-Online-Roster ───────────────────────────────
+          _SectionLabel('Aktuell online', Icons.bolt_rounded, widget.accent),
+          const SizedBox(height: 10),
+          _OnlineNowBlock(accent: widget.accent, accentBright: widget.accentBright),
+
+          const SizedBox(height: 24),
+
           // ── Letzte Aktivitäten ─────────────────────────────────────
           Row(children: [
             Expanded(child: _SectionLabel('Letzte Aktionen', Icons.history_rounded, widget.accent)),
@@ -2290,6 +2297,322 @@ class _OnlineDot extends StatelessWidget {
                   ),
                 ]
               : null,
+        ),
+      ),
+    );
+  }
+}
+
+// ── 🟢 Live-Online-Roster: zeigt User aktiv in den letzten 5/15 min
+class _OnlineNowBlock extends StatefulWidget {
+  final Color accent;
+  final Color accentBright;
+  const _OnlineNowBlock({required this.accent, required this.accentBright});
+
+  @override
+  State<_OnlineNowBlock> createState() => _OnlineNowBlockState();
+}
+
+class _OnlineNowBlockState extends State<_OnlineNowBlock> {
+  List<WorldUser> _all = const [];
+  bool _loading = true;
+  Timer? _t;
+  // Cutoff in Minuten — "Online jetzt"
+  static const _onlineCutoffMin = 5;
+  static const _recentCutoffMin = 15;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+    _t = Timer.periodic(const Duration(seconds: 45), (_) => _load());
+  }
+
+  @override
+  void dispose() {
+    _t?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    if (!mounted) return;
+    try {
+      final users = await WorldAdminService.getAllUsers();
+      if (mounted) setState(() { _all = users; _loading = false; });
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  // Liefert Delta in Minuten (oder null bei kein lastSeen).
+  int? _ageMin(WorldUser u) {
+    if (u.lastSeenAt == null) return null;
+    final t = DateTime.tryParse(u.lastSeenAt!);
+    if (t == null) return null;
+    return DateTime.now().toUtc().difference(t.toUtc()).inMinutes;
+  }
+
+  void _showFullList() {
+    final online = _all.where((u) {
+      final a = _ageMin(u);
+      return a != null && a < _onlineCutoffMin;
+    }).toList()
+      ..sort((a, b) => (_ageMin(a) ?? 99999).compareTo(_ageMin(b) ?? 99999));
+    final recent = _all.where((u) {
+      final a = _ageMin(u);
+      return a != null && a >= _onlineCutoffMin && a < _recentCutoffMin;
+    }).toList()
+      ..sort((a, b) => (_ageMin(a) ?? 99999).compareTo(_ageMin(b) ?? 99999));
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF0A0A18),
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (_) => DraggableScrollableSheet(
+        initialChildSize: 0.7,
+        minChildSize: 0.4,
+        maxChildSize: 0.95,
+        expand: false,
+        builder: (ctx, scroll) => ListView(
+          controller: scroll,
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+          children: [
+            Center(
+              child: Container(
+                width: 42, height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(children: [
+              Icon(Icons.bolt_rounded, color: widget.accent, size: 20),
+              const SizedBox(width: 8),
+              Text('Live-Roster',
+                  style: TextStyle(color: widget.accentBright, fontWeight: FontWeight.bold, fontSize: 16)),
+              const Spacer(),
+              Text('< $_onlineCutoffMin min: ${online.length}',
+                  style: const TextStyle(color: Color(0xFF4CAF50), fontSize: 11)),
+            ]),
+            const SizedBox(height: 14),
+            if (online.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8),
+                child: Text('Niemand aktuell online.',
+                    style: TextStyle(color: Colors.white54, fontSize: 13)),
+              )
+            else
+              ...online.map((u) => _rosterTile(u, isOnline: true)),
+            if (recent.isNotEmpty) ...[
+              const SizedBox(height: 14),
+              Text('Vor $_onlineCutoffMin–$_recentCutoffMin min · ${recent.length}',
+                  style: const TextStyle(color: Colors.white38, fontSize: 11, letterSpacing: 1)),
+              const SizedBox(height: 6),
+              ...recent.map((u) => _rosterTile(u, isOnline: false)),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _rosterTile(WorldUser u, {required bool isOnline}) {
+    final age = _ageMin(u);
+    final worldChip = u.world == 'materie'
+        ? ('M', Colors.orange)
+        : u.world == 'energie'
+            ? ('E', Colors.teal)
+            : ('?', Colors.white24);
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isOnline
+              ? const Color(0xFF4CAF50).withValues(alpha: 0.3)
+              : Colors.white12,
+        ),
+      ),
+      child: Row(children: [
+        Stack(clipBehavior: Clip.none, children: [
+          CircleAvatar(
+            radius: 16,
+            backgroundColor: widget.accent.withValues(alpha: 0.18),
+            child: Text(
+              u.avatarEmoji?.isNotEmpty == true
+                  ? u.avatarEmoji!
+                  : (u.username.isEmpty ? '?' : u.username[0].toUpperCase()),
+              style: const TextStyle(fontSize: 14, color: Colors.white),
+            ),
+          ),
+          Positioned(
+            right: -2, bottom: -2,
+            child: _OnlineDot(lastSeenAtIso: u.lastSeenAt),
+          ),
+        ]),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(u.displayName ?? u.username,
+                  style: const TextStyle(
+                      color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+                  overflow: TextOverflow.ellipsis),
+              Text('@${u.username}',
+                  style: TextStyle(color: widget.accent.withValues(alpha: 0.7), fontSize: 10),
+                  overflow: TextOverflow.ellipsis),
+            ],
+          ),
+        ),
+        const SizedBox(width: 6),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          decoration: BoxDecoration(
+            color: worldChip.$2.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(color: worldChip.$2.withValues(alpha: 0.4)),
+          ),
+          child: Text(worldChip.$1,
+              style: TextStyle(
+                  color: worldChip.$2, fontSize: 9, fontWeight: FontWeight.bold)),
+        ),
+        const SizedBox(width: 8),
+        if (age != null)
+          Text(age < 1 ? 'jetzt' : '${age}m',
+              style: const TextStyle(color: Colors.white54, fontSize: 11)),
+      ]),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) {
+      return Container(
+        height: 92,
+        decoration: BoxDecoration(
+          color: const Color(0xFF12121E),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+        ),
+        child: Center(child: CircularProgressIndicator(color: widget.accent, strokeWidth: 2)),
+      );
+    }
+
+    final onlineNow = _all.where((u) {
+      final a = _ageMin(u);
+      return a != null && a < _onlineCutoffMin;
+    }).toList()
+      ..sort((a, b) => (_ageMin(a) ?? 99999).compareTo(_ageMin(b) ?? 99999));
+
+    final byWorld = <String, int>{'energie': 0, 'materie': 0, 'andere': 0};
+    for (final u in onlineNow) {
+      final w = u.world;
+      if (w == 'energie') {
+        byWorld['energie'] = byWorld['energie']! + 1;
+      } else if (w == 'materie') {
+        byWorld['materie'] = byWorld['materie']! + 1;
+      } else {
+        byWorld['andere'] = byWorld['andere']! + 1;
+      }
+    }
+
+    final preview = onlineNow.take(6).toList();
+
+    return GestureDetector(
+      onTap: _showFullList,
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              const Color(0xFF4CAF50).withValues(alpha: 0.10),
+              widget.accent.withValues(alpha: 0.04),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0xFF4CAF50).withValues(alpha: 0.25)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              Container(
+                width: 10, height: 10,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Color(0xFF4CAF50),
+                  boxShadow: [
+                    BoxShadow(color: Color(0x884CAF50), blurRadius: 6, spreadRadius: 1),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text('${onlineNow.length}',
+                  style: const TextStyle(
+                      color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+              const SizedBox(width: 6),
+              const Text('online',
+                  style: TextStyle(color: Colors.white60, fontSize: 13)),
+              const Spacer(),
+              Text('E ${byWorld['energie']}  ·  M ${byWorld['materie']}',
+                  style: const TextStyle(color: Colors.white54, fontSize: 11)),
+              const SizedBox(width: 6),
+              const Icon(Icons.chevron_right_rounded, color: Colors.white38, size: 18),
+            ]),
+            const SizedBox(height: 10),
+            if (preview.isEmpty)
+              const Text('Niemand aktiv in den letzten 5 Minuten.',
+                  style: TextStyle(color: Colors.white54, fontSize: 12))
+            else
+              Wrap(
+                spacing: 6, runSpacing: 6,
+                children: preview.map((u) {
+                  final ageMin = _ageMin(u);
+                  final initial = u.username.isEmpty
+                      ? '?'
+                      : u.username[0].toUpperCase();
+                  return Tooltip(
+                    message: '@${u.username} · ${ageMin == null ? "?" : ageMin < 1 ? "jetzt" : "${ageMin}m"}',
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.06),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.white12),
+                      ),
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        CircleAvatar(
+                          radius: 9,
+                          backgroundColor: widget.accent.withValues(alpha: 0.2),
+                          child: Text(
+                            u.avatarEmoji?.isNotEmpty == true ? u.avatarEmoji! : initial,
+                            style: const TextStyle(fontSize: 9, color: Colors.white),
+                          ),
+                        ),
+                        const SizedBox(width: 5),
+                        Text(u.username,
+                            style: const TextStyle(color: Colors.white70, fontSize: 11)),
+                      ]),
+                    ),
+                  );
+                }).toList(),
+              ),
+            if (onlineNow.length > preview.length) ...[
+              const SizedBox(height: 6),
+              Text('+${onlineNow.length - preview.length} weitere · Tippen für Liste',
+                  style: TextStyle(color: widget.accent, fontSize: 11)),
+            ],
+          ],
         ),
       ),
     );
