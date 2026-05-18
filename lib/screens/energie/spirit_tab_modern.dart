@@ -27,6 +27,7 @@ import 'calculators/tarot_spreads_screen.dart'; // 🔮 Tarot-Legesysteme (alt)
 import 'calculators/tarot_oracle_screen.dart'; // 🔮 Cinematic mit AI-Lesung
 import 'calculators/runes_oracle_screen.dart'; // ᚱ Elder Futhark Cinematic
 import 'calculators/akasha_chronicle_screen.dart'; // 🌌 Cinematic Journal + AI
+import 'calculators/birth_chart_360_screen.dart'; // ♓ 360° Visual Geburts-Chart
 import 'calculators/animated_sacred_geometry_screen.dart'; // 🔯 Animierte SVG
 import 'calculators/sacred_geometry_constructor_screen.dart'; // 🔯 Interaktiver Konstruktor
 import 'calculators/affirmations_studio_screen.dart'; // 🌟 Cinematic AI-Studio
@@ -550,12 +551,22 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'screen': const ShamanicJourneyToolScreen(),
       },
 
-      // ♓ Geburtshoroskop (v25 – Meeus-Astrologie + Lexikon)
+      // ♓ Geburtshoroskop 360° — Cinematic Visual-Chart
+      {
+        'icon': Icons.brightness_2,
+        'iconEmoji': '♓',
+        'title': 'Geburtshoroskop 360°',
+        'subtitle': 'Zodiac-Rad · 10 Planeten · 5 Aspekte · Transits',
+        'color': const Color(0xFF7E57C2),
+        'category': 'new',
+        'screen': const BirthChart360Screen(),
+      },
+      // ♓ Geburtshoroskop klassisch (v25 – Meeus-Astrologie + Lexikon)
       {
         'icon': Icons.auto_awesome,
         'iconEmoji': '♓',
-        'title': 'Geburtshoroskop',
-        'subtitle': 'Natal-Chart mit echter Ephemeride',
+        'title': 'Horoskop-Lexikon',
+        'subtitle': 'Verlauf · Planeten · Zeichen-Lexikon',
         'color': const Color(0xFF6C63FF),
         'category': 'new',
         'screen': const NatalChartToolScreen(),
