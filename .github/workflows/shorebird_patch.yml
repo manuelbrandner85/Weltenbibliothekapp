@@ -175,39 +175,79 @@ jobs:
           echo "=== shorebird releases list --platforms=android ==="
           shorebird releases list --platforms=android 2>&1 || true
 
-      - name: 📡 Patch veröffentlichen (nur neueste Release-Version)
-        # STRATEGIE (ab v5.37+): Patches gehen NUR an die neueste Release-Version.
-        # User auf älteren APKs (v5.35.0+) werden über den in-App `ReleaseUpdateScreen`
-        # zum Download der neuen APK geleitet — gesteuert über `app_config.min_version`.
-        # Damit entfällt das fragile Multi-Version-Patching (Engine-Drift, Release-IDs
-        # mit Build-Nummer, CLI-Kompatibilität) komplett.
+      - name: 📡 Patch veröffentlichen (pubspec + letzter Release-Tag)
+        # STRATEGIE (ab 18.5.2026): Patches gehen an MEHRERE Release-Versionen
+        # damit auch User die ein älteres APK installiert haben Updates bekommen.
         #
-        # `--release-version=latest` löst Shorebird-intern gegen die jüngste
-        # registrierte Release-Version auf — eigener Resolver nicht nötig.
+        # Konkret patchen wir:
+        #   1. Die Version aus pubspec.yaml (immer)
+        #   2. Die Version vom letzten GitHub-Release-Tag (falls != pubspec)
         #
-        # --allow-asset-diffs bleibt weil MaterialIcons.otf bei jedem Build anders
-        # tree-geshaked wird sobald neue Icons im Dart-Code stehen.
+        # Wenn ein Shorebird-Release für eine der Versionen nicht existiert,
+        # wird der einzelne Patch mit Warnung übersprungen — der andere läuft
+        # trotzdem durch.
+        #
+        # --allow-asset-diffs bleibt weil MaterialIcons.otf bei jedem Build
+        # anders tree-geshaked wird sobald neue Icons im Dart-Code stehen.
         env:
           SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
         run: |
-          set -euo pipefail
+          set -uo pipefail
 
-          # Release-Version aus pubspec.yaml (inkl. Build-Nummer) für Shorebird
-          FULL_VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: //' | tr -d '[:space:]')
-          echo "Ziel-Release-Version: $FULL_VERSION (latest)"
+          # Primär-Ziel: aktuelle pubspec.yaml-Version
+          PRIMARY=$(grep '^version:' pubspec.yaml | sed 's/version: //' | tr -d '[:space:]')
 
-          shorebird patch android \
-            --allow-asset-diffs \
-            --release-version="$FULL_VERSION" \
-            -- \
-            --target-platform=android-arm64,android-arm \
-            --dart-define=APP_VERSION=${{ steps.version.outputs.version }} \
-            --dart-define=SUPABASE_URL=$SUPABASE_URL \
-            --dart-define=SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY \
-            --dart-define=CLOUDFLARE_WORKER_URL=https://weltenbibliothek-api.brandy13062.workers.dev \
-            --dart-define=LIVEKIT_URL=${{ secrets.LIVEKIT_URL || 'wss://livekit-wb.srv1438024.hstgr.cloud' }}
+          # Sekundär-Ziel: pubspec aus dem letzten GitHub-Release-Tag
+          # (oft != pubspec wenn Build-Nummer revertet wurde aber User noch
+          # ältere APK installiert hat).
+          git fetch --tags --force --depth=1 origin 2>/dev/null || true
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          SECONDARY=""
+          if [ -n "$LAST_TAG" ]; then
+            SECONDARY=$(git show "$LAST_TAG:pubspec.yaml" 2>/dev/null \
+              | grep '^version:' | sed 's/version: //' | tr -d '[:space:]' || echo "")
+          fi
 
-          echo "✅ Patch an Release $FULL_VERSION gesendet"
+          # Liste der zu patchenden Versionen (dedupliziert)
+          VERSIONS="$PRIMARY"
+          if [ -n "$SECONDARY" ] && [ "$SECONDARY" != "$PRIMARY" ]; then
+            VERSIONS="$PRIMARY $SECONDARY"
+          fi
+
+          echo "Versionen zu patchen: $VERSIONS"
+          FAIL_COUNT=0
+          SUCCESS_COUNT=0
+          for v in $VERSIONS; do
+            echo ""
+            echo "================================================"
+            echo "Patching Release: $v"
+            echo "================================================"
+            if shorebird patch android \
+              --allow-asset-diffs \
+              --release-version="$v" \
+              -- \
+              --target-platform=android-arm64,android-arm \
+              --dart-define=APP_VERSION=${{ steps.version.outputs.version }} \
+              --dart-define=SUPABASE_URL=$SUPABASE_URL \
+              --dart-define=SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY \
+              --dart-define=CLOUDFLARE_WORKER_URL=https://weltenbibliothek-api.brandy13062.workers.dev \
+              --dart-define=LIVEKIT_URL=${{ secrets.LIVEKIT_URL || 'wss://livekit-wb.srv1438024.hstgr.cloud' }}; then
+              echo "✅ Patch an Release $v gesendet"
+              SUCCESS_COUNT=$((SUCCESS_COUNT+1))
+            else
+              echo "⚠️ Patch an $v fehlgeschlagen (Release evtl. nicht registriert)"
+              FAIL_COUNT=$((FAIL_COUNT+1))
+            fi
+          done
+          echo ""
+          echo "================================================"
+          echo "Zusammenfassung: $SUCCESS_COUNT erfolgreich, $FAIL_COUNT fehlgeschlagen"
+          echo "================================================"
+          # Job nur fehlschlagen wenn ALLE Versionen fehlgeschlagen sind
+          if [ $SUCCESS_COUNT -eq 0 ]; then
+            echo "❌ Kein einziger Patch erfolgreich"
+            exit 1
+          fi
 
       - name: 📝 Patch-Changelog in Supabase schreiben
         env:
