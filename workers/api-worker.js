@@ -2252,18 +2252,27 @@ export default {
           if (!title || !msgBody) return errorResponse('title und body sind pflicht', 400);
 
           // Empfänger-Liste aus profiles holen
+          // world_preference-Spalte ggf. entfernt — fallback ohne wenn 42703.
           let filter = '';
           if (target === 'materie' || target === 'energie' || target === 'vorhang' || target === 'ursprung') {
             filter = `&or=(world.eq.${target},world_preference.eq.${target})`;
           } else if (target === 'user' && body.userId) {
             filter = `&id=eq.${body.userId}`;
           }
-          const recRes = await fetch(
+          let recRes = await fetch(
             `${SUPABASE_URL}/rest/v1/profiles?select=id${filter}&limit=2000`,
             { headers: svcH }
           );
           if (!recRes.ok) {
-            return errorResponse(`Empfänger-Fetch ${recRes.status}`);
+            const txt = await recRes.text().catch(() => '');
+            if ((txt.includes('42703') || txt.includes('world_preference')) && filter.includes('world_preference')) {
+              const fallbackFilter = filter.replace(/&or=\(world\.eq\.[^,]+,world_preference\.eq\.[^)]+\)/, `&world=eq.${target}`);
+              recRes = await fetch(
+                `${SUPABASE_URL}/rest/v1/profiles?select=id${fallbackFilter}&limit=2000`,
+                { headers: svcH }
+              );
+            }
+            if (!recRes.ok) return errorResponse(`Empfänger-Fetch ${recRes.status}`);
           }
           const recipients = await recRes.json().catch(() => []);
           const userIds = (Array.isArray(recipients) ? recipients : [])
@@ -2326,19 +2335,34 @@ export default {
 
       // ── GET /api/admin/users  (ALLE Welten · für Admin-Dashboard) ──
       // SERVICE_ROLE_KEY umgeht RLS — Client kann sonst keine fremden
-      // Profile sehen. Inkl. last_seen_at + world/world_preference, gefiltert
+      // Profile sehen. Inkl. last_seen_at + world, gefiltert
       // System-Profile (id 00000000-...) raus.
+      // world_preference-Spalte wurde aus dem Schema entfernt — robustly
+      // versuche zuerst mit, dann ohne (Fallback bei 42703 column not exist).
       if (method === 'GET' && path === '/api/admin/users') {
         try {
           const anonKey = env.SUPABASE_ANON_KEY || '';
           const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || anonKey;
-          const res = await fetch(
-            `${SUPABASE_URL}/rest/v1/profiles?select=id,username,display_name,role,is_banned,avatar_url,avatar_emoji,created_at,world,world_preference,last_seen_at&order=created_at.desc&limit=500`,
-            { headers: { 'Content-Type': 'application/json', 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}` } }
-          );
+          const fetchProfiles = async (withWorldPref) => {
+            const cols = withWorldPref
+              ? 'id,username,display_name,role,is_banned,avatar_url,avatar_emoji,created_at,world,world_preference,last_seen_at'
+              : 'id,username,display_name,role,is_banned,avatar_url,avatar_emoji,created_at,world,last_seen_at';
+            return fetch(
+              `${SUPABASE_URL}/rest/v1/profiles?select=${cols}&order=created_at.desc&limit=500`,
+              { headers: { 'Content-Type': 'application/json', 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}` } }
+            );
+          };
+          let res = await fetchProfiles(true);
           if (!res.ok) {
             const txt = await res.text().catch(() => '');
-            return errorResponse(`Supabase ${res.status}: ${txt.substring(0, 200)}`);
+            // 42703 = undefined_column → retry ohne world_preference
+            if (txt.includes('42703') || txt.includes('world_preference')) {
+              res = await fetchProfiles(false);
+            }
+            if (!res.ok) {
+              const txt2 = await res.text().catch(() => '');
+              return errorResponse(`Supabase ${res.status}: ${txt2.substring(0, 200)}`);
+            }
           }
           const all = await res.json().catch(() => []);
           const list = Array.isArray(all) ? all : [];
