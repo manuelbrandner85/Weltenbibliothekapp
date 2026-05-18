@@ -1036,7 +1036,8 @@ class _MaterieHomeTabV5State extends State<MaterieHomeTabV5>
   }
 
   // ── RECENT ROOMS ───────────────────────────────────────────────────────
-  static const Map<String, (String, String)> _recentRoomMeta = {
+  // dart2js stolpert über const Map<String, Record> → final genutzt.
+  static final Map<String, (String, String)> _recentRoomMeta = {
     'politik': ('🎭', 'Politik'),
     'geschichte': ('🏛️', 'Geschichte'),
     'ufo': ('🛸', 'UFOs'),

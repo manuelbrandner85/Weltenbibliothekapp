@@ -1952,13 +1952,15 @@ class _ActivityTile extends StatelessWidget {
   final AuditLogEntry entry;
   const _ActivityTile({required this.entry});
 
-  static const _icons = {
-    'edit_message':   (Icons.edit_rounded,           Color(0xFF1E88E5)),
-    'delete_message': (Icons.delete_rounded,          Color(0xFFE53935)),
-    'promote':        (Icons.arrow_upward_rounded,    Color(0xFF43A047)),
-    'demote':         (Icons.arrow_downward_rounded,  Color(0xFFFB8C00)),
-    'ban':            (Icons.block_rounded,           Color(0xFFE53935)),
-    'unban':          (Icons.check_circle_rounded,    Color(0xFF00ACC1)),
+  // dart2js stolpert über const Map<String, Record> → final Map mit
+  // expliziten Tupel-Klassen umgangen.
+  static final Map<String, (IconData, Color)> _icons = {
+    'edit_message':   (Icons.edit_rounded,           const Color(0xFF1E88E5)),
+    'delete_message': (Icons.delete_rounded,          const Color(0xFFE53935)),
+    'promote':        (Icons.arrow_upward_rounded,    const Color(0xFF43A047)),
+    'demote':         (Icons.arrow_downward_rounded,  const Color(0xFFFB8C00)),
+    'ban':            (Icons.block_rounded,           const Color(0xFFE53935)),
+    'unban':          (Icons.check_circle_rounded,    const Color(0xFF00ACC1)),
   };
 
   static const _labels = {

@@ -946,8 +946,9 @@ class _KristallPainter extends CustomPainter {
   final Color accent;
   _KristallPainter(this.t, this.accent);
 
-  // 10 Kristall-Scherben mit festen Seed-Positionen
-  static const _seeds = <(double, double, double)>[
+  // 10 Kristall-Scherben mit festen Seed-Positionen.
+  // dart2js stolpert über const List<Record> → final genutzt.
+  static final List<(double, double, double)> _seeds = <(double, double, double)>[
     (0.15, 0.20, 0.0), (0.45, 0.12, 0.2), (0.78, 0.25, 0.4),
     (0.08, 0.55, 0.6), (0.35, 0.65, 0.8), (0.62, 0.50, 0.1),
     (0.88, 0.60, 0.3), (0.25, 0.82, 0.5), (0.58, 0.85, 0.7),

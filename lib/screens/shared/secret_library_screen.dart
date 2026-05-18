@@ -24,7 +24,8 @@ class SecretLibraryScreen extends StatefulWidget {
 
 class _SecretLibraryScreenState extends State<SecretLibraryScreen>
     with TickerProviderStateMixin {
-  static const _categories = <(String, String)>[
+  // dart2js stolpert über const List<Record> → final Liste umgangen.
+  static final List<(String, String)> _categories = <(String, String)>[
     ('CIA', 'cia'),
     ('Hermetik', 'hermetik'),
     ('Alchemie', 'alchemie'),

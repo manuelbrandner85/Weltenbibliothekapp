@@ -1415,7 +1415,8 @@ class _EnergieHomeTabV5State extends State<EnergieHomeTabV5>
   }
 
   // ── RECENT ROOMS ───────────────────────────────────────────────────────
-  static const Map<String, (String, String)> _recentRoomMeta = {
+  // dart2js stolpert über const Map<String, Record> → final genutzt.
+  static final Map<String, (String, String)> _recentRoomMeta = {
     'meditation': ('🧘', 'Meditation'),
     'astralreisen': ('🌌', 'Astralreisen'),
     'chakren': ('🔥', 'Chakren'),
