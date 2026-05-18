@@ -340,7 +340,10 @@ class _God {
 
 // Anreicherungs-Daten pro Gott (Mythos, Ritual, Element, Planet, Tag, Gaben).
 // Wird im Detail-Sheet angezeigt.
-const Map<String, ({String mythos, String ritual, String element, String planet, String day, String offering})> _godExtra = {
+// Hinweis: 'final' statt 'const' — dart2js (Flutter Web) hat einen Bug
+// mit const Maps die Records mit benannten Feldern als Werte halten.
+// Lazy initialization beim ersten Zugriff ist ohnehin günstig.
+final Map<String, ({String mythos, String ritual, String element, String planet, String day, String offering})> _godExtra = {
   'Zeus': (
     mythos: 'Zeus wurde als jüngster Sohn der Titanen Kronos und Rhea geboren. Sein Vater verschlang seine Kinder aus Angst, von ihnen entmachtet zu werden — doch Rhea versteckte Zeus auf Kreta und reichte Kronos einen in Windeln gewickelten Stein. Erwachsen befreite Zeus seine Geschwister, stürzte die Titanen in einer 10-Jahres-Schlacht und wurde Herr des Olymp.',
     ritual: 'Donnerstag-Abend (Jupiter-Tag): Kerze aufstellen, Eichenblatt oder Eichel daneben legen, drei tiefe Atemzüge in den Sonnenplexus, klar formulieren wo du gerade Verantwortung übernehmen willst. Worte: "Wie über mir, so in mir — ich nehme den Thron meines eigenen Lebens an."',
