@@ -16,7 +16,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../config/api_config.dart';
 
-import '../theme/wb_cinematic_tokens.dart';
+import '../../theme/wb_cinematic_tokens.dart';
 class WebLoginScreen extends StatefulWidget {
   final VoidCallback? onLoginSuccess;
   const WebLoginScreen({super.key, this.onLoginSuccess});

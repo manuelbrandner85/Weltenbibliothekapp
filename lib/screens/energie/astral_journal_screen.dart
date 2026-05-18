@@ -6,7 +6,7 @@ import 'package:sqflite/sqflite.dart'
     if (dart.library.html) '../../stubs/sqflite_stub.dart';
 import 'package:path/path.dart' as p;
 
-import '../theme/wb_cinematic_tokens.dart';
+import '../../theme/wb_cinematic_tokens.dart';
 // ──────────────────────────────────────────────────────────────
 // Astrales Tagebuch – Weltenbibliothek Energie-Welt
 // Cinema-Stil: Kosmisches Void, Nebel-Orbs, Sternenfeld
