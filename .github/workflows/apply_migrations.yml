@@ -417,6 +417,14 @@ jobs:
           run_sql "v91 Profile InvisibleAuth Compat + user_devices + role audit" \
             supabase/migrations/20260518_v91_profile_invisible_auth_compat.sql
 
+          # v92: Username-Immutability + Change-Request-Flow
+          #      Trigger verbietet UPDATE auf profiles.username sofern nicht
+          #      (a) Service-Role, (b) root_admin, (c) approved Change-Request
+          #      <7 Tage alt. Neue Tabelle username_change_requests fuer den
+          #      Approval-Workflow + View *_pending fuer Admin-Dashboard.
+          run_sql "v92 Username Immutability + Change-Request Flow" \
+            supabase/migrations/20260518_v92_username_immutability.sql
+
           echo ""
           if [ "$MIGRATION_FAILED" = "1" ]; then
             echo "⚠️  Einige frühe Migrationen schlugen fehl (siehe Warnungen oben)."

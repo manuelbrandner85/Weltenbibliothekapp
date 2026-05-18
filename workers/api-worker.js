@@ -1174,15 +1174,14 @@ export default {
           delete body.password;
 
           // v5.44.3: InvisibleAuth-User schicken ihre client-generierte ID
-          // im Feld 'userId' oder 'legacy_user_id'. Mappe auf profiles-Spalte.
-          // Wenn body.userId wie 'user_<ts>_<rand>' aussieht (TEXT statt UUID),
-          // schreibe sie in profiles.legacy_user_id, NICHT in id.
+          // im Feld 'userId'. Mappe auf profiles.legacy_user_id.
           const incomingUserId = body.userId || body.user_id || body.id;
+          let legacyUserId = null;
+          let knownUuid = null;
           if (incomingUserId && typeof incomingUserId === 'string') {
             const looksLikeUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(incomingUserId);
-            if (!looksLikeUuid) {
-              body.legacy_user_id = incomingUserId;
-            }
+            if (looksLikeUuid) knownUuid = incomingUserId;
+            else legacyUserId = incomingUserId;
           }
           // ID-Felder vom Client immer entfernen damit profiles.id auto-generiert
           // wird (gen_random_uuid()) - vermeidet UUID-Validierungsfehler.
@@ -1190,20 +1189,68 @@ export default {
           delete body.user_id;
           delete body.id;
 
-          // Upsert via username (UNIQUE constraint) — Trigger setzt role=root_admin für 'Weltenbibliothek'
           const anonKey = env.SUPABASE_ANON_KEY || '';
           const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || anonKey;
-          // Service-Role-Key nutzen damit Trigger und role-Feld auch mit RLS schreiben kann
-          const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?on_conflict=username`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'apikey': serviceKey,
-              'Authorization': `Bearer ${serviceKey}`,
-              'Prefer': 'return=representation,resolution=merge-duplicates',
-            },
-            body: JSON.stringify(body),
-          });
+
+          // v5.44.3+v92: Username IMMUTABLE. Lookup-Strategie:
+          //   1. Existing-Profil per legacy_user_id ODER known UUID finden
+          //   2. Wenn gefunden -> PATCH ohne username-Feld
+          //      (Trigger enforce_username_immutability haut sonst zurueck)
+          //   3. Wenn nicht gefunden -> INSERT mit allen Feldern inkl. username
+          let existing = null;
+          if (knownUuid) {
+            const lookup = await fetch(
+              `${SUPABASE_URL}/rest/v1/profiles?select=id,username,role,legacy_user_id&id=eq.${knownUuid}&limit=1`,
+              { headers: { 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}` } }
+            );
+            const arr = await lookup.json().catch(() => []);
+            if (Array.isArray(arr) && arr.length > 0) existing = arr[0];
+          }
+          if (!existing && legacyUserId) {
+            const lookup = await fetch(
+              `${SUPABASE_URL}/rest/v1/profiles?select=id,username,role,legacy_user_id&legacy_user_id=eq.${encodeURIComponent(legacyUserId)}&limit=1`,
+              { headers: { 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}` } }
+            );
+            const arr = await lookup.json().catch(() => []);
+            if (Array.isArray(arr) && arr.length > 0) existing = arr[0];
+          }
+
+          let res;
+          if (existing) {
+            // UPDATE: username NIE veraendern (immutable). Root-Admin-Sonderfall
+            // wird durch DB-Trigger gehandled - wir lassen username sicherheits-
+            // halber im PATCH-Body komplett raus.
+            const isRootAdmin = (existing.role || '').toLowerCase().replace('-', '_') === 'root_admin';
+            const patchBody = { ...body };
+            if (!isRootAdmin) {
+              delete patchBody.username;
+              delete patchBody.legacy_user_id; // legacy_user_id ist auch immutable
+            }
+            res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${existing.id}`, {
+              method: 'PATCH',
+              headers: {
+                'Content-Type': 'application/json',
+                'apikey': serviceKey,
+                'Authorization': `Bearer ${serviceKey}`,
+                'Prefer': 'return=representation',
+              },
+              body: JSON.stringify(patchBody),
+            });
+          } else {
+            // INSERT: neuer User, alles inkl. username erlaubt.
+            const insertBody = { ...body };
+            if (legacyUserId) insertBody.legacy_user_id = legacyUserId;
+            res = await fetch(`${SUPABASE_URL}/rest/v1/profiles`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'apikey': serviceKey,
+                'Authorization': `Bearer ${serviceKey}`,
+                'Prefer': 'return=representation',
+              },
+              body: JSON.stringify(insertBody),
+            });
+          }
           const data = await res.json().catch(() => ({}));
           const profile = Array.isArray(data) ? data[0] : data;
           if (profile && profile.id) {
@@ -1221,6 +1268,124 @@ export default {
           return jsonResponse(data, res.status < 300 ? 200 : res.status);
         } catch (e) {
           return errorResponse(`Profil-Speicher-Fehler: ${e.message}`);
+        }
+      }
+
+      // ── POST /api/profile/username-change-request (v92) ────────────────
+      // Body: { userId, requested_username, reason? }
+      // Erlaubt User einen Username-Wechsel zu beantragen. Pro User max
+      // 1 pending Request gleichzeitig (DB-Constraint).
+      if (method === 'POST' && parts[3] === 'username-change-request' && parts.length === 4) {
+        try {
+          const body = await request.json().catch(() => ({}));
+          const incomingUserId = body.userId || body.user_id;
+          const requested = String(body.requested_username || '').trim();
+          const reason = String(body.reason || '').slice(0, 500);
+
+          if (!incomingUserId) return errorResponse('userId fehlt', 400);
+          if (!requested || requested.length < 3 || requested.length > 32) {
+            return errorResponse('requested_username muss 3-32 Zeichen sein', 400);
+          }
+          if (!/^[a-zA-Z0-9_.\-]+$/.test(requested)) {
+            return errorResponse(
+              'requested_username darf nur Buchstaben/Zahlen/._- enthalten', 400
+            );
+          }
+
+          const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+          const svcH = { 'Content-Type': 'application/json', 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}` };
+
+          // Lookup Profil
+          const looksLikeUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(incomingUserId);
+          const lookupCol = looksLikeUuid ? 'id' : 'legacy_user_id';
+          const lookup = await fetch(
+            `${SUPABASE_URL}/rest/v1/profiles?select=id,username,legacy_user_id,role&${lookupCol}=eq.${encodeURIComponent(incomingUserId)}&limit=1`,
+            { headers: svcH }
+          );
+          const arr = await lookup.json().catch(() => []);
+          const profile = Array.isArray(arr) && arr.length > 0 ? arr[0] : null;
+          if (!profile) return errorResponse('Profil nicht gefunden', 404);
+
+          // Prefer: Username schon frei? Wenn ja, bei root_admin DIREKT anwenden
+          // sonst Antrag stellen.
+          const isRootAdmin = (profile.role || '').toLowerCase() === 'root_admin';
+          if (isRootAdmin) {
+            // Direkt-Update (Trigger laesst root_admin durch)
+            const patchRes = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${profile.id}`, {
+              method: 'PATCH', headers: { ...svcH, 'Prefer': 'return=representation' },
+              body: JSON.stringify({ username: requested }),
+            });
+            if (!patchRes.ok) {
+              const t = await patchRes.text().catch(() => '');
+              return errorResponse(`Direkt-Update fehlgeschlagen: ${t.slice(0, 200)}`);
+            }
+            return jsonResponse({
+              success: true, direct: true, message: 'root_admin: direkt geaendert',
+              new_username: requested,
+            });
+          }
+
+          // Username schon belegt?
+          const taken = await fetch(
+            `${SUPABASE_URL}/rest/v1/profiles?select=id&username=eq.${encodeURIComponent(requested)}&limit=1`,
+            { headers: svcH }
+          );
+          const takenArr = await taken.json().catch(() => []);
+          if (Array.isArray(takenArr) && takenArr.length > 0) {
+            return errorResponse('Username bereits vergeben', 409);
+          }
+
+          // Insert Request
+          const insertRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/username_change_requests`,
+            {
+              method: 'POST', headers: { ...svcH, 'Prefer': 'return=representation' },
+              body: JSON.stringify({
+                profile_id: profile.id,
+                legacy_user_id: profile.legacy_user_id,
+                current_username: profile.username,
+                requested_username: requested,
+                reason: reason || null,
+                status: 'pending',
+              }),
+            }
+          );
+          if (!insertRes.ok) {
+            const t = await insertRes.text().catch(() => '');
+            // 23505 = unique_violation -> User hat schon einen pending Request
+            if (t.includes('23505') || t.includes('one_pending_per_user')) {
+              return errorResponse('Du hast bereits einen offenen Antrag', 409);
+            }
+            return errorResponse(`Antrag-Speicherung fehlgeschlagen: ${t.slice(0, 200)}`);
+          }
+          const reqData = await insertRes.json().catch(() => []);
+          return jsonResponse({
+            success: true, direct: false,
+            message: 'Antrag eingereicht - wartet auf Admin-Approval',
+            request: Array.isArray(reqData) ? reqData[0] : reqData,
+          });
+        } catch (e) {
+          return errorResponse(`Username-Change-Request-Fehler: ${e.message}`);
+        }
+      }
+
+      // ── GET /api/profile/my-username-request?userId=XXX ────────────────
+      // Liefert aktuellen pending Request (oder null) fuer einen User.
+      if (method === 'GET' && parts[3] === 'my-username-request') {
+        try {
+          const incomingUserId = url.searchParams.get('userId');
+          if (!incomingUserId) return errorResponse('userId fehlt', 400);
+          const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+          const looksLikeUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(incomingUserId);
+          const lookupCol = looksLikeUuid ? 'profile_id' : 'legacy_user_id';
+          const r = await fetch(
+            `${SUPABASE_URL}/rest/v1/username_change_requests?select=*&${lookupCol}=eq.${encodeURIComponent(incomingUserId)}&status=eq.pending&limit=1`,
+            { headers: { 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}` } }
+          );
+          const arr = await r.json().catch(() => []);
+          return jsonResponse({ request: Array.isArray(arr) && arr.length > 0 ? arr[0] : null });
+        } catch (e) {
+          return errorResponse(`My-Request-Fehler: ${e.message}`);
         }
       }
 
@@ -3079,6 +3244,111 @@ export default {
           });
         } catch (e) {
           return errorResponse(`XP-Fehler: ${e.message}`);
+        }
+      }
+
+      // ── GET /api/admin/username-change-requests (v92) ─────────────────
+      // Liefert alle pending Username-Change-Requests fuer den Admin-Dashboard.
+      if (method === 'GET' && path === '/api/admin/username-change-requests') {
+        try {
+          const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+          const r = await fetch(
+            `${SUPABASE_URL}/rest/v1/username_change_requests_pending?select=*`,
+            { headers: { 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}` } }
+          );
+          const arr = await r.json().catch(() => []);
+          return jsonResponse({
+            success: true,
+            requests: Array.isArray(arr) ? arr : [],
+            total: Array.isArray(arr) ? arr.length : 0,
+          });
+        } catch (e) {
+          return errorResponse(`Requests-Fehler: ${e.message}`);
+        }
+      }
+
+      // ── POST /api/admin/username-change-requests/:id/approve|reject ────
+      // Body: { admin?: string (Username des Entscheiders), note?: string }
+      if (method === 'POST' &&
+          path.startsWith('/api/admin/username-change-requests/') &&
+          (path.endsWith('/approve') || path.endsWith('/reject'))) {
+        try {
+          const reqId = path.split('/')[4];
+          const decision = path.endsWith('/approve') ? 'approved' : 'rejected';
+          const body = await request.json().catch(() => ({}));
+          const adminUsername = String(body.admin || 'unknown').slice(0, 80);
+          const note = String(body.note || '').slice(0, 500);
+
+          const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY;
+          const svcH = {
+            'Content-Type': 'application/json',
+            'apikey': serviceKey,
+            'Authorization': `Bearer ${serviceKey}`,
+          };
+
+          // Fetch request
+          const fetchReq = await fetch(
+            `${SUPABASE_URL}/rest/v1/username_change_requests?id=eq.${reqId}&limit=1`,
+            { headers: svcH }
+          );
+          const reqArr = await fetchReq.json().catch(() => []);
+          if (!Array.isArray(reqArr) || reqArr.length === 0) {
+            return errorResponse('Request nicht gefunden', 404);
+          }
+          const reqRow = reqArr[0];
+          if (reqRow.status !== 'pending') {
+            return errorResponse(`Request bereits ${reqRow.status}`, 400);
+          }
+
+          // Update status
+          await fetch(
+            `${SUPABASE_URL}/rest/v1/username_change_requests?id=eq.${reqId}`,
+            {
+              method: 'PATCH',
+              headers: { ...svcH, 'Prefer': 'return=minimal' },
+              body: JSON.stringify({
+                status: decision,
+                decided_by_username: adminUsername,
+                decided_at: new Date().toISOString(),
+                decision_note: note || null,
+              }),
+            }
+          );
+
+          // Bei Approval: Username direkt aendern (Trigger laesst durch wegen
+          // approved Request <7 Tage alt). Aber sicherheitshalber selber als
+          // Service-Role machen.
+          if (decision === 'approved' && reqRow.profile_id) {
+            // Pruefe ob neuer Name noch frei (race condition)
+            const taken = await fetch(
+              `${SUPABASE_URL}/rest/v1/profiles?select=id&username=eq.${encodeURIComponent(reqRow.requested_username)}&limit=1`,
+              { headers: svcH }
+            );
+            const takenArr = await taken.json().catch(() => []);
+            if (Array.isArray(takenArr) && takenArr.length > 0
+                && takenArr[0].id !== reqRow.profile_id) {
+              return errorResponse(
+                'Username ist mittlerweile vergeben - Request abgelehnt', 409
+              );
+            }
+            await fetch(
+              `${SUPABASE_URL}/rest/v1/profiles?id=eq.${reqRow.profile_id}`,
+              {
+                method: 'PATCH',
+                headers: { ...svcH, 'Prefer': 'return=minimal' },
+                body: JSON.stringify({ username: reqRow.requested_username }),
+              }
+            );
+          }
+
+          return jsonResponse({
+            success: true,
+            decision,
+            request_id: reqId,
+            new_username: decision === 'approved' ? reqRow.requested_username : null,
+          });
+        } catch (e) {
+          return errorResponse(`Decision-Fehler: ${e.message}`);
         }
       }
 
