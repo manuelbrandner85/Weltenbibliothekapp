@@ -30,7 +30,6 @@ import 'calculators/audio_meditation_screen.dart'; // 🧘 TTS-Meditationen
 import 'calculators/photo_progress_screen.dart'; // 📸 Vor/Nach
 import 'calculators/crystal_photo_id_screen.dart'; // 💎 KI-Foto-ID
 import 'calculators/voice_affirmation_screen.dart'; // 💫 Voice-Recording
-import 'calculators/pdf_reader_screen.dart'; // 📄 PDF-Reader
 import 'calculators/new_spirit_tool_screens.dart';
 import 'meditation_timer_screen.dart'; // MeditationTimerScreen (canonical, deduplicated)
 import 'calculators/moon_calendar_tool_screen.dart'; // 🌕 v19 Mondkalender
@@ -644,16 +643,6 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'color': const Color(0xFF4A148C),
         'category': 'cosmos',
         'screen': const EnergieRechercheScreen(),
-      },
-      // 📄 PDF-Reader — in-App PDF-Lesen mit Bookmarks
-      {
-        'icon': Icons.picture_as_pdf,
-        'iconEmoji': '📄',
-        'title': 'PDF-Reader',
-        'subtitle': 'PDFs öffnen, Lesezeichen speichern',
-        'color': const Color(0xFF7C4DFF),
-        'category': 'cosmos',
-        'screen': const PdfReaderScreen(),
       },
     ];
   }
