@@ -175,53 +175,64 @@ jobs:
           echo "=== shorebird releases list --platforms=android ==="
           shorebird releases list --platforms=android 2>&1 || true
 
-      - name: 📡 Patch veröffentlichen (pubspec + letzter Release-Tag)
-        # STRATEGIE (ab 18.5.2026): Patches gehen an MEHRERE Release-Versionen
-        # damit auch User die ein älteres APK installiert haben Updates bekommen.
+      - name: 📡 Patch veröffentlichen (alle aktiven Release-Versionen)
+        # STRATEGIE (ab 18.5.2026): Patches gehen an ALLE in den letzten
+        # PATCH_LOOKBACK GitHub-Release-Tags registrierten Shorebird-Releases.
+        # Damit bekommen auch User die ein älteres APK installiert haben die
+        # neuen Patches - kein erzwungener Re-Install.
         #
-        # Konkret patchen wir:
-        #   1. Die Version aus pubspec.yaml (immer)
-        #   2. Die Version vom letzten GitHub-Release-Tag (falls != pubspec)
-        #
-        # Wenn ein Shorebird-Release für eine der Versionen nicht existiert,
-        # wird der einzelne Patch mit Warnung übersprungen — der andere läuft
-        # trotzdem durch.
+        # PATCH_LOOKBACK = wieviele letzte Tags wir versuchen zu patchen.
+        # Default 8. Wenn ein Shorebird-Release für eine Version nicht
+        # registriert ist, wird die einzelne Version übersprungen.
+        # Job läuft nur rot wenn ALLE Versionen fehlschlagen.
         #
         # --allow-asset-diffs bleibt weil MaterialIcons.otf bei jedem Build
         # anders tree-geshaked wird sobald neue Icons im Dart-Code stehen.
         env:
           SHOREBIRD_TOKEN: ${{ secrets.SHOREBIRD_TOKEN }}
+          PATCH_LOOKBACK: 8
         run: |
           set -uo pipefail
 
-          # Primär-Ziel: aktuelle pubspec.yaml-Version
-          PRIMARY=$(grep '^version:' pubspec.yaml | sed 's/version: //' | tr -d '[:space:]')
-
-          # Sekundär-Ziel: pubspec aus dem letzten GitHub-Release-Tag
-          # (oft != pubspec wenn Build-Nummer revertet wurde aber User noch
-          # ältere APK installiert hat).
+          # Tags holen (force damit lokale Snapshots überschrieben werden)
           git fetch --tags --force --depth=1 origin 2>/dev/null || true
-          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
-          SECONDARY=""
-          if [ -n "$LAST_TAG" ]; then
-            SECONDARY=$(git show "$LAST_TAG:pubspec.yaml" 2>/dev/null \
-              | grep '^version:' | sed 's/version: //' | tr -d '[:space:]' || echo "")
-          fi
 
-          # Liste der zu patchenden Versionen (dedupliziert)
-          VERSIONS="$PRIMARY"
-          if [ -n "$SECONDARY" ] && [ "$SECONDARY" != "$PRIMARY" ]; then
-            VERSIONS="$PRIMARY $SECONDARY"
-          fi
+          # Letzte N Tags sortiert nach Versions-Reihenfolge (neueste zuerst)
+          TAGS=$(git tag --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' \
+                  | head -${PATCH_LOOKBACK})
 
-          echo "Versionen zu patchen: $VERSIONS"
+          # Plus die aktuelle pubspec-Version (falls != letzter Tag)
+          PUBSPEC_V=$(grep '^version:' pubspec.yaml | sed 's/version: //' | tr -d '[:space:]')
+
+          # Aus jedem Tag die pubspec-Version extrahieren
+          VERSIONS=""
+          declare -A SEEN
+          # 1. Pubspec immer drin (aktueller HEAD)
+          VERSIONS="$PUBSPEC_V"
+          SEEN["$PUBSPEC_V"]=1
+          # 2. Aus jedem Tag die Version lesen
+          for t in $TAGS; do
+            v=$(git show "$t:pubspec.yaml" 2>/dev/null \
+                | grep '^version:' | sed 's/version: //' | tr -d '[:space:]' || echo "")
+            if [ -n "$v" ] && [ -z "${SEEN[$v]:-}" ]; then
+              VERSIONS="$VERSIONS $v"
+              SEEN["$v"]=1
+            fi
+          done
+
+          echo "================================================"
+          echo "Patche $(echo $VERSIONS | wc -w) Release-Versionen (Lookback=$PATCH_LOOKBACK):"
+          for v in $VERSIONS; do echo "  • $v"; done
+          echo "================================================"
+
           FAIL_COUNT=0
           SUCCESS_COUNT=0
+          FAILED_VERSIONS=""
           for v in $VERSIONS; do
             echo ""
-            echo "================================================"
-            echo "Patching Release: $v"
-            echo "================================================"
+            echo "------------------------------------------------"
+            echo "📡 Patch -> $v"
+            echo "------------------------------------------------"
             if shorebird patch android \
               --allow-asset-diffs \
               --release-version="$v" \
@@ -232,18 +243,24 @@ jobs:
               --dart-define=SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY \
               --dart-define=CLOUDFLARE_WORKER_URL=https://weltenbibliothek-api.brandy13062.workers.dev \
               --dart-define=LIVEKIT_URL=${{ secrets.LIVEKIT_URL || 'wss://livekit-wb.srv1438024.hstgr.cloud' }}; then
-              echo "✅ Patch an Release $v gesendet"
+              echo "✅ $v - Patch erfolgreich"
               SUCCESS_COUNT=$((SUCCESS_COUNT+1))
             else
-              echo "⚠️ Patch an $v fehlgeschlagen (Release evtl. nicht registriert)"
+              echo "⚠️ $v - Patch fehlgeschlagen (Release nicht registriert?)"
               FAIL_COUNT=$((FAIL_COUNT+1))
+              FAILED_VERSIONS="$FAILED_VERSIONS $v"
             fi
           done
+
           echo ""
           echo "================================================"
-          echo "Zusammenfassung: $SUCCESS_COUNT erfolgreich, $FAIL_COUNT fehlgeschlagen"
+          echo "Zusammenfassung: $SUCCESS_COUNT/$(($SUCCESS_COUNT+$FAIL_COUNT)) erfolgreich"
+          if [ -n "$FAILED_VERSIONS" ]; then
+            echo "Fehlgeschlagen:$FAILED_VERSIONS"
+            echo "(Diese Versionen haben evtl. keinen Shorebird-Release - "
+            echo " manuell shorebird_release.yml triggern mit entsprechender pubspec)"
+          fi
           echo "================================================"
-          # Job nur fehlschlagen wenn ALLE Versionen fehlgeschlagen sind
           if [ $SUCCESS_COUNT -eq 0 ]; then
             echo "❌ Kein einziger Patch erfolgreich"
             exit 1
