@@ -839,6 +839,196 @@ class _UsersTabState extends State<_UsersTab> {
     if (ok) _load();
   }
 
+  // Manual XP-Vergabe: Dialog mit Quick-Buttons (+10/+50/+100/+500/-50) und
+  // freiem Eingabefeld + Begründung. Sendet an Worker → audit_log + Push.
+  Future<void> _grantXp(WorldUser u) async {
+    final amountCtrl = TextEditingController();
+    final reasonCtrl = TextEditingController();
+    int? selectedPreset;
+    final presets = [10, 50, 100, 250, 500, -50];
+
+    final result = await showDialog<({int amount, String reason})?>(
+      context: context,
+      builder: (dialogCtx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          backgroundColor: const Color(0xFF12121E),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Row(children: [
+            Container(
+              padding: const EdgeInsets.all(7),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                    colors: [Color(0xFFFFC107), Color(0xFFFF9800)]),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 18),
+            ),
+            const SizedBox(width: 10),
+            const Expanded(
+              child: Text('XP-Vergabe',
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+            ),
+          ]),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Empfänger: @${u.username}',
+                    style: TextStyle(color: widget.accent, fontSize: 12)),
+                const SizedBox(height: 14),
+                const Text('Schnell-Wahl',
+                    style: TextStyle(
+                        color: Colors.white54, fontSize: 11, letterSpacing: 1.2)),
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 6, runSpacing: 6,
+                  children: presets.map((p) {
+                    final sel = selectedPreset == p;
+                    final neg = p < 0;
+                    return GestureDetector(
+                      onTap: () => setDialogState(() {
+                        selectedPreset = p;
+                        amountCtrl.text = p.toString();
+                      }),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                        decoration: BoxDecoration(
+                          color: sel
+                              ? (neg ? Colors.red : const Color(0xFFFFC107)).withValues(alpha: 0.2)
+                              : Colors.white.withValues(alpha: 0.05),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: sel
+                                ? (neg ? Colors.red : const Color(0xFFFFC107))
+                                : Colors.white12,
+                          ),
+                        ),
+                        child: Text(
+                          p > 0 ? '+$p' : '$p',
+                          style: TextStyle(
+                            color: sel
+                                ? (neg ? Colors.red.shade100 : const Color(0xFFFFE082))
+                                : Colors.white70,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 14),
+                TextField(
+                  controller: amountCtrl,
+                  keyboardType: const TextInputType.numberWithOptions(signed: true),
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    labelText: 'Betrag (±, max 10000)',
+                    labelStyle: const TextStyle(color: Colors.white54),
+                    filled: true,
+                    fillColor: Colors.white.withValues(alpha: 0.05),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: Colors.white12),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: Colors.white12),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: widget.accent),
+                    ),
+                  ),
+                  onChanged: (_) => setDialogState(() => selectedPreset = null),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: reasonCtrl,
+                  maxLength: 80,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    labelText: 'Begründung (sichtbar in Push)',
+                    labelStyle: const TextStyle(color: Colors.white54),
+                    filled: true,
+                    fillColor: Colors.white.withValues(alpha: 0.05),
+                    counterStyle: const TextStyle(color: Colors.white24, fontSize: 10),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: Colors.white12),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: Colors.white12),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: widget.accent),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                const Text('Vergabe wird im Audit-Log protokolliert.',
+                    style: TextStyle(color: Colors.white38, fontSize: 11)),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogCtx, null),
+              child: const Text('Abbrechen', style: TextStyle(color: Colors.white54)),
+            ),
+            ElevatedButton.icon(
+              onPressed: () {
+                final a = int.tryParse(amountCtrl.text.trim());
+                if (a == null || a == 0) {
+                  ScaffoldMessenger.of(dialogCtx).showSnackBar(const SnackBar(
+                    content: Text('Bitte gültigen Betrag eingeben'),
+                    backgroundColor: Colors.redAccent,
+                  ));
+                  return;
+                }
+                final r = reasonCtrl.text.trim().isEmpty
+                    ? 'Admin-Anpassung'
+                    : reasonCtrl.text.trim();
+                Navigator.pop(dialogCtx, (amount: a, reason: r));
+              },
+              icon: const Icon(Icons.send_rounded, color: Colors.white, size: 16),
+              label: const Text('Vergeben', style: TextStyle(color: Colors.white)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFFFC107),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (result == null) return;
+
+    setState(() => _processing = true);
+    final res = await WorldAdminServiceV162.grantXp(
+      userId: u.userId,
+      amount: result.amount,
+      reason: result.reason,
+      adminUsername: widget.admin.username,
+    );
+    setState(() => _processing = false);
+    if (res != null && (res['success'] == true)) {
+      final newXp = res['new_xp'];
+      _snack(
+        result.amount > 0
+            ? '✨ +${result.amount} XP an @${u.username} (neu: $newXp)'
+            : '⚠️ ${result.amount} XP für @${u.username} (neu: $newXp)',
+        color: result.amount > 0 ? Colors.green.shade700 : Colors.orange,
+      );
+    } else {
+      _snack('❌ XP-Vergabe fehlgeschlagen', color: Colors.red);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Stack(
@@ -996,6 +1186,7 @@ class _UsersTabState extends State<_UsersTab> {
                                     onUnban: () => _unban(u),
                                     onPromote: () => _promote(u),
                                     onDemote: () => _demote(u),
+                                    onGrantXp: () => _grantXp(u),
                                   ),
                                 ),
                               ]);
@@ -1829,6 +2020,7 @@ class _UserTile extends StatelessWidget {
   final bool isRootAdmin;
   final Color accent, accentBright;
   final VoidCallback onBan, onUnban, onPromote, onDemote;
+  final VoidCallback? onGrantXp;
   const _UserTile({
     required this.user,
     required this.isRootAdmin,
@@ -1838,6 +2030,7 @@ class _UserTile extends StatelessWidget {
     required this.onUnban,
     required this.onPromote,
     required this.onDemote,
+    this.onGrantXp,
   });
 
   Color get _roleColor => switch (user.role) {
@@ -1951,6 +2144,9 @@ class _UserTile extends StatelessWidget {
                         Icons.arrow_downward_rounded, 'Degradieren', Colors.orange, onDemote),
                   _ActionBtn(Icons.block_rounded, 'Sperren', Colors.red, onBan),
                   _ActionBtn(Icons.check_circle_outline_rounded, 'Entsperren', Colors.teal, onUnban),
+                  if (onGrantXp != null)
+                    _ActionBtn(Icons.auto_awesome_rounded, 'XP vergeben',
+                        const Color(0xFFFFC107), onGrantXp!),
                 ]),
               ]),
             ),

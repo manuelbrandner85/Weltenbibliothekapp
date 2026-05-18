@@ -702,6 +702,37 @@ extension WorldAdminServiceV162 on WorldAdminService {
     }
   }
 
+  // Manual XP-Vergabe durch Admin. amount > 0 = Bonus, amount < 0 = Abzug.
+  // Worker schreibt Audit-Log + sendet Push.
+  // Returns: { success, new_xp, amount } oder null bei Fehler.
+  static Future<Map<String, dynamic>?> grantXp({
+    required String userId,
+    required int amount,
+    required String reason,
+    String? adminUsername,
+  }) async {
+    try {
+      final url = Uri.parse('${WorldAdminService._baseUrl}/api/admin/users/$userId/xp');
+      final response = await http.post(
+        url,
+        headers: const {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'amount': amount,
+          'reason': reason,
+          'admin': adminUsername ?? 'admin',
+        }),
+      ).timeout(WorldAdminService._timeout);
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      }
+      if (kDebugMode) debugPrint('❌ grantXp HTTP ${response.statusCode}: ${response.body}');
+      return null;
+    } catch (e) {
+      if (kDebugMode) debugPrint('❌ grantXp: $e');
+      return null;
+    }
+  }
+
   static Future<bool> unmuteUser({required String userId, String? adminUserId}) async {
     try {
       final url = Uri.parse('${WorldAdminService._baseUrl}/api/admin/users/$userId/unmute');

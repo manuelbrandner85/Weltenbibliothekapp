@@ -2574,6 +2574,98 @@ export default {
         return jsonResponse({ success: true, action: 'unmuted' });
       }
 
+      // ── POST /api/admin/users/:userId/xp  (Admin vergibt XP manuell) ──
+      // Body: { amount: int, reason: string, admin: string }
+      // amount kann positiv (Bonus) oder negativ (Abzug) sein, |amount| ≤ 10000.
+      // Versucht zuerst RPC add_user_xp; bei Fehler direkter PATCH auf profiles.xp.
+      // Schreibt admin_audit_log und sendet In-App + Push-Benachrichtigung.
+      if (method === 'POST' && path.includes('/xp')) {
+        try {
+          const userId = path.split('/')[5];
+          if (!userId) return errorResponse('userId fehlt', 400);
+          const body = await request.json().catch(() => ({}));
+          const amountRaw = Number(body.amount);
+          if (!Number.isFinite(amountRaw) || amountRaw === 0) {
+            return errorResponse('amount muss eine Zahl ≠ 0 sein', 400);
+          }
+          const amount = Math.max(-10000, Math.min(10000, Math.trunc(amountRaw)));
+          const reason = String(body.reason || 'admin_grant').slice(0, 200);
+          const adminUsername = String(body.admin || 'unknown').slice(0, 80);
+
+          // Versuch 1: RPC add_user_xp (atomares Increment).
+          let newXp = null;
+          let usedRpc = false;
+          try {
+            const rpcRes = await fetch(`${SUPABASE_URL}/rest/v1/rpc/add_user_xp`, {
+              method: 'POST', headers: svcHeaders,
+              body: JSON.stringify({ p_user_id: userId, p_amount: amount, p_reason: `admin:${reason}` }),
+            });
+            if (rpcRes.ok) {
+              usedRpc = true;
+              const r = await rpcRes.json().catch(() => null);
+              if (typeof r === 'number') newXp = r;
+              else if (r && typeof r === 'object' && 'xp' in r) newXp = r.xp;
+            }
+          } catch (_) { /* fall through to PATCH */ }
+
+          // Versuch 2: Direkter PATCH wenn RPC nicht existiert.
+          if (!usedRpc) {
+            // Aktuellen XP lesen
+            const cur = await fetch(
+              `${SUPABASE_URL}/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}&select=xp,username&limit=1`,
+              { headers: svcHeaders }
+            );
+            const curData = await cur.json().catch(() => []);
+            const curXp = Number((Array.isArray(curData) && curData[0]?.xp) || 0);
+            newXp = Math.max(0, curXp + amount);
+            const patch = await fetch(
+              `${SUPABASE_URL}/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}`,
+              {
+                method: 'PATCH',
+                headers: { ...svcHeaders, 'Prefer': 'return=minimal' },
+                body: JSON.stringify({ xp: newXp }),
+              }
+            );
+            if (!patch.ok) {
+              const t = await patch.text().catch(() => '');
+              return errorResponse(`XP-Patch fehlgeschlagen: ${t}`, patch.status);
+            }
+          }
+
+          // Audit-Log (fire-and-forget)
+          fetch(`${SUPABASE_URL}/rest/v1/admin_audit_log`, {
+            method: 'POST',
+            headers: { ...svcHeaders, 'Prefer': 'return=minimal' },
+            body: JSON.stringify({
+              admin_username: adminUsername,
+              action: amount > 0 ? 'xp_grant' : 'xp_revoke',
+              target_identity: userId,
+              target_username: null,
+              details: { amount, reason, new_xp: newXp, used_rpc: usedRpc },
+            }),
+          }).catch(() => {});
+
+          // Push-Benachrichtigung an User
+          if (amount > 0) {
+            await pushNotif(userId, 'xp_grant', '✨ XP-Bonus erhalten',
+              `Du hast ${amount} XP von einem Admin erhalten · ${reason}`,
+              { type: 'xp_grant', amount, reason });
+          } else {
+            await pushNotif(userId, 'xp_revoke', '⚠️ XP-Anpassung',
+              `Ein Admin hat ${amount} XP angepasst · ${reason}`,
+              { type: 'xp_revoke', amount, reason });
+          }
+
+          return jsonResponse({
+            success: true,
+            action: amount > 0 ? 'xp_grant' : 'xp_revoke',
+            amount, new_xp: newXp, used_rpc: usedRpc,
+          });
+        } catch (e) {
+          return errorResponse(`XP-Fehler: ${e.message}`);
+        }
+      }
+
       // ── Fallback GET ─────────────────────────────────────────
       if (method === 'GET') {
         if (path.includes('/users')) {
