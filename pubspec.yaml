@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 5.44.0+20260520
+version: 5.44.1+20260521
 
 environment:
   sdk: '>=3.5.0 <4.0.0'
@@ -90,6 +90,8 @@ dependencies:
   speech_to_text: ^7.0.0    # Spracherkennung für Voice Search
   permission_handler: ^11.3.1  # Mikrofon-Berechtigungen
   connectivity_plus: ^6.1.2  # Offline-Mode Detection
+  # 💓 v5.44.1: Direkt-BLE Heart-Rate (Polar/Wahoo/Garmin/Galaxy Watch ohne Health Connect)
+  flutter_blue_plus: ^1.32.12  # BLE-Direktverbindung zu HR-Geräten
   # record: ^5.1.2            # ❌ DEAKTIVIERT für Android Build (record_linux Kompatibilitätsproblem)
   flutter_cache_manager: ^3.3.0  # 🆕 Offline Cache Management
   # pdfx entfernt – kein PdfView/PdfController-Import gefunden
