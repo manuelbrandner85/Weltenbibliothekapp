@@ -32,6 +32,7 @@ import '../data/hidden_facts.dart';
 import '../data/achievement_data.dart';
 import '../widgets/mini_game.dart';
 import '../services/achievement_service.dart';
+import 'easter_egg/easter_egg_sheet.dart';
 
 /// CINEMA-QUALITY Portal mit Nebula-Effekt und Advanced Particle System
 class PortalHomeScreen extends StatefulWidget {
@@ -275,99 +276,33 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> with TickerProvider
   }
   
   void _showEasterEgg() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.black.withValues(alpha: 0.95),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
-          children: [
-            Icon(Icons.auto_awesome, color: Color(0xFFFFD700)),
-            SizedBox(width: 10),
-            Text('🌀 Portal Geheimnis', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
-          ],
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        opaque: false,
+        barrierColor: Colors.black.withValues(alpha: 0.6),
+        transitionDuration: const Duration(milliseconds: 500),
+        pageBuilder: (_, __, ___) => EasterEggSheet(
+          onColorPicker: _showPortalColorPicker,
+          onHiddenFacts: _showHiddenFacts,
+          onMiniGame: _startMiniGame,
+          onCheatCodes: _showCheatCodes,
+          onAchievements: _showAchievements,
+          onDeveloperStats: _showDeveloperStats,
+          onSharePortalStats: _sharePortalStats,
+          onAbout: _showAboutPortal,
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Du hast das versteckte Portal-Menü entdeckt!',
-              style: TextStyle(color: Colors.white70, fontSize: 14),
+        transitionsBuilder: (_, anim, __, child) {
+          // Tunnel-Zoom-In von 0.8 zu 1.0 + Fade
+          return FadeTransition(
+            opacity: anim,
+            child: ScaleTransition(
+              scale: Tween<double>(begin: 0.85, end: 1.0).animate(
+                CurvedAnimation(parent: anim, curve: Curves.easeOutCubic),
+              ),
+              child: child,
             ),
-            const SizedBox(height: 24),
-            _buildEasterEggOption(
-              '🎨 Portal-Farben ändern', 
-              'Wechsle zwischen Farbschemas',
-              () {
-                Navigator.pop(context);
-                _showPortalColorPicker();
-              },
-            ),
-            _buildEasterEggOption(
-              '📚 Hidden Facts', 
-              'Verschwörungstheorien & Fakten',
-              () {
-                Navigator.pop(context);
-                _showHiddenFacts();
-              },
-            ),
-            _buildEasterEggOption(
-              '🎮 Mini-Game: Portal Defense', 
-              'Verteidige das Portal!',
-              () {
-                Navigator.pop(context);
-                _startMiniGame();
-              },
-            ),
-            _buildEasterEggOption(
-              '🔐 Cheat Codes', 
-              'Geheime Codes eingeben',
-              () {
-                Navigator.pop(context);
-                _showCheatCodes();
-              },
-            ),
-            _buildEasterEggOption(
-              '🏆 Achievements', 
-              'Deine Erfolge & Fortschritt',
-              () {
-                Navigator.pop(context);
-                _showAchievements();
-              },
-            ),
-            _buildEasterEggOption(
-              '📊 Entwickler-Stats', 
-              'Technische Details & Performance',
-              () {
-                Navigator.pop(context);
-                _showDeveloperStats();
-              },
-            ),
-            _buildEasterEggOption(
-              '📤 Stats teilen', 
-              'Portal-Stats auf Social Media',
-              () {
-                Navigator.pop(context);
-                _sharePortalStats();
-              },
-            ),
-            _buildEasterEggOption(
-              '🔮 Über das Portal', 
-              'Weltenbibliothek v5.40 COMPLETE',
-              () {
-                Navigator.pop(context);
-                _showAboutPortal();
-              },
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Schließen', style: TextStyle(color: Color(0xFF64B5F6), fontSize: 16)),
-          ),
-        ],
+          );
+        },
       ),
     );
   }
@@ -986,8 +921,14 @@ class _PortalHomeScreenState extends State<PortalHomeScreen> with TickerProvider
                   const Spacer(),
 
                   // ── Cinematic Dual-World Portal (tap = easter egg) ──
+                  // Long-Press 1.5s = direkter Easter-Egg-Shortcut.
                   GestureDetector(
                     onTap: _handlePortalTap,
+                    onLongPress: () {
+                      HapticService.heavyImpact();
+                      SoundService.playUnlockSound();
+                      _showEasterEgg();
+                    },
                     child: SizedBox(
                       key: _portalKey,
                       width: 260,
