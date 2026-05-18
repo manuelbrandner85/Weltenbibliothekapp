@@ -4,7 +4,9 @@
 // G4 Reading-Tagebuch: full timeline pro Tool.
 
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'achievement_service.dart';
 
 class SpiritReading {
   final String id;
@@ -70,6 +72,8 @@ class SpiritReadingService {
       // gegenueber Spam (1 Reading/Tool/Tag waere ideal, aber Idempotenz
       // braucht Datenbank-Logik. Hier nur einfacher Award.)
       _awardXp(userId, tool);
+      // v5.44.4: Achievement-Tracking fire-and-forget
+      _trackAchievements(tool);
       return SpiritReading.fromJson(Map<String, dynamic>.from(res as Map));
     } catch (e) {
       if (kDebugMode) debugPrint('⚠️ Reading save: $e');
@@ -103,6 +107,67 @@ class SpiritReadingService {
       } catch (e2) {
         if (kDebugMode) debugPrint('XP-Award Fallback auch fehlgeschlagen: $e2');
       }
+    }
+  }
+
+  /// v5.44.4: Spirit-Achievement-Tracking. Fire-and-forget, throws nie.
+  /// Loggt + erhoeht Achievement-Progress fuer:
+  /// - spirit_first: Erstes Reading
+  /// - spirit_10/50/100: total Readings
+  /// - spirit_seven_tools: 7 unterschiedliche Tools
+  /// - spirit_master_diviner: alle 14 Tools genutzt
+  /// - spirit_streak_7: Spirit-Nutzung an 7 aufeinanderfolgenden Tagen
+  static const _kSpiritUsedToolsKey = 'spirit_tools_used_v1';
+  static const _kSpiritLastDayKey = 'spirit_last_day_v1';
+  static const _kSpiritStreakKey = 'spirit_streak_v1';
+
+  Future<void> _trackAchievements(String tool) async {
+    try {
+      final svc = AchievementService();
+      final prefs = await SharedPreferences.getInstance();
+
+      // Erstes Reading
+      await svc.incrementProgress('spirit_first');
+
+      // Total-Counter (incrementProgress macht intern den Vergleich gegen
+      // maxProgress und lockt frei wenn erreicht)
+      await svc.incrementProgress('spirit_10');
+      await svc.incrementProgress('spirit_50');
+      await svc.incrementProgress('spirit_100');
+
+      // Unterschiedliche Tools tracking
+      final usedToolsRaw = prefs.getStringList(_kSpiritUsedToolsKey) ?? const [];
+      final usedTools = usedToolsRaw.toSet();
+      if (!usedTools.contains(tool)) {
+        usedTools.add(tool);
+        await prefs.setStringList(_kSpiritUsedToolsKey, usedTools.toList());
+        await svc.incrementProgress('spirit_seven_tools');
+        await svc.incrementProgress('spirit_master_diviner');
+      }
+
+      // Streak tracking
+      final today = DateTime.now();
+      final todayKey = '${today.year}-${today.month}-${today.day}';
+      final lastDay = prefs.getString(_kSpiritLastDayKey);
+      if (lastDay != todayKey) {
+        // Neuer Tag - pruefe ob gestern war (= Streak weiter)
+        int streak = prefs.getInt(_kSpiritStreakKey) ?? 0;
+        final yesterday = today.subtract(const Duration(days: 1));
+        final yesterdayKey = '${yesterday.year}-${yesterday.month}-${yesterday.day}';
+        if (lastDay == yesterdayKey) {
+          streak += 1;
+        } else {
+          streak = 1; // Lücke - reset
+        }
+        await prefs.setString(_kSpiritLastDayKey, todayKey);
+        await prefs.setInt(_kSpiritStreakKey, streak);
+        // increment Achievement für jeden Tag (1..7)
+        if (streak <= 7) {
+          await svc.incrementProgress('spirit_streak_7');
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ Spirit-Achievement-Tracking: $e');
     }
   }
 
