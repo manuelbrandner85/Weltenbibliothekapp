@@ -8,6 +8,7 @@ import '../../../widgets/cinematic/wb_glass_app_bar.dart';
 import '../../../widgets/cinematic/wb_vignette.dart';
 import 'power_network_explorer_screen.dart';
 import 'study_analyst_screen.dart';
+import 'version_watcher_screen.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // OSINT Datenbanken Hub — 7 direkte Datenbank-Zugänge via WebView
@@ -43,12 +44,13 @@ class OsintToolsHub extends StatelessWidget {
       customScreenBuilder: () => const StudyAnalystScreen(),
     ),
     _DbDef(
-      icon: Icons.archive_rounded,
-      label: 'Internet Archive',
-      sub: '50 Mio. Dokumente & Wayback',
-      color: Color(0xFFFF7043),
-      url: 'https://archive.org/',
-      description: 'Wayback Machine + 50 Millionen Bücher, Videos, Audio und Webseiten — das Gedächtnis des Internets.',
+      icon: Icons.history_rounded,
+      label: 'Versions-Wächter',
+      sub: 'Wayback-Diff + Watchlist',
+      color: const Color(0xFFFF7043),
+      url: '',
+      description: 'URL eingeben → Wayback-Verlauf, beliebige 2 Snapshots vergleichen (Text-Diff: was wurde gelöscht/hinzugefügt). Watchlist alarmiert bei neuen Versionen.',
+      customScreenBuilder: () => const VersionWatcherScreen(),
     ),
     _DbDef(
       icon: Icons.how_to_vote_rounded,
