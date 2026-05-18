@@ -205,7 +205,7 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
           _ChatModerationTab(world: widget.world, admin: admin, accent: _accent, accentBright: _accentBright),
           _ContentInsightsTab(accent: _accent, accentBright: _accentBright),
           _PushBroadcastTab(accent: _accent, accentBright: _accentBright),
-          _AuditLogTab(world: widget.world, accent: _accent, accentBright: _accentBright),
+          _AuditReportsWrapper(world: widget.world, accent: _accent, accentBright: _accentBright),
           _SystemTab(accent: _accent, accentBright: _accentBright),
         ],
       ),
@@ -4183,6 +4183,560 @@ class _PushBroadcastTabState extends State<_PushBroadcastTab> {
 // ═══════════════════════════════════════════════════════════
 // 📜 AUDIT-LOG TAB
 // ═══════════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════════════════════════════
+// TAB – AUDIT + REPORTS WRAPPER (zwei Sub-Tabs)
+// ═════════════════════════════════════════════════════════════════════════════
+class _AuditReportsWrapper extends StatefulWidget {
+  final String world;
+  final Color accent;
+  final Color accentBright;
+  const _AuditReportsWrapper({
+    required this.world,
+    required this.accent,
+    required this.accentBright,
+  });
+
+  @override
+  State<_AuditReportsWrapper> createState() => _AuditReportsWrapperState();
+}
+
+class _AuditReportsWrapperState extends State<_AuditReportsWrapper>
+    with SingleTickerProviderStateMixin {
+  late TabController _ctrl;
+  int _openReports = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = TabController(length: 2, vsync: this);
+    _loadReportsCount();
+  }
+
+  Future<void> _loadReportsCount() async {
+    try {
+      final res = await http
+          .get(Uri.parse('${ApiConfig.workerUrl}/api/admin/reports?status=open&limit=1'))
+          .timeout(const Duration(seconds: 8));
+      if (res.statusCode == 200 && mounted) {
+        final data = jsonDecode(res.body) as Map<String, dynamic>;
+        final counts = (data['counts'] as Map?)?.cast<String, dynamic>() ?? const {};
+        setState(() => _openReports = (counts['open'] as int?) ?? 0);
+      }
+    } catch (_) {}
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(children: [
+      Container(
+        color: const Color(0xFF0D0D1A),
+        child: TabBar(
+          controller: _ctrl,
+          indicatorColor: widget.accent,
+          labelColor: widget.accentBright,
+          unselectedLabelColor: Colors.white38,
+          labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+          tabs: [
+            const Tab(icon: Icon(Icons.history_rounded, size: 16), text: 'Audit-Log'),
+            Tab(
+              icon: Stack(clipBehavior: Clip.none, children: [
+                const Icon(Icons.flag_rounded, size: 16),
+                if (_openReports > 0)
+                  Positioned(
+                    right: -8, top: -4,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: Colors.redAccent,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text('$_openReports',
+                          style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+              ]),
+              text: 'Reports',
+            ),
+          ],
+        ),
+      ),
+      Expanded(
+        child: TabBarView(
+          controller: _ctrl,
+          children: [
+            _AuditLogTab(world: widget.world, accent: widget.accent, accentBright: widget.accentBright),
+            _ReportsInboxTab(
+              accent: widget.accent,
+              accentBright: widget.accentBright,
+              onChanged: _loadReportsCount,
+            ),
+          ],
+        ),
+      ),
+    ]);
+  }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// TAB – REPORTS-INBOX
+// ═════════════════════════════════════════════════════════════════════════════
+class _ReportsInboxTab extends StatefulWidget {
+  final Color accent;
+  final Color accentBright;
+  final VoidCallback onChanged;
+  const _ReportsInboxTab({
+    required this.accent,
+    required this.accentBright,
+    required this.onChanged,
+  });
+
+  @override
+  State<_ReportsInboxTab> createState() => _ReportsInboxTabState();
+}
+
+class _ReportsInboxTabState extends State<_ReportsInboxTab> {
+  List<Map<String, dynamic>> _reports = [];
+  Map<String, int> _counts = {};
+  Map<String, int> _byType = {};
+  bool _loading = true;
+  String _filterStatus = 'open';
+  String _filterType = 'all';
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() { _loading = true; _error = null; });
+    try {
+      final uri = Uri.parse('${ApiConfig.workerUrl}/api/admin/reports')
+          .replace(queryParameters: {
+        if (_filterStatus != 'all') 'status': _filterStatus,
+        if (_filterType != 'all') 'type': _filterType,
+        'limit': '100',
+      });
+      final res = await http.get(uri).timeout(const Duration(seconds: 12));
+      if (res.statusCode == 200 && mounted) {
+        final data = jsonDecode(res.body) as Map<String, dynamic>;
+        setState(() {
+          _reports = ((data['reports'] as List?) ?? const []).cast<Map<String, dynamic>>();
+          _counts = ((data['counts'] as Map?)?.cast<String, dynamic>() ?? const {})
+              .map((k, v) => MapEntry(k, (v as num).toInt()));
+          _byType = ((data['by_type'] as Map?)?.cast<String, dynamic>() ?? const {})
+              .map((k, v) => MapEntry(k, (v as num).toInt()));
+          _loading = false;
+        });
+      } else if (mounted) {
+        setState(() {
+          _error = 'HTTP ${res.statusCode}: ${res.body.substring(0, 120)}';
+          _loading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() { _error = 'Netzwerk: $e'; _loading = false; });
+    }
+  }
+
+  Future<void> _setStatus(Map<String, dynamic> report, String status, {String? note}) async {
+    final id = report['id'] as String?;
+    if (id == null) return;
+    try {
+      final res = await http.patch(
+        Uri.parse('${ApiConfig.workerUrl}/api/admin/reports/$id'),
+        headers: const {'Content-Type': 'application/json'},
+        body: jsonEncode({'status': status, if (note != null) 'resolution_note': note, 'admin': 'admin'}),
+      ).timeout(const Duration(seconds: 10));
+      if (res.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('✅ Status: $status'),
+          backgroundColor: widget.accent,
+        ));
+        _load();
+        widget.onChanged();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('❌ HTTP ${res.statusCode}'),
+          backgroundColor: Colors.redAccent,
+        ));
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Netzwerk: $e'),
+        backgroundColor: Colors.redAccent,
+      ));
+    }
+  }
+
+  Future<void> _showDetail(Map<String, dynamic> r) async {
+    final noteCtrl = TextEditingController();
+    await showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF0A0A18),
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.78,
+        maxChildSize: 0.95,
+        minChildSize: 0.4,
+        expand: false,
+        builder: (_, scroll) => ListView(
+          controller: scroll,
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
+          children: [
+            Center(child: Container(
+              width: 42, height: 4,
+              decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
+            )),
+            const SizedBox(height: 16),
+            Row(children: [
+              _typeChip(r['type'] as String? ?? '?', big: true),
+              const SizedBox(width: 8),
+              _severityChip(r['severity'] as String? ?? 'medium'),
+              const Spacer(),
+              _statusChip(r['status'] as String? ?? 'open'),
+            ]),
+            const SizedBox(height: 14),
+            Text(r['title']?.toString() ?? '',
+                style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 6),
+            Text('@${r['username'] ?? 'anonym'} · ${_fmt(r['created_at'] as String? ?? '')}',
+                style: const TextStyle(color: Colors.white54, fontSize: 12)),
+            if ((r['body'] as String?)?.isNotEmpty == true) ...[
+              const SizedBox(height: 14),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.04),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: SelectableText(r['body'].toString(),
+                    style: const TextStyle(color: Colors.white80, fontSize: 13, height: 1.5)),
+              ),
+            ],
+            if ((r['target_id'] as String?)?.isNotEmpty == true) ...[
+              const SizedBox(height: 10),
+              _InfoRow(Icons.gps_fixed_rounded, 'Target: ${r['target_id']}'),
+            ],
+            if ((r['context'] != null) && (r['context'] is Map) && (r['context'] as Map).isNotEmpty) ...[
+              const SizedBox(height: 10),
+              _InfoRow(Icons.info_outline_rounded, 'Context: ${jsonEncode(r['context'])}'),
+            ],
+            if ((r['resolution_note'] as String?)?.isNotEmpty == true) ...[
+              const SizedBox(height: 14),
+              const Text('AUFLÖSUNG',
+                  style: TextStyle(color: Colors.white38, fontSize: 10, letterSpacing: 2)),
+              const SizedBox(height: 4),
+              Text(r['resolution_note'].toString(),
+                  style: const TextStyle(color: Colors.white70, fontSize: 13)),
+              Text('— @${r['reviewed_by'] ?? '?'} · ${_fmt(r['reviewed_at'] as String? ?? '')}',
+                  style: const TextStyle(color: Colors.white38, fontSize: 10)),
+            ],
+            const SizedBox(height: 22),
+            const Text('Bearbeiten',
+                style: TextStyle(color: Colors.white54, fontSize: 11, letterSpacing: 1.5)),
+            const SizedBox(height: 8),
+            TextField(
+              controller: noteCtrl,
+              maxLines: 3,
+              maxLength: 400,
+              style: const TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                hintText: 'Notiz/Lösung (optional)',
+                hintStyle: const TextStyle(color: Colors.white38),
+                filled: true,
+                fillColor: Colors.white.withValues(alpha: 0.04),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(color: Colors.white12),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(color: Colors.white12),
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Wrap(spacing: 8, runSpacing: 8, children: [
+              ElevatedButton.icon(
+                onPressed: () { Navigator.pop(ctx); _setStatus(r, 'reviewing', note: noteCtrl.text.trim().isEmpty ? null : noteCtrl.text.trim()); },
+                icon: const Icon(Icons.remove_red_eye_rounded, size: 16),
+                label: const Text('In Bearbeitung'),
+                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFFC107), foregroundColor: Colors.black),
+              ),
+              ElevatedButton.icon(
+                onPressed: () { Navigator.pop(ctx); _setStatus(r, 'resolved', note: noteCtrl.text.trim().isEmpty ? null : noteCtrl.text.trim()); },
+                icon: const Icon(Icons.check_circle_rounded, size: 16),
+                label: const Text('Erledigt'),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.green.shade700, foregroundColor: Colors.white),
+              ),
+              ElevatedButton.icon(
+                onPressed: () { Navigator.pop(ctx); _setStatus(r, 'dismissed', note: noteCtrl.text.trim().isEmpty ? null : noteCtrl.text.trim()); },
+                icon: const Icon(Icons.close_rounded, size: 16),
+                label: const Text('Verwerfen'),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.grey.shade700, foregroundColor: Colors.white),
+              ),
+              ElevatedButton.icon(
+                onPressed: () { Navigator.pop(ctx); _setStatus(r, 'open'); },
+                icon: const Icon(Icons.replay_rounded, size: 16),
+                label: const Text('Erneut öffnen'),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.blueGrey, foregroundColor: Colors.white),
+              ),
+            ]),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _typeChip(String type, {bool big = false}) {
+    final String label;
+    final Color color;
+    switch (type) {
+      case 'bug':      label = '🐛 Bug';      color = Colors.red;    break;
+      case 'content':  label = '🚩 Inhalt';   color = Colors.orange; break;
+      case 'feedback': label = '💬 Feedback'; color = Colors.blue;   break;
+      case 'voice':    label = '🎙️ Voice';    color = Colors.purple; break;
+      default:         label = '?';            color = Colors.grey;
+    }
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: big ? 10 : 6, vertical: big ? 5 : 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.18),
+        borderRadius: BorderRadius.circular(big ? 10 : 6),
+        border: Border.all(color: color.withValues(alpha: 0.45)),
+      ),
+      child: Text(label, style: TextStyle(color: color, fontSize: big ? 12 : 10, fontWeight: FontWeight.bold)),
+    );
+  }
+
+  Widget _severityChip(String sev) {
+    final String label;
+    final Color color;
+    switch (sev) {
+      case 'low':      label = 'Niedrig';  color = Colors.grey;   break;
+      case 'high':     label = 'Hoch';     color = Colors.orange; break;
+      case 'critical': label = 'KRITISCH'; color = Colors.red;    break;
+      case 'medium':
+      default:         label = 'Medium';   color = Colors.blue;
+    }
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(label,
+          style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.5)),
+    );
+  }
+
+  Widget _statusChip(String status) {
+    final String label;
+    final Color color;
+    switch (status) {
+      case 'reviewing': label = 'IN BEARB.'; color = const Color(0xFFFFC107); break;
+      case 'resolved':  label = 'ERLEDIGT';  color = Colors.green;            break;
+      case 'dismissed': label = 'VERWORFEN'; color = Colors.grey;             break;
+      case 'open':
+      default:          label = 'OFFEN';     color = Colors.redAccent;
+    }
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
+      ),
+      child: Text(label,
+          style: TextStyle(color: color, fontSize: 9, fontWeight: FontWeight.w700, letterSpacing: 1)),
+    );
+  }
+
+  String _fmt(String iso) {
+    try {
+      final dt = DateTime.parse(iso).toLocal();
+      return '${dt.day.toString().padLeft(2,'0')}.${dt.month.toString().padLeft(2,'0')}. ${dt.hour.toString().padLeft(2,'0')}:${dt.minute.toString().padLeft(2,'0')}';
+    } catch (_) { return iso; }
+  }
+
+  Widget _filterPill(String label, String value, String current, int? count, void Function(String) onTap) {
+    final sel = current == value;
+    return GestureDetector(
+      onTap: () => onTap(value),
+      child: Container(
+        margin: const EdgeInsets.only(right: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: sel ? widget.accent.withValues(alpha: 0.25) : Colors.white.withValues(alpha: 0.04),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: sel ? widget.accent : Colors.transparent),
+        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Text(label,
+              style: TextStyle(color: sel ? widget.accentBright : Colors.white70, fontSize: 11, fontWeight: FontWeight.w600)),
+          if (count != null && count > 0) ...[
+            const SizedBox(width: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text('$count',
+                  style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ]),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(children: [
+      // Filter-Leiste
+      Container(
+        color: const Color(0xFF0D0D1A),
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('STATUS', style: TextStyle(color: Colors.white38, fontSize: 9, letterSpacing: 1.5)),
+            const SizedBox(height: 4),
+            SizedBox(height: 30, child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: [
+                _filterPill('Offen', 'open', _filterStatus, _counts['open'], (v) { setState(() => _filterStatus = v); _load(); }),
+                _filterPill('In Bearb.', 'reviewing', _filterStatus, _counts['reviewing'], (v) { setState(() => _filterStatus = v); _load(); }),
+                _filterPill('Erledigt', 'resolved', _filterStatus, _counts['resolved'], (v) { setState(() => _filterStatus = v); _load(); }),
+                _filterPill('Verworfen', 'dismissed', _filterStatus, _counts['dismissed'], (v) { setState(() => _filterStatus = v); _load(); }),
+                _filterPill('Alle', 'all', _filterStatus, null, (v) { setState(() => _filterStatus = v); _load(); }),
+              ],
+            )),
+            const SizedBox(height: 8),
+            const Text('TYP', style: TextStyle(color: Colors.white38, fontSize: 9, letterSpacing: 1.5)),
+            const SizedBox(height: 4),
+            SizedBox(height: 30, child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: [
+                _filterPill('Alle', 'all', _filterType, null, (v) { setState(() => _filterType = v); _load(); }),
+                _filterPill('🐛 Bug', 'bug', _filterType, _byType['bug'], (v) { setState(() => _filterType = v); _load(); }),
+                _filterPill('🚩 Inhalt', 'content', _filterType, _byType['content'], (v) { setState(() => _filterType = v); _load(); }),
+                _filterPill('💬 Feedback', 'feedback', _filterType, _byType['feedback'], (v) { setState(() => _filterType = v); _load(); }),
+                _filterPill('🎙️ Voice', 'voice', _filterType, _byType['voice'], (v) { setState(() => _filterType = v); _load(); }),
+              ],
+            )),
+          ],
+        ),
+      ),
+
+      Expanded(
+        child: _loading
+            ? Center(child: CircularProgressIndicator(color: widget.accent))
+            : _error != null
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(mainAxisSize: MainAxisSize.min, children: [
+                        const Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 40),
+                        const SizedBox(height: 12),
+                        Text(_error!,
+                            style: const TextStyle(color: Colors.white70, fontSize: 13),
+                            textAlign: TextAlign.center),
+                        const SizedBox(height: 12),
+                        ElevatedButton(onPressed: _load, child: const Text('Neu laden')),
+                      ]),
+                    ),
+                  )
+                : _reports.isEmpty
+                    ? RefreshIndicator(
+                        color: widget.accent,
+                        onRefresh: () async => _load(),
+                        child: ListView(children: const [
+                          SizedBox(height: 80),
+                          Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(24),
+                              child: Column(children: [
+                                Icon(Icons.inbox_rounded, color: Colors.white24, size: 60),
+                                SizedBox(height: 12),
+                                Text('Keine Reports in diesem Filter.',
+                                    style: TextStyle(color: Colors.white54, fontSize: 13)),
+                              ]),
+                            ),
+                          ),
+                        ]),
+                      )
+                    : RefreshIndicator(
+                        color: widget.accent,
+                        onRefresh: () async => _load(),
+                        child: ListView.builder(
+                          padding: const EdgeInsets.all(12),
+                          itemCount: _reports.length,
+                          itemBuilder: (_, i) {
+                            final r = _reports[i];
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(12),
+                                  onTap: () => _showDetail(r),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF12121E),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(color: Colors.white12),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(children: [
+                                          _typeChip(r['type'] as String? ?? '?'),
+                                          const SizedBox(width: 6),
+                                          _severityChip(r['severity'] as String? ?? 'medium'),
+                                          const Spacer(),
+                                          _statusChip(r['status'] as String? ?? 'open'),
+                                        ]),
+                                        const SizedBox(height: 8),
+                                        Text(r['title']?.toString() ?? '',
+                                            style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+                                            maxLines: 2, overflow: TextOverflow.ellipsis),
+                                        if ((r['body'] as String?)?.isNotEmpty == true) ...[
+                                          const SizedBox(height: 4),
+                                          Text(r['body'].toString(),
+                                              style: const TextStyle(color: Colors.white54, fontSize: 11, height: 1.3),
+                                              maxLines: 2, overflow: TextOverflow.ellipsis),
+                                        ],
+                                        const SizedBox(height: 6),
+                                        Text('@${r['username'] ?? 'anonym'} · ${_fmt(r['created_at'] as String? ?? '')}',
+                                            style: const TextStyle(color: Colors.white38, fontSize: 10)),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+      ),
+    ]);
+  }
+}
+
 class _AuditLogTab extends StatefulWidget {
   final String world;
   final Color accent;
