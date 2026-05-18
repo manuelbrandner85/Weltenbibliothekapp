@@ -224,46 +224,76 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
 
   Widget _buildMysticHeader() {
     return Container(
-      margin: const EdgeInsets.all(20),
-      padding: const EdgeInsets.all(24),
+      margin: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [Color(0xFF673AB7), Color(0xFF9C27B0), Color(0xFF4A148C)],
         ),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF673AB7).withValues(alpha: 0.5),
-            blurRadius: 20,
-            spreadRadius: 2,
+            color: const Color(0xFF673AB7).withValues(alpha: 0.4),
+            blurRadius: 12,
+            spreadRadius: 1,
           ),
         ],
       ),
       child: Column(
         children: [
-          const Icon(Icons.auto_stories, color: Color(0xFFFFD700), size: 40),
-          const SizedBox(height: 12),
-          Text(
-            '${_profile!.firstName} ${_profile!.lastName}',
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildHeaderNumber('HEBRÄISCH', _hebrewFullName, const Color(0xFFFFD700)),
-              Container(width: 2, height: 40, color: Colors.white24),
-              _buildHeaderNumber('LATEINISCH', _latinFullName, const Color(0xFFE91E63)),
+              const Icon(Icons.auto_stories, color: Color(0xFFFFD700), size: 22),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '${_profile!.firstName} ${_profile!.lastName}',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              // Hebr + Lat als kompakte Chips rechts
+              _miniNumber('HE', _hebrewFullName, const Color(0xFFFFD700)),
+              const SizedBox(width: 6),
+              _miniNumber('LAT', _latinFullName, const Color(0xFFE91E63)),
             ],
           ),
-          const SizedBox(height: 16),
-          // Multi-Tradition: Mispar Gadol/Katan/Siduri + Griechische Isopsephie + Arabischer Abjad
+          const SizedBox(height: 10),
           _buildMultiTraditionRow(),
+        ],
+      ),
+    );
+  }
+
+  Widget _miniNumber(String label, int value, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.18),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withValues(alpha: 0.55)),
+      ),
+      child: Column(
+        children: [
+          Text(label,
+              style: TextStyle(
+                color: color,
+                fontSize: 8,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1,
+              )),
+          Text('$value',
+              style: TextStyle(
+                color: color,
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                height: 1,
+              )),
         ],
       ),
     );
@@ -276,43 +306,52 @@ class _GematriaCalculatorScreenState extends State<GematriaCalculatorScreen> wit
     final siduri = GematriaEngine.calculateHebrewSiduri(fullName);
     final greek = GematriaEngine.calculateGreekIsopsephy(fullName);
     final arabic = GematriaEngine.calculateArabicAbjad(fullName);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    // Kompakte horizontale Chips-Zeile mit Tap-to-Info statt Block-Layout.
+    return SizedBox(
+      height: 26,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
         children: [
-          Text('MULTI-TRADITION',
-              style: TextStyle(
-                fontSize: 10,
-                color: Colors.white.withValues(alpha: 0.7),
-                letterSpacing: 2,
-                fontWeight: FontWeight.w700,
-              )),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 6,
-            children: [
-              _traditionChip('Mispar Gadol', gadol, const Color(0xFFFFC400)),
-              _traditionChip('Mispar Katan', katan, const Color(0xFFFFAB00)),
-              _traditionChip('Mispar Siduri', siduri, const Color(0xFFFF8F00)),
-              _traditionChip('Isopsephie (Gr)', greek, const Color(0xFF00BCD4)),
-              _traditionChip('Abjad (Ar)', arabic, const Color(0xFF7C4DFF)),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Hebräisch ist Standard-Mispar-Hechrachi. Gadol nutzt erweiterte Endbuchstaben-Werte. '
-            'Greek/Arabic erfordern Eingabe im jeweiligen Alphabet.',
-            style: TextStyle(
-              fontSize: 10,
-              color: Colors.white.withValues(alpha: 0.5),
-              height: 1.4,
+          _traditionChip('Gadol', gadol, const Color(0xFFFFC400)),
+          const SizedBox(width: 6),
+          _traditionChip('Katan', katan, const Color(0xFFFFAB00)),
+          const SizedBox(width: 6),
+          _traditionChip('Siduri', siduri, const Color(0xFFFF8F00)),
+          const SizedBox(width: 6),
+          _traditionChip('Greek', greek, const Color(0xFF00BCD4)),
+          const SizedBox(width: 6),
+          _traditionChip('Abjad', arabic, const Color(0xFF7C4DFF)),
+          const SizedBox(width: 6),
+          GestureDetector(
+            onTap: () => showDialog(
+              context: context,
+              builder: (_) => AlertDialog(
+                backgroundColor: const Color(0xFF1A1A2E),
+                title: const Text('Multi-Tradition-Gematria',
+                    style: TextStyle(color: Colors.white, fontSize: 16)),
+                content: const Text(
+                  'Hebräisch ist Standard-Mispar-Hechrachi.\n\n'
+                  'Gadol nutzt erweiterte Endbuchstaben-Werte (Kaf-Sofit=500 statt 20 usw.).\n\n'
+                  'Katan = reduzierter Wert (1-9).\n\n'
+                  'Siduri = Ordinalwert (1-22).\n\n'
+                  'Greek (Isopsephie) und Arabic (Abjad) erfordern Eingabe im jeweiligen Alphabet.',
+                  style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.5),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('OK', style: TextStyle(color: Color(0xFFFFD700))),
+                  ),
+                ],
+              ),
+            ),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.info_outline, size: 14, color: Colors.white70),
             ),
           ),
         ],
