@@ -7,6 +7,7 @@ import '../../models/favorite.dart';
 import '../../models/energie_profile.dart';
 import 'calculators/numerology_calculator_screen.dart';
 import 'calculators/everyday_numerology_screen.dart';
+import 'calculators/numerology_quiz_screen.dart';
 import 'calculators/archetype_calculator_screen.dart';
 import 'calculators/chakra_calculator_screen.dart';
 import 'calculators/kabbalah_calculator_screen.dart';
@@ -129,6 +130,16 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'color': const Color(0xFF9C27B0),
         'category': 'core',
         'screen': const NumerologyCalculatorScreen(),
+      },
+      // 🎓 Numerologie-Quiz -- Wissens-Check mit Gamification
+      {
+        'icon': Icons.school_rounded,
+        'iconEmoji': '🎓',
+        'title': 'Numerologie-Quiz',
+        'subtitle': '30 Fragen, 3 Levels',
+        'color': const Color(0xFFCE93D8),
+        'category': 'core',
+        'screen': const NumerologyQuizScreen(),
       },
       // 🏠 Alltags-Numerologie -- Adresse, Telefon, Kennzeichen
       {
