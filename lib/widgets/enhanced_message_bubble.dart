@@ -403,7 +403,6 @@ class _EnhancedMessageBubbleState extends State<EnhancedMessageBubble> {
                     }).toList(),
                   ),
                 ),
-                  ), // Container (Glassmorphism-Inner)
                 ), // BackdropFilter
               ), // ClipRRect
 
