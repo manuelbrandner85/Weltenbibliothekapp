@@ -99,45 +99,58 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
     _tabsLen = length;
   }
 
-  /// v102: Fallback-Resolution wenn adminStateProvider noch leer ist.
-  /// Liest Materie/Energie-Profile aus dem lokalen Storage, checkt ob
-  /// Username Root-Admin oder Content-Editor ist, sonst nimmt das
-  /// gespeicherte role-Feld. Verhindert das Dashboard-Loading-Loop und
-  /// das "Kein Zugriff"-Screen wenn der Provider noch laedt.
+  /// v103: Robuster Fallback. NICHT mehr nur wenn Provider leer ist,
+  /// sondern IMMER -- waehle die HOECHSTE Berechtigung aus mehreren
+  /// Quellen (Provider-Backend, lokales Profil-Role, Username-Match,
+  /// Web-Pref). Vermeidet "Kein Zugriff"-Screen wenn der Provider mit
+  /// einer alten role='user' aus dem Cache geladen wurde, obwohl
+  /// lokal/per Username klar Root-Admin angemeldet ist.
   AdminState _resolveLocalFallback(AdminState provider) {
-    if (provider.username != null && provider.username!.isNotEmpty) {
-      // Provider hat geladen -> nimm ihn.
-      return provider;
-    }
     try {
       final storage = StorageService();
       final m = storage.getMaterieProfile();
       final e = storage.getEnergieProfile();
-      final localUser = m?.username ?? e?.username;
-      if (localUser == null || localUser.isEmpty) return provider;
+      final localUser =
+          provider.username ?? m?.username ?? e?.username ?? '';
 
-      String? localRole = m?.role ?? e?.role;
-      if (localRole == null || localRole.isEmpty) {
-        if (AppRoles.isRootAdminByUsername(localUser)) {
-          localRole = AppRoles.rootAdmin;
-        } else if (AppRoles.isContentEditorByUsername(localUser)) {
-          localRole = AppRoles.contentEditor;
-        }
-      }
+      // Wenn weder lokal noch im Provider ein Username steht: nichts zu tun.
+      if (localUser.isEmpty) return provider;
 
-      if (localRole == null) return provider;
+      // Sammle Rollen-Kandidaten und nimm die hoechste.
+      final candidates = <String?>[
+        provider.role,
+        m?.role,
+        e?.role,
+        if (AppRoles.isRootAdminByUsername(localUser)) AppRoles.rootAdmin,
+        if (AppRoles.isContentEditorByUsername(localUser))
+          AppRoles.contentEditor,
+      ].where((r) => r != null && r.isNotEmpty).toList();
+
+      final highest = _highestRole(candidates.cast<String>());
+      final effectiveRole = highest ?? provider.role;
+
       return AdminState(
-        isAdmin: AppRoles.isAdmin(localRole),
-        isRootAdmin: AppRoles.isRootAdmin(localRole),
-        isModerator: AppRoles.isModerator(localRole),
+        isAdmin: AppRoles.isAdmin(effectiveRole),
+        isRootAdmin: AppRoles.isRootAdmin(effectiveRole),
+        isModerator: AppRoles.isModerator(effectiveRole),
         world: provider.world,
-        backendVerified: false,
+        backendVerified: provider.backendVerified,
         username: localUser,
-        role: localRole,
+        role: effectiveRole,
       );
     } catch (_) {
       return provider;
     }
+  }
+
+  /// Rangliste der Rollen (hoechste zuerst): root_admin > admin >
+  /// content_editor > moderator > user.
+  String? _highestRole(List<String> roles) {
+    const order = ['root_admin', 'root-admin', 'admin', 'content_editor', 'moderator', 'user'];
+    for (final candidate in order) {
+      if (roles.contains(candidate)) return candidate;
+    }
+    return roles.isEmpty ? null : roles.first;
   }
 
   Future<void> _waitForState() async {
