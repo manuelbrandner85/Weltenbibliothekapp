@@ -23,6 +23,11 @@ class EnergieProfile {
   final bool birthTimeUnknown;          // Wenn true: Tools nehmen 12:00 an
   final String? gender;                 // male|female|diverse|prefer_not_say
 
+  // ✨ v94: Geburtsname-Felder (Heirat/Adoption -- fuer Numerologie-Vergleich)
+  final String? birthFirstName;         // Vorname bei Geburt, falls abweichend
+  final String? birthMiddleNames;       // Alle Zweitnamen bei Geburt
+  final String? birthLastName;          // Nachname bei Geburt (vor Heirat)
+
   EnergieProfile({
     required this.username,
     required this.firstName,
@@ -40,7 +45,20 @@ class EnergieProfile {
     this.timezoneOffsetHours,
     this.birthTimeUnknown = false,
     this.gender,
+    this.birthFirstName,
+    this.birthMiddleNames,
+    this.birthLastName,
   });
+
+  /// True wenn ein Geburtsname-Feld gesetzt ist und sich vom aktuellen Namen
+  /// unterscheidet -- triggert die Vergleichs-Karte im Numerologie-Screen.
+  bool get hasDifferentBirthName {
+    final bf = birthFirstName?.trim() ?? '';
+    final bl = birthLastName?.trim() ?? '';
+    if (bf.isEmpty && bl.isEmpty) return false;
+    return (bf.isNotEmpty && bf != firstName) ||
+        (bl.isNotEmpty && bl != lastName);
+  }
   
   // Display-Name: Vollständiger Name
   String get displayName => fullName;
@@ -78,6 +96,10 @@ class EnergieProfile {
       'timezone_offset_hours': timezoneOffsetHours,
       'birth_time_unknown': birthTimeUnknown,
       'gender': gender,
+      // v94 Geburtsname
+      'birth_first_name': birthFirstName,
+      'birth_middle_names': birthMiddleNames,
+      'birth_last_name': birthLastName,
     };
   }
 
@@ -102,6 +124,9 @@ class EnergieProfile {
       timezoneOffsetHours: (json['timezone_offset_hours'] as num?)?.toDouble(),
       birthTimeUnknown: json['birth_time_unknown'] == true,
       gender: json['gender'] as String?,
+      birthFirstName: json['birth_first_name'] as String?,
+      birthMiddleNames: json['birth_middle_names'] as String?,
+      birthLastName: json['birth_last_name'] as String?,
     );
   }
 
@@ -123,6 +148,9 @@ class EnergieProfile {
     double? timezoneOffsetHours,
     bool? birthTimeUnknown,
     String? gender,
+    String? birthFirstName,
+    String? birthMiddleNames,
+    String? birthLastName,
   }) => EnergieProfile(
         username: username ?? this.username,
         firstName: firstName ?? this.firstName,
@@ -140,6 +168,9 @@ class EnergieProfile {
         timezoneOffsetHours: timezoneOffsetHours ?? this.timezoneOffsetHours,
         birthTimeUnknown: birthTimeUnknown ?? this.birthTimeUnknown,
         gender: gender ?? this.gender,
+        birthFirstName: birthFirstName ?? this.birthFirstName,
+        birthMiddleNames: birthMiddleNames ?? this.birthMiddleNames,
+        birthLastName: birthLastName ?? this.birthLastName,
       );
   
   // Leeres Profil erstellen
