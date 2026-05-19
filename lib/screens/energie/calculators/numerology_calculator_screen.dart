@@ -1415,6 +1415,7 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
     );
   }
 
+  // ignore: unused_element
   Widget _buildProfileCard() {
     return HoverGlowCard(
       glowColor: const Color(0xFF9C27B0),
