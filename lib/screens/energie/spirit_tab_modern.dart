@@ -27,6 +27,7 @@ import 'calculators/dream_pattern_analysis_screen.dart'; // 💭 Traum-Muster
 import 'calculators/family_tree_screen.dart'; // 🌳 Stammbaum
 import 'calculators/tarot_spreads_screen.dart'; // 🔮 Tarot-Legesysteme (alt)
 import 'calculators/tarot_oracle_screen.dart'; // 🔮 Cinematic mit AI-Lesung
+import 'calculators/tarot_lexicon_screen.dart'; // 📚 78-Karten-Lexikon
 import 'calculators/runes_oracle_screen.dart'; // ᚱ Elder Futhark Cinematic
 import 'calculators/akasha_chronicle_screen.dart'; // 🌌 Cinematic Journal + AI
 import 'calculators/birth_chart_360_screen.dart'; // ♓ 360° Visual Geburts-Chart
@@ -553,6 +554,16 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'color': const Color(0xFF8E5AE2),
         'category': 'new',
         'screen': const TarotOracleScreen(),
+      },
+      // 📚 Tarot-Lexikon -- alle 78 Karten browsebar (v95)
+      {
+        'icon': Icons.menu_book_rounded,
+        'iconEmoji': '📚',
+        'title': 'Tarot-Lexikon',
+        'subtitle': '78 Karten · Filter · Suche · Detail-Lesungen',
+        'color': const Color(0xFFCE93D8),
+        'category': 'core',
+        'screen': const TarotLexiconScreen(),
       },
 
       // 🕯️ Ahnenarbeit (v23 – Ahnen, Muster, Rituale)
