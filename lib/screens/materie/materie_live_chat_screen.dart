@@ -16,6 +16,7 @@ import '../../widgets/mention_autocomplete.dart'; // @ MENTIONS
 import '../../widgets/pinned_banner_v2.dart'; // 📌 E2 Sticky-Banner
 import '../../services/feature_flags.dart';
 import '../../widgets/live/live_chat_hero.dart';
+import '../../widgets/live/empty_chat_orb.dart';
 import '../../widgets/live/chat_intelligence_widgets.dart'
     show CatchupCard, TopicCloud, SmartReplyComputer;
 import '../../widgets/live/pins_polls_header.dart';
@@ -1616,6 +1617,23 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
                           const SnackBar(content: Text('Live-Schedule kommt bald.')),
                         );
                       },
+                      // Starte einen neuen Live-Call: First-in-room ist Host.
+                      onStartLive: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => LiveKitGroupCallScreen(
+                              roomName: 'wb-materie-$_selectedRoom',
+                              world: 'materie',
+                              displayName:
+                                  _username.isNotEmpty ? _username : 'Mitglied',
+                              avatarUrl: _avatarUrl,
+                              audioOnly: true,
+                              initialMicEnabled: true,
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   // 📺 Live-Anruf-Banner (wie Telegram) — zeigt aktive Räume
                   LiveRoomBanner(
@@ -1663,20 +1681,17 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
                   if (!hideHeaders) ...[
                     // ✨ STORIES BAR — Online-User als glühende Avatar-Kreise
                     _buildStoriesBar(),
-                    // 📌 PINNED MESSAGE BANNER
-                    SizedBox(
-                      height: 36,
-                      child: PinnedMessageBanner(
-                        room: _selectedRoom,
-                        onRefresh: () {
-                          _loadMessages();
-                        },
-                        onTap: () {
-                          // ✅ Scroll to bottom (pinned message visible)
-                          _scrollToBottom();
-                        },
-                        worldColor: Colors.red, // MATERIE Red
-                      ),
+                    // 📌 PINNED MESSAGE BANNER (shrinkt selbst auf 0 wenn leer)
+                    PinnedMessageBanner(
+                      room: _selectedRoom,
+                      onRefresh: () {
+                        _loadMessages();
+                      },
+                      onTap: () {
+                        // ✅ Scroll to bottom (pinned message visible)
+                        _scrollToBottom();
+                      },
+                      worldColor: Colors.red, // MATERIE Red
                     ),
                     // ✅ REMOVED: VoiceChatBanner (redundant - use VoiceParticipantHeaderBar instead)
                   // 🎥 Voice-Header-Bar entfernt — kommt im LiveKit-Folge-PR.
@@ -1973,10 +1988,9 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
 
     // 🎨 EMPTY STATE (NEW)
     if (_messages.isEmpty) {
-      return const EmptyStateWidget(
-        title: 'Noch keine Nachrichten',
-        message: 'Sei der Erste, der etwas schreibt!',
-        icon: Icons.chat_bubble_outline,
+      return EmptyChatOrb(
+        world: 'materie',
+        roomName: _rooms[_selectedRoom]?['name'] as String? ?? 'diesem Raum',
       );
     }
 

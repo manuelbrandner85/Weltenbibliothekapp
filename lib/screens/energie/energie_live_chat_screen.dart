@@ -87,6 +87,7 @@ import '../../widgets/chat_animated_background.dart';
 import '../../widgets/live_room_banner.dart';
 import '../../services/feature_flags.dart';
 import '../../widgets/live/live_chat_hero.dart';
+import '../../widgets/live/empty_chat_orb.dart';
 import '../../widgets/live/chat_intelligence_widgets.dart'
     show CatchupCard, TopicCloud, SmartReplyComputer;
 import '../../widgets/live/pins_polls_header.dart';
@@ -1656,6 +1657,23 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                           const SnackBar(content: Text('Live-Schedule kommt bald.')),
                         );
                       },
+                      // Starte einen neuen Live-Call: First-in-room ist Host.
+                      onStartLive: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => LiveKitGroupCallScreen(
+                              roomName: 'wb-energie-$_selectedRoom',
+                              world: 'energie',
+                              displayName:
+                                  _username.isNotEmpty ? _username : 'Mitglied',
+                              avatarUrl: _avatarUrl,
+                              audioOnly: true,
+                              initialMicEnabled: true,
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   // 📺 Live-Anruf-Banner (wie Telegram) — zeigt aktive Räume
                   LiveRoomBanner(
@@ -1705,20 +1723,17 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                   if (!hideHeaders) ...[
                     // ✨ STORIES BAR — Online-User als glühende Avatar-Kreise
                     _buildStoriesBar(),
-                    // 📌 PINNED MESSAGE BANNER (Kompakt für mehr Chat-Platz)
-                    SizedBox(
-                      height: 36,
-                      child: PinnedMessageBanner(
-                        room: _selectedRoom,
-                        onRefresh: () {
-                          _loadMessages(silent: true);
-                        },
-                        onTap: () {
-                          // ✅ Scroll to bottom when pinned message tapped
-                          _scrollToBottom();
-                        },
-                        worldColor: const Color(0xFF9B51E0), // ENERGIE Purple
-                      ),
+                    // 📌 PINNED MESSAGE BANNER (shrinkt selbst auf 0 wenn leer)
+                    PinnedMessageBanner(
+                      room: _selectedRoom,
+                      onRefresh: () {
+                        _loadMessages(silent: true);
+                      },
+                      onTap: () {
+                        // ✅ Scroll to bottom when pinned message tapped
+                        _scrollToBottom();
+                      },
+                      worldColor: const Color(0xFF9B51E0), // ENERGIE Purple
                     ),
                   
                   // ✅ REMOVED: VoiceChatBanner (redundant - use VoiceParticipantHeaderBar instead)
@@ -1769,10 +1784,9 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
                         message: 'Lade Nachrichten...',
                       )
                     : _messages.isEmpty
-                        ? EmptyStateWidget(
-                            title: 'Noch keine Nachrichten',
-                            message: 'Sei der Erste in ${_rooms[_selectedRoom]!['name']}!',
-                            icon: Icons.chat_bubble_outline,
+                        ? EmptyChatOrb(
+                            world: 'energie',
+                            roomName: _rooms[_selectedRoom]!['name'] as String,
                           )
                         : AnimatedBuilder(
                             animation: UserBlockService.instance,
