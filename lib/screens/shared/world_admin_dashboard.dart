@@ -110,34 +110,45 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
       final storage = StorageService();
       final m = storage.getMaterieProfile();
       final e = storage.getEnergieProfile();
-      final localUser = provider.username ?? m?.username ?? e?.username ?? '';
 
-      // Wenn weder lokal noch im Provider ein Username steht: nichts zu tun.
-      if (localUser.isEmpty) return provider;
+      // v105: ALLE Username-Quellen sammeln statt nur den ersten zu nehmen.
+      // Vorher fiel der Username-Override durch wenn provider.username
+      // einen Email-String enthielt (z.B. supabase auth.email) -- der
+      // lokale 'Weltenbibliothek' wurde nicht mehr beruecksichtigt.
+      final allUsernames = <String>[
+        provider.username ?? '',
+        m?.username ?? '',
+        e?.username ?? '',
+      ].where((u) => u.isNotEmpty).toList();
+
+      if (allUsernames.isEmpty) return provider;
+
+      final localUser = allUsernames.first;
+      final matchesRoot = allUsernames.any(AppRoles.isRootAdminByUsername);
+      final matchesContentEditor =
+          allUsernames.any(AppRoles.isContentEditorByUsername);
 
       // Sammle Rollen-Kandidaten und nimm die hoechste.
       final candidates = <String?>[
         provider.role,
         m?.role,
         e?.role,
-        if (AppRoles.isRootAdminByUsername(localUser)) AppRoles.rootAdmin,
-        if (AppRoles.isContentEditorByUsername(localUser))
-          AppRoles.contentEditor,
+        if (matchesRoot) AppRoles.rootAdmin,
+        if (matchesContentEditor) AppRoles.contentEditor,
       ].where((r) => r != null && r.isNotEmpty).toList();
 
       final highest = _highestRole(candidates.cast<String>());
       final effectiveRole = highest ?? provider.role;
 
       // v103 FIX 3: Hard Username-Override. Wenn alle anderen Quellen
-      // 'user' liefern oder leer sind, aber der Username einem bekannten
-      // Admin-Account entspricht -> Rolle hart setzen. Schuetzt vor
-      // Cache-Race-Conditions und veralteten Supabase-Rows.
+      // 'user' liefern oder leer sind, aber IRGENDEINE Username-Quelle
+      // einem Admin-Account entspricht -> Rolle hart setzen.
       final finalRole = (effectiveRole == null ||
               effectiveRole.isEmpty ||
               effectiveRole == AppRoles.user)
-          ? (AppRoles.isRootAdminByUsername(localUser)
+          ? (matchesRoot
               ? AppRoles.rootAdmin
-              : AppRoles.isContentEditorByUsername(localUser)
+              : matchesContentEditor
                   ? AppRoles.contentEditor
                   : effectiveRole)
           : effectiveRole;
@@ -212,19 +223,28 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
     if (admin.username == null || admin.username!.isEmpty) {
       return _loadingScaffold();
     }
-    // v103 FIX 4: Zugriffsschutz mit Username-Match-Fallback.
+    // v103 FIX 4 + v105: Zugriffsschutz mit Multi-Source-Username-Check.
     // hasAccess akzeptiert JEDE der folgenden Quellen:
     //   - admin.isAdmin / isRootAdmin / isModerator (Provider-Flags)
     //   - canAccessAdminDashboard(role) (Rolle-Whitelist)
-    //   - isRootAdminByUsername / isContentEditorByUsername
-    //     (hartes Username-Mapping als Last-Resort)
-    // role='user' UND unbekannter Username -> blockt zuverlaessig.
+    //   - isRootAdminByUsername / isContentEditorByUsername fuer:
+    //       admin.username (vom Resolver), MaterieProfile, EnergieProfile
+    //   role='user' UND alle Username-Quellen unbekannt -> blockt.
+    final storage = StorageService();
+    final altUsernames = <String?>[
+      admin.username,
+      storage.getMaterieProfile()?.username,
+      storage.getEnergieProfile()?.username,
+    ];
+    final usernameMatchesAdmin = altUsernames.any((u) =>
+        u != null &&
+        (AppRoles.isRootAdminByUsername(u) ||
+            AppRoles.isContentEditorByUsername(u)));
     final hasAccess = admin.isAdmin ||
         admin.isRootAdmin ||
         admin.isModerator ||
         AppRoles.canAccessAdminDashboard(admin.role ?? '') ||
-        AppRoles.isRootAdminByUsername(admin.username) ||
-        AppRoles.isContentEditorByUsername(admin.username);
+        usernameMatchesAdmin;
     if (!hasAccess) return _accessDeniedScaffold();
 
     // v103: Tabs dynamisch -- Rollen-Permission steuert Sichtbarkeit.
