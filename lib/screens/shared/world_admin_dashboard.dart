@@ -127,17 +127,28 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
       final highest = _highestRole(candidates.cast<String>());
       final effectiveRole = highest ?? provider.role;
 
-      // v103 Zugriffsschutz: isAdmin wird ueber canAccessAdminDashboard
-      // geprueft -- explicit gegen role='user'. Damit kann der Fallback
-      // NIE einem normalen User durch Zufall Admin-Rechte geben.
+      // v103 FIX 3: Hard Username-Override. Wenn alle anderen Quellen
+      // 'user' liefern oder leer sind, aber der Username einem bekannten
+      // Admin-Account entspricht -> Rolle hart setzen. Schuetzt vor
+      // Cache-Race-Conditions und veralteten Supabase-Rows.
+      final finalRole = (effectiveRole == null ||
+              effectiveRole.isEmpty ||
+              effectiveRole == AppRoles.user)
+          ? (AppRoles.isRootAdminByUsername(localUser)
+              ? AppRoles.rootAdmin
+              : AppRoles.isContentEditorByUsername(localUser)
+                  ? AppRoles.contentEditor
+                  : effectiveRole)
+          : effectiveRole;
+
       return AdminState(
-        isAdmin: AppRoles.canAccessAdminDashboard(effectiveRole),
-        isRootAdmin: AppRoles.isRootAdmin(effectiveRole),
-        isModerator: AppRoles.isModerator(effectiveRole),
+        isAdmin: AppRoles.canAccessAdminDashboard(finalRole),
+        isRootAdmin: AppRoles.isRootAdmin(finalRole),
+        isModerator: AppRoles.isModerator(finalRole),
         world: provider.world,
         backendVerified: provider.backendVerified,
         username: localUser,
-        role: effectiveRole,
+        role: finalRole,
       );
     } catch (_) {
       return provider;
@@ -200,15 +211,19 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
     if (admin.username == null || admin.username!.isEmpty) {
       return _loadingScaffold();
     }
-    // v103 Zugriffsschutz: hasAccess prueft alle Admin-Rollen explizit
-    // gegen die AppRoles-Whitelist (root_admin/admin/moderator/
-    // content_editor). User mit role='user' werden 100% geblockt --
-    // weder ueber den Button (auch dort gegated) noch ueber direktes
-    // Navigieren auf /admin.
+    // v103 FIX 4: Zugriffsschutz mit Username-Match-Fallback.
+    // hasAccess akzeptiert JEDE der folgenden Quellen:
+    //   - admin.isAdmin / isRootAdmin / isModerator (Provider-Flags)
+    //   - canAccessAdminDashboard(role) (Rolle-Whitelist)
+    //   - isRootAdminByUsername / isContentEditorByUsername
+    //     (hartes Username-Mapping als Last-Resort)
+    // role='user' UND unbekannter Username -> blockt zuverlaessig.
     final hasAccess = admin.isAdmin ||
         admin.isRootAdmin ||
         admin.isModerator ||
-        AppRoles.canAccessAdminDashboard(admin.role ?? '');
+        AppRoles.canAccessAdminDashboard(admin.role ?? '') ||
+        AppRoles.isRootAdminByUsername(admin.username) ||
+        AppRoles.isContentEditorByUsername(admin.username);
     if (!hasAccess) return _accessDeniedScaffold();
 
     // v103: Tabs dynamisch -- Rollen-Permission steuert Sichtbarkeit.

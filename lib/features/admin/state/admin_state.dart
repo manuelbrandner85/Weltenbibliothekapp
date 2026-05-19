@@ -141,7 +141,29 @@ class AdminStateNotifier extends StateNotifier<AdminState> {
 
         if (profile != null) {
           final username = profile['username'] as String? ?? '';
-          final role = profile['role'] as String? ?? AppRoles.user;
+          var role = profile['role'] as String? ?? AppRoles.user;
+
+          // v103 FIX 1: Username-basierter Override falls Supabase-Rolle
+          // 'user' ist aber Username einem bekannten Admin-Account
+          // entspricht. Passiert wenn profiles.role nie auf root_admin
+          // gesetzt wurde oder durch einen Bug zurueckgesetzt wurde.
+          if (role == AppRoles.user || role.isEmpty) {
+            if (AppRoles.isRootAdminByUsername(username)) {
+              role = AppRoles.rootAdmin;
+              if (kDebugMode) {
+                debugPrint(
+                    '🔐 AdminState: Username-Override → root_admin für $username');
+              }
+              _fixSupabaseRole(user.id, AppRoles.rootAdmin);
+            } else if (AppRoles.isContentEditorByUsername(username)) {
+              role = AppRoles.contentEditor;
+              if (kDebugMode) {
+                debugPrint(
+                    '🔐 AdminState: Username-Override → content_editor für $username');
+              }
+              _fixSupabaseRole(user.id, AppRoles.contentEditor);
+            }
+          }
 
           // In Hive cachen für Offline-Nutzung
           await _storage.saveProfile(world, {
@@ -198,6 +220,31 @@ class AdminStateNotifier extends StateNotifier<AdminState> {
     }
 
     // ──────────────────────────────────────────────────────────────
+    // SCHRITT 2.5: Username-basierter Role-Override (Offline-Sicherheit)
+    // ──────────────────────────────────────────────────────────────
+    // v103 FIX 1: Wenn Hive/SQLite role='user' oder fehlt, aber Username
+    // ist bekannter Root-Admin/Content-Editor -> auf entsprechende Rolle
+    // anheben. Damit funktioniert Admin-Zugriff auch komplett offline.
+    if (username != null && username.isNotEmpty) {
+      if ((role == null || role == AppRoles.user || role.isEmpty) &&
+          AppRoles.isRootAdminByUsername(username)) {
+        role = AppRoles.rootAdmin;
+        if (kDebugMode) {
+          debugPrint(
+              '🔐 AdminState: Offline-Override → root_admin für $username');
+        }
+      }
+      if ((role == null || role == AppRoles.user || role.isEmpty) &&
+          AppRoles.isContentEditorByUsername(username)) {
+        role = AppRoles.contentEditor;
+        if (kDebugMode) {
+          debugPrint(
+              '🔐 AdminState: Offline-Override → content_editor für $username');
+        }
+      }
+    }
+
+    // ──────────────────────────────────────────────────────────────
     // SCHRITT 3: AdminResolver — InvisibleAuth + Web SharedPref + Role-by-Username
     // ──────────────────────────────────────────────────────────────
     // Fängt Root-Admin und Content-Editor auch wenn Supabase-Session fehlt
@@ -235,6 +282,29 @@ class AdminStateNotifier extends StateNotifier<AdminState> {
 
   /// Alias für explizites Re-Sync mit Supabase.
   Future<void> refreshAdminStatus() => load();
+
+  /// v103 FIX 1: Korrigiert die Rolle in Supabase profiles im Hintergrund.
+  /// Wird vom Username-Override aufgerufen wenn Supabase falsche Rolle
+  /// hatte. Fire-and-forget -- Fehler werden nur geloggt, nie geworfen.
+  /// Service-Role-Bypass durch v71-Trigger (auto_set_admin_role) oder
+  /// RLS-Policy profiles_role_update_admin_only mit Service-Role.
+  void _fixSupabaseRole(String supabaseUserId, String correctRole) {
+    Future(() async {
+      try {
+        await supabase
+            .from('profiles')
+            .update({'role': correctRole}).eq('id', supabaseUserId);
+        if (kDebugMode) {
+          debugPrint(
+              '✅ AdminState: Supabase role korrigiert → $correctRole');
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          debugPrint('⚠️ AdminState: Supabase role fix failed: $e');
+        }
+      }
+    });
+  }
 }
 
 /// Provider (pro Welt)

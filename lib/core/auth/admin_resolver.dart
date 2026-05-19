@@ -30,14 +30,35 @@ class AdminResolver {
     try {
       final user = Supabase.instance.client.auth.currentUser;
       if (user != null) {
+        // v103 FIX 5: select username UND role -- damit wir hier schon
+        // den Username-Override anwenden koennen.
         final profile = await Supabase.instance.client
             .from('profiles')
-            .select('role')
+            .select('role, username')
             .eq('id', user.id)
             .maybeSingle()
             .timeout(const Duration(seconds: 6));
-        final role = profile?['role'] as String?;
+        var role = profile?['role'] as String?;
         if (role != null && role.isNotEmpty) {
+          // v103 FIX 5: Username-Override -- wenn Supabase 'user' sagt
+          // aber der Username einem bekannten Admin-Account entspricht,
+          // wird die Rolle hier korrigiert.
+          final username = profile?['username'] as String? ?? '';
+          if (role == AppRoles.user &&
+              AppRoles.isRootAdminByUsername(username)) {
+            role = AppRoles.rootAdmin;
+            if (kDebugMode) {
+              debugPrint(
+                  '🔐 [AdminResolver] Supabase-Override: user→root_admin für $username');
+            }
+          } else if (role == AppRoles.user &&
+              AppRoles.isContentEditorByUsername(username)) {
+            role = AppRoles.contentEditor;
+            if (kDebugMode) {
+              debugPrint(
+                  '🔐 [AdminResolver] Supabase-Override: user→content_editor für $username');
+            }
+          }
           if (kDebugMode) {
             debugPrint('🔐 [AdminResolver] Supabase-Session: role=$role');
           }
@@ -45,8 +66,9 @@ class AdminResolver {
         }
       }
     } catch (e) {
-      if (kDebugMode)
+      if (kDebugMode) {
         debugPrint('⚠️ [AdminResolver] Supabase-Lookup-Fehler: $e');
+      }
     }
 
     // 2. Mobile-App via InvisibleAuth → Username aus lokalem Profil

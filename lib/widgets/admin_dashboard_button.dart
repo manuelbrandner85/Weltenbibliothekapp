@@ -39,6 +39,12 @@ class AdminDashboardButton extends StatefulWidget {
 class _AdminDashboardButtonState extends State<AdminDashboardButton> {
   bool _fallbackIsAdmin = false;
   String? _fallbackRole;
+  // v103 FIX 2: Race-Condition-Schutz. _resolveFallback() ist async.
+  // Beim ersten build() ist _fallbackIsAdmin/_fallbackRole noch leer.
+  // Mit _fallbackResolved=false rendern wir einen 0-Pixel-Platzhalter
+  // statt SizedBox.shrink() -- so verschwindet der Button nicht
+  // dauerhaft falls der Provider spaeter erst auflost.
+  bool _fallbackResolved = false;
 
   @override
   void initState() {
@@ -101,20 +107,36 @@ class _AdminDashboardButtonState extends State<AdminDashboardButton> {
       setState(() {
         _fallbackIsAdmin = usernameMatch || roleMatch || webMatch;
         _fallbackRole = resolvedRole;
+        _fallbackResolved = true;
       });
-    } catch (_) {/* still false */}
+    } catch (_) {
+      // Auch im Fehlerfall als resolved markieren -- sonst haengen wir
+      // ewig im Placeholder-State.
+      if (mounted) setState(() => _fallbackResolved = true);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    // v103 Zugriffsschutz: Button NUR fuer User mit echter Admin-Rolle.
-    // canAccessAdminDashboard prueft gegen AppRoles
-    // (root_admin/admin/moderator/content_editor). 'user' bekommt
-    // garantiert kein Button und kein Navigations-Pfad.
+    // v103 FIX 2: Multi-Source-Access-Check. Button erscheint sobald
+    // EINE Quelle Admin-Zugriff signalisiert (Provider-Role,
+    // Provider-Flags, lokales Profil, Username-Match, Web-Pref). Damit
+    // ist der Button auch dann da, wenn das Backend langsam ist oder
+    // einer der Pfade noch nicht aufgeloest hat.
     final role = widget.adminState.role ?? _fallbackRole;
     final hasAccess = AppRoles.canAccessAdminDashboard(role) ||
-        (widget.adminState.isAdmin &&
-            AppRoles.canAccessAdminDashboard(widget.adminState.role));
+        widget.adminState.isAdmin ||
+        widget.adminState.isRootAdmin ||
+        widget.adminState.isModerator ||
+        _fallbackIsAdmin;
+
+    // Solange weder Provider noch Fallback fertig sind: 0-Pixel-Platz-
+    // halter statt SizedBox.shrink(). Damit wird beim naechsten
+    // setState (sobald Fallback durch ist) NEU geprueft -- sonst
+    // verschwindet der Button und kommt nie zurueck.
+    if (!hasAccess && role == null && !_fallbackResolved) {
+      return const SizedBox(height: 0);
+    }
     if (!hasAccess) return const SizedBox.shrink();
 
     final scheme = _resolveScheme(role);
