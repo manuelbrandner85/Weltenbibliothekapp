@@ -359,7 +359,9 @@ class _EnhancedMessageBubbleState extends State<EnhancedMessageBubble> {
                   ],
                 ),
               ),
-              
+                ), // BackdropFilter
+              ), // ClipRRect
+
               // Reactions
               if (_reactions.isNotEmpty)
                 Padding(
@@ -403,8 +405,6 @@ class _EnhancedMessageBubbleState extends State<EnhancedMessageBubble> {
                     }).toList(),
                   ),
                 ),
-                ), // BackdropFilter
-              ), // ClipRRect
 
               // Reaction Picker
               if (_showReactionPicker)
