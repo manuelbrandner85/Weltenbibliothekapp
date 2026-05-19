@@ -115,29 +115,24 @@ class RealtimeNotificationService {
 
   Future<void> _subscribeQueue() async {
     // v96: zwei moegliche Identitaeten -- UUID (Supabase Auth) oder
-    // legacy_user_id (InvisibleAuth). Wir subscriben fuer beide, weil ein
-    // User je nach Pfad mal das eine, mal das andere haben kann.
-    final profile = UnifiedProfileService.instance;
-    final userId = profile.userId;
-    final legacyId = profile.current?.userId; // gleichlautend, falls vorhanden
-    final legacyOnly = (profile.current != null &&
-        (userId == null || userId.isEmpty) &&
-        (legacyId != null && legacyId.startsWith('user_')))
-        ? legacyId
-        : null;
-
-    if ((userId == null || userId.isEmpty) && legacyOnly == null) {
+    // legacy_user_id (InvisibleAuth, beginnt mit 'user_'). UnifiedProfile.userId
+    // enthaelt eines von beiden.
+    final userId = UnifiedProfileService.instance.userId;
+    if (userId == null || userId.isEmpty) {
       if (kDebugMode) {
         debugPrint('🔔 Realtime-Queue: keine Identitaet -- skip subscribe');
       }
       return;
     }
 
+    // Heuristik: InvisibleAuth-IDs starten mit 'user_<ts>_<rand>'.
+    // Echte UUIDs haben Bindestriche (8-4-4-4-12).
+    final isLegacy = userId.startsWith('user_');
+    final filterColumn = isLegacy ? 'legacy_user_id' : 'user_id';
+
     try {
       final client = supabase;
-      final keyValue = userId?.isNotEmpty == true ? userId! : legacyOnly!;
-      final filterColumn =
-          userId?.isNotEmpty == true ? 'user_id' : 'legacy_user_id';
+      final keyValue = userId;
       _channel = client
           .channel('rt-notif-$keyValue-${DateTime.now().millisecondsSinceEpoch}')
           .onPostgresChanges(
