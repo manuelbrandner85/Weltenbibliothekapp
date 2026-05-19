@@ -13,6 +13,7 @@ import 'services/sqlite_storage_service.dart'; // 🗄️ SQLITE LOCAL STORAGE (
 // import 'package:firebase_core/firebase_core.dart';
 // import 'firebase_options.dart';
 import 'screens/intro_image_screen.dart';
+import 'screens/cinematic_splash_screen.dart'; // 🎬 Cinematic Splash (Mobile only)
 import 'screens/portal_home_screen.dart'; // 🌀 Portal (NACH Tutorial)
 import 'screens/web/web_auth_gate.dart'; // 🌐 Web Auth Gate
 import 'screens/web/web_admin_panel.dart'; // 👑 Web Admin Panel
@@ -431,7 +432,7 @@ class _WeltenbibliothekAppState extends State<WeltenbibliothekApp>
           // Mobile: direkt zum Portal + UpdateGate für OTA-Patch-Dialog
           home: kIsWeb
               ? const WebAuthGate()
-              : const UpdateGate(child: PortalHomeScreen()),
+              : const _MobileEntryGate(),
           routes: {
             '/home': (context) => const IntroImageScreen(),
             '/dashboard': (context) => const EnergieWorldScreen(), // ✅ FIXED
@@ -461,6 +462,31 @@ class _WeltenbibliothekAppState extends State<WeltenbibliothekApp>
             '/admin/web-users': (context) => const WebAdminPanel(),
           },
         );
+      },
+    );
+  }
+}
+
+/// 🎬 Mobile-only entry: zeigt erst die Cinematic-Splash, danach UpdateGate.
+/// Web nutzt diesen Wrapper NICHT (kIsWeb-Branch in MaterialApp.home).
+class _MobileEntryGate extends StatefulWidget {
+  const _MobileEntryGate();
+
+  @override
+  State<_MobileEntryGate> createState() => _MobileEntryGateState();
+}
+
+class _MobileEntryGateState extends State<_MobileEntryGate> {
+  bool _splashDone = false;
+
+  @override
+  Widget build(BuildContext context) {
+    if (_splashDone) {
+      return const UpdateGate(child: PortalHomeScreen());
+    }
+    return CinematicSplashScreen(
+      onComplete: () {
+        if (mounted) setState(() => _splashDone = true);
       },
     );
   }
