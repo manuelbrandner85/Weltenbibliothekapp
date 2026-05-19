@@ -7,6 +7,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 
 import '../../../services/achievement_service.dart';
+import '../../../services/activity_log_service.dart';
 import '../../../services/spirit_calculations/numerology_engine.dart';
 import '../../../services/streak_tracking_service.dart';
 import '../../../widgets/cinematic/wb_ambient_particles.dart';
@@ -70,14 +71,21 @@ class _NumerologyQuizScreenState extends State<NumerologyQuizScreen> {
 
   void _pick(int i) {
     if (_revealed) return;
+    final correct = i == _questions[_index].correctIndex;
     setState(() {
       _selected = i;
       _revealed = true;
-      if (i == _questions[_index].correctIndex) {
+      if (correct) {
         _score++;
         _xp += _xpPerQuestion;
       }
     });
+    // Echtzeit-Tagging: jede Antwort -> ActivityLog (XP serverseitig).
+    ActivityLogService.instance.logQuestionAnswered(
+      quizId: 'numerology_${_level.name}',
+      xp: correct ? _xpPerQuestion : 0,
+      correct: correct,
+    );
   }
 
   void _next() {

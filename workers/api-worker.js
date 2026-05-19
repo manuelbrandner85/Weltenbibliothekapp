@@ -3643,6 +3643,71 @@ export default {
         }
       }
 
+      // ── POST /api/activity/log  (v95 Echtzeit Activity Tracking) ──
+      // Body: { user_id?, username?, kind, world, label, metadata?, xp, ts }
+      // Schreibt in user_activity_log + addiert xp via fn_add_xp (RPC).
+      // Idempotenz: keine -- die App soll selbst dedupen (z.B. tool_open
+      // pro Session max 1x).
+      if (method === 'POST' && path === '/api/activity/log') {
+        try {
+          const data = await request.json().catch(() => null);
+          if (!data) return errorResponse('Invalid JSON', 400);
+          const serviceKey =
+              env.SUPABASE_SERVICE_ROLE_KEY || env.SUPABASE_ANON_KEY || '';
+          if (!serviceKey) return errorResponse('Service-Key fehlt', 500);
+          const auth = {
+            'Content-Type': 'application/json',
+            'apikey': serviceKey,
+            'Authorization': `Bearer ${serviceKey}`,
+          };
+          const userId = data.user_id || null;
+          const username = data.username || null;
+          const xp = Math.max(0, Math.min(500, Number(data.xp) || 0));
+
+          // 1) Activity-Row einfuegen (best-effort).
+          const insertRes = await fetch(
+              `${SUPABASE_URL}/rest/v1/user_activity_log`, {
+            method: 'POST',
+            headers: { ...auth, 'Prefer': 'return=minimal' },
+            body: JSON.stringify({
+              user_id: userId,
+              username,
+              kind: String(data.kind || 'custom').substring(0, 40),
+              world: String(data.world || 'meta').substring(0, 20),
+              label: String(data.label || '').substring(0, 120),
+              metadata: data.metadata || {},
+              xp,
+              created_at: data.ts || new Date().toISOString(),
+            }),
+          });
+          const inserted = insertRes.ok;
+
+          // 2) XP addieren -- nur wenn user_id (UUID) vorhanden.
+          let xpAdded = false;
+          if (xp > 0 && userId) {
+            try {
+              const rpcRes = await fetch(
+                  `${SUPABASE_URL}/rest/v1/rpc/fn_add_user_xp`, {
+                method: 'POST',
+                headers: auth,
+                body: JSON.stringify({
+                  p_user_id: userId,
+                  p_amount: xp,
+                  p_source: data.label || data.kind || 'activity',
+                }),
+              });
+              xpAdded = rpcRes.ok;
+            } catch (_) { /* RPC fehlt eventuell -- okay */ }
+          }
+          return jsonResponse({
+            success: inserted,
+            xp_added: xpAdded,
+          });
+        } catch (e) {
+          return errorResponse(`Activity-Log-Fehler: ${e.message}`);
+        }
+      }
+
       // ── POST /api/devices/register  (v5.44.3 FCM-Token Persistenz) ──
       // Body: { fcm_token, platform: 'android'|'ios'|'web', profile_id?,
       //         legacy_user_id?, app_version?, device_model? }

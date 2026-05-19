@@ -11,6 +11,7 @@ import 'package:supabase_flutter/supabase_flutter.dart' show RealtimeChannel;
 // Removed: dart:convert (unused after FIX 15)
 // Removed: package:http (unused after FIX 15)
 import 'package:image_picker/image_picker.dart'; // Image Picker
+import '../../services/activity_log_service.dart';
 import '../../services/cloudflare_api_service.dart';
 import '../../services/offline_sync_service.dart'; // 📡 OFFLINE SYNC (NEW Phase 3)
 import '../../services/user_service.dart';
@@ -712,6 +713,13 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
             'avatarEmoji': _avatar,
           },
           userId: _userId,
+        );
+
+        // v95 Activity-Log fuer Echtzeit-XP + UI-Stream.
+        ActivityLogService.instance.logChatMessage(
+          world: 'energie',
+          roomId: _selectedRoom,
+          messageLength: message.length,
         );
 
         // Optimistisches Einfügen mit Pending-Flag → User sieht seine Nachricht

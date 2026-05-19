@@ -1,8 +1,10 @@
 import 'dart:async' show Timer, unawaited;
 
 import 'package:flutter/material.dart';
+import '../../services/activity_log_service.dart';
 import '../../services/spirit_profile_service.dart';
 import '../../services/storage_service.dart';
+import '../../services/unified_profile_service.dart';
 import '../../services/username_availability_service.dart';
 import '../../widgets/profile_chat_preview.dart';
 import '../../widgets/profile_completeness_bar.dart';
@@ -879,6 +881,9 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
         if (updatedProfile != null) {
           // 💾 Vollständiges Profil lokal speichern (mit userId & role)
           await storage.saveEnergieProfile(updatedProfile);
+          // v95: UnifiedProfileService benachrichtigen + Activity loggen.
+          await UnifiedProfileService.instance.save(updatedProfile);
+          ActivityLogService.instance.logProfileEdit();
           // Cross-sync username to MaterieProfile (unified profile)
           final existingMat = storage.getMaterieProfile();
           final syncedMat = MaterieProfile(

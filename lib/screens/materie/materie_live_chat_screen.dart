@@ -8,6 +8,7 @@ import '../shared/livekit_group_call_screen.dart';
 import 'kaninchenbau/kaninchenbau_screen.dart';
 import '../../services/supabase_service.dart'; // 🔥 supabase Auth
 import 'package:supabase_flutter/supabase_flutter.dart' show RealtimeChannel;
+import '../../services/activity_log_service.dart';
 import '../../services/cloudflare_api_service.dart';
 import '../../services/chat_notification_service.dart'; // 🔔 NOTIFICATIONS
 import '../../services/user_service.dart'; // 🆕 User Service für Auth
@@ -920,6 +921,13 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
     ChatRateLimitService.instance.recordSend(_fullRoomId);
     HapticFeedbackService().messageSent();
     _isSending = true; // 🛑 Bundle 4.8: Lock vor I/O
+
+    // v95 Activity-Log fuer Echtzeit-XP + UI-Stream.
+    ActivityLogService.instance.logChatMessage(
+      world: 'materie',
+      roomId: _selectedRoom,
+      messageLength: text.length,
+    );
 
     // 📡 OFFLINE-FIRST: Bei fehlender Verbindung Nachricht queuen + optimistisch
     //    mit Pending-Flag in die Liste einfügen.

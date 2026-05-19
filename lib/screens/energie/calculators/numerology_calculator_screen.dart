@@ -9,6 +9,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../../models/energie_profile.dart';
 import '../../../services/achievement_service.dart';
+import '../../../services/activity_log_service.dart';
 import '../../../services/numerology_pdf_service.dart';
 import '../../../services/spirit_calculations/cross_system_engine.dart';
 import '../../../services/spirit_calculations/numerology_engine.dart';
@@ -925,6 +926,8 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
       final svc = AchievementService();
       await svc.incrementProgress('numerology_pdf_first');
       await svc.incrementProgress('numerology_pdf_share_5');
+      // v95: ActivityLog -- Echtzeit-Sync zu Backend + UI-Event.
+      await ActivityLogService.instance.logPdfShared(type: 'soul_portrait');
       if (kIsWeb) {
         // Web-Fallback: nur Vorschau-Snackbar (kein direkter Share).
         if (!mounted) return;
