@@ -32,6 +32,9 @@ import 'calculators/runes_oracle_screen.dart'; // ᚱ Elder Futhark Cinematic
 import 'calculators/galdr_meditation_screen.dart'; // ᚠ Galdr-Gesang
 import 'calculators/synastry_chart_screen.dart'; // 💞 Astrologie-Synastrie
 import 'calculators/bind_rune_screen.dart'; // 🪬 Bind-Rune
+import 'calculators/crystal_finder_screen.dart'; // 💎 K2 Wizard
+import 'calculators/crystal_combiner_screen.dart'; // 💎 K3 Combiner
+import 'calculators/birthstone_matcher_screen.dart'; // 💎 K4 Birthstone
 import 'calculators/akasha_chronicle_screen.dart'; // 🌌 Cinematic Journal + AI
 import 'calculators/birth_chart_360_screen.dart'; // ♓ 360° Visual Geburts-Chart
 import 'calculators/biorhythm_chart_screen.dart'; // 📊 90-Tage Bio + Critical Days
@@ -673,6 +676,37 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'category': 'core',
         'screen': const BindRuneScreen(),
       },
+      // 💎 Kristall-Finder (v95)
+      {
+        'icon': Icons.diamond_outlined,
+        'iconEmoji': '💎',
+        'title': 'Kristall-Finder',
+        'subtitle': '3-Fragen-Wizard · Top-3 Empfehlung',
+        'color': const Color(0xFF9C27B0),
+        'category': 'core',
+        'screen': const CrystalFinderScreen(),
+      },
+      // 🪨 Kristall-Kombi (v95)
+      {
+        'icon': Icons.style_rounded,
+        'iconEmoji': '🪨',
+        'title': 'Kristall-Kombi',
+        'subtitle': '2 Kristalle · Synergie-Analyse',
+        'color': const Color(0xFFCE93D8),
+        'category': 'core',
+        'screen': const CrystalCombinerScreen(),
+      },
+      // 🎂 Geburtsstein-Matcher (v95)
+      {
+        'icon': Icons.cake_rounded,
+        'iconEmoji': '🎂',
+        'title': 'Geburtsstein-Matcher',
+        'subtitle': 'Monat + Sternzeichen + Lebenszahl',
+        'color': const Color(0xFFC9A84C),
+        'category': 'core',
+        'screen': const BirthstoneMatcherScreen(),
+      },
+
       // 💞 Synastrie -- Astrologie Partner-Vergleich (v95)
       {
         'icon': Icons.favorite_border_rounded,
