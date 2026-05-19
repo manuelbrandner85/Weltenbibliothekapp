@@ -4,6 +4,7 @@ library;
 
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'push_notification_helper.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:convert';
 
@@ -594,6 +595,27 @@ class AchievementService {
     // Sync to Supabase — fires DB notification + FCM push via fn_unlock_achievement RPC
     _syncUnlockToSupabase(achievement).ignore();
 
+    // v103 (3.1): Direkt-Push via Worker als Fallback, falls Supabase-RPC
+    // ausfaellt oder der User keine Supabase-Session hat (InvisibleAuth).
+    Future(() async {
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final userId = prefs.getString('auth_user_id');
+        if (userId == null) return;
+        await PushNotificationHelper.instance.sendToUser(
+          targetUserId: userId,
+          type: 'achievement',
+          title: '🏆 Achievement: ${achievement.name}',
+          body:
+              '${achievement.icon} ${achievement.description} (+${achievement.xpReward} XP)',
+          data: {
+            'achievement_id': achievement.id,
+            'xp': achievement.xpReward,
+          },
+        );
+      } catch (_) {}
+    });
+
     for (var listener in _unlockListeners) {
       listener(achievement, progress);
     }
@@ -641,6 +663,24 @@ class AchievementService {
       if (kDebugMode) {
         debugPrint('⬆️ LEVEL UP! Level ${_userLevel.level}');
       }
+
+      // v103 (3.2): Push fuer jeden Level-Up. Fire-and-forget.
+      final newLevel = _userLevel.level;
+      Future(() async {
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          final userId = prefs.getString('auth_user_id');
+          if (userId == null) return;
+          await PushNotificationHelper.instance.sendToUser(
+            targetUserId: userId,
+            type: 'level_up',
+            title: '⬆️ Level Up!',
+            body:
+                'Herzlichen Glückwunsch! Du hast Level $newLevel erreicht! 🎉',
+            data: {'new_level': newLevel},
+          );
+        } catch (_) {}
+      });
     }
 
     await _saveProgress();
