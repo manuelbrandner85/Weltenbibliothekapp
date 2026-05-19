@@ -50,6 +50,7 @@ import 'calculators/photo_progress_screen.dart'; // 📸 Vor/Nach
 import 'calculators/crystal_photo_id_screen.dart'; // 💎 KI-Foto-ID
 import 'calculators/voice_affirmation_screen.dart'; // 💫 Voice-Recording
 import 'calculators/mantra_practice_screen.dart'; // 🕉️ Mantra-Praxis cinematic
+import 'calculators/mantra_guide_screen.dart'; // 🕉️ M-Guide einsteigerfreundlich
 import 'calculators/iching_oracle_screen.dart'; // ☯ I-Ging cinematic
 import 'calculators/new_spirit_tool_screens.dart';
 import 'meditation_timer_screen.dart'; // MeditationTimerScreen (canonical, deduplicated)
@@ -387,12 +388,22 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'category': 'new',
         'screen': const MantraLibraryScreen(),
       },
-      // 🕉️ Mantra-Praxis (cinematic) — Audio + 108-Mala + Tagesmantra
+      // 🕉️ Mantra-Guide (v95) -- einsteigerfreundlich
+      {
+        'icon': Icons.menu_book_rounded,
+        'iconEmoji': '🕉️',
+        'title': 'Mantra-Guide',
+        'subtitle': 'Was, Wofuer, Wie · 12 Mantras · 21-Tage · Journal',
+        'color': const Color(0xFF9C27B0),
+        'category': 'core',
+        'screen': const MantraGuideScreen(),
+      },
+      // 🕉️ Mantra-Praxis (advanced) — Audio + 108-Mala + Tagesmantra
       {
         'icon': Icons.spa,
         'iconEmoji': '📿',
         'title': 'Mantra-Praxis',
-        'subtitle': 'Aussprache · 108-Mala · Tagesmantra',
+        'subtitle': 'Audio · 108-Mala-Zaehler (Fortgeschritten)',
         'color': const Color(0xFFFFB300),
         'category': 'new',
         'screen': const MantraPracticeScreen(),
