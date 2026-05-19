@@ -407,6 +407,131 @@ class NatalAstrology {
         _deg(math.atan2(math.sin(lstRad), math.cos(lstRad) * math.cos(_rad(eps))));
     return mc < 0 ? mc + 360 : mc;
   }
+
+  // ══════════════════════════════════════════════════════════════════
+  // 🏠 HÄUSER-SYSTEM (Bereich B1)
+  // ══════════════════════════════════════════════════════════════════
+
+  /// Equal-House-System: 12 Häuser zu je 30°, beginnend am Aszendenten.
+  /// Vereinfachung gegenüber Placidus, aber didaktisch klar und ohne
+  /// transzendente Gleichung-Loesung. Erfordert Geburts-Lat+Long+UTC-Zeit.
+  ///
+  /// Liefert: Map mit:
+  ///   - 'ascendant': {sign, degree, longitude}
+  ///   - 'midheaven': {sign, degree, longitude}
+  ///   - 'houses': List<PlanetPosition> mit 12 Cusp-Positionen
+  ///   - 'planetHouses': Map<planet, int> -> in welchem Haus 1..12
+  static Map<String, dynamic>? calculateHouses({
+    required DateTime birthDateUtc,
+    required double latitude,
+    required double longitude,
+  }) {
+    final jd = _julianDay(birthDateUtc);
+    final gmst = _greenwichSiderealTime(jd);
+    final lst = (gmst + longitude / 15.0) * 15.0;
+    final ascLon = _normalizeDeg(_ascendantLongitude(lst, latitude));
+    final mcLon = _normalizeDeg(_mcLongitude(lst));
+
+    // Equal House: House N = ASC + (N-1) * 30°
+    final houses = <PlanetPosition>[];
+    for (int i = 0; i < 12; i++) {
+      final cusp = _normalizeDeg(ascLon + 30.0 * i);
+      houses.add(_toPos(cusp));
+    }
+
+    // Compute current chart and assign planets to houses.
+    final chart = compute(
+      birthDateUtc: birthDateUtc,
+      latitude: latitude,
+      longitude: longitude,
+    );
+    final planetHouses = <String, int>{};
+    chart.planets.forEach((name, pos) {
+      planetHouses[name] = _houseForLongitude(pos.longitude, ascLon);
+    });
+
+    return {
+      'ascendant': _toPos(ascLon),
+      'midheaven': _toPos(mcLon),
+      'houses': houses,
+      'planetHouses': planetHouses,
+    };
+  }
+
+  /// Berechnet das Haus (1..12) fuer eine ekliptische Laenge,
+  /// gegeben den Aszendenten als Haus-1-Cusp.
+  static int _houseForLongitude(double lon, double ascLon) {
+    final delta = _normalizeDeg(lon - ascLon);
+    return (delta / 30.0).floor() + 1;
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  // 💞 SYNASTRIE-ASPEKTE (Bereich B2 -- Engine-Anteil)
+  // ══════════════════════════════════════════════════════════════════
+
+  /// Berechnet alle Synastrie-Aspekte zwischen Person A (chartA) und
+  /// Person B (chartB). Beruecksichtigt 5 Major-Aspekte:
+  ///   - Konjunktion 0° ±8°
+  ///   - Sextil 60° ±6°
+  ///   - Quadrat 90° ±7°
+  ///   - Trigon 120° ±8°
+  ///   - Opposition 180° ±8°
+  ///
+  /// Liefert: Liste von Aspekt-Maps und Gesamt-Score (0..100).
+  static Map<String, dynamic> calculateSynastry({
+    required NatalChartResult chartA,
+    required NatalChartResult chartB,
+  }) {
+    const aspects = <(String name, double angle, double orb, int weight)>[
+      ('Konjunktion', 0, 8, 0),    // neutral / kontextabhaengig
+      ('Sextil', 60, 6, 6),         // harmonisch
+      ('Quadrat', 90, 7, -8),       // Spannung
+      ('Trigon', 120, 8, 10),       // harmonisch
+      ('Opposition', 180, 8, -6),   // Spannung
+    ];
+
+    final hits = <Map<String, dynamic>>[];
+    int totalScore = 0;
+    int count = 0;
+
+    chartA.planets.forEach((nameA, posA) {
+      chartB.planets.forEach((nameB, posB) {
+        final delta = _aspectAngle(posA.longitude, posB.longitude);
+        for (final asp in aspects) {
+          final diff = (delta - asp.$2).abs();
+          if (diff <= asp.$3) {
+            hits.add({
+              'planetA': nameA,
+              'planetB': nameB,
+              'aspect': asp.$1,
+              'exact': asp.$2,
+              'orb': diff,
+              'weight': asp.$4,
+            });
+            totalScore += asp.$4;
+            count++;
+            break;
+          }
+        }
+      });
+    });
+
+    final normScore = count > 0
+        ? (50 + (totalScore / count) * 5).clamp(0, 100).toInt()
+        : 50;
+
+    return {
+      'aspects': hits,
+      'score': normScore,
+      'count': count,
+    };
+  }
+
+  static double _aspectAngle(double lonA, double lonB) {
+    var d = (lonA - lonB).abs();
+    if (d > 180) d = 360 - d;
+    return d;
+  }
 }
 
 class _Orbital {
