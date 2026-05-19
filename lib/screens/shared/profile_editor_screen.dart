@@ -168,6 +168,10 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
   // Energie-spezifisch
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
+  // v94 -- Geburtsname-Felder (optional, fuer Numerologie-Vergleich)
+  final _birthFirstNameController = TextEditingController();
+  final _birthMiddleNamesController = TextEditingController();
+  final _birthLastNameController = TextEditingController();
   final _birthPlaceController = TextEditingController();
   final _birthTimeController = TextEditingController();
   final _birthDateController = TextEditingController(); // ✅ NEU: Für manuelle Datumseingabe
@@ -317,6 +321,9 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
     _bioController.dispose();
     _firstNameController.dispose();
     _lastNameController.dispose();
+    _birthFirstNameController.dispose();
+    _birthMiddleNamesController.dispose();
+    _birthLastNameController.dispose();
     _birthPlaceController.dispose();
     _birthTimeController.dispose();
     _birthDateController.dispose(); // ✅ NEU
@@ -494,6 +501,9 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
           _usernameController.text = profile.username;
           _firstNameController.text = profile.firstName;
           _lastNameController.text = profile.lastName;
+          _birthFirstNameController.text = profile.birthFirstName ?? '';
+          _birthMiddleNamesController.text = profile.birthMiddleNames ?? '';
+          _birthLastNameController.text = profile.birthLastName ?? '';
           _birthPlaceController.text = profile.birthPlace;
           _birthTimeController.text = profile.birthTime ?? '';
           _selectedBirthDate = profile.birthDate;
@@ -848,8 +858,18 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
           timezoneOffsetHours: _timezoneOffsetHours,
           birthTimeUnknown: _birthTimeUnknown,
           gender: _gender,
+          // v94 -- Geburtsname (nur speichern wenn ausgefuellt)
+          birthFirstName: _birthFirstNameController.text.trim().isEmpty
+              ? null
+              : _birthFirstNameController.text.trim(),
+          birthMiddleNames: _birthMiddleNamesController.text.trim().isEmpty
+              ? null
+              : _birthMiddleNamesController.text.trim(),
+          birthLastName: _birthLastNameController.text.trim().isEmpty
+              ? null
+              : _birthLastNameController.text.trim(),
         );
-        
+
         // 🔥 FIX: Backend-Sync + Get Updated Profile (mit userId & role)
         final updatedProfile = await syncService.saveEnergieProfileAndGetUpdated(
           profile,
@@ -1482,7 +1502,109 @@ class _ProfileEditorScreenState extends ConsumerState<ProfileEditorScreen> {
                         },
                       ),
                       const SizedBox(height: 16),
-                      
+
+                      // ✨ v94 -- Geburtsname (optional, fuer Numerologie)
+                      // Klappbares ExpansionTile, damit die normale UX
+                      // nicht ueberladen wirkt. Erscheint NICHT als Pflicht.
+                      Theme(
+                        data: Theme.of(context).copyWith(
+                          dividerColor: Colors.transparent,
+                        ),
+                        child: ExpansionTile(
+                          tilePadding:
+                              const EdgeInsets.symmetric(horizontal: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          collapsedShape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          backgroundColor:
+                              const Color(0xFFC9A84C).withValues(alpha: 0.05),
+                          collapsedBackgroundColor: isDark
+                              ? Colors.white.withValues(alpha: 0.03)
+                              : Colors.white,
+                          iconColor: const Color(0xFFC9A84C),
+                          collapsedIconColor:
+                              const Color(0xFFC9A84C).withValues(alpha: 0.6),
+                          title: const Text(
+                            'Geburtsname (optional)',
+                            style: TextStyle(
+                                fontSize: 14, fontWeight: FontWeight.w600),
+                          ),
+                          subtitle: const Padding(
+                            padding: EdgeInsets.only(top: 2),
+                            child: Text(
+                              'Falls sich dein Name seit Geburt geaendert hat',
+                              style: TextStyle(fontSize: 11),
+                            ),
+                          ),
+                          childrenPadding: const EdgeInsets.fromLTRB(8, 0, 8, 12),
+                          children: [
+                            const Padding(
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: 4, vertical: 8),
+                              child: Text(
+                                'Trage hier deinen vollstaendigen Geburtsnamen ein '
+                                '(Heirat, Adoption etc.). Wir nutzen ihn fuer die '
+                                'Vergleichskarte im Numerologie-Screen.',
+                                style: TextStyle(
+                                    fontSize: 11, height: 1.4),
+                              ),
+                            ),
+                            TextFormField(
+                              controller: _birthFirstNameController,
+                              decoration: InputDecoration(
+                                labelText: 'Geburts-Vorname',
+                                hintText: 'z.B. Maria',
+                                prefixIcon:
+                                    const Icon(Icons.history_edu_outlined),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                filled: true,
+                                fillColor: isDark
+                                    ? Colors.white.withValues(alpha: 0.05)
+                                    : Colors.white,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            TextFormField(
+                              controller: _birthMiddleNamesController,
+                              decoration: InputDecoration(
+                                labelText: 'Zweitnamen bei Geburt',
+                                hintText: 'z.B. Anna Theresia',
+                                prefixIcon: const Icon(Icons.notes_outlined),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                filled: true,
+                                fillColor: isDark
+                                    ? Colors.white.withValues(alpha: 0.05)
+                                    : Colors.white,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            TextFormField(
+                              controller: _birthLastNameController,
+                              decoration: InputDecoration(
+                                labelText: 'Geburts-Nachname',
+                                hintText: 'z.B. Maedchenname',
+                                prefixIcon: const Icon(Icons.account_tree_outlined),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                filled: true,
+                                fillColor: isDark
+                                    ? Colors.white.withValues(alpha: 0.05)
+                                    : Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
                       // ✅ Geburtsdatum - Manuelle Eingabe mit Punkten + Kalender-Icon
                       TextFormField(
                         controller: _birthDateController,
