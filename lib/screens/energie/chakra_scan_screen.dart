@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../services/streak_tracking_service.dart';
 import 'frequency_generator_screen.dart';
+import 'chakra_history_screen.dart';
 
 /// 💎 Chakra-Assessment — Fragebogen-basierte Energieanalyse
 class ChakraScanScreen extends StatefulWidget {
@@ -483,6 +484,15 @@ class _ChakraScanScreenState extends State<ChakraScanScreen>
           elevation: 0,
           title: const Text('Dein Chakra-Profil'),
           actions: [
+            IconButton(
+              icon: const Icon(Icons.history_rounded, color: Color(0xFFCE93D8)),
+              tooltip: 'Verlauf',
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => const ChakraHistoryScreen()),
+              ),
+            ),
             TextButton(
               onPressed: _restart,
               child: const Text('Neu', style: TextStyle(color: Color(0xFF7C4DFF))),
