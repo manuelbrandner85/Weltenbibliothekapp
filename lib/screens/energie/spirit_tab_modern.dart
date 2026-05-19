@@ -29,6 +29,7 @@ import 'calculators/tarot_spreads_screen.dart'; // 🔮 Tarot-Legesysteme (alt)
 import 'calculators/tarot_oracle_screen.dart'; // 🔮 Cinematic mit AI-Lesung
 import 'calculators/tarot_lexicon_screen.dart'; // 📚 78-Karten-Lexikon
 import 'calculators/runes_oracle_screen.dart'; // ᚱ Elder Futhark Cinematic
+import 'calculators/galdr_meditation_screen.dart'; // ᚠ Galdr-Gesang
 import 'calculators/akasha_chronicle_screen.dart'; // 🌌 Cinematic Journal + AI
 import 'calculators/birth_chart_360_screen.dart'; // ♓ 360° Visual Geburts-Chart
 import 'calculators/biorhythm_chart_screen.dart'; // 📊 90-Tage Bio + Critical Days
@@ -650,7 +651,17 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'category': 'new',
         'screen': const RunesOracleScreen(),
       },
-      
+      // ᚠ Galdr-Meditation -- Runen-Gesang (v95)
+      {
+        'icon': Icons.self_improvement_rounded,
+        'iconEmoji': 'ᚠ',
+        'title': 'Galdr-Meditation',
+        'subtitle': '24 Runen-Gesaenge · Atem · 3/5/9 min',
+        'color': const Color(0xFFC9A84C),
+        'category': 'core',
+        'screen': const GaldrMeditationScreen(),
+      },
+
       // 💫 Affirmationen · Cinematic AI-Studio
       {
         'icon': Icons.format_quote,
