@@ -22,7 +22,7 @@ import '../../services/profile_sync_service.dart'; // 🔥 BACKEND SYNC
 import '../../models/energie_profile.dart';
 import '../shared/profile_editor_screen.dart'; // ✅ Profile Editor
 import '../../services/moderation_service.dart'; // 🔧 ADMIN MODERATION
-import '../../services/admin_permissions.dart'; // 🔐 ADMIN SYSTEM
+import '../../core/constants/roles.dart'; // 🔐 ADMIN SYSTEM (v103)
 import '../../widgets/error_display_widget.dart'; // 🎨 ERROR DISPLAY (NEW)
 import 'crystal_library_screen.dart'; // 💠 Kristall-Bibliothek Screen
 import 'meditation_timer_screen.dart'; // 🧘 Meditation Timer Screen
@@ -2711,13 +2711,11 @@ class _EnergieLiveChatScreenState extends State<EnergieLiveChatScreen> with Tick
     final profile = storage.getEnergieProfile();
     final backendRole = profile?.role;  // 'root_admin', 'admin', or 'user'
     
-    final adminLevel = AdminPermissions.getAdminLevelFromBackendRole(backendRole);
-    final isAdmin = adminLevel != AdminLevel.user;
-    final adminBadge = AdminPermissions.getAdminBadgeFromBackendRole(backendRole);
-    
-    // Admin-Rechte basierend auf Backend-Rolle
-    final canDeleteAny = isAdmin;  // root_admin oder admin
-    final canBan = isAdmin;        // root_admin oder admin
+    // v103: Migration weg von AdminPermissions zu AppRoles.
+    final isAdmin = AppRoles.canViewModTools(backendRole);
+    final adminBadge = AppRoles.getBadgeEmoji(backendRole);
+    final canDeleteAny = AppRoles.canDeleteMessages(backendRole);
+    final canBan = AppRoles.canBanUsers(backendRole);
     
     await showModalBottomSheet(
       context: context,

@@ -89,6 +89,42 @@ class AppRoles {
   /// Wer darf Profile-Sync triggern? Admin+
   static bool canRunUserSync(String? role) => _isAdminLike(role);
 
+  /// Wer darf Nachrichten anpinnen? Moderator+ (Phase 3b: ersetzt
+  /// AdminPermissions.canPinMessages).
+  static bool canPinMessages(String? role) => _isModeratorOrAbove(role);
+
+  /// Wer darf Mod-Tools sehen (Buttons im Chat, Mod-UI)? Moderator+
+  static bool canViewModTools(String? role) => _isModeratorOrAbove(role);
+
+  /// Wer darf Voice-Kick / Mute in Live-Sessions? Moderator+
+  static bool canModerateVoice(String? role) => _isModeratorOrAbove(role);
+
+  /// Wer darf Announcements / Broadcasts erstellen? Admin+
+  static bool canCreateAnnouncements(String? role) => _isAdminLike(role);
+
+  // ============================================================================
+  // BADGES + LABELS (ersetzt AdminPermissions.getAdminBadge etc.)
+  // ============================================================================
+
+  /// Emoji-Badge fuer eine Rolle. Leer-String wenn 'user'/unbekannt.
+  static String getBadgeEmoji(String? role) {
+    if (_isRoot(role)) return '👑';
+    if (role == admin) return '🛡️';
+    if (role == contentEditor) return '✍️';
+    if (role == moderator) return '⚔️';
+    return '';
+  }
+
+  /// Klartext-Title fuer Rollen-Anzeige in UI.
+  static String getRoleTitle(String? role) {
+    if (_isRoot(role)) return 'Root-Admin';
+    if (role == admin) return 'Administrator';
+    if (role == contentEditor) return 'Content-Editor';
+    if (role == moderator) return 'Moderator';
+    if (role == user) return 'Benutzer';
+    return 'Benutzer';
+  }
+
   // ============================================================================
   // BERECHTIGUNGS-CHECKS - CONTENT MANAGEMENT
   // ============================================================================

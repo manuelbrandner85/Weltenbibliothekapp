@@ -669,7 +669,7 @@ class AuditLogEntry {
 /// 
 /// ⚠️ WICHTIG: ROLLEN-PRÜFUNG
 /// Alle Ban/Mute/Management-Funktionen erfordern:
-/// - Root Admin Rolle (AdminPermissions.canManageAdmins)
+/// - Root Admin Rolle (AppRoles.canManageUsers)
 /// - Verifizierung über AdminState (adminStateProvider)
 /// 
 /// Bitte VOR dem Aufruf prüfen:

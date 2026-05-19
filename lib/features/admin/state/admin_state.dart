@@ -95,6 +95,9 @@ class AdminStateNotifier extends StateNotifier<AdminState> {
   final Ref ref;
   final String world;
   final _storage = UnifiedStorageService();
+  // v103: Race-Condition-Schutz. Verhindert dass parallele load()-Aufrufe
+  // (Constructor + onAuthStateChange) sich gegenseitig ueberschreiben.
+  bool _isLoading = false;
 
   AdminStateNotifier(this.ref, this.world) : super(AdminState.empty(world)) {
     load();
@@ -108,6 +111,19 @@ class AdminStateNotifier extends StateNotifier<AdminState> {
   }
 
   Future<void> load() async {
+    if (_isLoading) {
+      if (kDebugMode) debugPrint('🔐 AdminState: load() skipped (already running)');
+      return;
+    }
+    _isLoading = true;
+    try {
+      await _loadInternal();
+    } finally {
+      _isLoading = false;
+    }
+  }
+
+  Future<void> _loadInternal() async {
     if (kDebugMode) debugPrint('🔐 AdminState: load() für $world');
 
     // ──────────────────────────────────────────────────────────────
