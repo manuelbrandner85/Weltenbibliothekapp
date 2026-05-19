@@ -140,8 +140,11 @@ class WorldAdminService {
 
   /// Get list of users in a specific world
   /// ✅ FIXED AUTH: Uses simple Bearer token (username)
-  /// 
+  ///
   /// Returns: List[WorldUser]
+  /// v103: deprecated -- ein User hat EIN globales Profil. Verwende
+  /// getAllUsers() statt einer Welt-Liste.
+  @Deprecated('v103: Profile sind global. Use getAllUsers() instead.')
   static Future<List<WorldUser>> getUsersByWorld(String world, {String? role}) async {
     if (kDebugMode) {
       debugPrint('📋 Fetching users for world: $world');
@@ -619,11 +622,20 @@ class WorldUser {
     return 'unknown';
   }
 
-  /// World label for display
+  /// World label for display (v103: alle 4 Welten unterstuetzt).
   String get worldLabel {
-    if (world == 'materie') return 'Materie';
-    if (world == 'energie') return 'Energie';
-    return 'Unbekannt';
+    switch (world) {
+      case 'materie':
+        return 'Materie';
+      case 'energie':
+        return 'Energie';
+      case 'vorhang':
+        return 'Vorhang';
+      case 'ursprung':
+        return 'Ursprung';
+      default:
+        return 'Alle';
+    }
   }
 }
 

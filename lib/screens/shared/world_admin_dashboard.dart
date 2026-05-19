@@ -38,68 +38,65 @@ class WorldAdminDashboard extends ConsumerStatefulWidget {
 
 class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
     with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-  // v95: Welt-Switcher -- Admin kann live zwischen Welten wechseln.
-  // Initialwert kommt aus der Route (widget.world), dann lokal mutable.
-  late String _selectedWorld;
-  // v100: 'all' = welt-uebergreifender Aggregat-Modus, Default beim
-  // Oeffnen des Dashboards. Admin sieht alle Welten zusammen statt nur
-  // die, aus der er ins Dashboard kam.
-  static const String kAllWorlds = 'all';
-  static const _allWorlds = [kAllWorlds, 'materie', 'energie', 'vorhang', 'ursprung'];
+  TabController? _tabController;
+  int _tabsLen = 0;
 
-  // ── Theme per (aktuell gewaehlter) Welt ────────────────────────────────
-  Color get _primary {
-    switch (_selectedWorld) {
-      case 'materie': return const Color(0xFF1565C0);
-      case 'energie': return const Color(0xFF6A1B9A);
-      case 'vorhang': return const Color(0xFFB07D2B);
-      case 'ursprung': return const Color(0xFF00897B);
-      default: return const Color(0xFF6A1B9A);
-    }
-  }
-
-  Color get _accent {
-    switch (_selectedWorld) {
-      case 'materie': return const Color(0xFF42A5F5);
-      case 'energie': return const Color(0xFFCE93D8);
-      case 'vorhang': return const Color(0xFFC9A84C);
-      case 'ursprung': return const Color(0xFF00D4AA);
-      default: return const Color(0xFFCE93D8);
-    }
-  }
-
-  Color get _accentBright {
-    switch (_selectedWorld) {
-      case 'materie': return const Color(0xFF82B1FF);
-      case 'energie': return const Color(0xFFEA80FC);
-      case 'vorhang': return const Color(0xFFFFE08A);
-      case 'ursprung': return const Color(0xFF80FFE0);
-      default: return const Color(0xFFEA80FC);
-    }
-  }
-
-  String get _worldEmoji {
-    switch (_selectedWorld) {
-      case 'materie': return '🔷';
-      case 'energie': return '⚡';
-      case 'vorhang': return '🎭';
-      case 'ursprung': return '🌀';
-      default: return '🌍';
-    }
-  }
+  // v103: Dashboard ist ein globales Tool fuer ALLE Welten gleichzeitig.
+  // Kein Welt-Filter, kein Welt-Switcher, keine welt-spezifischen Farben.
+  // widget.world bleibt nur als Cache-Key fuer adminStateProvider erhalten
+  // (damit Rolle/Username aus dem bereits geladenen World-Wrapper-State
+  // gelesen werden kann -- sonst muesste das Dashboard neu laden).
+  static const Color _primary = Color(0xFF6A1B9A);
+  static const Color _accent = Color(0xFFCE93D8);
+  static const Color _accentBright = Color(0xFFEA80FC);
 
   @override
   void initState() {
     super.initState();
-    // v100: Dashboard startet welt-uebergreifend. Admin kann optional
-    // auf einzelne Welt filtern. Vorher zeigte das Dashboard nur die
-    // Welt aus der man kam -> Daten der anderen Welten unsichtbar.
-    _selectedWorld = kAllWorlds;
-    _tabController = TabController(length: 7, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _waitForState();
     });
+  }
+
+  /// v103: Ermittelt erlaubte Tabs anhand der Rolle.
+  /// Moderator sieht nur Uebersicht/Chat/Audit, Admin+ alles.
+  List<_AdminTabDef> _availableTabs(String? role) {
+    final tabs = <_AdminTabDef>[
+      const _AdminTabDef(
+          icon: Icons.dashboard_rounded, label: 'Übersicht', kind: 'overview'),
+    ];
+    if (AppRoles.canViewUserList(role)) {
+      tabs.add(const _AdminTabDef(
+          icon: Icons.people_rounded, label: 'Nutzer', kind: 'users'));
+    }
+    tabs.add(const _AdminTabDef(
+        icon: Icons.chat_bubble_rounded, label: 'Chat', kind: 'chat'));
+    if (AppRoles.canEditContent(role)) {
+      tabs.add(const _AdminTabDef(
+          icon: Icons.analytics_rounded, label: 'Content', kind: 'content'));
+    }
+    if (AppRoles.canCreateAnnouncements(role)) {
+      tabs.add(const _AdminTabDef(
+          icon: Icons.notifications_active_rounded,
+          label: 'Push',
+          kind: 'push'));
+    }
+    tabs.add(const _AdminTabDef(
+        icon: Icons.history_rounded, label: 'Audit', kind: 'audit'));
+    if (AppRoles.isAdmin(role)) {
+      tabs.add(const _AdminTabDef(
+          icon: Icons.monitor_heart_rounded,
+          label: 'System',
+          kind: 'system'));
+    }
+    return tabs;
+  }
+
+  void _ensureTabController(int length) {
+    if (_tabController != null && _tabsLen == length) return;
+    _tabController?.dispose();
+    _tabController = TabController(length: length, vsync: this);
+    _tabsLen = length;
   }
 
   /// v102: Fallback-Resolution wenn adminStateProvider noch leer ist.
@@ -157,14 +154,9 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
     }
   }
 
-  void _switchWorld(String newWorld) {
-    if (newWorld == _selectedWorld) return;
-    setState(() => _selectedWorld = newWorld);
-  }
-
   @override
   void dispose() {
-    _tabController.dispose();
+    _tabController?.dispose();
     super.dispose();
   }
 
@@ -189,6 +181,10 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
     }
     if (!admin.isAdmin) return _accessDeniedScaffold();
 
+    // v103: Tabs dynamisch -- Rollen-Permission steuert Sichtbarkeit.
+    final tabDefs = _availableTabs(admin.role);
+    _ensureTabController(tabDefs.length);
+
     return Scaffold(
       backgroundColor: const Color(0xFF0A0A0A),
       appBar: WBGlassAppBar(
@@ -204,16 +200,19 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
           ),
           const SizedBox(width: 10),
           Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Text('Admin-Dashboard',
+                style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white)),
             Row(mainAxisSize: MainAxisSize.min, children: [
-              const Text('Admin',
-                  style: TextStyle(
-                      fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white)),
+              Text(admin.username ?? '',
+                  style: const TextStyle(fontSize: 10, color: _accent)),
               const SizedBox(width: 6),
-              // Welt-Switcher als kompakte PopupMenu
-              _buildWorldSwitcher(),
+              if (AppRoles.getBadgeEmoji(admin.role).isNotEmpty)
+                Text(AppRoles.getBadgeEmoji(admin.role),
+                    style: const TextStyle(fontSize: 10)),
             ]),
-            Text(admin.username ?? '',
-                style: TextStyle(fontSize: 10, color: _accent)),
           ]),
         ]),
         actions: [
@@ -297,114 +296,40 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
           unselectedLabelColor: Colors.white38,
           labelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
           unselectedLabelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w400),
-          tabs: const [
-            Tab(icon: Icon(Icons.dashboard_rounded, size: 18), text: 'Übersicht'),
-            Tab(icon: Icon(Icons.people_rounded, size: 18), text: 'Nutzer'),
-            Tab(icon: Icon(Icons.chat_bubble_rounded, size: 18), text: 'Chat'),
-            Tab(icon: Icon(Icons.analytics_rounded, size: 18), text: 'Content'),
-            Tab(icon: Icon(Icons.notifications_active_rounded, size: 18), text: 'Push'),
-            Tab(icon: Icon(Icons.history_rounded, size: 18), text: 'Audit'),
-            Tab(icon: Icon(Icons.monitor_heart_rounded, size: 18), text: 'System'),
-          ],
+          tabs: tabDefs
+              .map((t) => Tab(icon: Icon(t.icon, size: 18), text: t.label))
+              .toList(),
         ),
       ),
       body: TabBarView(
         controller: _tabController,
-        children: [
-          _OverviewTab(world: _selectedWorld, admin: admin, accent: _accent, accentBright: _accentBright),
-          _UsersTab(world: _selectedWorld, admin: admin, accent: _accent, accentBright: _accentBright),
-          _ChatModerationTab(world: _selectedWorld, admin: admin, accent: _accent, accentBright: _accentBright),
-          _ContentInsightsTab(accent: _accent, accentBright: _accentBright),
-          _PushBroadcastTab(accent: _accent, accentBright: _accentBright),
-          _AuditReportsWrapper(world: _selectedWorld, accent: _accent, accentBright: _accentBright),
-          _SystemTab(accent: _accent, accentBright: _accentBright),
-        ],
+        children: tabDefs.map((t) => _buildTabBody(t.kind, admin)).toList(),
       ),
     );
   }
 
-  Widget _buildWorldSwitcher() {
-    return PopupMenuButton<String>(
-      tooltip: 'Welt umschalten',
-      onSelected: _switchWorld,
-      color: const Color(0xFF12121E),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: _accent.withValues(alpha: 0.3)),
-      ),
-      offset: const Offset(0, 36),
-      itemBuilder: (_) => _allWorlds.map((w) {
-        final sel = w == _selectedWorld;
-        return PopupMenuItem<String>(
-          value: w,
-          child: Row(children: [
-            Text(
-              _emojiForWorld(w),
-              style: const TextStyle(fontSize: 16),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              _labelForWorld(w),
-              style: TextStyle(
-                color: sel ? _accentBright : Colors.white,
-                fontWeight: sel ? FontWeight.w800 : FontWeight.w500,
-                fontSize: 13,
-              ),
-            ),
-            if (sel) ...[
-              const Spacer(),
-              const Icon(Icons.check_rounded,
-                  color: Colors.greenAccent, size: 14),
-            ],
-          ]),
-        );
-      }).toList(),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-        decoration: BoxDecoration(
-          color: _accent.withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: _accent.withValues(alpha: 0.4), width: 0.8),
-        ),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          Text(_worldEmoji, style: const TextStyle(fontSize: 12)),
-          const SizedBox(width: 4),
-          Text(
-            _labelForWorld(_selectedWorld),
-            style: TextStyle(
-              color: _accentBright,
-              fontSize: 11,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 0.4,
-            ),
-          ),
-          const SizedBox(width: 2),
-          Icon(Icons.arrow_drop_down_rounded,
-              color: _accentBright, size: 16),
-        ]),
-      ),
-    );
-  }
-
-  static String _emojiForWorld(String w) {
-    switch (w) {
-      case kAllWorlds: return '🌐';
-      case 'materie': return '🔷';
-      case 'energie': return '⚡';
-      case 'vorhang': return '🎭';
-      case 'ursprung': return '🌀';
-      default: return '🌍';
-    }
-  }
-
-  static String _labelForWorld(String w) {
-    switch (w) {
-      case kAllWorlds: return 'ALLE WELTEN';
-      case 'materie': return 'MATERIE';
-      case 'energie': return 'ENERGIE';
-      case 'vorhang': return 'VORHANG';
-      case 'ursprung': return 'URSPRUNG';
-      default: return w.toUpperCase();
+  Widget _buildTabBody(String kind, AdminState admin) {
+    switch (kind) {
+      case 'overview':
+        return _OverviewTab(
+            world: 'all', admin: admin, accent: _accent, accentBright: _accentBright);
+      case 'users':
+        return _UsersTab(
+            world: 'all', admin: admin, accent: _accent, accentBright: _accentBright);
+      case 'chat':
+        return _ChatModerationTab(
+            world: 'all', admin: admin, accent: _accent, accentBright: _accentBright);
+      case 'content':
+        return _ContentInsightsTab(accent: _accent, accentBright: _accentBright);
+      case 'push':
+        return _PushBroadcastTab(accent: _accent, accentBright: _accentBright);
+      case 'audit':
+        return _AuditReportsWrapper(
+            world: 'all', accent: _accent, accentBright: _accentBright);
+      case 'system':
+        return _SystemTab(accent: _accent, accentBright: _accentBright);
+      default:
+        return const SizedBox.shrink();
     }
   }
 
@@ -613,8 +538,8 @@ class _OverviewTabState extends State<_OverviewTab> {
           Text('$value',
               style: TextStyle(color: widget.accent, fontSize: 48, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          Text('Aktuelle Anzahl für ${widget.world.toUpperCase()}',
-              style: const TextStyle(color: Colors.white54, fontSize: 13)),
+          const Text('Aktuelle Anzahl ueber ALLE WELTEN',
+              style: TextStyle(color: Colors.white54, fontSize: 13)),
         ]),
         actions: [
           TextButton(
@@ -663,7 +588,7 @@ class _OverviewTabState extends State<_OverviewTab> {
               const SizedBox(width: 12),
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('Live-Übersicht · ${widget.world.toUpperCase()}',
+                  Text('Live-Übersicht · Alle Welten',
                       style: TextStyle(
                           color: widget.accentBright,
                           fontWeight: FontWeight.bold, fontSize: 15)),
@@ -752,7 +677,7 @@ class _OverviewTabState extends State<_OverviewTab> {
                 onTap: () {
                   // Navigate to Users tab
                   final scaffold = context.findAncestorStateOfType<_WorldAdminDashboardState>();
-                  scaffold?._tabController.animateTo(1);
+                  scaffold?._tabController?.animateTo(1);
                 },
               ),
             ),
@@ -764,7 +689,7 @@ class _OverviewTabState extends State<_OverviewTab> {
                 color: const Color(0xFF8E24AA),
                 onTap: () {
                   final scaffold = context.findAncestorStateOfType<_WorldAdminDashboardState>();
-                  scaffold?._tabController.animateTo(2);
+                  scaffold?._tabController?.animateTo(2);
                 },
               ),
             ),
@@ -778,7 +703,7 @@ class _OverviewTabState extends State<_OverviewTab> {
                 color: const Color(0xFF00897B),
                 onTap: () {
                   final scaffold = context.findAncestorStateOfType<_WorldAdminDashboardState>();
-                  scaffold?._tabController.animateTo(3);
+                  scaffold?._tabController?.animateTo(3);
                 },
               ),
             ),
@@ -1916,23 +1841,8 @@ class _ChatModerationTabState extends State<_ChatModerationTab> {
     const ursprung = [
       'ursprung-bewusstsein', 'ursprung-quanten', 'ursprung-realitaet',
     ];
-    switch (widget.world) {
-      case _WorldAdminDashboardState.kAllWorlds:
-        _rooms = [...materie, ...energie, ...vorhang, ...ursprung];
-        break;
-      case 'materie':
-        _rooms = materie;
-        break;
-      case 'vorhang':
-        _rooms = vorhang;
-        break;
-      case 'ursprung':
-        _rooms = ursprung;
-        break;
-      case 'energie':
-      default:
-        _rooms = energie;
-    }
+    // v103: Dashboard ist global -- IMMER alle Raeume aller Welten.
+    _rooms = [...materie, ...energie, ...vorhang, ...ursprung];
   }
 
   @override
@@ -6701,4 +6611,11 @@ class _UsernameRequestsTabState
       ),
     );
   }
+}
+
+class _AdminTabDef {
+  final IconData icon;
+  final String label;
+  final String kind;
+  const _AdminTabDef({required this.icon, required this.label, required this.kind});
 }

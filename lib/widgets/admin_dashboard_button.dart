@@ -181,9 +181,9 @@ class _AdminDashboardButtonState extends State<AdminDashboardButton> {
                         ),
                       ),
                       const SizedBox(height: 2),
-                      Text(
-                        'Admin-Dashboard öffnen',
-                        style: const TextStyle(
+                      const Text(
+                        'Admin-Dashboard · Alle Welten',
+                        style: TextStyle(
                           color: Colors.white,
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
