@@ -350,6 +350,15 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
     );
   }
 
+  // Top-Inset fuer alle Tabs: Status-Bar + AppBar (56) + TabBar (46) + Puffer.
+  // Wird gebraucht weil extendBodyBehindAppBar=true den Body hinter die
+  // AppBar rendert -- ohne dieses Padding ist der obere Teil unsichtbar.
+  double _topInset(BuildContext context) =>
+      MediaQuery.of(context).padding.top + kToolbarHeight + 46 + 8;
+
+  // Bottom-Inset fuer Tabs mit FAB darauf, damit Inhalt nicht verdeckt wird.
+  double _bottomInset() => 100;
+
   Widget _buildCoreNumbersTab() {
     // Aktuelle Werte basierend auf System-Toggle:
     // Lebenszahl bleibt immer pythagoraeisch (basiert auf Datum, nicht Name).
@@ -367,7 +376,7 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
         : (_personality ?? 0);
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.fromLTRB(20, _topInset(context), 20, _bottomInset()),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -507,8 +516,8 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
       child: Row(
         children: [
           Container(
-            width: 46,
-            height: 46,
+            width: 54,
+            height: 54,
             decoration: const BoxDecoration(
               shape: BoxShape.circle,
               gradient: LinearGradient(
@@ -523,10 +532,10 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
               style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w900,
-                  fontSize: 20),
+                  fontSize: 24),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -537,33 +546,34 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 16,
+                      fontSize: 18,
                       fontWeight: FontWeight.w800),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 3),
                 if (birth.isNotEmpty)
                   Text('Geboren: $birth',
                       style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.65),
-                          fontSize: 11)),
+                          color: Colors.white.withValues(alpha: 0.75),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500)),
               ],
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
-              color: const Color(0xFF7C4DFF).withValues(alpha: 0.25),
-              borderRadius: BorderRadius.circular(12),
+              color: const Color(0xFF7C4DFF).withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                  color: const Color(0xFFCE93D8).withValues(alpha: 0.5)),
+                  color: const Color(0xFFCE93D8).withValues(alpha: 0.6)),
             ),
             child: Text(
               _chaldeanMode ? 'Chaldäisch' : 'Pythagoräisch',
               style: const TextStyle(
                   color: Color(0xFFEA80FC),
-                  fontSize: 10,
+                  fontSize: 12,
                   fontWeight: FontWeight.w800,
-                  letterSpacing: 0.4),
+                  letterSpacing: 0.5),
             ),
           ),
         ],
@@ -574,66 +584,92 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
   // Erweitert eine pythagoräisch-basierte Beschreibung um System-spezifischen
   // Kontext, sodass Toggle Pyth/Chald sichtbar unterschiedliche Texte liefert
   // -- selbst wenn beide Systeme zufaellig dieselbe Zahl ausspucken.
+  // System-Prefix VOR den persoenlichen Text setzen. Wirkt JETZT auch fuer
+  // Lebenszahl (User wollte sichtbaren Unterschied). Numerische Identitaet
+  // wird transparent kommuniziert.
   String _systemPrefixedDescription(
     String base, {
     required String kind,
     required int number,
   }) {
-    // Lebenszahl ist immer pythagoraeisch (datumsbasiert) -- nur dort kein
-    // Prefix.
-    if (kind == 'life') return base;
-
+    final firstName = _profile?.firstName.isNotEmpty == true
+        ? _profile!.firstName
+        : 'Du';
     if (_chaldeanMode) {
-      final lens = _chaldeanLens(kind, number);
-      return 'CHALDÄISCHE AUSLEGUNG (Klangschwingung, ca. 4000 v. Chr.):\n'
+      final lens = _chaldeanLens(kind, number, firstName);
+      return 'CHALDAEISCHE AUSLEGUNG (Klangschwingung, ca. 4000 v. Chr.)\n'
+          '——————————————————————\n'
           '$lens\n\n'
-          '— Pythagoräische Standard-Deutung der Zahl $number zum Vergleich —\n'
+          'KLASSISCHE DEUTUNG DER ZAHL $number\n'
+          '——————————————————————\n'
           '$base';
     }
-    final lens = _pythagoreanLens(kind, number);
-    return 'PYTHAGORÄISCHE AUSLEGUNG (Buchstaben-Reihenfolge):\n'
+    final lens = _pythagoreanLens(kind, number, firstName);
+    return 'PYTHAGORAEISCHE AUSLEGUNG (Buchstaben-Reihenfolge)\n'
+        '——————————————————————\n'
         '$lens\n\n'
+        'KLASSISCHE DEUTUNG DER ZAHL $number\n'
+        '——————————————————————\n'
         '$base';
   }
 
-  String _pythagoreanLens(String kind, int n) {
+  String _pythagoreanLens(String kind, int n, String name) {
     switch (kind) {
+      case 'life':
+        return '$name, die pythagoraeische Lebenszahl $n wird aus der '
+            'Quersumme deines Geburtsdatums gebildet. Pythagoras sah Zahlen '
+            'als Urprinzipien der Welt -- deine $n traegt die Resonanz von '
+            'Tag, Monat und Jahr deiner Geburt im westlichen Verstaendnis.';
       case 'soul':
-        return 'Die innere Sehnsucht in der pythagoräischen Tradition: '
-            'Vokale ergeben die Resonanz deiner Wünsche im Ordnungssystem '
-            'von Pythagoras.';
+        return '$name, im pythagoraeischen System bilden die Vokale deines '
+            'Namens die Seelenzahl $n. Jeder Vokal traegt seinen Wert aus '
+            'der alphabetischen Reihenfolge (A=1, E=5, I=9, O=6, U=3). '
+            'Deine innersten Wuensche resonieren in diesem System mit $n.';
       case 'expression':
-        return 'Talente und Ausdruck nach Pythagoras: alle Buchstaben '
-            'tragen den Wert ihrer Position im Alphabet (1-9, dann '
-            'Wiederholung).';
+        return '$name, alle Buchstaben deines Namens ergeben '
+            'pythagoraeisch die Ausdruckszahl $n. Jeder Buchstabe traegt '
+            'den Wert seiner Position im Alphabet (1-9, dann Wiederholung) '
+            '-- ein systematisches Verfahren, das Pythagoras ca. 500 v.Chr. '
+            'auf Buchstaben uebertrug.';
       case 'personality':
-        return 'Wirkung nach aussen: Konsonanten bilden im '
-            'pythagoräischen System die Maske, die du der Welt zeigst.';
+        return '$name, die Konsonanten ergeben pythagoraeisch die Zahl $n. '
+            'Sie zeigen, wie andere dich beim ersten Eindruck erleben -- '
+            'deine aeussere Maske im westlichen Ordnungssystem.';
       default:
-        return 'Pythagoräische Berechnung.';
+        return 'Pythagoraeische Berechnung der Zahl $n.';
     }
   }
 
-  String _chaldeanLens(String kind, int n) {
+  String _chaldeanLens(String kind, int n, String name) {
     switch (kind) {
+      case 'life':
+        return '$name, die Lebenszahl bleibt im Chaldaeischen System '
+            'numerisch identisch ($n) -- sie wird aus deinem Geburtsdatum '
+            'gebildet, nicht aus dem Namen. Aber die chaldaeische Lesart '
+            'sieht $n nicht als Buchstabe-Position, sondern als '
+            'Klangschwingung. Es ist dieselbe Zahl, aber die Babylonier '
+            'verstanden sie als heilige Frequenz, die ueber 6000 Jahre '
+            'zurueckreicht.';
       case 'soul':
-        return 'Im chaldäischen System klingen deine Vokale als '
-            'archaische Schwingung -- nicht aus dem Alphabet, sondern '
-            'aus dem Klang abgeleitet. Die 9 fehlt absichtlich (heilig). '
-            'Deine Seele resoniert hier mit der Zahl $n auf einer '
-            'tieferen, vorsemitischen Ebene.';
+        return '$name, im chaldaeischen System (4000 v.Chr., Babylonien) '
+            'ergibt deine Vokal-Schwingung die Seelenzahl $n. Anders als '
+            'bei Pythagoras zaehlt hier nicht die Buchstaben-Position '
+            'sondern der Urklang. Die 9 ist heilig und keinem Buchstaben '
+            'zugeordnet. Deine Seele resoniert auf einer archaischen, '
+            'vorsemitischen Ebene mit $n.';
       case 'expression':
-        return 'Dein gesamter Name ergibt im chaldäischen System die '
-            'Schwingung $n. Dieses ältere Verfahren betrachtet jeden '
-            'Buchstaben als Trägerschwingung -- die Resonanz ist oft '
-            'spezifischer als beim pythagoräischen Pendant.';
+        return '$name, dein vollstaendiger Name ergibt chaldaeisch die '
+            'Schwingung $n. Dieses aeltere Verfahren betrachtet jeden '
+            'Buchstaben als individuellen Klangtraeger -- die Resonanz ist '
+            'oft spezifischer und ueberraschender als beim pythagoraeischen '
+            'Pendant, weil sich nicht alle Buchstaben gleich verteilen.';
       case 'personality':
-        return 'Die Konsonanten ergeben chaldäisch die Zahl $n. '
+        return '$name, deine Konsonanten ergeben chaldaeisch die Zahl $n. '
             'Hier zeigt sich, wie deine Stimme klingt, wenn andere dich '
-            'erstmals wahrnehmen -- archaische Resonanz statt '
-            'systematischer Wert.';
+            'erstmals wahrnehmen -- archaische Klangresonanz statt '
+            'systematischer Werteberechnung.';
       default:
-        return 'Chaldäische Berechnung -- Klangschwingung, 9 ist heilig.';
+        return 'Chaldaeische Berechnung -- Klangschwingung, 9 ist heilig.';
     }
   }
 
@@ -672,21 +708,29 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(vertical: 10),
+        padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
           color: active
-              ? const Color(0xFF7C4DFF).withValues(alpha: 0.28)
+              ? const Color(0xFF7C4DFF).withValues(alpha: 0.32)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
+          boxShadow: active
+              ? [
+                  BoxShadow(
+                    color: const Color(0xFF7C4DFF).withValues(alpha: 0.4),
+                    blurRadius: 12,
+                  ),
+                ]
+              : null,
         ),
         alignment: Alignment.center,
         child: Text(
           label,
           style: TextStyle(
-            color: active ? Colors.white : Colors.white60,
-            fontSize: 12,
-            fontWeight: active ? FontWeight.w800 : FontWeight.w500,
-            letterSpacing: 0.4,
+            color: active ? Colors.white : Colors.white70,
+            fontSize: 14,
+            fontWeight: active ? FontWeight.w800 : FontWeight.w600,
+            letterSpacing: 0.6,
           ),
         ),
       ),
@@ -796,7 +840,7 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
 
   Widget _buildTimeNumbersTab() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.fromLTRB(20, _topInset(context), 20, _bottomInset()),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -836,7 +880,7 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
 
   Widget _buildCyclesTab() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.fromLTRB(20, _topInset(context), 20, _bottomInset()),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -880,7 +924,7 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
     final freqEffect = CrossSystemEngine.getFrequencyEffect(lp);
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.fromLTRB(20, _topInset(context), 20, _bottomInset()),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1039,7 +1083,7 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
 
   Widget _buildSpecialNumbersTab() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.fromLTRB(20, _topInset(context), 20, _bottomInset()),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1552,7 +1596,7 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
                 ),
                 const SizedBox(height: 16),
                 Container(
-                  padding: const EdgeInsets.all(14),
+                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: Colors.black.withValues(alpha: 0.45),
                     borderRadius: BorderRadius.circular(12),
@@ -1564,10 +1608,15 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        _getPersonalizedNumberText(title, number),
+                        // v95: Wenn description vom Caller gesetzt ist (z.B.
+                        // CORE-Tab mit System-Prefix), nutze die. Sonst
+                        // fallback auf die personalisierte Standard-Variante.
+                        description.isNotEmpty
+                            ? '$description\n\n${_getPersonalizedNumberText(title, number)}'
+                            : _getPersonalizedNumberText(title, number),
                         style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.white.withValues(alpha: 0.92),
+                          fontSize: 15,
+                          color: Colors.white.withValues(alpha: 0.94),
                           height: 1.6,
                         ),
                       ),
@@ -2458,7 +2507,7 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
     return Text(
       title,
       style: const TextStyle(
-        fontSize: 14,
+        fontSize: 16,
         fontWeight: FontWeight.bold,
         color: Color(0xFFCE93D8),
         letterSpacing: 1.5,
@@ -2891,7 +2940,7 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
   // 🆕 PARTNER-KOMPATIBILITÄTS-TAB
   Widget _buildPartnerCompatibilityTab() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.fromLTRB(20, _topInset(context), 20, _bottomInset()),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -3421,7 +3470,7 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
     final monthlyEnergies = _currentYearJourney!['monthlyEnergies'] as List<dynamic>;
     
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.fromLTRB(20, _topInset(context), 20, _bottomInset()),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
