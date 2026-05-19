@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/materie_profile.dart';
 import '../models/energie_profile.dart';
 import '../models/spirit_profile.dart';
+import '../models/user_profile.dart';
 import 'profile_sync_service.dart';
 import '../models/research_topic.dart';
 import '../models/spirit_entry.dart';
@@ -116,6 +117,30 @@ class StorageService {
     // damit es im Admin-Dashboard mit Echtdaten erscheint.
     // Best-effort -- bei Netzfehler bleibt es trotzdem lokal gespeichert.
     unawaited(SupabaseProfileSync.instance.syncMaterieProfile(profile));
+    // v101: Unified identity. Spiegelt Username/Avatar/Bio ins Energie-
+    // Profil damit alle Welten denselben User-Avatar/Display-Name sehen.
+    await _mirrorIdentityToEnergie(profile);
+  }
+
+  /// v101: Synchronisiert die geteilten Identity-Felder ins Energie-Profil
+  /// nach jedem Materie-Save. Spirit-spezifische Felder (Geburtsdatum,
+  /// Birth-Chart usw.) bleiben unberuehrt.
+  Future<void> _mirrorIdentityToEnergie(MaterieProfile m) async {
+    try {
+      final existing = getEnergieProfile();
+      final updated = (existing ?? EnergieProfile.empty()).copyWith(
+        username: m.username,
+        avatarUrl: m.avatarUrl,
+        avatarEmoji: m.avatarEmoji,
+        bio: m.bio,
+        userId: m.userId,
+        role: m.role,
+      );
+      final prefs = await _ensurePrefs();
+      await prefs.setString(_kEnergieProfile, jsonEncode(updated.toJson()));
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ mirror identity to energie: $e');
+    }
   }
 
   MaterieProfile? getMaterieProfile() {
@@ -148,6 +173,53 @@ class StorageService {
     final prefs = await _ensurePrefs();
     await prefs.setString(_kEnergieProfile, jsonEncode(profile.toJson()));
     unawaited(SupabaseProfileSync.instance.syncEnergieProfile(profile));
+    // v101: Unified identity -- spiegelt Username/Avatar ins Materie-Profil.
+    await _mirrorIdentityToMaterie(profile);
+  }
+
+  /// v101: Synchronisiert die geteilten Identity-Felder ins Materie-Profil
+  /// nach jedem Energie-Save.
+  Future<void> _mirrorIdentityToMaterie(EnergieProfile e) async {
+    try {
+      final existing = getMaterieProfile();
+      // Falls noch kein Materie-Profil existiert: ein minimales anlegen.
+      final updated = MaterieProfile(
+        username: e.username,
+        name: existing?.name ?? e.fullName,
+        avatarUrl: e.avatarUrl ?? existing?.avatarUrl,
+        bio: e.bio ?? existing?.bio,
+        avatarEmoji: e.avatarEmoji ?? existing?.avatarEmoji,
+        userId: e.userId ?? existing?.userId,
+        role: e.role ?? existing?.role,
+      );
+      final prefs = await _ensurePrefs();
+      await prefs.setString(_kMaterieProfile, jsonEncode(updated.toJson()));
+    } catch (e) {
+      if (kDebugMode) debugPrint('⚠️ mirror identity to materie: $e');
+    }
+  }
+
+  /// v101: Unified-Identity-Lookup. Liefert die geteilten Felder unabhaengig
+  /// von der Welt -- bevorzugt Materie, faellt auf Energie zurueck, dann
+  /// Default. UI-Code, der nur Username/Avatar/Display-Name braucht, sollte
+  /// diese Methode statt getMaterieProfile/getEnergieProfile nutzen.
+  UserProfile? getUnifiedProfile() {
+    final m = getMaterieProfile();
+    final e = getEnergieProfile();
+    if (m == null && e == null) return null;
+    return UserProfile(
+      username: m?.username.isNotEmpty == true
+          ? m!.username
+          : (e?.username ?? ''),
+      displayName: m?.name?.isNotEmpty == true
+          ? m!.name
+          : (e?.fullName.isNotEmpty == true ? e!.fullName : null),
+      avatarUrl: m?.avatarUrl ?? e?.avatarUrl,
+      avatarEmoji: m?.avatarEmoji ?? e?.avatarEmoji,
+      bio: m?.bio ?? e?.bio,
+      userId: m?.userId ?? e?.userId,
+      role: m?.role ?? e?.role,
+    );
   }
 
   EnergieProfile? getEnergieProfile() {

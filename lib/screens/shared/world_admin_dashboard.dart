@@ -102,8 +102,14 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
   }
 
   Future<void> _waitForState() async {
+    // v101: adminStateProvider wird NUR mit der Original-Welt (widget.world)
+    // aufgerufen, damit der Cache aus dem World-Wrapper getroffen wird.
+    // _selectedWorld dient nur dazu, Daten zu filtern -- nicht die Rolle
+    // zu ermitteln. Sonst wuerde adminStateProvider('all') einen neuen
+    // Notifier starten ohne lokalen Cache und das Dashboard haengt im
+    // Loading-State.
     for (int i = 0; i < 8; i++) {
-      final a = ref.read(adminStateProvider(_selectedWorld));
+      final a = ref.read(adminStateProvider(widget.world));
       if (a.username != null && a.username!.isNotEmpty) return;
       await Future.delayed(const Duration(milliseconds: 400));
     }
@@ -122,7 +128,10 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
 
   @override
   Widget build(BuildContext context) {
-    final admin = ref.watch(adminStateProvider(_selectedWorld));
+    // v101: Rolle/Zugriff IMMER aus der Original-Welt lesen.
+    // _selectedWorld wird nur an die Tabs weitergegeben fuer Daten-Filter,
+    // beeinflusst aber nie die Auth-State-Resolution.
+    final admin = ref.watch(adminStateProvider(widget.world));
 
     // ⚠️ Supabase-Session NICHT mehr Pflicht — Root-Admin via InvisibleAuth
     // oder Web-Login (WebAuthGate) hat keine Supabase-Session, ist aber
@@ -214,7 +223,7 @@ class _WorldAdminDashboardState extends ConsumerState<WorldAdminDashboard>
             icon: Icon(Icons.refresh_rounded, color: _accentBright),
             tooltip: 'Alles neu laden',
             onPressed: () {
-              ref.read(adminStateProvider(_selectedWorld).notifier).refresh();
+              ref.read(adminStateProvider(widget.world).notifier).refresh();
               setState(() {});
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(

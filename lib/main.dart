@@ -453,7 +453,10 @@ class _WeltenbibliothekAppState extends State<WeltenbibliothekApp>
             '/health': (context) => const BackendHealthMonitorScreen(), // 🏥 HEALTH MONITOR
             UpdateHistoryScreen.routeName: (context) => const UpdateHistoryScreen(),
             // REMOVED: '/simple_voice_test' route (deprecated Simple Voice Test)
-            // 🔐 ADMIN-DASHBOARDS (World-specific)
+            // 🔐 ADMIN-DASHBOARD (v101 unified, default ueber alle Welten)
+            // Per Welt-Pfad bleiben fuer Rueckwaerts-Kompatibilitaet erhalten
+            // -- alle laden das gleiche welt-uebergreifende Dashboard.
+            '/admin': (context) => const WorldAdminDashboard(world: 'materie'),
             '/admin/materie': (context) => const WorldAdminDashboard(world: 'materie'),
             '/admin/energie': (context) => const WorldAdminDashboard(world: 'energie'),
             '/admin/vorhang': (context) => const WorldAdminDashboard(world: 'vorhang'),
