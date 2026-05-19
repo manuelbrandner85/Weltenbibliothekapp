@@ -18,6 +18,7 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/admin_action.dart';
+import 'push_notification_helper.dart';
 import 'supabase_service.dart';
 
 class AdminActionService {
@@ -72,16 +73,27 @@ class AdminActionService {
     required String targetUsername,
     String? reason,
     String? roomId,
-  }) =>
-      _logAction(
-        adminId: adminId,
-        adminUsername: adminUsername,
-        targetUserId: targetUserId,
-        targetUsername: targetUsername,
-        type: AdminActionType.mute,
-        reason: reason,
-        roomId: roomId,
-      );
+  }) async {
+    final ok = await _logAction(
+      adminId: adminId,
+      adminUsername: adminUsername,
+      targetUserId: targetUserId,
+      targetUsername: targetUsername,
+      type: AdminActionType.mute,
+      reason: reason,
+      roomId: roomId,
+    );
+    // v103 (4.4): Push an den gemuteten User.
+    PushNotificationHelper.instance.sendToUser(
+      targetUserId: targetUserId,
+      type: 'admin_mute',
+      title: '🔇 Stummgeschaltet',
+      body:
+          'Du wurdest stummgeschaltet.${reason != null ? " Grund: $reason" : ""}',
+      data: {'action': 'mute', 'reason': reason},
+    ).ignore();
+    return ok;
+  }
 
   Future<bool> unmuteUser({
     required String adminId,
@@ -163,6 +175,22 @@ class AdminActionService {
         isPermanent: isPermanent,
       );
       _bannedUsersController.add(Map.unmodifiable(_bansCache));
+
+      // v103 (4.1): Push an den gebannten User. Fire-and-forget.
+      PushNotificationHelper.instance.sendToUser(
+        targetUserId: targetUserId,
+        type: 'admin_ban',
+        title: '🚫 Account gesperrt',
+        body: isPermanent
+            ? 'Dein Account wurde dauerhaft gesperrt.${reason != null ? " Grund: $reason" : ""}'
+            : 'Dein Account wurde vorübergehend gesperrt.${reason != null ? " Grund: $reason" : ""}',
+        data: {
+          'action': 'ban',
+          'reason': reason,
+          'is_permanent': isPermanent,
+        },
+      ).ignore();
+
       return ok;
     } catch (e) {
       if (kDebugMode) debugPrint('❌ AdminAction.banUser: $e');
@@ -181,13 +209,22 @@ class AdminActionService {
       await supabase.from('admin_bans').delete().eq('user_id', targetUserId);
       _bansCache.remove(targetUserId);
       _bannedUsersController.add(Map.unmodifiable(_bansCache));
-      return _logAction(
+      final ok = await _logAction(
         adminId: adminId,
         adminUsername: adminUsername,
         targetUserId: targetUserId,
         targetUsername: targetUsername,
         type: AdminActionType.unban,
       );
+      // v103 (4.2): Push an den entbannten User.
+      PushNotificationHelper.instance.sendToUser(
+        targetUserId: targetUserId,
+        type: 'admin_unban',
+        title: '✅ Sperre aufgehoben',
+        body: 'Deine Account-Sperre wurde aufgehoben. Willkommen zurück!',
+        data: {'action': 'unban'},
+      ).ignore();
+      return ok;
     } catch (e) {
       if (kDebugMode) debugPrint('❌ AdminAction.unbanUser: $e');
       return false;
@@ -221,6 +258,16 @@ class AdminActionService {
         reason: reason,
         roomId: roomId,
       );
+
+      // v103 (4.3): Push an den verwarnten User. Vor dem 3-Strike-Check
+      // damit auch die Warnung selbst eine Notification ausloest.
+      PushNotificationHelper.instance.sendToUser(
+        targetUserId: targetUserId,
+        type: 'admin_warning',
+        title: '⚠️ Verwarnung erhalten',
+        body: 'Du hast eine Verwarnung erhalten. Grund: $reason',
+        data: {'action': 'warning', 'reason': reason},
+      ).ignore();
 
       // 3-Strike-Rule
       final count = await getWarningCount(targetUserId);
