@@ -31,6 +31,7 @@ import 'calculators/tarot_lexicon_screen.dart'; // 📚 78-Karten-Lexikon
 import 'calculators/runes_oracle_screen.dart'; // ᚱ Elder Futhark Cinematic
 import 'calculators/galdr_meditation_screen.dart'; // ᚠ Galdr-Gesang
 import 'calculators/synastry_chart_screen.dart'; // 💞 Astrologie-Synastrie
+import 'calculators/bind_rune_screen.dart'; // 🪬 Bind-Rune
 import 'calculators/akasha_chronicle_screen.dart'; // 🌌 Cinematic Journal + AI
 import 'calculators/birth_chart_360_screen.dart'; // ♓ 360° Visual Geburts-Chart
 import 'calculators/biorhythm_chart_screen.dart'; // 📊 90-Tage Bio + Critical Days
@@ -661,6 +662,16 @@ class _SpiritTabModernState extends State<SpiritTabModern>
         'color': const Color(0xFFC9A84C),
         'category': 'core',
         'screen': const GaldrMeditationScreen(),
+      },
+      // 🪬 Bind-Rune (v95)
+      {
+        'icon': Icons.auto_awesome_rounded,
+        'iconEmoji': '🪬',
+        'title': 'Bind-Rune',
+        'subtitle': '2-3 Runen kombinieren · Intention setzen',
+        'color': const Color(0xFFC9A84C),
+        'category': 'core',
+        'screen': const BindRuneScreen(),
       },
       // 💞 Synastrie -- Astrologie Partner-Vergleich (v95)
       {
