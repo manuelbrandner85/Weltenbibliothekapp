@@ -440,6 +440,25 @@ class _OverviewTabState extends State<_OverviewTab> {
     super.dispose();
   }
 
+  // v98: Sync-Endpoint -- backfillt fehlende profiles aus auth.users.
+  Future<void> _syncUsers() async {
+    final result = await WorldAdminServiceV162.syncUsers();
+    if (!mounted) return;
+    if (result == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('🔄 Profile-Sync fehlgeschlagen'),
+      ));
+      return;
+    }
+    final inserted = result['profiles_inserted'] ?? 0;
+    final authSeen = result['auth_users_seen'] ?? 0;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text('🔄 $inserted neue Profile (von $authSeen auth-Usern)'),
+      backgroundColor: Colors.green,
+    ));
+    _load();
+  }
+
   Future<void> _load() async {
     if (!mounted) return;
     try {
@@ -585,6 +604,19 @@ class _OverviewTabState extends State<_OverviewTab> {
                   const Text('Letzte 7 Tage · Automatische Aktualisierung',
                       style: TextStyle(color: Colors.white38, fontSize: 11)),
                 ]),
+              ),
+              GestureDetector(
+                onTap: _syncUsers,
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  margin: const EdgeInsets.only(right: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.greenAccent.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(Icons.cloud_sync_rounded,
+                      color: Colors.greenAccent, size: 18),
+                ),
               ),
               GestureDetector(
                 onTap: _load,
@@ -1071,6 +1103,114 @@ class _UsersTabState extends State<_UsersTab> {
     if (ok) _load();
   }
 
+  // v98: Hard-Delete eines Users. Nur Root-Admin. Verlangt Eingabe des
+  // exakten Usernames zur Bestaetigung (Fat-Finger-Schutz).
+  Future<void> _deleteUser(WorldUser u) async {
+    if (!widget.admin.isRootAdmin) return;
+    final confirmCtrl = TextEditingController();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF12121E),
+        title: const Row(children: [
+          Icon(Icons.delete_forever_rounded, color: Colors.redAccent),
+          SizedBox(width: 8),
+          Text('Hard-Delete', style: TextStyle(color: Colors.white)),
+        ]),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '@${u.username} wird unwiderruflich geloescht.\n\n'
+              'Profile-Zeile + auth.users (falls vorhanden) werden geloescht. '
+              'XP, Chat-Eintraege und alle abhaengigen Daten gehen verloren.',
+              style: const TextStyle(color: Colors.white70, fontSize: 13),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              'Tippe "${u.username}" zur Bestaetigung:',
+              style: const TextStyle(color: Colors.white54, fontSize: 12),
+            ),
+            const SizedBox(height: 6),
+            TextField(
+              controller: confirmCtrl,
+              autofocus: true,
+              style: const TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                hintText: u.username,
+                hintStyle: const TextStyle(color: Colors.white24),
+                filled: true,
+                fillColor: const Color(0xFF1A1A26),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(
+                      color: Colors.redAccent.withValues(alpha: 0.4)),
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Abbrechen',
+                  style: TextStyle(color: Colors.white60))),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.redAccent,
+                foregroundColor: Colors.white),
+            icon: const Icon(Icons.delete_forever_rounded, size: 16),
+            label: const Text('Endgueltig loeschen'),
+            onPressed: () {
+              if (confirmCtrl.text.trim() == u.username) {
+                Navigator.pop(ctx, true);
+              } else {
+                ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(
+                  content: Text(
+                      'Username stimmt nicht ueberein -- Bestaetigung abgebrochen.'),
+                ));
+              }
+            },
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+
+    setState(() => _processing = true);
+    final success = await WorldAdminServiceV162.deleteUser(
+      userId: u.userId,
+      adminUsername: widget.admin.username,
+    );
+    if (!mounted) return;
+    setState(() => _processing = false);
+    _snack(
+      success ? '🗑️ @${u.username} geloescht' : '❌ Loeschen fehlgeschlagen',
+      color: success ? Colors.red : Colors.orange,
+    );
+    if (success) _load();
+  }
+
+  // v98: Sync-Endpoint -- backfillt fehlende profiles aus auth.users.
+  Future<void> _syncUsers() async {
+    setState(() => _processing = true);
+    final result = await WorldAdminServiceV162.syncUsers();
+    if (!mounted) return;
+    setState(() => _processing = false);
+    if (result == null) {
+      _snack('❌ Sync fehlgeschlagen', color: Colors.red);
+      return;
+    }
+    final inserted = result['profiles_inserted'] ?? 0;
+    final authSeen = result['auth_users_seen'] ?? 0;
+    _snack(
+      '🔄 $inserted neue Profile (von $authSeen auth-Usern)',
+      color: Colors.green,
+    );
+    _load();
+  }
+
   // Manual XP-Vergabe: Dialog mit Quick-Buttons (+10/+50/+100/+500/-50) und
   // freiem Eingabefeld + Begründung. Sendet an Worker → audit_log + Push.
   Future<void> _grantXp(WorldUser u) async {
@@ -1517,6 +1657,9 @@ class _UsersTabState extends State<_UsersTab> {
                                     onPromote: () => _promote(u),
                                     onDemote: () => _demote(u),
                                     onGrantXp: () => _grantXp(u),
+                                    onDelete: widget.admin.isRootAdmin
+                                        ? () => _deleteUser(u)
+                                        : null,
                                     onChangeRole: (newRole) =>
                                         _changeRole(u, newRole),
                                   ),
@@ -2514,6 +2657,8 @@ class _UserTile extends StatelessWidget {
   final Color accent, accentBright;
   final VoidCallback onBan, onUnban, onPromote, onDemote;
   final VoidCallback? onGrantXp;
+  // v98: Hard-Delete -- nur Root-Admin sieht den Button.
+  final VoidCallback? onDelete;
   // Additiv (v5.44.3+): feinere Rollen-Auswahl via PopupMenuButton.
   // Bleibt optional, damit andere Caller nicht brechen.
   final void Function(String newRole)? onChangeRole;
@@ -2527,6 +2672,7 @@ class _UserTile extends StatelessWidget {
     required this.onPromote,
     required this.onDemote,
     this.onGrantXp,
+    this.onDelete,
     this.onChangeRole,
   });
 
@@ -2724,6 +2870,9 @@ class _UserTile extends StatelessWidget {
                   if (onGrantXp != null)
                     _ActionBtn(Icons.auto_awesome_rounded, 'XP vergeben',
                         const Color(0xFFFFC107), onGrantXp!),
+                  if (isRootAdmin && onDelete != null)
+                    _ActionBtn(Icons.delete_forever_rounded, 'Loeschen',
+                        Colors.redAccent, onDelete!),
                 ]),
               ]),
             ),

@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/materie_profile.dart';
 import '../models/energie_profile.dart';
 import '../models/spirit_profile.dart';
+import 'profile_sync_service.dart';
 import '../models/research_topic.dart';
 import '../models/spirit_entry.dart';
 import '../models/community_post.dart';
@@ -111,6 +112,10 @@ class StorageService {
   Future<void> saveMaterieProfile(MaterieProfile profile) async {
     final prefs = await _ensurePrefs();
     await prefs.setString(_kMaterieProfile, jsonEncode(profile.toJson()));
+    // v99: nach lokalem Speichern Profil sofort nach Supabase pushen,
+    // damit es im Admin-Dashboard mit Echtdaten erscheint.
+    // Best-effort -- bei Netzfehler bleibt es trotzdem lokal gespeichert.
+    unawaited(ProfileSyncService.instance.syncMaterieProfile(profile));
   }
 
   MaterieProfile? getMaterieProfile() {
@@ -142,6 +147,7 @@ class StorageService {
   Future<void> saveEnergieProfile(EnergieProfile profile) async {
     final prefs = await _ensurePrefs();
     await prefs.setString(_kEnergieProfile, jsonEncode(profile.toJson()));
+    unawaited(ProfileSyncService.instance.syncEnergieProfile(profile));
   }
 
   EnergieProfile? getEnergieProfile() {

@@ -1,12 +1,12 @@
 // UserPresenceService — Heartbeat für Online-Status im Admin-Dashboard.
 //
-// Tickt alle 90 Sekunden während die App im Foreground ist und schreibt
-// last_seen_at auf das eigene profile. Im Background (pausiert) stoppt
-// der Timer; ein letzter Tick beim Pausieren markiert "gerade weg".
+// Tickt alle 90 Sekunden während die App im Foreground ist und
+// aktualisiert last_seen_at.
 //
-// v98: nutzt ensure_legacy_profile RPC um Profile fuer InvisibleAuth-User
-// automatisch anzulegen falls fehlt -- so erscheinen sie sicher im
-// Admin-Dashboard, sobald sie die App das erste Mal oeffnen.
+// v99: Erstellt KEIN Profil mehr automatisch. Wenn der User noch kein
+// Profil ausgefuellt hat, ist der Heartbeat ein no-op. Profil-Anlage
+// erfolgt nur ueber ProfileSyncService -- ausgeloest beim aktiven
+// Speichern eines Materie/Energie/Vorhang/Ursprung-Profils.
 
 import 'dart:async';
 
@@ -22,15 +22,14 @@ class UserPresenceService {
   static const _heartbeatInterval = Duration(seconds: 90);
   Timer? _timer;
 
-  /// Startet den Heartbeat. Idempotent — mehrfacher Aufruf macht nichts.
+  /// Startet den Heartbeat. Idempotent.
   void start() {
     if (_timer != null && _timer!.isActive) return;
     _tick();
     _timer = Timer.periodic(_heartbeatInterval, (_) => _tick());
   }
 
-  /// Stoppt den Heartbeat. Setzt last_seen einmal noch (User ist gerade
-  /// gegangen). Aufrufen z.B. wenn App in den Background geht.
+  /// Stoppt den Heartbeat und macht einen letzten Tick.
   Future<void> stop() async {
     _timer?.cancel();
     _timer = null;
@@ -43,48 +42,27 @@ class UserPresenceService {
       final m = storage.getMaterieProfile();
       final e = storage.getEnergieProfile();
       final username = (m?.username ?? e?.username ?? '').trim();
-      if (username.isEmpty) return;
-
-      final displayName =
-          (m?.displayName ?? e?.displayName ?? username).trim();
-      final now = DateTime.now().toUtc().toIso8601String();
+      if (username.isEmpty) return; // Kein Profil -> nichts zu tun.
 
       final supa = Supabase.instance.client;
 
-      // Wenn Supabase Session da ist: per ID updaten (genauer).
+      // Auth-User: per Session-ID -- RLS erlaubt das eigene Update.
       final auth = supa.auth.currentUser;
       if (auth != null) {
-        await supa.from('profiles')
-            .update({'last_seen_at': now})
-            .eq('id', auth.id);
+        await supa.rpc('touch_auth_presence');
         return;
       }
 
-      // InvisibleAuth: ensure_legacy_profile RPC legt Profil an falls
-      // fehlt und aktualisiert last_seen_at atomar (v98).
+      // InvisibleAuth-User: touch_legacy_presence aktualisiert nur
+      // last_seen_at, legt aber kein neues Profil an. Wenn der User
+      // sein Profil noch nicht gespeichert hat, passiert nichts.
       final legacyId = (m?.userId ?? e?.userId ?? '').trim();
-      if (legacyId.isNotEmpty) {
-        try {
-          await supa.rpc('ensure_legacy_profile', params: {
-            'p_legacy_id': legacyId,
-            'p_username': username,
-            'p_display_name': displayName,
-          });
-          return;
-        } catch (rpcErr) {
-          if (kDebugMode) {
-            debugPrint(
-                '⚠️ ensure_legacy_profile RPC fail, fallback: $rpcErr');
-          }
-        }
-      }
-
-      // Fallback (ohne RPC verfuegbar): per username.
-      await supa.from('profiles')
-          .update({'last_seen_at': now})
-          .ilike('username', username);
+      if (legacyId.isEmpty) return;
+      await supa.rpc('touch_legacy_presence', params: {
+        'p_legacy_id': legacyId,
+      });
     } catch (e) {
-      if (kDebugMode) debugPrint('⚠️ Presence heartbeat: $e');
+      if (kDebugMode) debugPrint('Presence heartbeat: $e');
     }
   }
 }
