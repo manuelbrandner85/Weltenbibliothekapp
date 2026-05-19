@@ -65,13 +65,13 @@ class _RelationshipNumerologyScreenState
       _bLast.text.isNotEmpty &&
       _bBirth != null;
 
-  // Kompatibilitäts-Score: |a-b|=0 → 100%, |a-b|=4 → 0%
-  int _scoreFor(int a, int b) {
-    final diff = (a - b).abs();
-    // Numbers 1-9 wrap-around: distance is min(diff, 9-diff)
-    final wrapped = diff > 4 ? 9 - diff : diff;
-    return ((1 - wrapped / 4) * 100).round().clamp(0, 100);
-  }
+  // Echte numerologische Kompatibilitaets-Matrix (Verbesserung 6).
+  // Delegiert an die Engine, gewichteter Gesamtscore separat berechnet.
+  int _scoreFor(int a, int b) =>
+      NumerologyEngine.calculateTrueCompatibility(a, b);
+
+  String _descriptionFor(int a, int b) =>
+      NumerologyEngine.getCompatibilityDescription(a, b);
 
   @override
   Widget build(BuildContext context) {
@@ -211,7 +211,23 @@ class _RelationshipNumerologyScreenState
     final lifeScore = _scoreFor(aLife, bLife);
     final soulScore = _scoreFor(aSoul, bSoul);
     final exprScore = _scoreFor(aExpr, bExpr);
-    final overall = ((lifeScore + soulScore + exprScore) / 3).round();
+    // Gewichteter Gesamtscore: Lebenszahl 40%, Seele 35%, Ausdruck 25%
+    final overall = NumerologyEngine.calculateWeightedCompatibility(
+      lifePathA: aLife,
+      lifePathB: bLife,
+      soulA: aSoul,
+      soulB: bSoul,
+      expressionA: aExpr,
+      expressionB: bExpr,
+    );
+    // Achsen mit Score sortieren, um Staerkste / Wachstumsfeld zu finden.
+    final axes = <Map<String, dynamic>>[
+      {'label': 'Lebenszahl', 'score': lifeScore, 'a': aLife, 'b': bLife},
+      {'label': 'Seelenzahl', 'score': soulScore, 'a': aSoul, 'b': bSoul},
+      {'label': 'Ausdruckszahl', 'score': exprScore, 'a': aExpr, 'b': bExpr},
+    ]..sort((x, y) => (y['score'] as int).compareTo(x['score'] as int));
+    final strongest = axes.first;
+    final weakest = axes.last;
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
@@ -242,14 +258,39 @@ class _RelationshipNumerologyScreenState
         ),
         const SizedBox(height: 18),
         _axisCard('🌟 Lebenszahl',
-            'Grundenergie & Lebensthema', aLife, bLife, lifeScore),
+            'Grundenergie & Lebensthema (40% Gewichtung)',
+            aLife, bLife, lifeScore,
+            description: _descriptionFor(aLife, bLife)),
         const SizedBox(height: 10),
         _axisCard('💞 Seelenzahl',
-            'Innere Sehnsucht (aus Vokalen)', aSoul, bSoul, soulScore),
+            'Innere Sehnsucht aus Vokalen (35% Gewichtung)',
+            aSoul, bSoul, soulScore,
+            description: _descriptionFor(aSoul, bSoul)),
         const SizedBox(height: 10),
-        _axisCard('🎯 Schicksalszahl',
-            'Ausdruck & Talent (voller Name)', aExpr, bExpr, exprScore),
+        _axisCard('🎯 Ausdruckszahl',
+            'Ausdruck & Talent aus vollem Namen (25% Gewichtung)',
+            aExpr, bExpr, exprScore,
+            description: _descriptionFor(aExpr, bExpr)),
         const SizedBox(height: 18),
+        // Staerkste gemeinsame Achse
+        _highlightCard(
+          icon: Icons.star_rounded,
+          accent: Colors.amberAccent,
+          title: 'Staerkste Achse: ${strongest['label']}',
+          body:
+              'Score ${strongest['score']}%. Hier zieht ihr besonders gut an einem Strang.',
+        ),
+        const SizedBox(height: 8),
+        // Wachstumsfeld
+        _highlightCard(
+          icon: Icons.trending_up_rounded,
+          accent: Colors.orangeAccent,
+          title: 'Wachstumsfeld: ${weakest['label']}',
+          body:
+              'Score ${weakest['score']}%. Hier liegt das groesste Lernpotenzial - '
+              'bewusste Kommunikation und gegenseitiges Verstaendnis bringen euch weiter.',
+        ),
+        const SizedBox(height: 14),
         Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
@@ -276,7 +317,47 @@ class _RelationshipNumerologyScreenState
     );
   }
 
-  Widget _axisCard(String title, String desc, int a, int b, int score) {
+  Widget _highlightCard({
+    required IconData icon,
+    required Color accent,
+    required String title,
+    required String body,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: accent.withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: accent, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title,
+                    style: TextStyle(
+                        color: accent,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800)),
+                const SizedBox(height: 4),
+                Text(body,
+                    style: const TextStyle(
+                        color: Colors.white, fontSize: 12.5, height: 1.4)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _axisCard(String title, String desc, int a, int b, int score,
+      {String? description}) {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -324,6 +405,12 @@ class _RelationshipNumerologyScreenState
               ),
             ),
           ]),
+          if (description != null && description.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Text(description,
+                style: const TextStyle(
+                    color: Colors.white, fontSize: 12, height: 1.45)),
+          ],
         ],
       ),
     );
