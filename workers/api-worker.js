@@ -1356,7 +1356,7 @@ export default {
             if (!ADMIN_PASSWORD) {
               return jsonResponse({
                 success: false,
-                error: 'Root-Admin-Login serverseitig nicht konfiguriert. '
+                error: 'Root-Admin-Login serverseitig nicht konfiguriert. ' +
                        'ROOT_ADMIN_PASSWORD muss via wrangler secret gesetzt werden.',
               }, 503);
             }
@@ -2786,7 +2786,7 @@ export default {
           const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY;
           if (!serviceKey) {
             return errorResponse(
-              'SUPABASE_SERVICE_ROLE_KEY fehlt -- Admin-User-Endpoint deaktiviert. '
+              'SUPABASE_SERVICE_ROLE_KEY fehlt -- Admin-User-Endpoint deaktiviert. ' +
               'Service-Role-Secret muss via wrangler secret put gesetzt werden.',
               503,
             );
