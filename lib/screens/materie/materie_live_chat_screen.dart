@@ -1990,7 +1990,7 @@ class _MaterieLiveChatScreenState extends State<MaterieLiveChatScreen> with Tick
     if (_messages.isEmpty) {
       return EmptyChatOrb(
         world: 'materie',
-        roomName: _rooms[_selectedRoom]?['name'] as String? ?? 'diesem Raum',
+        roomName: _materieRooms[_selectedRoom]?['name'] as String? ?? 'diesem Raum',
       );
     }
 
