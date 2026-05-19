@@ -2,7 +2,13 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
+import 'dart:io' if (dart.library.html) '../../../stubs/dart_io_stub.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
+
 import '../../../models/energie_profile.dart';
+import '../../../services/numerology_pdf_service.dart';
 import '../../../services/spirit_calculations/numerology_engine.dart';
 import '../../../services/storage_service.dart';
 import '../../../services/streak_tracking_service.dart';
@@ -155,6 +161,17 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
     return Scaffold(
       extendBodyBehindAppBar: true,
       backgroundColor: const Color(0xFF050310),
+      floatingActionButton: _profile != null
+          ? FloatingActionButton.extended(
+              onPressed: _shareSoulPortrait,
+              backgroundColor: const Color(0xFF7C4DFF),
+              foregroundColor: Colors.white,
+              icon: const Icon(Icons.picture_as_pdf_rounded, size: 20),
+              label: const Text('Seelenportraet',
+                  style: TextStyle(
+                      fontWeight: FontWeight.w700, letterSpacing: 0.4)),
+            )
+          : null,
       appBar: WBGlassAppBar(
         world: WBWorld.energie,
         titleWidget: ShaderMask(
@@ -469,8 +486,306 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
             ))
           else
             _buildEmptyCard('Keine Karma-Zahlen gefunden', Icons.check_circle_outline),
+          const SizedBox(height: 24),
+          _buildSectionTitle('BRUECKENZAHLEN'),
+          const SizedBox(height: 8),
+          _buildBridgeNumbersSection(),
+          const SizedBox(height: 24),
+          _buildSectionTitle('INCLUSION CHART'),
+          const SizedBox(height: 8),
+          _buildInclusionChartSection(),
         ],
       ),
+    );
+  }
+
+  // ── PDF Share (Verbesserung 7) ───────────────────────────────────────
+  Future<void> _shareSoulPortrait() async {
+    if (_profile == null ||
+        _lifePath == null ||
+        _expression == null ||
+        _soul == null ||
+        _personality == null ||
+        _personalYear == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Numerologie wird noch berechnet ...')),
+      );
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Erstelle PDF ...')),
+    );
+    try {
+      final inclusion = NumerologyEngine.calculateInclusionChart(
+          _profile!.firstName, _profile!.lastName);
+      final bridges = NumerologyEngine.calculateBridgeNumbers(
+          _lifePath!, _expression!, _soul!, _personality!);
+      final bytes = await NumerologyPdfService.generateSoulPortrait(
+        profile: _profile!,
+        lifePath: _lifePath!,
+        soul: _soul!,
+        expression: _expression!,
+        personality: _personality!,
+        personalYear: _personalYear!,
+        masterNumbers: _masterNumbers ?? const [],
+        karmaNumbers: _karmaNumbers ?? const [],
+        inclusionChart: inclusion,
+        bridgeNumbers: bridges,
+      );
+      StreakTrackingService().trackToolUsage('numerology_pdf');
+      if (kIsWeb) {
+        // Web-Fallback: nur Vorschau-Snackbar (kein direkter Share).
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('PDF (${0} kB) im Web nur als Vorschau.')),
+        );
+        return;
+      }
+      final dir = await getTemporaryDirectory();
+      final safeName = _profile!.firstName.replaceAll(RegExp(r'[^A-Za-z0-9]'), '_');
+      final file = File('${dir.path}/seelenportraet_$safeName.pdf');
+      await file.writeAsBytes(bytes);
+      await Share.shareXFiles(
+        [XFile(file.path, mimeType: 'application/pdf')],
+        text: 'Mein numerologisches Seelenportraet - erstellt mit Weltenbibliothek.',
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('PDF-Fehler: $e')),
+      );
+    }
+  }
+
+  // ── BRUECKENZAHLEN (Verbesserung 3) ──────────────────────────────────
+  Widget _buildBridgeNumbersSection() {
+    if (_lifePath == null || _expression == null || _soul == null || _personality == null) {
+      return _buildEmptyCard('Brueckenzahlen erscheinen nach Profil-Load.',
+          Icons.hourglass_empty_rounded);
+    }
+    final bridges = NumerologyEngine.calculateBridgeNumbers(
+      _lifePath!,
+      _expression!,
+      _soul!,
+      _personality!,
+    );
+    return Column(
+      children: bridges
+          .map(
+            (b) => Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                  child: Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                          color: const Color(0xFFCE93D8).withValues(alpha: 0.35)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            _miniNumber(b['numberA'] as int,
+                                const Color(0xFF7C4DFF)),
+                            const SizedBox(width: 8),
+                            Container(
+                              width: 36,
+                              height: 1.5,
+                              color: Colors.white.withValues(alpha: 0.3),
+                            ),
+                            const SizedBox(width: 6),
+                            _miniNumber(
+                              b['bridge'] as int,
+                              const Color(0xFFC9A84C),
+                              outline: true,
+                            ),
+                            const SizedBox(width: 6),
+                            Container(
+                              width: 36,
+                              height: 1.5,
+                              color: Colors.white.withValues(alpha: 0.3),
+                            ),
+                            const SizedBox(width: 8),
+                            _miniNumber(b['numberB'] as int,
+                                const Color(0xFF7C4DFF)),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '${b['labelA']} <-> ${b['labelB']}',
+                          style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.5),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          (b['interpretation'] as String?) ?? '',
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12.5,
+                              height: 1.45),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          )
+          .toList(),
+    );
+  }
+
+  Widget _miniNumber(int n, Color c, {bool outline = false}) {
+    return Container(
+      width: 36,
+      height: 36,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: outline ? Colors.transparent : c.withValues(alpha: 0.25),
+        border: Border.all(color: c, width: outline ? 1.6 : 1),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        '$n',
+        style: TextStyle(
+            color: c,
+            fontWeight: FontWeight.w900,
+            fontSize: 14),
+      ),
+    );
+  }
+
+  // ── INCLUSION CHART (Verbesserung 4) ─────────────────────────────────
+  Widget _buildInclusionChartSection() {
+    if (_profile == null) {
+      return _buildEmptyCard('Inclusion-Chart erscheint nach Profil-Load.',
+          Icons.hourglass_empty_rounded);
+    }
+    final chart = NumerologyEngine.calculateInclusionChart(
+        _profile!.firstName, _profile!.lastName);
+    final counts = (chart['numberCounts'] as Map).cast<int, int>();
+    final missing = (chart['missingNumbers'] as List).cast<int>();
+    final missingTexts =
+        (chart['missingInterpretations'] as Map).cast<int, String>();
+
+    Color cellColor(int c) {
+      if (c == 0) return Colors.redAccent;
+      if (c >= 3) return const Color(0xFFFFD54F);
+      if (c >= 2) return Colors.lightGreenAccent;
+      return Colors.white54;
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 3,
+            mainAxisSpacing: 8,
+            crossAxisSpacing: 8,
+            childAspectRatio: 1.2,
+          ),
+          itemCount: 9,
+          itemBuilder: (_, i) {
+            final n = i + 1;
+            final c = counts[n] ?? 0;
+            final color = cellColor(c);
+            return Container(
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.14),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: color.withValues(alpha: 0.6), width: 1.2),
+                boxShadow: c >= 3
+                    ? [
+                        BoxShadow(
+                          color: color.withValues(alpha: 0.4),
+                          blurRadius: 14,
+                        ),
+                      ]
+                    : null,
+              ),
+              alignment: Alignment.center,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text('$n',
+                      style: TextStyle(
+                        color: color,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                      )),
+                  Text('${c}x',
+                      style: TextStyle(
+                        color: color.withValues(alpha: 0.85),
+                        fontSize: 10,
+                      )),
+                ],
+              ),
+            );
+          },
+        ),
+        if (missing.isNotEmpty) ...[
+          const SizedBox(height: 14),
+          const Text('Karmische Lektionen',
+              style: TextStyle(
+                  color: Colors.redAccent,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.0)),
+          const SizedBox(height: 6),
+          ...missing.map((n) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                        color: Colors.redAccent.withValues(alpha: 0.3)),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 28,
+                        height: 28,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.redAccent.withValues(alpha: 0.2),
+                        ),
+                        child: Text('$n',
+                            style: const TextStyle(
+                                color: Colors.redAccent,
+                                fontWeight: FontWeight.w800)),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          missingTexts[n] ?? '',
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12.5,
+                              height: 1.45),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )),
+        ],
+      ],
     );
   }
 
