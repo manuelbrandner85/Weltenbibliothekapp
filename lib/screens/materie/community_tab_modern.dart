@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, debugPrint;
 import '../../models/community_post.dart';
+import '../../services/moderation_queue_service.dart';
+import '../../services/storage_service.dart';
 import '../../services/community_service.dart'; // 🌐 ECHTE API
 import '../../widgets/create_post_dialog_v2.dart'; // ✅ POST-DIALOG
 import '../../widgets/loading_skeletons.dart'; // 💀 LOADING SKELETONS
@@ -102,6 +104,92 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
       _reactions[postId] ??= {};
       _reactions[postId]![emoji] = (_reactions[postId]![emoji] ?? 0) + 1;
     });
+  }
+
+  // v103 Phase 4h: Post-Report-Flow. Dialog mit Grund-Auswahl, dann
+  // ModerationQueueService.reportPost ins Supabase reported_posts.
+  Future<void> _reportPost(CommunityPost post) async {
+    final reasonCtrl = TextEditingController();
+    String selectedReason = 'spam';
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF12121E),
+        title: const Text('Beitrag melden',
+            style: TextStyle(color: Colors.white)),
+        content: StatefulBuilder(
+          builder: (ctx, setLocal) => Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final r in [
+                ('spam', 'Spam'),
+                ('hate', 'Hass / Beleidigung'),
+                ('misinfo', 'Falsche Info'),
+                ('other', 'Sonstiges'),
+              ])
+                RadioListTile<String>(
+                  value: r.$1,
+                  groupValue: selectedReason,
+                  onChanged: (v) =>
+                      setLocal(() => selectedReason = v ?? 'other'),
+                  title: Text(r.$2,
+                      style: const TextStyle(
+                          color: Colors.white, fontSize: 13)),
+                  activeColor: Colors.orange,
+                  dense: true,
+                ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: reasonCtrl,
+                style: const TextStyle(color: Colors.white, fontSize: 13),
+                maxLines: 2,
+                decoration: const InputDecoration(
+                  hintText: 'Optionale Notiz',
+                  hintStyle: TextStyle(color: Colors.white38),
+                  filled: true,
+                  fillColor: Color(0xFF1A1A2E),
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Abbrechen',
+                  style: TextStyle(color: Colors.white60))),
+          ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style:
+                  ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+              child: const Text('Senden')),
+        ],
+      ),
+    );
+    if (ok != true) return;
+
+    final storage = StorageService();
+    final reporterId = (storage.getMaterieProfile()?.userId ??
+            storage.getEnergieProfile()?.userId ??
+            'anonymous')
+        .toString();
+    final reporterName = storage.getMaterieProfile()?.username ??
+        storage.getEnergieProfile()?.username;
+
+    final success = await ModerationQueueService.instance.reportPost(
+      postId: post.id,
+      reporterId: reporterId,
+      reporterName: reporterName,
+      authorUsername: post.authorUsername,
+      reason: selectedReason,
+      notes: reasonCtrl.text.trim().isEmpty ? null : reasonCtrl.text.trim(),
+    );
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content:
+          Text(success ? '✅ Meldung gesendet' : '❌ Fehler beim Senden'),
+    ));
   }
   
   @override
@@ -953,7 +1041,10 @@ class _MaterieCommunityTabModernState extends State<MaterieCommunityTabModern> w
                         ListTile(
                           leading: const Icon(Icons.flag_outlined, color: Colors.orange),
                           title: const Text('Melden', style: TextStyle(color: Colors.white)),
-                          onTap: () { Navigator.pop(ctx); ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Gemeldet. Danke.'))); },
+                          onTap: () async {
+                            Navigator.pop(ctx);
+                            await _reportPost(post);
+                          },
                         ),
                       ]),
                     ),
