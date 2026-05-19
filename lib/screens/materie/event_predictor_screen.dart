@@ -758,10 +758,11 @@ class _LiveIndicatorsTabState extends State<_LiveIndicatorsTab>
       itemCount: _news.length,
       itemBuilder: (_, i) {
         final a = _news[i];
+        final date = a.webPublicationDate;
         return _tile(
             title: a.webTitle,
             subtitle:
-                '${a.sectionName} - ${a.webPublicationDate.substring(0, 10)}',
+                '${a.sectionName ?? ""} - ${date != null && date.length >= 10 ? date.substring(0, 10) : ""}',
             url: a.webUrl,
             icon: Icons.article,
             color: Colors.cyan);
