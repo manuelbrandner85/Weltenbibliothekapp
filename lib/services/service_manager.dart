@@ -24,6 +24,7 @@ import 'anonymous_cloud_sync_service.dart';
 import 'realtime_updates_service.dart';
 // import 'notification_service.dart'; // ❌ Web-only - Disabled for Android
 import 'achievement_service.dart';  // 🏆 Achievement System
+import 'unified_profile_service.dart';  // 🪪 v95 Unified Profile
 import 'daily_challenges_service.dart';  // 🎯 Daily Challenges
 import 'leaderboard_service.dart';  // 🏆 Leaderboard
 import 'reward_service.dart';  // 🎁 Reward System
@@ -115,6 +116,16 @@ class ServiceManager {
           await LocalChatStorageService().initialize();
         },
         critical: true,
+        timeout: const Duration(seconds: 2),
+      );
+
+      // 🪪 UnifiedProfileService - One profile fuer alle Welten (v95)
+      await _initializeService(
+        'UnifiedProfileService',
+        () async {
+          await UnifiedProfileService.instance.init();
+        },
+        critical: false,
         timeout: const Duration(seconds: 2),
       );
       
