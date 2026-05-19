@@ -536,8 +536,13 @@ async function dispatchPushQueue(env, pushAuth) {
 
   // 2. Pending-Zeilen laden (bis 100 pro Lauf) + retrybare Failed-Items (attempts < 3)
   // v96: legacy_user_id mitselectieren -- InvisibleAuth-User haben user_id NULL.
+  // v104: scheduled_at-Filter -- nur Zeilen die JETZT oder frueher faellig sind.
+  //   scheduled_at IS NULL -> sofort (default)
+  //   scheduled_at <= now    -> faellig
+  //   scheduled_at > now     -> noch warten, wird in spaeterem Cron geholt
+  const nowIso = new Date().toISOString();
   const fetchRes = await fetch(
-    `${SUPABASE_URL}/rest/v1/notification_queue?or=(status.eq.pending,and(status.eq.failed,attempts.lt.3))&select=id,user_id,legacy_user_id,title,body,data,attempts&order=created_at.asc&limit=100`,
+    `${SUPABASE_URL}/rest/v1/notification_queue?or=(status.eq.pending,and(status.eq.failed,attempts.lt.3))&or=(scheduled_at.is.null,scheduled_at.lte.${nowIso})&select=id,user_id,legacy_user_id,title,body,data,attempts&order=created_at.asc&limit=100`,
     { headers: pushAuth }
   );
   const rows = await fetchRes.json().catch(() => []);
@@ -2051,6 +2056,76 @@ export default {
       // ════════════════════════════════════════════════════════════
       // v103 PRODUCTION PUSH ENDPOINTS
       // ════════════════════════════════════════════════════════════
+
+      // POST /api/push/schedule
+      // Body: { target_user_id, type, title, body, data, scheduled_at }
+      // scheduled_at: ISO8601 in der Zukunft. Wird in notification_queue
+      // mit status=pending eingetragen; der naechste Cron-Run der nach
+      // scheduled_at faellt holt sie via OR(scheduled_at IS NULL,
+      // scheduled_at <= NOW()) und sendet via FCM.
+      // v103 (8.1): zeitgesteuerte Pushes ohne Durable Objects.
+      if (method === 'POST' && path.endsWith('/schedule')) {
+        if (!serviceKey) return errorResponse('SERVICE_ROLE_KEY required', 500);
+        try {
+          const targetUserId = body?.target_user_id || body?.user_id;
+          const title = (body?.title || '').toString().trim();
+          const msgBody = (body?.body || '').toString().trim();
+          const type = body?.type || 'scheduled';
+          const data = body?.data || {};
+          const scheduledAt = body?.scheduled_at;
+          if (!targetUserId || !title || !msgBody || !scheduledAt) {
+            return errorResponse(
+              'target_user_id, title, body, scheduled_at required', 400);
+          }
+          // Validiere scheduled_at -- muss ISO + in der Zukunft.
+          const ts = Date.parse(scheduledAt);
+          if (Number.isNaN(ts)) {
+            return errorResponse('scheduled_at must be ISO8601', 400);
+          }
+          if (ts < Date.now() - 60_000) {
+            return errorResponse(
+              'scheduled_at must be in the future', 400);
+          }
+          const isLegacy = String(targetUserId).startsWith('user_');
+          const row = isLegacy
+            ? {
+                legacy_user_id: targetUserId,
+                title,
+                body: msgBody,
+                data: { ...data, type, scheduled: true },
+                status: 'pending',
+                scheduled_at: new Date(ts).toISOString(),
+              }
+            : {
+                user_id: targetUserId,
+                title,
+                body: msgBody,
+                data: { ...data, type, scheduled: true },
+                status: 'pending',
+                scheduled_at: new Date(ts).toISOString(),
+              };
+          const ins = await fetch(
+            `${SUPABASE_URL}/rest/v1/notification_queue`,
+            {
+              method: 'POST',
+              headers: { ...pushAuth, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
+              body: JSON.stringify(row),
+            },
+          );
+          if (!ins.ok) {
+            const txt = await ins.text().catch(() => '');
+            return errorResponse(`Schedule ${ins.status}: ${txt.slice(0, 200)}`);
+          }
+          const inserted = await ins.json().catch(() => null);
+          return jsonResponse({
+            success: true,
+            scheduled_at: new Date(ts).toISOString(),
+            row: Array.isArray(inserted) ? inserted[0] : inserted,
+          });
+        } catch (e) {
+          return errorResponse(`schedule failed: ${e.message}`);
+        }
+      }
 
       // POST /api/push/send-to-user
       // Body: { target_user_id, type, title, body, data }
