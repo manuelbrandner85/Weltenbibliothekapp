@@ -273,6 +273,166 @@ async function sendFcmMessage(accessToken, projectId, token, title, body, data) 
   return { ok: res.ok, status: res.status, body: respText };
 }
 
+// ──────────────────────────────────────────────────────────────────────
+// 🔢 Numerology daily energy push (Verbesserung 5)
+// ──────────────────────────────────────────────────────────────────────
+// Berechnet fuer alle Profile mit Geburtsdatum den persoenlichen Tag und
+// queued eine FCM-Notification. Wird einmal pro UTC-Tag ausgefuehrt --
+// Schutz via Marker-Row in notification_queue mit type='numerology_daily'
+// im data-JSON.
+function _reduceDigit(n) {
+  while (n > 9) {
+    let s = 0;
+    while (n > 0) {
+      s += n % 10;
+      n = Math.floor(n / 10);
+    }
+    n = s;
+  }
+  return n;
+}
+
+function _calcPersonalDay(birthIso, now) {
+  // birthIso = "YYYY-MM-DD" oder ISO datetime
+  const d = new Date(birthIso);
+  if (Number.isNaN(d.getTime())) return null;
+  const birthDay = _reduceDigit(d.getUTCDate());
+  const birthMonth = _reduceDigit(d.getUTCMonth() + 1);
+  const yr = _reduceDigit(now.getUTCFullYear());
+  const personalYear = _reduceDigit(birthDay + birthMonth + yr);
+  const personalMonth =
+      _reduceDigit(personalYear + _reduceDigit(now.getUTCMonth() + 1));
+  const personalDay =
+      _reduceDigit(personalMonth + _reduceDigit(now.getUTCDate()));
+  return personalDay;
+}
+
+const _DAILY_ENERGY_TEXTS = {
+  1: [
+    'Heute strahlt Pionierenergie! Starte etwas Neues.',
+    'Tag der Initiative -- geh voran!',
+    'Die 1 ruft: Sei mutig und eigenstaendig!',
+  ],
+  2: [
+    'Harmonie-Tag: Pflege deine Beziehungen.',
+    'Diplomatie und Feingefuehl sind heute deine Staerken.',
+    'Die 2 fluestert: Hoere zu und vermittle.',
+  ],
+  3: [
+    'Kreativitaets-Explosion! Druecke dich aus.',
+    'Freude und Ausdruck stehen heute im Fokus.',
+    'Die 3 singt: Erschaffe etwas Schoenes!',
+  ],
+  4: [
+    'Strukturtag: Ordne und organisiere.',
+    'Heute lohnt sich fleissige Arbeit doppelt.',
+    'Die 4 spricht: Baue solide Fundamente.',
+  ],
+  5: [
+    'Abenteuer-Tag! Sei offen fuer Neues.',
+    'Veraenderung liegt in der Luft -- umarme sie!',
+    'Die 5 ruft: Brich aus der Routine aus!',
+  ],
+  6: [
+    'Familien- und Liebestag.',
+    'Fuersorge und Verantwortung tragen heute Fruechte.',
+    'Die 6 waermt: Gib und empfange Liebe.',
+  ],
+  7: [
+    'Tag der inneren Einkehr und Analyse.',
+    'Meditation und Stille bringen heute Klarheit.',
+    'Die 7 schweigt: Hoere nach innen.',
+  ],
+  8: [
+    'Manifestations-Tag! Denke gross.',
+    'Materieller Fokus bringt heute Ergebnisse.',
+    'Die 8 manifestiert: Dein Erfolg wartet.',
+  ],
+  9: [
+    'Tag des Loslassens und der Vollendung.',
+    'Mitgefuehl und Dienst am Naechsten erfuellen heute.',
+    'Die 9 vollendet: Lass los, was nicht mehr dient.',
+  ],
+};
+
+async function dispatchDailyNumerology(env, pushAuth) {
+  const now = new Date();
+  // Nur einmal pro Tag -- pruefe Marker in notification_queue.
+  const today = now.toISOString().slice(0, 10);
+  const checkRes = await fetch(
+    `${SUPABASE_URL}/rest/v1/notification_queue?select=id&data->>type=eq.numerology_daily&created_at=gte.${today}T00:00:00Z&limit=1`,
+    { headers: pushAuth },
+  );
+  if (checkRes.ok) {
+    const arr = await checkRes.json().catch(() => []);
+    if (Array.isArray(arr) && arr.length > 0) {
+      return { skipped: 'already_queued_today' };
+    }
+  }
+
+  // Profile mit Geburtsdatum + aktivem Push-Opt-In holen.
+  // numerology_push_enabled ist optional -- wenn Spalte fehlt, fallback
+  // auf alle mit birth_date (Backward-compatibility).
+  let profiles = [];
+  let usedFallback = false;
+  const tryRes = await fetch(
+    `${SUPABASE_URL}/rest/v1/profiles?select=id,birth_date&birth_date=not.is.null&numerology_push_enabled=eq.true&limit=2000`,
+    { headers: pushAuth },
+  );
+  if (tryRes.ok) {
+    profiles = await tryRes.json().catch(() => []);
+  } else {
+    usedFallback = true;
+    const fbRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/profiles?select=id,birth_date&birth_date=not.is.null&limit=2000`,
+      { headers: pushAuth },
+    );
+    if (fbRes.ok) profiles = await fbRes.json().catch(() => []);
+  }
+  if (!Array.isArray(profiles) || profiles.length === 0) {
+    return { queued: 0, total: 0, fallback: usedFallback };
+  }
+
+  let queued = 0;
+  const variantIndex = (now.getUTCDate() + now.getUTCMonth()) % 3;
+  for (const p of profiles) {
+    if (!p.id || !p.birth_date) continue;
+    const pd = _calcPersonalDay(p.birth_date, now);
+    if (pd == null || pd < 1 || pd > 9) continue;
+    const variants = _DAILY_ENERGY_TEXTS[pd] || [];
+    const body = variants[variantIndex] || variants[0] || '';
+    const title = `Deine Tagesenergie: ${pd}`;
+    try {
+      const insertRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/notification_queue`,
+        {
+          method: 'POST',
+          headers: {
+            ...pushAuth,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=minimal',
+          },
+          body: JSON.stringify({
+            user_id: p.id,
+            title,
+            body: body.substring(0, 120),
+            data: {
+              type: 'numerology_daily',
+              personal_day: pd,
+              date: today,
+            },
+            status: 'pending',
+          }),
+        },
+      );
+      if (insertRes.ok) queued++;
+    } catch (_) {
+      // ignore individual failures
+    }
+  }
+  return { queued, total: profiles.length, fallback: usedFallback };
+}
+
 async function dispatchPushQueue(env, pushAuth) {
   // 1. FCM-Access-Token holen — ZUERST, bevor Queue gelesen wird.
   //    Wenn FCM nicht konfiguriert ist: Queue NICHT anfassen → Items bleiben 'pending'
@@ -372,6 +532,17 @@ export default {
       console.log('cron dispatch ok:', JSON.stringify(result));
     } catch (e) {
       console.error('cron dispatch failed:', e.message);
+    }
+    // 🔢 Tagesenergie (Verbesserung 5): einmal pro UTC-Tag um ~07:00.
+    // Cron schiesst alle 5 min, also nur in der 07:00..07:04-Slot pruefen.
+    try {
+      const nowUTC = new Date();
+      if (nowUTC.getUTCHours() === 7 && nowUTC.getUTCMinutes() < 5) {
+        const res = await dispatchDailyNumerology(env, pushAuth);
+        console.log('cron numerology-daily:', JSON.stringify(res));
+      }
+    } catch (e) {
+      console.error('cron numerology-daily failed:', e.message);
     }
     // 🧹 6h Chat-Reset: ALLE Nachrichten aus allen Räumen löschen.
     // Läuft ca. einmal pro 6h (random 1/360 per Minute-Cron).
