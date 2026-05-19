@@ -11,6 +11,7 @@ import '../../../widgets/cinematic/wb_ambient_particles.dart';
 import '../../../widgets/cinematic/wb_glass_app_bar.dart';
 import '../../../widgets/cinematic/wb_vignette.dart';
 import '../../../theme/wb_cinematic_tokens.dart';
+import 'crystal_ritual_screen.dart';
 
 class CrystalFinderScreen extends StatefulWidget {
   const CrystalFinderScreen({super.key});
@@ -451,7 +452,12 @@ class _CrystalFinderScreenState extends State<CrystalFinderScreen> {
       );
 
   Widget _resultCard(CrystalEntry c, int rank) {
-    return ClipRRect(
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => CrystalRitualScreen(crystal: c)),
+      ),
+      child: ClipRRect(
       borderRadius: BorderRadius.circular(16),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
@@ -543,6 +549,7 @@ class _CrystalFinderScreenState extends State<CrystalFinderScreen> {
             ],
           ),
         ),
+      ),
       ),
     );
   }
