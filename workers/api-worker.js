@@ -1897,6 +1897,198 @@ export default {
         }
       }
 
+      // ════════════════════════════════════════════════════════════
+      // v103 PRODUCTION PUSH ENDPOINTS
+      // ════════════════════════════════════════════════════════════
+
+      // POST /api/push/send-to-user
+      // Body: { target_user_id, type, title, body, data }
+      // Enqueues a push for ONE user (UUID or InvisibleAuth-ID), then
+      // immediately drains the queue so FCM fires within seconds.
+      if (method === 'POST' && path.endsWith('/send-to-user')) {
+        if (!serviceKey) return errorResponse('SERVICE_ROLE_KEY required', 500);
+        try {
+          const targetUserId = body?.target_user_id || body?.user_id;
+          const type = body?.type || 'system';
+          const title = (body?.title || '').toString().trim();
+          const msgBody = (body?.body || '').toString().trim();
+          const data = body?.data || {};
+          if (!targetUserId || !title || !msgBody) {
+            return errorResponse('target_user_id, title, body required', 400);
+          }
+          // Username-lookup falls targetUserId wie ein Username aussieht
+          // (kein UUID, kein 'user_' Prefix).
+          let resolvedId = targetUserId;
+          const looksLikeUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetUserId);
+          const isLegacy = String(targetUserId).startsWith('user_');
+          if (!looksLikeUuid && !isLegacy) {
+            try {
+              const lookup = await fetch(
+                `${SUPABASE_URL}/rest/v1/profiles?select=id,legacy_user_id&username=eq.${encodeURIComponent(targetUserId)}&limit=1`,
+                { headers: pushAuth },
+              );
+              const rows = await lookup.json().catch(() => []);
+              if (Array.isArray(rows) && rows.length > 0) {
+                resolvedId = rows[0].id || rows[0].legacy_user_id || targetUserId;
+              }
+            } catch (_) {}
+          }
+          const useLegacy = String(resolvedId).startsWith('user_');
+          const queueRow = useLegacy
+            ? { legacy_user_id: resolvedId, title, body: msgBody, data: { ...data, type }, status: 'pending' }
+            : { user_id: resolvedId, title, body: msgBody, data: { ...data, type }, status: 'pending' };
+          const ins = await fetch(
+            `${SUPABASE_URL}/rest/v1/notification_queue`,
+            {
+              method: 'POST',
+              headers: { ...pushAuth, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+              body: JSON.stringify(queueRow),
+            }
+          );
+          if (!ins.ok) {
+            const txt = await ins.text().catch(() => '');
+            return errorResponse(`Enqueue ${ins.status}: ${txt.slice(0, 200)}`);
+          }
+          // Immediate dispatch.
+          try {
+            await dispatchPushQueue(env, pushAuth);
+          } catch (_) {}
+          return jsonResponse({ success: true, target_user_id: resolvedId, type });
+        } catch (e) {
+          return errorResponse(`send-to-user failed: ${e.message}`);
+        }
+      }
+
+      // POST /api/push/send-to-topic
+      // Body: { topic, title, body, data }
+      // Lookup all active push_subscriptions where device_info->topics
+      // contains the topic, enqueue one push each, dispatch.
+      if (method === 'POST' && path.endsWith('/send-to-topic')) {
+        if (!serviceKey) return errorResponse('SERVICE_ROLE_KEY required', 500);
+        try {
+          const topic = (body?.topic || '').toString().trim();
+          const title = (body?.title || '').toString().trim();
+          const msgBody = (body?.body || '').toString().trim();
+          const data = body?.data || {};
+          if (!topic || !title || !msgBody) {
+            return errorResponse('topic, title, body required', 400);
+          }
+          // Query subscribers. device_info is JSONB; check ->topics ?| array.
+          // Fallback: if no rows match the topic filter, treat as broadcast
+          // (legacy clients without topics field still receive global pushes).
+          const topicFilter =
+            `device_info->topics=cs.["${topic.replace(/"/g, '\\"')}"]`;
+          let recRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/push_subscriptions?select=user_id&is_active=eq.true&${topicFilter}&limit=5000`,
+            { headers: pushAuth },
+          );
+          let recipients = recRes.ok ? await recRes.json().catch(() => []) : [];
+          if (!Array.isArray(recipients) || recipients.length === 0) {
+            // Fallback: kein Topic-Filter -> ALLE aktiven Subscriber.
+            recRes = await fetch(
+              `${SUPABASE_URL}/rest/v1/push_subscriptions?select=user_id&is_active=eq.true&limit=5000`,
+              { headers: pushAuth },
+            );
+            recipients = recRes.ok ? await recRes.json().catch(() => []) : [];
+          }
+          const userIds = (Array.isArray(recipients) ? recipients : [])
+            .map(r => r.user_id)
+            .filter(id => id && !String(id).startsWith('00000000-'));
+          if (userIds.length === 0) {
+            return jsonResponse({ success: true, sent: 0, failed: 0, topic, note: 'no subscribers' });
+          }
+          const now = new Date().toISOString();
+          const rows = userIds.map(uid => ({
+            user_id: uid,
+            title,
+            body: msgBody,
+            data: { ...data, type: data?.type || 'topic', topic, source: 'push_topic' },
+            status: 'pending',
+            created_at: now,
+          }));
+          const insRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/notification_queue`,
+            {
+              method: 'POST',
+              headers: { ...pushAuth, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+              body: JSON.stringify(rows),
+            },
+          );
+          if (!insRes.ok) {
+            const txt = await insRes.text().catch(() => '');
+            return errorResponse(`Enqueue ${insRes.status}: ${txt.slice(0, 200)}`);
+          }
+          try { await dispatchPushQueue(env, pushAuth); } catch (_) {}
+          return jsonResponse({ success: true, sent: userIds.length, failed: 0, topic });
+        } catch (e) {
+          return errorResponse(`send-to-topic failed: ${e.message}`);
+        }
+      }
+
+      // POST /api/push/broadcast
+      // Body: { title, body, admin, data }
+      // Sends to ALL active subscribers. Logs admin_audit_log.
+      if (method === 'POST' && path.endsWith('/broadcast') && !path.includes('/admin/')) {
+        if (!serviceKey) return errorResponse('SERVICE_ROLE_KEY required', 500);
+        try {
+          const title = (body?.title || '').toString().trim();
+          const msgBody = (body?.body || '').toString().trim();
+          const data = body?.data || {};
+          const adminUsername = (body?.admin || 'system').toString().slice(0, 80);
+          if (!title || !msgBody) {
+            return errorResponse('title, body required', 400);
+          }
+          const recRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/push_subscriptions?select=user_id&is_active=eq.true&limit=5000`,
+            { headers: pushAuth },
+          );
+          const recipients = recRes.ok ? await recRes.json().catch(() => []) : [];
+          const userIds = (Array.isArray(recipients) ? recipients : [])
+            .map(r => r.user_id)
+            .filter(id => id && !String(id).startsWith('00000000-'));
+          if (userIds.length === 0) {
+            return jsonResponse({ success: true, sent: 0, failed: 0, note: 'no subscribers' });
+          }
+          const now = new Date().toISOString();
+          const rows = userIds.map(uid => ({
+            user_id: uid,
+            title,
+            body: msgBody,
+            data: { ...data, type: 'admin_broadcast', source: 'push_broadcast', admin: adminUsername },
+            status: 'pending',
+            created_at: now,
+          }));
+          const insRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/notification_queue`,
+            {
+              method: 'POST',
+              headers: { ...pushAuth, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+              body: JSON.stringify(rows),
+            },
+          );
+          if (!insRes.ok) {
+            const txt = await insRes.text().catch(() => '');
+            return errorResponse(`Enqueue ${insRes.status}: ${txt.slice(0, 200)}`);
+          }
+          // Audit log (best-effort).
+          fetch(`${SUPABASE_URL}/rest/v1/admin_audit_log`, {
+            method: 'POST',
+            headers: { ...pushAuth, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+            body: JSON.stringify({
+              actor_id: '00000000-0000-0000-0000-000000000000',
+              action: 'push_broadcast',
+              target_type: 'all',
+              target_id: 'all',
+              payload: { title, body: msgBody, admin: adminUsername, recipients: userIds.length },
+            }),
+          }).catch(() => {});
+          try { await dispatchPushQueue(env, pushAuth); } catch (_) {}
+          return jsonResponse({ success: true, sent: userIds.length, failed: 0 });
+        } catch (e) {
+          return errorResponse(`broadcast failed: ${e.message}`);
+        }
+      }
+
       // GET /api/push/debug?user_id=UUID → Diagnose-Endpunkt (kein Secret exponiert)
       if (method === 'GET' && path.endsWith('/debug')) {
         const userId = url.searchParams.get('user_id');
