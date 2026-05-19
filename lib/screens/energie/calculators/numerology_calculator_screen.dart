@@ -2021,13 +2021,11 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
                           color: const Color(0xFF0D0D0D).withValues(alpha: 0.5),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Text(
-                          _getCyclePersonalizedText(cycle['cycle'], cycle['number'], _profile?.firstName ?? 'Du'),
-                          style: TextStyle(
-                            fontSize: 13.5,
-                            color: Colors.white.withValues(alpha: 0.92),
-                            height: 1.65,
-                          ),
+                        child: _FormattedNumerologyText(
+                          text: _getCyclePersonalizedText(cycle['cycle'],
+                              cycle['number'], _profile?.firstName ?? 'Du'),
+                          accent: color,
+                          baseFontSize: 13.5,
                         ),
                       ),
                     ],
@@ -2241,17 +2239,14 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
                           color: const Color(0xFF0D0D0D).withValues(alpha: 0.5),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Text(
-                          _getPinnaclePersonalText(
+                        child: _FormattedNumerologyText(
+                          text: _getPinnaclePersonalText(
                               pinnacle['pinnacle'] as int,
                               pinnacle['number'] as int,
                               pinnacle['startAge'] as int,
                               name),
-                          style: TextStyle(
-                            fontSize: 13.5,
-                            color: Colors.white.withValues(alpha: 0.92),
-                            height: 1.6,
-                          ),
+                          accent: color,
+                          baseFontSize: 13.5,
                         ),
                       ),
                     ],
@@ -2348,13 +2343,10 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
                 color: const Color(0xFF0D0D0D).withValues(alpha: 0.55),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Text(
-                _getChallengePersonalText(challengeNum, number, name),
-                style: TextStyle(
-                  fontSize: 13.5,
-                  color: Colors.white.withValues(alpha: 0.92),
-                  height: 1.6,
-                ),
+              child: _FormattedNumerologyText(
+                text: _getChallengePersonalText(challengeNum, number, name),
+                accent: color,
+                baseFontSize: 13.5,
               ),
             ),
           ],
@@ -2460,13 +2452,10 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
                     ),
                   ),
                   const SizedBox(height: 12),
-                  Text(
-                    _getMasterNumberPersonalText(number, name),
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Colors.white,
-                      height: 1.65,
-                    ),
+                  _FormattedNumerologyText(
+                    text: _getMasterNumberPersonalText(number, name),
+                    accent: const Color(0xFFFFD700),
+                    baseFontSize: 14,
                   ),
                 ],
               ),
@@ -2766,13 +2755,10 @@ class _NumerologyCalculatorScreenState extends State<NumerologyCalculatorScreen>
                 color: const Color(0xFF0D0D0D).withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Text(
-                _getKarmaNumberPersonalText(number, name),
-                style: TextStyle(
-                  fontSize: 13.5,
-                  color: Colors.white.withValues(alpha: 0.92),
-                  height: 1.65,
-                ),
+              child: _FormattedNumerologyText(
+                text: _getKarmaNumberPersonalText(number, name),
+                accent: const Color(0xFFE91E63),
+                baseFontSize: 13.5,
               ),
             ),
           ],
@@ -4627,3 +4613,253 @@ class _PartnerInputDialogState extends State<_PartnerInputDialog> {
   }
 }
 
+
+
+// ══════════════════════════════════════════════════════════════════════
+// v95: FormattedNumerologyText -- Markdown-Lite-Parser fuer schoene
+// Darstellung der ausfuehrlichen Numerologie-Texte. Erkennt:
+//   • UPPERCASE-Zeilen mit ':' am Ende -> Section-Pille
+//   • Zeilen mit "DEINE FRAGE:" am Anfang -> Highlight-Quote-Box
+//   • Zeilen mit "• " oder "- " am Anfang -> Bullet-Item
+//   • Leerzeile -> Spacing
+//   • Sonst: normaler Paragraph
+// ══════════════════════════════════════════════════════════════════════
+class _FormattedNumerologyText extends StatelessWidget {
+  final String text;
+  final Color accent;
+  final double baseFontSize;
+
+  const _FormattedNumerologyText({
+    required this.text,
+    required this.accent,
+    this.baseFontSize = 14,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final blocks = _parse(text);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: blocks,
+    );
+  }
+
+  List<Widget> _parse(String input) {
+    final widgets = <Widget>[];
+    final lines = input.split('\n');
+    final bulletBuffer = <String>[];
+    final paragraphBuffer = <String>[];
+
+    void flushParagraph() {
+      if (paragraphBuffer.isEmpty) return;
+      final p = paragraphBuffer.join(' ').trim();
+      paragraphBuffer.clear();
+      if (p.isEmpty) return;
+      widgets.add(Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Text(
+          p,
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.92),
+            fontSize: baseFontSize,
+            height: 1.6,
+          ),
+        ),
+      ));
+    }
+
+    void flushBullets() {
+      if (bulletBuffer.isEmpty) return;
+      final items = bulletBuffer.toList();
+      bulletBuffer.clear();
+      widgets.add(Padding(
+        padding: const EdgeInsets.only(top: 6, bottom: 6),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: items.map((item) => Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 5,
+                  height: 5,
+                  margin: const EdgeInsets.only(top: 8, right: 10),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: accent.withValues(alpha: 0.85),
+                  ),
+                ),
+                Expanded(
+                  child: Text(
+                    item,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.95),
+                      fontSize: baseFontSize - 0.5,
+                      height: 1.55,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          )).toList(),
+        ),
+      ));
+    }
+
+    for (final raw in lines) {
+      final line = raw.trim();
+      if (line.isEmpty) {
+        flushParagraph();
+        flushBullets();
+        widgets.add(const SizedBox(height: 4));
+        continue;
+      }
+
+      // Section-Pille: UPPERCASE-Zeile mit ':' am Ende
+      if (_isSectionHeader(line)) {
+        flushParagraph();
+        flushBullets();
+        widgets.add(Padding(
+          padding: const EdgeInsets.only(top: 10, bottom: 6),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: 0.18),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: accent.withValues(alpha: 0.5)),
+            ),
+            child: Text(
+              line.replaceAll(':', '').trim(),
+              style: TextStyle(
+                color: accent,
+                fontSize: baseFontSize - 2.5,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1.4,
+              ),
+            ),
+          ),
+        ));
+        continue;
+      }
+
+      // DEINE FRAGE: Highlight-Box
+      if (line.startsWith('DEINE FRAGE')) {
+        flushParagraph();
+        flushBullets();
+        final body = line.contains(':')
+            ? line.substring(line.indexOf(':') + 1).trim()
+            : line;
+        widgets.add(Padding(
+          padding: const EdgeInsets.only(top: 10),
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFD54F).withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(10),
+              border: const Border(
+                left: BorderSide(color: Color(0xFFFFD54F), width: 3),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Row(children: [
+                  Icon(Icons.help_outline_rounded,
+                      color: Color(0xFFFFD54F), size: 14),
+                  SizedBox(width: 6),
+                  Text('DEINE FRAGE',
+                      style: TextStyle(
+                          color: Color(0xFFFFD54F),
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.5)),
+                ]),
+                const SizedBox(height: 6),
+                Text(body,
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        height: 1.5,
+                        fontStyle: FontStyle.italic)),
+              ],
+            ),
+          ),
+        ));
+        continue;
+      }
+
+      // HERAUSFORDERUNG: Warn-Box
+      if (line.startsWith('HERAUSFORDERUNG')) {
+        flushParagraph();
+        flushBullets();
+        final body = line.contains(':')
+            ? line.substring(line.indexOf(':') + 1).trim()
+            : line;
+        widgets.add(Padding(
+          padding: const EdgeInsets.only(top: 10),
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.orangeAccent.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(10),
+              border: const Border(
+                left: BorderSide(color: Colors.orangeAccent, width: 3),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Row(children: [
+                  Icon(Icons.warning_amber_rounded,
+                      color: Colors.orangeAccent, size: 14),
+                  SizedBox(width: 6),
+                  Text('HERAUSFORDERUNG',
+                      style: TextStyle(
+                          color: Colors.orangeAccent,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.5)),
+                ]),
+                const SizedBox(height: 6),
+                Text(body,
+                    style: const TextStyle(
+                        color: Colors.white, fontSize: 14, height: 1.5)),
+              ],
+            ),
+          ),
+        ));
+        continue;
+      }
+
+      // Bullet
+      if (line.startsWith('• ') || line.startsWith('- ')) {
+        flushParagraph();
+        bulletBuffer.add(line.substring(2).trim());
+        continue;
+      }
+
+      // Sonst Paragraph-Sammler
+      flushBullets();
+      paragraphBuffer.add(line);
+    }
+
+    flushParagraph();
+    flushBullets();
+
+    return widgets;
+  }
+
+  bool _isSectionHeader(String line) {
+    // ALL-CAPS oder kombi mit Bindestrich, mit ':' am Ende und max 60 Zeichen
+    if (line.length > 60) return false;
+    if (!line.endsWith(':')) return false;
+    final body = line.replaceAll(':', '').trim();
+    if (body.isEmpty) return false;
+    // Pruefen: keine Kleinbuchstaben drin (oder nur in 'und' o.ae.)
+    final letters = body.replaceAll(RegExp(r'[^A-Za-zÄÖÜäöüß]'), '');
+    if (letters.isEmpty) return false;
+    final upper = letters.toUpperCase();
+    return letters == upper;
+  }
+}
