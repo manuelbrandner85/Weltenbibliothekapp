@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../models/enhanced_chat_message.dart';
+import 'push_notification_helper.dart';
 
 /// Chat Notification Service - Verwaltet Unread Counter & Mentions
 class ChatNotificationService extends ChangeNotifier {
@@ -105,7 +106,18 @@ class ChatNotificationService extends ChangeNotifier {
           '🔔 Neue Nachricht von ${message.username} in ${message.roomId}');
     }
 
-    // TODO: System Notification anzeigen (wenn implementiert)
+    // v103 (2.1): Topic-Push -- jeder Subscriber des Raum-Topics
+    // bekommt eine Notification. Fire-and-forget.
+    PushNotificationHelper.instance.sendToTopic(
+      topic: 'chat_${message.roomId}',
+      title: '💬 Neue Nachricht in #${_roomDisplayName(message.roomId)}',
+      body: '${message.username}: ${_truncate(message.message, 80)}',
+      data: {
+        'type': 'chat_message',
+        'room_id': message.roomId,
+        'sender': message.username,
+      },
+    ).ignore();
   }
 
   /// Mention Notification (Immer)
@@ -115,8 +127,35 @@ class ChatNotificationService extends ChangeNotifier {
           '📢 Du wurdest erwähnt von ${message.username}: ${message.message}');
     }
 
-    // TODO: System Notification anzeigen (wenn implementiert)
+    // v103 (2.2): Mention-Push direkt an den erwaehnten User.
+    final me = _currentUsername;
+    if (me != null && me.isNotEmpty) {
+      PushNotificationHelper.instance.sendToUser(
+        targetUserId: me,
+        type: 'chat_mention',
+        title: '📢 Du wurdest erwähnt!',
+        body:
+            '${message.username} in #${_roomDisplayName(message.roomId)}: ${_truncate(message.message, 80)}',
+        data: {
+          'room_id': message.roomId,
+          'sender': message.username,
+          'mention': true,
+        },
+      ).ignore();
+    }
   }
+
+  /// Pretty-printed room name -- strips welt-prefix and capitalizes.
+  String _roomDisplayName(String roomId) {
+    final parts = roomId.split('-');
+    if (parts.length < 2) return roomId;
+    final tail = parts.sublist(1).join('-');
+    if (tail.isEmpty) return roomId;
+    return tail[0].toUpperCase() + tail.substring(1);
+  }
+
+  String _truncate(String s, int max) =>
+      s.length <= max ? s : '${s.substring(0, max)}...';
 
   /// Reset Service
   void reset() {
